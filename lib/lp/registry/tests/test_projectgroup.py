@@ -126,13 +126,13 @@ class TestProjectGroupPermissions(TestCaseWithFactory):
         login_celebrity('registry_experts')
         new_owner = self.factory.makePerson(name='project-group-owner')
         self.pg.name = 'new-name'
-        self.assertRaises(Unauthorized,
-                          setattr, self.pg, 'owner', new_owner)
+        self.assertRaises(
+            Unauthorized, setattr, self.pg, 'owner', new_owner)
 
     def test_attribute_changes_by_owner(self):
         login_person(self.pg.owner)
-        self.assertRaises(Unauthorized,
-                          setattr, self.pg, 'name', 'new-name')
+        self.assertRaises(
+            Unauthorized, setattr, self.pg, 'name', 'new-name')
         self.pg.owner = self.factory.makePerson(name='project-group-owner')
 
 

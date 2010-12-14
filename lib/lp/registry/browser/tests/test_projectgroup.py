@@ -37,8 +37,8 @@ class TestProjectGroupEditView(TestCaseWithFactory):
         # An admin can change details and administer a project group.
         with celebrity_logged_in('admin'):
             user = getUtility(ILaunchBag).user
-            view = create_initialized_view(self.project_group, '+index',
-                                           principal=user)
+            view = create_initialized_view(
+                self.project_group, '+index', principal=user)
             contents = view.render()
             self.assertThat(contents, Contains("Change details"))
             self.assertThat(contents, Contains("Administer"))
@@ -48,8 +48,8 @@ class TestProjectGroupEditView(TestCaseWithFactory):
         # group.
         with celebrity_logged_in('registry_experts'):
             user = getUtility(ILaunchBag).user
-            view = create_initialized_view(self.project_group, '+index',
-                                           principal=user)
+            view = create_initialized_view(
+                self.project_group, '+index', principal=user)
             contents = view.render()
             self.assertThat(contents, Not(Contains("Change details")))
             self.assertThat(contents, Contains("Administer"))
@@ -58,8 +58,8 @@ class TestProjectGroupEditView(TestCaseWithFactory):
         # An owner can change details but not administer a project group.
         with person_logged_in(self.project_group.owner):
             user = getUtility(ILaunchBag).user
-            view = create_initialized_view(self.project_group, '+index',
-                                           principal=user)
+            view = create_initialized_view(
+                self.project_group, '+index', principal=user)
             contents = view.render()
             self.assertThat(contents, Contains("Change details"))
             self.assertThat(contents, Not(Contains("Administer")))
