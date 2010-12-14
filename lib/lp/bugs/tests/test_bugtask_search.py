@@ -764,15 +764,6 @@ class MilestoneTarget(BugTargetTestBase):
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.product)
 
-    def test_exclude_conjoined_master(self):
-        # Search results can be limited to exclude bugs on a milestone
-        # that have a conjoined master.
-        with person_logged_in(self.owner):
-            cve = self.factory.makeCVE('2010-0123')
-            self.bugtasks[0].bug.linkCVE(cve, self.owner)
-        params = self.getBugTaskSearchParams(user=None, exclude_conjoined_master=True)
-        self.assertSearchFinds(params, self.bugtasks[:1])
-
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                          BugTargetWithBugSuperVisor,
