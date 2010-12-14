@@ -64,7 +64,9 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message
@@ -245,8 +247,8 @@ class MailingList(SQLBase):
         return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+        return '<MailingList for team "%s"; status=%s; address=%s at %#x>' % (
+            self.team.name, self.status.name, self.address, id(self))
 
     def startConstructing(self):
         """See `IMailingList`."""
