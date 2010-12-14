@@ -458,12 +458,12 @@ class POTMsgSet(SQLBase):
 
     def hasTranslationChangedInLaunchpad(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        imported_translation = self.getOtherTranslationMessage(
-            potemplate, language)
-        current_translation = self.getCurrentTranslationMessage(
-            potemplate, language)
-        return (imported_translation is not None and
-                imported_translation != current_translation)
+        other_translation = self.getOtherTranslationMessage(
+            language, potemplate.translation_side)
+        current_translation = self.getCurrentTranslation(
+            potemplate, language, potemplate.translation_side)
+        return (other_translation is not None and
+                other_translation != current_translation)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
@@ -621,8 +621,9 @@ class POTMsgSet(SQLBase):
                                        submitter, force_shared=False,
                                        force_diverged=False):
         """Make the given translation message the current one."""
-        current_message = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        current_message = self.getCurrentTranslation(
+            pofile.potemplate, pofile.language,
+            pofile.potemplate.translation_side)
 
         # Converging from a diverged to a shared translation:
         # when the new translation matches a shared one (iscurrent,
@@ -856,7 +857,7 @@ class POTMsgSet(SQLBase):
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
             upstream_message = self.getOtherTranslationMessage(
-                pofile.potemplate, pofile.language)
+                pofile.language, pofile.potemplate.translation_side)
         else:
             upstream_message = None
 
@@ -1366,8 +1367,9 @@ class POTMsgSet(SQLBase):
         method.
         """
         assert lock_timestamp is not None, "No lock timestamp given."
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        current = self.getCurrentTranslation(
+            pofile.potemplate, pofile.language,
+            pofile.potemplate.translatoin_side)
         if current is None:
             return
 
