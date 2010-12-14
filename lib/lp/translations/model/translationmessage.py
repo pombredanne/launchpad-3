@@ -399,6 +399,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
+        # XXX henninge 2010-12-14 bug=690254: This method still needs some
+        # thought on how it relates to the new model.
+
         if self.potemplate is None:
             # Already converged.
             return
@@ -408,13 +411,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         # Existing shared current translation for this POTMsgSet, if
         # any.
-        current = self.potmsgset.getCurrentTranslationMessage(
-            potemplate=None, language=self.language)
+        current = self.potmsgset.getCurrentTranslation(
+            None, self.language, TranslationSide.UBUNTU)
 
         # Existing shared upstream translation for this POTMsgSet, if
         # any.
-        upstream = self.potmsgset.getOtherTranslationMessage(
-            potemplate=None, language=self.language)
+        upstream = self.potmsgset.getOtherTranslation(
+            self.language, TranslationSide.UBUNTU)
 
         if shared is None:
             clash_with_shared_current = (
