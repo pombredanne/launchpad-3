@@ -61,7 +61,9 @@ def gen_test_lines(lines):
             line.startswith('Tests with failures:') or
             line.startswith('Tests with errors:'))
     def p_take(line):
-        return not line.startswith('Total:')
+        return not (
+            line.isspace() or
+            line.startswith('Total:'))
     lines = iter(lines)
     for line in lines:
         if p_start(line):
