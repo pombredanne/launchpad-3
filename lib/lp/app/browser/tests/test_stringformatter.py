@@ -108,8 +108,6 @@ def test_break_long_words():
     """
 
 class TestLinkifyingProtocols(TestCase):
-    
-    layer = DatabaseFunctionalLayer
 
     def test_apt_is_linked(self):
         test_string = 'This becomes a link: apt:some-package'
