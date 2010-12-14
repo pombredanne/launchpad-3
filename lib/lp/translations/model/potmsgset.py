@@ -294,6 +294,11 @@ class POTMsgSet(SQLBase):
             current.setPOFile(pofile)
             return current
 
+    def getCurrentTranslationMessage(self, potemplate, language):
+        """See `IPOTMsgSet`."""
+        return self.getCurrentTranslation(
+            potemplate, language, potemplate.translation_side)
+
     def getOtherTranslation(self, language, side):
         """See `IPOTMsgSet`."""
         traits = getUtility(

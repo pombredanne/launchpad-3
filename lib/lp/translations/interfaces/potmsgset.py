@@ -142,6 +142,13 @@ class IPOTMsgSet(Interface):
             `self` in `pofile`.
         """
 
+    def getCurrentTranslationMessage(potemplate, language):
+        """Returns a TranslationMessage marked as being currently used.
+
+        :param potemplate: Messages diverged to this template are preferred.
+        :param language: The language in which to find the message.
+        """
+
     def getOtherTranslation(language, side):
         """Returns the TranslationMessage that is current on the other side.
 
