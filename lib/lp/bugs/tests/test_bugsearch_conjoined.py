@@ -7,21 +7,17 @@ __metaclass__ = type
 
 __all__ = []
 
-import random
 from testtools.matchers import Equals
 
 from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
-from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTaskSet,
     )
 from lp.testing import (
     person_logged_in,
@@ -33,6 +29,8 @@ from lp.testing.matchers import HasQueryCount
 
 class TestSearchBase(TestCaseWithFactory):
     """Tests of exclude_conjoined_tasks param."""
+
+    #_reset_between_tests = False
 
     def makeBug(self, milestone):
         bug = self.factory.makeBug(
@@ -168,6 +166,32 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
                 self.bug_count - conjoined_master_count,
                 self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_irrelevant_conjoined_masters(self):
+        # Verify that a conjoined master in one project of the project
+        # group doesn't cause a bugtask on another project in the group
+        # to be excluded from the project group milestone's bugs.
+        for bug, product in self.bug_products.items():
+            other_product = self.factory.makeProduct(
+                project=self.projectgroup)
+            # Create a new milestone with the same name.
+            other_product_milestone = self.factory.makeMilestone(
+                product=other_product,
+                name=bug.default_bugtask.milestone.name)
+            # Add bugtask on the new product and select the milestone.
+            other_product_bugtask = self.factory.makeBugTask(
+                bug=bug, target=other_product)
+            with person_logged_in(other_product.owner):
+                other_product_bugtask.transitionToMilestone(
+                    other_product_milestone, other_product.owner)
+            # Add conjoined master for the milestone on the new product.
+            self.factory.makeBugTask(
+                bug=bug, target=other_product.development_focus)
+            # The bug count should not change, since we are just adding
+            # bugtasks on existing bugs.
+            self.assertEqual(
+                self.bug_count,
+                self.milestone.target.searchTasks(self.params).count())
+
     def test_search_results_count_with_wontfix_conjoined_masters(self):
         # Test that conjoined master bugtasks in the WONTFIX status
         # don't cause the bug to be excluded.
@@ -203,7 +227,7 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
         self.params = BugTaskSearchParams(
             user=None, milestone=self.milestone, exclude_conjoined_tasks=True)
 
-    def test_distribution_milestone(self):
+    def test_search_results_count_simple(self):
         # Verify number of results with no conjoined masters.
         self.assertEqual(
             self.bug_count,
