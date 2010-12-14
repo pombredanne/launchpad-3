@@ -7,7 +7,10 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = []
 
+
 from email.mime.application import MIMEApplication
+
+from zope.security.proxy import removeSecurityProxy
 
 from Mailman import Errors
 from Mailman.Handlers import LPSize
@@ -38,7 +41,8 @@ class TestLPSizeTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.subscriber_email = self.team.teamowner.preferredemail.email
+        self.subscriber_email = removeSecurityProxy(
+            self.team.teamowner.preferredemail).email
 
     def tearDown(self):
         super(TestLPSizeTestCase, self).tearDown()
@@ -94,7 +98,8 @@ class TestTruncatedMessage(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.subscriber_email = self.team.teamowner.preferredemail.email
+        self.subscriber_email = removeSecurityProxy(
+            self.team.teamowner.preferredemail).email
 
     def test_attchments_are_removed(self):
         # Plain-text and multipart are preserved, everything else is removed.
