@@ -235,7 +235,7 @@ The Ubuntu Team does have a preferred email address.
 We subscribe the Ubuntu Team and an email is sent to the team's
 preferred email address.
 
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
     >>> ([message['To'] for message in pop_notifications()] ==
     ...     [str(ubuntu_team.preferredemail.email)])
     True
@@ -250,7 +250,7 @@ preferred email address.
 We modified the Ubuntu Team's subscription and again, an email is sent
 to the team's preferred email address.
 
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
     >>> ([message['To'] for message in pop_notifications()] ==
     ...     [str(ubuntu_team.preferredemail.email)])
     True

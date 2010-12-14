@@ -1733,7 +1733,11 @@ class Archive(SQLBase):
         except NoSuchPPA:
             return None
         else:
-            return "You already have a PPA named '%s'." % proposed_name
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
 
     def getPockets(self):
         """See `IArchive`."""
