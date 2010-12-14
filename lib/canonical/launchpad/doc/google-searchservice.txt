@@ -295,8 +295,8 @@ be raised.
     GoogleWrongGSPVersion: Could not get the 'total' from the
                            GSP XML response.
 
-Similarly, if the total were ever less than zero (which we are suspicious
-of because of bug 683115), we would see an error.
+On the other hand, if the total is ever less than zero (see bug 683115),
+this is expected: we simply return a total of 0.
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-negative-total.xml')
@@ -308,11 +308,8 @@ of because of bug 683115), we would see an error.
     <RES SN="1" EN="1">
     <M>-1</M>...
 
-    >>> google_search._parse_google_search_protocol(gsp_xml)
-    Traceback (most recent call last):
-     ...
-    GoogleResponseError: The reported total (-1, from '-1') was less than
-                zero. See bug 683115.
+    >>> google_search._parse_google_search_protocol(gsp_xml).total
+    0
 
 A PageMatch requires a title, url, and a summary. If those elements
 ('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch

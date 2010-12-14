@@ -11,7 +11,10 @@ __all__ = [
     ]
 
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
 from storm.expr import (

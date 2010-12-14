@@ -483,7 +483,7 @@ twice, once as posted from Malone, and once as held by Mailman.
     ...         return self
     ...     signature = object()
 
-    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> from lp.bugs.mail.handler import MaloneHandler
     >>> from email import message_from_string
     >>> malone_msg = message_from_string(message_text, _class=SignedMessage)
 

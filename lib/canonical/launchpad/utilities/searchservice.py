@@ -290,9 +290,8 @@ class GoogleSearchService:
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
         if total < 0:
-            raise GoogleResponseError(
-                ("The reported total (%d, from %r) was less than zero. "
-                 "See bug 683115.") % (total, results.find('M').text))
+            # See bug 683115.
+            total = 0
         for result in results.findall('R'):
             url_tag = result.find('U')
             title_tag = result.find('T')
