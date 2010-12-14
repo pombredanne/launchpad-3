@@ -325,7 +325,7 @@ class POTMsgSet(SQLBase):
     def getCurrentTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self.getCurrentTranslation(
-            potemplate, language, potemplate.side)
+            potemplate, language, potemplate.translation_side)
 
     def getOtherTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
@@ -337,7 +337,7 @@ class POTMsgSet(SQLBase):
     def getSharedTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self.getCurrentTranslation(
-            None, language, potemplate.side)
+            None, language, potemplate.translation_side)
 
     def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
