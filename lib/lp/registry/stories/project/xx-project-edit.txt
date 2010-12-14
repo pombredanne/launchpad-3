@@ -37,7 +37,7 @@ But administrators can access the page:
     http://launchpad.dev/gnome/+review
 
     >>> print admin_browser.title
-    Review upstream project group...
+    Change project group details : New Name
 
 Mark the project as reviewed and change the name.
 
