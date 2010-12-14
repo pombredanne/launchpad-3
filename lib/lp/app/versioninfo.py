@@ -39,7 +39,7 @@ __all__ = [
 def read_version_info():
     try:
         import launchpadversioninfo
-    except InputError:
+    except ImportError:
         return None
     else:
         return getattr(launchpadversioninfo, 'version_info', None)
