@@ -62,7 +62,9 @@ class MailmanTestCase(TestCaseWithFactory):
         mlist.Create(team.name, owner_email, 'password')
         mlist.host_name = 'lists.launchpad.dev'
         mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
-        mlist.use_dollar_strings = 1
+        mlist.personalize = 1
+        mlist.include_rfc2369_headers = False
+        mlist.use_dollar_strings = True
         mlist.Save()
         mlist.addNewMember(owner_email)
         return mlist
