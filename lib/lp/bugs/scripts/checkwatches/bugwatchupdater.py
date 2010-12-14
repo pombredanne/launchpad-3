@@ -58,9 +58,7 @@ class BugWatchUpdater(WorkingBase):
     #     should be removed.
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
-                       new_remote_importance, new_malone_importance,
-                       can_import_comments=None, can_push_comments=None,
-                       can_back_link=None):
+                       new_remote_importance, new_malone_importance):
         """Update the BugWatch."""
         with self.transaction:
             if new_malone_status is not None:
@@ -88,14 +86,14 @@ class BugWatchUpdater(WorkingBase):
         oops_id = None
         if do_sync:
             try:
-                if can_import_comments or self.can_import_comments:
+                if self.can_import_comments:
                     error_status = (
                         BugWatchActivityStatus.COMMENT_IMPORT_FAILED)
                     self.importBugComments()
-                if can_push_comments or self.can_push_comments:
+                if self.can_push_comments:
                     error_status = BugWatchActivityStatus.COMMENT_PUSH_FAILED
                     self.pushBugComments()
-                if can_back_link or self.can_back_link:
+                if self.can_back_link:
                     error_status = BugWatchActivityStatus.BACKLINK_FAILED
                     self.linkLaunchpadBug()
             except Exception, ex:
