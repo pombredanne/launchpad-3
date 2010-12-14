@@ -1603,15 +1603,30 @@ class BugTaskSet:
                 'Unrecognized status value: %s' % repr(status))
 
     def _buildExcludeConjoinedClause(self, milestone):
+        """Exclude bugtasks with a conjoined master.
+
+        This search option only makes sense when searching for bugtasks
+        for a milestone.  Only bugtasks for a project or a distribution
+        can have a conjoined master bugtask, which is a bugtask on the
+        project's development focus series or the distribution's
+        currentseries. The project bugtask or the distribution bugtask
+        will always have the same milestone set as its conjoined master
+        bugtask, if it exists on the bug. Therefore, this prevents a lot
+        of bugs having two bugtasks listed in the results. However, it
+        is ok if a bug has multiple bugtasks in the results as long as
+        those other bugtasks are on other series.
+        """
         # Perform a LEFT JOIN to the conjoined master bugtask.  If the
         # conjoined master is not null, it gets filtered out.
         ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
         extra_clauses = ["ConjoinedMaster.id IS NULL"]
         if milestone.distribution is not None:
+            # XXX
             current_series = milestone.distribution.currentseries
             join = LeftJoin(
                 ConjoinedMaster,
                 And(ConjoinedMaster.bugID == BugTask.bugID,
+                    BugTask.distributionID == milestone.distribution.id,
                     ConjoinedMaster.distroseriesID == current_series.id,
                     Not(ConjoinedMaster.status.is_in(
                             BugTask._NON_CONJOINED_STATUSES))))
@@ -1619,21 +1634,25 @@ class BugTaskSet:
         else:
             # Prevent import loop.
             from lp.registry.model.milestone import Milestone
+            from lp.registry.model.product import Product
             if IProjectGroupMilestone.providedBy(milestone):
                 # XXX
+                # Since an IProjectGroupMilestone could have bugs with
+                # bugtasks on two different projects, the project
+                # bugtask is only excluded by a development focus series
+                # bugtask on the same project.
                 joins = [
                     Join(Milestone, BugTask.milestone == Milestone.id),
+                    LeftJoin(Product, BugTask.product == Product.id),
                     LeftJoin(
                         ConjoinedMaster,
                         And(ConjoinedMaster.bugID == BugTask.bugID,
-                            ConjoinedMaster.productseriesID.is_in(SQL('''
-                                SELECT development_focus
-                                FROM Product
-                                WHERE Product.id = Milestone.product
-                                ''')),
+                            ConjoinedMaster.productseriesID
+                                == Product.development_focusID,
                             Not(ConjoinedMaster.status.is_in(
                                     BugTask._NON_CONJOINED_STATUSES)))),
                     ]
+                # join.right is the table name.
                 join_tables = [(join.right, join) for join in joins]
             elif milestone.product is not None:
                 dev_focus_id = (
@@ -1642,6 +1661,7 @@ class BugTaskSet:
                 join = LeftJoin(
                     ConjoinedMaster,
                     And(ConjoinedMaster.bugID == BugTask.bugID,
+                        BugTask.productID == milestone.product.id,
                         ConjoinedMaster.productseriesID == dev_focus_id,
                         Not(ConjoinedMaster.status.is_in(
                                 BugTask._NON_CONJOINED_STATUSES))))
