@@ -53,9 +53,6 @@ class BugWatchUpdater(WorkingBase):
         self.can_push_comments = parent.can_push_comments
         self.can_back_link = parent.can_back_link
 
-    # XXX 2010-05-11 gmb bug=578714:
-    #     The last three parameters on this method aren't needed and
-    #     should be removed.
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance):
