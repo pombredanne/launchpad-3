@@ -31,8 +31,8 @@ class TestLPModerateTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.lp_user = self.factory.makePerson()
-        self.lp_user_email = removeSecurityProxy(self.lp_user).preferredemail.email
+        self.lp_user_email = 'capybara@eg.dom'
+        self.lp_user = self.factory.makePerson(email=self.lp_user_email)
 
     def tearDown(self):
         super(TestLPModerateTestCase, self).tearDown()
