@@ -47,7 +47,8 @@ validate her alternative address.
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
 
     >>> login('admin@canonical.com')
     >>> anne = factory.makePersonByName('Anne')
@@ -631,28 +632,3 @@ not need to re-subscribe to the mailing list.
     itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     [Itest-one] A posting from a member once again
     <iguana>
-
-
-Preventing archiver forgeries
-=============================
-
-We archive messages by sending them to a special address owned by the Mail
-Archive <http://www.mail-archive.com>.  This address becomes a recipient of
-the mailing list, but we also prevent this address from being used to post
-messages to the list.
-
-    >>> from canonical.config import config
-    >>> config.mailman.archive_address
-    'archive@mail-archive.dev'
-    >>> inject('itest-one', """\
-    ... From: %s
-    ... To: itest-one@lists.launchpad.dev
-    ... Subject: A forgery
-    ... Message-ID: <narwhale>
-    ...
-    ... Hi, I am forging me some spam!
-    ... """ % config.mailman.archive_address)
-
-    >>> vette_watcher.wait_for_discard('narwhale')
-    >>> len(list(smtpd))
-    0
