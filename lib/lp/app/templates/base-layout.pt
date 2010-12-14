@@ -3,8 +3,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define-macro="master"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    release modules/canonical.launchpad.versioninfo/release;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    release modules/lp.app.versioninfo/release;
     version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;

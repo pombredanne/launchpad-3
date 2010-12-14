@@ -8,7 +8,7 @@ import subprocess
 import unittest
 
 from canonical.config import TREE_ROOT
-from canonical.launchpad.versioninfo import revno
+from lp.app.versioninfo import revno
 
 
 class TestVersionInfo(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestVersionInfo(unittest.TestCase):
         # Our cronscripts are executed with cwd != LP root.
         # Getting version info should still work in them.
         args = [os.path.join(TREE_ROOT, "bin/py"), "-c",
-                "from canonical.launchpad.versioninfo import revno;"
+                "from lp.app.versioninfo import revno;"
                 "print revno"]
         process = subprocess.Popen(args, cwd='/tmp', stdout=subprocess.PIPE)
         (output, errors) = process.communicate(None)
