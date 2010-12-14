@@ -142,25 +142,18 @@ class IPOTMsgSet(Interface):
             `self` in `pofile`.
         """
 
-    def getCurrentTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage marked as being currently used.
-
-        :param potemplate: Messages diverged to this template are preferred.
-        :param language: The language in which to find the message.
-        """
-
-    def getOtherTranslationMessage(potemplate, language):
+    def getOtherTranslation(language, side):
         """Returns the TranslationMessage that is current on the other side.
 
-        :param potemplate: Needed to determine the side.
         :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
         """
 
-    def getSharedTranslationMessage(potemplate, language):
+    def getSharedTranslation(language, side):
         """Returns a shared TranslationMessage.
         
-        :param potemplate: Needed to determine the side.
         :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
         """
 
     def getLocalTranslationMessages(potemplate, language,
