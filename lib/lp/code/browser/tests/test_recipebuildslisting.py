@@ -48,14 +48,14 @@ class TestRecipeBuildListing(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _extract_view_text(self, recipe_build_record):
-        naked_recipebuild = removeSecurityProxy(
-            recipe_build_record.recipebuild)
+        naked_archive = removeSecurityProxy(
+            recipe_build_record.archive)
         naked_distribution = removeSecurityProxy(
-            naked_recipebuild.distribution)
+            naked_archive.distribution)
         text = '\n'.join(str(item) for item in (
                 naked_distribution.displayname,
                 recipe_build_record.sourcepackagename.name,
-                naked_recipebuild.recipe.name,
+                recipe_build_record.recipe.name,
                 recipe_build_record.recipeowner.displayname,
                 recipe_build_record.archive.displayname,
                 recipe_build_record.most_recent_build_time.strftime(

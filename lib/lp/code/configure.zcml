@@ -1012,7 +1012,7 @@
   </securedutility>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
-    <allow attributes="sourcepackagename recipeowner recipebuild archive
+    <allow attributes="sourcepackagename recipeowner recipe archive
                         most_recent_build_time distro_source_package"/>
   </class>
 
