@@ -45,6 +45,7 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.interfaces.side import TranslationSide
 
 
 UTC = pytz.timezone('UTC')
@@ -471,8 +472,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUbuntu(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language)
+            incumbent = self.potmsgset.getCurrentTranslation(
+                self.potemplate, self.language, TranslationSide.UBUNTU)
             if incumbent == self:
                 return
             if (incumbent is not None and
@@ -486,8 +487,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUpstream(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getOtherTranslationMessage(
-                self.potemplate, self.language)
+            incumbent = self.potmsgset.getOtherTranslation(
+                self.language, TranslationSide.UBUNTU)
             if incumbent == self:
                 return
             if (incumbent is not None and

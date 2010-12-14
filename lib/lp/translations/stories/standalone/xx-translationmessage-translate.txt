@@ -552,8 +552,8 @@ we do it directly in the database.
     >>> evolution_pofile = evolution_potemplate.getPOFileByLang('es')
     >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(' cards')
     >>> spanish = evolution_pofile.language
-    >>> imported = potmsgset.getOtherTranslationMessage(
-    ...     evolution_potemplate, spanish)
+    >>> imported = potmsgset.getOtherTranslation(
+    ...     spanish, evolution_potemplate.translation_side)
     >>> imported.translations
     [u' tarjetas']
 

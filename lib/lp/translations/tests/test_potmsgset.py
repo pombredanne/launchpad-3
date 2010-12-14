@@ -247,9 +247,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.stable_potemplate, serbian), shared_translation)
 
 
-    # XXX henninge 2010-12-10 bug=688519: The meaning of  imported is gone
-    # and so this test and the method it is testing need to be updated.
-    def test_getOtherTranslationMessage(self):
+    def test_getOtherTranslation(self):
         """Test how shared and diverged current translation messages
         interact."""
         # Share POTMsgSet in a template on the other side.
@@ -268,18 +266,20 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=pofile, potmsgset=self.potmsgset, current_other=True)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             ubuntu_potemplate, ubuntu_pofile.language), shared_translation)
-        self.assertEquals(self.potmsgset.getOtherTranslationMessage(
-            self.devel_potemplate, pofile.language), shared_translation)
+        self.assertEquals(self.potmsgset.getOtherTranslation(
+            pofile.language, self.devel_potemplate.translation_side),
+            shared_translation)
 
         # A diverted translation on the other side is not returned.
         diverged_translation = self.factory.makeCurrentTranslationMessage(
             pofile=ubuntu_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             ubuntu_potemplate, ubuntu_pofile.language), diverged_translation)
-        self.assertEquals(self.potmsgset.getOtherTranslationMessage(
-            self.devel_potemplate, pofile.language), shared_translation)
+        self.assertEquals(self.potmsgset.getOtherTranslation(
+            pofile.language, self.devel_potemplate.translation_side),
+            shared_translation)
 
-    def test_getSharedTranslationMessage(self):
+    def test_getSharedTranslation(self):
         """Test how shared and diverged current translation messages
         interact."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
@@ -290,16 +290,16 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         shared_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
-            self.potmsgset.getSharedTranslationMessage(
-                self.stable_potemplate, serbian),
+            self.potmsgset.getSharedTranslation(
+                serbian, self.stable_potemplate.translation_side),
             shared_translation)
 
         # Adding a diverged translation doesn't break getSharedTM.
         diverged_translation = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(
-            self.potmsgset.getSharedTranslationMessage(
-                self.stable_potemplate, serbian),
+            self.potmsgset.getSharedTranslation(
+                serbian, self.stable_potemplate.translation_side),
             shared_translation)
 
     def test_getLocalTranslationMessages(self):
@@ -1726,8 +1726,8 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message, potmsgset.getOtherTranslationMessage(
-            pofile.potemplate, pofile.language))
+        self.assertEqual(message, potmsgset.getOtherTranslation(
+            pofile.language, pofile.potemplate.translation_side))
         self.assertEqual(origin, message.origin)
 
     def test_identical(self):
@@ -1757,8 +1757,8 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message, potmsgset.getOtherTranslationMessage(
-            pofile.potemplate, pofile.language))
+        self.assertEqual(message, potmsgset.getOtherTranslation(
+            pofile.language, pofile.potemplate.translation_side))
 
     def test_detects_conflict(self):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()

@@ -64,7 +64,8 @@ Check that this submission is now the active one for this msgset/pluralform
 
 Check that this submission is the upstream one
 
-    >>> potmsgset.getOtherTranslationMessage(template, spanish) == message
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == message
     True
     >>> message.is_current_upstream
     True
@@ -110,8 +111,8 @@ This is marked as current in both Ubuntu and upstream.
     >>> upstream_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getOtherTranslationMessage(
-    ...     template, spanish) == upstream_message
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == upstream_message
     True
 
 Excellent. This shows that activating a new upstream translation upon
@@ -139,14 +140,14 @@ upstream selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getOtherTranslationMessage(template,
-    ...     spanish) == web_submission
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == web_submission
     False
 
 In fact, the upstream submission should still be the original one, from Pa:
 
-    >>> potmsgset.getOtherTranslationMessage(
-    ...     template, spanish) == upstream_message
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == upstream_message
     True
 
 And the lasttranslator for this pofile should be the one who submitted the
@@ -256,8 +257,8 @@ This new submission should not be active:
 
 And it should definitely not be current upstream:
 
-    >>> (potmsgset.getOtherTranslationMessage(template, spanish) ==
-    ...  noneditor_submission)
+    >>> (potmsgset.getOtherTranslation(spanish, template.translation_side) ==
+    ...     noneditor_submission)
     False
 
 However, given NonEditorTranslations, this should be available as

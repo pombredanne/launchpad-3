@@ -75,8 +75,8 @@ class TestTranslationEmptyMessages(TestCaseWithFactory):
         deactivation = potmsgset.updateTranslation(
             self.pofile_sr, self.pofile_sr.owner, [""],
             is_current_upstream=True, lock_timestamp=self.now)
-        upstream_message = potmsgset.getOtherTranslationMessage(
-            self.potemplate, self.serbian)
+        upstream_message = potmsgset.getOtherTranslation(
+            self.serbian, self.potemplate.translation_side)
         ubuntu_message = potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.serbian)
 
@@ -102,8 +102,8 @@ class TestTranslationEmptyMessages(TestCaseWithFactory):
         deactivation = potmsgset.updateTranslation(
             self.pofile_sr, self.pofile_sr.owner, [""],
             is_current_upstream=True, lock_timestamp=self.now)
-        new_upstream_message = potmsgset.getOtherTranslationMessage(
-            self.potemplate, self.serbian)
+        new_upstream_message = potmsgset.getOtherTranslation(
+            self.serbian, self.potemplate.translation_side)
         ubuntu_message = potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.serbian)
 

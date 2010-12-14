@@ -463,7 +463,7 @@ class POTMsgSet(SQLBase):
 
     def hasTranslationChangedInLaunchpad(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        other_translation = self.getOtherTranslationMessage(
+        other_translation = self.getOtherTranslation(
             language, potemplate.translation_side)
         current_translation = self.getCurrentTranslation(
             potemplate, language, potemplate.translation_side)
@@ -861,7 +861,7 @@ class POTMsgSet(SQLBase):
             matching_message is not None and
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
-            upstream_message = self.getOtherTranslationMessage(
+            upstream_message = self.getOtherTranslation(
                 pofile.language, pofile.potemplate.translation_side)
         else:
             upstream_message = None
