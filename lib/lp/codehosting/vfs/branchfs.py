@@ -61,6 +61,7 @@ __all__ = [
     'LaunchpadServer',
     ]
 
+import sys
 import xmlrpclib
 
 from bzrlib import urlutils
@@ -80,7 +81,10 @@ from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 from lazr.uri import URI
-from twisted.internet import defer
+from twisted.internet import (
+    defer,
+    error,
+    )
 from twisted.python import (
     failure,
     log,
@@ -92,6 +96,7 @@ from zope.interface import (
     )
 
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -140,8 +145,13 @@ class BadUrlScheme(BadUrl):
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation. We support
 # only two numbered backups to avoid indefinite space usage.
-ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr', 'backup.bzr.~1~',
-	'backup.bzr.~2~')
+ALLOWED_DIRECTORIES = (
+    '.bzr',
+    '.bzr.backup',
+    'backup.bzr',
+    'backup.bzr.~1~',
+    'backup.bzr.~2~',
+    )
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
@@ -500,10 +510,12 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # Launchpad branch.
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
+
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
             failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
+
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
@@ -687,10 +699,42 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 data['id'], stacked_on_url, last_revision,
                 control_string, branch_string, repository_string)
 
-        # It gets really confusing if we raise an exception from this method
-        # (the branch remains locked, but this isn't obvious to the client) so
-        # just log the error, which will result in an OOPS being logged.
-        return deferred.addCallback(got_path_info).addErrback(log.err)
+        def handle_error(failure=None, **kw):
+            # It gets really confusing if we raise an exception from this
+            # method (the branch remains locked, but this isn't obvious to
+            # the client). We could just log the failure using Twisted's
+            # log.err but this results in text containing traceback
+            # information etc being written to stderr. Since stderr is
+            # displayed to the user, if for example they arrive at this point
+            # via the smart server, we want to ensure that the message is
+            # sanitised. So what we will do is raise an oops and ask the user
+            # to log a bug with the oops information.
+            # See bugs 674305 and 675517 for details.
+
+            request = errorlog.ScriptRequest([
+                ('source', virtual_url_fragment),
+                ('error-explanation', failure.getErrorMessage())])
+            self.unexpectedError(failure, request)
+            fault = faults.OopsOccurred(
+                "updating a Launchpad branch", request.oopsid)
+            # Twisted's log.err used to write to stderr but it doesn't now so
+            # we will write to stderr as well as log.err.
+            print >> sys.stderr, repr(fault)
+            log.err(repr(fault))
+            return fault
+        return deferred.addCallback(got_path_info).addErrback(handle_error)
+
+    def unexpectedError(self, failure, request=None, now=None):
+        # If the sub-process exited abnormally, the stderr it produced is
+        # probably a much more interesting traceback than the one attached to
+        # the Failure we've been passed.
+        traceback = None
+        if failure.check(error.ProcessTerminated):
+            traceback = getattr(failure, 'error', None)
+        if traceback is None:
+            traceback = failure.getTraceback()
+        errorlog.globalErrorUtility.raising(
+            (failure.type, failure.value, traceback), request, now)
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,

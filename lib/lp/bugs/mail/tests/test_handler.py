@@ -1,19 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Test MaloneHandler."""
 
 __metaclass__ = type
 
-from doctest import DocTestSuite
 import email
 import time
+
 import transaction
-import unittest
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.commands import BugEmailCommand
-from canonical.launchpad.mail.handlers import MaloneHandler
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
 from lp.testing import (
     person_logged_in,
@@ -141,7 +142,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
             body=' security no', signing_context=signing_context)
         handler = MaloneHandler()
         with person_logged_in(self.factory.makePerson()):
-            success = handler.process(msg, msg['To'])
+            handler.process(msg, msg['To'])
         commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
@@ -161,15 +162,8 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         # Clear old emails before potentially generating more.
         del stub.test_emails[:]
         with person_logged_in(self.factory.makePerson()):
-            success = handler.process(msg, msg['To'])
+            handler.process(msg, msg['To'])
         commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
