@@ -1201,8 +1201,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
             is_current_upstream=True, force_shared=True)
-        import pdb
-        pdb.set_trace()
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
             is_current_upstream=True)
@@ -1444,8 +1442,9 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
             eo_pofile, credits, translations=[imported_credits],
             current_other=True)
 
-        eo_translation = credits.getCurrentTranslationMessage(
-            self.potemplate, eo_pofile.language)
+        eo_translation = credits.getCurrentTranslation(
+            self.potemplate, eo_pofile.language,
+            self.potemplate.translation_side)
         self.assertEqual(imported_credits, eo_translation.msgstr0.translation,
             "Imported translation credits do not replace dummy credits.")
 

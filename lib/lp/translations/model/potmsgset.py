@@ -1389,10 +1389,13 @@ class POTMsgSet(SQLBase):
                     other_incumbent = (
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
-                    if other_incumbent is None:
-                        traits.other_side_traits.setFlag(message, True)
+                    if other_incumbent is not None:
+                        traits.other_side_traits.setFlag(
+                            other_incumbent, False)
+                    traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
+                    traits.other_side_traits.setFlag(incumbent_message, False)
                     traits.other_side_traits.setFlag(message, True)
             else:
                 raise AssertionError(
@@ -1623,8 +1626,8 @@ class POTMsgSet(SQLBase):
         if not self.is_translation_credit:
             return
 
-        shared_upstream_translation = self.getCurrentTranslation(
-            None, pofile.language, TranslationSide.UPSTREAM)
+        shared_upstream_translation = self.getOtherTranslation(
+            pofile.language, pofile.potemplate.translation_side)
 
         if shared_upstream_translation is not None:
             return
@@ -1636,7 +1639,7 @@ class POTMsgSet(SQLBase):
             pofile, translator, {0: credits_message_str},
             RosettaTranslationOrigin.LAUNCHPAD_GENERATED,
             share_with_other_side=True)
-        generated_translation.shareIfPossible()
+#        generated_translation.shareIfPossible()
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
