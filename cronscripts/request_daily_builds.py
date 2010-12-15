@@ -34,7 +34,7 @@ class RequestDailyBuilds(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure(self.name)
         source = getUtility(ISourcePackageRecipeBuildSource)
-        builds = source.makeDailyBuilds()
+        builds = source.makeDailyBuilds(self.logger)
         self.logger.info('Requested %d daily builds.' % len(builds))
         transaction.commit()
 

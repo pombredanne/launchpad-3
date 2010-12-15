@@ -53,6 +53,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.logger import TestLogger
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -234,6 +235,18 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_makeDailyBuilds_logs_builds(self):
+        # If a logger is passed into the makeDailyBuilds method, each recipe
+        # that a build is requested for gets logged.
+        owner = self.factory.makePerson(name='eric')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True)
+        logger = TestLogger()
+        SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual(
+            ['DEBUG Build for eric/funky-recipe requested'],
+            logger.output)
 
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(

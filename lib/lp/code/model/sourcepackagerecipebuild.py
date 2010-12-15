@@ -182,7 +182,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return spbuild
 
     @staticmethod
-    def makeDailyBuilds():
+    def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
         builds = []
@@ -200,6 +200,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
+                    if logger is not None:
+                        logger.debug(
+                            'Build for %s/%s requested',
+                            recipe.owner.name, recipe.name)
                     builds.append(build)
             recipe.is_stale = False
         return builds
