@@ -7,19 +7,18 @@ __metaclass__ = type
 
 __all__ = []
 
-from testtools.matchers import Equals
-
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.series import SeriesStatus
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
