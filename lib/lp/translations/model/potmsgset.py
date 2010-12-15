@@ -294,8 +294,7 @@ class POTMsgSet(SQLBase):
             current.setPOFile(pofile)
             return current
 
-    def _getUsedTranslationMessage(self, potemplate, language,
-                                   other_side=False):
+    def _getUsedTranslationMessage(self, potemplate, language, current=True):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
 
@@ -334,7 +333,7 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             potemplate, language, current=True)
 
-    def getImportedTranslationMessage(self, potemplate, language):
+    def getOtherTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
             potemplate, language, current=False)
