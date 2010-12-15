@@ -496,26 +496,7 @@ def applied_patches(con):
 
 
 def apply_patch(con, major, minor, patch, patch_file):
-    log.info("Applying %s" % patch_file)
-    cur = con.cursor()
-    full_sql = open(patch_file).read()
-
-    # Strip comments
-    full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
-    full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
-
-    # Regular expression to extract a single statement.
-    # A statement may contain semicolons if it is a stored procedure
-    # definition, which requires a disgusting regexp or a parser for
-    # PostgreSQL specific SQL.
-    statement_re = re.compile(
-            r"( (?: [^;$] | \$ (?! \$) | \$\$.*? \$\$)+ )",
-            re.DOTALL | re.MULTILINE | re.VERBOSE
-            )
-    for sql in statement_re.split(full_sql):
-        sql = sql.strip()
-        if sql and sql != ';':
-            cur.execute(sql) # Will die on a bad patch.
+    apply_other(con, patch_file, no_commit=True)
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this
     # automatically and avoid the boilerplate, but then we would lose the
@@ -531,14 +512,21 @@ def apply_patch(con, major, minor, patch, patch_file):
         con.commit()
 
 
-def apply_other(con, script):
+def apply_other(con, script, no_commit=False):
     log.info("Applying %s" % script)
     cur = con.cursor()
     path = os.path.join(os.path.dirname(__file__), script)
     sql = open(path).read()
+    if not sql.rstrip().endswith(';'):
+        # This is important because patches are concatenated together
+        # into a single script when we apply them to a replicated
+        # environment.
+        log.fatal(
+            "Last non-whitespace character of %s must be a semicolon", script)
+        sys.exit(3)
     cur.execute(sql)
 
-    if options.commit and options.partial:
+    if not no_commit and options.commit and options.partial:
         log.debug("Committing changes")
         con.commit()
 
