@@ -518,7 +518,11 @@ def apply_other(con, script, no_commit=False):
     path = os.path.join(os.path.dirname(__file__), script)
     sql = open(path).read()
     if not sql.rstrip().endswith(';'):
-        log.fatal("%s did not terminate with a semicolon", script)
+        # This is important because patches are concatenated together
+        # into a single script when we apply them to a replicated
+        # environment.
+        log.fatal(
+            "Last non-whitespace character of %s must be a semicolon", script)
         sys.exit(3)
     cur.execute(sql)
 
