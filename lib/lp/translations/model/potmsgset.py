@@ -670,9 +670,8 @@ class POTMsgSet(SQLBase):
                                        submitter, force_shared=False,
                                        force_diverged=False):
         """Make the given translation message the current one."""
-        current_message = self.getCurrentTranslation(
-            pofile.potemplate, pofile.language,
-            pofile.potemplate.translation_side)
+        current_message = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
 
         # Converging from a diverged to a shared translation:
         # when the new translation matches a shared one (iscurrent,
@@ -905,8 +904,8 @@ class POTMsgSet(SQLBase):
             matching_message is not None and
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
-            upstream_message = self.getOtherTranslation(
-                pofile.language, pofile.potemplate.translation_side)
+            upstream_message = self.getOtherTranslationMessage(
+                pofile.potemplate, pofile.language)
         else:
             upstream_message = None
 
@@ -1416,9 +1415,8 @@ class POTMsgSet(SQLBase):
         method.
         """
         assert lock_timestamp is not None, "No lock timestamp given."
-        current = self.getCurrentTranslation(
-            pofile.potemplate, pofile.language,
-            pofile.potemplate.translatoin_side)
+        current = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
         if current is None:
             return
 
