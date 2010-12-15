@@ -9,6 +9,10 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
@@ -26,15 +30,16 @@ class TestRecipeBuildView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_recipebuildrecords(self):
-        # Check that the view is created from the url and loads the expected
-        # records.
-        records = self.factory.makeRecipeBuildRecords(10, 5)
+        records, records_outside_30_days = (
+            self.factory.makeRecipeBuildRecords(10, 5))
         login(ANONYMOUS)
         root = getUtility(ILaunchpadRoot)
         view = create_initialized_view(root, "+daily-builds", rootsite='code')
         # It's easier to do it this way than sorted() since __lt__ doesn't
         # work properly on zope proxies.
-        self.assertEqual(10, view.dailybuilds.count())
+        self.assertEqual(15, view.dailybuilds.count())
+        # By default, all build records will be included in the view.
+        records.extend(records_outside_30_days)
         self.assertEqual(set(records), set(view.dailybuilds))
 
 
@@ -42,28 +47,38 @@ class TestRecipeBuildListing(BrowserTestCase):
     """Browser tests for the Recipe Build Listing page."""
     layer = DatabaseFunctionalLayer
 
-    def _test_recipebuild_listing(self, no_login=False):
-        # Test the content of the listing when there is data.
-        [record] = self.factory.makeRecipeBuildRecords(1, 5)
-        naked_recipebuild = removeSecurityProxy(record.recipebuild)
+    def _extract_view_text(self, recipe_build_record):
+        naked_recipebuild = removeSecurityProxy(
+            recipe_build_record.recipebuild)
         naked_distribution = removeSecurityProxy(
             naked_recipebuild.distribution)
+        text = '\n'.join(str(item) for item in (
+                naked_distribution.displayname,
+                recipe_build_record.sourcepackagename.name,
+                naked_recipebuild.recipe.name,
+                recipe_build_record.recipeowner.displayname,
+                recipe_build_record.archive.displayname,
+                recipe_build_record.most_recent_build_time.strftime(
+                    '%Y-%m-%d %H:%M:%S')))
+        return text
+
+    def _test_recipebuild_listing(self, no_login=False):
+        # Test the text on a recipe build listing page is as expected.
+        [record], records_outside_30_days = (
+            self.factory.makeRecipeBuildRecords(1, 5))
+        record_text = self._extract_view_text(record)
         root = getUtility(ILaunchpadRoot)
         text = self.getMainText(
             root, '+daily-builds', rootsite='code', no_login=no_login)
-        expected_text = '\n'.join(str(item) for item in (
-                """Most Recently Completed Daily Recipe Builds
-                Source Package
-                Recipe
-                Recipe Owner
-                Archive
-                Most Recent Build Time""",
-                naked_distribution.displayname,
-                record.sourcepackagename.name,
-                naked_recipebuild.recipe.name,
-                record.recipeowner.displayname,
-                record.archive.displayname,
-                record.most_recent_build_time.strftime('%Y-%m-%d %H:%M:%S')))
+        expected_text = """
+            Most Recently Completed Daily Recipe Builds
+            .*
+            Source Package
+            Recipe
+            Recipe Owner
+            Archive
+            Most Recent Build Time
+            """ + record_text
         self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
 
     def test_recipebuild_listing_no_records(self):
@@ -87,3 +102,54 @@ class TestRecipeBuildListing(BrowserTestCase):
         user_browser = self.getUserBrowser("%s/+daily-builds" % root_url)
         self.assertEqual(
             user_browser.url, "%s/+daily-builds" % root_url)
+
+    def test_recentbuild_filter(self):
+        login(ANONYMOUS)
+        records, records_outside_30_days = (
+            self.factory.makeRecipeBuildRecords(3, 2))
+        records_text = set()
+        for record in records:
+            record_text = self._extract_view_text(
+                record).replace(' ', '').replace('\n', '')
+            records_text.add(record_text)
+
+        root_url = self.layer.appserver_root_url(facet='code')
+        browser = self.getUserBrowser("%s/+daily-builds" % root_url)
+        status_control = browser.getControl(
+            name='field.when_completed_filter')
+
+        status_control.value = ['WITHIN_30_DAYS']
+        browser.getControl('Filter').click()
+        table = find_tag_by_id(browser.contents, 'daily-build-listing')
+
+        view_records_text = set()
+        for row in table.tbody.fetch('tr'):
+            text = extract_text(row)
+            view_records_text.add(text.replace(' ', '').replace('\n', ''))
+        self.assertEquals(records_text, view_records_text)
+
+    def test_all_records_filter(self):
+        login(ANONYMOUS)
+        records, records_outside_30_days = (
+            self.factory.makeRecipeBuildRecords(3, 2))
+        records.extend(records_outside_30_days)
+        records_text = set()
+        for record in records:
+            record_text = self._extract_view_text(
+                record).replace(' ', '').replace('\n', '')
+            records_text.add(record_text)
+
+        root_url = self.layer.appserver_root_url(facet='code')
+        browser = self.getUserBrowser("%s/+daily-builds" % root_url)
+        status_control = browser.getControl(
+            name='field.when_completed_filter')
+
+        status_control.value = ['ALL']
+        browser.getControl('Filter').click()
+        table = find_tag_by_id(browser.contents, 'daily-build-listing')
+
+        view_records_text = set()
+        for row in table.tbody.fetch('tr'):
+            text = extract_text(row)
+            view_records_text.add(text.replace(' ', '').replace('\n', ''))
+        self.assertEquals(records_text, view_records_text)
