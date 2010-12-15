@@ -6,9 +6,15 @@ __metaclass__ = type
 __all__ = []
 
 
-from Mailman import mm_cfg
+from Mailman import (
+    mm_cfg,
+    Utils,
+    )
 
+from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
+from lp.services.mailman.config import configure_prefix
+from lp.services.mailman.monkeypatches import monkey_patch
 from lp.testing import TestCase
 
 
@@ -55,36 +61,56 @@ class TestMMCfgDefaultsTestCase(TestCase):
 
 
 class TestMMCfgLaunchpadConfigTestCase(TestCase):
-    """Test launchapd default overrides."""
+    """Test launchapd default overrides.
+
+    The mailman config is generated from the selected launchpad config.
+    The config will either be the test runner or the app server depending
+    on the what was previously used when mailman was run. The config must
+    be created in setup to ensure predicable values.
+    """
 
     layer = FunctionalLayer
 
+    def setUp(self):
+        super(TestMMCfgLaunchpadConfigTestCase, self).setUp()
+        # Generate a mailman config using this environment's config.
+        mailman_path = configure_prefix(config.mailman.build_prefix)
+        monkey_patch(mailman_path, config)
+
     def test_mail_server(self):
         # Launchpad's smtp config values.
-        self.assertEqual('localhost', mm_cfg.SMTPHOST)
-        self.assertEqual(9025, mm_cfg.SMTPPORT)
+        host, port = config.mailman.smtp.split(':')
+        self.assertEqual(host, mm_cfg.SMTPHOST)
+        self.assertEqual(int(port), mm_cfg.SMTPPORT)
 
     def test_xmlrpc_server(self):
         # Launchpad's smtp config values.
         self.assertEqual(
-            'http://xmlrpc-private.launchpad.dev:8087/mailinglists',
+            config.mailman.xmlrpc_url,
             mm_cfg.XMLRPC_URL)
-        self.assertEqual(1, mm_cfg.XMLRPC_SLEEPTIME)
-        self.assertEqual(25, mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE)
-        self.assertEqual('topsecret', mm_cfg.LAUNCHPAD_SHARED_SECRET)
+        self.assertEqual(
+            config.mailman.xmlrpc_runner_sleep,
+            mm_cfg.XMLRPC_SLEEPTIME)
+        self.assertEqual(
+            config.mailman.subscription_batch_size,
+            mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE)
+        self.assertEqual(
+            config.mailman.shared_secret,
+            mm_cfg.LAUNCHPAD_SHARED_SECRET)
 
     def test_messge_footer(self):
         # Launchpad's email footer.
         self.assertEqual(
-            'http://help.launchpad.dev/ListHelp', mm_cfg.LIST_HELP_HEADER)
+            config.mailman.list_help_header,
+            mm_cfg.LIST_HELP_HEADER)
         self.assertEqual(
-            'http://launchpad.dev/~$team_name',
+            config.mailman.list_owner_header_template,
             mm_cfg.LIST_SUBSCRIPTION_HEADERS)
         self.assertEqual(
-            'http://lists.launchpad.dev/$team_name',
+            config.mailman.archive_url_template,
             mm_cfg.LIST_ARCHIVE_HEADER_TEMPLATE)
         self.assertEqual(
-            'http://launchpad.dev/~$team_name',
+            config.mailman.list_owner_header_template,
             mm_cfg.LIST_OWNER_HEADER_TEMPLATE)
         self.assertEqual(
             "-- \n"
@@ -96,10 +122,15 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
 
     def test_message_rules(self):
         # Launchpad's rules for handling messages.
-        self.assertEqual('gniTkrOFvY@example.com', mm_cfg.SITE_LIST_OWNER)
-        self.assertEqual(40000, mm_cfg.LAUNCHPAD_SOFT_MAX_SIZE)
-        self.assertEqual(1000000, mm_cfg.LAUNCHPAD_HARD_MAX_SIZE)
-        self.assertEqual(1, mm_cfg.REGISTER_BOUNCES_EVERY)
+        self.assertEqual(
+            config.mailman.soft_max_size,
+            mm_cfg.LAUNCHPAD_SOFT_MAX_SIZE)
+        self.assertEqual(
+            config.mailman.hard_max_size,
+            mm_cfg.LAUNCHPAD_HARD_MAX_SIZE)
+        self.assertEqual(
+            config.mailman.register_bounces_every,
+            mm_cfg.REGISTER_BOUNCES_EVERY)
 
     def test_archive_setup(self):
         # Launchpad's rules for setting up list archives.
@@ -127,3 +158,31 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertEqual(
             mm_cfg.PRIVATE_EXTERNAL_ARCHIVER, mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+
+
+class TestSiteTemplates(TestCase):
+    """Test launchapd site templates."""
+
+    layer = FunctionalLayer
+
+    def test_postheld(self):
+        postheld_dict = {
+            'listname': 'fake-list',
+            'hostname': 'lists.launchpad.net',
+            'reason': 'XXX',
+            'sender': 'test@canonical.com',
+            'subject': "YYY",
+            'admindb_url': 'http://lists.launchpad.net/fake/admin',
+            }
+        text, file_name = Utils.findtext('postheld.txt', dict=postheld_dict)
+        self.assertTrue(
+            file_name.endswith('/lib/mailman/templates/site/en/postheld.txt'))
+        self.assertEqual(
+            "Your mail to 'fake-list' with the subject\n\n"
+            "    YYY\n\n"
+            "Is being held until the list moderator can review it for "
+            "approval.\n\nThe reason it is being held:\n\n"
+            "    XXX\n\n"
+            "Either the message will get posted to the list, or you will "
+            "receive\nnotification of the moderator's decision.\n",
+            text)
