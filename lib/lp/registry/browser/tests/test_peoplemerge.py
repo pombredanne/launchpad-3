@@ -157,7 +157,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
     def test_cannot_merge_team_with_ppa_containing_published_packages(self):
-        # The PPA must be removed before the team can be merged.
+        # A team with a published PPA cannot be merged.
         login_celebrity('admin')
         self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
         archive = self.dupe_team.createPPA()
@@ -165,8 +165,8 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
-            [u"dupe-team has a PPA with published packages; "
-              "we can't merge it."],
+            [u'dupe-team has a PPA that must be removed before '
+              'it can be merged.'],
             view.errors)
 
     def test_registry_delete_team_with_super_teams(self):
@@ -212,6 +212,6 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         view = self.getView()
         self.assertEqual(
-            [u"dupe-person has a PPA with published packages; "
-              "we can't merge it."],
+            [u'dupe-person has a PPA that must be removed before '
+              'it can be merged.'],
             view.errors)

@@ -441,7 +441,7 @@ active members of the team so that we can perform the merge.
     >>> list(IPollSubset(landscape).getAll())
     []
 
-A person with a PPA can't be merged until the PPA is deleted.
+A person with a PPA can't be merged.
 
     >>> person_with_ppa = factory.makePerson()
     >>> other_person = factory.makePerson()

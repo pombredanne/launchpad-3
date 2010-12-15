@@ -136,8 +136,8 @@ class AdminMergeBaseView(LaunchpadFormView):
         # packages on the duplicate person, unless that PPA is removed.
         if dupe_person.has_ppa_with_published_packages:
             self.addError(_(
-                "${name} has a PPA with published packages; we "
-                "can't merge it.", mapping=dict(name=dupe_person.name)))
+                "${name} has a PPA that must be removed before it "
+                "can be merged.", mapping=dict(name=dupe_person.name)))
 
 
     def render(self):
