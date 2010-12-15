@@ -1,4 +1,5 @@
-= Launchpad search page =
+Launchpad search page
+=====================
 
 Users can search for Launchpad objects and pages from the search form
 located on all pages. The search is performed and displayed by the
@@ -16,7 +17,8 @@ LaunchpadSearchView.
     <....SimpleViewClass from .../templates/launchpad-search.pt ...>
 
 
-== Page title and heading ==
+Page title and heading
+----------------------
 
 The page title and heading suggest to the user to search launchpad
 when there is no search text.
@@ -55,7 +57,8 @@ When text is not None, the title indicates what was searched.
     u'Pages matching "albatross" in Launchpad'
 
 
-== No matches ==
+No matches
+----------
 
 There were no matches for 'albatross'.
 
@@ -75,7 +78,8 @@ search action.
     False
 
 
-== bug and question searches ==
+Bug and Question Searches
+-------------------------
 
 When a numeric token can be extracted from the submitted search text,
 the view tries to match a bug and question. Bugs and questions are
@@ -189,7 +193,8 @@ when the start param is 0.
 
 
 
-== Projects and Persons and Teams searches ==
+Projects and Persons and Teams searches
+---------------------------------------
 
 When a Launchpad name can be made from the search text, the view tries
 to match the name to a pillar or person. a pillar is a distribution,
@@ -314,7 +319,8 @@ pillar, nor will nsv match Nicolas Velin's unclaimed account.
     None
 
 
-== Shipit CD searches ==
+Shipit CD searches
+------------------
 
 The has_shipit property will be True when the search looks like the user
 is searching for Shipit CDs. There is no correct object in Launchpad to
@@ -373,7 +379,8 @@ The shipit FAQ URL is provides by the view for the template to use.
     'http://www.ubuntu.com/getubuntu/shipit-faq'
 
 
-== Page searches ==
+Page searches
+-------------
 
 The view uses the GoogleSearchService to locate pages that match the
 search terms.
@@ -493,7 +500,8 @@ See `google-searchservice.txt` for more information about the
 GoogleSearchService and PageMatch objects.
 
 
-== No page matches ==
+No page matches
+---------------
 
 When an empty PageMatches object is returned by the GoogleSearchService to
 the view, there are no matches to show.
@@ -504,7 +512,8 @@ the view, there are no matches to show.
     False
 
 
-== Bad Google response handling ==
+Bad Google response handling
+----------------------------
 
 Connectivity problems can cause missing or incomplete responses from
 Google. The LaunchpadSearchView will display the other searches and
@@ -536,7 +545,8 @@ tracked.
     'The response was incomplete, no xml.'
 
 
-== SearchFormView and SearchFormPrimaryView ==
+SearchFormView and SearchFormPrimaryView
+----------------------------------------
 
 Two companion views are used to help render the global search form.
 They define the required attributes to render the form in the
@@ -560,7 +570,7 @@ present in the rendered form.
       name="sitesearch-secondary">
       <div>
         <input class="textType" type="text" size="36"
-          id="field.text-secondary" name="field.text-secondary" />
+          id="field.text-secondary" name="field.text" />
         <input class="button" type="submit" value="Search"
           id="field.text-secondary" name="field.actions.search-secondary" />
       </div>
@@ -588,8 +598,8 @@ field's value is 'bug', as was submitted above.
       </div>
     </form>
 
-
-== WindowedList and GoogleBatchNavigator ==
+WindowedList and GoogleBatchNavigator
+-------------------------------------
 
 The LaunchpadSearchView uses two helper classes to work with
 PageMatches.

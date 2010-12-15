@@ -50,7 +50,11 @@ class ScopesFromRequest(object):
         parts = scope_name.split('.')
         if len(parts) == 2:
             if parts[0] == 'server':
-                return canonical.config.config['launchpad']['is_' + parts[1]]
+                try:
+                    return canonical.config.config['launchpad'][
+                        'is_' + parts[1]]
+                except KeyError:
+                    return False
 
     def _lookup_pageid(self, pageid_scope):
         """Lookup a pageid as a scope.

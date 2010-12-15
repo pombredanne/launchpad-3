@@ -58,6 +58,7 @@ class MailmanTestCase(TestCaseWithFactory):
         # This utility is based on mailman/tests/TestBase.py.
         mlist = MailList.MailList()
         team = lp_mailing_list.team
+        self.cleanMailmanList(None, team.name)
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
         mlist.Create(team.name, owner_email, 'password')
         mlist.host_name = 'lists.launchpad.dev'
@@ -66,10 +67,11 @@ class MailmanTestCase(TestCaseWithFactory):
         mlist.addNewMember(owner_email)
         return mlist
 
-    def cleanMailmanList(self, mlist):
+    def cleanMailmanList(self, mlist, list_name=None):
         # This utility is based on mailman/tests/TestBase.py.
-        mlist.Unlock()
-        listname = mlist.internal_name()
+        if mlist is not None:
+            mlist.Unlock()
+            list_name = mlist.internal_name()
         paths = [
             'lists/%s',
             'archives/private/%s',
@@ -78,7 +80,7 @@ class MailmanTestCase(TestCaseWithFactory):
             'archives/public/%s.mbox',
             ]
         for dirtmpl in paths:
-            list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % listname)
+            list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % list_name)
             if os.path.islink(list_dir):
                 os.unlink(list_dir)
             elif os.path.isdir(list_dir):
