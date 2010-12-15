@@ -17,11 +17,11 @@ class TestLPModerateTestCase(MailmanTestCase):
     """Test lpmoderate.
 
     Mailman process() methods quietly return. They may set msg_data key-values
-    or raise an error to end processing. This group of tests tests often check
-    for errors, but that does not mean there is an error condition, it only
-    means message processing has reached a final decision. Messages that do
-    not cause a final decision pass-through and the process() methods ends
-    without a return.
+    or raise an error to end processing. These tests often check for errors,
+    but that does not mean there is an error condition, it only means message
+    processing has reached a final decision. Messages that do not cause a
+    final decision pass through, and the process() methods ends without a
+    return.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -31,8 +31,8 @@ class TestLPModerateTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.lp_user = self.factory.makePerson()
-        self.lp_user_email = removeSecurityProxy(self.lp_user).preferredemail.email
+        self.lp_user_email = 'capybara@eg.dom'
+        self.lp_user = self.factory.makePerson(email=self.lp_user_email)
 
     def tearDown(self):
         super(TestLPModerateTestCase, self).tearDown()
