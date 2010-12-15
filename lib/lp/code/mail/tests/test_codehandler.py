@@ -27,7 +27,6 @@ from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
-from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
     get_current_principal,
@@ -69,6 +68,7 @@ from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
+from lp.services.mail.handlers import mail_handlers
 from lp.services.osutils import override_environ
 from lp.testing import (
     login,

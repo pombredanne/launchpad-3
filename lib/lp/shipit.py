@@ -1,7 +1,4 @@
-from canonical.launchpad import (
-    _,
-    versioninfo,
-    )
+from canonical.launchpad import _
 # From browser/configure.zcml.
 from canonical.launchpad.browser import MaintenanceMessage
 # From browser/configure.zcml.
@@ -49,7 +46,8 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown as sd_tearDown,
     )
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.versioninfo import revno
+from lp.app import versioninfo
+from lp.app.versioninfo import revno
 from canonical.launchpad.webapp import (
     canonical_url,
     Navigation,

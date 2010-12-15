@@ -37,12 +37,14 @@ from lp.code.browser.branch import (
     BranchView,
     )
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.bzr import ControlFormat
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.testing import (
+    BrowserTestCase,
     login,
     login_person,
     logout,
@@ -132,7 +134,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "<private server>", view.mirror_location)
 
 
-class TestBranchView(TestCaseWithFactory):
+class TestBranchView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -172,7 +174,7 @@ class TestBranchView(TestCaseWithFactory):
         """Registering a mirrored branch requests a mirror."""
         arbitrary_person = self.factory.makePerson()
         arbitrary_product = self.factory.makeProduct()
-        login(arbitrary_person.preferredemail.email)
+        login_person(arbitrary_person)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
@@ -247,6 +249,30 @@ class TestBranchView(TestCaseWithFactory):
         view = BranchView(branch, self.request)
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
+
+    def test_is_empty_directory(self):
+        # Branches are considered empty until they get a control format.
+        branch = self.factory.makeBranch()
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertTrue(view.is_empty_directory)
+        with person_logged_in(branch.owner):
+            # Make it look as though the branch has been pushed.
+            branch.branchChanged(
+                None, None, ControlFormat.BZR_METADIR_1, None, None)
+        self.assertFalse(view.is_empty_directory)
+
+    def test_empty_directories_use_existing(self):
+        # Push example should include --use-existing for empty directories.
+        branch = self.factory.makeBranch(owner=self.user)
+        text = self.getMainText(branch)
+        self.assertIn('push\n--use-existing', text)
+        with person_logged_in(self.user):
+            # Make it look as though the branch has been pushed.
+            branch.branchChanged(
+                None, None, ControlFormat.BZR_METADIR_1, None, None)
+        text = self.getMainText(branch)
+        self.assertNotIn('push\n--use-existing', text)
 
     def test_user_can_upload(self):
         # A user can upload if they have edit permissions.

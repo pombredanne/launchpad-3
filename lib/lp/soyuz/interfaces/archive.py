@@ -905,6 +905,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param proposed_name: A String identifying the proposed PPA name.
         """
 
+    def getPockets():
+        """Return iterable containing valid pocket names for this archive."""
+
+
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
 

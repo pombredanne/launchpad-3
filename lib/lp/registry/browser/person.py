@@ -1353,7 +1353,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
             self.person.displayname)
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.MailingListManager')
+    @enabled_with_permission('launchpad.Moderate')
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list

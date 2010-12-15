@@ -122,8 +122,8 @@ class TestLoginHelpers(TestCaseWithFactory):
 
     def test_login_with_email(self):
         # login() logs a person in by email.
-        person = self.factory.makePerson()
-        email = person.preferredemail.email
+        email = 'test-email@example.com'
+        person = self.factory.makePerson(email=email)
         logout()
         login(email)
         self.assertLoggedIn(person)

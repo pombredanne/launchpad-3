@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Contains',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'HasQueryCount',
@@ -141,7 +142,7 @@ class _MismatchedQueryCount(Mismatch):
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
         return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
- 
+
 
 class IsNotProxied(Mismatch):
     """An object is not proxied."""

@@ -10,7 +10,6 @@ __metaclass__ = type
 import re
 from StringIO import StringIO
 import tarfile
-from unittest import TestLoader
 
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -38,6 +37,7 @@ class UploadInjector:
     getLatestTranslationsUploads method return the given library file
     alias.
     """
+
     def __init__(self, script, tar_alias):
         self.tar_alias = tar_alias
         self.script = script
@@ -190,7 +190,7 @@ class TestReuploadScript(TestCaseWithFactory):
                 '-s', self.distroseries.name,
                 '-p', self.sourcepackagename1.name,
                 '-p', self.sourcepackagename2.name,
-                '-vv',
+                '-v',
                 '--dry-run',
             ])
 
@@ -207,7 +207,3 @@ class TestReuploadScript(TestCaseWithFactory):
         self.assertTrue(
             re.match(expected_output, stderr),
             'expected %s, got %s' % (expected_output, stderr))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -18,6 +18,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_celebrity,
     login_person,
     person_logged_in,
@@ -144,8 +145,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
-    def test_merge_team_as_delete_with_super_teams_into_registry_experts(
-            self):
+    def test_owner_delete_team_with_super_teams(self):
         # Super team memberships are removed.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
@@ -168,6 +168,18 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
             [u"dupe-team has a PPA with published packages; "
               "we can't merge it."],
             view.errors)
+
+    def test_registry_delete_team_with_super_teams(self):
+        # Registry admins can delete teams with super team memberships.
+        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
+        super_team = self.factory.makeTeam()
+        # Use admin to avoid the team invitation dance. The Registry admin
+        # is logged back in.
+        with celebrity_logged_in('admin'):
+            self.dupe_team.join(super_team, super_team.teamowner)
+        view = self.getView()
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
 
 
 class TestAdminPeopleMergeView(TestCaseWithFactory):

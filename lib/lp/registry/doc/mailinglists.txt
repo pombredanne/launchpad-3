@@ -51,13 +51,14 @@ create the list until Mailman acts on the mailing list creation request.
     >>> verifyObject(IMailingList, list_one)
     True
     >>> list_one
-    <MailingList for team "team-one"; status=APPROVED at 0x...>
+    <MailingList for team "team-one"; status=APPROVED;
+     address=team-one@lists.launchpad.dev at 0x...>
 
 You can always access the mailing list through its team, if the team has a
 mailing list.
 
     >>> team_one.mailing_list
-    <MailingList for team "team-one"; status=APPROVED at 0x...>
+    <MailingList for team "team-one"; status=APPROVED; ...>
     >>> print team_two.mailing_list
     None
 
@@ -89,7 +90,7 @@ However, if we make Anne a team owner, she can create the mailing list.
     >>> login(ANONYMOUS)
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two
-    <MailingList for team "team-two"; status=APPROVED at ...>
+    <MailingList for team "team-two"; status=APPROVED; ...>
     >>> print list_two.address
     team-two@lists.launchpad.dev
 
@@ -129,8 +130,8 @@ mailing lists to construct, the list's statuses are set to the CONSTRUCTING
 state.
 
     >>> sorted_lists(list_set.approved_lists)
-    [<MailingList for team "team-one"; status=APPROVED at ...>,
-     <MailingList for team "team-two"; status=APPROVED at ...>]
+    [<MailingList for team "team-one"; status=APPROVED; ...>,
+     <MailingList for team "team-two"; status=APPROVED; ...>]
 
     >>> list_one.startConstructing()
     >>> print list_one.status.name
@@ -139,7 +140,7 @@ state.
 Once in the construction phase, a list is no longer in the approval state.
 
     >>> sorted_lists(list_set.approved_lists)
-    [<MailingList for team "team-two"; status=APPROVED at ...>]
+    [<MailingList for team "team-two"; status=APPROVED; ...>]
 
 Lists should never be constructed more than once.
 
@@ -163,7 +164,8 @@ a mailing list is made active, its email address is registered in Launchpad
 and associated with the team's mailing list, so that it can be used as the
 team's contact address.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
@@ -190,9 +192,9 @@ Some list constructions may fail.
 You can then get the mailing list for a team, given the team name.
 
     >>> list_set.get(team_one.name)
-    <MailingList for team "team-one"; status=ACTIVE at ...>
+    <MailingList for team "team-one"; status=ACTIVE; ...>
     >>> list_set.get(team_two.name)
-    <MailingList for team "team-two"; status=FAILED at ...>
+    <MailingList for team "team-two"; status=FAILED; ...>
 
 This method will return None for missing teams or non-team people.
 
@@ -223,7 +225,7 @@ needs to query for the requested deactivations, take the necessary actions,
 and report the deactivation results.
 
     >>> sorted_lists(list_set.deactivated_lists)
-    [<MailingList for team "team-three"; status=DEACTIVATING at ...>]
+    [<MailingList for team "team-three"; status=DEACTIVATING; ...>]
     >>> list_three.transitionToStatus(MailingListStatus.INACTIVE)
     >>> print list_three.status.name
     INACTIVE
@@ -303,7 +305,7 @@ However, you can give a private team a mailing list.
     ...     new_list_for_team)
     >>> thereminists_list = new_list_for_team(thereminists)
     >>> thereminists_list
-    <MailingList for team "thereminists"; status=ACTIVE at ...>
+    <MailingList for team "thereminists"; status=ACTIVE; ...>
 
 Welcome messages
 ================
@@ -324,7 +326,7 @@ After changing the welcome message, the list's status should be MODIFIED.
     >>> print list_one.status.name
     MODIFIED
     >>> sorted_lists(list_set.modified_lists)
-    [<MailingList for team "team-one"; status=MODIFIED at ...>]
+    [<MailingList for team "team-one"; status=MODIFIED; ...>]
 
 Eventually, Mailman will get around to acting on this modification.  When it
 does so, the list's state transitions first to UPDATING so as to avoid
