@@ -29,7 +29,7 @@ def monkey_patch(mailman_path, config):
     # provide everything Mailman needs.
     #
     # Remember, don't rely on Launchpad's config object in the mm_cfg.py file
-    # or in the canonical.mailman.monkeypatches.defaults module because
+    # or in the lp.services.mailman.monkeypatches.defaults module because
     # Mailman will not be able to initialize Launchpad's configuration system.
     # Instead, anything that's needed from config should be written to the
     # mm_cfg.py file now.

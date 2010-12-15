@@ -16,11 +16,11 @@ from canonical.librarian.interfaces import (
     IRestrictedLibrarianClient,
     ILibrarianClient,
     )
-from canonical.librarian.smoketest import main
+from canonical.librarian.smoketest import do_smoketest
 
 
 if __name__ == '__main__':
     execute_zcml_for_scripts()
     restricted_client = getUtility(IRestrictedLibrarianClient)
     regular_client = getUtility(ILibrarianClient)
-    sys.exit(main(restricted_client, regular_client))
+    sys.exit(do_smoketest(restricted_client, regular_client))
