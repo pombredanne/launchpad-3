@@ -411,13 +411,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         # Existing shared current translation for this POTMsgSet, if
         # any.
-        current = self.potmsgset.getCurrentTranslation(
-            None, self.language, TranslationSide.UBUNTU)
+        current = self.potmsgset.getCurrentTranslationMessage(
+            None, self.language)
 
         # Existing shared upstream translation for this POTMsgSet, if
         # any.
-        upstream = self.potmsgset.getOtherTranslation(
-            self.language, TranslationSide.UBUNTU)
+        upstream = self.potmsgset.getOtherTranslationMessage(
+            None, self.language)
 
         if shared is None:
             clash_with_shared_current = (
@@ -475,8 +475,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUbuntu(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslation(
-                self.potemplate, self.language, TranslationSide.UBUNTU)
+            incumbent = self.potmsgset.getCurrentTranslationMessage(
+                self.potemplate, self.language)
             if incumbent == self:
                 return
             if (incumbent is not None and
@@ -490,8 +490,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUpstream(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getOtherTranslation(
-                self.language, TranslationSide.UBUNTU)
+            incumbent = self.potmsgset.getOtherTranslationMessage(
+                self.potemplate, self.language)
             if incumbent == self:
                 return
             if (incumbent is not None and
