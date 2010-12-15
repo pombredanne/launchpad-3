@@ -69,7 +69,7 @@ class TestLaunchpadMemberTestCase(MailmanTestCase):
         self.assertEqual(None, silence)
 
     def test_messages_from_launchpad_itself_are_accepted(self):
-        # A message from launchpad itseld is accepted. Launchpad will sent
+        # A message from launchpad itself is accepted. Launchpad will sent
         # a secret.
         message = self.makeMailmanMessage(
             self.mm_list, 'guinea-pig@noplace.dom', 'subject', 'any content.')
