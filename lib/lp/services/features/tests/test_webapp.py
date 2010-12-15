@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from textwrap import dedent
 
+from canonical.config import config
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
 from lp.services.features import webapp
