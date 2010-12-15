@@ -1616,12 +1616,16 @@ class BugTaskSet:
         is ok if a bug has multiple bugtasks in the results as long as
         those other bugtasks are on other series.
         """
+        # XXX: EdwinGrubbs 2010-12-15 bug=682989
+        # (ConjoinedMaster.bug == X) produces the wrong sql, but
+        # (ConjoinedMaster.bugID == X) works right. This bug applies to
+        # all foreign keys on the ClassAlias.
+
         # Perform a LEFT JOIN to the conjoined master bugtask.  If the
         # conjoined master is not null, it gets filtered out.
         ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
         extra_clauses = ["ConjoinedMaster.id IS NULL"]
         if milestone.distribution is not None:
-            # XXX
             current_series = milestone.distribution.currentseries
             join = LeftJoin(
                 ConjoinedMaster,
@@ -1636,7 +1640,6 @@ class BugTaskSet:
             from lp.registry.model.milestone import Milestone
             from lp.registry.model.product import Product
             if IProjectGroupMilestone.providedBy(milestone):
-                # XXX
                 # Since an IProjectGroupMilestone could have bugs with
                 # bugtasks on two different projects, the project
                 # bugtask is only excluded by a development focus series
@@ -1657,7 +1660,6 @@ class BugTaskSet:
             elif milestone.product is not None:
                 dev_focus_id = (
                     milestone.product.development_focusID)
-                # XXX
                 join = LeftJoin(
                     ConjoinedMaster,
                     And(ConjoinedMaster.bugID == BugTask.bugID,
