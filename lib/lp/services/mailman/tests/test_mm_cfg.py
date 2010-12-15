@@ -76,6 +76,7 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         # Generate a mailman config using this environment's config.
         mailman_path = configure_prefix(config.mailman.build_prefix)
         monkey_patch(mailman_path, config)
+        reload(mm_cfg)
 
     def test_mail_server(self):
         # Launchpad's smtp config values.
