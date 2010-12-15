@@ -172,7 +172,7 @@ class TestBranchView(TestCaseWithFactory):
         """Registering a mirrored branch requests a mirror."""
         arbitrary_person = self.factory.makePerson()
         arbitrary_product = self.factory.makeProduct()
-        login(arbitrary_person.preferredemail.email)
+        login_person(arbitrary_person)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()

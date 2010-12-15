@@ -106,14 +106,16 @@ email addresses and the visible_email_address_description summarises who
 can see them
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
+anyone in Launchpad..
 
+    >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
     u'mark@example.com'
 
     >>> mark.hide_email_addresses
     False
+    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
@@ -332,7 +334,7 @@ progress state.
 
     >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login(user.preferredemail.email)
+    >>> login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')

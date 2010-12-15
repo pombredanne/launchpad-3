@@ -1002,4 +1002,23 @@
         factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
         name="RECIPEBRANCHBUILD"
         permission="zope.Public"/>
+
+  <!-- RecipeBuildRecordSet and related classes-->
+
+  <securedutility
+      class="lp.code.model.recipebuild.RecipeBuildRecordSet"
+      provides="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet">
+    <allow interface="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"/>
+  </securedutility>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecord">
+    <allow attributes="sourcepackagename recipeowner recipe archive
+                        most_recent_build_time distro_source_package"/>
+  </class>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">
+    <allow interface="storm.zope.interfaces.IResultSet" />
+    <allow attributes="__getslice__" />
+  </class>
+
 </configure>

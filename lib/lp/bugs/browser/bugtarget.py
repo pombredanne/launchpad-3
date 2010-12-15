@@ -163,6 +163,8 @@ class IProductBugConfiguration(Interface):
         IBugTarget['bug_reporting_guidelines'])
     bug_reported_acknowledgement = copy_field(
         IBugTarget['bug_reported_acknowledgement'])
+    enable_bugfiling_duplicate_search = copy_field(
+        IBugTarget['enable_bugfiling_duplicate_search'])
 
 
 def product_to_productbugconfiguration(product):
@@ -187,12 +189,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
     def field_names(self):
         """Return the list of field names to display."""
         field_names = [
-                "bugtracker",
-                "enable_bug_expiration",
-                "remote_product",
-                "bug_reporting_guidelines",
-                "bug_reported_acknowledgement",
-                ]
+            "bugtracker",
+            "enable_bug_expiration",
+            "remote_product",
+            "bug_reporting_guidelines",
+            "bug_reported_acknowledgement",
+            "enable_bugfiling_duplicate_search",
+            ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
 
