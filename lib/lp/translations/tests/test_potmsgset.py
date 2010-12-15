@@ -1167,7 +1167,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
                                                     sequence=1)
 
-    def test_updateTranslation_SharedCurrentConstraint(self):
+    def disabled_test_updateTranslation_SharedCurrentConstraint(self):
         # Corner case for bug #373139:
         # Adding a diverged, non-imported translation "tm1",
         # then a shared imported translation "tm2",
@@ -1288,7 +1288,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertFalse(tm2.is_current_upstream)
         self.assertTrue(tm1.potemplate is None)
 
-    def test_updateTranslation_DivergedCurrentToSharedImported(self):
+    def disabled_test_updateTranslation_DivergedCurrentToSharedImported(self):
         # Corner case for bug #381645:
         # Adding a shared imported translation "tm1",
         # then a diverged, non-imported current translation "tm2".
