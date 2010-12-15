@@ -227,6 +227,30 @@ class FormattersAPI:
         return '<a href="%s">%s</a>%s' % (url, text, trailers)
 
     @staticmethod
+    def _linkify_url_is_blacklisted(url):
+        '''Don't linkify URIs consisting of just the protocol'''
+        
+        blacklist_bases = [
+            'about',
+            'gopher',
+            'http',
+            'https',
+            'sftp',
+            'news',
+            'ftp',
+            'mailto',
+            'irc',
+            'jabber',
+            'apt',
+            'data',
+            ]
+
+        for base in blacklist_bases:
+            if url in ('%s' % base, '%s:' % base, '%s://' % base):
+                return True
+        return False
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             return FormattersAPI._linkify_bug_number(
@@ -235,16 +259,19 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = match.group('url')
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            full_url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(full_url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                cgi.escape(url, quote=True),
-                add_word_breaks(cgi.escape(url)),
-                cgi.escape(trailers))
+            if not FormattersAPI._linkify_url_is_blacklisted(url):
+                return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                    cgi.escape(url, quote=True),
+                    add_word_breaks(cgi.escape(url)),
+                    cgi.escape(trailers))
+            else:
+                return full_url
         elif match.group('faq') is not None:
             # This is *BAD*.  We shouldn't be doing database lookups to
             # linkify text.

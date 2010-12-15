@@ -118,10 +118,14 @@ class TestLinkifyingProtocols(TestCase):
             ]
         
         expected_strings = [
-            '<p><a rel="nofollow" href="http://example.com">http://<wbr></wbr>example.<wbr></wbr>com</a></p>',
-            '<p><a rel="nofollow" href="http://example.com/">http://<wbr></wbr>example.<wbr></wbr>com/</a></p>',
-            '<p><a rel="nofollow" href="http://example.com/path">http://<wbr></wbr>example.<wbr></wbr>com/path</a></p>',
-            '<p><a rel="nofollow" href="http://example.com/path/">http://<wbr></wbr>example.<wbr></wbr>com/path/</a></p>',
+            ('<p><a rel="nofollow" href="http://example.com">'
+             'http://<wbr></wbr>example.<wbr></wbr>com</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/path">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/path/">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path/</a></p>'),
             ]
 
         self.assertEqual(
