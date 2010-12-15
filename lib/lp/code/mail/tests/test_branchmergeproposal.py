@@ -109,17 +109,22 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.root_message_id = None
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         reviewer = bmp.target_branch.owner
-        self.assertEqual("""\
-Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
+        expected = dedent("""\
+        Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
 
-Requested reviews:
-  %s
+        Requested reviews:
+          %(reviewer)s
 
---\x20
-%s
-%s
-""" % (reviewer.unique_displayname, canonical_url(bmp),reason.getReason()),
-       ctrl.body)
+        For more details, see:
+        %(bmp)s
+        --\x20
+        %(bmp)s
+        %(reason)s
+        """) % {
+            'reviewer': reviewer.unique_displayname,
+            'bmp': canonical_url(bmp),
+            'reason': reason.getReason()}
+        self.assertEqual(expected, ctrl.body)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar', ctrl.subject)
@@ -160,14 +165,16 @@ Requested reviews:
     def test_forCreation_with_review_request(self):
         """Correctly format list of reviewers."""
         reviewer = self.factory.makePerson(name='review-person')
-        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)        
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
             '\nRequested reviews:'
-            '\n  Review-person (review-person)'
-            '\n\n-- \n',
+            '\n  Review-person (review-person)\n'
+            '\n'
+            'For more details, see:\n'
+            '%s\n-- \n' % canonical_url(bmp),
             ctrl.body)
 
     def test_forCreation_with_review_request_and_bug(self):
@@ -184,7 +191,10 @@ Requested reviews:
             '\n  Review-person (review-person)'
             '\nRelated bugs:'
             '\n  #%d I am a bug'
-            '\n  %s\n\n--' % (bug.id, canonical_url(bug)))
+            '\n  %s\n'
+            '\nFor more details, see:\n'
+            '%s'
+            '\n--' % (bug.id, canonical_url(bug), canonical_url(bmp)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
@@ -414,6 +424,9 @@ Requested reviews:
             Description changed to:
 
             change description
+
+            For more details, see:
+            http://code.launchpad.dev/~bob/super-product/fix-foo-for-bar/+merge/1
             --\x20
             %s
             You are the owner of lp://dev/~bob/super-product/fix-foo-for-bar.
@@ -532,6 +545,9 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         [sent_mail] = pop_notifications()
         expected = dedent("""\
                 You have been requested to review the proposed merge of %(source)s into %(target)s.
+
+                For more details, see:
+                %(bmp)s
 
                 This branch is awesome.
 

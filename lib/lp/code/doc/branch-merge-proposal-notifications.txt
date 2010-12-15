@@ -188,6 +188,9 @@ in the email.
         Bob the Builder (bob)
         Mary Jones (mary): ui
     <BLANKLINE>
+    For more details, see:
+    http://code.launchpad.dev/~person-name...
+    <BLANKLINE>
     This is the initial commit message.
     <BLANKLINE>
     It is included in the initial email sent out.
