@@ -1,4 +1,5 @@
-= Merging =
+Merging
+=======
 
 For many reasons (i.e. a gina run) we could have duplicated accounts in
 Launchpad. Once a duplicated account is identified, we need to allow the user
@@ -19,7 +20,8 @@ different email address.
     >>> marilize = personset.getByName('marilize')
 
 
-== Sanity checks ==
+Sanity checks
+-------------
 
 We can't merge an account that still has email addresses attached to it
 
@@ -29,7 +31,8 @@ We can't merge an account that still has email addresses attached to it
     AssertionError: ...
 
 
-== Preparing test person for the merge ==
+Preparing test person for the merge
+-----------------------------------
 
 Merging people involves updating the merged person relationships. Let's
 put the person we will merge into some of those.
@@ -57,10 +60,11 @@ Marilize and save it for later comparison.
     marilize
     >>> sampleperson_old_karma = sample.karma
 
-Branches whose owner is being merged are uniquified by appending '-N' where N
-is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by marilize, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
-Person' to test that branch name uniquifying works.
+Branches whose owner is being merged are uniquified by appending '-N'
+where N is a unique integer. We create "peoplemerge" and
+"peoplemerge-1" branches owned by marilize, and a "peoplemerge" and
+"peoplemerge-1" branches owned by 'Sample Person' to test that branch
+name uniquifying works.
 
 Branches with smaller IDs will be processed first, so we create "peoplemerge"
 first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
@@ -81,9 +85,9 @@ to implement, and it be should extremely rare for the case to occur.
     >>> peoplemerge11 = factory.makePersonalBranch(
     ...     name='peoplemerge-1', owner=marilize)
 
-'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while marilize is an active member. After the merge, 'Sample Person' will be an
-active member of that team.
+'Sample Person' is a deactivated member of the 'Ubuntu Translators'
+team, while marilize is an active member. After the merge, 'Sample
+Person' will be an active member of that team.
 
     >>> sample in ubuntu_translators.inactivemembers
     True
@@ -102,7 +106,8 @@ transferred to Sample Person.
     u'Marilize Coetzee'
 
 
-== Do the merge! ==
+Do the merge!
+-------------
 
     # Now we remove the only email address marilize had, so that we can merge
     # it.  First we need to change its status, though, because we can't delete
@@ -119,7 +124,8 @@ transferred to Sample Person.
     >>> personset.merge(marilize, sample)
 
 
-== Merge results ==
+Merge results
+-------------
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
@@ -336,7 +342,8 @@ the winner, and the to_person will be unaffected.
     loser, winner,
 
 
-== Merging teams ==
+Merging teams
+-------------
 
 Merging of teams is also possible and uses the same API used for merging
 people.  Team memberships are carried over just like when merging people.
