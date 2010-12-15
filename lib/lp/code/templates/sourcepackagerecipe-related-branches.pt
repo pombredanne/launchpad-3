@@ -15,7 +15,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="branch view/related_package_branches">
+        <tr tal:repeat="branch packageBranches">
           <td width="60%">
             <a href="#"
                tal:content="branch/displayname"
@@ -43,7 +43,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="branch view/related_series_branches">
+        <tr tal:repeat="branch seriesBranches">
           <td width="60%">
             <a href="#"
                tal:content="branch/displayname"
