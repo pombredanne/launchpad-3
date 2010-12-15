@@ -11,12 +11,14 @@ __all__ = [
     'BugListingPortletInfoView',
     'BugListingPortletStatsView',
     'BugNominationsView',
+    'BugsBugTaskSearchListingView',
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
+    'bugtask_heat_html',
+    'BugTaskBreadcrumb',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
-    'BugTaskBreadcrumb',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -25,28 +27,31 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
+    'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
-    'BugTasksAndNominationsView',
-    'bugtask_heat_html',
-    'BugsBugTaskSearchListingView',
     'calculate_heat_display',
-    'NominationsReviewTableBatchNavigatorView',
-    'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'get_visible_comments',
+    'group_comments_with_activity',
+    'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     ]
 
 import cgi
 from datetime import (
     datetime,
     timedelta,
+    )
+from itertools import (
+    chain,
+    groupby,
     )
 from math import (
     floor,
@@ -463,6 +468,70 @@ def target_has_expirable_bugs_listing(target):
     else:
         # This context is not a supported bugtarget.
         return False
+
+
+def group_comments_with_activity(
+    comments, activities, window=timedelta(minutes=5)):
+    """Group comments and activity together for human consumption.
+
+    @param comments: An iterable of `BugComment` instances.
+    @param activities: An iterable of `BugActivity` instances.
+    """
+
+    comment_kind = object()
+    comments = (
+        (comment.datecreated, comment.owner, comment_kind, comment)
+        for comment in comments)
+
+    activity_kind = object()
+    activity = (
+        (activity.datechanged, activity.person, activity_kind, activity)
+        for activity in activities)
+
+    records = sorted(
+        chain(comments, activity), key=itemgetter(0, 1))
+
+    def gen_comment_windows(actor_window):
+        comment_count = 0
+        for date, actor, kind, event in actor_window:
+            if kind is comment_kind:
+                comment_count += 1
+            # The first comment window includes activity
+            # before the first comment.
+            yield max(1, comment_count), date, kind, event
+
+    def gen_date_windows(comment_window):
+        window_index, window_end = 0, None
+        for index, date, kind, event in comment_window:
+            if window_end is None or date >= window_end:
+                window_end = date + window
+                window_index += 1
+            yield window_index, date, kind, event
+
+    def combine_date_window(date_window):
+        activities = []
+        comment = None
+        for index, date, kind, event in date_window:
+            if kind is comment_kind:
+                assert comment is None
+                comment = event
+            else:
+                activities.append(event)
+        if comment is None:
+            return activities
+        else:
+            comment.activity.extend(activities)
+            return comment
+
+    actor_windows_grouper = groupby(records, itemgetter(1))
+    for actor, actor_window in actor_windows_grouper:
+        comment_windows_grouper = groupby(
+            gen_comment_windows(actor_window), itemgetter(0))
+        for index, comment_window in comment_windows_grouper:
+            date_windows_grouper = groupby(
+                gen_date_windows(comment_window), itemgetter(0))
+            for index, date_window in date_windows_grouper:
+                yield combine_date_window(date_window)
 
 
 class BugTargetTraversalMixin:

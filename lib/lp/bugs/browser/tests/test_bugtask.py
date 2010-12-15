@@ -4,12 +4,16 @@
 __metaclass__ = type
 
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from doctest import DocTestSuite
+from itertools import count
 import unittest
 
 from storm.store import Store
 from testtools.matchers import LessThan
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -30,10 +34,12 @@ from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
+    group_comments_with_activity,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import (
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -86,6 +92,121 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
+
+
+class BugActivityStub:
+
+    def __init__(self, datechanged, person=None):
+        self.datechanged = datechanged
+        if person is None:
+            person = PersonStub()
+        self.person = person
+
+    def __repr__(self):
+        return "BugActivityStub(%r, %r)" % (
+            self.datechanged.strftime('%Y-%m-%d--%H%M'), self.person)
+
+
+class BugCommentStub:
+
+    def __init__(self, datecreated, owner=None):
+        self.datecreated = datecreated
+        if owner is None:
+            owner = PersonStub()
+        self.owner = owner
+        self.activity = []
+
+    def __repr__(self):
+        return "BugCommentStub(%r, %r)" % (
+            self.datecreated.strftime('%Y-%m-%d--%H%M'), self.owner)
+
+
+class PersonStub:
+
+    ids = count(1)
+
+    def __init__(self):
+        self.id = next(self.ids)
+
+    def __repr__(self):
+        return "PersonStub#%d" % self.id
+
+
+class TestGroupCommentsWithActivities(TestCase):
+    """Tests for `group_comments_with_activities`."""
+
+    def setUp(self):
+        super(TestGroupCommentsWithActivities, self).setUp()
+        self.now = datetime.utcnow()
+        self.timestamps = (
+            self.now + timedelta(minutes=counter)
+            for counter in count(1))
+
+    def group(self, comments, activities):
+        return list(
+            group_comments_with_activity(
+                comments=comments, activities=activities))
+
+    def test_empty(self):
+        # Given no comments or activities the result is also empty.
+        self.assertEqual(
+            [], self.group(comments=[], activities=[]))
+
+    def test_activity_empty_no_common_actor(self):
+        # When no activities is passed in, and the comments passed in don't
+        # have any common actors, no grouping is possible.
+        comments = [
+            BugCommentStub(next(self.timestamps))
+            for number in xrange(5)]
+        self.assertEqual(
+            comments, self.group(comments=comments, activities=[]))
+
+    def test_comments_empty_no_common_actor(self):
+        # When no comments are passed in, and the activities passed in don't
+        # have any common actors, no grouping is possible.
+        activities = [
+            BugActivityStub(next(self.timestamps))
+            for number in xrange(5)]
+        self.assertEqual(
+            [[activity] for activity in activities], self.group(
+                comments=[], activities=activities))
+
+    def test_no_common_actor(self):
+        # When each activities and comment given has a different actor then no
+        # grouping is possible.
+        activity1 = BugActivityStub(next(self.timestamps))
+        comment1 = BugCommentStub(next(self.timestamps))
+        activity2 = BugActivityStub(next(self.timestamps))
+        comment2 = BugCommentStub(next(self.timestamps))
+
+        activities = set([activity1, activity2])
+        comments = set([comment1, comment2])
+
+        self.assertEqual(
+            [[activity1], comment1, [activity2], comment2],
+            self.group(comments=comments, activities=activities))
+
+    def test_comment_then_activity_close_together_by_common_actor(self):
+        # An activity shortly after a comment by the same person is grouped
+        # into the comment.
+        actor = PersonStub()
+        comment = BugCommentStub(next(self.timestamps), actor)
+        activity = BugActivityStub(next(self.timestamps), actor)
+        grouped = self.group(comments=[comment], activities=[activity])
+        self.assertEqual([comment], grouped)
+        self.assertEqual([activity], comment.activity)
+
+    def test_activity_then_comment_close_together_by_common_actor(self):
+        # An activity shortly before a comment by the same person is grouped
+        # into the comment.
+        actor = PersonStub()
+        activity = BugActivityStub(next(self.timestamps), actor)
+        comment = BugCommentStub(next(self.timestamps), actor)
+        grouped = self.group(comments=[comment], activities=[activity])
+        self.assertEqual([comment], grouped)
+        self.assertEqual([activity], comment.activity)
+
+    # XXX: Needs more complex tests!
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
