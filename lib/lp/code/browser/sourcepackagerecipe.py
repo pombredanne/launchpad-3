@@ -391,12 +391,11 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
 
     custom_widget('related-branches', RelatedBranchesWidget)
 
-    def setUpFields(self):
+    def extendFields(self):
         """See `LaunchpadFormView`.
 
         Adds a related branches field to the form.
         """
-        super(RecipeRelatedBranchesMixin, self).setUpFields()
         self.form_fields += form.Fields(Field(__name__='related-branches'))
         self.form_fields['related-branches'].custom_widget = (
             self.custom_widgets['related-branches'])
