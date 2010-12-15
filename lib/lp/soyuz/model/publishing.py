@@ -806,7 +806,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             assert self.component.name == 'main'
             return
 
-        # If there is an published ancestry, use its component, otherwise
+        # If there is published ancestry, use its component, otherwise
         # use the original upload component.
         ancestry = self.getAncestry()
         if ancestry is not None:
