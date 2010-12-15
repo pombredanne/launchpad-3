@@ -222,7 +222,7 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
             # The bug count should not change, since we are just adding
             # bugtasks on existing bugs.
             self.assertEqual(
-                self.bug_count,
+                self.bug_count + extra_bugtasks,
                 self.bugtask_set.search(self.params).count())
 
     def test_search_results_count_with_wontfix_conjoined_masters(self):
@@ -269,7 +269,7 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
 
     def test_search_query_count(self):
         # Verify query count.
-        # 1. Query all the distroseries to calculate the distro's
+        # 1. Query all the distroseries to determine the distro's
         #    currentseries.
         # 2. Query the bugtasks.
         Store.of(self.milestone).flush()
@@ -282,22 +282,34 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
         # productseries that are not the development focus.
         distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, status=SeriesStatus.SUPPORTED)
+        extra_bugtasks = 0
         for bug in self.bugs:
-            self.factory.makeBugTask(bug=bug, target=distroseries)
+            extra_bugtasks += 1
+            bugtask = self.factory.makeBugTask(bug=bug, target=distroseries)
+            with person_logged_in(self.distro.owner):
+                bugtask.transitionToMilestone(
+                    self.milestone, self.distro.owner)
             self.assertEqual(
-                self.bug_count,
+                self.bug_count + extra_bugtasks,
                 self.bugtask_set.search(self.params).count())
 
     def test_search_results_count_with_conjoined_masters(self):
         # Test with increasing numbers of conjoined masters.
-        conjoined_master_count = 0
+        tasks = list(self.bugtask_set.search(self.params))
         for bug in self.bugs:
-            conjoined_master_count += 1
+            # The distro bugtask is in the results before the conjoined
+            # master is added.
+            self.assertIn(
+                (bug.id, self.distro),
+                [(task.bug.id, task.distribution) for task in tasks])
             self.factory.makeBugTask(
                 bug=bug, target=self.distro.currentseries)
-            self.assertEqual(
-                self.bug_count - conjoined_master_count,
-                self.bugtask_set.search(self.params).count())
+            tasks = list(self.bugtask_set.search(self.params))
+            # The product bugtask is excluded from the results.
+            self.assertEqual(self.bug_count, len(tasks))
+            self.assertNotIn(
+                (bug.id, self.distro),
+                [(task.bug.id, task.distribution) for task in tasks])
 
     def test_search_results_count_with_wontfix_conjoined_masters(self):
         # Test that conjoined master bugtasks in the WONTFIX status
@@ -306,12 +318,24 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
             self.factory.makeBugTask(
                 bug=bug, target=self.distro.currentseries)
             for bug in self.bugs]
-        conjoined_master_count = len(masters)
+        wontfix_masters_count = 0
+        tasks = list(self.bugtask_set.search(self.params))
         for bugtask in masters:
-            conjoined_master_count -= 1
+            wontfix_masters_count += 1
+            # The distro bugtask is still excluded by the conjoined
+            # master.
+            self.assertNotIn(
+                (bugtask.bug.id, self.distro),
+                [(task.bug.id, task.distribution) for task in tasks])
             with person_logged_in(self.distro.owner):
                 bugtask.transitionToStatus(
                     BugTaskStatus.WONTFIX, self.distro.owner)
+            tasks = list(self.bugtask_set.search(self.params))
             self.assertEqual(
-                self.bug_count - conjoined_master_count,
+                self.bug_count + wontfix_masters_count,
                 self.bugtask_set.search(self.params).count())
+            # The distro bugtask is no longer excluded by the conjoined
+            # master, since its status is WONTFIX.
+            self.assertIn(
+                (bugtask.bug.id, self.distro),
+                [(task.bug.id, task.distribution) for task in tasks])
