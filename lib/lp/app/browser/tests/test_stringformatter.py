@@ -109,7 +109,32 @@ def test_break_long_words():
 
 class TestLinkifyingProtocols(TestCase):
 
+    def test_normal_set(self):
+        test_strings = [
+            "http://example.com",
+            "http://example.com/",
+            "http://example.com/path",
+            "http://example.com/path/",
+            ]
+        
+        expected_strings = [
+            '<p><a rel="nofollow" href="http://example.com">http://<wbr></wbr>example.<wbr></wbr>com</a></p>',
+            '<p><a rel="nofollow" href="http://example.com/">http://<wbr></wbr>example.<wbr></wbr>com/</a></p>',
+            '<p><a rel="nofollow" href="http://example.com/path">http://<wbr></wbr>example.<wbr></wbr>com/path</a></p>',
+            '<p><a rel="nofollow" href="http://example.com/path/">http://<wbr></wbr>example.<wbr></wbr>com/path/</a></p>',
+            ]
+
+        self.assertEqual(
+            expected_strings,
+            [FormattersAPI(text).text_to_html() for text in test_strings]
+        )
+
     def test_protocol_alone_does_not_link(self):
+        test_string = "This doesn't link: apt:"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = "<p>This doesn't link: apt:</p>"
+        self.assertEqual(expected_html, html)
+
         test_string = "This doesn't link: http://"
         html = FormattersAPI(test_string).text_to_html()
         expected_html = "<p>This doesn't link: http://</p>"
