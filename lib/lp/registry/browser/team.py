@@ -508,6 +508,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     field_names = ['welcome_message']
     label = "Mailing list configuration"
     custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
+    page_title = label
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.

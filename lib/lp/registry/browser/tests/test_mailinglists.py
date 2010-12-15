@@ -18,7 +18,22 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
+
+
+class MailingListTestCase(TestCaseWithFactory):
+    """Verify the content in +mailing-list-portlet."""
+
+    def makeTeamWithMailingList(self, name=None, owner=None, visibility=None):
+        team = self.factory.makeTeam(
+            name=name, owner=owner, visibility=visibility)
+        login_person(team.teamowner)
+        team_list = self.factory.makeMailingList(
+            team=team, owner=team.teamowner)
+        return team
 
 
 class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
@@ -57,21 +72,14 @@ class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
         self.assertEqual(None, link_tag)
 
 
-class MailingListPortletTestCase(TestCaseWithFactory):
-    """Verify the team index subscribe/unsubscribe to mailing list content."""
+class TestMailingListPortlet(MailingListTestCase):
+    """Verify the content in +mailing-list-portlet."""
 
     layer = DatabaseFunctionalLayer
 
-    def makeTeamAndMailingList(self, visibility=None):
-        team = self.factory.makeTeam(visibility=visibility)
-        login_person(team.teamowner)
-        team_list = self.factory.makeMailingList(
-            team=team, owner=team.teamowner)
-        return team
-
     def test_public_archive(self):
         # Public teams have public archives.
-        team = self.makeTeamAndMailingList()
+        team = self.makeTeamWithMailingList()
         view = create_view(
             team, name='+portlet-mailinglist',
             server_url='http://launchpad.dev', path_info='/~%s' % team.name)
@@ -80,10 +88,51 @@ class MailingListPortletTestCase(TestCaseWithFactory):
 
     def test_private_archive(self):
         # Private teams have private archives.
-        team = self.makeTeamAndMailingList(
+        team = self.makeTeamWithMailingList(
             visibility=PersonVisibility.PRIVATE)
         view = create_view(
             team, name='+portlet-mailinglist',
             server_url='http://launchpad.dev', path_info='/~%s' % team.name)
         link = find_tag_by_id(view(), 'mailing-list-archive')
         self.assertEqual('View private archive', extract_text(link))
+
+
+class TestTeamMailingListConfigurationView(MailingListTestCase):
+    """Verify the +mailinglist view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_public_achive_message_with_list(self):
+        # Public teams have public archives.
+        team = self.makeTeamWithMailingList()
+        view = create_initialized_view(
+            team, name='+mailinglist', principal=team.teamowner,)
+        element = find_tag_by_id(view(), 'mailing-list-archive')
+        self.assertEqual('public', extract_text(element))
+
+    def test_private_message_message_with_list(self):
+        # Private teams have private archives.
+        team = self.makeTeamWithMailingList(
+            visibility=PersonVisibility.PRIVATE)
+        view = create_initialized_view(
+            team, name='+mailinglist', principal=team.teamowner)
+        element = find_tag_by_id(view(), 'mailing-list-archive')
+        self.assertEqual('private', extract_text(element))
+
+    def test_public_achive_message_without_list(self):
+        # Public teams have public archives.
+        team = self.factory.makeTeam()
+        view = create_initialized_view(
+            team, name='+mailinglist', principal=team.teamowner,)
+        element = find_tag_by_id(view(), 'mailing-list-archive')
+        self.assertEqual('public', extract_text(element))
+
+    def test_private_message_message_without_list(self):
+        # Private teams have private archives.
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
+        view = create_initialized_view(
+            team, name='+mailinglist', principal=team.teamowner)
+        element = find_tag_by_id(view(), 'mailing-list-archive')
+        self.assertEqual('private', extract_text(element))

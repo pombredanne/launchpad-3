@@ -55,5 +55,5 @@ What if Mailman failed to apply the change?
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'mailing_list_status_message').b)
+    ...     user_browser.contents, 'mailing_list_status_message').strong)
     This team's mailing list is in an inconsistent state...
