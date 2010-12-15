@@ -59,17 +59,6 @@ The page contains a few interesting details about team membership.
     Languages:
     English
 
-The polls portlet is only shown if current polls exist.
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'polls'))
-    Polls
-    A random poll that never closes...
-    Show polls
-
-    >>> browser.open('http://launchpad.dev/~launchpad')
-    >>> print find_tag_by_id(browser.contents, 'polls')
-    None
-
 The subteam-of portlet is not shown if the team is not a subteam.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team')

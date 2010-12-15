@@ -35,7 +35,6 @@
   </metal:contact>
 
   <tal:menu replace="structure view/@@+global-actions" />
-  <tal:polls replace="structure context/@@+portlet-polls" />
 
 </div>
 

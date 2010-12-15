@@ -3871,20 +3871,10 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
-            # Polls are not carried over when merging teams.
-            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
-            # I don't think we need to worry about the votecast and vote
-            # tables, because a real human should never have two profiles
-            # in Launchpad that are active members of a given team and voted
-            # in a given poll. -- GuilhermeSalgado 2005-07-07
-            # We also can't afford to change poll results after they are
-            # closed -- StuartBishop 20060602
-            ('votecast', 'person'),
-            ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
             ]
 

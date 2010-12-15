@@ -339,34 +339,26 @@ the winner, and the to_person will be unaffected.
 == Merging teams ==
 
 Merging of teams is also possible and uses the same API used for merging
-people.  Note, though, that when merging teams, its polls will not be
-carried over to the remaining team.  Team memberships, on the other hand,
-are carried over just like when merging people.
+people.  Team memberships are carried over just like when merging people.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
     >>> ignored = launchpad_devs.addMember(
     ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
-    >>> today = datetime.now(pytz.timezone('UTC'))
+    >>> today = datetime.now(pytz.UTC)
     >>> tomorrow = today + timedelta(days=1)
-    >>> poll = IPollSubset(test_team).new(
-    ...     'test-poll', 'Title', 'Proposition', today, tomorrow,
-    ...     PollSecrecy.OPEN, allowspoilt=True)
 
-    # test_team has a superteam, one active member and a poll.
+    # test_team has a superteam and one active member.
     >>> [team.name for team in test_team.super_teams]
     [u'launchpad']
     >>> test_team.teamowner.name
     u'name12'
     >>> [member.name for member in test_team.allmembers]
     [u'name12']
-    >>> list(IPollSubset(test_team).getAll())
-    [<Poll at ...]
 
-    # Landscape-developers has no super teams, two members and no polls.
+    # Landscape-developers has no super teams and two members.
     >>> landscape = personset.getByName('landscape-developers')
     >>> [team.name for team in landscape.super_teams]
     []
@@ -374,8 +366,6 @@ are carried over just like when merging people.
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
-    >>> list(IPollSubset(landscape).getAll())
-    []
 
 Now we try to merge them, but since test_team has active members it can't be
 merged.
@@ -427,14 +417,11 @@ active members of the team so that we can perform the merge.
     ...     test_team.retractTeamMembership(team, test_team.teamowner)
     >>> personset.merge(test_team, landscape)
 
-    # The resulting Landscape-developers no new super teams, has
-    # no polls and its members are still the same two from before the
-    # merge.
+    # The resulting Landscape-developers no new super teams and its
+    # members are still the same two from before the merge.
     >>> landscape.teamowner.name
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
     >>> [team.name for team in landscape.super_teams]
-    []
-    >>> list(IPollSubset(landscape).getAll())
     []
