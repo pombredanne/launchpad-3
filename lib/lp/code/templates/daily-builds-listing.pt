@@ -69,14 +69,14 @@
           <tbody>
             <tr tal:repeat="dailybuild dailybuilds">
               <td>
-                <a tal:replace="structure dailybuild/recipebuild/distribution/fmt:link">distribution</a>
+                <a tal:replace="structure dailybuild/archive/distribution/fmt:link">distribution</a>
                 <a tal:attributes="href dailybuild/distro_source_package/fmt:url"
                   tal:content="dailybuild/sourcepackagename/name">source package name</a>
               </td>
 
               <td>
-                <a href="recipe" tal:attributes="href dailybuild/recipebuild/recipe/fmt:url">
-                <span tal:replace="dailybuild/recipebuild/recipe/name">
+                <a href="recipe" tal:attributes="href dailybuild/recipe/fmt:url">
+                <span tal:replace="dailybuild/recipe/name">
                   recipe
                 </span>
                 </a>
