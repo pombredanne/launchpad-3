@@ -232,7 +232,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -1472,6 +1475,38 @@ class Person(
 
         # Since we've updated the database behind Storm's back,
         # flush its caches.
+        store.invalidate()
+
+        # Remove all indirect TeamParticipation entries resulting from this
+        # team. If this were just a select, it would be a complicated but
+        # feasible set of joins. Since it's a delete, we have to use
+        # some sub selects.
+        cur.execute('''
+            DELETE FROM TeamParticipation
+                WHERE
+                    -- The person needs to be a member of the team in question
+                    person IN
+                        (SELECT person from TeamParticipation WHERE
+                            team = %(team)s) AND
+
+                    -- The teams being deleted should be teams that this team
+                    -- is a member of.
+                    team IN
+                        (SELECT team from TeamMembership WHERE
+                            person = %(team)s) AND
+
+                    -- The person needs to not have direct membership in the
+                    -- team.
+                    NOT EXISTS
+                        (SELECT tm1.person from TeamMembership tm1
+                            WHERE
+                                tm1.person = TeamParticipation.person and
+                                tm1.team = TeamParticipation.team and
+                                tm1.status IN %(active_states)s);
+            ''', dict(team=self.id, active_states=ACTIVE_STATES))
+
+        # Since we've updated the database behind Storm's back yet again,
+        # we need to flush its caches, again.
         store.invalidate()
 
         # Remove all members from the TeamParticipation table
@@ -3816,6 +3851,9 @@ class PersonSet:
             raise AssertionError(
                 "Only teams without active members can be merged")
 
+        if from_person.is_team and from_person.super_teams.count() > 0:
+            raise AssertionError(
+                "Only teams without super teams can be merged.")
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)

@@ -1,17 +1,21 @@
-= Google Search Service =
+=====================
+Google Search Service
+=====================
 
 The GoogleSearchService is a Google Custom Service Business Edition
 (cs-be) client. Given one or more terms, it will retrieve an XML
 summary of the matching launchpad.net pages.
 
 
-== GoogleSearchService ==
+GoogleSearchService
+===================
 
 The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces.searchservice import ISearchService
+    >>> from canonical.launchpad.interfaces.searchservice import (
+    ...     ISearchService)
 
     >>> google_search = getUtility(ISearchService)
     >>> verifyObject(ISearchService, google_search)
@@ -20,13 +24,16 @@ The GoogleSearchService implements the ISearchService interface.
     <...GoogleSearchService ...>
 
 
-=== GoogleSearchService search() ===
+----------------------------
+GoogleSearchService search()
+----------------------------
 
 The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
 entered in Google search form; the terms should not be escaped.
 
-    >>> from canonical.launchpad.interfaces.searchservice import ISearchResults
+    >>> from canonical.launchpad.interfaces.searchservice import (
+    ...     ISearchResults)
 
     >>> first_page_matches = google_search.search(terms='bug')
     >>> first_page_matches
@@ -41,7 +48,8 @@ returned, to get the second batch of matches, you would use start=20.
     <...PageMatches ...>
 
 
-== PageMatches ==
+PageMatches
+===========
 
 The PageMatches object returned by GoogleSearchService.search()
 implements ISearchResults.
@@ -106,7 +114,8 @@ An empty PageMatches is returns if there are no results.
     0
 
 
-== PageMatch ==
+PageMatch
+=========
 
 The PageMatch object represents a single result from a search result
 set. It is created by passing a title, url, and a summary. It is
@@ -138,7 +147,8 @@ mapped to the local environment.
     'http://launchpad.dev/unicode-titles'
 
 
-== Search configuration ==
+Search configuration
+====================
 
 The google search service is configured by the google section in
 lazr.config. All requests are made to Google's site, but the
@@ -183,7 +193,8 @@ the time of the search.
     start : 0
 
 
-== create_search_url() ==
+create_search_url()
+===================
 
 The search url used inside the search() method is created by
 create_search_url(). It accepts two optional arguments: terms and start.
@@ -229,7 +240,8 @@ The start parameter can be changed by passing a start int argument.
     'http://launchpad.dev:.../...q=svg+%2Bbugs&start=20'
 
 
-== Google Search Protocol parsing ==
+Google Search Protocol parsing
+==============================
 
 The GoogleSearchService's _parse_google_search_protocol() requires a
 subset of the GSP 3.2 markup to create the PageMatch and PageMatches
@@ -282,6 +294,22 @@ be raised.
      ...
     GoogleWrongGSPVersion: Could not get the 'total' from the
                            GSP XML response.
+
+On the other hand, if the total is ever less than zero (see bug 683115),
+this is expected: we simply return a total of 0.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-negative-total.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="1">
+    <M>-1</M>...
+
+    >>> google_search._parse_google_search_protocol(gsp_xml).total
+    0
 
 A PageMatch requires a title, url, and a summary. If those elements
 ('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch
@@ -343,7 +371,7 @@ vhosts. The edge vhost has no summary, so it is skipped.
     ...
     <R N="1">
     <U>https://blueprints.edge.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
-    <UE>https://blueprints.edge.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <UE>https://blueprints.edge.launchpad.net.../%2Bspec/gobuntu-hardy</UE>
     <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
     <RK>0</RK>
     <S></S>
@@ -504,7 +532,9 @@ tags about every 40 characters.
       tracker allows collaboration'
 
 
-=== URL rewriting ===
+-------------
+URL rewriting
+-------------
 
 The URL scheme used in the rewritten URL is configured in
 config.google.url_rewrite_scheme. The hostname is set in the shared
@@ -557,7 +587,9 @@ is only run in one environment, so links to that site will be preserved.
     'https://help.launchpad.net/OpenID'
 
 
-=== Graceful handling of timeouts ===
+-----------------------------
+Graceful handling of timeouts
+-----------------------------
 
 The external service (Google Search Engine) may not be available, or
 is not responding quickly because there are network issues. In these

@@ -9,9 +9,9 @@ import os
 
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.utils import (
-    DpkgSourceError,
     determine_binary_file_type,
     determine_source_file_type,
+    DpkgSourceError,
     extract_dpkg_source,
     re_isadeb,
     re_issource,
@@ -237,7 +237,7 @@ class TestFilenameRegularExpressions(TestCase):
         extensions = (
             'dsc', 'tar.gz', 'tar.bz2', 'diff.gz', 'orig.tar.gz',
             'orig.tar.bz2', 'orig-bar.tar.gz', 'orig-bar.tar.bz2',
-            'debian.tar.gz', 'debian.tar.bz2')
+            'orig-foo_bar.tar.gz', 'debian.tar.gz', 'debian.tar.bz2')
         for extension in extensions:
             self.assertEquals(
                 ('foo-bar', '1.0', extension),

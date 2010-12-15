@@ -119,11 +119,11 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
     Whiteboard,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 

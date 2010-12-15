@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 
 """Test for code review."""
 
@@ -17,6 +17,7 @@ from canonical.launchpad.windmill.testing.widgets import (
     search_and_select_picker_widget,
     )
 from lp.code.windmill.testing import CodeWindmillLayer
+from canonical.launchpad.windmill.testing import constants
 from lp.testing import (
     login_person,
     WindmillTestCase,
@@ -49,6 +50,7 @@ class TestRequestReview(WindmillTestCase):
         client.waits.forPageLoad(timeout=u'10000')
 
         link = u'//a[@class="menu-link-register_merge sprite add"]'
+        client.waits.forElement(xpath=link, timeout=constants.FOR_ELEMENT)
         client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')

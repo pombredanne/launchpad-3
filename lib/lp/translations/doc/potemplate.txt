@@ -626,7 +626,10 @@ instead, we get a tarball with all those files.
     >>> print exported_translation_file.content_type
     application/x-gtar
 
-Inspecting the tarball content, we have the list of entries exported.
+Inspecting the tarball content, we have the list of entries exported. This
+includes the 'pt' POFile that was created earlier on the 'evolution'
+product as this is sharing translations with the source package that this
+potemplate is from.
 
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
@@ -637,7 +640,7 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> sorted(name.rstrip('/') for name in tarfile.getnames())
     ['evolution-2.2', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
-     'po', 'po/evolution-2.2.pot']
+     'po', 'po/evolution-2.2-pt.po', 'po/evolution-2.2.pot']
 
 The *-es.po file is indeed the Spanish translation...
 
@@ -656,6 +659,7 @@ And GNU tar can cope with it.
     evolution-2.2/evolution-2.2-ja.po
     evolution-2.2/evolution-2.2-xh.po
     po/
+    po/evolution-2.2-pt.po
     po/evolution-2.2.pot
     >>> pofile = simple_popen2(
     ...     ['tar', 'zxfO', '-', 'evolution-2.2/evolution-2.2-es.po'],

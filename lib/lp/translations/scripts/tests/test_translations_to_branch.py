@@ -72,7 +72,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             template, singular='Hello World', sequence=1)
         pofile = self.factory.makePOFile(
             'nl', potemplate=template, owner=product.owner)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translator=product.owner, reviewer=product.owner,
             translations=['Hallo Wereld'])

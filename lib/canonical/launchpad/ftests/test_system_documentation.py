@@ -280,12 +280,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests = [
-        # XXX gary 2008-12-06 bug=305856: Spurious test failure
-        # discovered on buildbot, build 40.  Note that, to completely
-        # disable the test from running, the filename has been changed
-        # to emailinterface.txt.disabled, so when this test is
-        # reinstated it will be need to be changed back.
-        # '../../../lp/answers/doc/emailinterface.txt',
+        '../../../lp/answers/tests/emailinterface.txt',
         '../../../lp/bugs/tests/bugs-emailinterface.txt',
         '../../../lp/bugs/doc/bugs-email-affects-path.txt',
         '../doc/emailauthentication.txt',

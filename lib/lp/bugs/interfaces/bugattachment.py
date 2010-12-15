@@ -39,7 +39,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from lp.services.fields import RestrictedBytes, Title
+from lp.services.fields import Title
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -115,7 +115,7 @@ class IBugAttachment(IHasBug):
     libraryfile = Bytes(title=_("The attachment content."),
               required=True)
     data = exported(
-        RestrictedBytes(title=_("The attachment content."),
+        Bytes(title=_("The attachment content."),
               required=True,
               readonly=True))
     message = exported(

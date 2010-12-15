@@ -2,7 +2,7 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
@@ -980,10 +980,10 @@ COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
 validated this translation. Being 0 the value that says this row has not been
 validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
-COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
-is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
-is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
+is being used in Ubuntu.';
+COMMENT ON COLUMN TranslationMessage.is_current_upstream IS 'Whether this translation
+is being used upstream.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
 
@@ -1788,7 +1788,8 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time a
 COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2046,7 +2047,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.by_maintainer IS 'Notes whether this upload was done by the maintiner of the package or project.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';

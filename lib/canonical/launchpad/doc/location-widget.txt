@@ -28,7 +28,7 @@ When rendering salgado's location widget to himself, we'll center the
 map around the location where he seems to be, based on the IP address of
 the request.
 
-    >>> login(salgado.preferredemail.email)
+    >>> login_person(salgado)
     >>> widget = LocationWidget(bound_field, request)
     >>> widget.zoom
     7
@@ -65,7 +65,7 @@ location.
 
     >>> kamion = getUtility(IPersonSet).getByName('kamion')
     >>> bound_field = field.bind(kamion)
-    >>> login(kamion.preferredemail.email)
+    >>> login_person(kamion)
     >>> widget = LocationWidget(bound_field, request)
     >>> widget.zoom
     9
@@ -148,7 +148,7 @@ the map.
     >>> bound_field = field.bind(kamion)
     >>> request = LaunchpadTestRequest(
     ...     environ={'REMOTE_ADDR': '201.13.165.145'})
-    >>> login(kamion.preferredemail.email)
+    >>> login_person(kamion)
     >>> widget = LocationWidget(bound_field, request)
     >>> print widget()
     <input...name="field.location.latitude"...type="hidden"...
@@ -173,7 +173,7 @@ access ba-ws.geonames.net's service.
     >>> print widget.map_javascript
     <BLANKLINE>
     <script type="text/javascript">
-        YUI().use('node', 'lp.app.mapping', function(Y) {
+        LPS.use('node', 'lp.app.mapping', function(Y) {
             function renderMap() {
                 Y.lp.app.mapping.renderPersonMap(
                     52.2, 0.3, "Colin Watson",

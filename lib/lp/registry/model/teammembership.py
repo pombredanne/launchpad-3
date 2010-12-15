@@ -60,6 +60,7 @@ from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
     )
 from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
     CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ITeamMembership,
@@ -67,9 +68,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamParticipation,
     TeamMembershipStatus,
     )
-
-
-ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class TeamMembership(SQLBase):

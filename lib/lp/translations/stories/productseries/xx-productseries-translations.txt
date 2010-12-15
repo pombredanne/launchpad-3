@@ -22,17 +22,15 @@ Listing languages with translations is best checked with a helper method.
     ...         print "No translations."
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     print "%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed")
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
     ...         untranslated = extract_text(cols[2])
     ...         unreviewed = extract_text(cols[3])
-    ...         changed = extract_text(cols[4])
-    ...         print "%-25s %13d %13d %13d" % (
-    ...             language,
-    ...             int(untranslated), int(unreviewed), int(changed))
+    ...         print "%-25s %13d %13d" % (
+    ...             language, int(untranslated), int(unreviewed))
 
 When there are no translatable templates, series is considered as not
 being set up for translation.
@@ -80,8 +78,8 @@ of existing translations is shown.
 
     >>> browser.open(frobnicator_trunk_url)
     >>> print_language_stats(browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Serbian                               6             5             2
+    Language                   Untranslated    Unreviewed
+    Serbian                               6             5
 
 Since there is only one template, language link directly to PO file
 pages.
@@ -104,8 +102,8 @@ Statistics add up for untranslated messages.
 
     >>> browser.open(frobnicator_trunk_url)
     >>> print_language_stats(browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Serbian                              11             5             2
+    Language                   Untranslated    Unreviewed
+    Serbian                              11             5
 
 With more than one template, link points to a product series per-language
 translations page.

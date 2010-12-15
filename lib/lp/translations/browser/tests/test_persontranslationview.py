@@ -55,7 +55,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
             if previously_worked_on:
                 potmsgset = self.factory.makePOTMsgSet(
                     potemplate=pofile.potemplate, singular='x', sequence=1)
-                self.factory.makeTranslationMessage(
+                self.factory.makeCurrentTranslationMessage(
                     potmsgset=potmsgset, pofile=pofile,
                     translator=self.view.context, translations=['y'])
 

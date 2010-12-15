@@ -592,7 +592,7 @@ class SourcePackageRelease(SQLBase):
 
         return change
 
-    def attachTranslationFiles(self, tarball_alias, is_published,
+    def attachTranslationFiles(self, tarball_alias, by_maintainer,
                                importer=None):
         """See ISourcePackageRelease."""
         tarball = tarball_alias.read()
@@ -603,7 +603,7 @@ class SourcePackageRelease(SQLBase):
         queue = getUtility(ITranslationImportQueue)
 
         queue.addOrUpdateEntriesFromTarball(
-            tarball, is_published, importer,
+            tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
             distroseries=self.upload_distroseries,
             filename_filter=_filter_ubuntu_translation_file)

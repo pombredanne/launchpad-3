@@ -339,13 +339,13 @@
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
-            interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            interface="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            set_schema="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
