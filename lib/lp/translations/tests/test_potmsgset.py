@@ -287,7 +287,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         serbian = sr_pofile.language
 
         # A shared translation matches the current one.
-        shared_translation = self.factory.makeSharedTranslationMessage(
+        shared_translation = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
             self.potmsgset.getSharedTranslation(
@@ -494,9 +494,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If only a current, non-imported translation exists, it's not
         # changed in Ubuntu.
-        current_shared = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_current_upstream=False)
+        current_shared = self.factory.makeCurrentTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -504,10 +503,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If the current upstream translation is also current in Ubuntu,
         # it's not changed in Ubuntu.
-        current_shared.makeCurrentUbuntu(False)
-        imported_shared = self.factory.makeSharedTranslationMessage(
+        imported_shared = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_current_upstream=True)
+            current_other=True)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -515,18 +513,19 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there's a current, diverged translation, and an imported
         # non-current one, it's changed in Ubuntu.
-        imported_shared.makeCurrentUbuntu(False)
         current_diverged = self.factory.makeCurrentTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset,
-            current_other=False)
+            pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             True)
 
-        # If the upstream one is shared and used in Ubuntu, yet there is
-        # a diverged Ubuntu translation as well, it is changed in Ubuntu.
-        imported_shared.makeCurrentUbuntu(False)
+        # If the there is  a different non-diverged translations,
+        # it's changed in Ubuntu.
+        current = self.factory.makeCurrentTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertTrue(current.is_current_upstream)
+        self.assertTrue(imported_shared.is_current_ubuntu)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -767,8 +766,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
 
         # Shared translation is generated.
-        shared = credits_potmsgset.getCurrentTranslation(
-            None, sr_pofile.language, TranslationSide.UPSTREAM)
+        shared = credits_potmsgset.getSharedTranslation(
+            sr_pofile.language, sr_pofile.potemplate.translation_side)
         self.assertNotEquals(diverged_credits, shared)
         self.assertIsNot(None, shared)
 
@@ -1718,7 +1717,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
             for form in xrange(forms))
 
     def test_baseline(self):
-        # setCurrentTranslation sets the current upstream translation
+        # setCurrentTranslation sets the current translation
         # for a message.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         translations = self._makeTranslations(potmsgset)
@@ -1727,8 +1726,9 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message, potmsgset.getOtherTranslation(
-            pofile.language, pofile.potemplate.translation_side))
+        self.assertEqual(message, potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language,
+            pofile.potemplate.translation_side))
         self.assertEqual(origin, message.origin)
 
     def test_identical(self):
@@ -1748,15 +1748,15 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         self.assertEqual(pofile.potemplate.owner, message.submitter)
         self.assertEqual(RosettaTranslationOrigin.ROSETTAWEB, message.origin)
 
-    def test_upstream_also_sets_initial_ubuntu(self):
-        # Setting an upstream translation also initializes the Ubuntu
-        # translation.
+    def test_share_with_other_side(self):
+        # If requested, the translation can also be set on the other side.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         translations = self._makeTranslations(potmsgset)
         origin = RosettaTranslationOrigin.ROSETTAWEB
 
         message = potmsgset.setCurrentTranslation(
-            pofile, pofile.potemplate.owner, translations, origin)
+            pofile, pofile.potemplate.owner, translations, origin,
+            share_with_other_side=True)
 
         self.assertEqual(message, potmsgset.getOtherTranslation(
             pofile.language, pofile.potemplate.translation_side))
