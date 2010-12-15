@@ -109,6 +109,12 @@ def test_break_long_words():
 
 class TestLinkifyingProtocols(TestCase):
 
+    def test_protocol_alone_does_not_link(self):
+        test_string = "This doesn't link: http://"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = "<p>This doesn't link: http://</p>"
+        self.assertEqual(expected_html, html)
+
     def test_apt_is_linked(self):
         test_string = 'This becomes a link: apt:some-package'
         html = FormattersAPI(test_string).text_to_html()
