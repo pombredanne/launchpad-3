@@ -1626,10 +1626,10 @@ class POTMsgSet(SQLBase):
         if not self.is_translation_credit:
             return
 
-        shared_upstream_translation = self.getOtherTranslation(
+        shared_translation = self.getSharedTranslation(
             pofile.language, pofile.potemplate.translation_side)
 
-        if shared_upstream_translation is not None:
+        if shared_translation is not None:
             return
 
         # The credits message has a fixed "translator."

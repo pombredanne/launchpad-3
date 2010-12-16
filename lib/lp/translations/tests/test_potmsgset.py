@@ -751,17 +751,19 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
-        diverged_credits = credits_potmsgset.setCurrentTranslation(
-            sr_pofile, sr_pofile.potemplate.owner, {0: 'credits'},
-            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        diverged_credits = self.factory.makeCurrentTranslationMessage(
+            sr_pofile, credits_potmsgset)
         # Since translation credits are special, we can't easily create
         # a diverged translation on it, though it may already exist in
         # the DB.
         removeSecurityProxy(diverged_credits).potemplate = (
             sr_pofile.potemplate)
         # Make sure that worked (not a real test).
-        self.assertTrue(diverged_credits.is_current_upstream)
-        self.assertEquals(sr_pofile.potemplate, diverged_credits.potemplate)
+        test_diverged_credits = credits_potmsgset.getCurrentTranslation(
+            sr_pofile.potemplate, sr_pofile.language,
+            sr_pofile.potemplate.translation_side)
+        self.assertTrue(test_diverged_credits.is_current_upstream)
+        self.assertEquals(sr_pofile.potemplate, test_diverged_credits.potemplate)
 
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
 
