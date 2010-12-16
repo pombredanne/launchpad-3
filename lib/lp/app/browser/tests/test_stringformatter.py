@@ -130,8 +130,31 @@ class TestLinkifyingProtocols(TestCase):
 
         self.assertEqual(
             expected_strings,
-            [FormattersAPI(text).text_to_html() for text in test_strings]
-        )
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+    
+    def test_parens_handled_well(self):
+        test_strings = [
+            '(http://example.com)',
+            'http://example.com/path_(with_parens)',
+            '(http://example.com/path_(with_parens))',
+            ]
+
+        expected_html = [
+            ('<p>(<a rel="nofollow" href="http://example.com">'
+             'http://<wbr></wbr>example.<wbr></wbr>com</a>)</p>'),
+            ('<p><a rel="nofollow" href="http://example.com/path_(with_parens)">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
+             '<wbr></wbr>(with_parens)</a></p>'),
+            ('<p>(<a rel="nofollow" '
+             'href="http://example.com/path_(with_parens)">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
+             '<wbr></wbr>(with_parens)</a>)</p>'),
+            ]
+        
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
 
     def test_protocol_alone_does_not_link(self):
         test_string = "This doesn't link: apt:"
@@ -145,7 +168,7 @@ class TestLinkifyingProtocols(TestCase):
         self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
-        test_string = 'This becomes a link: apt:some-package'
+        test_strings = 'This becomes a link: apt:some-package'
         html = FormattersAPI(test_string).text_to_html()
         expected_html = (
             '<p>This becomes a link: '

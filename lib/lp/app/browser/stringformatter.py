@@ -201,6 +201,22 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _handle_parens_in_trailers(url, trailers):
+        opencount = url.count('(')
+        closedcount = url.count(')')
+        missing = opencount - closedcount
+        slice_idx = 0
+        while slice_idx < missing:
+            if trailers[slice_idx] == ')':
+                slice_idx += 1
+            else:
+                break
+        url += trailers[:slice_idx]
+        trailers = trailers[slice_idx:]
+        return url, trailers
+        
+
+    @staticmethod
     def _split_url_and_trailers(url):
         """Given a URL return a tuple of the URL and punctuation trailers.
 
@@ -216,7 +232,7 @@ class FormattersAPI:
             url = url[:-len(trailers)]
         else:
             trailers = ''
-        return url, trailers
+        return FormattersAPI._handle_parens_in_trailers(url, trailers)
 
     @staticmethod
     def _linkify_bug_number(text, bugnum, trailers=''):
