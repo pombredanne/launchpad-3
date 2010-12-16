@@ -378,10 +378,10 @@ the notification message is properly encoded.
 
 
 == Posting privileges ==
-
 Message approvals are also used to derived posting privileges for non-team
 members.  To start with, only the team owner can post to the list.
 
+    >>> login('no-priv@canonical.com')
     >>> team_three, list_three = mailinglists_helper.new_team(
     ...     'test-three', True)
     >>> sorted(email.email for email in list_three.getSenderAddresses())
@@ -483,7 +483,7 @@ twice, once as posted from Malone, and once as held by Mailman.
     ...         return self
     ...     signature = object()
 
-    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> from lp.bugs.mail.handler import MaloneHandler
     >>> from email import message_from_string
     >>> malone_msg = message_from_string(message_text, _class=SignedMessage)
 

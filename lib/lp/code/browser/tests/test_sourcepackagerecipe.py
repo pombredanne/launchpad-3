@@ -25,6 +25,7 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    get_radio_button_text_for_field,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
@@ -41,6 +42,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
@@ -411,6 +413,132 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEqual(
             get_message_text(browser, 2),
             'Recipe may not refer to private branch: %s' % bzr_identity)
+
+    def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
+        # If the user creating a recipe has no existing PPAs, the selector
+        # isn't shown, but the field to enter a new PPA name is.
+        self.user = self.factory.makePerson(password='test')
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has an initial value.
+        self.assertEqual('ppa', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertIs(None, ppa_chooser)
+        # There is a hidden option to say create a new ppa.
+        ppa_options = content.find(attrs={'name': 'field.use_ppa'})
+        self.assertEqual('input', ppa_options.name)
+        self.assertEqual('hidden', ppa_options['type'])
+        self.assertEqual('create-new', ppa_options['value'])
+
+    def test_ppa_selector_shown_if_user_has_ppas(self):
+        # If the user creating a recipe has existing PPAs, the selector is
+        # shown, along with radio buttons to decide whether to use an existing
+        # ppa or to create a new one.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has no initial value.
+        self.assertEqual('', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertEqual('select', ppa_chooser.name)
+        ppa_options = list(
+            get_radio_button_text_for_field(content, 'use_ppa'))
+        self.assertEqual(
+            ['(*) Use an existing PPA',
+             '( ) Create a new PPA for this recipe'''],
+            ppa_options)
+
+    def test_create_new_ppa(self):
+        # If the user doesn't have any PPAs, a new once can be created.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = self.user.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
+    def test_create_new_ppa_duplicate(self):
+        # If a new PPA is being created, and the user already has a ppa of the
+        # name specifed an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        # Make a PPA called 'ppa' using the default.
+        self.user.createPPA(name='foo')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create a new PPA').click()
+        browser.getControl(name='field.ppa_name').value = 'foo'
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You already have a PPA named 'foo'.")
+
+    def test_create_new_ppa_missing_name(self):
+        # If a new PPA is being created, and the user has not specified a
+        # name, an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl(name='field.ppa_name').value = ''
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You need to specify a name for the PPA.")
+
+    def test_create_new_ppa_owned_by_recipe_owner(self):
+        # The new PPA that is created is owned by the recipe owner.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        team = self.factory.makeTeam(
+            name='vikings', members=[self.user],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        branch = self.factory.makeAnyBranch(owner=team)
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl(name='field.owner').value = ['vikings']
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~vikings/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = team.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):

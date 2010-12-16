@@ -26,4 +26,5 @@ RENAME TO tm__language__submitter__idx;
 ALTER TABLE TranslationImportQueueEntry
     RENAME COLUMN is_published TO by_maintainer;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 30, 0)
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 30, 0);
+
