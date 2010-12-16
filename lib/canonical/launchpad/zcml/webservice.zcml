@@ -43,6 +43,19 @@
         <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
+    <!-- Registration for the class that manages an entry's RestrictedBytes
+         fields. -->
+    <adapter
+        for="lazr.restful.interfaces.IEntry
+             lp.services.fields.IRestrictedBytes"
+        provides="lazr.restful.interfaces.IByteStorage"
+        factory="canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage"
+        />
+
+    <class class="canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage">
+        <allow interface='lazr.restful.interfaces.IByteStorage' />
+    </class>
+
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
         for="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"
