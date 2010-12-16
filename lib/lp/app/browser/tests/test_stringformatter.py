@@ -168,7 +168,7 @@ class TestLinkifyingProtocols(TestCase):
         self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
-        test_strings = 'This becomes a link: apt:some-package'
+        test_string = 'This becomes a link: apt:some-package'
         html = FormattersAPI(test_string).text_to_html()
         expected_html = (
             '<p>This becomes a link: '
