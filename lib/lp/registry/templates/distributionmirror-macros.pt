@@ -59,7 +59,7 @@
         Include a blank row after the last entry of a country to provide
         vertical spacing to separate the next country.
       </tal:comment>
-      <tr class="note">
+      <tr class="lesser">
         <td>&nbsp;</td>
       </tr>
 

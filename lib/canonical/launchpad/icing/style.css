@@ -25,8 +25,6 @@
 
 /* === Fonts and colors === */
 
-
-.discreet, .lesser, .duplicate-details {font-size: 90%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 

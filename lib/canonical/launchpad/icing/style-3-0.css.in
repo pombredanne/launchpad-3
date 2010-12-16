@@ -1787,9 +1787,8 @@ a.unofficial-tag {
     color: #F8C300;
     }
 
-
-.note {
-    font-size: 77%;
+.discreet, .lesser, .duplicate-details {
+    font-size: 85%;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
