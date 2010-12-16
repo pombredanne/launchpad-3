@@ -606,8 +606,8 @@ class MessageSharingMerge(LaunchpadScript):
 
         clashing_imported = None
         if message.is_current_upstream:
-            found = target_potmsgset.getOtherTranslation(
-                message.language, target_potemplate.translation_side)
+            found = target_potmsgset.getOtherTranslationMessage(
+                target_potemplate, message.language)
             if found is not None and found.potemplate == target_potemplate:
                 clashing_imported = found
 
