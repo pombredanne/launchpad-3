@@ -287,7 +287,7 @@ retrying the build is not a possibility anymore.
     >>> admin_browser.getControl("Retry Build").click()
     >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
-    Build record active
+    Build retried
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
