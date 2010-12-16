@@ -427,6 +427,25 @@ Another paragraph
       <contents>QSBwYXRjaA==</contents>
     </attachment>
   </comment>
+  <comment>
+    <!-- empty comment -->
+    <sender name="nobody"/>
+    <date>2005-01-01T14:00:00Z</date>
+    <text></text>
+  </comment>
+  <comment>
+    <!-- empty comment with attachment -->
+    <sender name="nobody"/>
+    <date>2005-01-01T15:00:00Z</date>
+    <text></text>
+    <attachment>
+      <type>UNSPECIFIED</type>
+      <filename>hello.txt</filename>
+      <title>Hello</title>
+      <mimetype>text/plain</mimetype>
+      <contents>SGVsbG8gd29ybGQ=</contents>
+    </attachment>
+  </comment>
 </bug>'''
 
 duplicate_bug = '''\
@@ -524,11 +543,13 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bugtask.milestone, None)
         self.assertEqual(bugtask.milestone.name, 'future')
 
-        # there are three comments:
-        self.assertEqual(bug.messages.count(), 3)
+        # there are five comments:
+        self.assertEqual(bug.messages.count(), 5)
         message1 = bug.messages[0]
         message2 = bug.messages[1]
         message3 = bug.messages[2]
+        message4 = bug.messages[3]
+        message5 = bug.messages[4]
 
         # Message 1:
         self.assertEqual(message1.owner.preferredemail.email,
@@ -580,6 +601,29 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment2.libraryfile.filename, 'foo.patch')
         # mime type forced to text/plain because we have a patch
         self.assertEqual(attachment2.libraryfile.mimetype, 'text/plain')
+
+        # Message 4:
+        self.assertEqual(message4.owner.preferredemail.email,
+                         'bug-importer@launchpad.net')
+        self.assertEqual(message4.datecreated.isoformat(),
+                         '2005-01-01T14:00:00+00:00')
+        self.assertEqual(message4.subject, 'Re: A test bug')
+        self.assertEqual(message4.text_contents, '<empty comment>')
+        self.assertEqual(message4.bugattachments.count(), 0)
+
+        # Message 5:
+        self.assertEqual(message5.owner.preferredemail.email,
+                         'bug-importer@launchpad.net')
+        self.assertEqual(message5.datecreated.isoformat(),
+                         '2005-01-01T15:00:00+00:00')
+        self.assertEqual(message5.subject, 'Re: A test bug')
+        self.assertEqual(message5.text_contents, '')
+        self.assertEqual(message5.bugattachments.count(), 1)
+        attachment = message5.bugattachments[0]
+        self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
+        self.assertEqual(attachment.title, 'Hello')
+        self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
+        self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
         self.assertNoPendingNotifications(bug)
 
