@@ -27,7 +27,7 @@ Sample Person can access the +mailinglist page.
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 No Privileges Person is added as a member of the Aardvarks.
@@ -39,7 +39,7 @@ But regular members can't access the +mailinglist page.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     False
 
 Sample Person trusts No Privileges Person so she makes no-priv a team
@@ -60,7 +60,7 @@ Now No Privileges Person has permission to request mailing lists.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 
@@ -81,7 +81,7 @@ no communication between the two systems.
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> an_expert = list(celebrities.mailing_list_experts.allmembers)[0]
+    >>> an_expert = list(celebrities.registry_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]
 
     >>> def create_view(principal, form=None):

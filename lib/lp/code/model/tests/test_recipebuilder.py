@@ -298,6 +298,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
         job = self.makeJob()
+        test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer", OkSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]

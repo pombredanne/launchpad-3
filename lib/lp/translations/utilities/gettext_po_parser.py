@@ -26,7 +26,7 @@ import pytz
 from zope import datetime as zope_datetime
 from zope.interface import implements
 
-from canonical.launchpad.versioninfo import revno
+from lp.app.versioninfo import revno
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationHeaderData,
     )

@@ -338,7 +338,7 @@ purge mailing lists.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> test = person_set.getByName('name12')
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> ignored = experts.addMember(test, reviewer=experts.teamowner)
     >>> logout()
     >>> transaction.commit()
