@@ -563,7 +563,7 @@ def notify_new_ppa_subscription(subscription, event):
         recipient_subscriptions_url = "%s/+archivesubscriptions" % (
             canonical_url(person))
         description_blurb = '.'
-        if ppa_description:
+        if ppa_description is not None and ppa_description != '':
             description_blurb = ' and has the following description:\n%s' % (
                 ppa_description)
         replacements = {
