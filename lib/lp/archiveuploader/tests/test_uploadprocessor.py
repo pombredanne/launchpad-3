@@ -2033,6 +2033,44 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertIsNot(None, build.duration)
         self.assertIsNot(None, build.upload_log)
 
+    def testBuildWithInvalidStatus(self):
+        # Builds with an invalid (non-UPLOADING) status should trigger
+        # a warning but be left alone.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        source_pub = self.publishPackage('bar', '1.0-1')
+        [build] = source_pub.createMissingBuilds()
+
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1", name="bar")
+        queue_item.setDone()
+
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.status = BuildStatus.BUILDING
+
+        shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", queue_entry=leaf_name)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        last_stub_mail_count = len(stub.test_emails)
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+        # The build status is not changed
+        self.assertTrue(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertEquals(BuildStatus.BUILDING, build.status)
+        self.assertLogContains(
+            "Expected build status to be 'UPLOADING', was BUILDING. "
+            "Ignoring.")
+
 
 class ParseBuildUploadLeafNameTests(TestCase):
     """Tests for parse_build_upload_leaf_name."""
