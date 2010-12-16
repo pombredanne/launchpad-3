@@ -510,36 +510,39 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bug, None)
         # check bug attributes
         self.assertEqual(bug.owner.preferredemail.email, 'foo@example.com')
-        self.assertEqual(bug.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            bug.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(bug.title, 'A test bug')
         self.assertEqual(bug.description, 'A modified bug description')
         self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
-        self.assertEqual(sorted(cve.sequence for cve in bug.cves),
-                         ['2005-2730', '2005-2736', '2005-2737'])
+        self.assertEqual(
+            sorted(cve.sequence for cve in bug.cves),
+            ['2005-2730', '2005-2736', '2005-2737'])
         self.assertEqual(bug.tags, ['bar', 'foo'])
         self.assertEqual(len(bug.getDirectSubscribers()), 2)
-        self.assertEqual(sorted(person.preferredemail.email
-                                for person in bug.getDirectSubscribers()),
-                         ['foo@example.com', 'test@canonical.com'])
+        self.assertEqual(
+            sorted(person.preferredemail.email for person in
+                bug.getDirectSubscribers()),
+            ['foo@example.com', 'test@canonical.com'])
         # There are two bug watches
         self.assertEqual(bug.watches.count(), 2)
-        self.assertEqual(sorted(watch.url for watch in bug.watches),
-                         ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
-                          'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
+        self.assertEqual(
+            sorted(watch.url for watch in bug.watches),
+            ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
+            'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):
         self.assertEqual(len(bug.bugtasks), 1)
         bugtask = bug.bugtasks[0]
         self.assertEqual(bugtask.product, product)
-        self.assertEqual(bugtask.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            bugtask.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(bugtask.importance, BugTaskImportance.HIGH)
         self.assertEqual(bugtask.status, BugTaskStatus.CONFIRMED)
-        self.assertEqual(bugtask.assignee.preferredemail.email,
-                         'bar@example.com')
+        self.assertEqual(
+            bugtask.assignee.preferredemail.email, 'bar@example.com')
         self.assertNotEqual(bugtask.milestone, None)
         self.assertEqual(bugtask.milestone.name, 'future')
 
@@ -552,10 +555,10 @@ class ImportBugTestCase(unittest.TestCase):
         message5 = bug.messages[4]
 
         # Message 1:
-        self.assertEqual(message1.owner.preferredemail.email,
-                         'foo@example.com')
-        self.assertEqual(message1.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            message1.owner.preferredemail.email, 'foo@example.com')
+        self.assertEqual(
+            message1.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(message1.subject, 'A test bug')
         self.assertEqual(message1.text_contents, 'Original description')
         self.assertEqual(message1.bugattachments.count(), 1)
@@ -566,19 +569,19 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
         # Message 2:
-        self.assertEqual(message2.owner.preferredemail.email,
-                         'bug-importer@launchpad.net')
-        self.assertEqual(message2.datecreated.isoformat(),
-                         '2005-01-01T11:00:00+00:00')
+        self.assertEqual(
+            message2.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message2.datecreated.isoformat(), '2005-01-01T11:00:00+00:00')
         self.assertEqual(message2.subject, 'Re: A test bug')
-        self.assertEqual(message2.text_contents,
-                         'A comment from an anonymous user')
+        self.assertEqual(
+            message2.text_contents, 'A comment from an anonymous user')
 
         # Message 3:
-        self.assertEqual(message3.owner.preferredemail.email,
-                         'mark@example.com')
-        self.assertEqual(message3.datecreated.isoformat(),
-                         '2005-01-01T13:00:00+00:00')
+        self.assertEqual(
+            message3.owner.preferredemail.email, 'mark@example.com')
+        self.assertEqual(
+            message3.datecreated.isoformat(), '2005-01-01T13:00:00+00:00')
         self.assertEqual(message3.subject, 'Re: A test bug')
         self.assertEqual(
             message3.text_contents,
@@ -603,19 +606,19 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment2.libraryfile.mimetype, 'text/plain')
 
         # Message 4:
-        self.assertEqual(message4.owner.preferredemail.email,
-                         'bug-importer@launchpad.net')
-        self.assertEqual(message4.datecreated.isoformat(),
-                         '2005-01-01T14:00:00+00:00')
+        self.assertEqual
+            message4.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
         self.assertEqual(message4.subject, 'Re: A test bug')
         self.assertEqual(message4.text_contents, '<empty comment>')
         self.assertEqual(message4.bugattachments.count(), 0)
 
         # Message 5:
-        self.assertEqual(message5.owner.preferredemail.email,
-                         'bug-importer@launchpad.net')
-        self.assertEqual(message5.datecreated.isoformat(),
-                         '2005-01-01T15:00:00+00:00')
+        self.assertEqual(
+            message5.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message5.datecreated.isoformat(), '2005-01-01T15:00:00+00:00')
         self.assertEqual(message5.subject, 'Re: A test bug')
         self.assertEqual(message5.text_contents, '')
         self.assertEqual(message5.bugattachments.count(), 1)
