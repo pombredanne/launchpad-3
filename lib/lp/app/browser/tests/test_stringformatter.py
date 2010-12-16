@@ -157,7 +157,6 @@ class TestLinkifyingProtocols(TestCase):
             expected_html,
             [FormattersAPI(text).text_to_html() for text in test_strings])
 
-
     def test_protocol_alone_does_not_link(self):
         test_string = "This doesn't link: apt:"
         html = FormattersAPI(test_string).text_to_html()
