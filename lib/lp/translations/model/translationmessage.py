@@ -45,7 +45,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.interfaces.side import TranslationSide
 
 
 UTC = pytz.timezone('UTC')

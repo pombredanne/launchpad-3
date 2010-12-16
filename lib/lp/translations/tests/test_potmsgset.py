@@ -246,7 +246,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             self.stable_potemplate, serbian), shared_translation)
 
-
     def test_getOtherTranslation(self):
         """Test how shared and diverged current translation messages
         interact."""
@@ -763,7 +762,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             sr_pofile.potemplate, sr_pofile.language,
             sr_pofile.potemplate.translation_side)
         self.assertTrue(test_diverged_credits.is_current_upstream)
-        self.assertEquals(sr_pofile.potemplate, test_diverged_credits.potemplate)
+        self.assertEquals(
+            sr_pofile.potemplate, test_diverged_credits.potemplate)
 
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
 

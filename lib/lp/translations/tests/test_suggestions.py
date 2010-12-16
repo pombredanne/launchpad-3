@@ -9,7 +9,6 @@ from datetime import (
     )
 import unittest
 
-import gettextpo
 from pytz import timezone
 import transaction
 from zope.component import getUtility

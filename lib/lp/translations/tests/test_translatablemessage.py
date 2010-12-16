@@ -13,7 +13,6 @@ from datetime import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage

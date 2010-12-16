@@ -7,10 +7,7 @@ __all__ = [
     'make_translationmessage_for_context',
     ]
 
-from storm.expr import (
-    Coalesce,
-    Or,
-    )
+from storm.expr import Or
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

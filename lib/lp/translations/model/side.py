@@ -43,6 +43,7 @@ class TranslationSideTraits:
         naked_tm = removeSecurityProxy(translationmessage)
         setattr(naked_tm, self.flag_name, value)
 
+
 class TranslationSideTraitsSet:
     """See `ITranslationSideTraitsSet`."""
     implements(ITranslationSideTraitsSet)

@@ -594,7 +594,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
+
         # The is_current_ubuntu and is_current_upstream flags from the
         # duplicate messages have been merged into a single message,
         # current in both ubuntu and upstream.
