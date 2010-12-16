@@ -22,25 +22,26 @@ class BugImportScript(LaunchpadScript):
     loglevel = logging.INFO
 
     def add_my_options(self):
-        self.parser.add_option('-p', '--product', metavar='PRODUCT',
-                               action='store',
-                               help='Which product to export',
-                               type='string', dest='product', default=None)
-        self.parser.add_option('--cache', metavar='FILE', action='store',
-                               help='Cache for bug ID mapping',
-                               type='string', dest='cache_filename',
-                               default='bug-map.pickle')
+        self.parser.add_option(
+            '-p', '--product', metavar='PRODUCT', action='store',
+            help='Which product to export', type='string', dest='product',
+            default=None)
+        self.parser.add_option(
+            '--cache', metavar='FILE', action='store',
+            help='Cache for bug ID mapping', type='string',
+            dest='cache_filename', default='bug-map.pickle')
         # XXX: jamesh 2007-04-11 bugs=86352
         # Not verifying users created by a bug import can result in
         # problems with mail notification, so should not be used for
         # imports.
-        self.parser.add_option('--dont-verify-users', dest='verify_users',
-                               help="Don't verify newly created users",
-                               action='store_false', default=True)
-        self.parser.add_option('--allow-empty-comments',
-                               dest='allow_empty_comments',
-                               help="Allow empty bug comments",
-                               action='store_true', default=False)
+        self.parser.add_option(
+            '--dont-verify-users', dest='verify_users',
+            help="Don't verify newly created users", action='store_false',
+            default=True)
+        self.parser.add_option(
+            '--allow-empty-comments', dest='allow_empty_comments',
+            help="Allow empty bug comments", action='store_true',
+            default=False)
 
     def main(self):
         if self.options.product is None:
