@@ -408,9 +408,9 @@ class BugImporter:
         if date is None:
             raise BugXMLSyntaxError('No date for comment %r' % title)
         text = get_value(commentnode, 'text')
-        # If there is no attachment and no comment text, use a place-holder
-        no_attachments = get_element (commentnode, 'attachment') == None
-        if no_attachments and (text is None or text == ''):
+        # If there is no comment text and no attachment, use a place-holder
+        if ((text is None or text == '') and
+            get_element(commentnode, 'attachment') is None):
             text = '<empty comment>'
         return getUtility(IMessageSet).fromText(title, text, sender, date)
 
