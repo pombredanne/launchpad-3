@@ -12,6 +12,7 @@ Example:
 """
 import _pythonpath # Not lint, actually needed.
 
+from multiprocessing import Process
 import optparse
 import os
 import sys
@@ -32,6 +33,31 @@ def write(filename, content):
     f.close()
 
 
+def make_files(path_template, directory, version, force):
+    wadl_filename = path_template % {'version': version}
+    # If the WADL file doesn't exist or we're being forced to regenerate
+    # it...
+    if (not os.path.exists(wadl_filename) or force):
+        print "Writing WADL for version %s to %s." % (
+            version, wadl_filename)
+        write(wadl_filename, generate_wadl(version))
+    else:
+        print "Skipping already present WADL file:", wadl_filename
+
+    # Now, convert the WADL into an human-readable description and
+    # put the HTML in the same directory as the WADL.
+    html_filename = os.path.join(directory, version + ".html")
+    # If the HTML file doesn't exist or we're being forced to regenerate
+    # it...
+    if (not os.path.exists(html_filename) or force):
+        print "Writing apidoc for version %s to %s" % (
+            version, html_filename)
+        write(html_filename, generate_html(wadl_filename,
+            suppress_stderr=False))
+    else:
+        print "Skipping already present HTML file:", html_filename
+
+
 def main(path_template, force=False):
     WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
@@ -47,29 +73,17 @@ def main(path_template, force=False):
     f = open(index_filename, 'w')
     f.write(template(config=config))
 
+    # Start a process to build each set of WADL and HTML files.
+    processes = []
     for version in config.active_versions:
-        wadl_filename = path_template % {'version': version}
-        # If the WADL file doesn't exist or we're being forced to regenerate
-        # it...
-        if (not os.path.exists(wadl_filename) or force):
-            print "Writing WADL for version %s to %s." % (
-                version, wadl_filename)
-            write(wadl_filename, generate_wadl(version))
-        else:
-            print "Skipping already present WADL file:", wadl_filename
+        p = Process(target=make_files,
+            args=(path_template, directory, version, force))
+        p.start()
+        processes.append(p)
 
-        # Now, convert the WADL into an human-readable description and
-        # put the HTML in the same directory as the WADL.
-        html_filename = os.path.join(directory, version + ".html")
-        # If the HTML file doesn't exist or we're being forced to regenerate
-        # it...
-        if (not os.path.exists(html_filename) or force):
-            print "Writing apidoc for version %s to %s" % (
-                version, html_filename)
-            write(html_filename, generate_html(wadl_filename,
-                suppress_stderr=False))
-        else:
-            print "Skipping already present HTML file:", html_filename
+    # Wait for all the subprocesses to finish.
+    for p in processes:
+        p.join()
 
     return 0
 

@@ -745,7 +745,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """
         is_moderator = check_permission('launchpad.Moderate', self.context)
         is_mailing_list_manager = check_permission(
-            'launchpad.MailingListManager', self.context)
+            'launchpad.Moderate', self.context)
         if is_moderator or is_mailing_list_manager:
             return self.getListInState(*PURGE_STATES) is not None
         else:

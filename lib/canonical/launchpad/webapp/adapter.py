@@ -68,6 +68,7 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
+from lp.services.log.loglevels import DEBUG2
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -487,6 +488,11 @@ class LaunchpadDatabase(Postgres):
                 'DB connection URL %s does not meet naming convention.')
 
         _reset_dirty_commit_flags(*flags)
+
+        logging.log(
+            DEBUG2,
+            "Connected to %s backend %d, as user %s, at isolation level %s.",
+            flavor, raw_connection.get_backend_pid(), dbuser, self._isolation)
         return raw_connection
 
     @property

@@ -113,8 +113,4 @@ The message was delivered to Anne and the archiver.
     X-RcptTo: anne.person@example.com
     <BLANKLINE>
     This is a test message.
-    _______________________________________________
-    Mailing list: http://launchpad.dev/~alpha
-    Post to     : alpha@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/~alpha
-    More help   : http://help.launchpad.dev/ListHelp
+    ...

@@ -133,7 +133,7 @@ class DistributionSourcePackageLinksMixin:
         """Edit the details of this source package."""
         # This is titled "Edit bug reporting guidelines" because that
         # is the only editable property of a source package right now.
-        return Link('+edit', 'Edit bug reporting guidelines', icon='edit')
+        return Link('+edit', 'Configure bug tracker', icon='edit')
 
     def new_bugs(self):
         base_path = "+bugs"
@@ -544,6 +544,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     field_names = [
         'bug_reporting_guidelines',
         'bug_reported_acknowledgement',
+        'enable_bugfiling_duplicate_search',
         ]
 
     @property
