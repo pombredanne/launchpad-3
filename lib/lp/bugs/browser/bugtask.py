@@ -907,6 +907,24 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return comments
 
     @cachedproperty
+    def interesting_activity(self):
+        """A sequence of interesting bug activity."""
+        bugtask_change_re = (
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
+            '(assignee|importance|milestone|status)')
+        interesting_expressions = [
+             'affects', 'description', 'security vulnerability',
+             'summary', 'tags', 'visibility', bugtask_change_re]
+        interesting_expression = "|".join(interesting_expressions)
+        interesting_regex = re.compile("^(%s)$" % interesting_expression)
+        p_interesting = lambda activity: (
+            interesting_regex.match(activity.whatchanged) is not None)
+        return tuple(
+            BugActivityItem(activity)
+            for activity in self.context.bug.activity
+            if p_interesting(activity))
+
+    @cachedproperty
     def activity_by_date(self):
         """Return a dict of `BugActivityItem`s for the current bug.
 
@@ -914,31 +932,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         occurred.
         """
         activity_by_date = {}
-        bugtask_change_re = (
-            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
-            '(assignee|importance|milestone|status)')
-        interesting_changes = [
-             'description',
-             'security vulnerability',
-             'summary',
-             'tags',
-             'visibility',
-             'affects',
-             bugtask_change_re,
-             ]
 
-        # Turn the interesting_changes list into a regex so that we can
-        # do complex matches.
-        interesting_changes_expression = "|".join(interesting_changes)
-        interesting_changes_regex = re.compile(
-            "^(%s)$" % interesting_changes_expression)
-
-        for activity in self.context.bug.activity:
-            # If we're not interested in the change, skip it.
-            if interesting_changes_regex.match(activity.whatchanged) is None:
-                continue
-
-            activity = BugActivityItem(activity)
+        for activity in self.interesting_activity:
             if activity.datechanged not in activity_by_date:
                 activity_by_date[activity.datechanged] = {
                     activity.target: [activity]}
