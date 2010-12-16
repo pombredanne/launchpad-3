@@ -66,7 +66,8 @@ component.
     ...
     Build status
     Needs building
-    Start in ... (2505) What's this?
+    Start in ... 
+    Build score:2505 (What's this?)
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -88,6 +89,7 @@ question.
     ...
     Build status
     Needs building
+    Build score:2505 (What's this?)
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -142,7 +144,8 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... (0) Rescore build What's this?
+    Start in ... 
+    Build score:0 Rescore build (What's this?)
 
 Eventually a pending build record will get started, and while it's
 building the page will also contain a link to the builder where the
@@ -165,6 +168,7 @@ messages.
     ...     find_tag_by_id(anon_browser.contents, 'status'))
     Build status
     Currently building on Bob The Builder
+    Build score:0 (What's this?)
     Started ... ago
 
     >>> print anon_browser.getLink('Bob The Builder').url
@@ -288,7 +292,8 @@ retrying the build is not a possibility anymore.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... (...) Rescore build What's this?
+    Start in ... 
+    Build score:... Rescore build (What's this?)
 
     >>> admin_browser.getLink("Retry this build").click()
     Traceback (most recent call last):
@@ -463,6 +468,7 @@ The 'Build status' section is identical for PPAs.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
     Build status
     Successfully built on Bob The Builder
+    Build score:...
     Started on ...
     Finished on ... (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)
