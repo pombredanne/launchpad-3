@@ -1389,10 +1389,8 @@ class POTMsgSet(SQLBase):
                     other_incumbent = (
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
-                    if other_incumbent is not None:
-                        traits.other_side_traits.setFlag(
-                            other_incumbent, False)
-                    traits.other_side_traits.setFlag(message, True)
+                    if other_incumbent is None:
+                        traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
                     traits.other_side_traits.setFlag(incumbent_message, False)
@@ -1626,10 +1624,10 @@ class POTMsgSet(SQLBase):
         if not self.is_translation_credit:
             return
 
-        shared_translation = self.getSharedTranslation(
-            pofile.language, pofile.potemplate.translation_side)
+        shared_upstream_translation = self.getSharedTranslation(
+            pofile.language, TranslationSide.UPSTREAM)
 
-        if shared_translation is not None:
+        if shared_upstream_translation is not None:
             return
 
         # The credits message has a fixed "translator."
