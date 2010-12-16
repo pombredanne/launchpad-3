@@ -10,7 +10,6 @@ The maintainer of a project can edit its details.
     Change project group details...
 
     >>> soup = find_main_content(browser.contents)
-    >>> browser.getControl(name='field.name').value = 'new-name'
     >>> browser.getControl('Display Name').value = 'New Name'
     >>> browser.getControl('Title').value = 'New Title'
     >>> browser.getControl('Project Group Summary').value = 'New Summary.'
@@ -20,7 +19,7 @@ The maintainer of a project can edit its details.
     >>> browser.getControl('Change Details').click()
 
     >>> print browser.url
-    http://launchpad.dev/new-name
+    http://launchpad.dev/gnome
 
 Regular users can't access the +review page.
 
@@ -31,18 +30,19 @@ Regular users can't access the +review page.
 
 But administrators can access the page:
 
-    >>> admin_browser.open('http://launchpad.dev/new-name')
+    >>> admin_browser.open('http://launchpad.dev/gnome')
     >>> admin_browser.getLink('Administer').click()
 
     >>> print admin_browser.url
-    http://launchpad.dev/new-name/+review
+    http://launchpad.dev/gnome/+review
 
     >>> print admin_browser.title
-    Review upstream project group...
+    Change project group details : New Name
 
-Mark the project as reviewed.
+Mark the project as reviewed and change the name.
 
     >>> admin_browser.getControl('Reviewed').selected = True
+    >>> admin_browser.getControl(name='field.name').value = 'new-name'
     >>> admin_browser.getControl('Change').click()
 
     >>> print admin_browser.url
@@ -148,17 +148,14 @@ there are fewer fields available.
     Traceback (most recent call last):
     ...
     LookupError: label 'Registrant'
-    >>> expert_browser.getControl('Name')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Name'
 
+    >>> expert_browser.getControl('Name').value = 'newer-name'
     >>> expert_browser.getControl('Aliases').value = 'sleepy'
     >>> expert_browser.getControl('Active').selected = False
     >>> expert_browser.getControl('Reviewed').selected = False
     >>> expert_browser.getControl('Change').click()
 
-    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.open('http://launchpad.dev/newer-name')
     >>> expert_browser.getLink('Administer').click()
     >>> print expert_browser.getControl('Aliases').value
     sleepy

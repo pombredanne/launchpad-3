@@ -15,6 +15,8 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 
+from storm.store import Store
+
 from twisted.internet import defer
 
 from zope.component import getUtility
@@ -401,6 +403,22 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
+    def test_collection_for_deleted_source(self):
+        # If we collected a build for a superseded/deleted source then
+        # the build should get marked superseded as the build results
+        # get discarded.
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        spr = removeSecurityProxy(self.build.source_package_release)
+        pub = self.build.current_source_publication
+        pub.requestDeletion(spr.creator)
+
+        def got_update(ignored):
+            self.assertEqual(
+                BuildStatus.SUPERSEDED, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
@@ -481,13 +499,13 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # the restricted librarian.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
-        # Un-publish the source so we don't trip the 'private' field
-        # validator.
-        from storm.store import Store
-        for source in self.build.archive.getPublishedSources():
-            Store.of(source).remove(source)
-        self.build.archive.private = True
-        self.build.archive.buildd_secret = "foo"
+        # Go behind Storm's back since the field validator on
+        # Archive.private prevents us from setting it to True with
+        # existing published sources.
+        Store.of(self.build).execute("""
+            UPDATE archive SET private=True,buildd_secret='foo'
+            WHERE archive.id = %s""" % self.build.archive.id)
+        Store.of(self.build).invalidate()
 
         def got_update(ignored):
             # Librarian needs a commit.  :(
