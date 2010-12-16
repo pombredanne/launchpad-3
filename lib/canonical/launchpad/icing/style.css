@@ -25,10 +25,6 @@
 
 /* === Fonts and colors === */
 
-
-
-
-
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
 .extra-discreet {font-size: 75%;}
@@ -60,15 +56,6 @@ form.primary.search {
 }
 @media screen {
   .notforscreen {display:none;}
-}
-
-tr.highlight {background: #ddd; border: 1px solid #ddd;}
-.unhighlighted {padding: 0 0.5em;}
-.dimmed {
-  padding: 0 0.5em;
-  opacity: .5;
-  filter: alpha(opacity=50);
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
 .debug {
@@ -261,7 +248,6 @@ div#branch-description {
     margin-top: 1em;
 }
 
-.product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 

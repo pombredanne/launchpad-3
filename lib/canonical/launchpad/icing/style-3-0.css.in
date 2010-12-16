@@ -1469,6 +1469,17 @@ span.help {
    Universal presentation
    Colors and fonts
 */
+
+.highlight {
+    background: #ddd;
+    border: 1px solid #ddd;
+    }
+.lowlight {
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
+
 pre .highlighted {
     border: none;
     padding: 0em;

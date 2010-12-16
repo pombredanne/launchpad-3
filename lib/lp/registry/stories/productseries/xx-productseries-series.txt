@@ -38,7 +38,7 @@ Any user can see that the trunk series is the focus of development and that
 it is highlighted.
 
     >>> print series_trunk['class']
-    highlighted series
+    highlight series
 
 The 1.0 series is not the focus of development, it is active, so it is not
 highlighted.
@@ -54,7 +54,7 @@ highlighted.
     >>> print series_1_0['class']
     unhighlighted series
 
-Any user can see that obsolete series are dimmed. Obsolete series do not
+Any user can see that obsolete series are lowlight. Obsolete series do not
 show bug status counts because it is expensive to retrieve the information.
 
     >>> series_xxx = find_tag_by_id(content, 'series-xxx')
@@ -64,4 +64,4 @@ show bug status counts because it is expensive to retrieve the information.
     Use true GTK UI.
 
     >>> print series_xxx['class']
-    dimmed series
+    lowlight series
