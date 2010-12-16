@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Give access to bzr and other version info, if available.
@@ -36,17 +36,13 @@ __all__ = [
     ]
 
 
-import imp
-
-
 def read_version_info():
     try:
-        infomodule = imp.load_source(
-            'launchpadversioninfo', 'bzr-version-info.py')
-    except IOError:
+        import launchpadversioninfo
+    except ImportError:
         return None
     else:
-        return getattr(infomodule, 'version_info', None)
+        return getattr(launchpadversioninfo, 'version_info', None)
 
 
 versioninfo = read_version_info()

@@ -1145,7 +1145,7 @@
             template="../templates/team-contactaddress.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.MailingListManager"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.team.TeamMailingListConfigurationView"
             name="+mailinglist"
             template="../templates/team-mailinglist.pt"/>
@@ -1376,15 +1376,6 @@
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        name="+review"/>
-    <browser:page
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        class="canonical.launchpad.browser.MailingListsReviewView"
-        name="+review"
-        template="../templates/mailinglists-review.pt"
-        permission="launchpad.Admin"/>
     <browser:page
         name="+moderation"
         for="lp.registry.interfaces.mailinglist.IMessageApproval"

@@ -12,6 +12,7 @@ email addresses must be unique.
 
 We can get an email address through IEmailAddressSet.getByEmail().
 
+    >>> login_person(person)
     >>> email = emailset.getByEmail(person.preferredemail.email)
     >>> email == person.preferredemail
     True

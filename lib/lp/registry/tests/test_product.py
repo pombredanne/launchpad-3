@@ -12,10 +12,7 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    syncUpdate,
-    )
+from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -37,7 +34,11 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestProduct(TestCaseWithFactory):
@@ -339,7 +340,7 @@ class BugSupervisorTestCase(TestCaseWithFactory):
         super(BugSupervisorTestCase, self).setUp()
         self.person = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.person)
-        login(self.person.preferredemail.email)
+        login_person(self.person)
 
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.
