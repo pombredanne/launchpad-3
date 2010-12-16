@@ -39,17 +39,15 @@ from storm.expr import (
     In,
     Join,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
-    )
-from storm.zope.interfaces import (
-    IResultSet,
-    ISQLObjectResultSet,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -142,6 +140,7 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -1490,16 +1489,23 @@ class BugTaskSet:
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
 
-        bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
+        bug_ids = set(bugtask.bugID for bugtask in bugtasks)
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
             SpecificationBug.bugID,
             SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
-        # Cache all bugs at once to avoid one query per bugtask. We
-        # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
+        # Check if the bugs are cached. If not, cache all uncached bugs
+        # at once to avoid one query per bugtask. We could rely on the
+        # Storm cache, but this is explicit.
+        bugs = dict(
+            (bug.id, bug)
+            for bug in IStore(Bug).find(Bug, Bug.id.is_in(bug_ids)).cached())
+        uncached_ids = bug_ids.difference(bug_id for bug_id in bugs)
+        if len(uncached_ids) > 0:
+            bugs.update(dict(IStore(Bug).find((Bug.id, Bug),
+                                              Bug.id.is_in(uncached_ids))))
 
         badge_properties = {}
         for bugtask in bugtasks:
@@ -1596,6 +1602,78 @@ class BugTaskSet:
             raise AssertionError(
                 'Unrecognized status value: %s' % repr(status))
 
+    def _buildExcludeConjoinedClause(self, milestone):
+        """Exclude bugtasks with a conjoined master.
+
+        This search option only makes sense when searching for bugtasks
+        for a milestone.  Only bugtasks for a project or a distribution
+        can have a conjoined master bugtask, which is a bugtask on the
+        project's development focus series or the distribution's
+        currentseries. The project bugtask or the distribution bugtask
+        will always have the same milestone set as its conjoined master
+        bugtask, if it exists on the bug. Therefore, this prevents a lot
+        of bugs having two bugtasks listed in the results. However, it
+        is ok if a bug has multiple bugtasks in the results as long as
+        those other bugtasks are on other series.
+        """
+        # XXX: EdwinGrubbs 2010-12-15 bug=682989
+        # (ConjoinedMaster.bug == X) produces the wrong sql, but
+        # (ConjoinedMaster.bugID == X) works right. This bug applies to
+        # all foreign keys on the ClassAlias.
+
+        # Perform a LEFT JOIN to the conjoined master bugtask.  If the
+        # conjoined master is not null, it gets filtered out.
+        ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
+        extra_clauses = ["ConjoinedMaster.id IS NULL"]
+        if milestone.distribution is not None:
+            current_series = milestone.distribution.currentseries
+            join = LeftJoin(
+                ConjoinedMaster,
+                And(ConjoinedMaster.bugID == BugTask.bugID,
+                    BugTask.distributionID == milestone.distribution.id,
+                    ConjoinedMaster.distroseriesID == current_series.id,
+                    Not(ConjoinedMaster.status.is_in(
+                            BugTask._NON_CONJOINED_STATUSES))))
+            join_tables = [(ConjoinedMaster, join)]
+        else:
+            # Prevent import loop.
+            from lp.registry.model.milestone import Milestone
+            from lp.registry.model.product import Product
+            if IProjectGroupMilestone.providedBy(milestone):
+                # Since an IProjectGroupMilestone could have bugs with
+                # bugtasks on two different projects, the project
+                # bugtask is only excluded by a development focus series
+                # bugtask on the same project.
+                joins = [
+                    Join(Milestone, BugTask.milestone == Milestone.id),
+                    LeftJoin(Product, BugTask.product == Product.id),
+                    LeftJoin(
+                        ConjoinedMaster,
+                        And(ConjoinedMaster.bugID == BugTask.bugID,
+                            ConjoinedMaster.productseriesID
+                                == Product.development_focusID,
+                            Not(ConjoinedMaster.status.is_in(
+                                    BugTask._NON_CONJOINED_STATUSES)))),
+                    ]
+                # join.right is the table name.
+                join_tables = [(join.right, join) for join in joins]
+            elif milestone.product is not None:
+                dev_focus_id = (
+                    milestone.product.development_focusID)
+                join = LeftJoin(
+                    ConjoinedMaster,
+                    And(ConjoinedMaster.bugID == BugTask.bugID,
+                        BugTask.productID == milestone.product.id,
+                        ConjoinedMaster.productseriesID == dev_focus_id,
+                        Not(ConjoinedMaster.status.is_in(
+                                BugTask._NON_CONJOINED_STATUSES))))
+                join_tables = [(ConjoinedMaster, join)]
+            else:
+                raise AssertionError(
+                    "A milestone must always have either a project, "
+                    "project group, or distribution")
+        return (join_tables, extra_clauses)
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -1664,6 +1742,17 @@ class BugTaskSet:
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
+
+            if params.exclude_conjoined_tasks:
+                tables, clauses = self._buildExcludeConjoinedClause(
+                    params.milestone)
+                join_tables += tables
+                extra_clauses += clauses
+        elif params.exclude_conjoined_tasks:
+            raise ValueError(
+                "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                "BugTaskSearchParam.milestone is not set")
+
 
         if params.project:
             # Prevent circular import problems.
@@ -2308,6 +2397,25 @@ class BugTaskSet:
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], params).result_set
+
+    def getPrecachedNonConjoinedBugTasks(self, user, milestone):
+        """See `IBugTaskSet`."""
+        params = BugTaskSearchParams(
+            user, milestone=milestone,
+            orderby=['status', '-importance', 'id'],
+            omit_dupes=True, exclude_conjoined_tasks=True)
+        non_conjoined_slaves = self.search(params)
+
+        def cache_people(rows):
+            assignee_ids = set(
+                bug_task.assigneeID for bug_task in rows)
+            assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                assignee_ids, need_validity=True)
+            # Execute query to load storm cache.
+            list(assignees)
+
+        return DecoratedResultSet(
+            non_conjoined_slaves, pre_iter_hook=cache_people)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
