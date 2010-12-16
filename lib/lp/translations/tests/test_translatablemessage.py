@@ -55,11 +55,9 @@ class TestTranslatableMessageBase:
                 pofile=self.pofile, potmsgset=self.potmsgset,
                 translations=translation,
                 current_other=is_current_ubuntu,
-                diverged=is_diverged)
-            if date_updated is not None:
-                naked_message = removeSecurityProxy(message)
-                naked_message.date_created = date_updated
-                naked_message.date_reviewed = date_updated
+                diverged=is_diverged,
+                date_created=date_updated,
+                date_reviewed=date_updated)
         else:
             message = self.factory.makeSuggestion(
                 pofile=self.pofile, potmsgset=self.potmsgset,
@@ -133,14 +131,14 @@ class TestTranslatableMessage(TestTranslatableMessageBase,
         self.assertEqual(translation, current)
 
     def test_getImportedTranslation(self):
-        translation = self._createTranslation(is_current_upstream=True)
+        translation = self._createTranslation(is_current_ubuntu=True)
 
         message = TranslatableMessage(self.potmsgset, self.pofile)
         imported = message.getImportedTranslation()
         self.assertEqual(translation, imported)
 
     def test_getSharedTranslation(self):
-        translation = self._createTranslation(is_current_ubuntu=True)
+        translation = self._createTranslation(is_current_upstream=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         shared = message.getSharedTranslation()
         self.assertEqual(translation, shared)
