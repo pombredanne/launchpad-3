@@ -88,11 +88,10 @@ def make_translationmessage(factory, pofile=None, potmsgset=None,
     return new_message
 
 
-def get_all_translations_current_anywhere(pofile, potmsgset):
-    """Get current `TranslationMessage`s for this `POTMsgSet` and language.
+def get_all_translations_diverged_anywhere(pofile, potmsgset):
+    """Get diverged `TranslationMessage`s for this `POTMsgSet` and language.
 
-    The `TranslationMessage`s can be in use anywhere; the `pofile` only
-    selects the language.
+    Leave out translations diverged to pofile.potemplate.
     """
     result = Store.of(potmsgset).find(
         TranslationMessage,
@@ -101,8 +100,9 @@ def get_all_translations_current_anywhere(pofile, potmsgset):
             TranslationMessage.is_current_ubuntu == True,
             TranslationMessage.is_current_upstream == True),
         TranslationMessage.potemplate != None,
+        TranslationMessage.potemplate != pofile.potemplate,
         TranslationMessage.language == pofile.language)
-    return result.order_by(-Coalesce(TranslationMessage.potemplateID, -1))
+    return result.order_by(-TranslationMessage.potemplateID)
 
 
 def summarize_current_translations(pofile, potmsgset):
@@ -135,16 +135,7 @@ def summarize_current_translations(pofile, potmsgset):
         "There is a diverged 'other' translation for "
         "this same template, which should be impossible.")
 
-    all_used = get_all_translations_current_anywhere(
-        pofile, potmsgset)
-    diverged = []
-    for suggestion in all_used:
-        if ((suggestion.potemplate is not None and
-             suggestion.potemplate != template) and
-            (suggestion.is_current_ubuntu or
-             suggestion.is_current_upstream)):
-            # It's diverged for another template and current somewhere.
-            diverged.append(suggestion)
+    diverged = list(get_all_translations_diverged_anywhere(pofile, potmsgset))
     return (
         current_shared, current_diverged,
         other_shared, diverged)
