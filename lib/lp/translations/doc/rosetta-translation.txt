@@ -64,7 +64,7 @@ Check that this submission is now the active one for this msgset/pluralform
 
 Check that this submission is the upstream one
 
-    >>> potmsgset.getOtherTranslationMessage(template, spanish) == message
+    >>> potmsgset.getImportedTranslationMessage(template, spanish) == message
     True
     >>> message.is_current_upstream
     True
@@ -110,7 +110,7 @@ This is marked as current in both Ubuntu and upstream.
     >>> upstream_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getOtherTranslationMessage(
+    >>> potmsgset.getImportedTranslationMessage(
     ...     template, spanish) == upstream_message
     True
 
@@ -139,13 +139,13 @@ upstream selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getOtherTranslationMessage(
+    >>> potmsgset.getImportedTranslationMessage(
     ...     template, spanish) == web_submission
     False
 
 In fact, the upstream submission should still be the original one, from Pa:
 
-    >>> potmsgset.getOtherTranslationMessage(
+    >>> potmsgset.getImportedTranslationMessage(
     ...     template, spanish) == upstream_message
     True
 
@@ -256,7 +256,7 @@ This new submission should not be active:
 
 And it should definitely not be current upstream:
 
-    >>> (potmsgset.getOtherTranslationMessage(template, spanish) ==
+    >>> (potmsgset.getImportedTranslationMessage(template, spanish) ==
     ...     noneditor_submission)
     False
 

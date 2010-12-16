@@ -416,7 +416,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         # Existing shared upstream translation for this POTMsgSet, if
         # any.
-        upstream = self.potmsgset.getOtherTranslationMessage(
+        upstream = self.potmsgset.getImportedTranslationMessage(
             None, self.language)
 
         if shared is None:
@@ -490,7 +490,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUpstream(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getOtherTranslationMessage(
+            incumbent = self.potmsgset.getImportedTranslationMessage(
                 self.potemplate, self.language)
             if incumbent == self:
                 return

@@ -333,7 +333,7 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             potemplate, language, current=True)
 
-    def getOtherTranslationMessage(self, potemplate, language):
+    def getImportedTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
             potemplate, language, current=False)
@@ -904,7 +904,7 @@ class POTMsgSet(SQLBase):
             matching_message is not None and
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
-            upstream_message = self.getOtherTranslationMessage(
+            upstream_message = self.getImportedTranslationMessage(
                 pofile.potemplate, pofile.language)
         else:
             upstream_message = None

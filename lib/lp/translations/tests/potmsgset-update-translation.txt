@@ -131,7 +131,7 @@ upstream translation, the one in Launchpad will be kept untouched.
     >>> message.is_complete
     True
 
-    >>> message = potmsgset.getOtherTranslationMessage(
+    >>> message = potmsgset.getImportedTranslationMessage(
     ...     upstream_evo, spanish)
     >>> message.translations
     [u'bars ']
