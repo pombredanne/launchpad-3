@@ -117,14 +117,13 @@ class BugImporter:
     """Import bugs into Launchpad"""
 
     def __init__(self, product, bugs_filename, cache_filename,
-                 verify_users=False, logger=None, allow_empty_comments=False):
+                 verify_users=False, logger=None):
         self.product = product
         self.bugs_filename = bugs_filename
         self.cache_filename = cache_filename
         self.verify_users = verify_users
         self.person_id_cache = {}
         self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        self.allow_empty_comments = allow_empty_comments;
 
         if logger is None:
             self.logger = DEFAULT_LOGGER
@@ -409,9 +408,10 @@ class BugImporter:
         if date is None:
             raise BugXMLSyntaxError('No date for comment %r' % title)
         text = get_value(commentnode, 'text')
-        if not self.allow_empty_comments:
-            if text is None or text == '':
-                text = '<empty comment>'
+        # If there is no attachment and no comment text, use a place-holder
+        no_attachments = get_element (commentnode, 'attachment') == None
+        if no_attachments and (text is None or text == ''):
+            text = '<empty comment>'
         return getUtility(IMessageSet).fromText(title, text, sender, date)
 
     def createAttachments(self, bug, message, commentnode):
