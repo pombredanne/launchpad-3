@@ -214,7 +214,6 @@ class FormattersAPI:
         url += trailers[:slice_idx]
         trailers = trailers[slice_idx:]
         return url, trailers
-        
 
     @staticmethod
     def _split_url_and_trailers(url):
@@ -245,7 +244,7 @@ class FormattersAPI:
     @staticmethod
     def _linkify_url_is_blacklisted(url):
         '''Don't linkify URIs consisting of just the protocol'''
-        
+
         blacklist_bases = [
             'about',
             'gopher',
