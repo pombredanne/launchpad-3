@@ -3,9 +3,7 @@ Hello %(recipient_name)s,
 Launchpad: access to a private archive
 --------------------------------------
 
-%(registrant_name)s has granted you access to a private software archive "%(ppa_displayname)s" (%(ppa_reference)s), which is hosted by Launchpad and has the following description:
-
-%(ppa_description)s
+%(registrant_name)s has granted you access to a private software archive "%(ppa_displayname)s" (%(ppa_reference)s), which is hosted by Launchpad%(ppa_description_blurb)s
 
 To start downloading and using software from this archive you need to view your access details by visiting this link:
 
