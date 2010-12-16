@@ -28,7 +28,7 @@ AnswerTrackerHandler.
     >>> now = now_generator(datetime.now(UTC) - timedelta(hours=24))
 
     # Define a helper function to send email to the Answer Tracker handler.
-    >>> from canonical.launchpad.mail.handlers import AnswerTrackerHandler
+    >>> from lp.answers.mail.handler import AnswerTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
     >>> from canonical.launchpad.mail import signed_message_from_string
     >>> handler = AnswerTrackerHandler()
@@ -393,7 +393,7 @@ The general mail processor delegates all emails to the
 config.answertracker.email_domain to the AnswerTrackerHandler.
 
     >>> raw_msg = """From: test@canonical.com
-    ... X-Original-To: question1@answers.launchpad.net
+    ... X-Launchpad-Original-To: question1@answers.launchpad.net
     ... Subject: A new comment
     ... Message-Id: <comment1@localhost>
     ... Date: Mon, 02 Jan 2006 15:42:07 -0000
@@ -408,7 +408,7 @@ config.answertracker.email_domain to the AnswerTrackerHandler.
     ...     'test@canonical.com', ['question1@answers.launchpad.net'],
     ...     raw_msg))
 
-    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> from lp.services.mail.incoming import handleMail
     >>> handleMail()
 
     >>> question_one = getUtility(IQuestionSet).get(1)
@@ -421,7 +421,7 @@ tracker was renamed to Answer Tracker, we still accept emails sent
 to the old ticket<ID>@support.launchpad.net address:
 
     >>> raw_msg = """From: test@canonical.com
-    ... X-Original-To: ticket11@support.launchpad.net
+    ... X-Launchpad-Original-To: ticket11@support.launchpad.net
     ... Subject: Another comment
     ... Message-Id: <comment2@localhost>
     ... Date: Mon, 23 Apr 2007 16:00:00 -0000

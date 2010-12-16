@@ -78,7 +78,7 @@ The mail handler that handles mail on notifications@specs.launchpad.net
 is SpecificationHandler.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> handler = mail_handlers.get(config.launchpad.specs_domain)
     >>> handler is not None
     True
