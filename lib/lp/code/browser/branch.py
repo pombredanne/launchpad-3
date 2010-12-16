@@ -490,6 +490,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
             self.context.stacked_on)
 
     @property
+    def is_empty_directory(self):
+        """True if the branch is an empty directory without even a '.bzr'."""
+        return self.context.control_format is None
+
+    @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
         return self.context.codebrowse_url()
