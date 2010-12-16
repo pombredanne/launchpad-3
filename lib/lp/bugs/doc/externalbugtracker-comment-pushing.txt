@@ -288,7 +288,7 @@ formatted to include data about the comment in Launchpad.
     >>> for remote_comment_id in sorted(remote_comments.keys()):
     ...     print remote_comments[remote_comment_id]
     ...     print "--------------------"
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
     <BLANKLINE>
@@ -296,7 +296,7 @@ formatted to include data about the comment in Launchpad.
     http://launchpad.net/bugs/...
     <BLANKLINE>
     --------------------
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Body the second.
     <BLANKLINE>
@@ -304,7 +304,7 @@ formatted to include data about the comment in Launchpad.
     http://launchpad.net/bugs/...
     <BLANKLINE>
     --------------------
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Body the third.
     <BLANKLINE>
@@ -320,7 +320,7 @@ the comment author, with the pushed comment.
 
     >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
     >>> print formatted_message
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
     <BLANKLINE>

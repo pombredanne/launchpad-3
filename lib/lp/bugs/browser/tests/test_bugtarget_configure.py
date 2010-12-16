@@ -38,6 +38,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             'field.remote_product': 'sf-boing',
             'field.bug_reporting_guidelines': 'guidelines',
             'field.bug_reported_acknowledgement': 'acknowledgement message',
+            'field.enable_bugfiling_duplicate_search': False,
             'field.actions.change': 'Change',
             }
 
@@ -49,7 +50,8 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         fields = [
             'bugtracker', 'enable_bug_expiration', 'remote_product',
             'bug_reporting_guidelines', 'bug_reported_acknowledgement',
-            'bug_supervisor', 'security_contact']
+            'enable_bugfiling_duplicate_search', 'bug_supervisor',
+            'security_contact']
         self.assertEqual(fields, view.field_names)
         self.assertEqual('http://launchpad.dev/boing', view.next_url)
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
@@ -63,7 +65,8 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual(label, view.label)
         fields = [
             'bugtracker', 'enable_bug_expiration', 'remote_product',
-            'bug_reporting_guidelines', 'bug_reported_acknowledgement']
+            'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+            'enable_bugfiling_duplicate_search']
         self.assertEqual(fields, view.field_names)
         self.assertEqual('http://launchpad.dev/boing', view.next_url)
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
@@ -87,6 +90,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual(
             'acknowledgement message',
             self.product.bug_reported_acknowledgement)
+        self.assertFalse(self.product.enable_bugfiling_duplicate_search)
 
     def test_bug_supervisor_invalid(self):
         # Verify that invalid bug_supervisor states are reported.
