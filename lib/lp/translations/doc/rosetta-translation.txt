@@ -139,8 +139,8 @@ upstream selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(
-    ...     template, spanish) == web_submission
+    >>> potmsgset.getImportedTranslationMessage(template,
+    ...     spanish) == web_submission
     False
 
 In fact, the upstream submission should still be the original one, from Pa:
@@ -250,14 +250,14 @@ Let's make sure:
 
 This new submission should not be active:
 
-    >>> (potmsgset.getCurrentTranslationMessage(template, spanish)
-    ...  == noneditor_submission)
+    >>> (potmsgset.getCurrentTranslationMessage(template, spanish) ==
+    ...  noneditor_submission)
     False
 
 And it should definitely not be current upstream:
 
     >>> (potmsgset.getImportedTranslationMessage(template, spanish) ==
-    ...     noneditor_submission)
+    ...  noneditor_submission)
     False
 
 However, given NonEditorTranslations, this should be available as
