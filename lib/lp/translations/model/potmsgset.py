@@ -1639,7 +1639,7 @@ class POTMsgSet(SQLBase):
             pofile, translator, {0: credits_message_str},
             RosettaTranslationOrigin.LAUNCHPAD_GENERATED,
             share_with_other_side=True)
-#        generated_translation.shareIfPossible()
+        generated_translation.shareIfPossible()
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
