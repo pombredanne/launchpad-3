@@ -44,7 +44,7 @@ LAUNCHPAD_HARD_MAX_SIZE = %(hard_max_size)d
 
 SITE_LIST_OWNER = '%(site_list_owner)s'
 
-DEFAULT_MSG_FOOTER = '''_______________________________________________
+DEFAULT_MSG_FOOTER = '''-- 
 %(footer)s'''
 
 # Set up MHonArc archiving.

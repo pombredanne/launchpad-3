@@ -5,7 +5,7 @@
 
 
 import hashlib
-import xmlrpclib
+from Mailman.Queue import XMLRPCRunner
 
 from Mailman import (
     Errors,
@@ -42,7 +42,7 @@ def process(mlist, msg, msgdata):
     # can't talk to Launchpad, I believe it's better to let the message get
     # posted to the list than to discard or hold it.
     is_member = True
-    proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+    proxy = proxy = XMLRPCRunner.get_mailing_list_api_proxy()
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
