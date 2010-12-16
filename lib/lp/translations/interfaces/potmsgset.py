@@ -149,7 +149,7 @@ class IPOTMsgSet(Interface):
         """
 
     def getImportedTranslationMessage(potemplate, language):
-        """Returns the TranslationMessage that is current on the other side.
+        """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
