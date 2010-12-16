@@ -565,9 +565,7 @@ class ILaunchpadPrincipal(IPrincipal):
 #
 
 class BrowserNotificationLevel:
-    """Matches the standard logging levels, with the addition of notice
-    (which we should probably add to our log levels as well)
-    """
+    """Matches the standard logging levels."""
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     WARNING = logging.WARNING # action will not be successful unless you ...
