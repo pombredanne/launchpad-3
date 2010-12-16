@@ -369,7 +369,6 @@ This is for a team:
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
->>> check("/~name18/+newpoll", auth=True)
 >>> check("/~name16/+rdf")
 >>> check("/~name18/+rdf")
 
