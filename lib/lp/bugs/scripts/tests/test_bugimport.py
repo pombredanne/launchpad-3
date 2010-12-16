@@ -606,7 +606,7 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment2.libraryfile.mimetype, 'text/plain')
 
         # Message 4:
-        self.assertEqual
+        self.assertEqual(
             message4.owner.preferredemail.email, 'bug-importer@launchpad.net')
         self.assertEqual(
             message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
