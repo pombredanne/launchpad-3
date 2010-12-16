@@ -64,8 +64,7 @@ Check that this submission is now the active one for this msgset/pluralform
 
 Check that this submission is the upstream one
 
-    >>> potmsgset.getOtherTranslation(
-    ...     spanish, template.translation_side) == message
+    >>> potmsgset.getOtherTranslationMessage(template, spanish) == message
     True
     >>> message.is_current_upstream
     True
@@ -111,8 +110,8 @@ This is marked as current in both Ubuntu and upstream.
     >>> upstream_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getOtherTranslation(
-    ...     spanish, template.translation_side) == upstream_message
+    >>> potmsgset.getOtherTranslationMessage(
+    ...     template, spanish) == upstream_message
     True
 
 Excellent. This shows that activating a new upstream translation upon
@@ -140,14 +139,14 @@ upstream selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getOtherTranslation(
-    ...     spanish, template.translation_side) == web_submission
+    >>> potmsgset.getOtherTranslationMessage(
+    ...     template, spanish) == web_submission
     False
 
 In fact, the upstream submission should still be the original one, from Pa:
 
-    >>> potmsgset.getOtherTranslation(
-    ...     spanish, template.translation_side) == upstream_message
+    >>> potmsgset.getOtherTranslationMessage(
+    ...     template, spanish) == upstream_message
     True
 
 And the lasttranslator for this pofile should be the one who submitted the
@@ -251,13 +250,13 @@ Let's make sure:
 
 This new submission should not be active:
 
-    >>> (potmsgset.getCurrentTranslationMessage(template, spanish) ==
-    ...  noneditor_submission)
+    >>> (potmsgset.getCurrentTranslationMessage(template, spanish)
+    ...  == noneditor_submission)
     False
 
 And it should definitely not be current upstream:
 
-    >>> (potmsgset.getOtherTranslation(spanish, template.translation_side) ==
+    >>> (potmsgset.getOtherTranslationMessage(template, spanish) ==
     ...     noneditor_submission)
     False
 
