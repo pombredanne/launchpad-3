@@ -62,9 +62,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
-.highlighted {padding: 0.5em;}
-.highlighted h3 {margin-top: 0;}
+tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .unhighlighted {padding: 0 0.5em;}
 .dimmed {
   padding: 0 0.5em;
