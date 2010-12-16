@@ -537,7 +537,7 @@ th, td {
     vertical-align: baseline;
     }
 thead th, tr.thead th {
-    text-align: center;
+    text-align: left;
     vertical-align: bottom;
     }
 th.icon, td.icon {
