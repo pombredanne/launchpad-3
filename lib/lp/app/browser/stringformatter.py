@@ -15,6 +15,7 @@ __all__ = [
 
 import cgi
 import re
+from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.component import getUtility
@@ -296,6 +297,19 @@ class FormattersAPI:
         else:
             raise AssertionError("Unknown pattern matched.")
 
+    @staticmethod
+    def _linkify_substitution_with_target(match):
+        """See `_linkify_substitution`().
+
+        The target attribute of the links will be updated to point to
+        "_new", so that links will open in a new window.
+        """
+        linkified_text = FormattersAPI._linkify_substitution(match)
+        element_tree = html.fromstring(linkified_text)
+        for link in element_tree.xpath('//a'):
+            link.set('target', '_new')
+        return html.tostring(element_tree)
+
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
@@ -427,7 +441,7 @@ class FormattersAPI:
     # don't want to include in the link.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self):
+    def _htmlify_text(self):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -459,11 +473,29 @@ class FormattersAPI:
             output.append('</p>')
 
         text = ''.join(output)
+        return text
 
+    def text_to_html(self):
+        """See `_htmlify_text`(). URLs will also be linkified."""
+        # Turn the text into HTML.
+        text = self._htmlify_text()
         # Linkify the text.
-        text = re_substitute(self._re_linkify, self._linkify_substitution,
-                             break_long_words, text)
+        text = re_substitute(
+            self._re_linkify, self._linkify_substitution,
+            break_long_words, text)
+        return text
 
+    def text_to_html_with_target(self):
+        """See `_htmlify_text`().
+
+        URLs will be linkified with a target="_new" attribute.
+        """
+        # Turn the text into HTML.
+        text = self._htmlify_text()
+        # Linkify the text.
+        text = re_substitute(
+            self._re_linkify, self._linkify_substitution_with_target,
+            break_long_words, text)
         return text
 
     def nice_pre(self):
@@ -810,6 +842,8 @@ class FormattersAPI:
             return self.break_long_words()
         elif name == 'text-to-html':
             return self.text_to_html()
+        elif name == 'text-to-html-with-target':
+            return self.text_to_html_with_target()
         elif name == 'nice_pre':
             return self.nice_pre()
         elif name == 'email-to-html':
