@@ -1480,11 +1480,6 @@ span.help {
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
-pre .highlighted {
-    border: none;
-    padding: 0em;
-    margin: 0em;
-    }
 .answers-stat {
     color: #3840BE;
     }
