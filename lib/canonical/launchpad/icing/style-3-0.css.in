@@ -663,9 +663,6 @@ table.listing table tfoot td, table.listing table td {
 table.listing tfoot td {
     border: 1px solid #d2d2d2;
     }
-table.listing tr.note {
-    font-size: 77%;
-    }
 table.listing th, table.listing td {
     padding: 0.25em;
     }
@@ -681,7 +678,7 @@ table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
-table.listing tr.note td {
+table.listing .note td {
     border-style: none;
     }
 table.listing img {
@@ -1470,6 +1467,9 @@ span.help {
    Colors and fonts
 */
 
+.exception {
+    color: #cc0000;
+    }
 .highlight {
     background: #ddd;
     border: 1px solid #ddd;
@@ -1785,6 +1785,11 @@ a.unofficial-tag {
 
 .launchpad-gold {
     color: #F8C300;
+    }
+
+
+.note {
+    font-size: 77%;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
