@@ -232,7 +232,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -1473,7 +1476,6 @@ class Person(
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
-        
 
         # Remove all indirect TeamParticipation entries resulting from this
         # team. If this were just a select, it would be a complicated but
@@ -1499,8 +1501,9 @@ class Person(
                         (SELECT tm1.person from TeamMembership tm1
                             WHERE
                                 tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team);
-            ''', dict(team=self.id))
+                                tm1.team = TeamParticipation.team and
+                                tm1.status IN %(active_states)s);
+            ''', dict(team=self.id, active_states=ACTIVE_STATES))
 
         # Since we've updated the database behind Storm's back yet again,
         # we need to flush its caches, again.

@@ -444,7 +444,7 @@ Check redirects of Unicode URLs works
 
 Icing resources.
 
->>> from canonical.launchpad.versioninfo import revno
+>>> from lp.app.versioninfo import revno
 >>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)

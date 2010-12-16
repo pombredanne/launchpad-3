@@ -70,7 +70,7 @@ URL for the branch.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push lp://dev/~name12/gnome-terminal/pushed
+    bzr push --use-existing lp://dev/~name12/gnome-terminal/pushed
 
 
 == SSH key directions ==
@@ -178,7 +178,8 @@ owning team's name.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push lp://dev/~landscape-developers/gnome-terminal/pushed
+    bzr push --use-existing
+    lp://dev/~landscape-developers/gnome-terminal/pushed
 
 
 == Import branch ==

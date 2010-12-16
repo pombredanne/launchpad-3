@@ -7,6 +7,7 @@ __all__ = []
 
 from Mailman import Errors
 from Mailman.Handlers import LPModerate
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
@@ -16,11 +17,11 @@ class TestLPModerateTestCase(MailmanTestCase):
     """Test lpmoderate.
 
     Mailman process() methods quietly return. They may set msg_data key-values
-    or raise an error to end processing. This group of tests tests often check
-    for errors, but that does not mean there is an error condition, it only
-    means message processing has reached a final decision. Messages that do
-    not cause a final decision pass-through and the process() methods ends
-    without a return.
+    or raise an error to end processing. These tests often check for errors,
+    but that does not mean there is an error condition, it only means message
+    processing has reached a final decision. Messages that do not cause a
+    final decision pass through, and the process() methods ends without a
+    return.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -30,8 +31,8 @@ class TestLPModerateTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.lp_user = self.factory.makePerson()
-        self.lp_user_email = self.lp_user.preferredemail.email
+        self.lp_user_email = 'capybara@eg.dom'
+        self.lp_user = self.factory.makePerson(email=self.lp_user_email)
 
     def tearDown(self):
         super(TestLPModerateTestCase, self).tearDown()
@@ -47,7 +48,8 @@ class TestLPModerateTestCase(MailmanTestCase):
 
     def test_process_message_from_subscriber(self):
         # Messages from subscribers silently complete the process.
-        subscriber_email = self.team.teamowner.preferredemail.email
+        subscriber_email = removeSecurityProxy(
+            self.team.teamowner).preferredemail.email
         message = self.makeMailmanMessage(
             self.mm_list, subscriber_email, 'subject', 'any content.')
         msg_data = {}

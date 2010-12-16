@@ -263,7 +263,7 @@ The script is run.
 
     >>> import subprocess
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-v'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )

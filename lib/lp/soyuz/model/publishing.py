@@ -506,7 +506,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @staticmethod
     def _convertBuilds(builds_for_sources):
         """Convert from IPublishingSet getBuilds to SPPH getBuilds."""
-        return [build for source, build, arch in builds_for_sources]
+        return [build[1] for build in builds_for_sources]
 
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -842,6 +842,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 return ProxiedLibraryFileAlias(
                     diff.diff_content, self.archive).http_url
         return None
+
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api that makes sure binaries
+        # get deleted too.
+        getUtility(IPublishingSet).requestDeletion(
+            [self], removed_by, removal_comment)
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -1216,6 +1223,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return dict(date_to_string(result) for result in results)
 
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api.  We don't do anything
+        # different here (yet).
+        self.requestDeletion(removed_by, removal_comment)
+
 
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
@@ -1331,7 +1344,8 @@ class PublishingSet:
         return pub
 
     def getBuildsForSourceIds(
-        self, source_publication_ids, archive=None, build_states=None):
+        self, source_publication_ids, archive=None, build_states=None,
+        need_build_farm_job=False):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
@@ -1404,16 +1418,22 @@ class PublishingSet:
             SourcePackagePublishingHistory,
             BinaryPackageBuild,
             DistroArchSeries,
-            )
+            ) + ((PackageBuild, BuildFarmJob) if need_build_farm_job else ())
 
         # Storm doesn't let us do builds_union.values('id') -
         # ('Union' object has no attribute 'columns'). So instead
         # we have to instantiate the objects just to get the id.
         build_ids = [build.id for build in builds_union]
 
+        prejoin_exprs = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            ) if need_build_farm_job else ()
+
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
-            BinaryPackageBuild.id.is_in(build_ids))
+            BinaryPackageBuild.id.is_in(build_ids),
+            *prejoin_exprs)
 
         return result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1697,8 +1717,11 @@ class PublishingSet:
             return {}
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # Find relevant builds while also getting PackageBuilds and
+        # BuildFarmJobs into the cache. They're used later.
         build_info = list(
-            self.getBuildsForSourceIds(source_ids, archive=archive))
+            self.getBuildsForSourceIds(
+                source_ids, archive=archive, need_build_farm_job=True))
         source_pubs = set()
         found_source_ids = set()
         for row in build_info:
@@ -1722,20 +1745,21 @@ class PublishingSet:
         source_build_statuses = {}
         need_unpublished = set()
         for source_pub in source_pubs:
-            source_builds = [build for build in build_info 
-                if build[0].id == source_pub.id]
-            builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
+            source_builds = [
+                build for build in build_info if build[0].id == source_pub.id]
+            builds = SourcePackagePublishingHistory._convertBuilds(
+                source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
             source_build_statuses[source_pub.id] = summary
 
             # If:
             #   1. the SPPH is in an active publishing state, and
             #   2. all the builds are fully-built, and
-            #   3. the SPPH is not being published in a rebuild/copy archive (in
-            #      which case the binaries are not published)
+            #   3. the SPPH is not being published in a rebuild/copy
+            #      archive (in which case the binaries are not published)
             #   4. There are unpublished builds
-            # Then we augment the result with FULLYBUILT_PENDING and attach the
-            # unpublished builds.
+            # Then we augment the result with FULLYBUILT_PENDING and
+            # attach the unpublished builds.
             if (source_pub.status in active_publishing_status and
                     summary['status'] == BuildSetStatus.FULLYBUILT and
                     not source_pub.archive.is_copy):
@@ -1750,7 +1774,7 @@ class PublishingSet:
             for source_pub, builds in unpublished_per_source.items():
                 summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': builds
+                    'builds': builds,
                 }
                 source_build_statuses[source_pub.id] = summary
 

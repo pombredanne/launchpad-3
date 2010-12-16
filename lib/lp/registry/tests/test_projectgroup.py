@@ -7,8 +7,8 @@ import unittest
 
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -17,6 +17,8 @@ from canonical.testing.layers import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     launchpadlib_for,
+    login_celebrity,
+    login_person,
     TestCaseWithFactory,
     )
 
@@ -36,7 +38,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
             name="razzle-dazzle", owner=self.person,
             description="Giving 110% at all times.")
         self.projectset = getUtility(IProjectGroupSet)
-        login(self.person.preferredemail.email)
+        login_person(self.person)
 
     def testSearchNoMatch(self):
         # Search for a string that does not exist.
@@ -107,6 +109,33 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
         self.assertEqual(self.project3, results[0])
 
 
+class TestProjectGroupPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupPermissions, self).setUp()
+        self.pg = self.factory.makeProject(name='my-project-group')
+
+    def test_attribute_changes_by_admin(self):
+        login_celebrity('admin')
+        self.pg.name = 'new-name'
+        self.pg.owner = self.factory.makePerson(name='project-group-owner')
+
+    def test_attribute_changes_by_registry_admin(self):
+        login_celebrity('registry_experts')
+        new_owner = self.factory.makePerson(name='project-group-owner')
+        self.pg.name = 'new-name'
+        self.assertRaises(
+            Unauthorized, setattr, self.pg, 'owner', new_owner)
+
+    def test_attribute_changes_by_owner(self):
+        login_person(self.pg.owner)
+        self.assertRaises(
+            Unauthorized, setattr, self.pg, 'name', 'new-name')
+        self.pg.owner = self.factory.makePerson(name='project-group-owner')
+
+
 class TestLaunchpadlibAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -116,8 +145,8 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         # is raised when trying to deactivate a project that has source
         # releases.
         last_oops = globalErrorUtility.getLastOopsReport()
-        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
 
+        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
         project = launchpad.projects['evolution']
         project.active = False
         e = self.assertRaises(ClientError, project.lp_save)

@@ -192,13 +192,7 @@ So Sample Person (the project owner) has edit permission:
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
 
-But No Privileges Person doesn't:
-
-    >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.Edit', firefox_faq)
-    False
-
-But if we make him an answer contact, he will:
+Answer contacts can also edit FAQs:
 
     # An answer contact needs a preferred language.
 
