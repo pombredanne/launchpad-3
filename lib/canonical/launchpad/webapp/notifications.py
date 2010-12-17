@@ -125,7 +125,7 @@ class NotificationResponse:
 
     >>> for notification in response.notifications:
     ...     print "%d -- %s" % (notification.level, notification.message)
-    25 -- <b>&lt;Fnord&gt;</b>
+    20 -- <b>&lt;Fnord&gt;</b>
     10 -- Whatever
     10 -- Debug
     20 -- Info
