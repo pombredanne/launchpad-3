@@ -105,7 +105,7 @@
   <td>
     <pre class="discreet" tal:content="view/source_comment">
       This refers to the content type.
-    </pre>  
+    </pre>
   </td>
 </tr>
 <tr
