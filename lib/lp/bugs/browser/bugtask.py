@@ -80,7 +80,7 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 from lazr.uri import URI
-from pytz import UTC
+from pytz import utc
 from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
@@ -1074,7 +1074,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         expire_after = timedelta(days=config.malone.days_before_expiration)
         expiration_date = self.context.bug.date_last_updated + expire_after
-        remaining_time = expiration_date - datetime.now(UTC)
+        remaining_time = expiration_date - datetime.now(utc)
         return remaining_time.days
 
     @property
