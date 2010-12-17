@@ -751,16 +751,6 @@ First, some set-up.
     >>> view = getMultiAdapter(
     ...     (bug.bugtasks[0], request), name="+index")
 
-The activity_by_date property of BugTaskView returns a dict of
-BugActivityItems grouped by the date on which they occurred. The items
-are returned as a list of dicts containig a list of activity items for a
-given target.
-
-    >>> print pretty(view.activity_by_date)
-    {datetime.datetime(2009, 3, 26...):
-    [{'activity': [<...BugActivityItem...>],
-    'target': None}]}
-
 The activity_and_comments property of BugTaskView is a list of comments
 and activity on a bug, ordered by the date that they occurred. Each item
 is encapsulated in a dict, in the form: {'comment': <BugComment>} or

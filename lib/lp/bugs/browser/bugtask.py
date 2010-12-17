@@ -900,41 +900,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             if p_interesting(activity))
 
     @cachedproperty
-    def activity_by_date(self):
-        """Return a dict of `BugActivityItem`s for the current bug.
-
-        The `BugActivityItem`s will be keyed by the date on which they
-        occurred.
-        """
-        activity_by_date = {}
-
-        for activity in self.interesting_activity:
-            if activity.datechanged not in activity_by_date:
-                activity_by_date[activity.datechanged] = {
-                    activity.target: [activity]}
-            else:
-                activity_dict = activity_by_date[activity.datechanged]
-                if activity.target in activity_dict:
-                    activity_dict[activity.target].append(activity)
-                else:
-                    activity_dict[activity.target] = [activity]
-
-        # Sort all the lists to ensure that changes are written out in
-        # alphabetical order.
-        for date, activity_by_target in activity_by_date.items():
-            # We convert each {target: activity_list} mapping into a list
-            # of {target, activity_list} dicts for the sake of making
-            # them usable in templates.
-            activity_by_date[date] = [{
-                'target': target,
-                'activity': sorted(
-                    activity_list, key=attrgetter('attribute')),
-                }
-                for target, activity_list in activity_by_target.items()]
-
-        return activity_by_date
-
-    @cachedproperty
     def activity_and_comments(self):
         """Build list of comments interleaved with activities
 
