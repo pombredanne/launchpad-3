@@ -188,10 +188,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     def test_full_fledged_account(self):
         # In the common case we just login and redirect to the URL specified
         # in the 'starting_url' query arg.
-        person = self.factory.makePerson()
+        test_email = 'test-example@example.com'
+        person = self.factory.makePerson(email=test_email)
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createViewWithResponse(
-                person.account, email=person.preferredemail.email)
+                person.account, email=test_email)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())

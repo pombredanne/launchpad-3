@@ -107,9 +107,46 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+class TestLinkifyingProtocols(TestCase):
+
+    def test_apt_is_linked(self):
+        test_string = 'This becomes a link: apt:some-package'
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = (
+            '<p>This becomes a link: '
+            '<a rel="nofollow" '
+                'href="apt:some-package">apt:some-<wbr></wbr>package</a></p>')
+        self.assertEqual(expected_html, html)
+
+        # Do it again for apt://
+        test_string = 'This becomes a link: apt://some-package'
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = (
+            '<p>This becomes a link: '
+            '<a rel="nofollow" '
+                'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
+        self.assertEqual(expected_html, html)
+
+    def test_file_is_not_linked(self):
+        test_string = "This doesn't become a link: file://some/file.txt"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = (
+            "<p>This doesn't become a link: "
+            "file://<wbr></wbr>some/file.<wbr></wbr>txt</p>")
+        self.assertEqual(expected_html, html)
+
+    def test_data_is_linked(self):
+        test_string = "This becomes a link: data:text/plain,test"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = (
+            "<p>This becomes a link: "
+            '<a rel="nofollow" '
+            'href="data:text/plain,test">data:text/<wbr></wbr>plain,test</a></p>')
+        self.assertEqual(expected_html, html)
+            
 
 class TestDiffFormatter(TestCase):
-    """Test the string formtter fmt:diff."""
+    """Test the string formatter fmt:diff."""
     layer = DatabaseFunctionalLayer
 
     def test_emptyString(self):

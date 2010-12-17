@@ -7,6 +7,7 @@ __all__ = [
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
+    'StructuralSubscribersPortletView',
     ]
 
 from operator import attrgetter
@@ -24,6 +25,7 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad.webapp import (
     canonical_url,
+    LaunchpadView,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -366,3 +368,21 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+
+class StructuralSubscribersPortletView(LaunchpadView):
+    """A simple view for displaying the subscribers portlet."""
+
+    @property
+    def target_label(self):
+        """Return the target label for the portlet."""
+        if IDistributionSourcePackage.providedBy(self.context):
+            return "To all bugs in %s" % self.context.displayname
+        else:
+            return "To all %s bugs" % self.context.title
+
+    @property
+    def parent_target_label(self):
+        """Return the target label for the portlet."""
+        return (
+            "To all %s bugs" % self.context.parent_subscription_target.title)

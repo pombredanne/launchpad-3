@@ -843,6 +843,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     diff.diff_content, self.archive).http_url
         return None
 
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api that makes sure binaries
+        # get deleted too.
+        getUtility(IPublishingSet).requestDeletion(
+            [self], removed_by, removal_comment)
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
@@ -1215,6 +1222,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return (result[0].strftime('%Y-%m-%d'), result[1])
 
         return dict(date_to_string(result) for result in results)
+
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api.  We don't do anything
+        # different here (yet).
+        self.requestDeletion(removed_by, removal_comment)
 
 
 class PublishingSet:

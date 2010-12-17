@@ -199,7 +199,8 @@ view provides a label, page_title and cancel_url.
 The view allows the user the set the bug_reporting_guidelines field.
 
     >>> view.field_names
-    ['bug_reporting_guidelines', 'bug_reported_acknowledgement']
+    ['bug_reporting_guidelines', 'bug_reported_acknowledgement',
+    'enable_bugfiling_duplicate_search']
 
     >>> print package.bug_reporting_guidelines
     None
