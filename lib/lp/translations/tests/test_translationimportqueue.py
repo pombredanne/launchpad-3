@@ -385,5 +385,27 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         self.import_queue.addOrUpdateEntriesFromTarball(
             tarfile_content, True, self.importer,
             productseries=self.productseries)
-        self.assertContentEqual([], self._getQueuePaths())
+        self.assertEqual([], self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path(self):
+        # File names are store with full path.
+        files = dict((
+            self._makeFile('pot', 'directory'),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertEqual(files.keys(), self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path_leading_slash(self):
+        # Leading slashes are stripped from path names.
+        path, content = self._makeFile('pot', '/directory')
+        files = dict(((path, content),))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        stripped_path = path.lstrip('/')
+        self.assertEqual([stripped_path], self._getQueuePaths())
 
