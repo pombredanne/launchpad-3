@@ -25,8 +25,7 @@ class HAProxyIntegrationTest(TestCase):
         TestCase.setUp(self)
         self.http = HTTPCaller()
         self.original_flag = haproxy.going_down_flag
-        self.addCleanup(
-            lambda: haproxy.set_going_down_flag(self.original_flag))
+        self.addCleanup(haproxy.set_going_down_flag, self.original_flag)
 
     def test_HAProxyStatusView_all_good_returns_200(self):
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)

@@ -331,6 +331,10 @@
     <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sighup.setup_sighup"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
     <subscriber
