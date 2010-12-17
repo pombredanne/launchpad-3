@@ -474,6 +474,9 @@ def group_comments_with_activity(
     comments, activities, window=timedelta(minutes=5)):
     """Group comments and activity together for human consumption.
 
+    Generates a stream of comment instances (with the activity grouped within)
+    or `list`s of grouped activities.
+
     @param comments: An iterable of `BugComment` instances.
     @param activities: An iterable of `BugActivity` instances.
     """
