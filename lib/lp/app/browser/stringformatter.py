@@ -209,24 +209,6 @@ class FormattersAPI:
         return '<a href="%s">%s</a>%s' % (url, text, trailers)
 
     @staticmethod
-    def _split_url_and_trailers(url):
-        """Given a URL return a tuple of the URL and punctuation trailers.
-
-        :return: an unescaped url, an unescaped trailer.
-        """
-        # The text will already have been cgi escaped.  We temporarily
-        # unescape it so that we can strip common trailing characters
-        # that aren't part of the URL.
-        url = xml_unescape(url)
-        match = FormattersAPI._re_url_trailers.search(url)
-        if match:
-            trailers = match.group(1)
-            url = url[:-len(trailers)]
-        else:
-            trailers = ''
-        return FormattersAPI._handle_parens_in_trailers(url, trailers)
-
-    @staticmethod
     def _handle_parens_in_trailers(url, trailers):
         """Move closing parens from the trailer back into the url if needed.
 
@@ -245,6 +227,24 @@ class FormattersAPI:
         url += trailers[:slice_idx]
         trailers = trailers[slice_idx:]
         return url, trailers
+
+    @staticmethod
+    def _split_url_and_trailers(url):
+        """Given a URL return a tuple of the URL and punctuation trailers.
+
+        :return: an unescaped url, an unescaped trailer.
+        """
+        # The text will already have been cgi escaped.  We temporarily
+        # unescape it so that we can strip common trailing characters
+        # that aren't part of the URL.
+        url = xml_unescape(url)
+        match = FormattersAPI._re_url_trailers.search(url)
+        if match:
+            trailers = match.group(1)
+            url = url[:-len(trailers)]
+        else:
+            trailers = ''
+        return FormattersAPI._handle_parens_in_trailers(url, trailers)
 
     @staticmethod
     def _linkify_url_should_be_ignored(url):
@@ -473,8 +473,10 @@ class FormattersAPI:
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
 
-    # a pattern to match common trailing punctuation for URLs that we
-    # don't want to include in the link.
+    # There is various punctuation that can occur at the end of a link that
+    # shouldn't be included. The regex below matches on the set of characters
+    # we don't generally want. See also _handle_parens_in_trailers, which
+    # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
     def text_to_html(self):
