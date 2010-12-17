@@ -106,5 +106,3 @@ class LaunchpadWriteTarFile:
 
         for filename in sorted(files.keys()):
             self.add_file(filename, files[filename])
-
-

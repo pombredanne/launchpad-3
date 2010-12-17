@@ -408,4 +408,3 @@ class TestTranslationImportQueue(TestCaseWithFactory):
             productseries=self.productseries)
         stripped_path = path.lstrip('/')
         self.assertEqual([stripped_path], self._getQueuePaths())
-
