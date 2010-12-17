@@ -295,15 +295,24 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         self.assertEquals(catalan_valencia, pofile.language)
 
     def test_KDE4_language_subvariant(self):
-        # PO files 'sr@test/something.po' in a package named like
+        # PO file 'sr@test/something.po' in a package named like
         # 'kde-l10n-sr' belong in the 'something' translation domain
-        # for "sr@test" language.
-        # translations.
+        # for "sr@test" language translations.
         serbian_test = self.factory.makeLanguage('sr@test')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-sr', 'sr@test/template')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(serbian_test, pofile.language)
+
+    def test_KDE4_language_at_sign(self):
+        # PO file 'blah@test/something.po' in a package named like
+        # 'kde-l10n-sr' belong in the 'something' translation domain
+        # for "sr" language translations.
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'source/blah@test/template')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian, pofile.language)
 
 
 class TestProductOwnerEntryImporter(TestCaseWithFactory):
