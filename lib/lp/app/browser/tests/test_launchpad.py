@@ -127,7 +127,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def assertDisplaysNotice(self, path, notification):
         """Assert that traversal redirects back with the specified notice."""
         self.assertDisplaysNotification(
-            path, notification, BrowserNotificationLevel.NOTICE)
+            path, notification, BrowserNotificationLevel.INFO)
 
     def assertDisplaysError(self, path, notification):
         """Assert that traversal redirects back with the specified notice."""
