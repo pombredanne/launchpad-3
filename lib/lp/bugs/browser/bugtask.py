@@ -480,11 +480,11 @@ def group_comments_with_activity(
     :param comments: An iterable of `BugComment` instances.
     :param activities: An iterable of `BugActivity` instances.
     """
-    comment_kind = object()
+    comment_kind = "comment"
     comments = (
         (comment.datecreated, comment.owner, comment_kind, comment)
         for comment in comments)
-    activity_kind = object()
+    activity_kind = "activity"
     activity = (
         (activity.datechanged, activity.person, activity_kind, activity)
         for activity in activities)
@@ -511,27 +511,28 @@ def group_comments_with_activity(
                 # All events within the window must belong to the same actor.
                 (window_actor is None or actor != window_actor))
             if window_ended:
-                window_comment = (event if kind is comment_kind else None)
-                window_actor, window_end = actor, date + window
-                window_index += 1
+                window_comment, window_actor = None, actor
+                window_index, window_end = window_index + 1, date + window
+            if kind is comment_kind:
+                window_comment = event
             yield window_index, kind, event
 
     event_windows = gen_event_windows(events)
     event_windows_grouper = groupby(event_windows, itemgetter(0))
-    for window_index, window_events in event_windows_grouper:
-        window_events = [
-            (kind, event) for (index, kind, event) in window_events]
-        for kind, event in window_events:
+    for window_index, window_group in event_windows_grouper:
+        window_group = [
+            (kind, event) for (index, kind, event) in window_group]
+        for kind, event in window_group:
             if kind is comment_kind:
                 window_comment = event
                 window_comment.activity.extend(
-                    event for (kind, event) in window_events
+                    event for (kind, event) in window_group
                     if kind is activity_kind)
                 yield window_comment
                 # There's only one comment per window.
                 break
         else:
-            yield [event for (kind, event) in window_events]
+            yield [event for (kind, event) in window_group]
 
 
 class BugTargetTraversalMixin:

@@ -172,10 +172,10 @@ class TestGroupCommentsWithActivities(TestCase):
             self.now + timedelta(minutes=counter)
             for counter in count(1))
 
-    def group(self, comments, activities):
+    def group(self, comments, activities, window=timedelta(minutes=5)):
         return list(
             group_comments_with_activity(
-                comments=comments, activities=activities))
+                comments=comments, activities=activities, window=window))
 
     def test_empty(self):
         # Given no comments or activities the result is also empty.
@@ -216,7 +216,7 @@ class TestGroupCommentsWithActivities(TestCase):
             [[activity1], comment1, [activity2], comment2],
             self.group(comments=comments, activities=activities))
 
-    def test_comment_then_activity_close_together_by_common_actor(self):
+    def test_comment_then_activity_close_by_common_actor(self):
         # An activity shortly after a comment by the same person is grouped
         # into the comment.
         actor = PersonStub()
@@ -226,7 +226,7 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([comment], grouped)
         self.assertEqual([activity], comment.activity)
 
-    def test_activity_then_comment_close_together_by_common_actor(self):
+    def test_activity_then_comment_close_by_common_actor(self):
         # An activity shortly before a comment by the same person is grouped
         # into the comment.
         actor = PersonStub()
@@ -236,7 +236,53 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([comment], grouped)
         self.assertEqual([activity], comment.activity)
 
-    # XXX: Needs more complex tests!
+    def test_interleaved_activity_with_comments_by_common_actor(self):
+        # Activities shortly before and after a comment are grouped into the
+        # comment's activity.
+        actor = PersonStub()
+        activity1 = BugActivityStub(next(self.timestamps), actor)
+        comment = BugCommentStub(next(self.timestamps), actor)
+        activity2 = BugActivityStub(next(self.timestamps), actor)
+        grouped = self.group(
+            comments=[comment], activities=[activity1, activity2])
+        self.assertEqual([comment], grouped)
+        self.assertEqual([activity1, activity2], comment.activity)
+
+    def test_common_actor_over_a_prolonged_time(self):
+        # There is a timeframe for grouping events. Anything outside of that
+        # window is considered separate.
+        actor = PersonStub()
+        activities = [
+            BugActivityStub(next(self.timestamps), actor)
+            for count in xrange(8)]
+        grouped = self.group(comments=[], activities=activities)
+        self.assertEqual(2, len(grouped))
+        self.assertEqual(activities[:5], grouped[0])
+        self.assertEqual(activities[5:], grouped[1])
+
+    def test_two_comments_by_common_actor(self):
+        # Only one comment will ever appear in a group.
+        actor = PersonStub()
+        comment1 = BugCommentStub(next(self.timestamps), actor)
+        comment2 = BugCommentStub(next(self.timestamps), actor)
+        grouped = self.group(comments=[comment1, comment2], activities=[])
+        self.assertEqual([comment1, comment2], grouped)
+
+    def test_two_comments_with_activity_by_common_actor(self):
+        # Activity gets associated with earlier comment when all other factors
+        # are unchanging.
+        actor = PersonStub()
+        activity1 = BugActivityStub(next(self.timestamps), actor)
+        comment1 = BugCommentStub(next(self.timestamps), actor)
+        activity2 = BugActivityStub(next(self.timestamps), actor)
+        comment2 = BugCommentStub(next(self.timestamps), actor)
+        activity3 = BugActivityStub(next(self.timestamps), actor)
+        grouped = self.group(
+            comments=[comment1, comment2],
+            activities=[activity1, activity2, activity3])
+        self.assertEqual([comment1, comment2], grouped)
+        self.assertEqual([activity1, activity2], comment1.activity)
+        self.assertEqual([activity3], comment2.activity)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
