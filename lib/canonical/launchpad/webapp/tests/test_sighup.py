@@ -34,4 +34,3 @@ class SIGHUPTestCase(TestCase):
         # Sending again should switch again.
         os.kill(os.getpid(), signal.SIGHUP)
         self.assertEquals(self.original_flag, haproxy.going_down_flag)
-

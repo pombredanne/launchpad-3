@@ -61,5 +61,3 @@ class HAProxyStatusView:
         else:
             self.request.response.setStatus(200)
             return u"Everything is groovy. Keep them coming!"
-
-

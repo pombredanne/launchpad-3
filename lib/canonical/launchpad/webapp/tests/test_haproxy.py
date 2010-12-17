@@ -47,4 +47,3 @@ class HAProxyIntegrationTest(TestCase):
         self.assertEquals(False, haproxy.going_down_flag)
         haproxy.switch_going_down_flag()
         self.assertEquals(True, haproxy.going_down_flag)
-
