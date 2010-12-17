@@ -441,7 +441,7 @@ class FormattersAPI:
     # don't want to include in the link.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def _htmlify_text(self):
+    def text_to_html(self, linkify_substitution=None):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -473,30 +473,21 @@ class FormattersAPI:
             output.append('</p>')
 
         text = ''.join(output)
-        return text
 
-    def text_to_html(self):
-        """See `_htmlify_text`(). URLs will also be linkified."""
-        # Turn the text into HTML.
-        text = self._htmlify_text()
         # Linkify the text.
+        if linkify_substitution is None:
+            linkify_substitution = self._linkify_substitution
         text = re_substitute(
-            self._re_linkify, self._linkify_substitution,
-            break_long_words, text)
+            self._re_linkify, linkify_substitution, break_long_words,
+            text)
         return text
 
     def text_to_html_with_target(self):
-        """See `_htmlify_text`().
+        """See `text_to_html`().
 
         URLs will be linkified with a target="_new" attribute.
         """
-        # Turn the text into HTML.
-        text = self._htmlify_text()
-        # Linkify the text.
-        text = re_substitute(
-            self._re_linkify, self._linkify_substitution_with_target,
-            break_long_words, text)
-        return text
+        return self.text_to_html(self._linkify_substitution_with_target)
 
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
