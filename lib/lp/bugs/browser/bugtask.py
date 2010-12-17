@@ -962,16 +962,25 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             else:
                 return comment_event_dict(event_group)
 
-        return map(event_dict, event_groups)
+        events = map(event_dict, event_groups)
 
-        # Insert blank if we're showing only a subset of the comment list
-        # if len(newest_comments) > 0:
-        #     activity_and_comments.append({
-        #         'num_hidden': (len(self.visible_comments)
-        #                        - len(oldest_comments)
-        #                        - len(newest_comments)),
-        #         'date': newest_comments[0].datecreated,
-        #         })
+        # Insert blank if we're showing only a subset of the comment list.
+        if len(newest_comments) > 0:
+            # Find first newest comment in the event list.
+            first_newest_comment = newest_comments[0]
+            for index, event in events:
+                if event.get("comment") is first_newest_comment:
+                    num_hidden = (
+                        len(self.visible_comments)
+                        - len(oldest_comments)
+                        - len(newest_comments))
+                    separator = {
+                        'date': first_newest_comment.datecreated,
+                        'num_hidden': num_hidden,
+                        }
+                    events.insert(index, separator)
+
+        return events
 
     @cachedproperty
     def visible_comments(self):
