@@ -446,7 +446,6 @@ A person with a PPA can't be merged.
     >>> person_with_ppa = factory.makePerson()
     >>> other_person = factory.makePerson()
     >>> archive = person_with_ppa.createPPA()
-    >>> ignore = factory.makeSourcePackagePublishingHistory(archive=archive)
     >>> email = IMasterObject(person_with_ppa.preferredemail)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
@@ -454,4 +453,4 @@ A person with a PPA can't be merged.
     >>> personset.merge(person_with_ppa, other_person)
     Traceback (most recent call last):
     ...
-    AssertionError: from_person still has ppas with published packages.
+    AssertionError: from_person has a ppa in ACTIVE or DELETING status

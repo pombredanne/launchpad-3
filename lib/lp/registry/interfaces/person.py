@@ -862,6 +862,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
 
+    has_existing_ppa = Bool(
+        title=_("Does this person have a ppa that is active or not fully "
+                "deleted?"),
+        readonly=True, required=False)
+
     has_ppa_with_published_packages = Bool(
         title=_("Does this person have a ppa with published packages?"),
         readonly=True, required=False)

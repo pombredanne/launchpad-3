@@ -156,17 +156,17 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
-    def test_cannot_merge_team_with_ppa_containing_published_packages(self):
-        # A team with a published PPA cannot be merged.
+    def test_cannot_merge_team_with_ppa(self):
+        # A team with a PPA cannot be merged.
         login_celebrity('admin')
         self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
         archive = self.dupe_team.createPPA()
-        self.factory.makeSourcePackagePublishingHistory(archive=archive)
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
-            [u'dupe-team has a PPA that must be removed before '
-              'it can be merged.'],
+            [u"dupe-team has a PPA that must be deleted before it can be "
+              "merged. It may take ten minutes to remove the deleted PPA's "
+              "files."],
             view.errors)
 
     def test_registry_delete_team_with_super_teams(self):
@@ -205,13 +205,13 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
         return create_initialized_view(
             self.person_set, '+adminpeoplemerge', form=form)
 
-    def test_cannot_merge_person_with_ppa_containing_published_packages(self):
-        # The PPA must be removed before the person can be merged.
+    def test_cannot_merge_person_with_ppa(self):
+        # A person with a PPA cannot be merged.
         login_celebrity('admin')
         archive = self.dupe_person.createPPA()
-        self.factory.makeSourcePackagePublishingHistory(archive=archive)
         view = self.getView()
         self.assertEqual(
-            [u'dupe-person has a PPA that must be removed before '
-              'it can be merged.'],
+            [u"dupe-person has a PPA that must be deleted before it can be "
+              "merged. It may take ten minutes to remove the deleted PPA's "
+              "files."],
             view.errors)

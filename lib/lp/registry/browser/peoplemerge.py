@@ -134,11 +134,12 @@ class AdminMergeBaseView(LaunchpadFormView):
                   mapping=dict(name=dupe_person.name)))
         # We cannot merge the teams if there is a PPA with published
         # packages on the duplicate person, unless that PPA is removed.
-        if dupe_person.has_ppa_with_published_packages:
+        if dupe_person.has_existing_ppa:
             self.addError(_(
-                "${name} has a PPA that must be removed before it "
-                "can be merged.", mapping=dict(name=dupe_person.name)))
-
+                "${name} has a PPA that must be deleted before it "
+                "can be merged. It may take ten minutes to remove the "
+                "deleted PPA's files.",
+                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
