@@ -405,11 +405,11 @@ class FormattersAPI:
          )
       ) |
       (?P<bug>
-        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)+
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)+(?:\#|item|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>

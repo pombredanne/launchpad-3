@@ -107,6 +107,41 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+class TestLinkifyingBugs(TestCase):
+
+    def test_regular_bug_case_works(self):
+        test_strings = [
+            "bug 34434",
+            "bugnumber 34434",
+            "bug number 34434",
+            ]
+        expected_html = [
+            '<p><a href="/bugs/34434">bug 34434</a></p>',
+            '<p><a href="/bugs/34434">bugnumber 34434</a></p>',
+            '<p><a href="/bugs/34434">bug number 34434</a></p>',
+            ]
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
+    def test_things_do_not_link_if_they_should_not(self):
+        test_strings = [
+            "bugnumber.4",
+            "bug number.4",
+            "bugno.4",
+            "bug no.4",
+            ]
+        expected_html = [
+            "<p>bugnumber.4</p>",
+            "<p>bug number.4</p>",
+            "<p>bugno.4</p>",
+            "<p>bug no.4</p>",
+            ]
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
+        
 class TestLinkifyingProtocols(TestCase):
 
     def test_apt_is_linked(self):
