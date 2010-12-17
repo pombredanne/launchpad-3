@@ -247,8 +247,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.stable_potemplate, serbian), shared_translation)
 
     def test_getOtherTranslation(self):
-        """Test how shared and diverged current translation messages
-        interact."""
+        # Get the translation on the other side.
         # Share POTMsgSet in a template on the other side.
         distroseries = self.factory.makeUbuntuDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -279,8 +278,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             shared_translation)
 
     def test_getSharedTranslation(self):
-        """Test how shared and diverged current translation messages
-        interact."""
+        # Get the current shared translation, not  the diverged one.
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
         serbian = sr_pofile.language
@@ -519,7 +517,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.devel_potemplate, serbian),
             True)
 
-        # If the there is  a different non-diverged translations,
+        # If there is a different non-diverged translation,
         # it's changed in Ubuntu.
         current = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
@@ -1168,7 +1166,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
                                                     sequence=1)
 
-    def disabled_test_updateTranslation_SharedCurrentConstraint(self):
+    def test_updateTranslation_SharedCurrentConstraint(self):
         # Corner case for bug #373139:
         # Adding a diverged, non-imported translation "tm1",
         # then a shared imported translation "tm2",
@@ -1289,7 +1287,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertFalse(tm2.is_current_upstream)
         self.assertTrue(tm1.potemplate is None)
 
-    def disabled_test_updateTranslation_DivergedCurrentToSharedImported(self):
+    def test_updateTranslation_DivergedCurrentToSharedImported(self):
         # Corner case for bug #381645:
         # Adding a shared imported translation "tm1",
         # then a diverged, non-imported current translation "tm2".

@@ -411,12 +411,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # Existing shared current translation for this POTMsgSet, if
         # any.
         current = self.potmsgset.getCurrentTranslationMessage(
-            None, self.language)
+            potemplate=None, language=self.language)
 
         # Existing shared upstream translation for this POTMsgSet, if
         # any.
         upstream = self.potmsgset.getImportedTranslationMessage(
-            None, self.language)
+            potemplate=None, language=self.language)
 
         if shared is None:
             clash_with_shared_current = (

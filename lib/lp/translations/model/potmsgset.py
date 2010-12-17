@@ -304,7 +304,6 @@ class POTMsgSet(SQLBase):
         # carefully: they need to match condition specified in indexes,
         # or Postgres may not pick them up (in complicated queries,
         # Postgres query optimizer sometimes does text-matching of indexes).
-        
         if current:
             used_clause = 'is_current_ubuntu IS TRUE'
         else:
