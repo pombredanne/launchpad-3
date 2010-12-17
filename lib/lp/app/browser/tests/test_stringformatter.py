@@ -107,6 +107,7 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
 class TestLinkifyingBugs(TestCase):
 
     def test_regular_bug_case_works(self):
@@ -141,7 +142,7 @@ class TestLinkifyingBugs(TestCase):
             expected_html,
             [FormattersAPI(text).text_to_html() for text in test_strings])
 
-        
+
 class TestLinkifyingProtocols(TestCase):
 
     def test_apt_is_linked(self):
@@ -159,7 +160,7 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             '<p>This becomes a link: '
             '<a rel="nofollow" '
-                'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
+            'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
         self.assertEqual(expected_html, html)
 
     def test_file_is_not_linked(self):
@@ -176,9 +177,10 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             "<p>This becomes a link: "
             '<a rel="nofollow" '
-            'href="data:text/plain,test">data:text/<wbr></wbr>plain,test</a></p>')
+            'href="data:text/plain,test">'
+            'data:text/<wbr></wbr>plain,test</a></p>')
         self.assertEqual(expected_html, html)
-            
+
 
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
@@ -221,7 +223,7 @@ class TestDiffFormatter(TestCase):
         html = FormattersAPI(diff).format_diff()
         line_numbers = find_tags_by_class(html, 'line-no')
         self.assertEqual(
-            ['1','2','3','4','5','6','7','8','9', '10', '11'],
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'],
             [tag.renderContents() for tag in line_numbers])
         text = find_tags_by_class(html, 'text')
         self.assertEqual(
