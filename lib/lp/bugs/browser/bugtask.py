@@ -948,9 +948,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         comments.  The division between the newest and oldest is marked
         by an entry in the list with the key 'num_hidden' defined.
         """
-        activity_and_comments = []
-        activity_log = self.activity_by_date
-
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
@@ -959,50 +956,57 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         newest_comments = self.visible_newest_comments_for_display
         oldest_comments = self.visible_oldest_comments_for_display
 
-        # Oldest comments and activities
-        for comment in oldest_comments:
-            # Move any corresponding activities into the comment
-            comment.activity = activity_log.pop(comment.datecreated, [])
-            comment.activity.sort(key=itemgetter('target'))
+        event_groups = group_comments_with_activity(
+            comments=chain(oldest_comments, newest_comments),
+            activities=self.interesting_activity)
 
-            activity_and_comments.append({
-                'comment': comment,
-                'date': comment.datecreated,
-                })
+        def group_activities_by_target(activities):
+            activities = sorted(
+                activities, key=attrgetter("target", "attribute"))
+            return [
+                {"target": target, "activity": list(activity)}
+                for target, activity in groupby(
+                    activities, attrgetter("target"))]
+
+        def comment_event_dict(comment):
+            actors = set(activity.person for activity in comment.activity)
+            actors.add(comment.owner)
+            assert len(actors) == 1, actors
+            dates = set(activity.datechanged for activity in comment.activity)
+            dates.add(comment.datecreated)
+            comment.activity = group_activities_by_target(comment.activity)
+            return {
+                "comment": comment,
+                "date": min(dates),
+                "person": actors.pop(),
+                }
+
+        def activity_event_dict(activities):
+            actors = set(activity.person for activity in activities)
+            assert len(actors) == 1, actors
+            dates = set(activity.datechanged for activity in activities)
+            return {
+                "activity": group_activities_by_target(activities),
+                "date": min(dates),
+                "person": actors.pop(),
+                }
+
+        def event_dict(event_group):
+            if isinstance(event_group, list):
+                return activity_event_dict(event_group)
+            else:
+                return comment_event_dict(event_group)
+
+        return map(event_dict, event_groups)
 
         # Insert blank if we're showing only a subset of the comment list
-        if len(newest_comments) > 0:
-            activity_and_comments.append({
-                'num_hidden': (len(self.visible_comments)
-                               - len(oldest_comments)
-                               - len(newest_comments)),
-                'date': newest_comments[0].datecreated,
-                })
-
-        # Most recent comments and activities (if showing a subset)
-        for comment in newest_comments:
-            # Move any corresponding activities into the comment
-            comment.activity = activity_log.pop(comment.datecreated, [])
-            comment.activity.sort(key=itemgetter('target'))
-
-            activity_and_comments.append({
-                'comment': comment,
-                'date': comment.datecreated,
-                })
-
-        # Add the remaining activities not associated with any visible
-        # comments to the activity_for_comments list.  For each
-        # activity dict we use the person responsible for the first
-        # activity item as the owner of the list of activities.
-        for date, activity_dict in activity_log.items():
-            activity_and_comments.append({
-                'activity': activity_dict,
-                'date': date,
-                'person': activity_dict[0]['activity'][0].person,
-                })
-
-        activity_and_comments.sort(key=itemgetter('date'))
-        return activity_and_comments
+        # if len(newest_comments) > 0:
+        #     activity_and_comments.append({
+        #         'num_hidden': (len(self.visible_comments)
+        #                        - len(oldest_comments)
+        #                        - len(newest_comments)),
+        #         'date': newest_comments[0].datecreated,
+        #         })
 
     @cachedproperty
     def visible_comments(self):

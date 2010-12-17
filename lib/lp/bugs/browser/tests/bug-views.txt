@@ -677,7 +677,7 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't been used by Mozilla Firefox before. 
+    The tag "new-tag" hasn't been used by Mozilla Firefox before.
     <input ...Create the new tag...>
 
     >>> bug_edit.wasRedirected()
@@ -784,28 +784,40 @@ order, the comments and activity that have taken place on a bug.
     ...     (bug.bugtasks[0], request), name="+index")
     >>> view.initialize()
 
-    >>> activity_and_comments = view.activity_and_comments
-    >>> for activity_or_comment in activity_and_comments:
-    ...     if 'activity' in activity_or_comment:
-    ...         activity_dict = activity_or_comment['activity']
-    ...         for activity_for_target in activity_dict:
-    ...             target_name = activity_for_target['target']
-    ...             activity_items = activity_for_target['activity']
-    ...             if target_name is not None:
-    ...                 print "Changed in %s:" % target_name
-    ...             for activity_item in activity_items:
-    ...                 print "%s: %s => %s" % (
-    ...                     activity_item.change_summary,
-    ...                     activity_item.oldvalue,
-    ...                     activity_item.newvalue)
-    ...
-    ...     if 'comment' in activity_or_comment:
-    ...         comment = activity_or_comment['comment']
-    ...         print comment.text_for_display
-    summary: A bug title => A new bug title
+    >>> def print_activities(activities):
+    ...     for activity in activities:
+    ...         target_name = activity['target']
+    ...         if target_name is None:
+    ...             print "Changed:"
+    ...         else:
+    ...             print "Changed in %s:" % target_name
+    ...         activity_items = activity['activity']
+    ...         for activity_item in activity_items:
+    ...             print "* %s: %s => %s" % (
+    ...                 activity_item.change_summary,
+    ...                 activity_item.oldvalue,
+    ...                 activity_item.newvalue)
+
+    >>> def print_comment(comment):
+    ...     print comment.text_for_display
+    ...     print_activities(comment.activity)
+
+    >>> def print_activity_and_comments(activity_and_comments):
+    ...     for activity_or_comment in activity_and_comments:
+    ...         print "-- {person.name} --".format(**activity_or_comment)
+    ...         if 'activity' in activity_or_comment:
+    ...             print_activities(activity_or_comment["activity"])
+    ...         if 'comment' in activity_or_comment:
+    ...             print_comment(activity_or_comment["comment"])
+
+    >>> print_activity_and_comments(view.activity_and_comments)
+    -- name16 --
+    Changed:
+    * summary: A bug title => A new bug title
+    -- name16 --
     A comment, for the reading of.
     Changed in testproduct:
-                    status: New => Confirmed
+    * status: New => Confirmed
 
 If a comment and a BugActivity item occur at the same time, the activity
 item will be returned in the comment's activity property rather than as
@@ -832,36 +844,17 @@ Looking at activity_and_comments will give us the same results as
 before, plus the new comment, since the changes we just made were
 grouped with that comment.
 
-    >>> activity_and_comments = view.activity_and_comments
-    >>> for activity_or_comment in activity_and_comments:
-    ...     if 'activity' in activity_or_comment:
-    ...         for activity_dict in activity_or_comment['activity']:
-    ...             for activity in activity_dict['activity']:
-    ...                 print "%s: %s => %s" % (
-    ...                     activity.whatchanged, activity.oldvalue,
-    ...                     activity.newvalue)
-    ...     if 'comment' in activity_or_comment:
-    ...         comment = activity_or_comment['comment']
-    ...         print comment.text_for_display
-    summary: A bug title => A new bug title
+    >>> print_activity_and_comments(view.activity_and_comments)
+    -- name16 --
+    Changed:
+    * summary: A bug title => A new bug title
+    -- name16 --
     A comment, for the reading of.
+    -- name16 --
     I triaged it.
-
-But if we look at the most recent comment's activity property we'll see
-that the activity recorded there reflects the changes that go with the
-comment.
-
-    >>> comment = activity_and_comments[-1]['comment']
-    >>> for activity_dict in comment.activity:
-    ...     if activity_dict['target'] is not None:
-    ...         print "Changed in %s:" % activity_dict['target']
-    ...     for activity in activity_dict['activity']:
-    ...         print "%s: %s => %s" % (
-    ...             activity.attribute, activity.oldvalue,
-    ...             activity.newvalue)
     Changed in testproduct:
-                importance: Undecided => High
-                    status: New => Confirmed
+    * importance: Undecided => High
+    * status: New => Confirmed
 
 
 == Getting the list of possible duplicates for a new bug ==
