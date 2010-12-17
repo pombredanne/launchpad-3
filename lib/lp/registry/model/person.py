@@ -307,7 +307,7 @@ class ValidPersonCache(SQLBase):
     Note that it performs poorly at least some of the time, and if
     EmailAddress and Person are already being queried, its probably better to
     query Account directly. See bug
-    https://bugs.launchpad.net/launchpad-registry/+bug/615237 for some
+    https://bugs.launchpad.net/launchpad/+bug/615237 for some
     corroborating information.
     """
 

@@ -95,7 +95,7 @@ RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
     'We would love for you to try them out, and if you have '
     'any issues, please '
-    '<a href="http://bugs.launchpad.net/launchpad-code">'
+    '<a href="http://bugs.launchpad.net/launchpad">'
     'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
