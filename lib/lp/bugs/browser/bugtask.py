@@ -501,15 +501,15 @@ def group_comments_with_activity(
             order.
         """
         window_comment, window_actor = None, None
-        window_index, window_end = 0, datetime(1879, 3, 14, tzinfo=UTC)
+        window_index, window_end = 0, None
         for date, actor, kind, event in events:
             window_ended = (
                 # A window may contain only one comment.
-                (kind is comment_kind and window_comment is not None) or
+                (window_comment is not None and kind is comment_kind) or
                 # All events must have happened within a given timeframe.
-                (date >= window_end) or
+                (window_end is None or date >= window_end) or
                 # All events within the window must belong to the same actor.
-                (actor != window_actor))
+                (window_actor is None or actor != window_actor))
             if window_ended:
                 window_comment = (event if kind is comment_kind else None)
                 window_actor, window_end = actor, date + window
