@@ -4,8 +4,7 @@ LaunchpadWriteTarFile is a helper class to make .tar.gz generation
 easy.
 
     >>> from StringIO import StringIO
-    >>> from lp.translations.utilities.translation_export import (
-    ...     LaunchpadWriteTarFile)
+    >>> from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 First, we are going to define a function we are going to use to validate the
 output we will get.
