@@ -45,7 +45,7 @@ not shown anymore.
     ...     """Find out if a mailing list is in an unusual state."""
     ...     tag = find_tag_by_id(contents, 'mailing_list_status_message')
     ...     if tag:
-    ...         return extract_text(tag.b)
+    ...         return extract_text(tag.strong)
     ...     else:
     ...         return ""
 
@@ -82,13 +82,6 @@ the archiver will display an informative message to that effect).
     >>> print extract_link_from_tag(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
-
-The archive link is clickable, though we won't click it because Mailman isn't
-running.
-
-    >>> browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/landscape-developers'>
 
 The team's overview page also displays the posting address.
 
@@ -390,87 +383,3 @@ A purged list acts as if it doesn't even exist.
 The team owner can see that an inactive list can be reactivated or purged.
 
     >>> set_list_state('aardvarks', MailingListStatus.INACTIVE)
-
-
-Actions on purged mailing lists
-===============================
-
-A mailing list expert purges the inactive list.
-
-    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Purge this Mailing List').click()
-
-Once purged, it's as if the mailing list never existed.
-
-    >>> print expert_browser.getLink('Mailing list archive')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-So now the team owner can re-register the mailing list.
-
-    >>> browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> browser.getControl('Apply for Mailing List').click()
-    >>> print browser.title
-    Aardvarks in Launchpad
-    >>> act()
-    >>> browser.open('http://launchpad.dev/~aardvarks')
-    >>> browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/aardvarks'>
-
-Once the mailing list has been purged, the team can be renamed.
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Deactivate this Mailing List').click()
-    >>> act()
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Purge this Mailing List').click()
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
-    >>> user_browser.getControl(name='field.name').value = 'antelopes'
-    >>> user_browser.getControl(name='field.displayname').value = 'Antelopes'
-    >>> user_browser.getControl('Save').click()
-    >>> print user_browser.title
-    Antelopes in Launchpad
-
-And of course, a mailing list for the newly renamed team can be created.
-
-    >>> user_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> user_browser.getControl('Apply for Mailing List').click()
-    >>> print user_browser.title
-    Antelopes in Launchpad
-    >>> act()
-    >>> user_browser.open(user_browser.url) # A `reload` would resubmit.
-    >>> user_browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/antelopes'>
-
-A team with an active mailing list cannot be merged with another team.
-
-    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
-    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'guadamen'
-    >>> admin_browser.getControl('Merge').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    antelopes is associated with a Launchpad mailing list; we can't merge it.
-
-But if the mailing list for the team being merge has been purged, then the
-merge is allowed.
-
-    >>> admin_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> admin_browser.getControl('Deactivate this Mailing List').click()
-    >>> act()
-    >>> admin_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> admin_browser.getControl('Purge this Mailing List').click()
-
-    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
-    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'guadamen'
-    >>> admin_browser.getControl('Merge').click()
-    >>> admin_browser.getControl('Deactivate Members and Merge').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Merge completed successfully.
