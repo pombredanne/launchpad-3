@@ -652,6 +652,9 @@ class TranslationImportQueueEntry(SQLBase):
 
             lang_code = re.sub(
                 kde_prefix_pattern, '', self.sourcepackagename.name)
+            if self.path.startswith(lang_code + '@'):
+                # There are language variants inside a language pack.
+                lang_code = os.path.split(self.path)[0]
             lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):

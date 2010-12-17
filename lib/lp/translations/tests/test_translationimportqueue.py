@@ -299,9 +299,9 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         # 'kde-l10n-sr' belong in the 'something' translation domain
         # for "sr@test" language.
         # translations.
+        serbian_test = self.factory.makeLanguage('sr@test')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-sr', 'sr@test/template')
-        serbian_test = self.factory.makeLanguage('sr@test')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(serbian_test, pofile.language)
 
