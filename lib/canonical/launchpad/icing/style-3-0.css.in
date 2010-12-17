@@ -969,8 +969,8 @@ h1 .edit {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
     color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
+    margin: 1em auto 1em auto;
+    padding: 0 1em 1em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,

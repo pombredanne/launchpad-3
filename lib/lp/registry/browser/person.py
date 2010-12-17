@@ -1538,7 +1538,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
+        self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()
 
@@ -1810,12 +1810,12 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
             # email is sent to the user.
             data['password'] = 'invalid'
             self.person.setPreferredEmail(None)
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
                     self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)

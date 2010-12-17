@@ -32,7 +32,6 @@
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
 .extra-discreet {font-size: 75%;}
-.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
