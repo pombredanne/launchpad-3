@@ -456,9 +456,11 @@ class LaunchpadBrowserPublication(
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
 
-        # For opstats, where we really don't want to have any DB access at all,
-        # ensure that all flag lookups will stop early.
-        if pageid in ('RootObject:OpStats', 'RootObject:+opstats'):
+        # For status URLs, where we really don't want to have any DB access 
+        # at all, ensure that all flag lookups will stop early.
+        if pageid in (
+            'RootObject:OpStats', 'RootObject:+opstats',
+            'RootObject:+haproxy'):
             request.features = NullFeatureController()
             features.per_thread.features = request.features
 

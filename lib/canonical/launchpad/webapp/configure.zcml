@@ -431,4 +431,11 @@
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
+    <!-- Registrations to support +haproxy status url. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+haproxy"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.haproxy.HAProxyStatusView"
+        />
 </configure>
