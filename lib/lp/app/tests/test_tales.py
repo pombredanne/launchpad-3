@@ -3,14 +3,16 @@
 
 """tales.py doctests."""
 
-from doctest import DocTestSuite
 import unittest
+
+from doctest import DocTestSuite
+from lxml import html
 
 from zope.component import getAdapter
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import test_tales, TestCase, TestCaseWithFactory
 
 
 def test_requestapi():
@@ -163,17 +165,13 @@ class TestFormattersAPI(TestCase):
         'mailto:noreply@launchpad.net\n'
         'jabber:noreply@launchpad.net\n'
         'http://localhost/foo?xxx&\n'
-        'http://localhost?testing=[square-brackets-in-query]\n'
-        )
+        'http://localhost?testing=[square-brackets-in-query]\n')
 
     def test_linkification_with_target(self):
         # The text-to-html-with-target formatter sets the target
         # attribute of the links it produces to _new.
-        from lp.testing import test_tales
         linkified_text = test_tales(
             'foo/fmt:text-to-html-with-target', foo=self.test_data)
-        from lxml import html
-        from StringIO import StringIO
         tree = html.fromstring(linkified_text)
         for link in tree.xpath('//a'):
             self.assertEqual('_new', link.get('target'))
