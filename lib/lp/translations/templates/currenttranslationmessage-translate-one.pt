@@ -102,8 +102,10 @@
   <th class="icon left right">
     <span class="sprite info" title="Developer's note to translators"></span>
   </th>
-  <td tal:content="view/source_comment">
+  <td>
+    <pre class="discreet" tal:content="view/source_comment">
       This refers to the content type.
+    </pre>  
   </td>
 </tr>
 <tr
