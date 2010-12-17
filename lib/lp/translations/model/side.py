@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.side import (
     ITranslationSideTraits,
@@ -39,10 +40,8 @@ class TranslationSideTraits:
 
     def setFlag(self, translationmessage, value):
         """See `ITranslationSideTraits`."""
-        if self.side == TranslationSide.UPSTREAM:
-            translationmessage.makeCurrentUpstream(value)
-        else:
-            translationmessage.makeCurrentUbuntu(value)
+        naked_tm = removeSecurityProxy(translationmessage)
+        setattr(naked_tm, self.flag_name, value)
 
 
 class TranslationSideTraitsSet:

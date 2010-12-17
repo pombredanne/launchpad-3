@@ -157,6 +157,20 @@ class IPOTMsgSet(Interface):
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
+    def getOtherTranslation(language, side):
+        """Returns the TranslationMessage that is current on the other side.
+
+        :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
+        """
+
+    def getSharedTranslation(language, side):
+        """Returns a shared TranslationMessage.
+
+        :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
+        """
+
     def getLocalTranslationMessages(potemplate, language,
                                     include_dismissed=False,
                                     include_unreviewed=True):

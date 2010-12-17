@@ -2656,24 +2656,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 potmsgset.singular_text, translations,
                 pofile.language.pluralforms)
 
-        message = potmsgset.setCurrentTranslation(
-            pofile, translator, translations,
-            RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=current_other)
-        naked_message = removeSecurityProxy(message)
-
         if diverged:
-            naked_message.potemplate = pofile.potemplate
+            message = self.makeDivergedTranslationMessage(
+                pofile, potmsgset, translator, reviewer,
+                translations, date_created)
+        else:
+            message = potmsgset.setCurrentTranslation(
+                pofile, translator, translations,
+                RosettaTranslationOrigin.ROSETTAWEB,
+                share_with_other_side=current_other)
+            if date_created is not None:
+                removeSecurityProxy(message).date_created = date_created
 
-        if date_created is not None:
-            naked_message.date_created = date_created
         message.markReviewed(reviewer, date_reviewed)
 
         return message
 
     def makeDivergedTranslationMessage(self, pofile=None, potmsgset=None,
                                        translator=None, reviewer=None,
-                                       translations=None):
+                                       translations=None, date_created=None):
         """Create a diverged, current `TranslationMessage`."""
         if pofile is None:
             pofile = self.makePOFile('lt')
@@ -2682,7 +2683,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         message = self.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
-            translations=translations)
+            translations=translations, date_created=date_created)
         return message.approveAsDiverged(pofile, reviewer)
 
     def makeTranslation(self, pofile, sequence,

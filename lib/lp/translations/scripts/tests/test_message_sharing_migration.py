@@ -212,8 +212,8 @@ class TranslatedProductMixin(TranslatableProductMixin):
             potemplate=template, language=self.dutch)
         if not message:
             # No diverged message here, so check for a shared one.
-            message = potmsgset.getSharedTranslationMessage(
-                language=self.dutch)
+            message = potmsgset.getSharedTranslation(
+                language=self.dutch, side=template.translation_side)
         return message
 
     def _getMessages(self):
@@ -594,7 +594,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
+
         # The is_current_ubuntu and is_current_upstream flags from the
         # duplicate messages have been merged into a single message,
         # current in both ubuntu and upstream.

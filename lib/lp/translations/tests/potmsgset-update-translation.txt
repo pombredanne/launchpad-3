@@ -53,16 +53,16 @@ We can see that this is actually the case:
 We change the upstream one, and thus, the one in Launchpad will be changed
 too at the same time.
 
-  >>> message = potmsgset.updateTranslation(
-  ...     pofile_es, carlos, {0: u'foo '}, is_current_upstream=True,
-  ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> message = potmsgset.updateTranslation(
+    ...     pofile_es, carlos, {0: u'foo '}, is_current_upstream=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
 
-  >>> message.msgstr0.translation
-  u'foo '
-  >>> message.is_complete
-  True
-  >>> message.is_current_upstream
-  True
+    >>> message.msgstr0.translation
+    u'foo '
+    >>> message.is_complete
+    True
+    >>> message.is_current_upstream
+    True
 
 Even more, if there is no translation at all in Launchpad, we still get
 the update from upstream.
@@ -131,7 +131,8 @@ upstream translation, the one in Launchpad will be kept untouched.
     >>> message.is_complete
     True
 
-    >>> message = potmsgset.getImportedTranslationMessage(upstream_evo, spanish)
+    >>> message = potmsgset.getImportedTranslationMessage(
+    ...     upstream_evo, spanish)
     >>> message.translations
     [u'bars ']
 
