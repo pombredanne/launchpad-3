@@ -508,7 +508,7 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
     usedfor = ISpecificationPublic
 
 
-class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+class EditSpecificationByRelatedPeople(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
     the spec target (distro/product) or goal (distroseries/productseries).
