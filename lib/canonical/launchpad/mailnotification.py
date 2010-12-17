@@ -562,13 +562,17 @@ def notify_new_ppa_subscription(subscription, event):
         to_address = [person.preferredemail.email]
         recipient_subscriptions_url = "%s/+archivesubscriptions" % (
             canonical_url(person))
+        description_blurb = '.'
+        if ppa_description is not None and ppa_description != '':
+            description_blurb = ' and has the following description:\n%s' % (
+                ppa_description)
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_displayname': ppa_displayname,
             'ppa_reference': ppa_reference,
-            'ppa_description': ppa_description,
+            'ppa_description_blurb': description_blurb,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,

@@ -130,11 +130,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.poll import (
-    IPoll,
-    IPollOption,
-    IPollSubset,
-    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -856,26 +851,6 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
-
-
-class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPoll
-
-
-class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollSubset
-
-
-class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOption
-
-    def checkAuthenticated(self, user):
-        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
