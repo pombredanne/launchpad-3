@@ -167,7 +167,7 @@ class TestGroupCommentsWithActivities(TestCase):
 
     def setUp(self):
         super(TestGroupCommentsWithActivities, self).setUp()
-        self.now = datetime.utcnow()
+        self.now = datetime.now(UTC)
         self.timestamps = (
             self.now + timedelta(minutes=counter)
             for counter in count(1))
