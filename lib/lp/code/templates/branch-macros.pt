@@ -181,7 +181,9 @@
 
   <dl class="revision">
     <tal:revision repeat="rev_no revisions"
-                  define="codebrowse view/codebrowse_url">
+                  define="codebrowse view/codebrowse_url;
+                        merged_from view/codebrowse_url;
+                        ">
       <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
   </dl>
@@ -234,6 +236,33 @@
     </tal:commit-message>
   </dd>
 
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
+  <tal:comment condition="nothing">
+    If a revision has parents, pick the first one and show the associated
+    branch and any linked bugs for that branch.
+  </tal:comment>
+  <div tal:define="change rev_no/revision" tal:condition="python:change.parents">
+    <tal:merged-from
+            define="merged_from python:change.parents[0].revision.getBranch()">
+      <dd class="subordinate revision-comment">
+          Merged from
+          <tal:merged-branch-link replace="structure merged_from/fmt:link"/>
+          <tal:linkedbugs condition="merged_from/linked_bugs">with linked bugs
+            <dl>
+                <tal:bug repeat="bug merged_from/linked_bugs">
+                  <dd class="subordinate revision-comment">
+                    <tal:bug-link replace="structure bug/fmt:link"/>
+                  </dd>
+                </tal:bug>
+            </dl>
+          </tal:linkedbugs>
+      </dd>
+    </tal:merged-from>
+  </div>
 </metal:revision-text>
 
 <metal:no-revision-message define-macro="no-revision-message">
