@@ -201,19 +201,12 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
-    def _handle_parens_in_trailers(url, trailers):
-        opencount = url.count('(')
-        closedcount = url.count(')')
-        missing = opencount - closedcount
-        slice_idx = 0
-        while slice_idx < missing:
-            if trailers[slice_idx] == ')':
-                slice_idx += 1
-            else:
-                break
-        url += trailers[:slice_idx]
-        trailers = trailers[slice_idx:]
-        return url, trailers
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # Don't look up the bug or display anything about the bug, just
+        # linkify to the general bug url.
+        url = '/bugs/%s' % bugnum
+        # The text will have already been cgi escaped.
+        return '<a href="%s">%s</a>%s' % (url, text, trailers)
 
     @staticmethod
     def _split_url_and_trailers(url):
@@ -234,18 +227,30 @@ class FormattersAPI:
         return FormattersAPI._handle_parens_in_trailers(url, trailers)
 
     @staticmethod
-    def _linkify_bug_number(text, bugnum, trailers=''):
-        # Don't look up the bug or display anything about the bug, just
-        # linkify to the general bug url.
-        url = '/bugs/%s' % bugnum
-        # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+    def _handle_parens_in_trailers(url, trailers):
+        """Move closing parens from the trailer back into the url if needed.
+
+        If there are opening parens in the url that are matched by closing
+        parens at the start of the trailer, those closing parens should be
+        part of the url."""
+        opencount = url.count('(')
+        closedcount = url.count(')')
+        missing = opencount - closedcount
+        slice_idx = 0
+        while slice_idx < missing:
+            if trailers[slice_idx] == ')':
+                slice_idx += 1
+            else:
+                break
+        url += trailers[:slice_idx]
+        trailers = trailers[slice_idx:]
+        return url, trailers
 
     @staticmethod
-    def _linkify_url_is_blacklisted(url):
-        '''Don't linkify URIs consisting of just the protocol'''
+    def _linkify_url_should_be_ignored(url):
+        """Don't linkify URIs consisting of just the protocol."""
 
-        blacklist_bases = [
+        protocol_bases = [
             'about',
             'gopher',
             'http',
@@ -260,7 +265,7 @@ class FormattersAPI:
             'data',
             ]
 
-        for base in blacklist_bases:
+        for base in protocol_bases:
             if url in ('%s' % base, '%s:' % base, '%s://' % base):
                 return True
         return False
@@ -280,11 +285,14 @@ class FormattersAPI:
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
-            if not FormattersAPI._linkify_url_is_blacklisted(url):
-                return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                    cgi.escape(url, quote=True),
-                    add_word_breaks(cgi.escape(url)),
-                    cgi.escape(trailers))
+            if not FormattersAPI._linkify_url_should_be_ignored(url):
+                link_string = ('<a rel="nofollow" '
+                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                                    'url': cgi.escape(url, quote=True),
+                                    'linked_text': add_word_breaks(cgi.escape(url)),
+                                    'trailers': cgi.escape(trailers)
+                                    })
+                return link_string
             else:
                 return full_url
         elif match.group('faq') is not None:
