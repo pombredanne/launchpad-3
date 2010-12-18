@@ -1,11 +1,11 @@
-= Launchpad helper to write tar files =
+Launchpad helper to write tar files
+===================================
 
 LaunchpadWriteTarFile is a helper class to make .tar.gz generation
 easy.
 
     >>> from StringIO import StringIO
-    >>> from lp.translations.utilities.translation_export import (
-    ...     LaunchpadWriteTarFile)
+    >>> from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 First, we are going to define a function we are going to use to validate the
 output we will get.
@@ -99,9 +99,9 @@ created.
     ...     'uno/dos/tres/cuatro': 'blah'
     ...     })
     >>> examine_tarfile(archive)
-    uno                 | 
-    uno/dos             | 
-    uno/dos/tres        | 
+    uno                 |
+    uno/dos             |
+    uno/dos/tres        |
     uno/dos/tres/cuatro | blah
 
 Also, if there is a duplicated file, last one is the one that remains there.

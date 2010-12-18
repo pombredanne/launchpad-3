@@ -9,15 +9,28 @@ __metaclass__ = type
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import SpecificationGoalStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class SpecificationTests(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_target_driver_has_edit_rights(self):
+        """Drivers of a blueprint's target can edit that blueprint."""
+        product = self.factory.makeProduct()
+        driver = self.factory.makePerson()
+        removeSecurityProxy(product).driver = driver
+        specification = self.factory.makeSpecification(product=product)
+        login_person(driver)
+        self.assertTrue(check_permission('launchpad.Edit', specification))
 
     def test_auto_accept_of_goal_for_drivers(self):
         """Drivers of a series accept the goal when they propose."""
@@ -49,7 +62,7 @@ class SpecificationTests(TestCaseWithFactory):
         specification2 = self.factory.makeSpecification(
             product=product2, name="foo")
         self.assertRaises(
-            TargetAlreadyHasSpecification, 
+            TargetAlreadyHasSpecification,
             removeSecurityProxy(specification1).retarget, product2)
 
     def test_retarget_is_protected(self):

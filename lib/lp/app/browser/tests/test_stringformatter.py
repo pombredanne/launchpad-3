@@ -107,7 +107,71 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
 class TestLinkifyingProtocols(TestCase):
+
+    def test_normal_set(self):
+        test_strings = [
+            "http://example.com",
+            "http://example.com/",
+            "http://example.com/path",
+            "http://example.com/path/",
+            ]
+
+        expected_strings = [
+            ('<p><a rel="nofollow" href="http://example.com">'
+             'http://<wbr></wbr>example.<wbr></wbr>com</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/path">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path</a></p>'),
+            ('<p><a rel="nofollow" href="http://example.com/path/">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path/</a></p>'),
+            ]
+
+        self.assertEqual(
+            expected_strings,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
+    def test_parens_handled_well(self):
+        test_strings = [
+            '(http://example.com)',
+            'http://example.com/path_(with_parens)',
+            '(http://example.com/path_(with_parens))',
+            '(http://example.com/path_(with_parens)and_stuff)',
+            ]
+
+        expected_html = [
+            ('<p>(<a rel="nofollow" href="http://example.com">'
+             'http://<wbr></wbr>example.<wbr></wbr>com</a>)</p>'),
+            ('<p><a rel="nofollow" '
+             'href="http://example.com/path_(with_parens)">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
+             '<wbr></wbr>(with_parens)</a></p>'),
+            ('<p>(<a rel="nofollow" '
+             'href="http://example.com/path_(with_parens)">'
+             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
+             '<wbr></wbr>(with_parens)</a>)</p>'),
+            ('<p>(<a rel="nofollow" '
+             'href="http://example.com/path_(with_parens)and_stuff">'
+             'http://<wbr></wbr>example.<wbr></wbr>com'
+             '/path_<wbr></wbr>(with_parens)<wbr></wbr>and_stuff</a>)</p>'),
+            ]
+
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
+    def test_protocol_alone_does_not_link(self):
+        test_string = "This doesn't link: apt:"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = "<p>This doesn't link: apt:</p>"
+        self.assertEqual(expected_html, html)
+
+        test_string = "This doesn't link: http://"
+        html = FormattersAPI(test_string).text_to_html()
+        expected_html = "<p>This doesn't link: http://</p>"
+        self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
         test_string = 'This becomes a link: apt:some-package'
@@ -124,7 +188,7 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             '<p>This becomes a link: '
             '<a rel="nofollow" '
-                'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
+            'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
         self.assertEqual(expected_html, html)
 
     def test_file_is_not_linked(self):
@@ -141,9 +205,10 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             "<p>This becomes a link: "
             '<a rel="nofollow" '
-            'href="data:text/plain,test">data:text/<wbr></wbr>plain,test</a></p>')
+            'href="data:text/plain,test">'
+            'data:text/<wbr></wbr>plain,test</a></p>')
         self.assertEqual(expected_html, html)
-            
+
 
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
