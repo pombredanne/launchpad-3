@@ -3,8 +3,7 @@
 
 __metaclass__ = type
 
-import posixpath
-
+import os.path
 import transaction
 from zope.component import getUtility
 
@@ -254,13 +253,14 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
             distroseries=self.distroseries)
         return (l10n_sourcepackage, pot)
 
-    def _getGuessedPOFile(self, source_name, template_name):
+    def _getGuessedPOFile(self, source_name, template_path):
         """Return new POTemplate and matched POFile for package and template.
         """
+        template_name = os.path.basename(template_path)
         package, pot = self.createSourcePackageAndPOTemplate(
             source_name, template_name)
         queue_entry = self.queue.addOrUpdateEntry(
-            '%s.po' % template_name, template_name, True, self.uploaderperson,
+            '%s.po' % template_path, template_name, True, self.uploaderperson,
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
         pofile = queue_entry.getGuessedPOFile()
@@ -294,6 +294,26 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
             'kde-l10n-ca-valencia', 'template')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(catalan_valencia, pofile.language)
+
+    def test_KDE4_language_subvariant(self):
+        # PO file 'sr@test/something.po' in a package named like
+        # 'kde-l10n-sr' belong in the 'something' translation domain
+        # for "sr@test" language translations.
+        serbian_test = self.factory.makeLanguage('sr@test')
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'sr@test/template')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian_test, pofile.language)
+
+    def test_KDE4_language_at_sign(self):
+        # PO file 'blah@test/something.po' in a package named like
+        # 'kde-l10n-sr' belong in the 'something' translation domain
+        # for "sr" language translations.
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'source/blah@test/template')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian, pofile.language)
 
 
 class TestProductOwnerEntryImporter(TestCaseWithFactory):
@@ -355,7 +375,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         if extension is not None:
             filename = "%s.%s" % (filename, extension)
         if directory is not None:
-            filename = posixpath.join(directory, filename)
+            filename = os.path.join(directory, filename)
         content = self.factory.getUniqueString()
         return (filename, content)
 
