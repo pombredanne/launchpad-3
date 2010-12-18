@@ -14,16 +14,7 @@ from canonical.config import config
 from lp.soyuz.enums import ArchivePurpose
 
 
-def update_pub_config(pubconf):
-    """Update dependent `PubConfig` fields.
-
-    Update fields dependending on 'archiveroot'.
-    """
-    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-    pubconf.overrideroot = None
-    pubconf.cacheroot = None
-    pubconf.miscroot = None
+APT_FTPARCHIVE_PURPOSES = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
 
 
 def getPubConfig(archive):
@@ -36,9 +27,10 @@ def getPubConfig(archive):
     pubconf = Config(archive.distribution)
     ppa_config = config.personalpackagearchive
 
-    if archive.purpose == ArchivePurpose.PRIMARY:
-        pass
-    elif archive.is_ppa:
+    pubconf.temproot = os.path.join(
+        config.archivepublisher.root, '%s-temp' % pubconf.distroName)
+
+    if archive.is_ppa:
         if archive.private:
             pubconf.distroroot = ppa_config.private_root
             pubconf.htaccessroot = os.path.join(
@@ -49,34 +41,41 @@ def getPubConfig(archive):
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.owner.name, archive.name,
             archive.distribution.name)
-        update_pub_config(pubconf)
-    elif archive.purpose == ArchivePurpose.PARTNER:
+    elif archive.is_main:
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, archive.distribution.name + '-partner')
-        update_pub_config(pubconf)
-    elif archive.purpose == ArchivePurpose.DEBUG:
-        pubconf.distroroot = config.archivepublisher.root
-        pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, archive.distribution.name + '-debug')
-        update_pub_config(pubconf)
+            pubconf.distroroot, archive.distribution.name)
+        if archive.purpose == ArchivePurpose.PARTNER:
+            pubconf.archiveroot += '-partner'
+        elif archive.purpose == ArchivePurpose.DEBUG:
+            pubconf.archiveroot += '-debug'
     elif archive.is_copy:
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot,
             archive.distribution.name + '-' + archive.name,
             archive.distribution.name)
-        # Multiple copy archives can exist on the same machine so the
-        # temp areas need to be unique also.
-        pubconf.temproot = pubconf.archiveroot + '-temp'
-        update_pub_config(pubconf)
-        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
-        pubconf.cacheroot = pubconf.archiveroot + '-cache'
-        pubconf.miscroot = pubconf.archiveroot + '-misc'
     else:
         raise AssertionError(
             "Unknown archive purpose %s when getting publisher config.",
             archive.purpose)
+
+    # There can be multiple copy archives, so the temp dir needs to be
+    # within the archive.
+    if archive.is_copy:
+        pubconf.temproot = pubconf.archiveroot + '-temp'
+
+    if archive.purpose in APT_FTPARCHIVE_PURPOSES:
+        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
+        pubconf.cacheroot = pubconf.archiveroot + '-cache'
+        pubconf.miscroot = pubconf.archiveroot + '-misc'
+    else:
+        pubconf.overrideroot = None
+        pubconf.cacheroot = None
+        pubconf.miscroot = None
+
+    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
 
     meta_root = os.path.join(
         pubconf.distroroot, archive.owner.name)
@@ -140,20 +139,6 @@ class Config(object):
         self.stayofexecution = self._distroconfig.get(
             "publishing", "pendingremovalduration", 5)
         self.stayofexecution = float(self.stayofexecution)
-        self.distroroot = self._distroconfig.get("publishing","root")
-        self.archiveroot = self._distroconfig.get("publishing","archiveroot")
-        self.poolroot = self._distroconfig.get("publishing","poolroot")
-        self.distsroot = self._distroconfig.get("publishing","distsroot")
-        self.overrideroot = self._distroconfig.get(
-            "publishing","overrideroot")
-        self.cacheroot = self._distroconfig.get("publishing","cacheroot")
-        self.miscroot = self._distroconfig.get("publishing","miscroot")
-        # XXX cprov 2007-04-26 bug=45270:
-        # We should build all the previous attributes
-        # dynamically like this. It would reduce the configuration complexity.
-        # Even before we have it properly modeled in LPDB.
-        self.temproot = os.path.join(
-            self.distroroot, '%s-temp' % self.distroName)
 
     def setupArchiveDirs(self):
         """Create missing required directories in archive.
