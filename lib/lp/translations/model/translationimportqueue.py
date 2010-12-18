@@ -1003,7 +1003,7 @@ class TranslationImportQueue:
 
     def _makePath(self, name, path_filter):
         """Make the file path from the name stored in the tarball."""
-        path = posixpath.normpath(name)
+        path = posixpath.normpath(name).lstrip('/')
         if path_filter:
             path = path_filter(path)
         return path

@@ -829,13 +829,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

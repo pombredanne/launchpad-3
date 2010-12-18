@@ -12,6 +12,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
@@ -352,3 +353,78 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
                 productseries=self.product.series[0])
             self.product.owner = self.new_owner
         self.assertEqual(self.old_owner, old_entry.importer)
+
+
+class TestTranslationImportQueue(TestCaseWithFactory):
+    """Tests for `TranslationImportQueue`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTranslationImportQueue, self).setUp()
+        self.productseries = self.factory.makeProductSeries()
+        self.importer = self.factory.makePerson()
+        self.import_queue = getUtility(ITranslationImportQueue)
+
+    def _makeFile(self, extension=None, directory=None):
+        """Create a file with arbitrary name and content.
+
+        Returns a tuple (name, content).
+        """
+        filename = self.factory.getUniqueString()
+        if extension is not None:
+            filename = "%s.%s" % (filename, extension)
+        if directory is not None:
+            filename = os.path.join(directory, filename)
+        content = self.factory.getUniqueString()
+        return (filename, content)
+
+    def _getQueuePaths(self):
+        entries = self.import_queue.getAllEntries(target=self.productseries)
+        return [entry.path for entry in entries]
+
+    def test_addOrUpdateEntriesFromTarball_baseline(self):
+        # Files from a tarball are placed in the queue.
+        files = dict((
+            self._makeFile('pot'),
+            self._makeFile('po'),
+            self._makeFile('xpi'),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertContentEqual(files.keys(), self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_only_translation_files(self):
+        # Only files with the right extensions are added.
+        files = dict((
+            self._makeFile(),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertEqual([], self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path(self):
+        # File names are store with full path.
+        files = dict((
+            self._makeFile('pot', 'directory'),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertEqual(files.keys(), self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path_leading_slash(self):
+        # Leading slashes are stripped from path names.
+        path, content = self._makeFile('pot', '/directory')
+        files = dict(((path, content),))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        stripped_path = path.lstrip('/')
+        self.assertEqual([stripped_path], self._getQueuePaths())
