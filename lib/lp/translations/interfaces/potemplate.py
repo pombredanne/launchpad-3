@@ -135,7 +135,7 @@ class IPOTemplate(IRosettaStats):
         required=True)
 
     iscurrent = exported(Bool(
-        title=_("Accept translations?"),
+        title=_("Template is active"),
         description=_(
             "If unchecked, people can no longer change the template's "
             "translations."),
