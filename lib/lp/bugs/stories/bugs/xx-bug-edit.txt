@@ -1,17 +1,5 @@
-Sample person tries to change the bug's nickname to a existing one and gets a nice error message. 
-
-  >>> user_browser.open(
-  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
-  >>> user_browser.getLink(url="+edit").click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
-  >>> user_browser.getControl('Nickname').value = 'blackhole'
-  >>> user_browser.getControl('Change').click()
-  >>> print user_browser.contents
-  <...
-  ...There is 1 error...
-  ...
-  ...blackhole is already in use by another bug...
+Bug editing
+===========
 
 The user should be able to look at the page title or heading and
 see the bug number being edited.
@@ -33,15 +21,15 @@ And now we show that any logged-in user can edit public bugs.
   >>> browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> browser.getControl('Summary').value = 'New Summary'
-  >>> browser.getControl('Nickname').value = 'testbug'
   >>> browser.getControl('Description').value = 'New description.'
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://.../debian/+source/mozilla-firefox/+bug/3'
-  >>> print browser.contents
-  <...testbug...
-  ...New Summary...
-  ...New description...
+  >>> content = find_main_content(browser.contents)
+  >>> print extract_text(content.h1)
+  New Summary
+  >>> print extract_text(find_tag_by_id(content, 'maincontentsub'))
+  Bug Description New description. ...
 
 
 == Viewing the original description ==

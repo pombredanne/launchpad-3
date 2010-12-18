@@ -634,7 +634,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
-    field_names = ['title', 'description', 'tags', 'name']
+    field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
     next_url = None

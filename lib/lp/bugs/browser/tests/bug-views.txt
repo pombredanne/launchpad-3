@@ -589,7 +589,7 @@ approve/decline nominations.)
 Bug Edit Page
 =============
 
-The bug edit page is used to edit the summary, description, nick name,
+The bug edit page is used to edit the summary, description,
 and bug tags. If the user try to add a tag that hasn't been used in the
 current context, we display a confirmation button, which shouldn't be
 automatically rendered by the form template. In order to show how it
@@ -611,6 +611,8 @@ Initially, the normal edit page is shown, with a single button.
 
     >>> bug_edit.view.render()
     EDIT BUG
+    >>> bug.field_names
+    ['title', 'description', 'tags']
     >>> [action.label for action in bug_edit.view.actions]
     ['Change']
 
@@ -621,7 +623,6 @@ and the bug will have been edited.
     >>> edit_values = {
     ...     'field.title': u'New title',
     ...     'field.description': u'New description.',
-    ...     'field.name': u'new-nickname',
     ...     'field.tags': u'doc'}
 
     >>> bug_edit.submit('change', edit_values)
@@ -634,8 +635,6 @@ and the bug will have been edited.
     u'New title'
     >>> bug_one.description
     u'New description.'
-    >>> bug_one.name
-    u'new-nickname'
     >>> bug_one.tags
     [u'doc']
 
