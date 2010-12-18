@@ -8,10 +8,18 @@ __metaclass__ = type
 __all__ = []
 
 import unittest
+import transaction
 
 from canonical.launchpad.ftests import login_person
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from canonical.testing import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.testing import (
+    TestCaseWithFactory,
+    ws_object,
+    )
+
 
 class TestBugTrackerComponent(TestCaseWithFactory):
 
@@ -33,7 +41,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         """Verify a component can be created"""
         component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
-        self.assertTrue(component is not None)
+        self.assertIsNot(None, component)
         self.assertEqual(component.name, u'example')
 
     def test_set_visibility(self):
@@ -62,7 +70,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         the omissions."""
         custom_component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group, custom=True)
-        self.assertTrue(custom_component != None)
+        self.assertIsNot(None, custom_component)
         self.assertEqual(custom_component.is_custom, True)
 
     def test_multiple_component_creation(self):
@@ -74,9 +82,20 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         comp_c = self.factory.makeBugTrackerComponent(
             u'example-c', self.comp_group, True)
 
-        self.assertTrue(comp_a is not None)
-        self.assertTrue(comp_b is not None)
-        self.assertTrue(comp_c is not None)
+        self.assertIsNot(None, comp_a)
+        self.assertIsNot(None, comp_b)
+        self.assertIsNot(None, comp_c)
+
+    def test_link_distro_source_package(self):
+        """Check that a link can be set to a distro source package"""
+        component = self.factory.makeBugTrackerComponent(
+            u'example', self.comp_group)
+        package = self.factory.makeDistributionSourcePackage()
+        self.assertIs(None, component.distro_source_package)
+
+        # Set the source package on the component
+        component.distro_source_package = package
+        self.assertIsNot(None, component.distro_source_package)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
@@ -167,6 +186,111 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         # Check one of the components, that it is what we expect
         comp = comp_group.getComponent(u'example-b')
         self.assertEqual(comp.name, u'example-b')
+
+
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestWebservice, self).setUp()
+
+        regular_user = self.factory.makePerson()
+        login_person(regular_user)
+
+        self.bug_tracker = self.factory.makeBugTracker()
+        self.launchpad = self.factory.makeLaunchpadService()
+
+    def test_get_bug_tracker(self):
+        """Check that bug tracker can be retrieved"""
+        bug_tracker = ws_object(self.launchpad, self.bug_tracker)
+        self.assertIsNot(None, bug_tracker)
+
+    def test_bug_tracker_with_no_component_groups(self):
+        """Initially, the bug tracker has no component groups"""
+        bug_tracker = ws_object(self.launchpad, self.bug_tracker)
+        comp_groups = bug_tracker.getAllRemoteComponentGroups()
+        self.assertEqual(0, len(list(comp_groups)))
+
+    def test_retrieve_component_group_from_bug_tracker(self):
+        """Looks up specific component group in bug tracker"""
+        self.bug_tracker.addRemoteComponentGroup(u'alpha')
+
+        bug_tracker = ws_object(self.launchpad, self.bug_tracker)
+        comp_group = bug_tracker.getRemoteComponentGroup(
+            component_group_name=u'alpha')
+        self.assertIsNot(None, comp_group)
+
+    def test_list_component_groups_for_bug_tracker(self):
+        """Retrieve the component groups for a bug tracker"""
+        self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        self.bug_tracker.addRemoteComponentGroup(u'beta')
+
+        bug_tracker = ws_object(self.launchpad, self.bug_tracker)
+        comp_groups = bug_tracker.getAllRemoteComponentGroups()
+        self.assertEqual(2, len(list(comp_groups)))
+
+    def test_list_components_for_component_group(self):
+        """Retrieve the components for a given group"""
+        db_comp_group_alpha = self.bug_tracker.addRemoteComponentGroup(
+            u'alpha')
+        db_comp_group_alpha.addComponent(u'1')
+        db_comp_group_alpha.addComponent(u'2')
+        transaction.commit()
+
+        comp_group = ws_object(self.launchpad, db_comp_group_alpha)
+        self.assertEqual(2, len(comp_group.components))
+
+    def test_add_component(self):
+        """Add a custom (local) component to the component group"""
+        db_comp_group = self.bug_tracker.addRemoteComponentGroup(
+            u'alpha')
+        comp_group = ws_object(self.launchpad, db_comp_group)
+        comp_group.addComponent(component_name=u'c')
+        self.assertEqual(1, len(comp_group.components))
+
+    def test_remove_component(self):
+        """Make a component not visible in the UI"""
+        db_comp = self.factory.makeBugTrackerComponent()
+        transaction.commit()
+
+        comp = ws_object(self.launchpad, db_comp)
+        self.assertTrue(comp.is_visible)
+        comp.is_visible = False
+        self.assertFalse(comp.is_visible)
+
+    def test_get_linked_source_package(self):
+        """Already linked source packages can be seen from the component"""
+        db_src_pkg = self.factory.makeDistributionSourcePackage()
+        db_comp = self.factory.makeBugTrackerComponent()
+        db_comp.distro_source_package = db_src_pkg
+        transaction.commit()
+
+        comp = ws_object(self.launchpad, db_comp)
+        self.assertIsNot(None, comp.distro_source_package)
+
+    def test_link_source_package(self):
+        """Link a component to a given source package"""
+        db_src_pkg = self.factory.makeDistributionSourcePackage()
+        db_comp = self.factory.makeBugTrackerComponent()
+        transaction.commit()
+
+        comp = ws_object(self.launchpad, db_comp)
+        src_pkg = ws_object(self.launchpad, db_src_pkg)
+        self.assertIs(None, comp.distro_source_package)
+        comp.distro_source_package = src_pkg
+        self.assertIsNot(None, comp.distro_source_package)
+
+    def test_relink_same_source_package(self):
+        """Attempts to re-link the same source package should not error"""
+        db_src_pkg = self.factory.makeDistributionSourcePackage()
+        db_comp = self.factory.makeBugTrackerComponent()
+        db_comp.distro_source_package = db_src_pkg
+        transaction.commit()
+
+        component = ws_object(self.launchpad, db_comp)
+        package = ws_object(self.launchpad, db_src_pkg)
+        component.distro_source_package = package
 
 
 def test_suite():

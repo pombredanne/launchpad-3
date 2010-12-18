@@ -167,23 +167,30 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     legal_arch_tags = set(
         arch.architecturetag for arch in legal_archseries if arch.enabled)
 
-    # We need to support arch tags like any-foo and linux-foo, so remove
-    # supported kernel prefixes, Also allow linux-any but not any-any.
-    # See bugs #73761 and #605002.
-    if hint_string in ['any', 'linux-any']:
+    hint_archs = set(hint_string.split())
+
+    # If a *-any architecture wildcard is present, build for everything
+    # we can. We only support Linux-based architectures at the moment,
+    # and any-any isn't a valid wildcard. See bug #605002.
+    if hint_archs.intersection(('any', 'linux-any')):
         package_tags = legal_arch_tags
-    elif hint_string == 'all':
-        nominated_arch = distroseries.nominatedarchindep
-        legal_archseries_ids = [arch.id for arch in legal_archseries]
-        assert nominated_arch.id in legal_archseries_ids, (
-            'nominatedarchindep is not present in legal_archseries: %s' %
-            ' '.join(legal_arch_tags))
-        package_tags = set([nominated_arch.architecturetag])
     else:
-        my_archs = hint_string.split()
-        for kernel in ['linux', 'any']:
-            my_archs = [arch.replace("%s-" % kernel, "") for arch in my_archs]
-        package_tags = set(my_archs).intersection(legal_arch_tags)
+        # We need to support arch tags like any-foo and linux-foo, so remove
+        # supported kernel prefixes. See bug #73761.
+        stripped_archs = hint_archs
+        for kernel in ('linux', 'any'):
+            stripped_archs = set(
+                arch.replace("%s-" % kernel, "") for arch in stripped_archs)
+        package_tags = stripped_archs.intersection(legal_arch_tags)
+
+        # 'all' is only used as a last resort, to create an arch-indep
+        # build where no builds would otherwise exist.
+        if len(package_tags) == 0 and 'all' in hint_archs:
+            nominated_arch = distroseries.nominatedarchindep
+            assert nominated_arch in legal_archseries, (
+                'nominatedarchindep is not present in legal_archseries: %s' %
+                ' '.join(legal_arch_tags))
+            package_tags = set([nominated_arch.architecturetag])
 
     if pas_verify:
         build_tags = set()

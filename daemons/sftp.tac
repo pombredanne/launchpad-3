@@ -8,7 +8,7 @@
 from twisted.application import service
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 from lp.codehosting.sshserver.daemon import (
     ACCESS_LOG_NAME, get_key_path, LOG_NAME, make_portal, OOPS_CONFIG_SECTION,
@@ -32,4 +32,4 @@ svc = SSHService(
 svc.setServiceParent(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(application)
+readyservice.ReadyService().setServiceParent(application)

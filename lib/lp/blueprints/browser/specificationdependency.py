@@ -17,10 +17,12 @@ from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
     )
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,

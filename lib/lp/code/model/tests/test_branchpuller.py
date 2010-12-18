@@ -61,7 +61,7 @@ class TestMirroringForImportedBranches(TestCaseWithFactory):
         """requestMirror sets the mirror request time to 'now'."""
         branch = self.makeAnyBranch()
         branch.requestMirror()
-        self.assertEqual(UTC_NOW, branch.next_mirror_time)
+        self.assertSqlAttributeEqualsDate(branch, 'next_mirror_time', UTC_NOW)
 
     def test_requestMirror_doesnt_demote_branch(self):
         # requestMirror() sets the mirror request time to 'now' unless
@@ -72,16 +72,16 @@ class TestMirroringForImportedBranches(TestCaseWithFactory):
         past_time = datetime.now(pytz.UTC) - timedelta(days=1)
         removeSecurityProxy(branch).next_mirror_time = past_time
         branch.requestMirror()
-        self.assertEqual(past_time, branch.next_mirror_time)
+        self.assertEqual(branch.next_mirror_time, past_time)
 
     def test_requestMirror_can_promote_branch(self):
         # requestMirror() sets the mirror request time to 'now' if
         # next_mirror_time is set and in the future.
         branch = self.makeAnyBranch()
-        future_time = datetime.now(pytz.UTC) - timedelta(days=1)
+        future_time = datetime.now(pytz.UTC) + timedelta(days=1)
         removeSecurityProxy(branch).next_mirror_time = future_time
         branch.requestMirror()
-        self.assertEqual(UTC_NOW, branch.next_mirror_time)
+        self.assertSqlAttributeEqualsDate(branch, 'next_mirror_time', UTC_NOW)
 
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""

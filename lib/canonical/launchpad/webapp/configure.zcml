@@ -67,6 +67,14 @@
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
 
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundReferenceSet' />
+
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundIndirectReferenceSet' />
+
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />

@@ -39,7 +39,6 @@ category_report() {
     }
 
 report() {
-    category_report $* edge /srv/launchpad.net-logs/edge
     category_report $* lpnet /srv/launchpad.net-logs/production
     return 0
 }

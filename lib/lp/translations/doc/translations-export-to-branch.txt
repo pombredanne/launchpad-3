@@ -186,6 +186,8 @@ the time it last exported them, it won't export them again.
     >>> script.simulated_latest_commit = now
     >>> main_pofile.date_changed = now - timedelta(days=3)
     >>> module_pofile.date_changed = now - timedelta(days=4)
+    >>> module_pofile.potemplate.date_last_updated = now - timedelta(days=5)
+    >>> transaction.commit()
     >>> old_pofile.date_changed = now - timedelta(days=5)
 
     >>> script.main()
@@ -220,8 +222,8 @@ database without populating them in bzr.  Exporting to such a branch
 won't work, so we email a notification to the branch owner.
 
     >>> from email import message_from_string
-    >>> from lp.services.mail import stub
     >>> from lp.codehosting.vfs import get_rw_server
+    >>> from lp.services.mail import stub
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
     >>> productseries = factory.makeProductSeries()

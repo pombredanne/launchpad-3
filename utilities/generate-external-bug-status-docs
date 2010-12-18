@@ -27,8 +27,7 @@ from datetime import datetime
 from itertools import chain
 from optparse import OptionParser
 
-from canonical.launchpad.components.externalbugtracker import (
-    BUG_TRACKER_CLASSES)
+from lp.bugs.externalbugtracker import BUG_TRACKER_CLASSES
 
 
 def generate_blank_lines(num):

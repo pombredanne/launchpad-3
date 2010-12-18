@@ -24,14 +24,16 @@ from zope.interface import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
@@ -145,8 +147,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
-        bug_branch = bug.linkBranch(
-            branch=self.context, registrant=self.user)
+        bug.linkBranch(branch=self.context, registrant=self.user)
 
 
 class BugBranchXHTMLRepresentation:

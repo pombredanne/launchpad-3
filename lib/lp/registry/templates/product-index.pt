@@ -12,6 +12,39 @@
     <tal:registrant replace="structure context/registrant/fmt:link" />
   </tal:registering>
 
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <style type="text/css">
+      div.collapsible {
+        border:medium none;
+        margin:0;
+        padding:16px 0 0;
+      }
+
+      div.collapsed {
+        display: None
+      }
+    </style>
+
+    <noscript>
+      <style type="text/css">
+        div.collapsible, div.collapsed {display: block;}
+      </style>
+    </noscript>
+
+        <script type="text/javascript"
+                tal:content="string:
+          LPS.use('lp.registry.pillar', function(Y) {
+              Y.on('load',
+                  function(e) {
+                      Y.lp.registry.pillar.activate_collapsible_div();
+                  },
+                  window);
+          });
+        "/>
+  </tal:head-epilogue>
+</head>
+
   <body>
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">

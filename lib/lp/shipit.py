@@ -1,7 +1,4 @@
-from canonical.launchpad import (
-    _,
-    versioninfo,
-    )
+from canonical.launchpad import _
 # From browser/configure.zcml.
 from canonical.launchpad.browser import MaintenanceMessage
 # From browser/configure.zcml.
@@ -16,13 +13,6 @@ from canonical.launchpad.helpers import (
     intOrZero,
     shortlist,
     )
-# From browser/configure.zcml.
-from canonical.launchpad.interfaces import (
-    ILaunchpadRoot,
-    IMasterObject,
-    ISlaveStore,
-    IStore,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -31,6 +21,12 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+# From browser/configure.zcml.
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    ISlaveStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.security import AuthorizationBase
@@ -50,7 +46,8 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown as sd_tearDown,
     )
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.versioninfo import revno
+from lp.app import versioninfo
+from lp.app.versioninfo import revno
 from canonical.launchpad.webapp import (
     canonical_url,
     Navigation,
@@ -65,15 +62,10 @@ from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadApplication,
+    ILaunchpadRoot,
     IPlacelessLoginSource,
     IStoreSelector,
     UnexpectedFormData,
-    )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     )
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession,
@@ -97,6 +89,12 @@ from canonical.launchpad.webapp.tests.test_login import (
     SRegResponse_fromSuccessResponse_stubbed,
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -108,7 +106,7 @@ from lp.services.mail import stub
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,

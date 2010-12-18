@@ -39,9 +39,9 @@ canonical mirror.
 
 Note that unofficial mirrors are not included in the listings.
 
-    >>> from lp.registry.model.distributionmirror import DistributionMirrorSet
-    >>> from canonical.launchpad.interfaces import MirrorStatus
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.registry.interfaces.distributionmirror import MirrorStatus
+    >>> from lp.registry.model.distributionmirror import DistributionMirrorSet
     >>> mirror = DistributionMirrorSet().getByHttpUrl(
     ...     'http://localhost:11375/archive-mirror/')
     >>> mirror.status = MirrorStatus.UNOFFICIAL

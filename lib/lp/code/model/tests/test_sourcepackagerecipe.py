@@ -3,8 +3,6 @@
 
 """Tests for the SourcePackageRecipe content type."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (
@@ -43,6 +41,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -52,7 +51,10 @@ from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
     SourcePackageRecipe,
     )
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild,
+    SourcePackageRecipeBuildJob,
+    )
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
@@ -67,10 +69,12 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.testing import (
     ANONYMOUS,
+    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     ws_object,
     )
@@ -80,6 +84,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageRecipe, self).setUp()
+        self.useContext(feature_flags())
 
     def test_implements_interface(self):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
@@ -221,7 +229,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_rejects_run_command(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
@@ -234,7 +242,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         sp_recipe = self.factory.makeSourcePackageRecipe()
         old_branches = list(sp_recipe.getReferencedBranches())
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
@@ -245,6 +253,36 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 recipe_text)
         self.assertEquals(
             old_branches, list(sp_recipe.getReferencedBranches()))
+
+    def test_nest_part(self):
+        """nest-part instruction can be round-tripped."""
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo bar tag:foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+
+    def test_nest_part_no_target(self):
+        """nest-part instruction with no target-dir can be round-tripped."""
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+
+    def test_accept_format_0_3(self):
+        """Recipe format 0.3 is accepted."""
+        builder_recipe = self.factory.makeRecipe()
+        builder_recipe.format = 0.3
+        self.factory.makeSourcePackageRecipe(recipe=str(builder_recipe))
 
     def test_reject_newer_formats(self):
         with recipe_parser_newest_version(145.115):
@@ -348,6 +386,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
             PackagePublishingPocket.RELEASE)
+
+    def test_recipes_enabled_config(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        self.assertFalse(recipes_enabled())
+
+    def test_recipes_enabled_flag(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        set_feature_flag(u'code.recipes_enabled', u'on')
+        self.assertTrue(recipes_enabled())
 
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
@@ -470,7 +517,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_destroySelf_clears_release(self):
+    def test_destroySelf_preserves_release(self):
         # Destroying a sourcepackagerecipe removes references to its builds
         # from their releases.
         recipe = self.factory.makeSourcePackageRecipe()
@@ -480,7 +527,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build, release.source_package_recipe_build)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()
-        self.assertIs(None, release.source_package_recipe_build)
+        self.assertIsNot(None, release.source_package_recipe_build)
+
+    def test_destroySelf_retains_build(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        store = Store.of(build)
+        store.flush()
+        build_id = build.id
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertEqual(recipe, build.recipe)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertIs(None, build.recipe)
         transaction.commit()
 
     def test_findStaleDailyBuilds(self):
@@ -564,7 +632,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_simplest_recipe(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
@@ -574,7 +642,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge bar %(merged)s
         ''' % self.branch_identities
@@ -589,7 +657,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
@@ -604,7 +672,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest_then_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         merge zam %(merged)s
@@ -624,7 +692,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge_then_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge zam %(merged)s
         nest bar %(nested)s baz
@@ -644,7 +712,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_a_merge_in_to_a_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           merge zam %(merged)s
@@ -667,7 +735,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nested2 = self.factory.makeAnyBranch()
         self.branch_identities['nested2'] = nested2.bzr_identity
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           nest zam %(nested2)s zoo
@@ -687,7 +755,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def tests_builds_recipe_with_revspecs(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s revid:a
         nest bar %(nested)s baz tag:b
         merge zam %(merged)s 2
@@ -732,7 +800,7 @@ class TestWebservice(TestCaseWithFactory):
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         transaction.commit()
         launchpad = launchpadlib_for('test', user,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)

@@ -36,7 +36,7 @@ Not everyone can modify it however:
     Content-Type: text/plain
     X-Lazr-Oopsid: OOPS-...
     <BLANKLINE>
-    (<Product at 0x...>, 'bug_reporting_guidelines', 'launchpad.Edit')
+    (..., 'bug_reporting_guidelines', 'launchpad.BugSupervisor')
     <BLANKLINE>
     Traceback (most recent call last):
     ...
@@ -50,7 +50,7 @@ We can access official bug tag targets and add and remove tags. We
 create a new product, owned by ~salgado.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> salgado = getUtility(IPersonSet).getByName('salgado')

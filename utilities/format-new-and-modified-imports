@@ -9,5 +9,5 @@
 #
 
 bzr status --short "$@" | \
-    awk '/^.[MN] .*[.]py$/ { print $2 }' | \
+    awk '/^.[MN] .*[.]py$/ { print $NF }' | \
     xargs -r "$(dirname "$0")/format-imports"

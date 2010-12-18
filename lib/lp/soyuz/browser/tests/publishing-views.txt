@@ -74,7 +74,7 @@ for each file related with the alsa-utils source publication in ubuntu.
 'iceweasel' source in Celso's PPA contains binary files that can be
 inspected.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
 
     >>> iceweasel_source_pub = cprov.archive.getPublishedSources(

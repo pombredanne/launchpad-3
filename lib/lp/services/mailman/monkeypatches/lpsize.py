@@ -1,15 +1,43 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A pipeline handler for checking message sizes."""
 
-# pylint: disable-msg=F0401
+import email
+
 from Mailman import (
     Errors,
+    Message,
     mm_cfg,
     )
 from Mailman.Handlers.LPModerate import hold
 from Mailman.Logging.Syslog import syslog
+
+
+def truncated_message(original_message, limit=10000):
+    """Create a smaller version of the message for moderation."""
+    message = email.message_from_string(
+        original_message.as_string(), Message.Message)
+    for part in email.iterators.typed_subpart_iterator(message, 'multipart'):
+        subparts = part.get_payload()
+        removeable = []
+        for subpart in subparts:
+            if subpart.get_content_maintype() == 'multipart':
+                # This part is handled in the outer loop.
+                continue
+            elif subpart.get_content_type() == 'text/plain':
+                # Truncate the message at 10kb so that there is enough
+                # information for the moderator to make a decision.
+                content = subpart.get_payload().strip()
+                if len(content) > limit:
+                    subpart.set_payload(
+                        content[:limit] + '\n[truncated for moderation]',
+                        subpart.get_charset())
+            else:
+                removeable.append(subpart)
+        for subpart in removeable:
+            subparts.remove(subpart)
+    return message
 
 
 def process(mlist, msg, msgdata):
@@ -42,7 +70,10 @@ def process(mlist, msg, msgdata):
     if message_size < mm_cfg.LAUNCHPAD_HARD_MAX_SIZE:
         # Hold the message in Mailman.  See lpmoderate.py for similar
         # algorithm.
-        hold(mlist, msg, msgdata, 'Too big')
+        # There is a limit to the size that can be stored in Lp. Send
+        # a trucated copy of the message that has enough information for
+        # the moderator to make a decision.
+        hold(mlist, truncated_message(msg), msgdata, 'Too big')
     # The message is larger than the hard limit, so log and discard.
     syslog('vette', 'Discarding message w/size > hard limit: %s',
            msg.get('message-id', 'n/a'))

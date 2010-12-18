@@ -64,7 +64,9 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message
@@ -73,6 +75,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -244,8 +247,8 @@ class MailingList(SQLBase):
         return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+        return '<MailingList for team "%s"; status=%s; address=%s at %#x>' % (
+            self.team.name, self.status.name, self.address, id(self))
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -887,7 +890,34 @@ class MessageApprovalSet:
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
-        return MessageApproval.selectBy(status=status)
+        # Use the master store as the messages will also be acknowledged and
+        # we want to make sure we are acknowledging the same messages that we
+        # iterate over.
+        return IMasterStore(MessageApproval).find(
+            (Message.rfc822msgid, Person.name),
+            MessageApproval.status == status,
+            MessageApproval.message == Message.id,
+            MessageApproval.mailing_list == MailingList.id,
+            MailingList.team == Person.id)
+
+    def acknowledgeMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        transitions = {
+            PostedMessageStatus.APPROVAL_PENDING:
+                PostedMessageStatus.APPROVED,
+            PostedMessageStatus.REJECTION_PENDING:
+                PostedMessageStatus.REJECTED,
+            PostedMessageStatus.DISCARD_PENDING:
+                PostedMessageStatus.DISCARDED,
+            }
+        try:
+            next_state = transitions[status]
+        except KeyError:
+            raise AssertionError(
+                'Not an acknowledgeable state: %s' % status)
+        approvals = IMasterStore(MessageApproval).find(
+            MessageApproval, MessageApproval.status == status)
+        approvals.set(status=next_state)
 
 
 class HeldMessageDetails:

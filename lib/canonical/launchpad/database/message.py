@@ -63,11 +63,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasSet,
-    IPersonSet,
-    PersonCreationRationale,
-    UnknownSender,
     )
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization,
@@ -77,10 +74,15 @@ from canonical.launchpad.interfaces.message import (
     IMessageSet,
     InvalidEmailMessage,
     IUserToUserEmail,
+    UnknownSender,
     )
 from canonical.launchpad.mail import signed_message_from_string
 from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    validate_public_person,
+    )
 from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 
@@ -236,8 +238,8 @@ class MessageSet:
         If the header isn't encoded properly, the characters that can't
         be decoded are replaced with unicode question marks.
 
-            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
-            u'F\ufffd\ufffd'
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6?=')
+            u'F\ufffd'
         """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())

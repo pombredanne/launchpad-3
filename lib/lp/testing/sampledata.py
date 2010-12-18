@@ -58,7 +58,6 @@ NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
 USER_EMAIL = 'test@canonical.com'
 VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'
 COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
-ADMIN_EMAIL = 'foo.bar@canonical.com'
 SAMPLE_PERSON_EMAIL = USER_EMAIL
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.

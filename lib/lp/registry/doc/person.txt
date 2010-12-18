@@ -6,11 +6,15 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.registry.interfaces.person import (
+    ...     IHasStanding,
+    ...     IPerson,
+    ...     IPersonSet,
+    ...     )
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
@@ -79,8 +83,8 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
@@ -136,8 +140,8 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from canonical.launchpad.database.account import Account
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
     >>> account.activate(
     ...     "Activated by doc test.",
@@ -330,7 +334,7 @@ value is available.
 A Launchpad administrator may change a person's standing, and may give a
 reason for the change.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -387,7 +391,7 @@ we may have Person objects which are, in fact, teams. To find out
 whether a given object is a person or a team we can use the isTeam()
 method of IPerson or check if the object provides the ITeam interface.
 
-    >>> from canonical.launchpad.interfaces import ITeam
+    >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
     >>> ddaa.isTeam()
     False
@@ -437,8 +441,8 @@ is raised.
 PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -635,6 +639,7 @@ Email notifications to teams
 If a team has a contact email address, all notifications we send to the
 team will go to that address.
 
+    >>> login('no-priv@canonical.com')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
@@ -719,7 +724,7 @@ The key concept in displaying the latest team memberships is that the
 team list is actually sorted by date joined.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
@@ -746,11 +751,11 @@ address:
     # First we'll define a utility function to help us displaying
     # the results.
 
-    >>> emailset = getUtility(IEmailAddressSet)
+    >>> naked_emailset = removeSecurityProxy(getUtility(IEmailAddressSet))
     >>> def print_people(results):
     ...     for person in results:
     ...         emails = [email.email
-    ...                   for email in emailset.getByPerson(person)]
+    ...                   for email in naked_emailset.getByPerson(person)]
     ...         print "%s (%s): %s" % (
     ...             person.displayname, person.name, emails)
 
@@ -856,7 +861,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()
@@ -1042,8 +1047,9 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IProjectGroup, IProduct)
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
@@ -1144,7 +1150,7 @@ Person.languages.
 
 To add new languages we use Person.addLanguage().
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> languageset = getUtility(ILanguageSet)
     >>> carlos.addLanguage(languageset['pt_BR'])
     >>> [lang.code for lang in carlos.languages]
@@ -1189,7 +1195,7 @@ on certain criteria:
 First, Carlos does not have any completed specifications assigned to
 him:
 
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()
@@ -1267,8 +1273,8 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
 
@@ -1319,7 +1325,7 @@ within the context of a specific bug target, or in Launchpad in general.
 A person with bugs assigned to them in a context is considered a 'Bug
 Contributor'.
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
     >>> cprov.searchTasks(
     ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
@@ -1333,7 +1339,7 @@ contributor.
 
 We assign a bug task to Celso.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> search_params = BugTaskSearchParams(user=foobar)
     >>> search_params.setProduct(firefox)
     >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]
@@ -1347,7 +1353,7 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 

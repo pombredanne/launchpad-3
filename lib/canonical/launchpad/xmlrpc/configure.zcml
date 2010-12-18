@@ -9,7 +9,7 @@
   >
 
   <securedutility
-      class="canonical.launchpad.xmlrpc.PrivateApplication"
+      class="canonical.launchpad.xmlrpc.application.PrivateApplication"
       provides="canonical.launchpad.interfaces.launchpad.IPrivateApplication">
       <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateApplication"/>
   </securedutility>
@@ -23,7 +23,7 @@
   <xmlrpc:view
     for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
     interface="canonical.launchpad.interfaces.authserver.IAuthServer"
-    class="canonical.launchpad.xmlrpc.AuthServerAPIView"
+    class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
     permission="zope.Public"
     />
 
@@ -49,7 +49,7 @@
   <xmlrpc:view
     for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
     interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
-    class="canonical.launchpad.xmlrpc.CodeImportSchedulerAPI"
+    class="lp.code.xmlrpc.codeimportscheduler.CodeImportSchedulerAPI"
     permission="zope.Public"
     />
 
@@ -62,7 +62,7 @@
   <xmlrpc:view
     for="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"
     interface="lp.bugs.interfaces.externalbugtracker.IExternalBugTrackerTokenAPI"
-    class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
+    class="lp.bugs.xmlrpc.bug.ExternalBugTrackerTokenAPI"
     permission="zope.Public"
     />
 

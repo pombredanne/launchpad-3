@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
@@ -104,7 +105,6 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
         """Make a driver for `object_with_driver`, and return the driver."""
         object_with_driver.driver = self.factory.makePerson()
         return object_with_driver.driver
-
 
     def test_drivers_group(self):
         # A driver on the group is reported as one of the drivers of the
@@ -271,6 +271,34 @@ class TestProductSeriesSet(TestCaseWithFactory):
         self.assertContentEqual(
                 [productseries, second_series],
                 self.ps_set.findByTranslationsImportBranch(branch, True))
+
+
+class TestProductSeriesReleases(TestCaseWithFactory):
+    '''Tests the releases functions for productseries.'''
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesReleases, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.productseries = self.factory.makeProductSeries(
+                                            product=self.product)
+
+    def test_getLatestRelease(self):
+        # getLatestRelease returns the most recent release.
+        self.assertIs(None, self.productseries.getLatestRelease())
+
+        release = self.factory.makeProductRelease(
+                        product=self.product,
+                        productseries=self.productseries)
+        self.assertEqual(release, self.productseries.getLatestRelease())
+
+        second_release = self.factory.makeProductRelease(
+                                product=self.product,
+                                productseries=self.productseries)
+        self.assertEqual(
+            second_release,
+            self.productseries.getLatestRelease())
 
 
 def test_suite():

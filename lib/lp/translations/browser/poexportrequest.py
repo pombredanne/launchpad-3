@@ -19,7 +19,9 @@ from canonical.launchpad.webapp import (
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )

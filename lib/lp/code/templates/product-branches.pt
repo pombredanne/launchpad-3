@@ -6,6 +6,12 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="context/codehosting_usage/enumvalue:UNKNOWN"
+      name="robots" content="noindex,nofollow" />
+  </tal:head-epilogue>
+</head>
 
 <body>
 
@@ -49,13 +55,16 @@
            tal:content="structure link/render"></p>
       </div>
 
-      <div tal:replace="structure context/@@+portlet-product-codestatistics" />
     </div>
   </metal:side>
 
   <tal:main metal:fill-slot="main">
 
     <tal:branch-summary content="structure context/@@+branch-summary" />
+
+    <tal:code-statistics
+      condition="not: view/context/codehosting_usage/enumvalue:UNKNOWN"
+      replace="structure context/@@+portlet-product-codestatistics" />
 
     <tal:has-branches condition="view/branch_count"
                       define="branches view/branches">

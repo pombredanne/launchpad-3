@@ -8,12 +8,12 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import (
     Config,
     LucilleConfigError,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import TestCaseWithFactory
 
 

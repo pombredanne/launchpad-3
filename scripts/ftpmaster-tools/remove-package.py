@@ -23,13 +23,18 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (BinaryPackagePublishingHistory,
-                                          SourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
 from canonical.lp import initZopeless
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 from contrib.glock import GlobalLock
 

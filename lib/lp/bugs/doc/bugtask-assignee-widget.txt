@@ -15,13 +15,13 @@ argument:
 
 and a context, which is an IBugTask.assignee field:
 
-  >>> from canonical.launchpad.interfaces import IBugTask
+  >>> from lp.bugs.interfaces.bugtask import IBugTask
   >>> field = IBugTask['assignee']
 
 Let's borrow a bugtask to use in this example:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugTaskSet
+  >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
   >>> bugtask = getUtility(IBugTaskSet).get(2)
 
   >>> ORIGINAL_ASSIGNEE = bugtask.assignee
@@ -81,7 +81,7 @@ The widget has valid input:
 
 The input value is the current user:
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag
+  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
   >>> widget.getInputValue() == getUtility(ILaunchBag).user
   True
 

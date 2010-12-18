@@ -28,15 +28,17 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
@@ -274,7 +276,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         vote = data.get('vote')
         review_type = data.get('review_type')
-        comment = self.branch_merge_proposal.createComment(
+        self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
             parent=self.reply_to, vote=vote, review_type=review_type)
 

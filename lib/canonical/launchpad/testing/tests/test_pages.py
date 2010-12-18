@@ -9,6 +9,8 @@ import shutil
 import tempfile
 import unittest
 
+from bzrlib.tests import iter_suite_tests
+
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.testing.layers import PageTestLayer
 
@@ -40,7 +42,7 @@ class TestMakeStoryTest(unittest.TestCase):
         # module's path.
         suite = PageTestSuite(os.path.basename(self.tempdir))
         self.failUnless(isinstance(suite, unittest.TestSuite))
-        [bar_test, story] = list(suite)
+        bar_test, story = iter_suite_tests(suite)
 
         # The unnumbered file appears as an independent test.
         self.assertEqual(os.path.basename(bar_test.id()), 'xx-bar_txt')

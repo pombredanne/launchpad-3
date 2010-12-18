@@ -32,7 +32,6 @@
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
 .extra-discreet {font-size: 75%;}
-.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
@@ -450,7 +449,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
 }
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
+.tab-branches #application-footer strong, .tab-branches #application-summary strong {
   background: none;
   color: #d18b39;
 }
@@ -655,21 +654,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.search-box {
-  text-align: left;
-  float: left;
-  border:1px solid #d6d6d6;
-  margin: 0.5em 0 0.5em 0;
-  color: #717171;
-  padding: 8px;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-
-.search-box form.primary.search {
-  margin: 0.5em;
-}
 
 /* ====== Content area styles ====== */
 

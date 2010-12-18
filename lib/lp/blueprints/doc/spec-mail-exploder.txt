@@ -78,7 +78,7 @@ The mail handler that handles mail on notifications@specs.launchpad.net
 is SpecificationHandler.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> handler = mail_handlers.get(config.launchpad.specs_domain)
     >>> handler is not None
     True
@@ -264,12 +264,12 @@ webmaster@ubuntu.com doesn't belong to any Person in Launchpad:
     True
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['To'] += ", notifications@%s" % (
+    >>> moin_change['X-Launchpad-Original-To'] = "notifications@%s" % (
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
+    >>> from lp.services.mail.incoming import handleMail
     >>> from lp.services.mail.sendmail import sendmail
-    >>> from canonical.launchpad.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
 

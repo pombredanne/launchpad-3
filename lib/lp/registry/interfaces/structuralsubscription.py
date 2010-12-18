@@ -181,27 +181,13 @@ class IStructuralSubscriptionTargetRead(Interface):
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
-    def getBugNotificationsRecipients(recipients=None, level=None):
-        """Return the set of bug subscribers to this target.
-
-        :param recipients: If recipients is not None, a rationale
-            is added for each subscriber.
-        :type recipients: `INotificationRecipientSet`
-        'param level: If level is not None, only strucutral
-            subscribers with a subscrition level greater or equal
-            to the given value are returned.
-        :type level: `BugNotificationLevel`
-        :return: An `INotificationRecipientSet` instance containing
-            the bug subscribers.
-        """
-
     target_type_display = Attribute("The type of the target, for display.")
 
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
-    def getSubscriptionsForBug(bug, level):
-        """Return subscriptions for a given `IBug` at `level`."""
+    def getSubscriptionsForBugTask(bug, level):
+        """Return subscriptions for a given `IBugTask` at `level`."""
 
 
 class IStructuralSubscriptionTargetWrite(Interface):
@@ -231,7 +217,8 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
-    def addBugSubscription(subscriber, subscribed_by):
+    def addBugSubscription(subscriber, subscribed_by,
+                           bug_notification_level=None):
         """Add a bug subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
@@ -241,6 +228,9 @@ class IStructuralSubscriptionTargetWrite(Interface):
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
+        :bug_notification_level: The BugNotificationLevel for the
+            subscription. If omitted, BugNotificationLevel.COMMENTS will be
+            used.
         :return: The new bug subscription.
         """
 

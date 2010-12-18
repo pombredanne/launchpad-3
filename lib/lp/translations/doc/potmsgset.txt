@@ -13,11 +13,11 @@ We need to get a POTMsgSet object to perform this test.
     >>> from zope.component import getUtility
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
 
     >>> potemplate = factory.makePOTemplate()
     >>> potmsgset = factory.makePOTMsgSet(
@@ -416,7 +416,7 @@ That is the one that no_priv submitted.
 And the active translation is not the one we suggested.
 
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     potmsgset.potemplate, spanish)
+    ...     evolution_potemplate, spanish)
     >>> current.translations
     [u'libreta de direcciones de Evolution']
 
@@ -478,8 +478,8 @@ We get a POTMsgSet and verify it's a singular form:
     ...     evolution_potemplate, pt_BR_dummypofile.language)
     >>> print current
     None
-    >>> pt_BR_dummy_current = potmsgset.getCurrentDummyTranslationMessage(
-    ...     evolution_potemplate, pt_BR_dummypofile.language)
+    >>> pt_BR_dummy_current = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pt_BR_dummypofile)
     >>> pt_BR_dummy_current.plural_forms
     1
     >>> pt_BR_dummy_current.translations
@@ -508,8 +508,8 @@ back to the most common case:
     >>> print apa_dummypofile.language.pluralforms
     None
     >>> apa_dummy_current = (
-    ...     plural_potmsgset.getCurrentDummyTranslationMessage(
-    ...         evolution_potemplate, apa_dummypofile.language))
+    ...     plural_potmsgset.getCurrentTranslationMessageOrDummy(
+    ...         apa_dummypofile))
     >>> apa_dummy_current.plural_forms
     2
     >>> apa_dummy_current.translations
@@ -519,8 +519,9 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
 
     >>> language_ru = getUtility(ILanguageSet).getLanguageByCode('ru')
     >>> ru_dummypofile = evolution_potemplate.getDummyPOFile(language_ru)
-    >>> ru_dummy_current = plural_potmsgset.getCurrentDummyTranslationMessage(
-    ...     evolution_potemplate, ru_dummypofile.language)
+    >>> ru_dummy_current = (
+    ...     plural_potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     	ru_dummypofile))
 
     >>> print ru_dummypofile.language.pluralforms
     3
@@ -623,8 +624,6 @@ one with two forms) is updated.
     >>> message_with_one_form = pm_potmsgset.updateTranslation(
     ...     pm_translation, pm_template.owner, ['%d fu'],
     ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
-    WARNING:...Translation for POTMsgSet ... into 'zap' matches
-    2 existing translations.
 
     >>> message_with_one_form == message_with_two_forms
     True
@@ -701,10 +700,11 @@ POTMsgSet.getExternallyUsedTranslationMessages
 On the other, we have a translation template for the evolution package in
 Ubuntu Hoary distribution.
 
+    >>> templateset = getUtility(IPOTemplateSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> evo_hoary_package = ubuntu_hoary.getSourcePackage('evolution')
-    >>> evo_distro_template = getUtility(IPOTemplateSet).getSubset(
+    >>> evo_distro_template = templateset.getSubset(
     ...     sourcepackagename=evo_hoary_package.sourcepackagename,
     ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
     >>> print evo_distro_template.title
@@ -723,6 +723,16 @@ And both translation templates are current
     True
     >>> evo_distro_template.iscurrent
     True
+
+The "suggestive templates" cache is up to date.
+
+    >>> def refresh_suggestive_templates_cache():
+    ...     """Update the `SuggestivePOTemplate` cache."""
+    ...     templateset.wipeSuggestivePOTemplatesCache()
+    ...     templateset.populateSuggestivePOTemplatesCache()
+
+    >>> refresh_suggestive_templates_cache()
+    >>> transaction.commit()
 
 We have the same message in both templates but with different
 translations in Spanish:
@@ -765,6 +775,7 @@ When a translation template is set as not current, those translations
 are not available as suggestions anymore:
 
     >>> evo_distro_template.iscurrent = False
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
@@ -790,6 +801,7 @@ translations.
 And products not using translations officially have the same behaviour.
 
     >>> evolution.translations_usage = ServiceUsage.NOT_APPLICABLE
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
@@ -800,6 +812,7 @@ Let's restore the flags for next section.
 
     >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
 
@@ -884,7 +897,8 @@ active) as it's another context.
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
-    >>> potmsgset_translated.potemplate.iscurrent = False
+    >>> evo_man_template.iscurrent = False
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
     >>> wiki_submissions = (
@@ -898,8 +912,9 @@ Launchpad for translations.
 
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
-    >>> potmsgset_translated.potemplate.iscurrent = True
+    >>> evo_man_template.iscurrent = True
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
     >>> wiki_submissions = (
@@ -907,29 +922,6 @@ Launchpad for translations.
     ...         pofile.language))
     >>> len(wiki_submissions)
     0
-
-
-POTMsgSet.getCurrentDummyTranslationMessage
--------------------------------------------
-
-Sometimes, there are POTMsgSet objects with no translations to a language,
-and we need to get dummy objects which emulate them to do read operations.
-This method give us such dummy objects.
-
-    >>> spanish_in_mexico = getUtility(ILanguageSet).getLanguageByCode(
-    ...     'es_MX')
-    >>> potmsgset.getCurrentDummyTranslationMessage(
-    ...     evolution_potemplate, spanish_in_mexico) is None
-    False
-
-But, if we already have a TranslationMessage for a POTMsgSet in our database,
-and we request a dummy one, that's broken and we detect it.
-
-    >>> potmsgset.getCurrentDummyTranslationMessage(
-    ...     evolution_potemplate, spanish)
-    Traceback (most recent call last):
-    ...
-    AssertionError: There is already a translation message ...
 
 
 Suggestions for translator credits

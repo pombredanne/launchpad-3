@@ -59,19 +59,13 @@ from canonical.launchpad.browser.feeds import (
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
-    safe_action,
     urlappend,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -80,7 +74,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from lp.app.browser.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
@@ -91,6 +84,14 @@ from canonical.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -162,6 +163,8 @@ class IProductBugConfiguration(Interface):
         IBugTarget['bug_reporting_guidelines'])
     bug_reported_acknowledgement = copy_field(
         IBugTarget['bug_reported_acknowledgement'])
+    enable_bugfiling_duplicate_search = copy_field(
+        IBugTarget['enable_bugfiling_duplicate_search'])
 
 
 def product_to_productbugconfiguration(product):
@@ -176,25 +179,33 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     label = "Configure bug tracker"
     schema = IProductBugConfiguration
-    field_names = [
-        "bug_supervisor",
-        "security_contact",
-        "bugtracker",
-        "enable_bug_expiration",
-        "remote_product",
-        "bug_reporting_guidelines",
-        "bug_reported_acknowledgement",
-        ]
     # This ProductBugTrackerWidget renders enable_bug_expiration and
     # remote_product as subordinate fields, so this view suppresses them.
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
     custom_widget('remote_product', GhostWidget)
 
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        field_names = [
+            "bugtracker",
+            "enable_bug_expiration",
+            "remote_product",
+            "bug_reporting_guidelines",
+            "bug_reported_acknowledgement",
+            "enable_bugfiling_duplicate_search",
+            ]
+        if check_permission("launchpad.Edit", self.context):
+            field_names.extend(["bug_supervisor", "security_contact"])
+
+        return field_names
+
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
-        self.validateBugSupervisor(data)
-        self.validateSecurityContact(data)
+        if check_permission("launchpad.Edit", self.context):
+            self.validateBugSupervisor(data)
+            self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
@@ -209,10 +220,11 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
-        self.changeBugSupervisor(data['bug_supervisor'])
-        del data['bug_supervisor']
-        self.changeSecurityContact(data['security_contact'])
-        del data['security_contact']
+        if check_permission("launchpad.Edit", self.context):
+            self.changeBugSupervisor(data['bug_supervisor'])
+            del data['bug_supervisor']
+            self.changeSecurityContact(data['security_contact'])
+            del data['security_contact']
         self.updateContextFromData(data)
 
 
@@ -1265,18 +1277,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
-
-    @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
-
-        :returns: `IBugTracker` or None
-        """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
 
     @property
     def bugtracker(self):

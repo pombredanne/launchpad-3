@@ -12,8 +12,8 @@ packages and will be performed frequently by our infrastructure.
 First we have to retrieve a SourcePackageRelease from the sampledata,
 let's use 'pmount' sources.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
@@ -33,8 +33,8 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from canonical.launchpad.interfaces import IPackageDiff
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
 
     >>> verifyObject(IPackageDiff, package_diff)
     True
@@ -44,7 +44,7 @@ Its main attributes are:
  * 'requester', which maps to a `IPerson`, the user who made the diff
    request.
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> verifyObject(IPerson, package_diff.requester)
     True
 
@@ -54,7 +54,7 @@ Its main attributes are:
  * 'from_source', which maps to a `ISourcePackageRelease`, the base
    source used in the diff.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
     >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
     True
 
@@ -64,7 +64,7 @@ Its main attributes are:
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
     >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
     True
 
@@ -116,8 +116,8 @@ chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
@@ -172,7 +172,7 @@ requests a diff, since there is a suitable ancestry.
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets
 and ubuntu/breezy-autotest.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> hoary.status = SeriesStatus.CURRENT
 
 We upload version '1.0-9' to hoary-updates and get the diff against
@@ -410,7 +410,7 @@ PackageDiffs attached to specific SourcePackageReleases.
 Using the utility it's possible to iterate over all PackageDiff
 stored.
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> packagediff_set = getUtility(IPackageDiffSet)
 
     >>> def print_diffs(diff_set):
@@ -674,8 +674,8 @@ Because of bug 314436, diffs of udev can generate huge output which fills the
 disk very quickly.  For that reason, diffs of udev are created FAILED by
 default, which will stop the diff script from attempting to create the diff.
 
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> discard = stp.setUpDefaultDistroSeries(hoary)
     >>> udev_orig = stp.getPubSource(

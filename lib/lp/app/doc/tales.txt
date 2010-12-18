@@ -41,7 +41,7 @@ The same image:icon, as well as a image:logo and a image:logo is also
 available for Person, Product, ProjectGroup, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> test_tales("person/image:sprite_css", person=mark)
     'sprite person'
@@ -84,7 +84,7 @@ We also have image:icon for KarmaCategory:
 
 We also have an icon for bugs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> print test_tales("bug/image:sprite_css", bug=bug)
     sprite bug
@@ -113,8 +113,8 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='rebuild')
@@ -197,8 +197,8 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.buildmaster.enums import BuildStatus
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
@@ -673,8 +673,11 @@ Product series
 Blueprints
 ..........
 
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationPriority)
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> test_tales("specification/fmt:link", specification=specification)
     u'<a...class="sprite blueprint-undefined">...</a>'
 
@@ -682,7 +685,8 @@ Blueprints
 Blueprint branches
 ..................
 
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> branch = factory.makeAnyBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
@@ -701,7 +705,7 @@ Projects
 Questions
 .........
 
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
     u'<a... class="sprite question">1:...</a>'
@@ -730,7 +734,7 @@ The fmt: namespace for specially formatted object info
 Bug Trackers
 ............
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
     >>> bugtracker.title = 'an@email.address bug tracker'
     >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',
@@ -787,7 +791,7 @@ which help when hiding email addresses from users who are not logged in.
 Bug Watches
 ...........
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> sf_bugwatch = getUtility(IBugWatchSet).createBugWatch(
     ...     getUtility(IBugSet).get(12),
     ...     getUtility(ILaunchBag).user,
@@ -1181,8 +1185,8 @@ Test the 'fmt:' namespace where the context is a dict.
 
 Test the 'fmt:url' namespace for canonical urls.
 
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import implements
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)
     ...     path = 'bonobo/saki'

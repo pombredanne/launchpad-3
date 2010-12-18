@@ -5,7 +5,10 @@ from cStringIO import StringIO
 from datetime import datetime
 import httplib
 import unittest
-from urllib2 import urlopen, HTTPError
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 from urlparse import urlparse
 
 import pytz
@@ -19,15 +22,17 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     session_store,
     )
-from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,
     )
 from canonical.librarian.interfaces import DownloadFailed
-from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.interfaces import IMasterStore
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

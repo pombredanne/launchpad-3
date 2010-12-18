@@ -72,5 +72,8 @@ class IBuildFarmJobBehavior(Interface):
         """Verify the current build job status.
 
         Perform the required actions for each state.
+
+        :param queueItem: The `BuildQueue` for the build.
+        :return: A Deferred that fires when the update is done.
         """
 

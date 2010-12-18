@@ -36,10 +36,10 @@
         for="lazr.restful.interfaces.IEntry
              zope.schema.interfaces.IField"
         provides="lazr.restful.interfaces.IByteStorage"
-        factory="canonical.launchpad.rest.LibraryBackedByteStorage"
+        factory="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage"
         />
 
-    <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
+    <class class="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage">
         <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
@@ -49,10 +49,10 @@
         for="lazr.restful.interfaces.IEntry
              lp.services.fields.IRestrictedBytes"
         provides="lazr.restful.interfaces.IByteStorage"
-        factory="canonical.launchpad.rest.RestrictedLibraryBackedByteStorage"
+        factory="canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage"
         />
 
-    <class class="canonical.launchpad.rest.RestrictedLibraryBackedByteStorage">
+    <class class="canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage">
         <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
@@ -68,13 +68,13 @@
         for="lp.bugs.interfaces.bugmessage.IBugComment
              lazr.restful.interfaces.IWebServiceClientRequest"
         provides="lazr.restful.interfaces.IEntry"
-        factory="canonical.launchpad.rest.bugcomment_to_entry"
+        factory="lp.bugs.adapters.bug.bugcomment_to_entry"
         />
 
    <grok:grok package="lazr.restful.directives" />
    <grok:grok package="canonical.launchpad.rest" />
 
-   <webservice:register module="canonical.launchpad.interfaces" />
+   <webservice:register module="canonical.launchpad.interfaces.webservice" />
 
    <adapter
        for="zope.schema.interfaces.IChoice

@@ -66,9 +66,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadFormView,
     Link,
     )
 from canonical.launchpad.webapp.authorization import (
@@ -83,6 +81,10 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import MenuAPI
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
@@ -94,6 +96,8 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
+from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -406,7 +410,8 @@ class BranchListingItemsMixin:
     @cachedproperty
     def official_package_links_map(self):
         """Return a map from branch id to a list of package links."""
-        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+        query_optimiser = self._query_optimiser
+        links = query_optimiser.getOfficialSourcePackageLinksForBranches(
             self._visible_branch_ids)
         result = {}
         for link in links:
@@ -531,7 +536,8 @@ class BranchListingBatchNavigator(TableBatchNavigator,
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView, FeedsMixin):
+class BranchListingView(LaunchpadFormView, FeedsMixin,
+                        BranchVisibilityPolicyMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
@@ -846,18 +852,19 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews']
+             'active_reviews', 'mergequeues']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
         'registered_branch_count',
         'show_summary',
         'subscribed_branch_count',
+        'mergequeue_count',
         ]
 
     def _getCountCollection(self):
@@ -911,11 +918,13 @@ class PersonBranchesMenu(ApplicationMenu):
                 self.owned_branch_count, 'owned branch', 'owned branches'))
 
     def registered(self):
+        person_is_individual = (not self.person.is_team)
         return Link(
             '+registeredbranches',
             get_plural_text(
                 self.registered_branch_count,
-                'registered branch', 'registered branches'))
+                'registered branch', 'registered branches'),
+            enabled=person_is_individual)
 
     def subscribed(self):
         return Link(
@@ -974,6 +983,16 @@ class PersonProductBranchesMenu(PersonBranchesMenu):
 
 class PersonBaseBranchListingView(BranchListingView):
     """Base class used for different person listing views."""
+
+    @property
+    def show_action_menu(self):
+        if self.user is not None:
+            return self.user.inTeam(self.context)
+        return False
+
+    @property
+    def show_junk_directions(self):
+        return self.user == self.context
 
     @property
     def initial_values(self):
@@ -1179,6 +1198,10 @@ class ProductBranchListingView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
+
+    def can_configure_branches(self):
+        """Whether or not the user can configure branches."""
+        return check_permission("launchpad.Edit", self.context)
 
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
@@ -1666,6 +1689,7 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
     """A base view used for other person-product branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+    show_action_menu = False
 
     @property
     def person(self):

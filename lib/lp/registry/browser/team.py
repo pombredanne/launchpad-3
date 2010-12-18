@@ -44,16 +44,11 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -67,6 +62,12 @@ from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
@@ -78,7 +79,6 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    IPerson,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
@@ -508,6 +508,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     field_names = ['welcome_message']
     label = "Mailing list configuration"
     custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
+    page_title = label
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.
@@ -695,7 +696,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         :return: A dictionary containing the current welcome message.
         """
-        context = self.context
         if self.mailing_list is not None:
             return dict(welcome_message=self.mailing_list.welcome_message)
         else:
@@ -742,15 +742,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
         or INACTIVE states.  Further, the user doing the purging, must be
-        a Launchpad administrator or mailing list expert.
+        an owner, Launchpad administrator or mailing list expert.
         """
-        requester = IPerson(self.request.principal, None)
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (requester is None or
-            (not requester.inTeam(celebrities.admin) and
-             not requester.inTeam(celebrities.mailing_list_experts))):
+        is_moderator = check_permission('launchpad.Moderate', self.context)
+        is_mailing_list_manager = check_permission(
+            'launchpad.Moderate', self.context)
+        if is_moderator or is_mailing_list_manager:
+            return self.getListInState(*PURGE_STATES) is not None
+        else:
             return False
-        return self.getListInState(*PURGE_STATES) is not None
 
 
 class TeamMailingListSubscribersView(LaunchpadView):
@@ -803,8 +803,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        assert(self.mailing_list is not None), (
-            'No mailing list: %s' % self.context.name)
+        if self.mailing_list is None:
+            self.request.response.addInfoNotification(
+                '%s does not have a mailing list.' % self.context.displayname)
+            return self.request.response.redirect(canonical_url(self.context))
 
     @cachedproperty
     def hold_count(self):
@@ -1077,6 +1079,8 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
+        # Clear the newmember widget so that the user can add another member.
+        self.widgets['newmember'].setRenderedValue(None)
 
 
 class TeamMapView(LaunchpadView):
@@ -1137,7 +1141,7 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
@@ -1152,7 +1156,7 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);

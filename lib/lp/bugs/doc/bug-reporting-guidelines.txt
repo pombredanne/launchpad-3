@@ -6,8 +6,9 @@ them to FAQs, and so forth.
 
     >>> login('foo.bar@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProjectGroupSet, IProductSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
     >>> distribution = getUtility(IDistributionSet).getByName('ubuntu')
     >>> distribution_source_package = (
@@ -68,7 +69,7 @@ access.
 The security proxies also prevent unprivileged users from editing the
 guidelines.
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
 
     >>> def check_access(user, context):
     ...     if IPerson.providedBy(user):

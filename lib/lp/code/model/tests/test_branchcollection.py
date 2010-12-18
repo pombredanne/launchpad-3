@@ -40,6 +40,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -637,6 +638,24 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_merge_proposals_merging_revno(self):
+        """Specifying merged_revnos selects the correct merge proposals."""
+        target = self.factory.makeBranch()
+        mp1 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp2 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp3 = self.factory.makeBranchMergeProposal(target_branch=target)
+        with person_logged_in(target.owner):
+            mp1.markAsMerged(123)
+            mp2.markAsMerged(123)
+            mp3.markAsMerged(321)
+        collection = self.all_branches
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123])
+        self.assertEqual(sorted([mp1, mp2]), sorted(result))
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123, 321])
+        self.assertEqual(sorted([mp1, mp2, mp3]), sorted(result))
 
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the

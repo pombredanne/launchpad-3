@@ -39,6 +39,7 @@ from lazr.restful.declarations import (
     exported,
     mutator_for,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -75,13 +76,14 @@ from lp.code.bzr import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
-    BranchMergeControlStatus,
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
@@ -394,9 +396,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     stacked_on = Attribute('Stacked-on branch')
 
-    merge_queue = Attribute(
-        "The queue that contains the QUEUED proposals for this branch.")
-
     # Bug attributes
     bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
@@ -588,14 +587,24 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param review_requests: An optional list of (`Person`, review_type).
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revnos=List(Int(
+            title=_('The target-branch revno of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """Return matching BranchMergeProposals."""
+
     def scheduleDiffUpdates():
         """Create UpdatePreviewDiffJobs for this branch's targets."""
 
     def getStackedBranches():
         """The branches that are stacked on this one."""
-
-    def getMergeQueue():
-        """The proposals that are QUEUED to land on this branch."""
 
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
@@ -996,11 +1005,6 @@ class IBranchEditableAttributes(Interface):
             required=False, readonly=True,
             vocabulary=ControlFormat))
 
-    merge_control_status = Choice(
-        title=_('Merge Control Status'), required=True,
-        vocabulary=BranchMergeControlStatus,
-        default=BranchMergeControlStatus.NO_QUEUE)
-
 
 class IBranchEdit(Interface):
     """IBranch attributes that require launchpad.Edit permission."""
@@ -1030,9 +1034,9 @@ class IBranchEdit(Interface):
         is set, the branch gets moved into the junk namespace of the branch
         owner.
 
-        :raise: `BranchTargetError` if both project and source_package are set,
-          or if either the project or source_package fail to be adapted to an
-          IBranchTarget.
+        :raise: `BranchTargetError` if both project and source_package are
+          set, or if either the project or source_package fail to be
+          adapted to an IBranchTarget.
         """
 
     def requestUpgrade():
@@ -1075,8 +1079,53 @@ class IBranchEdit(Interface):
         """
 
 
+class IMergeQueueable(Interface):
+    """An interface for branches that can be queued."""
+
+    merge_queue = exported(
+        Reference(
+            title=_('Branch Merge Queue'),
+            schema=IBranchMergeQueue, required=False, readonly=True,
+            description=_(
+                "The branch merge queue that manages merges for this "
+                "branch.")))
+
+    merge_queue_config = exported(
+        TextLine(
+            title=_('Name'), required=True, readonly=True,
+            description=_(
+                "A JSON string of configuration values to send to a "
+                "branch merge robot.")))
+
+    @mutator_for(merge_queue)
+    @operation_parameters(
+        queue=Reference(title=_('Branch Merge Queue'),
+              schema=IBranchMergeQueue))
+    @export_write_operation()
+    def addToQueue(queue):
+        """Add this branch to a specified queue.
+
+        A branch's merges can be managed by a queue.
+
+        :param queue: The branch merge queue that will manage the branch.
+        """
+
+    @mutator_for(merge_queue_config)
+    @operation_parameters(
+        config=TextLine(title=_("A JSON string of config values.")))
+    @export_write_operation()
+    def setMergeQueueConfig(config):
+        """Set the merge_queue_config property.
+
+        A branch can store a JSON string of configuration data for a merge
+        robot to retrieve.
+
+        :param config: A JSON string of data.
+        """
+
+
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
-              IBranchEditableAttributes, IBranchAnyone):
+              IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.

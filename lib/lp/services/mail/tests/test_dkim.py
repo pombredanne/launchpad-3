@@ -11,14 +11,11 @@ import unittest
 
 import dkim
 import dns.resolver
-from zope.component import getUtility
 
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.mail import (
-    incoming,
-    signed_message_from_string,
-    )
-from canonical.launchpad.mail.incoming import authenticateEmail
+from canonical.launchpad.mail import signed_message_from_string
+from lp.services.mail import incoming
+from lp.services.mail.incoming import authenticateEmail
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
@@ -77,33 +74,36 @@ class TestDKIM(TestCaseWithFactory):
 
     def fake_signing(self, plain_message, canonicalize=None):
         if canonicalize is None:
-            canonicalize = (dkim.Relaxed, dkim.Relaxed) 
+            canonicalize = (dkim.Relaxed, dkim.Relaxed)
         dkim_line = dkim.sign(plain_message,
-            selector='example', 
+            selector='example',
             domain='canonical.com',
             privkey=sample_privkey,
             debuglog=self._log_output,
-            canonicalize=canonicalize
-            )
+            canonicalize=canonicalize)
         assert dkim_line[-1] == '\n'
         return dkim_line + plain_message
 
     def monkeypatch_dns(self):
         self._dns_responses = {}
+
         def my_lookup(name):
             try:
                 return self._dns_responses[name]
             except KeyError:
                 raise dns.resolver.NXDOMAIN()
+
         orig_dnstxt = dkim.dnstxt
         dkim.dnstxt = my_lookup
+
         def restore():
             dkim.dnstxt = orig_dnstxt
+
         self.addCleanup(restore)
 
     def get_dkim_log(self):
         return self._log_output.getvalue()
-    
+
     def assertStronglyAuthenticated(self, principal, signed_message):
         if IWeaklyAuthenticatedPrincipal.providedBy(principal):
             self.fail('expected strong authentication; got weak:\n'
@@ -157,8 +157,10 @@ class TestDKIM(TestCaseWithFactory):
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
         saved_domains = incoming._trusted_dkim_domains[:]
+
         def restore():
             incoming._trusted_dkim_domains = saved_domains
+
         self.addCleanup(restore)
         incoming._trusted_dkim_domains = []
         principal = authenticateEmail(
@@ -185,14 +187,15 @@ class TestDKIM(TestCaseWithFactory):
             'steve.alexander@ubuntulinux.com')
 
     def test_dkim_changed_from_address(self):
-        # if the address part of the message has changed, it's detected.  we
-        # still treat this as weakly authenticated by the purported From-header
-        # sender, though perhaps in future we would prefer to reject these
-        # messages.
+        # If the address part of the message has changed, it's detected.
+        #  We still treat this as weakly authenticated by the purported
+        # From-header sender, though perhaps in future we would prefer
+        # to reject these messages.
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
+        fiddled_message = signed_message.replace(
+            'From: Foo Bar <foo.bar@canonical.com>',
             'From: Carlos <carlos@canonical.com>')
         principal = authenticateEmail(
             signed_message_from_string(fiddled_message))
@@ -202,22 +205,23 @@ class TestDKIM(TestCaseWithFactory):
             'carlos@canonical.com')
 
     def test_dkim_changed_from_realname(self):
-        # if the real name part of the message has changed, it's detected
+        # If the real name part of the message has changed, it's detected.
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
+        fiddled_message = signed_message.replace(
+            'From: Foo Bar <foo.bar@canonical.com>',
             'From: Evil Foo <foo.bar@canonical.com>')
         principal = authenticateEmail(
             signed_message_from_string(fiddled_message))
-        # we don't care about the real name for determining the principal
+        # We don't care about the real name for determining the principal.
         self.assertWeaklyAuthenticated(principal, fiddled_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
 
     def test_dkim_nxdomain(self):
-        # if there's no DNS entry for the pubkey
-        # it should be handled decently
+        # If there's no DNS entry for the pubkey it should be handled
+        # decently.
         signed_message = self.fake_signing(plain_content)
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
@@ -226,18 +230,19 @@ class TestDKIM(TestCaseWithFactory):
             'foo.bar@canonical.com')
 
     def test_dkim_message_unsigned(self):
-        # degenerate case: no signature treated as weakly authenticated
+        # This is a degenerate case: a message with no signature is
+        # treated as weakly authenticated.
+        # The library doesn't log anything if there's no header at all.
         principal = authenticateEmail(
             signed_message_from_string(plain_content))
         self.assertWeaklyAuthenticated(principal, plain_content)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
-        # the library doesn't log anything if there's no header at all
 
     def test_dkim_body_mismatch(self):
-        # The message message has a syntactically valid DKIM signature that
-        # doesn't actually correspond to what was signed.  We log something about
-        # this but we don't want to drop the message.
+        # The message has a syntactically valid DKIM signature that
+        # doesn't actually correspond to what was signed.  We log
+        # something about this but we don't want to drop the message.
         signed_message = self.fake_signing(plain_content)
         signed_message += 'blah blah'
         self._dns_responses['example._domainkey.canonical.com.'] = \

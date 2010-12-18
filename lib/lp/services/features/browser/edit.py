@@ -18,13 +18,12 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad.webapp import (
-    action,
-    enabled_with_permission,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.authorization import (
     check_permission,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
     )
 
 

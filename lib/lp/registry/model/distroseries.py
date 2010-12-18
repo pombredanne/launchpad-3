@@ -12,9 +12,11 @@ __all__ = [
     'DistroSeriesSet',
     ]
 
+import collections
 from cStringIO import StringIO
 import logging
 
+import apt_pkg
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -35,6 +37,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import (
     DEFAULT,
@@ -67,7 +70,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -88,6 +91,7 @@ from lp.bugs.model.bugtarget import (
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distroseries import (
+    DerivationError,
     IDistroSeries,
     IDistroSeriesSet,
     )
@@ -117,7 +121,10 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -128,6 +135,9 @@ from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
@@ -162,6 +172,10 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialisationError,
+    InitialiseDistroSeries,
+    )
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
@@ -170,16 +184,18 @@ from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage,
     DummyDistroSeriesLanguage,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
     )
 
 
@@ -967,26 +983,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         source_package_ids = [
             package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
+        # Construct a table of just current releases for the desired SPNs.
+        origin = SQL("""
+            SourcePackageRelease
+            JOIN (
+                SELECT
+                    spr.id as sourcepackagerelease, MAX(spph.id)
                 FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
+                    SourcePackageRelease spr
                 WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
+                    spr.sourcepackagename IN %s AND
                     spph.sourcepackagerelease = spr.id AND
                     spph.archive IN %s AND
                     spph.status IN %s AND
-                    spph.distroseries = %s)
+                    spph.distroseries = %s
+                GROUP BY spr.id)
+                AS spph ON SourcePackageRelease.id = spph.sourcepackagerelease
             """ % sqlvalues(
                 source_package_ids, self.distribution.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
+                active_publishing_status, self))
+        releases = IStore(self).using(origin).find(SourcePackageRelease)
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
@@ -1506,6 +1522,32 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return distro_sprs
 
+    @staticmethod
+    def setNewerDistroSeriesVersions(spphs):
+        """Set the newer_distroseries_version attribute on the spph entries.
+
+        :param spphs: The SourcePackagePublishingHistory objects to set the
+            newer_distroseries_version attribute on.
+        """
+        # Partition by distro series to use getCurrentSourceReleases
+        distro_series = collections.defaultdict(list)
+        for spph in spphs:
+            distro_series[spph.distroseries].append(spph)
+        for series, spphs in distro_series.items():
+            packagenames = set()
+            for spph in spphs:
+                packagenames.add(spph.sourcepackagerelease.sourcepackagename)
+            latest_releases = series.getCurrentSourceReleases(
+                packagenames)
+            for spph in spphs:
+                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                if latest_release is not None and apt_pkg.VersionCompare(
+                    latest_release.version, spph.source_package_version) > 0:
+                    version = latest_release
+                else:
+                    version = None
+                get_property_cache(spph).newer_distroseries_version = version
+
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive, signing_key=None):
         """See `IDistroSeries`."""
@@ -1855,6 +1897,57 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
+
+    def deriveDistroSeries(self, user, name, distribution=None,
+                           displayname=None, title=None, summary=None,
+                           description=None, version=None,
+                           architectures=(), packagesets=(), rebuild=False):
+        """See `IDistroSeries`."""
+        # XXX StevenK bug=643369 This should be in the security adapter
+        # This should be allowed if the user is a driver for self.parent
+        # or the child.parent's drivers.
+        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
+            raise Unauthorized
+        child = IStore(self).find(DistroSeries, name=name).one()
+        if child is None:
+            if distribution is None:
+                distribution = self.distribution
+            if not displayname:
+                raise DerivationError(
+                    "Display Name needs to be set when creating a "
+                    "distroseries.")
+            if not title:
+                raise DerivationError(
+                    "Title needs to be set when creating a distroseries.")
+            if not summary:
+                raise DerivationError(
+                    "Summary needs to be set when creating a "
+                    "distroseries.")
+            if not description:
+                raise DerivationError(
+                    "Description needs to be set when creating a "
+                    "distroseries.")
+            if not version:
+                raise DerivationError(
+                    "Version needs to be set when creating a "
+                    "distroseries.")
+            child = distribution.newSeries(
+                name=name, displayname=displayname, title=title,
+                summary=summary, description=description,
+                version=version, parent_series=self, owner=user)
+            IStore(self).add(child)
+        else:
+            if child.parent_series is not self:
+                raise DerivationError(
+                    "DistroSeries %s parent series isn't %s" % (
+                        child.name, self.name))
+        initialise_series = InitialiseDistroSeries(child)
+        try:
+            initialise_series.check()
+        except InitialisationError, e:
+            raise DerivationError(e)
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            child, architectures, packagesets, rebuild)
 
 
 class DistroSeriesSet:

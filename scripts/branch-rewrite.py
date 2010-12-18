@@ -17,10 +17,6 @@ import _pythonpath
 import os
 import sys
 
-# XXX, MichaelHudson, 2009-07-22, bug=402845: This pointless import avoids a
-# circular import killing us.
-from canonical.launchpad.database import account
-
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
 from lp.codehosting.rewrite import BranchRewriter

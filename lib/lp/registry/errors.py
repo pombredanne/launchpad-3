@@ -3,24 +3,30 @@
 
 __metaclass__ = type
 __all__ = [
-    'PrivatePersonLinkageError',
-    'NameAlreadyTaken',
-    'NoSuchDistroSeries',
-    'UserCannotChangeMembershipSilently',
-    'NoSuchSourcePackageName',
+    'DistroSeriesDifferenceError',
+    'NotADerivedSeriesError',
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
+    'DeleteSubscriptionError',
+    'JoinNotAllowed',
     'MirrorNotOfficial',
     'MirrorHasNoHTTPURL',
     'MirrorNotProbed',
-    'DeleteSubscriptionError',
-    'UserCannotSubscribePerson',
+    'NameAlreadyTaken',
+    'NoSuchDistroSeries',
+    'NoSuchSourcePackageName',
+    'PPACreationError',
+    'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
+    'TeamSubscriptionPolicyError',
+    'UserCannotChangeMembershipSilently',
+    'UserCannotSubscribePerson',
     ]
 
 import httplib
 
 from lazr.restful.declarations import webservice_error
+from zope.schema.interfaces import ConstraintNotSatisfied
 from zope.security.interfaces import Unauthorized
 
 from lp.app.errors import NameLookupFailed
@@ -107,10 +113,57 @@ class UserCannotSubscribePerson(Exception):
     webservice_error(httplib.UNAUTHORIZED)
 
 
+class DistroSeriesDifferenceError(Exception):
+    """Raised when package diffs cannot be created for a difference."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotADerivedSeriesError(Exception):
+    """A distro series difference must be created with a derived series.
+
+    This is raised when a DistroSeriesDifference is created with a
+    non-derived series - that is, a distroseries with a null Parent."""
+
+
 class TeamMembershipTransitionError(ValueError):
     """Indicates something has gone wrong with the transtiion.
 
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
     """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamSubscriptionPolicy.
+
+    The error can be raised because a super team or member team prevents
+    this team from setting a specific policy. The error can also be
+    raised if the team has an active PPA.
+    """
+    webservice_error(httplib.BAD_REQUEST)
+
+    _default_message = "Team Subscription Policy Error"
+
+    def __init__(self, message=None):
+        if message is None:
+            message = self._default_message
+        self.message = message
+
+    def doc(self):
+        """See `Invalid`."""
+        return self.message
+
+    def __str__(self):
+        return self.message
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA."""
+
     webservice_error(httplib.BAD_REQUEST)

@@ -239,9 +239,10 @@ LPS.use('node', 'lazr.effects', function(Y) {
 });
   </script>
 
-    <div style="font-size: larger; background: #e0f0d0;
+    <div id="staging-message" style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-       -webkit-border-radius: 5px; margin-bottom: 1em;">
+       -webkit-border-radius: 5px; margin-bottom: 1em;"
+      tal:condition="not: is_demo">
       You can <strong>test Launchpad's features</strong> at <a
       href="https://staging.launchpad.net/">staging.launchpad.net</a>
       <form style="display: inline; font-size: smaller"

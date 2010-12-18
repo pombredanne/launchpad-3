@@ -8,7 +8,6 @@ import subprocess
 
 from storm.expr import (
     Desc,
-    In,
     Join,
     )
 from storm.store import EmptyResultSet
@@ -50,6 +49,7 @@ def safe_mkdir(path):
 # XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
 # timeout handling and stderr passthrough, could be a single method used for
 # this and the similar requirement in test_on_merge.py.
+
 def run_subprocess_with_logging(process_and_args, log, prefix):
     """Run a subprocess, gathering the output as it runs and logging it.
 
@@ -140,6 +140,7 @@ class FTPArchiveHandler:
     Generates file lists and configuration for apt-ftparchive, and kicks
     off generation of the Sources and Releases files.
     """
+
     def __init__(self, log, config, diskpool, distro, publisher):
         self.log = log
         self._config = config
@@ -188,7 +189,6 @@ class FTPArchiveHandler:
     #
     # Empty Pocket Requests
     #
-
     def createEmptyPocketRequests(self, fullpublish=False):
         """Write out empty file lists etc for pockets.
 
@@ -207,6 +207,9 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
+                self.publisher.release_files_needed.add(
+                    (distroseries.name, pocket))
+
                 for comp in components:
                     self.createEmptyPocketRequest(distroseries, pocket, comp)
 
@@ -223,24 +226,19 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
-        self.publisher.release_files_needed.add((distroseries.name, pocket))
-
         suite = distroseries.getSuite(pocket)
 
-        def touch_overrides(*parts):
+        # Create empty override lists.
+        for path in ((comp, ), ("extra", comp), (comp, "src")):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                ".".join(["override", suite] + list(parts))))
-        # Create empty override lists.
-        touch_overrides(comp)
-        touch_overrides("extra", comp)
-        touch_overrides(comp, "src")
+                ".".join(("override", suite) + path)))
 
         # Create empty file lists.
         def touch_list(*parts):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                "_".join([suite] + list(parts))))
+                "_".join((suite, ) + parts)))
         touch_list(comp, "source")
 
         arch_tags = [
@@ -253,7 +251,6 @@ class FTPArchiveHandler:
     #
     # Override Generation
     #
-
     def getSourcesForOverrides(self, distroseries, pocket):
         """Fetch override information about all published sources.
 
@@ -294,6 +291,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section = result
             return (name, suite, component, section)
@@ -342,13 +340,14 @@ class FTPArchiveHandler:
             (BinaryPackageName.name, Component.name, Section.name,
              BinaryPackagePublishingHistory.priority),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
-            In(BinaryPackagePublishingHistory.distroarchseriesID,
-               architectures_ids),
+            BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                architectures_ids),
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section, priority = result
             return (name, suite, component, section, priority.title.lower())
@@ -439,12 +438,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source overrides")
+
         def update_source_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
             source_publications, update_source_override, self.log)
 
         self.log.debug("Calculating binary overrides")
+
         def update_binary_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
@@ -491,7 +492,7 @@ class FTPArchiveHandler:
 
         # Start to write the files out
         ef = open(ef_override, "w")
-        f = open(main_override , "w")
+        f = open(main_override, "w")
         for package, priority, section in bin_overrides:
             origin = "\t".join([package, "Origin", "Ubuntu"])
             bugs = "\t".join([package, "Bugs",
@@ -544,7 +545,6 @@ class FTPArchiveHandler:
     #
     # File List Generation
     #
-
     def getSourceFiles(self, distroseries, pocket):
         """Fetch publishing information about all published source files.
 
@@ -574,6 +574,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component = result
             return (name, suite, filename, component)
@@ -611,6 +612,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component, architecturetag = result
             architecture = 'binary-' + architecturetag
@@ -659,12 +661,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source filelist.")
+
         def update_source_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
             sourcefiles, update_source_filelist, self.log)
 
         self.log.debug("Calculating binary filelist.")
+
         def update_binary_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
@@ -679,7 +683,8 @@ class FTPArchiveHandler:
                     series, pocket = (
                         self.distro.getDistroSeriesAndPocket(suite))
                     if (architecture != 'source' and
-                        not series.getDistroArchSeries(architecture[7:]).enabled):
+                        not series.getDistroArchSeries(
+                            architecture[7:]).enabled):
                         continue
                     self.writeFileList(architecture, file_names,
                                        suite, component)
@@ -725,7 +730,6 @@ class FTPArchiveHandler:
     #
     # Config Generation
     #
-
     def generateConfig(self, fullpublish=False):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.

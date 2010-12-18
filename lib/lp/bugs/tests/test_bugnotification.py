@@ -15,7 +15,7 @@ from zope.interface import providedBy
 from canonical.config import config
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
-from canonical.testing.layers import (
+from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

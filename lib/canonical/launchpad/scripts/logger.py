@@ -172,7 +172,7 @@ class LaunchpadFormatter(logging.Formatter):
 
     def __init__(self, fmt=None, datefmt=None):
         if fmt is None:
-            if config.instance_name == 'testrunner':
+            if config.isTestRunner():
                 # Don't output timestamps in the test environment
                 fmt = '%(levelname)-7s %(message)s'
             else:

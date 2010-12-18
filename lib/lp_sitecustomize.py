@@ -9,6 +9,11 @@ import os
 import warnings
 import logging
 
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    )
+
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
 from lp.services.log.mappingfilter import MappingFilter
@@ -87,19 +92,23 @@ def silence_warnings():
         module="Crypto")
 
 
-def main():
-    # Note that we configure the LPCONFIG environmental variable in the
-    # custom buildout-generated sitecustomize.py in
-    # parts/scripts/sitecustomize.py rather than here.  This is because
-    # the instance name, ${configuration:instance_name}, is dynamic,
-    # sent to buildout from the Makefile.  See buildout.cfg in the
-    # initialization value of the [scripts] section for the code that
-    # goes into this custom sitecustomize.py.  We do as much other
-    # initialization as possible here, in a more visible place.
+def main(instance_name):
+    # This is called by our custom buildout-generated sitecustomize.py
+    # in parts/scripts/sitecustomize.py. The instance name is sent to
+    # buildout from the Makefile, and then inserted into
+    # sitecustomize.py.  See buildout.cfg in the "initialization" value
+    # of the [scripts] section for the code that goes into this custom
+    # sitecustomize.py.  We do all actual initialization here, in a more
+    # visible place.
+    if instance_name and instance_name != 'development':
+        # See bug 656213 for why we do this carefully.
+        os.environ.setdefault('LPCONFIG', instance_name)
     os.environ['STORM_CEXTENSIONS'] = '1'
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({Deferred: checker.NoProxy})
+    checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
     # The itertools._grouper type is not exposed by name, so we must get it
     # through actually using itertools.groupby.
@@ -109,5 +118,3 @@ def main():
     silence_bzr_logger()
     silence_zcml_logger()
     silence_transaction_logger()
-
-main()

@@ -4,7 +4,15 @@ The translation forms allow the user to select an alternative language.  The
 form will suggest translations from this alternative language as well as those
 in the form's main language.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
     >>> def get_alternative_languages_widget(browser):
     ...     """Check and return alternative languages widget offered on page.
     ...

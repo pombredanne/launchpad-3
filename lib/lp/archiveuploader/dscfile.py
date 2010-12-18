@@ -17,24 +17,21 @@ __all__ = [
     'find_copyright',
     ]
 
-import apt_pkg
 from cStringIO import StringIO
-from debian.deb822 import Deb822Dict
 import errno
 import glob
 import os
 import shutil
-import subprocess
 import tempfile
 
+import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    IGPGKeySet,
-    ISourcePackageNameSet,
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -50,42 +47,28 @@ from lp.archiveuploader.tagfiles import (
     )
 from lp.archiveuploader.utils import (
     determine_source_file_type,
+    DpkgSourceError,
+    extract_dpkg_source,
     get_source_file_extension,
     ParseMaintError,
-    prefix_multi_line_string,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-
-
-class DpkgSourceError(Exception):
-
-    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
-
-    def __init__(self, output, result):
-        Exception.__init__(
-            self, self._fmt % {"output": output, "result": result})
-        self.output = output
-        self.result = result
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 def unpack_source(dsc_filepath):
@@ -97,24 +80,7 @@ def unpack_source(dsc_filepath):
     # Get a temporary dir together.
     unpacked_dir = tempfile.mkdtemp()
     try:
-        # chdir into it
-        cwd = os.getcwd()
-        os.chdir(unpacked_dir)
-        try:
-            args = ["dpkg-source", "-sn", "-x", dsc_filepath]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-            output, unused = dpkg_source.communicate()
-            result = dpkg_source.wait()
-        finally:
-            # When all is said and done, chdir out again so that we can
-            # clean up the tree with shutil.rmtree without leaving the
-            # process in a directory we're trying to remove.
-            os.chdir(cwd)
-
-        if result != 0:
-            dpkg_output = prefix_multi_line_string(output, "  ")
-            raise DpkgSourceError(result=result, output=dpkg_output)
+        extract_dpkg_source(dsc_filepath, unpacked_dir)
     except:
         shutil.rmtree(unpacked_dir)
         raise
@@ -464,11 +430,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             archives = [self.policy.archive]
 
+        archives = [archive for archive in archives if archive is not None]
+
         library_file = None
         for archive in archives:
             try:
-                library_file = self.policy.distro.getFileByName(
-                    filename, source=True, binary=False, archive=archive)
+                library_file = archive.getFileByName(filename)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive
@@ -802,7 +769,6 @@ def find_changelog(source_dir, logger):
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
     return open(changelog_file, 'r').read()
-
 
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,

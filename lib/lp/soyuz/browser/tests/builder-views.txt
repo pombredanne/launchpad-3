@@ -130,9 +130,9 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.buildmaster.model.buildqueue import BuildQueue
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBuilderSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov_private_ppa = factory.makeArchive(
@@ -241,7 +241,7 @@ in categories. They are:
  * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builderset = getUtility(IBuilderSet)
 
     >>> builderset_view = getMultiAdapter(
@@ -251,7 +251,7 @@ In order to have a proper dataset for the tests we will populate the
 builder table with several builders for different categories and
 architectures.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from lp.soyuz.model.processor import Processor

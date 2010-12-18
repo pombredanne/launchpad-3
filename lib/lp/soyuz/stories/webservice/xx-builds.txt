@@ -13,10 +13,10 @@ source publications can be retrieved.
     >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
-    >>> from lp.registry.model.gpgkey import GPGKey
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive

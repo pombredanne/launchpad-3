@@ -34,8 +34,8 @@ Create and populate a temporary file and pretend it is a chroot:
 Setup a function to return a ManageChrootScript object given some
 parameters.
 
-    >>> from lp.soyuz.scripts.ftpmaster import ManageChrootScript
     >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.soyuz.scripts.ftpmaster import ManageChrootScript
     >>> def getScriptObject(command, distribution='ubuntu', suite='hoary',
     ...                     arch='i386', filepath=filepath):
     ...     test_args = ['-s', suite,

@@ -20,6 +20,7 @@ from canonical.launchpad.webapp import (
     Link,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 
@@ -32,7 +33,7 @@ class HasRecipesMenuMixin:
         enabled = False
         if self.context.getRecipes().count():
             enabled = True
-        if not config.build_from_branch.enabled:
+        if not recipes_enabled():
             enabled = False
         return Link(
             '+recipes', text, icon='info', enabled=enabled, site='code')

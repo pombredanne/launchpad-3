@@ -11,7 +11,7 @@ import re
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
-from canonical.launchpad.database import BinaryPackageName
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 
 
 class BaseNameList:

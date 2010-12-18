@@ -16,10 +16,10 @@ a Zope interaction to show it:
 
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('foo.bar@canonical.com')
-  >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+  >>> from zope.component import getUtility
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.person import IPersonSet
-  >>> from zope.component import getUtility
+  >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
   >>> permission_set = getUtility(IArchivePermissionSet)
   >>> main_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
   >>> name12 = getUtility(IPersonSet).getByName('name12')
@@ -172,8 +172,8 @@ Package sets from other series are not shown.
 
 First set up some additional data: a package diff to show in the listing.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
@@ -264,7 +264,7 @@ the builds can be created.
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
   >>> login('foo.bar@canonical.com')

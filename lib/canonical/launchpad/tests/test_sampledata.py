@@ -12,7 +12,6 @@ __metaclass__ = type
 __all__ = []
 
 import subprocess
-import unittest
 
 from canonical.testing.layers import DatabaseLayer
 from lp.testing import TestCase
@@ -37,14 +36,11 @@ class SampleDataTestCase(TestCase):
         cmd = (
             "pg_dump --format=c --compress=0 --no-privileges --no-owner"
             " --schema=public %s | pg_restore --clean"
-            " --exit-on-error --dbname=launchpad_ftest" % source_dbname)
+            " --exit-on-error --dbname=%s" % (
+            source_dbname, DatabaseLayer._db_fixture.dbname))
         proc = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             stdin=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         rv = proc.wait()
         self.failUnlessEqual(rv, 0, "Dump/Restore failed: %s" % stdout)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

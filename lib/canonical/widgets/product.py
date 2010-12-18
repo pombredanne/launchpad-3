@@ -30,8 +30,9 @@ from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
 from lp.services.fields import StrippedTextLine
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType, IBugTracker, IBugTrackerSet)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url

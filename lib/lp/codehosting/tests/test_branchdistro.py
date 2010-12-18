@@ -4,8 +4,6 @@
 """Tests for making new source package branches just after a distro release.
 """
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import os

@@ -37,13 +37,13 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachment,

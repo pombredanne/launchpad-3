@@ -3,9 +3,9 @@
 This test covers the use case when a package includes translations and is
 uploaded into the system.
 
-  >>> from canonical.launchpad.database import ProcessorFamily
   >>> from lp.registry.model.gpgkey import GPGKey
   >>> from lp.soyuz.model.component import Component
+  >>> from lp.soyuz.model.processor import ProcessorFamily
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
   ...     SourcePackagePublishingHistory)
@@ -25,8 +25,8 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
   # Login as an admin.
   >>> login('foo.bar@canonical.com')
@@ -338,15 +338,15 @@ PackageUploadCustom: these will emulate everything we need to document
 different interpretations of "importer" in attachTranslationFiles.
 
   >>> from zope.interface import implements
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+  >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
   >>> from lp.soyuz.model.queue import PackageUploadCustom
   >>> from lp.soyuz.interfaces.archive import (
   ...     IArchive, ArchivePurpose)
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
+  >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.enums import PackageUploadCustomFormat
   >>> from lp.soyuz.interfaces.component import IComponentSet
-  >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
   ...     ISourcePackageRelease)
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket

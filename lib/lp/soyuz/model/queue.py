@@ -26,7 +26,6 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
-    In,
     Join,
     )
 from storm.store import Store
@@ -102,7 +101,6 @@ from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
-
 
 def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
@@ -675,23 +673,20 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return PackageUploadSource(
             packageupload=self,
-            sourcepackagerelease=spr.id
-            )
+            sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
         """See `IPackageUpload`."""
         return PackageUploadBuild(
             packageupload=self,
-            build=build.id
-            )
+            build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
         return PackageUploadCustom(
             packageupload=self,
             libraryfilealias=library_file.id,
-            customformat=custom_type
-            )
+            customformat=custom_type)
 
     def isPPA(self):
         """See `IPackageUpload`."""
@@ -767,12 +762,12 @@ class PackageUpload(SQLBase):
         # uploads.
         for build in self.builds:
             for bpr in build.build.binarypackages:
-                files.extend(
-                    [(bpf.libraryfile.filename,'','') for bpf in bpr.files])
+                files.extend([
+                    (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
 
         if self.customfiles:
             files.extend(
-                [(file.libraryfilealias.filename,'','')
+                [(file.libraryfilealias.filename, '', '')
                 for file in self.customfiles])
 
         return files
@@ -883,9 +878,14 @@ class PackageUpload(SQLBase):
 
         body = message.template % message.__dict__
 
+        subject = "%s rejected" % self.changesfile.filename
+        if self.isPPA():
+            subject = "[PPA %s] %s" % (
+                get_ppa_reference(self.archive), subject)
+
         self._sendMail(
-            recipients, "%s rejected" % self.changesfile.filename,
-            body, dry_run, changesfile_content=changesfile_content,
+            recipients, subject, body, dry_run,
+            changesfile_content=changesfile_content,
             attach_changes=attach_changes)
 
     def _sendSuccessNotification(
@@ -1110,7 +1110,7 @@ class PackageUpload(SQLBase):
         # There can be no recipients if none of the emails are registered
         # in LP.
         if not recipients:
-            debug(self.logger,"No recipients on email, not sending.")
+            debug(self.logger, "No recipients on email, not sending.")
             return
 
         # Make the content of the actual changes file available to the
@@ -1222,7 +1222,7 @@ class PackageUpload(SQLBase):
         :attach_changes: A flag governing whether the original changesfile
             content shall be attached to the email.
         """
-        extra_headers = { 'X-Katie' : 'Launchpad actually' }
+        extra_headers = {'X-Katie': 'Launchpad actually'}
 
         # XXX cprov 20071212: ideally we only need to check archive.purpose,
         # however the current code in uploadprocessor.py (around line 259)
@@ -1398,8 +1398,7 @@ class PackageUploadBuild(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
@@ -1435,6 +1434,7 @@ class PackageUploadBuild(SQLBase):
             # At this point (uploads are already processed) sections are
             # guaranteed to exist in the DB. We don't care if sections are
             # not official.
+            pass
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -1494,8 +1494,7 @@ class PackageUploadBuild(SQLBase):
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    pocket=self.packageupload.pocket
-                    )
+                    pocket=self.packageupload.pocket)
                 published_binaries.append(bpph)
         return published_binaries
 
@@ -1509,13 +1508,11 @@ class PackageUploadSource(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     sourcepackagerelease = ForeignKey(
         dbName='sourcepackagerelease',
-        foreignKey='SourcePackageRelease'
-        )
+        foreignKey='SourcePackageRelease')
 
     def getSourceAncestry(self):
         """See `IPackageUploadSource`."""
@@ -1622,6 +1619,7 @@ class PackageUploadSource(SQLBase):
         # At this point (uploads are already processed) sections are
         # guaranteed to exist in the DB. We don't care if sections are
         # not official.
+        pass
 
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
@@ -1639,8 +1637,7 @@ class PackageUploadSource(SQLBase):
             distroseries=self.packageupload.distroseries,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
-            pocket=self.packageupload.pocket
-            )
+            pocket=self.packageupload.pocket)
 
 
 class PackageUploadCustom(SQLBase):
@@ -1651,8 +1648,7 @@ class PackageUploadCustom(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     customformat = EnumCol(dbName='customformat', unique=False,
                            notNull=True, schema=PackageUploadCustomFormat)
@@ -1898,11 +1894,11 @@ class PackageUploadSet:
         # method can be removed and call sites updated to use this one.
         store = Store.of(distroseries)
 
-        def dbitem_values_tuple(item_or_list):
+        def dbitem_tuple(item_or_list):
             if not isinstance(item_or_list, list):
-                return (item_or_list.value,)
+                return (item_or_list,)
             else:
-                return tuple(item.value for item in item_or_list)
+                return tuple(item_or_list)
 
         timestamp_query_clause = ()
         if created_since_date is not None:
@@ -1911,34 +1907,31 @@ class PackageUploadSet:
 
         status_query_clause = ()
         if status is not None:
-            status = dbitem_values_tuple(status)
-            status_query_clause = (
-                In(PackageUpload.status, status),)
+            status = dbitem_tuple(status)
+            status_query_clause = (PackageUpload.status.is_in(status),)
 
         archives = distroseries.distribution.getArchiveIDList(archive)
-        archive_query_clause = (
-            In(PackageUpload.archiveID, archives),)
+        archive_query_clause = (PackageUpload.archiveID.is_in(archives),)
 
         pocket_query_clause = ()
         if pocket is not None:
-            pocket = dbitem_values_tuple(pocket)
-            pocket_query_clause = (
-                In(PackageUpload.pocket, pocket),)
+            pocket = dbitem_tuple(pocket)
+            pocket_query_clause = (PackageUpload.pocket.is_in(pocket),)
 
         custom_type_query_clause = ()
         if custom_type is not None:
-            custom_type = dbitem_values_tuple(custom_type)
+            custom_type = dbitem_tuple(custom_type)
             custom_type_query_clause = (
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
-                In(PackageUploadCustom.customformat, custom_type))
+                PackageUploadCustom.customformat.is_in(custom_type))
 
         return store.find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
             *(status_query_clause + archive_query_clause +
               pocket_query_clause + timestamp_query_clause +
-              custom_type_query_clause)
-            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
+              custom_type_query_clause)).order_by(
+                  Desc(PackageUpload.id)).config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

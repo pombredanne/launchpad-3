@@ -18,9 +18,9 @@ reported as NOT OK (meaning it's unavailable).
 We'll make a private archive and add a new build to it to demonstrate this.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBuilderSet, IPersonSet)
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (

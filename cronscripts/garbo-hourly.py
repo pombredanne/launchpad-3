@@ -13,7 +13,7 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
-from canonical.launchpad.scripts.garbo import HourlyDatabaseGarbageCollector
+from lp.scripts.garbo import HourlyDatabaseGarbageCollector
 
 if __name__ == '__main__':
     script = HourlyDatabaseGarbageCollector()

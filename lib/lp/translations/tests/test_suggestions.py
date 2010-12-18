@@ -20,6 +20,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
@@ -50,6 +51,11 @@ class TestTranslationSuggestions(unittest.TestCase):
         self.nl = getUtility(ILanguageSet).getLanguageByCode('nl')
         self.foo_nl = factory.makePOFile('nl', potemplate=self.foo_template)
         self.bar_nl = factory.makePOFile('nl', potemplate=self.bar_template)
+        self._refreshSuggestiveTemplatesCache()
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Update the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_NoSuggestions(self):
         # When a msgid string is unique and nobody has submitted any

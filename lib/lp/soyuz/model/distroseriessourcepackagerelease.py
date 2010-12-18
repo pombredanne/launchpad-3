@@ -101,7 +101,7 @@ class DistroSeriesSourcePackageRelease:
 
         # Import DistributionSourcePackageRelease here to avoid circular
         # imports (and imported directly from database to avoid long line)
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distributionsourcepackagerelease import (
             DistributionSourcePackageRelease)
 
         distro_builds = DistributionSourcePackageRelease(

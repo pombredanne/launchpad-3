@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
+    'TimelineProductSeries',
     ]
 
 import datetime
@@ -47,7 +48,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -73,6 +74,7 @@ from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
+    ITimelineProductSeries,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.milestone import (
@@ -89,16 +91,18 @@ from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
-    )
 
 
 MAX_TIMELINE_MILESTONES = 20
@@ -200,7 +204,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             service_uses_launchpad(self.codehosting_usage) or
             service_uses_launchpad(self.bug_tracking_usage))
 
-
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
@@ -265,6 +268,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bug_reported_acknowledgement(self):
         """See `IBugTarget`."""
         return self.product.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return self.product.enable_bugfiling_duplicate_search
 
     @property
     def sourcepackages(self):
@@ -451,6 +459,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
 
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
+
     def getRelease(self, version):
         for release in self.releases:
             if release.version == version:
@@ -629,12 +644,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
         landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
         landmarks.reverse()
-        return dict(
+        return TimelineProductSeries(
             name=self.name,
             is_development_focus=self.is_development_focus,
-            status=self.status.title,
+            status=self.status,
             uri=canonical_url(self, path_only_if_possible=True),
-            landmarks=landmarks)
+            landmarks=landmarks,
+            product=self.product)
+
+
+class TimelineProductSeries:
+    """See `ITimelineProductSeries`."""
+    implements(ITimelineProductSeries)
+
+    def __init__(self, name, status, is_development_focus, uri, landmarks,
+                 product):
+        self.name = name
+        self.status = status
+        self.is_development_focus = is_development_focus
+        self.uri = uri
+        self.landmarks = landmarks
+        self.product = product
 
 
 class ProductSeriesSet:

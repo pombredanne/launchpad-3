@@ -25,7 +25,6 @@ from storm.cache import (
     Cache,
     GenerationalCache,
     )
-from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -43,7 +42,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.sqlbase import StupidCache
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
@@ -150,6 +149,7 @@ class BaseDatabasePolicy:
 
 class DatabaseBlockedPolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` that blocks all access to the database."""
+
     def getStore(self, name, flavor):
         """Raises `DisallowedStore`. No Database access is allowed."""
         raise DisallowedStore(name, flavor)
@@ -181,6 +181,7 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
     This policy is used for Feeds requests and other always-read only request.
     """
     default_flavor = SLAVE_FLAVOR
+
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
         if flavor == MASTER_FLAVOR:
@@ -211,6 +212,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     Selects the DEFAULT_FLAVOR based on the request.
     """
+
     def __init__(self, request):
         # The super constructor is a no-op.
         # pylint: disable-msg=W0231
@@ -365,6 +367,7 @@ class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     Access to all master Stores is blocked.
     """
+
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`.
 
@@ -384,6 +387,7 @@ class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
 
 class WhichDbView(LaunchpadView):
     "A page that reports which database is being used by default."
+
     def render(self):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         dbname = store.execute("SELECT current_database()").get_one()[0]

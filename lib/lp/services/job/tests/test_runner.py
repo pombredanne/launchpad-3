@@ -4,8 +4,6 @@
 """Tests for job-running facilities."""
 
 
-from __future__ import with_statement
-
 import sys
 from time import sleep
 from unittest import TestLoader

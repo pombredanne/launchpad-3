@@ -30,8 +30,8 @@ We will create a set of `PackageDiff` so we can precisely test how
 they show up in the UI.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
 
@@ -82,7 +82,7 @@ the first one (new upload).
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> diffs = list(diff_set.getPendingDiffs())
     >>> for diff in diffs:
@@ -95,12 +95,12 @@ Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
 later.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.enums import PackageDiffStatus
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.soyuz.enums import PackageDiffStatus
 
     >>> def perform_fake_diff(diff, filename):
     ...     naked_diff = removeSecurityProxy(diff)

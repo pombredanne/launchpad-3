@@ -28,15 +28,15 @@ in incoming requests from clients.
 
 == High Level ==
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> data = 'This is some data'
 
 We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
 This name is a mouthful, but is consistent with the rest of our naming.
 
     >>> lfas = getUtility(ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces import NEVER_EXPIRES
+    >>> from canonical.launchpad.interfaces.librarian import NEVER_EXPIRES
     >>> alias = lfas.create(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )
@@ -118,8 +118,8 @@ https one, depending on a config value.
 However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
 header in the request to 'http', even when 'use_https' is True.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET',
@@ -520,7 +520,7 @@ We need some files to test different ways of accessing them.
 
     # Create a new LibraryFileAlias not referencing any LibraryFileContent
     # record. Such records are considered as being deleted.
-    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -573,9 +573,9 @@ traversals.
 
 XXX bug=631884 we have to establish the flags object manually for testing.
 
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features import per_thread
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features.webapp import ScopesFromRequest
     >>> per_thread.features = FeatureController(
     ...     ScopesFromRequest(empty_request).lookup)
 

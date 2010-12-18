@@ -7,8 +7,8 @@ which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICommercialSubscription, IProductSet)
+    >>> from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
 
@@ -253,7 +253,7 @@ Make the subscription no longer active.
 The qualifies_for_free_hosting attribute is False
 if the product has License.OTHER_PROPRIETARY.
 
-    >>> from canonical.launchpad.interfaces import License
+    >>> from lp.registry.interfaces.product import License
     >>> bzr.licenses = [License.OTHER_PROPRIETARY]
     >>> bzr.qualifies_for_free_hosting
     False

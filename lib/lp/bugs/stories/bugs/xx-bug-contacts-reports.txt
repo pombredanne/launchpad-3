@@ -15,8 +15,9 @@ If we add a bug for Foo Bar these numbers will be updated:
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
 

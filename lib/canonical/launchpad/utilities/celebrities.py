@@ -9,16 +9,14 @@ __all__ = ['LaunchpadCelebrities']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    IBugTrackerSet,
-    IDistributionMirrorSet,
-    IDistributionSet,
-    ILanguageSet,
-    ILaunchpadCelebrities,
-    IPersonSet,
-    IProductSet,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import IDistributionMirrorSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class MutatedCelebrityError(Exception):
@@ -115,6 +113,7 @@ class LanguageCelebrityDescriptor(CelebrityDescriptor):
 
     Unlike most other celebrities, languages are retrieved by code.
     """
+
     def _getCelebrityByName(self, utility):
         """See `CelebrityDescriptor`."""
         return utility.getLanguageByCode(self.name)
@@ -148,7 +147,6 @@ class LaunchpadCelebrities:
         'launchpad-beta-testers')
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    mailing_list_experts = PersonCelebrityDescriptor('mailing-list-experts')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
     registry_experts = PersonCelebrityDescriptor('registry')

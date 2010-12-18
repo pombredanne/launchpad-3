@@ -4,16 +4,16 @@ On this section, we are going to test the view class for an IPOFile.
 
 First, we need some imports.
 
-    >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
+    >>> from StringIO import StringIO
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
-    >>> from lp.translations.publisher import TranslationsLayer
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -116,7 +116,7 @@ The id for this message set is the one we expected.
 
 And as it's the first entry, its sequence number is also the right one.
 
-    >>> potmsgset.getSequence(potmsgset.potemplate)
+    >>> potmsgset.getSequence(pofile_es.potemplate)
     1
 
 Test that the associated text to translate is the one we want. We initialize
@@ -215,7 +215,7 @@ The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     print potmsgset.getSequence(potmsgset.potemplate)
+    ...     print potmsgset.getSequence(pofile_es.potemplate)
     1
     2
     3

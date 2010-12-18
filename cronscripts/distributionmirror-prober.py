@@ -20,8 +20,11 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from lp.registry.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)

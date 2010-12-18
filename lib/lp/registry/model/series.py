@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATUSES',
     'SeriesMixin',
     ]
 
@@ -18,9 +19,18 @@ from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
     )
+from lp.registry.model.hasdrivers import HasDriversMixin
 
 
-class SeriesMixin:
+ACTIVE_STATUSES = [
+    SeriesStatus.DEVELOPMENT,
+    SeriesStatus.FROZEN,
+    SeriesStatus.CURRENT,
+    SeriesStatus.SUPPORTED,
+    ]
+
+
+class SeriesMixin(HasDriversMixin):
     """See `ISeriesMixin`."""
 
     implements(ISeriesMixin)
@@ -29,12 +39,7 @@ class SeriesMixin:
 
     @property
     def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED,
-            ]
+        return self.status in ACTIVE_STATUSES
 
     @property
     def bug_supervisor(self):
@@ -48,7 +53,7 @@ class SeriesMixin:
 
     @property
     def drivers(self):
-        """See `ISeriesMixin`."""
+        """See `IHasDrivers`."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.parent.drivers)

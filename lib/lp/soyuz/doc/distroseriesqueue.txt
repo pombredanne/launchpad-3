@@ -54,9 +54,9 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.model.component import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> universe = getUtility(IComponentSet)['universe']
@@ -80,9 +80,8 @@ Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
   >>> from lp.soyuz.enums import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -112,8 +111,8 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
   >>> from lp.soyuz.enums import PackagePublishingStatus
+  >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -123,8 +122,8 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
 
@@ -161,7 +160,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -268,8 +267,8 @@ Let's process a new upload:
 
   >>> signed_queue = bar_ok.queue_root
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPackageUpload, IGPGKey)
+  >>> from lp.registry.interfaces.gpg import IGPGKey
+  >>> from lp.soyuz.interfaces.queue import IPackageUpload
 
   >>> verifyObject(IPackageUpload, signed_queue)
   True
@@ -509,8 +508,8 @@ don't raise any exception):
 Check forbidden approval of not selected Section:
 
   >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, ISectionSet)
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.section import ISectionSet
 
 Retrieve mozilla-firefox Upload:
 

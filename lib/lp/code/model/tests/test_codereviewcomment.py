@@ -83,7 +83,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Re: Message subject', reply.message.subject)
 
     def test_createNoParentComment(self):
-        comment = self.bmp.createComment(
+        self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',

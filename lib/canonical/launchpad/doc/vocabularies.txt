@@ -10,9 +10,11 @@ style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
@@ -75,7 +77,7 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
@@ -130,7 +132,7 @@ Firefox has the following series:
 Now, if we look at bug one, we can see that it hasn't been targeted
 for any Firefox series yet:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
@@ -395,8 +397,8 @@ All bug watches associated with a bugtask's bug.
 Bug watches with an email address URL (i.e. starts with "mailto:") are
 treated differently.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_twelve = getUtility(IBugSet).get(12)
     >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')

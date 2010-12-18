@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the CodeImportWorkerMonitor and related classes."""
@@ -18,6 +18,11 @@ import urllib
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 import transaction
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    flush_logged_errors,
+    )
 from twisted.internet import (
     defer,
     error,
@@ -25,7 +30,6 @@ from twisted.internet import (
     reactor,
     )
 from twisted.python import log
-from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
@@ -33,9 +37,8 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
-    TwistedAppServerLayer,
-    TwistedLaunchpadZopelessLayer,
-    TwistedLayer,
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.code.enums import (
     CodeImportResultStatus,
@@ -71,6 +74,7 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
+from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing import (
     login,
     logout,
@@ -79,9 +83,10 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
+fix_bug_2518()
 
-    layer = TwistedLayer
+
+class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
     class StubWorkerMonitor:
 
@@ -94,7 +99,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
     def setUp(self):
         self.worker_monitor = self.StubWorkerMonitor()
         self.log_file = StringIO.StringIO()
-        ProcessTestsMixin.setUp(self)
+        super(TestWorkerMonitorProtocol, self).setUp()
 
     def makeProtocol(self):
         """See `ProcessTestsMixin.makeProtocol`."""
@@ -195,7 +200,7 @@ class FakeCodeImportScheduleEndpointProxy:
             raise self.no_such_job_exception
 
 
-class TestWorkerMonitorUnit(TrialTestCase, TestCase):
+class TestWorkerMonitorUnit(TestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
     We have to pay attention to the fact that several of the methods of the
@@ -204,10 +209,8 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     they did.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
-
-    # This works around a clash between the TrialTestCase and our TestCase.
-    skip = None
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """A subclass of CodeImportWorkerMonitor that stubs logging OOPSes."""
@@ -216,7 +219,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
             log.err(failure)
 
     def assertOopsesLogged(self, exc_types):
-        failures = self.flushLoggedErrors()
+        failures = flush_logged_errors()
         self.assertEqual(len(exc_types), len(failures))
         for fail, exc_type in zip(failures, exc_types):
             self.assert_(fail.check(exc_type))
@@ -262,7 +265,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # getWorkerArguments didn't find the supplied job, getWorkerArguments
         # translates this to an 'ExitQuietly' exception.
         worker_monitor = self.makeWorkerMonitorWithoutJob()
-        return self.assertFailure(
+        return assert_fails_with(
             worker_monitor.getWorkerArguments(), ExitQuietly)
 
     def test_getWorkerArguments_endpoint_failure_raises(self):
@@ -270,7 +273,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # handled in any special way by getWorkerArguments.
         worker_monitor = self.makeWorkerMonitorWithoutJob(
             exception=ZeroDivisionError())
-        return self.assertFailure(
+        return assert_fails_with(
             worker_monitor.getWorkerArguments(), ZeroDivisionError)
 
     def test_getWorkerArguments_arbitrary_fault_raises(self):
@@ -278,7 +281,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # handled in any special way by getWorkerArguments.
         worker_monitor = self.makeWorkerMonitorWithoutJob(
             exception=xmlrpc.Fault(1, ''))
-        return self.assertFailure(
+        return assert_fails_with(
             worker_monitor.getWorkerArguments(), xmlrpc.Fault)
 
     def test_updateHeartbeat(self):
@@ -341,7 +344,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
             self.assertEqual(
                 [('finishJobID', job_id, 'SUCCESS', '')],
                 worker_monitor.codeimport_endpoint.calls)
-            errors = self.flushLoggedErrors(ZeroDivisionError)
+            errors = flush_logged_errors(ZeroDivisionError)
             self.assertEqual(1, len(errors))
         return worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
@@ -431,10 +434,11 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
+        self.layer.force_dirty_database()
         worker_monitor = self.makeWorkerMonitorWithJob()
         ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         def check_log_file(ignored):
-            failures = self.flushLoggedErrors(RuntimeError)
+            failures = flush_logged_errors(RuntimeError)
             self.assertEqual(1, len(failures))
             fail = failures[0]
             traceback_file = StringIO.StringIO()
@@ -455,14 +459,11 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         self.assertEqual(calls, [])
 
 
-class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
+class TestWorkerMonitorRunNoProcess(BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
-
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
@@ -574,12 +575,10 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
+class TestWorkerMonitorIntegration(BzrTestCase):
 
-    layer = TwistedAppServerLayer
-
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    layer = ZopelessAppServerLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def setUp(self):
         BzrTestCase.setUp(self)

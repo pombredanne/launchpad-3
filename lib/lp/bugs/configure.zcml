@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
@@ -130,7 +131,7 @@
     <xmlrpc:view
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         methods="filebug"
-        class="canonical.launchpad.xmlrpc.FileBugAPI"
+        class="lp.bugs.xmlrpc.bug.FileBugAPI"
         permission="launchpad.AnyPerson"/>
 
     <!-- Global Malone portlets -->
@@ -196,8 +197,6 @@
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
-                    isMentor
-                    canMentor
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
@@ -257,11 +256,6 @@
             <require
                 permission="launchpad.Edit"
                 set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -369,7 +363,6 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
-                    component_groups
                     contactdetails
                     getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
@@ -395,10 +388,10 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
-                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -477,12 +470,15 @@
                     name
                     is_visible
                     is_custom
+                    distro_source_package
+                    component_group
                     "/>
             <require
                 permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
@@ -646,9 +642,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    mentoring_offers
-                    canMentor
-                    isMentor
                     getNullBugTask
                     is_complete
                     official_tags
@@ -704,6 +697,7 @@
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
+                    getSubscriptionForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -730,35 +724,35 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addAttachment
+                    addChange
                     addChangeNotification
                     addCommentNotification
+                    addNomination
+                    addTask
                     addWatch
-                    removeWatch
+                    convertToQuestion
+                    expireNotifications
+                    findCvesInText
+                    linkAttachment
+                    linkBranch
                     linkCVE
                     linkCVEAndReturnNothing
-                    unlinkCVE
-                    findCvesInText
-                    newMessage
+                    linkHWSubmission
                     linkMessage
-                    addAttachment
-                    unsubscribeFromDupes
-                    subscribe
-                    unsubscribe
-                    addNomination
-                    expireNotifications
-                    setStatus
+                    markAsDuplicate
+                    markUserAffected
+                    newMessage
+                    removeWatch
                     setPrivate
                     setSecurityRelated
-                    convertToQuestion
-                    markUserAffected
-                    addTask
-                    addChange
-                    markAsDuplicate
-                    linkHWSubmission
-                    unlinkHWSubmission
-                    linkBranch
+                    setStatus
+                    subscribe
                     unlinkBranch
-                    linkAttachment
+                    unlinkCVE
+                    unlinkHWSubmission
+                    unsubscribe
+                    unsubscribeFromDupes
                     updateHeat"
                 set_attributes="
                     activity initial_message
@@ -778,11 +772,6 @@
                     tags
                     title description
                     who_made_private"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
             <require
                 permission="launchpad.Admin"
                 attributes="
@@ -1035,6 +1024,12 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">
@@ -1060,4 +1055,7 @@
         mail_header
         recipient"/>
   </class>
+
+  <webservice:register module="lp.bugs.interfaces.webservice" />
+
 </configure>

@@ -29,6 +29,7 @@ from lp.services.apachelogparser.base import (
     get_fd_and_file_size,
     get_files_to_parse,
     get_host_date_status_and_request,
+    get_method_and_path,
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
@@ -70,6 +71,35 @@ class TestLineParsing(TestCase):
     def test_day_extraction(self):
         date = '[13/Jun/2008:18:38:57 +0100]'
         self.assertEqual(get_day(date), datetime(2008, 6, 13))
+
+    def test_parsing_path_with_missing_protocol(self):
+        request = (r'GET /56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?'
+                   r'N\x1f\x9b')
+        method, path = get_method_and_path(request)
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
+            path,
+            r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b')
+
+    def test_parsing_path_with_space(self):
+        # See bug 676489.
+        request = (r'GET /56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?'
+                   r'N\x1f\x9b Z%7B... HTTP/1.0')
+        method, path = get_method_and_path(request)
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
+            path,
+            r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b Z%7B...')
+
+    def test_parsing_path_with_space_and_missing_protocol(self):
+        # This is a variation of bug 676489.
+        request = (r'GET /56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?'
+                   r'N\x1f\x9b Z%7B...')
+        method, path = get_method_and_path(request)
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
+            path,
+            r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b Z%7B...')
 
 
 class Test_get_fd_and_file_size(TestCase):

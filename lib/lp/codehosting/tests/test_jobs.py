@@ -3,8 +3,6 @@
 
 """Tests for Job-running facilities."""
 
-from __future__ import with_statement
-
 from unittest import TestLoader
 
 from canonical.config import config

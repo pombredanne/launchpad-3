@@ -13,12 +13,12 @@ test too much.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from lp.registry.model.karma import KarmaCategory
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.karma import IKarmaCacheManager
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
@@ -66,6 +66,24 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
 
 Getting the most translated pillars
 -----------------------------------
+
+Set Up
+......
+
+The following demo assumes the test data has official_translations set.
+Let's set that up.
+
+    >>> from lp.app.enums import ServiceUsage
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+
+Using getMostTranslatedPillars
+..............................
 
 Method getMostTranslatedPillars() returns a list of dicts listing
 pillars with most translations karma so far, along with a relative

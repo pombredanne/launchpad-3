@@ -5,8 +5,8 @@ PocketChroot records combine DistroArchSeries and a Chroot.
 Chroot are identified per LibraryFileAlias and we offer three method
 based on IDistroArchSeries to handle them: get, add and update.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+  >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 

@@ -101,13 +101,6 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             distinct=True)
 
     @property
-    def translator_count(self):
-        translators = set()
-        for translator in self.translators:
-            translators = translators.union(translator.allmembers)
-        return len(translators)
-
-    @property
     def contributor_count(self):
         return self.contributorcount
 
@@ -169,7 +162,6 @@ class DummyDistroSeriesLanguage(RosettaStats):
         self.distroseries = distroseries
         self.messageCount = distroseries.messagecount
         self.dateupdated = datetime.now(tz=pytz.timezone('UTC'))
-        self.translator_count = 0
         self.contributor_count = 0
         self.title = '%s translations of %s %s' % (
             self.language.englishname,

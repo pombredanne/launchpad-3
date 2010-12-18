@@ -21,6 +21,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.browser.project import ProjectEditView
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 

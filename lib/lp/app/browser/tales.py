@@ -68,14 +68,74 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import (
-    IProduct,
-    LicenseStatus,
-    )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 SEPARATOR = ' : '
+
+
+class MenuLinksDict(dict):
+    """A dict class to construct menu links when asked for and not before.
+
+    We store all the information we need to construct the requested links,
+    including the menu object and request url.
+    """
+
+    def __init__(self, menu, request_url, request):
+        self._request_url = request_url
+        self._menu = menu
+        self._all_link_names = []
+        self._extra_link_names = []
+        dict.__init__(self)
+
+        # The object has the facet, but does not have a menu, this
+        # is probably the overview menu with is the default facet.
+        if menu is None or getattr(menu, 'disabled', False):
+            return
+        menu.request = request
+
+        # We get all the possible link names for the menu.
+        # The link names are the defined menu links plus any extras.
+        self._all_link_names = list(menu.links)
+        extras = menu.extra_attributes
+        if extras is not None:
+            self._extra_link_names = list(extras)
+            self._all_link_names.extend(extras)
+
+    def __getitem__(self, link_name):
+        if not link_name in self._all_link_names:
+            raise KeyError(link_name)
+
+        link = dict.get(self, link_name, None)
+        if link is None:
+            if link_name in self._extra_link_names:
+                link = getattr(self._menu, link_name, None)
+            else:
+                link = self._menu.initLink(link_name, self._request_url)
+
+        if not link_name in self._extra_link_names:
+            self._menu.updateLink(link, self._request_url)
+
+        self[link_name] = link
+        return link
+
+    def __delitem__(self, key):
+        self._all_link_names.remove(key)
+        dict.__delitem__(self, key)
+
+    def items(self):
+        return zip(self._all_link_names, self.values())
+
+    def values(self):
+        return [self[key] for key in self._all_link_names]
+
+    def keys(self):
+        return self._all_link_names
+
+    def iterkeys(self):
+        return iter(self._all_link_names)
+    __iter__ = iterkeys
 
 
 class MenuAPI:
@@ -131,34 +191,20 @@ class MenuAPI:
         menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
             menu = queryAdapter(self._context, INavigationMenu, facet)
-        if menu is not None:
-            links_map = self._getMenuLinksAndAttributes(menu)
-        else:
-            # The object has the facet, but does not have a menu, this
-            # is probably the overview menu with is the default facet.
-            links_map = {}
-        object.__setattr__(self, facet, links_map)
-        return links_map
+        links = self._getMenuLinksAndAttributes(menu)
+        object.__setattr__(self, facet, links)
+        return links
 
     def _getMenuLinksAndAttributes(self, menu):
         """Return a dict of the links and attributes of the menu."""
-        menu.request = self._request
-        request_url = self._request_url()
-        result = dict(
-            (link.name, link)
-            for link in menu.iterlinks(request_url=request_url))
-        extras = menu.extra_attributes
-        if extras is not None:
-            for attr in extras:
-                result[attr] = getattr(menu, attr, None)
-        return result
+        return MenuLinksDict(menu, self._request_url(), self._request)
 
     def _has_facet(self, facet):
         """Does the object have the named facet?"""
-        for facet_entry in self.facet():
-            if facet == facet_entry.name:
-                return True
-        return False
+        menu = self._facet_menu()
+        if menu is None:
+            return False
+        return facet in menu.links
 
     def _request_url(self):
         request = self._request
@@ -176,6 +222,16 @@ class MenuAPI:
         return request_urlobj
 
     def facet(self):
+        """Return the IFacetMenu links related to the context."""
+        menu = self._facet_menu()
+        if menu is None:
+            return []
+        menu.request = self._request
+        return list(menu.iterlinks(
+            request_url=self._request_url(),
+            selectedfacetname=self._selectedfacetname))
+
+    def _facet_menu(self):
         """Return the IFacetMenu related to the context."""
         try:
             try:
@@ -188,12 +244,7 @@ class MenuAPI:
         except NoCanonicalUrl:
             menu = None
 
-        if menu is None:
-            return []
-        menu.request = self._request
-        return list(menu.iterlinks(
-            request_url=self._request_url(),
-            selectedfacetname=self._selectedfacetname))
+        return menu
 
     def selectedfacetname(self):
         if self._selectedfacetname is None:
@@ -204,10 +255,7 @@ class MenuAPI:
     @property
     def context(self):
         menu = IContextMenu(self._context, None)
-        if menu is None:
-            return  {}
-        else:
-            return self._getMenuLinksAndAttributes(menu)
+        return self._getMenuLinksAndAttributes(menu)
 
     @property
     def navigation(self):
@@ -229,10 +277,7 @@ class MenuAPI:
                     context, INavigationMenu, name=selectedfacetname)
             except NoCanonicalUrl:
                 menu = None
-            if menu is None or menu.disabled:
-                return {}
-            else:
-                return self._getMenuLinksAndAttributes(menu)
+            return self._getMenuLinksAndAttributes(menu)
         except AttributeError, e:
             # If this method gets an AttributeError, we rethrow it as a
             # AssertionError. Otherwise, zope will hide the root cause
@@ -832,10 +877,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
         return self.icon_template % (alt, title, css)
 
-    def _hasMentoringOffer(self):
-        """Return whether the bug has a mentoring offer."""
-        return self._context.bug.mentoring_offers.count() > 0
-
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
         return self._context.bug.linked_branches.count() > 0
@@ -853,10 +894,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         if self._context.bug.private:
             badges.append(self.icon_template % (
                 "private", "Private", "sprite private"))
-
-        if self._hasMentoringOffer():
-            badges.append(self.icon_template % (
-                "mentoring", "Mentoring offered", "sprite mentoring"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
@@ -889,10 +926,6 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     should be displayed, which don't require a DB query when they are
     accessed.
     """
-
-    def _hasMentoringOffer(self):
-        """See `BugTaskImageDisplayAPI`"""
-        return self._context.has_mentoring_offer
 
     def _hasBugBranch(self):
         """See `BugTaskImageDisplayAPI`"""
@@ -936,9 +969,6 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     def badges(self):
 
         badges = ''
-        if self._context.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "sprite mentoring")
 
         if self._context.linked_branches.count() > 0:
             badges += self.icon_template % (

@@ -11,9 +11,9 @@ DistributionSourcePackages.
     >>> login('test@canonical.com')
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet)['firefox']
@@ -86,8 +86,8 @@ IQuestion interface
 
 Questions are manipulated through the IQuestion interface.
 
-    >>> from lp.answers.interfaces.question import IQuestion
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.answers.interfaces.question import IQuestion
 
     # The complete interface is not necessarily available to the
     # logged in user.

@@ -7,11 +7,13 @@ __metaclass__ = type
 
 
 import bz2
+import crypt
 import gzip
 import os
 import shutil
 import stat
 import tempfile
+from textwrap import dedent
 
 import transaction
 from zope.component import getUtility
@@ -395,11 +397,9 @@ class TestPublisher(TestPublisherBase):
         # Stub parameters.
         allowed_suites = [
             ('breezy-autotest', PackagePublishingPocket.RELEASE)]
-        distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -416,7 +416,7 @@ class TestPublisher(TestPublisherBase):
         partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntutest, ArchivePurpose.PARTNER)
         distro_publisher = getPublisher(
-            partner_archive, allowed_suites, self.logger, distsroot)
+            partner_archive, allowed_suites, self.logger)
         self.assertEqual(partner_archive, distro_publisher.archive)
         self.assertEqual('/var/tmp/archive/ubuntutest-partner/dists',
             distro_publisher._config.distsroot)
@@ -660,10 +660,8 @@ class TestPublisher(TestPublisherBase):
         work on the deleted publications.
         """
         allowed_suites = []
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -735,10 +733,8 @@ class TestPublisher(TestPublisherBase):
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
             ('breezy-autotest', PackagePublishingPocket.UPDATES),
             ]
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -890,19 +886,19 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 15]
+        plain_sources_md5_line = release_contents[md5_header_index + 16]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 17]
+        release_md5_line = release_contents[md5_header_index + 15]
         self.assertEqual(
             release_md5_line,
             (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
             '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        bz2_sources_md5_line = release_contents[md5_header_index + 16]
+        bz2_sources_md5_line = release_contents[md5_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
         gz_sources_md5_line = release_contents[md5_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
@@ -911,18 +907,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 15]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 17]
+        release_sha1_line = release_contents[sha1_header_index + 15]
         self.assertEqual(
             release_sha1_line,
             (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
              '130 main/source/Release'))
         # See above.
-        bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
+        bz2_sources_sha1_line = release_contents[sha1_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
         gz_sources_sha1_line = release_contents[sha1_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
@@ -931,18 +927,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 15]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 17]
+        release_sha256_line = release_contents[sha256_header_index + 15]
         self.assertEqual(
             release_sha256_line,
             (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
              '1e2c505aa              130 main/source/Release'))
         # See above.
-        bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
+        bz2_sources_sha256_line = release_contents[sha256_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
@@ -1040,6 +1036,42 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
+    def testHtaccessForPrivatePPA(self):
+        # A htaccess file is created for new private PPA's.
+
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, private=True)
+        ppa.buildd_secret = "geheim"
+
+        # Setup the publisher for it and publish its repository.
+        archive_publisher = getPublisher(ppa, [], self.logger)
+        pubconf = getPubConfig(ppa)
+        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        self.assertTrue(os.path.exists(htaccess_path))
+        with open(htaccess_path, 'r') as htaccess_f:
+            self.assertEquals(htaccess_f.read(), dedent("""
+                AuthType           Basic
+                AuthName           "Token Required"
+                AuthUserFile       %s/.htpasswd
+                Require            valid-user
+                """) % pubconf.htaccessroot)
+
+        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+
+        # Read it back in.
+        with open(htpasswd_path, "r") as htpasswd_f:
+            file_contents = htpasswd_f.readlines()
+
+        self.assertEquals(1, len(file_contents))
+
+        # The first line should be the buildd_secret.
+        [user, password] = file_contents[0].strip().split(":", 1)
+        self.assertEqual(user, "buildd")
+        # We can re-encrypt the buildd_secret and it should match the
+        # one in the .htpasswd file.
+        encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
+        self.assertEqual(encrypted_secret, password)
+
 
 class TestArchiveIndices(TestPublisherBase):
     """Tests for the native publisher's index generation.
@@ -1052,14 +1084,14 @@ class TestArchiveIndices(TestPublisherBase):
         """Run the index generation step of the publisher."""
         publisher.C_writeIndexes(False)
 
-    def assertIndices(self, publisher, suites, present=[], absent=[]):
+    def assertIndices(self, publisher, suites, present=(), absent=()):
         """Assert that the given suites have correct indices."""
         for series, pocket in suites:
             self.assertIndicesForSuite(
                 publisher, series, pocket, present, absent)
 
     def assertIndicesForSuite(self, publisher, series, pocket,
-                              present=[], absent=[]):
+                              present=(), absent=()):
         """Assert that the suite has correct indices.
 
         Checks that the architecture tags in 'present' have Packages and

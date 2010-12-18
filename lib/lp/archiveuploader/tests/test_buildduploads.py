@@ -20,6 +20,7 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
 
@@ -195,6 +196,13 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         real_policy = self.policy
         self.policy = 'insecure'
         super(TestBuilddUploads, self).setUp()
+        # Publish the source package release so it can be found by
+        # NascentUploadFile.findSourcePackageRelease().
+        spr = self.source_queue.sources[0].sourcepackagerelease
+        getUtility(IPublishingSet).newSourcePublication(
+            self.distroseries.main_archive, spr,
+            self.distroseries, spr.component,
+            spr.section, PackagePublishingPocket.RELEASE)
         self.policy = real_policy
 
     def _publishBuildQueueItem(self, queue_item):

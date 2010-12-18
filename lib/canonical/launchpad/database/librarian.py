@@ -57,14 +57,14 @@ from canonical.database.sqlbase import (
     session_store,
     SQLBase,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias,
     ILibraryFileAliasSet,
     ILibraryFileAliasWithParent,
     ILibraryFileContent,
     ILibraryFileDownloadCount,
-    IMasterStore,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.librarian.interfaces import (
     DownloadFailed,
     ILibrarianClient,

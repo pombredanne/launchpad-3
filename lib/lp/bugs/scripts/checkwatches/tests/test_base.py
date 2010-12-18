@@ -3,8 +3,6 @@
 
 """Tests for the `base` module."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from contextlib import contextmanager

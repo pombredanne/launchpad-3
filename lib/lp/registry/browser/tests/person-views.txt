@@ -64,7 +64,7 @@ Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
     >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
 
     # Only admins can change an account.
 
@@ -106,14 +106,16 @@ email addresses and the visible_email_address_description summarises who
 can see them
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
+anyone in Launchpad..
 
+    >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
     u'mark@example.com'
 
     >>> mark.hide_email_addresses
     False
+    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
@@ -330,10 +332,9 @@ progress.
 Assigned specifications that do not display when they are not in an in
 progress state.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login(user.preferredemail.email)
+    >>> login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')
@@ -352,8 +353,7 @@ The specification is displayed only when it is in a in progress state
 specifications is a link to show all the specifications that the user is
 working on.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    SpecificationDefinitionStatus)
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
 
     >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> newstate = spec.updateLifecycleStatus(user)
@@ -393,7 +393,7 @@ Assigned bugs do not display when their status is not INPROGRESS.
 The assigned bug is displayed in the "Working on..." section when its
 status is in INPROGRESS.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
 
     # Create a new view because we're testing some cached properties.

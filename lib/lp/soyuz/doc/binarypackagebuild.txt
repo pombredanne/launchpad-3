@@ -224,8 +224,8 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
@@ -302,7 +302,7 @@ it won't interfere in the next tests.
 Initialize all the required arguments to create a binary package for a
 given build record entry.
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
     >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
@@ -328,8 +328,8 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     section=section, priority=priority, installedsize=installedsize,
     ...     architecturespecific=architecturespecific)
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
@@ -489,8 +489,8 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> from storm.expr import In
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from storm.expr import In
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -723,12 +723,12 @@ Log in as admin to avoid security on IBinaryPackageBuild for the moment.
 
 Let's create a private PPA for cprov (and hence its builds become private):
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, private=True, name='p3a',
     ...     distribution=cprov.archive.distribution)
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> binaries = test_publisher.getPubBinaries(
     ...     archive=cprov_private_ppa, builder=bob,
@@ -756,7 +756,7 @@ The default set of builds with no user specified excludes private builds:
 If we include an admin user, we can see all the builds.  Here, we get
 an additional private build for cprov:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)

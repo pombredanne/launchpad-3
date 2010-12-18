@@ -4,12 +4,11 @@ Distro Arch Series
 
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
-   >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchSeriesBinaryPackage,
-   ...    IBinaryPackagePublishingHistory,
-   ...    ISectionSet)
+   >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import IDistroArchSeriesBinaryPackage
+   >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+   >>> from lp.soyuz.interfaces.section import ISectionSet
 
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from lp.registry.interfaces.distribution import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
 
@@ -164,8 +163,8 @@ In order to test its behavior we will create a bunch of sample
 publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory)

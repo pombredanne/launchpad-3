@@ -7,5 +7,6 @@
                          revisions context/revisions">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
   </tal:revisions>
+  <tal:diff condition="context/diff" replace="structure context/diff/text/fmt:diff" />
 
 </tal:root>

@@ -485,19 +485,6 @@ class TestLaunchpadBrowserRequest(TestCase):
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
 
-    def test_isRedirectInhibited_without_cookie(self):
-        # When the request doesn't include the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns False.
-        request = LaunchpadBrowserRequest('', {})
-        self.assertFalse(request.isRedirectInhibited())
-
-    def test_isRedirectInhibited_with_cookie(self):
-        # When the request includes the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns True.
-        request = LaunchpadBrowserRequest(
-            '', dict(HTTP_COOKIE="inhibit_beta_redirect=1"))
-        self.assertTrue(request.isRedirectInhibited())
-
 
 def test_suite():
     suite = unittest.TestSuite()

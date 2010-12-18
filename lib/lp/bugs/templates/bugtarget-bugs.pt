@@ -101,7 +101,7 @@
       <tal:uses_launchpad_bugtracker
         condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <tal:has_bugtasks condition="context/has_bugtasks">
-        <div class="search-box" style="margin-bottom:2em">
+        <div id="simple-bug-search" class="portlet-top" style="margin-bottom:2em">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
           />
@@ -111,7 +111,7 @@
         --></script>
       </tal:has_bugtasks>
 
-      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
+      <div class="portlet" tal:condition="view/hot_bugs_info/bugtasks">
         <h2>Hot bugs</h2>
 
         <table class="listing" id="hot-bugs"
@@ -157,7 +157,7 @@
            tal:condition="view/hot_bugs_info/has_more_bugs">
           <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">See all hot bugs</a>
         </p>
-      </tal:has_hot_bugs>
+      </div>
 
       <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no
@@ -190,17 +190,8 @@
 
     <tal:also_in_ubuntu
       condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD">
-      <p tal:define="packages context/ubuntu_packages | nothing"
-         tal:condition="packages"
-         id="also-in-ubuntu">
-        Ubuntu
-        <tal:also condition="view/external_bugtracker">also</tal:also>
-        tracks bugs for packages derived from this project:
-        <tal:packages repeat="package packages">
-          <span style="white-space: nowrap"
-                tal:content="structure package/fmt:link" /><tal:comma
-          condition="not:repeat/package/end">,</tal:comma></tal:packages>.
-      </p>
+      <metal:also-in-ubuntu
+        use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
     </tal:also_in_ubuntu>
 
     <div

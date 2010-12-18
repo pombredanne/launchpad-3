@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0222,W0231
@@ -18,6 +18,11 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.urlutils import join as urljoin
 import pytz
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    flush_logged_errors,
+    )
 from twisted.internet import (
     defer,
     error,
@@ -25,15 +30,13 @@ from twisted.internet import (
     )
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
     reset_logging,
-    TwistedAppServerLayer,
-    TwistedLayer,
+    ZopelessAppServerLayer,
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -49,7 +52,7 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     ProcessTestsMixin,
     suppress_stderr,
     )
-from lp.testing.factory import ObjectFactory
+from lp.testing import TestCase
 
 
 class FakeCodehostingEndpointProxy:
@@ -73,15 +76,17 @@ class FakeCodehostingEndpointProxy:
         return defer.succeed(0)
 
 
-class TestJobScheduler(TrialTestCase):
+class TestJobScheduler(TestCase):
 
     def setUp(self):
+        super(TestJobScheduler, self).setUp()
         self.masterlock = 'master.lock'
 
     def tearDown(self):
         reset_logging()
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
+        super(TestJobScheduler, self).tearDown()
 
     def makeJobScheduler(self, branch_type_names=()):
         return scheduler.JobScheduler(
@@ -113,14 +118,14 @@ class TestJobScheduler(TrialTestCase):
             manager.codehosting_endpoint.calls)
 
 
-class TestPullerWireProtocol(TrialTestCase):
+class TestPullerWireProtocol(TestCase):
     """Tests for the `PullerWireProtocol`.
 
     Some of the docstrings and comments in this class refer to state numbers
     -- see the docstring of `PullerWireProtocol` for what these mean.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     class StubTransport:
         def loseConnection(self):
@@ -142,6 +147,7 @@ class TestPullerWireProtocol(TrialTestCase):
             self.failure = failure
 
     def setUp(self):
+        super(TestPullerWireProtocol, self).setUp()
         self.puller_protocol = self.StubPullerProtocol()
         self.protocol = scheduler.PullerWireProtocol(self.puller_protocol)
         self.protocol.makeConnection(self.StubTransport())
@@ -218,11 +224,10 @@ class TestPullerWireProtocol(TrialTestCase):
         self.assertUnexpectedErrorCalled(NetstringParseError)
 
 
-class TestPullerMonitorProtocol(
-    ProcessTestsMixin, TrialTestCase):
+class TestPullerMonitorProtocol(ProcessTestsMixin, TestCase):
     """Tests for the process protocol used by the job manager."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     class StubPullerListener:
         """Stub listener object that records calls."""
@@ -251,7 +256,7 @@ class TestPullerMonitorProtocol(
 
     def setUp(self):
         self.listener = self.StubPullerListener()
-        ProcessTestsMixin.setUp(self)
+        super(TestPullerMonitorProtocol, self).setUp()
 
     def assertProtocolSuccess(self):
         """Assert that the protocol saw no unexpected errors."""
@@ -319,7 +324,7 @@ class TestPullerMonitorProtocol(
         self.clock.advance(config.supermirror.worker_timeout - 1)
         self.protocol.do_branchChanged('', '', '', '', '', '')
         self.clock.advance(2)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.TimeoutError)
 
     def test_mirrorFailedDoesNotResetTimeout(self):
@@ -332,7 +337,7 @@ class TestPullerMonitorProtocol(
         self.clock.advance(config.supermirror.worker_timeout - 1)
         self.protocol.do_mirrorFailed('error message', 'OOPS')
         self.clock.advance(2)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.TimeoutError)
 
     def test_terminatesWithError(self):
@@ -348,7 +353,7 @@ class TestPullerMonitorProtocol(
         self.protocol.errReceived('error message')
         self.simulateProcessExit(clean=False)
 
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
     def test_stderrFailsProcess(self):
@@ -377,7 +382,7 @@ class TestPullerMonitorProtocol(
         # have for the worker's death.
         self.protocol.do_startMirroring()
         self.simulateProcessExit(clean=False)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
     def test_errorBeforeStatusReport(self):
@@ -389,7 +394,7 @@ class TestPullerMonitorProtocol(
         self.assertEqual(
             self.listener.calls,
             ['startMirroring', ('mirrorFailed', 'traceback', None)])
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
     @suppress_stderr
@@ -410,23 +415,23 @@ class TestPullerMonitorProtocol(
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
         self.assertEqual(
-            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
-        return self.assertFailure(
+            flush_logged_errors(RuntimeError), [runtime_error_failure])
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
 
-class TestPullerMaster(TrialTestCase):
+class TestPullerMaster(TestCase):
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
+        super(TestPullerMaster, self).setUp()
         self.status_client = FakeCodehostingEndpointProxy()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, None, logging.getLogger(), self.status_client,
             set(['oops-prefix']))
-        self.factory = ObjectFactory()
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
@@ -492,21 +497,17 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkMirrorFailed)
 
 
-class TestPullerMasterSpawning(TrialTestCase):
+class TestPullerMasterSpawning(TestCase):
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        self.factory = ObjectFactory()
+        super(TestPullerMasterSpawning, self).setUp()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
             'HOSTED', oops_prefixes=self.available_oops_prefixes)
-        self._realSpawnProcess = reactor.spawnProcess
-        reactor.spawnProcess = self.spawnProcess
+        self.patch(reactor, 'spawnProcess', self.spawnProcess)
         self.commands_spawned = []
-
-    def tearDown(self):
-        reactor.spawnProcess = self._realSpawnProcess
 
     def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
                          oops_prefixes=None):
@@ -614,19 +615,14 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
+class TestPullerMasterIntegration(PullerBranchTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = TwistedAppServerLayer
-
-    # XXX: Hacky workaround for Trial. It interprets the skip method as a
-    # reason to skip the tests, but the default test result object doesn't
-    # support skipping, hence errors.
-    skip = None
+    layer = ZopelessAppServerLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
-        TrialTestCase.setUp(self)
-        PullerBranchTestCase.setUp(self)
+        super(TestPullerMasterIntegration, self).setUp()
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         url = urljoin(self.serveOverHTTP(), 'src-branch')
@@ -636,10 +632,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchLookup).get(branch_id)
         self.client = FakeCodehostingEndpointProxy()
-
-    def run(self, result):
-        # We want to use Trial's run() method so we can return Deferreds.
-        return TrialTestCase.run(self, result)
 
     def _dumpError(self, failure):
         # XXX: JonathanLange 2007-10-17: It would be nice if we didn't have to
