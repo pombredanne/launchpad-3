@@ -105,6 +105,16 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         # both try to delete the attached Job.
         Store.of(self.context).remove(self.context)
 
+    @property
+    def build(self):
+        """Return a TranslationTemplateBuild for this build job."""
+        build_id = self.context.metadata.get('build_id', None)
+        if build_id is None:
+            return None
+        else:
+            return getUtility(ITranslationTemplatesBuildSource).get(
+                int(build_id))
+
     @classmethod
     def _hasPotteryCompatibleSetup(cls, branch):
         """Does `branch` look as if pottery can generate templates for it?
@@ -142,7 +152,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         return True
 
     @classmethod
-    def create(cls, branch):
+    def create(cls, branch, testing=False):
         """See `ITranslationTemplatesBuildJobSource`."""
         logger = logging.getLogger('translation-templates-build')
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
@@ -159,6 +169,8 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             build_farm_job.id, build.id)
 
         specific_job = build.makeJob()
+        if testing:
+            removeSecurityProxy(specific_job)._constructed_build = build
         logger.debug("Made %s.", specific_job)
 
         duration_estimate = cls.duration_estimate
