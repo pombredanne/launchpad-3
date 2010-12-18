@@ -52,7 +52,7 @@ highlighted.
     The 1.0 branch of the Mozilla web browser. Currently, this is the ...
 
     >>> print series_1_0['class']
-    unhighlighted series
+    series
 
 Any user can see that obsolete series are lowlight. Obsolete series do not
 show bug status counts because it is expensive to retrieve the information.

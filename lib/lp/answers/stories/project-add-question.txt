@@ -70,7 +70,7 @@ that he submitted:
 
     >>> similar_questions = find_tag_by_id(
     ...     user_browser.contents, 'similar-questions')
-    >>> for row in similar_questions.fetch('tr', 'noted'):
+    >>> for row in similar_questions.fetch('tr', 'lesser'):
     ...     print row.a.renderContents()
     Problem showing the SVG demo on W3C site
 
