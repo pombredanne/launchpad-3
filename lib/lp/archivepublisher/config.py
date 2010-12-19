@@ -120,8 +120,6 @@ class Config(object):
         self._distroconfig.readfp(strio)
         strio.close()
 
-        self._extractConfigInfo()
-
     def distroSeriesNames(self):
         # Because dicts iterate for keys only; this works to get dr names
         return self._distroseries.keys()
@@ -133,12 +131,6 @@ class Config(object):
             raise LucilleConfigError(
                 'No Lucille config section for %s in %s' %
                     (dr, self.distroName))
-
-    def _extractConfigInfo(self):
-        """Extract configuration information into the attributes we use"""
-        self.stayofexecution = self._distroconfig.get(
-            "publishing", "pendingremovalduration", 5)
-        self.stayofexecution = float(self.stayofexecution)
 
     def setupArchiveDirs(self):
         """Create missing required directories in archive.
