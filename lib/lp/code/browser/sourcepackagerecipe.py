@@ -405,13 +405,9 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
         # Adds a new related branches widget.
         super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
         self.widgets['related-branches'].display_label = False
-
-    def render(self):
-        # Sets the related branches widget's value.
         self.widgets['related-branches'].setRenderedValue(dict(
                 related_package_branches=self.related_package_branches,
                 related_series_branches=self.related_series_branches))
-        return super(RecipeRelatedBranchesMixin, self).render()
 
     @cachedproperty
     def related_series_branches(self):
