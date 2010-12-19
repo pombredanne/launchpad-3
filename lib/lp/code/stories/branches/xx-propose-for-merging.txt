@@ -8,7 +8,8 @@ Propose a branch for merging
     >>> url = canonical_url(branch)
     >>> logout()
 
-The Propose for merging link should be there is if there is no logged in user.
+The Propose for merging link should be there even if there is no logged in
+user.
 
     >>> browser = setupBrowser()
     >>> browser.open(url)
