@@ -29,8 +29,6 @@
     <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />
 
-    <include file="widgets.zcml" />
-
     <!-- System homepages -->
 
     <!-- Event configuration -->

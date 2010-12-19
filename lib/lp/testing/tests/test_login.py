@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Tests for the login helpers."""
 
 __metaclass__ = type
@@ -124,8 +122,8 @@ class TestLoginHelpers(TestCaseWithFactory):
 
     def test_login_with_email(self):
         # login() logs a person in by email.
-        person = self.factory.makePerson()
-        email = person.preferredemail.email
+        email = 'test-email@example.com'
+        person = self.factory.makePerson(email=email)
         logout()
         login(email)
         self.assertLoggedIn(person)

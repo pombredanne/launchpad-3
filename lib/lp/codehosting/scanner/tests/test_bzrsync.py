@@ -5,8 +5,6 @@
 
 # pylint: disable-msg=W0141
 
-from __future__ import with_statement
-
 import datetime
 import os
 import random
@@ -33,14 +31,18 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJobSource, BranchMergeProposalJobType)
 from lp.code.model.revision import (
     Revision,
     RevisionAuthor,
     RevisionParent,
     )
+from lp.code.model.tests.test_diff import commit_file
+from lp.codehosting.bzrutils import write_locked
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, temp_dir
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -391,37 +393,99 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
 
-    def test_get_revisions_empty(self):
-        # An empty branch should have no revisions.
-        bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_ancestry, bzr_history = (
-            bzrsync.retrieveBranchDetails(self.bzr_branch))
-        self.assertEqual(
-            [], list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
+    def getAncestryDelta_test(self, clean_repository=False):
+        """"Test various ancestry delta calculations.
 
-    def test_get_revisions_linear(self):
-        # If the branch has a linear ancestry, getRevisions() should yield
-        # each revision along with a sequence number, starting at 1.
+        :param clean_repository: If True, perform calculations with a branch
+            whose repository contains only revisions in the ancestry of the
+            tip.
+        """
+        (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
+            'base', 'trunk', 'branch', 'merge')
+        bzr_branch = bzr_tree.branch
+        self.factory.makeBranchRevision(db_branch, 'base', 0)
+        self.factory.makeBranchRevision(
+            db_branch, 'trunk', 1, parent_ids=['base'])
+        self.factory.makeBranchRevision(
+            db_branch, 'branch', None, parent_ids=['base'])
+        self.factory.makeBranchRevision(
+            db_branch, 'merge', 2, parent_ids=['trunk', 'branch'])
+        sync = self.makeBzrSync(db_branch)
+        self.useContext(write_locked(bzr_branch))
+
+        def get_delta(bzr_rev, db_rev):
+            db_branch.last_scanned_id = db_rev
+            graph = bzr_branch.repository.get_graph()
+            revno = graph.find_distance_to_null(bzr_rev, [])
+            if clean_repository:
+                tempdir = self.useContext(temp_dir())
+                delta_branch = self.createBranchAtURL(tempdir)
+                self.useContext(write_locked(delta_branch))
+                delta_branch.pull(bzr_branch, stop_revision=bzr_rev)
+            else:
+                bzr_branch.set_last_revision_info(revno, bzr_rev)
+                delta_branch = bzr_branch
+            return sync.getAncestryDelta(delta_branch)
+
+        added_ancestry, removed_ancestry = get_delta('merge', None)
+        # All revisions are new for an unscanned branch
+        self.assertEqual(
+            set(['base', 'trunk', 'branch', 'merge']), added_ancestry)
+        self.assertEqual(set(), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('merge', 'base')
+        self.assertEqual(
+            set(['trunk', 'branch', 'merge']), added_ancestry)
+        self.assertEqual(set(), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta(NULL_REVISION, 'merge')
+        self.assertEqual(
+            set(), added_ancestry)
+        self.assertEqual(
+            set(['base', 'trunk', 'branch', 'merge']), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('base', 'merge')
+        self.assertEqual(
+            set(), added_ancestry)
+        self.assertEqual(
+            set(['trunk', 'branch', 'merge']), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('trunk', 'branch')
+        self.assertEqual(set(['trunk']), added_ancestry)
+        self.assertEqual(set(['branch']), removed_ancestry)
+
+    def test_getAncestryDelta(self):
+        """"Test ancestry delta calculations with a dirty repository."""
+        return self.getAncestryDelta_test()
+
+    def test_getAncestryDelta_clean_repository(self):
+        """"Test ancestry delta calculations with a clean repository."""
+        return self.getAncestryDelta_test(clean_repository=True)
+
+    def test_revisionsToInsert_empty(self):
+        # An empty branch should have no revisions.
+        self.assertEqual(
+            [], list(BzrSync.revisionsToInsert([], 0, set())))
+
+    def test_revisionsToInsert_linear(self):
+        # If the branch has a linear ancestry, revisionsToInsert() should
+        # yield each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_ancestry, bzr_history = (
-            bzrsync.retrieveBranchDetails(self.bzr_branch))
-        self.assertEqual(
-            [('rev-1', 1)],
-            list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
+        bzr_history = self.bzr_branch.revision_history()
+        added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
+        result = bzrsync.revisionsToInsert(
+            bzr_history, self.bzr_branch.revno(), added_ancestry)
+        self.assertEqual({'rev-1': 1}, dict(result))
 
-    def test_get_revisions_branched(self):
+    def test_revisionsToInsert_branched(self):
         # Confirm that these revisions are generated by getRevisions with None
         # as the sequence 'number'.
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_ancestry, bzr_history = (
-            bzrsync.retrieveBranchDetails(bzr_tree.branch))
-        expected = set(
-            [('base', 1), ('trunk', 2), ('merge', 3), ('branch', None)])
+        bzr_history = bzr_tree.branch.revision_history()
+        added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
+        expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(
-            expected, set(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
+            expected, dict(bzrsync.revisionsToInsert(bzr_history,
+                bzr_tree.branch.revno(), added_ancestry)))
 
     def test_sync_with_merged_branches(self):
         # Confirm that when we syncHistory, all of the revisions are included
@@ -459,19 +523,6 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncBazaarBranchToDatabase(branch_tree.branch, db_trunk)
         expected = set([(1, 'base'), (2, 'branch')])
         self.assertEqual(self.getBranchRevisions(db_trunk), expected)
-
-    def test_retrieveBranchDetails(self):
-        # retrieveBranchDetails should set last_revision, bzr_ancestry and
-        # bzr_history on the BzrSync instance to match the information in the
-        # Bazaar branch.
-        (db_trunk, trunk_tree), ignored = self.makeBranchWithMerge(
-            'base', 'trunk', 'branch', 'merge')
-        bzrsync = self.makeBzrSync(db_trunk)
-        bzr_ancestry, bzr_history = (
-            bzrsync.retrieveBranchDetails(trunk_tree.branch))
-        expected_ancestry = set(['base', 'trunk', 'branch', 'merge'])
-        self.assertEqual(expected_ancestry, bzr_ancestry)
-        self.assertEqual(['base', 'trunk', 'merge'], bzr_history)
 
     def test_retrieveDatabaseAncestry(self):
         # retrieveDatabaseAncestry should set db_ancestry and db_history to
@@ -604,6 +655,40 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertIsNot(None, bmp.next_preview_diff_job)
+
+
+class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
+    """Test the scheduling of GenerateIncrementalDiffJobs."""
+
+    def getPending(self):
+        return list(
+            BranchMergeProposalJobSource.iterReady(
+                BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
+                )
+            )
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_create_on_new_revision(self):
+        """When branch tip changes, a job is created."""
+        parent_id = commit_file(self.db_branch, 'foo', 'bar')
+        self.factory.makeBranchRevision(self.db_branch, parent_id,
+                revision_date=self.factory.getUniqueDate())
+        self.db_branch.last_scanned_id = parent_id
+        # Make sure that the merge proposal is created in the past.
+        date_created = (
+            datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=7))
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=self.db_branch,
+            date_created=date_created)
+        revision_id = commit_file(self.db_branch, 'foo', 'baz')
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        self.assertEqual([], self.getPending())
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        (job,) = self.getPending()
+        self.assertEqual(revision_id, job.new_revision_id)
+        self.assertEqual(parent_id, job.old_revision_id)
 
 
 class TestSetRecipeStale(BzrSyncTestCase):

@@ -7,7 +7,7 @@ similar bug reports, etc.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bugtarget import FileBugViewBase
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> bug_data = dict(
@@ -120,7 +120,7 @@ The first inline part will be appended to the bug description.
     ... """
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
+    >>> from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the

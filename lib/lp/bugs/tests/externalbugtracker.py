@@ -38,7 +38,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -1075,6 +1075,28 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # expand sequences of length 1. Trying to do that on a dict will
         # cause it to explode.
         return [{'changes': changes}]
+
+
+class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
+    """A TestBugzillaAPIXMLRPCTransport that has no bug aliases."""
+
+    bugs = {
+        1: {'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'Marvin',
+            'resolution': 'FIXED',
+            'see_also': [],
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        }
 
 
 class TestMantis(Mantis):

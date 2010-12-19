@@ -5,8 +5,8 @@ abstracts a single bug comment, has an index, and can be rendered
 independently.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
 
 == Handling of the bug's first comment ==
@@ -185,7 +185,8 @@ If a comment made by the same user is strictly identical to its previous
 comment in sequence, it will be omitted. Let's add some comments and
 attachments to a bug to see this in action:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import StringIO
     >>> user = getUtility(ILaunchBag).user
     >>> different_user = getUtility(IPersonSet).getByName('name16')
@@ -338,7 +339,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
 
     >>> from lp.bugs.browser.bugcomment import BugComment
     >>> from lp.bugs.browser.bugtask import BugActivityItem
-    >>> from canonical.launchpad.interfaces import IBugActivitySet
+    >>> from lp.bugs.interfaces.bugactivity import IBugActivitySet
 
     >>> user = factory.makePerson(displayname="Arthur Dent")
     >>> message = factory.makeMessage(

@@ -3,7 +3,7 @@ IStructuralSubscriptionTarget
 
 Let's subscribe ubuntu-team.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName("ubuntu-team")
     >>> no_priv = personset.getByName("no-priv")
@@ -24,8 +24,7 @@ notification level for bugs is set to NOTHING.
     ...               subscription.bug_notification_level.name,
     ...               subscription.blueprint_notification_level.name)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BlueprintNotificationLevel)
+    >>> from lp.registry.interfaces.structuralsubscription import BlueprintNotificationLevel
 
     >>> subscription = target.addBugSubscription(foobar, foobar)
     >>> subscription.blueprint_notification_level = (

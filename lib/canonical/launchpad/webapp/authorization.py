@@ -61,7 +61,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         lp_permission = getUtility(ILaunchpadPermission, permission)
         if lp_permission.access_level == "write":
             required_access_level = [
-                AccessLevel.WRITE_PUBLIC, AccessLevel.WRITE_PRIVATE]
+                AccessLevel.WRITE_PUBLIC, AccessLevel.WRITE_PRIVATE,
+                AccessLevel.DESKTOP_INTEGRATION]
             if access_level not in required_access_level:
                 return False
         elif lp_permission.access_level == "read":
@@ -80,7 +81,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         access to private objects, return False.  Return True otherwise.
         """
         private_access_levels = [
-            AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
+            AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE,
+            AccessLevel.DESKTOP_INTEGRATION]
         if access_level in private_access_levels:
             # The user has access to private objects. Return early,
             # before checking whether the object is private, since

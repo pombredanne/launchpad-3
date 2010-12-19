@@ -32,12 +32,12 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.temporaryblobstorage import (
     BlobTooLarge,
-    ILibraryFileAliasSet,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
 

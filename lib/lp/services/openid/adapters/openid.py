@@ -55,8 +55,11 @@ class OpenIDPersistentIdentity:
     @property
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
+        openid_identifier = self.openid_identifier
+        if openid_identifier is None:
+            return None
         identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + self.openid_identifier.encode('ascii')
+        return identity_root_url + openid_identifier.encode('ascii')
 
     @property
     def openid_identifier(self):

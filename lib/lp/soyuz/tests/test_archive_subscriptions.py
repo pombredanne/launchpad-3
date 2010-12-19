@@ -3,8 +3,6 @@
 
 """Test Archive features."""
 
-from __future__ import with_statement
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -73,6 +71,11 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         # As per bug 611568, an email is not sent for commercial PPAs.
         with celebrity_logged_in('commercial_admin'):
             self.archive.commercial = True
+
+        # Logging in as a celebrity team causes an email to be sent
+        # because a person is added as a member of the team, so this
+        # needs to be cleared out before calling newSubscription().
+        pop_notifications()
 
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)

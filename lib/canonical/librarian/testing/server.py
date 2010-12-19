@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
@@ -11,9 +11,9 @@ __all__ = [
     'LibrarianTestSetup',
     ]
 
+import atexit
 import os
 import shutil
-import tempfile
 import warnings
 
 from fixtures import Fixture
@@ -24,7 +24,6 @@ from canonical.launchpad.daemons.tachandler import (
     get_pid_from_file,
     TacException,
     TacTestSetup,
-    two_stage_kill,
     )
 from canonical.librarian.storage import _relFileLocation
 
@@ -195,8 +194,13 @@ class LibrarianServerFixture(TacTestSetup):
         # error.
         return os.path.join(self.root, 'librarian.log')
 
+    def logChunks(self):
+        """Get a list with the contents of the librarian log in it."""
+        return open(self.logfile, 'rb').readlines()
+
 
 _global_fixture = LibrarianServerFixture()
+
 
 def LibrarianTestSetup():
     """Support the stateless lie."""

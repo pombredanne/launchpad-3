@@ -31,7 +31,7 @@ from zope.component import getUtility
 
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 
 

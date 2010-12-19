@@ -50,11 +50,13 @@ class BugSubscription(Storm):
         "subscribed_by", allow_none=False, validator=validate_person)
     subscribed_by = Reference(subscribed_by_id, "Person.id")
 
-    def __init__(self, bug=None, person=None, subscribed_by=None):
+    def __init__(self, bug=None, person=None, subscribed_by=None,
+                 bug_notification_level=BugNotificationLevel.COMMENTS):
         super(BugSubscription, self).__init__()
         self.bug = bug
         self.person = person
         self.subscribed_by = subscribed_by
+        self.bug_notification_level = bug_notification_level
 
     @property
     def display_subscribed_by(self):

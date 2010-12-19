@@ -17,19 +17,20 @@ from zope.interface import Interface
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
     IBugWatch,
@@ -63,8 +64,6 @@ class BugWatchView(LaunchpadView):
         If the current user is not a member of the Launchpad developers
         team, no comments will be returned.
         """
-        user = getUtility(ILaunchBag).user
-
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
             truncate=True)
 

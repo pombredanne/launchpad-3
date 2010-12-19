@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Testing infrastructure for page tests."""
 
 # Stop lint warning about not initializing TestCase parent on
@@ -47,11 +45,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities,
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet,
     OAUTH_REALM,
-    TeamMembershipStatus,
     )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -64,6 +61,7 @@ from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing.layers import PageTestLayer
 from lp.registry.errors import NameAlreadyTaken
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,
@@ -321,6 +319,27 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
             print sep.join(row_content)
 
 
+def get_radio_button_text_for_field(soup, name):
+    """Find the input called field.name, and return an iterable of strings.
+
+    The resulting output will look something like:
+    ['(*) A checked option', '( ) An unchecked option']
+    """
+    buttons = soup.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                soup.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        yield "%s %s" % (radio, label)
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -329,19 +348,8 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons = main.findAll(
-        'input', {'name': 'field.%s' % name})
-    for button in buttons:
-        if button.parent.name == 'label':
-            label = extract_text(button.parent)
-        else:
-            label = extract_text(
-                main.find('label', attrs={'for': button['id']}))
-        if button.get('checked', None):
-            radio = '(*)'
-        else:
-            radio = '( )'
-        print radio, label
+    for field in get_radio_button_text_for_field(main, name):
+        print field
 
 
 def strip_label(label):
@@ -813,7 +821,6 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 
@@ -848,7 +855,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -910,20 +917,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
-    # Add unnumbered tests to the suite individually.
+    suite = unittest.TestSuite()
     checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    # Add unnumbered tests to the suite individually.
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

@@ -1,5 +1,5 @@
 Subscriptions View
-==================
+------------------
 
 XXX: bdmurray 2010-09-24 bug=628411 This story is complete until we publish
 the link that leads to the +subscriptions page.
@@ -144,3 +144,62 @@ Webster now chooses to unsubscribe team America from the bug about Scofflaw.
     ...     find_main_content(subscriber_browser.contents))
     >>> "does not have any direct bug subscriptions" in page_text
     True
+
+
+Structural subscriptions
+========================
+
+Leading from the subscriptions view is an overview page of all
+structural subscriptions.
+
+    >>> admin_browser.open("http://launchpad.dev/people/+me/+subscriptions")
+    >>> admin_browser.getLink("Structural subscriptions").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~name16/+structural-subscriptions'
+    >>> admin_browser.title
+    'Structural subscriptions : Foo Bar'
+
+The structures to which the user is subscribed are displayed in a
+list. The title of the structure links to the structure itself, and is
+followed by a link to edit the subscription.
+
+    >>> subscriptions = find_tag_by_id(
+    ...     admin_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     structure_link, modify_link = subscription.findAll("a")
+    ...     print "%s <%s>" % (
+    ...         extract_text(structure_link), structure_link.get("href"))
+    ...     print "--> %s" % modify_link.get("href")
+    mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
+    --> /ubuntu/+source/mozilla-firefox/+subscribe
+    pmount in ubuntu </ubuntu/+source/pmount>
+    --> /ubuntu/+source/pmount/+subscribe
+
+The links to modify subscriptions are only shown when the user has
+permission to modify those subscriptions.
+
+    >>> subscriber_browser.open(
+    ...     "http://launchpad.dev/~name16/+structural-subscriptions")
+    >>> subscriptions = find_tag_by_id(
+    ...     subscriber_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     [structure_link] = subscription.findAll("a")
+    ...     print "%s <%s>" % (
+    ...         extract_text(structure_link), structure_link.get("href"))
+    mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
+    pmount in ubuntu </ubuntu/+source/pmount>
+
+The structural subscriptions page links back to the direct
+subscriptions page.
+
+    >>> admin_browser.getLink("Direct subscriptions").url
+    'http://launchpad.dev/~name16/+subscriptions'
+
+A simple explanatory message is shown when the user doesn't have any
+structural subscriptions.
+
+    >>> subscriber_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> print extract_text(find_tag_by_id(
+    ...     subscriber_browser.contents, "structural-subscriptions"))
+    Webster does not have any structural subscriptions.

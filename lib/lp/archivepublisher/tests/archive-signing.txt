@@ -32,8 +32,8 @@ Querying 'pending signing key' PPAs
 `IArchiveSet.getPPAsPendingSigningKey` allows call-sites to query for
 PPA pending signing key generation.
 
-    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
 Only PPAs with at least one source publication are considered.
 

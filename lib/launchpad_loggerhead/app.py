@@ -257,8 +257,8 @@ _oops_html_template = '''\
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
-<a href="https://bugs.launchpad.net/launchpad-code"
->https://bugs.launchpad.net/launchpad-code</a>
+<a href="https://bugs.launchpad.net/launchpad"
+>https://bugs.launchpad.net/launchpad</a>
 and quote OOPS-ID <strong>%(oopsid)s</strong>
 </p></body></html>'''
 
@@ -271,7 +271,7 @@ class WrappedStartResponse(object):
     """Wraps start_response (from a WSGI request) to keep track of whether
     start_response was called (and whether the callable it returns has been
     called).
-    
+
     Used by oops_middleware.
     """
 
@@ -324,7 +324,7 @@ def report_oops(environ, error_utility):
         [], URL=construct_url(environ))
     error_utility.raising(sys.exc_info(), request)
     return request.oopsid
-        
+
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.

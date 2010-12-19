@@ -4,16 +4,26 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only"
 >
+
+<head>
+  <tal:head_epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="not:context/has_translatable"
+          name="robots" content="noindex,nofollow" />
+  </tal:head_epilogue>
+</head>
+
 <body>
   <div metal:fill-slot="main">
 
     <div class="top-portlet">
-      <p tal:condition="context/translatables">
+      <p tal:condition="context/has_translatable">
         Select a project you want to translate into your own language.
       </p>
-      <p tal:condition="not:context/translatables">
+      <p tal:condition="not:context/has_translatable">
+        <strong>
         There are no translatable projects in
         <span tal:content="context/displayname">Project Group</span>.
+        </strong>
       </p>
       <p tal:condition="not:view/required:launchpad.Edit">
         If a project for <span tal:content="context/displayname">Project Group
@@ -34,7 +44,7 @@
       <div class="yui-u first">
         <div class="portlet" id="translatable-projects">
           <h3>Translatable projects</h3>
-          <dl tal:condition="context/translatables">
+          <dl tal:condition="context/has_translatable">
             <tal:project repeat="product context/translatables">
               <dt>
                 <a tal:replace="structure product/fmt:link/+translations">
@@ -80,8 +90,6 @@
         <a class="add sprite" href="+newproduct">Add another project</a>
       </p>
     </div>
-
-
   </div><!--main-->
 </body>
 </html>

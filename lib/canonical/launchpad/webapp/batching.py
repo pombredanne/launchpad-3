@@ -32,6 +32,24 @@ class FiniteSequenceAdapter:
         return self.context.count()
 
 
+class BoundReferenceSetAdapter:
+    """Adaptor for `BoundReferenceSet` implementations in Storm."""
+
+    implements(IFiniteSequence)
+
+    def __init__(self, context):
+        self.context = context
+
+    def __getitem__(self, ix):
+        return self.context.find()[ix]
+
+    def __iter__(self):
+        return iter(self.context)
+
+    def __len__(self):
+        return self.context.count()
+
+
 class UpperBatchNavigationView(LaunchpadView):
     """Only render navigation links if there is a batch."""
 

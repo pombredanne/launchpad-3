@@ -7,8 +7,10 @@ admins.
 
 Unprivileged users do not see the visibility widget.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonVisibility,
+    ...     )
     >>> personset = getUtility(IPersonSet)
     >>> nopriv = personset.getByEmail('no-priv@canonical.com')
     >>> login('no-priv@canonical.com')

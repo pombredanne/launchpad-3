@@ -81,6 +81,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
+    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -88,7 +89,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import IPropertyCache
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -842,6 +843,8 @@ class Archive(SQLBase):
     def getComponentsForSeries(self, distroseries):
         if self.is_partner:
             return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
         else:
             return distroseries.components
 
@@ -1308,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
@@ -1713,6 +1717,37 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    @classmethod
+    def validatePPA(self, person, proposed_name):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if person.isTeam() and (
+            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            return "Open teams cannot have PPAs."
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            return (
+                "A PPA cannot have the same name as its distribution.")
+        if proposed_name is None:
+            proposed_name = 'ppa'
+        try:
+            person.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            return None
+        else:
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
+
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1850,7 +1885,7 @@ class ArchiveSet:
                 signing_key = owner.archive.signing_key
             else:
                 # owner.archive is a cached property and we've just cached it.
-                del IPropertyCache(owner).archive
+                del get_property_cache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,

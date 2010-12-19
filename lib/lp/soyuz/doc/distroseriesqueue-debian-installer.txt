@@ -42,7 +42,7 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload

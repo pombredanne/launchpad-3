@@ -8,8 +8,10 @@ To test the various marshallers we create a dummy request and
 application root.
 
     >>> from canonical.launchpad.webapp.adapter import set_request_started
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
-    >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     WebServicePublication,
+    ...     WebServiceTestRequest,
+    ...     )
     >>> request = WebServiceTestRequest(method='GET')
     >>> set_request_started()
     >>> request.setPublication(WebServicePublication(None))
@@ -18,7 +20,7 @@ application root.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
     >>> root = WebServiceApplication()
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(root)
 
 
@@ -29,12 +31,12 @@ interpreted as URLs referencing objects on the web service. If the given
 string is a URL corresponding to a vocabulary item, the marshaller
 returns that item. Otherwise it raises a ValueError.
 
-    >>> from canonical.launchpad.interfaces import IPerson
     >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Choice
+    >>> from lazr.restful import EntryResource
     >>> from lazr.restful.fields import ReferenceChoice
     >>> from lazr.restful.interfaces import IFieldMarshaller
-    >>> from lazr.restful import EntryResource
+    >>> from lp.registry.interfaces.person import IPerson
 
     # Bind the field, to resolve the vocabulary name.
     >>> field = ReferenceChoice(
@@ -45,7 +47,7 @@ returns that item. Otherwise it raises a ValueError.
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> person = marshaller.marshall_from_request(
     ...     "http://api.launchpad.dev/beta/~salgado")
     >>> IPerson.providedBy(person)

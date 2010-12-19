@@ -16,7 +16,11 @@ import logging
 from optparse import OptionParser
 import os.path
 import sys
-from urllib2 import urlopen, HTTPError, URLError
+from urllib2 import (
+    HTTPError,
+    URLError,
+    urlopen,
+    )
 
 from contrib.glock import (
     GlobalLock,
@@ -28,7 +32,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
-from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
@@ -36,6 +39,7 @@ from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail,
     )
 from canonical.lp import initZopeless
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 LOCK_PATH = "/var/lock/"
@@ -393,13 +397,10 @@ class LaunchpadCronScript(LaunchpadScript):
 def cronscript_enabled(control_url, name, log):
     """Return True if the cronscript is enabled."""
     try:
-        if sys.version_info[:2] >= (2, 6):
-            # Timeout of 5 seconds should be fine on the LAN. We don't want
-            # the default as it is too long for scripts being run every 60
-            # seconds.
-            control_fp = urlopen(control_url, timeout=5)
-        else:
-            control_fp = urlopen(control_url)
+        # Timeout of 5 seconds should be fine on the LAN. We don't want
+        # the default as it is too long for scripts being run every 60
+        # seconds.
+        control_fp = urlopen(control_url, timeout=5)
     # Yuck. API makes it hard to catch 'does not exist'.
     except HTTPError, error:
         if error.code == 404:

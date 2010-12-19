@@ -23,18 +23,18 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpad import (
     IAuthServerApplication,
-    ILaunchBag,
-    IMailingListApplication,
     IPrivateApplication,
     IPrivateMaloneApplication,
     )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 
 

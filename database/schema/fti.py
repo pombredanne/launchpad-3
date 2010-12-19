@@ -314,7 +314,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             """
 
         log.debug('Installing tsearch2')
-        cmd = 'psql -f - -d %s' % lp.dbname
+        cmd = 'psql -f - -d %s' % lp.get_dbname()
         if lp.dbhost:
             cmd += ' -h %s' % lp.dbhost
         if options.dbuser:

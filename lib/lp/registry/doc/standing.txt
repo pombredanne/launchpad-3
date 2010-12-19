@@ -11,8 +11,10 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.tests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonalStanding)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonalStanding,
+    ...     )
     >>> from canonical.launchpad.ftests import sync, syncUpdate
 
     >>> person_set = getUtility(IPersonSet)
@@ -29,9 +31,9 @@ are not a member of, their message gets held for moderator approval.
     >>> message_ids = message_id_generator()
 
     # A helper for posting messages to a list.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IMessageSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> from email.Utils import formatdate
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def post_message(from_address, to_team_name):
     ...     message = getUtility(IMessageSet).fromEmail("""\
     ... From: %s

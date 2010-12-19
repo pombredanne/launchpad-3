@@ -110,8 +110,8 @@ We remember the 'last_update_date' in order to check if it was changed
 after updating the template.
 
     >>> from zope.component import getUtility
-    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> login('foo.bar@canonical.com')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution_trunk = evolution.getSeries('trunk')

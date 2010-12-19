@@ -20,7 +20,6 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     Desc,
-    In,
     Int,
     Join,
     Or,
@@ -51,7 +50,10 @@ from canonical.launchpad.components.storm_operators import (
     Match,
     RANK,
     )
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -84,7 +86,7 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.archivepublisher.debversion import Version
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -139,19 +141,19 @@ from lp.registry.model.distributionsourcepackage import (
     )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -189,8 +191,8 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.model.translationimportqueue import (
+from lp.translations.enums import TranslationPermission
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
@@ -200,7 +202,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
-                   HasBugHeatMixin):
+                   HasBugHeatMixin, HasDriversMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
@@ -536,27 +538,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             architectures += series.architectures
 
         return architectures
-
-    @property
-    def mentoring_offers(self):
-        """See `IDistribution`"""
-        via_specs = MentoringOffer.select("""
-            Specification.distribution = %s AND
-            Specification.id = MentoringOffer.specification
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + Specification.completeness_clause + ")",
-            clauseTables=['Specification'],
-            distinct=True)
-        via_bugs = MentoringOffer.select("""
-            BugTask.distribution = %s AND
-            BugTask.bug = MentoringOffer.bug AND
-            BugTask.bug = Bug.id AND
-            Bug.private IS FALSE
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + BugTask.completeness_clause +")",
-            clauseTables=['BugTask', 'Bug'],
-            distinct=True)
-        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def bugtargetdisplayname(self):
@@ -1164,16 +1145,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         publishing_condition = ''
         if publishing_distroseries is not None:
-            publishing_condition = """
-                AND EXISTS (
-                    SELECT 1
-                    FROM SourcePackageRelease spr
-                        JOIN SourcePackagePublishingHistory spph
-                            ON spph.sourcepackagerelease = spr.id
-                    WHERE spr.sourcepackagename = SourcePackageName.id
-                        AND spph.distroseries = %d
-                    )""" % (
-                publishing_distroseries.id)
+            origin += [
+                Join(SourcePackageRelease,
+                    SourcePackageRelease.sourcepackagename ==
+                        SourcePackageName.id),
+                Join(SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.sourcepackagerelease ==
+                        SourcePackageRelease.id),
+                ]
+            publishing_condition = (
+                "AND SourcePackagePublishingHistory.distroseries = %d"
+                % publishing_distroseries.id)
 
         packaging_query = """
             SELECT 1
@@ -1200,8 +1182,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text), has_packaging_condition,
                    publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition).order_by('rank DESC')
-
+            find_spec, condition).order_by(
+                'rank DESC, DistributionSourcePackageCache.name')
+        dsp_caches_with_ranks.config(distinct=True)
         return dsp_caches_with_ranks
 
     def searchSourcePackages(
@@ -1242,8 +1225,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
-            In(
-                DistributionSourcePackageCache.archiveID,
+            DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
@@ -1254,7 +1236,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if exact_match:
             find_spec = self._binaryPackageSearchClause + (
-                BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+                BinaryPackageRelease.binarypackagename
+                    == BinaryPackageName.id,
                 )
             match_clause = (BinaryPackageName.name == package_name,)
         else:
@@ -1263,8 +1246,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # DistributionSourcePackageCache records.
             find_spec = (
                 DistributionSourcePackageCache.distribution == self,
-                In(
-                    DistributionSourcePackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID.is_in(
                     self.all_distro_archive_ids))
             match_clause = (
                 DistributionSourcePackageCache.binpkgnames.like(
@@ -1278,7 +1260,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
         search_vector_column = DistroSeriesPackageCache.fti
-        query_function = FTQ(package_name)
+        query_function = FTQ(ensure_unicode(package_name))
         rank = RANK(search_vector_column, query_function)
 
         extra_clauses = (
@@ -1441,12 +1423,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
-        Person.id = Archive.owner AND
-        Person.id = ValidPersonOrTeamCache.id
+        Archive.owner = ValidPersonOrTeamCache.id
         """ % sqlvalues(ArchivePurpose.PPA, self)]
 
-        clauseTables = ['Person', 'ValidPersonOrTeamCache']
-        orderBy = ['Person.name']
+        clauseTables = ['ValidPersonOrTeamCache']
+        orderBy = ['Archive.displayname']
 
         if not show_inactive:
             active_statuses = (PackagePublishingStatus.PUBLISHED,
@@ -1753,7 +1734,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
-        del IPropertyCache(self).series
+        del get_property_cache(self).series
 
         return series
 

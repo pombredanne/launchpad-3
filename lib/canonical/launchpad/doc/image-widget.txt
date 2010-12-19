@@ -23,7 +23,7 @@ instead to expose this as an edit form after the object is created.
 Let's use Salgado and the Launchpad Administrators team as an examples
 here, since they haven't uploaded custom logos yet.
 
-    >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
+    >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> salgado.logo is None
     True
@@ -74,7 +74,7 @@ other radio button allows the user to upload a new image.
 If we set any random file as salgado's logo, we'll see it there, as
 well as an option to delete the image that was just uploaded.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> login('guilherme.salgado@canonical.com')
     >>> logo = getUtility(ILibraryFileAliasSet)[53]
     >>> salgado.logo = logo

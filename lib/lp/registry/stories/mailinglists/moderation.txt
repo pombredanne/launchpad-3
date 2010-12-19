@@ -22,7 +22,7 @@ member in good standing (as is the default).
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> login('foo.bar@canonical.com')
     >>> guadamen = getUtility(IMailingListSet).get('guadamen')
     >>> logout()
@@ -58,7 +58,7 @@ member in good standing.  He posts a message to the team's mailing list,
 and it is held for approval.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: carlos@canonical.com
@@ -183,7 +183,7 @@ discarded.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<aardvark>')
@@ -204,7 +204,7 @@ on-topic, so he decides to decline this message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<bobcat>')
@@ -225,7 +225,7 @@ accept the message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<caribou>')

@@ -13,8 +13,8 @@ The target attribute of questions created on SourcePackage will be that
 of the DistributionSourcePackage (and not the SourcePackage):
 
     >>> login('no-priv@canonical.com')
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> firefox = ubuntu.currentseries.getSourcePackage('mozilla-firefox')
 

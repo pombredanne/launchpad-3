@@ -15,7 +15,7 @@ And they're correctly displayed in the dependency graph imagemap.
   >>> print anon_browser.contents
   <img ...
   <map id="deptree" name="deptree">
-  <area shape="poly" title="Support &lt;canvas&gt; Objects" .../>
+  <area shape="poly" ...title="Support &lt;canvas&gt; Objects" .../>
   <area shape="poly" ...title="A title with non&#45;ascii characters áã" .../>
   ...
 

@@ -3,8 +3,6 @@
 
 """Infrastructure for setting up doctests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'default_optionflags',
@@ -31,7 +29,7 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 from lp.testing import (
@@ -211,7 +209,6 @@ def setGlobs(test):
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
     test.globs['oauth_access_token_for'] = oauth_access_token_for

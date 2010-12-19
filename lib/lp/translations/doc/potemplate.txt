@@ -216,8 +216,8 @@ POTemplate is an object with all strings that must be translated for a
 concrete context.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.model.potemplate import POTemplate
     >>> from lp.translations.interfaces.potemplate import IPOTemplate
+    >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(1)
 
 It implements the IPOTemplate interface.

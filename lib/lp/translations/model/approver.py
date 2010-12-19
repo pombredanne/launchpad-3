@@ -12,10 +12,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.utilities.template import (
     make_domain,
     make_name,
@@ -116,7 +114,7 @@ class TranslationBranchApprover(object):
             return entry
         potemplate = None
         # Path must be a template path.
-        if not self._potemplates.has_key(entry.path):
+        if entry.path not in self._potemplates:
             return entry
 
         domain = make_domain(entry.path)
@@ -237,8 +235,9 @@ class TranslationBuildApprover(object):
         assert (
             entry.productseries == self._potemplateset.productseries and
             entry.distroseries == self._potemplateset.distroseries and
-            entry.sourcepackagename == self._potemplateset.sourcepackagename
-            ), ("Entry must be for same target as approver.")
+            entry.sourcepackagename ==
+                self._potemplateset.sourcepackagename), (
+            "Entry must be for same target as approver.")
 
         # This method is intended to be used to wrap
         # TranslationImportQueue.addOrUpdateEntry which may return None.
@@ -256,4 +255,3 @@ class TranslationBuildApprover(object):
                     RosettaImportStatus.APPROVED,
                     getUtility(ILaunchpadCelebrities).rosetta_experts)
         return entry
-

@@ -168,8 +168,8 @@ so that they appear in his +packages page.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
@@ -299,9 +299,9 @@ public archives.
 Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,
     ...     ArchivePurpose.PRIMARY)

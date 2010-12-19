@@ -49,14 +49,11 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -73,6 +70,11 @@ from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
@@ -550,7 +552,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             name for name in name_list if match_text in name]
 
         if len(matching_names) > 5:
-            more_than_five = True
             matching_names = matching_names[:5]
             matching_names.append('...')
 
@@ -740,9 +741,9 @@ class DistributionAddView(LaunchpadFormView):
         "domainname",
         "members",
         "official_malone",
-        "official_blueprints",
+        "blueprints_usage",
         "official_rosetta",
-        "official_answers",
+        "answers_usage",
         ]
 
     @property
@@ -786,9 +787,9 @@ class DistributionEditView(RegistryEditFormView):
         'mugshot',
         'official_malone',
         'enable_bug_expiration',
-        'official_blueprints',
+        'blueprints_usage',
         'official_rosetta',
-        'official_answers',
+        'answers_usage',
         'translation_focus',
         ]
 
@@ -828,13 +829,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

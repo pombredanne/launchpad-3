@@ -9,10 +9,12 @@ import signal
 from meliae import scanner
 
 from twisted.application import service, strports
+from twisted.internet import reactor
+from twisted.python import log
 from twisted.web import server
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
@@ -29,16 +31,20 @@ path = config.librarian_server.root
 if config.librarian_server.upstream_host:
     upstreamHost = config.librarian_server.upstream_host
     upstreamPort = config.librarian_server.upstream_port
-    print 'Using upstream librarian http://%s:%d' % (
-        upstreamHost, upstreamPort)
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg,
+        'Using upstream librarian http://%s:%d' %
+        (upstreamHost, upstreamPort))
 else:
     upstreamHost = upstreamPort = None
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg, 'Not using upstream librarian')
 
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(librarianService)
+readyservice.ReadyService().setServiceParent(librarianService)
 
 def setUpListener(uploadPort, webPort, restricted):
     """Set up a librarian listener on the given ports.

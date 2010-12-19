@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'DpkgSourceError',
+    'extract_dpkg_source',
     're_taint_free',
     're_isadeb',
     're_issource',
@@ -27,13 +29,27 @@ __all__ = [
 
 import email.Header
 import re
+import signal
+import subprocess
 
 from canonical.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
-from lp.archiveuploader.tagfiles import TagFileParseError
 from lp.soyuz.enums import BinaryPackageFileType
+
+
+class DpkgSourceError(Exception):
+
+    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
+
+    def __init__(self, command, output, result):
+        super(DpkgSourceError, self).__init__(
+            self._fmt % {
+                "output": output, "result": result, "command": command})
+        self.output = output
+        self.result = result
+        self.command = command
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -44,7 +60,7 @@ source_file_exts = [
     'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
     '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
+    r"([^_]+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
 re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
 re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
 re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
@@ -249,3 +265,27 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
+
+
+def extract_dpkg_source(dsc_filepath, target):
+    """Extract a source package by dsc file path.
+
+    :param dsc_filepath: Path of the DSC file
+    :param target: Target directory
+    """
+
+    def subprocess_setup():
+        # Python installs a SIGPIPE handler by default. This is usually not
+        # what non-Python subprocesses expect.
+        # http://www.chiark.greenend.org.uk/ucgi/~cjwatson/ \
+        #   blosxom/2009-07-02-python-sigpipe.html
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    args = ["dpkg-source", "-sn", "-x", dsc_filepath]
+    dpkg_source = subprocess.Popen(
+        args, stdout=subprocess.PIPE, cwd=target, stderr=subprocess.PIPE,
+        preexec_fn=subprocess_setup)
+    output, unused = dpkg_source.communicate()
+    result = dpkg_source.wait()
+    if result != 0:
+        dpkg_output = prefix_multi_line_string(output, "  ")
+        raise DpkgSourceError(result=result, output=dpkg_output, command=args)

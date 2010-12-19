@@ -4,8 +4,8 @@
 == Setup ==
 
     >>> import email
-    >>> from lp.services.mail import stub
     >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> from lp.services.mail import stub
 
 Setup the stub KeyServer:
 
@@ -86,8 +86,8 @@ the clear text instructions contain the expected URLs pointing to more help.
 
 Import the secret keys needed for this test:
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 
     >>> from canonical.launchpad.ftests import (
     ...     import_secret_test_key, decrypt_content)
@@ -220,7 +220,7 @@ token to a fixed value:
     >>> nothing, token_value = token_url.split('http://launchpad.dev/token/')
 
     >>> import pytz, datetime
-    >>> from canonical.launchpad.database import LoginToken
+    >>> from canonical.launchpad.database.logintoken import LoginToken
     >>> logintoken = LoginToken.selectOneBy(token=token_value)
     >>> logintoken.date_created = datetime.datetime(
     ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))

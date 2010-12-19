@@ -40,7 +40,7 @@ on it, so an exception with an appropriate error message is raised.
 
 Getting a product is done by specifying the name of the product.
 
-    >>> from canonical.launchpad.interfaces import IProduct
+    >>> from lp.registry.interfaces.product import IProduct
     >>> evolution = AffectsEmailCommand.getBugTarget('evolution')
     >>> IProduct.providedBy(evolution)
     True
@@ -49,7 +49,7 @@ Getting a product is done by specifying the name of the product.
 
 Inactive products are treated like non-existant ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> unassigned = getUtility(IProductSet).getByName('unassigned')
     >>> unassigned.active
     False
@@ -64,7 +64,7 @@ Inactive products are treated like non-existant ones.
 A product series is a part of a product, so both the product and series
 name have to be given, separated with a slash.
 
-    >>> from canonical.launchpad.interfaces import IProductSeries
+    >>> from lp.registry.interfaces.productseries import IProductSeries
     >>> evolution_trunk = AffectsEmailCommand.getBugTarget('evolution/trunk')
     >>> IProductSeries.providedBy(evolution_trunk)
     True
@@ -94,7 +94,7 @@ exception with an appropriate error is raised.
 Getting a distribution is done by specifying the name of the
 distribution.
 
-    >>> from canonical.launchpad.interfaces import IDistribution
+    >>> from lp.registry.interfaces.distribution import IDistribution
     >>> ubuntu = AffectsEmailCommand.getBugTarget('ubuntu')
     >>> IDistribution.providedBy(ubuntu)
     True
@@ -107,7 +107,7 @@ A distribution source package is a part of a distribution, so both the
 distribution and package name has to be specified when getting such a
 package.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> ubuntu_evolution = AffectsEmailCommand.getBugTarget('ubuntu/evolution')
     >>> IDistributionSourcePackage.providedBy(ubuntu_evolution)
     True
@@ -138,7 +138,7 @@ exception with an appropriate error is raised.
 A distribution series is a part of a distribution, so both the
 distribution and series has to be specified.
 
-    >>> from canonical.launchpad.interfaces import IDistroSeries
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> ubuntu_warty = AffectsEmailCommand.getBugTarget('ubuntu/warty')
     >>> IDistroSeries.providedBy(ubuntu_warty)
     True
@@ -157,7 +157,7 @@ both.
 When getting a source package within a distribution series, the source
 package is given after the distribution series.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackage
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> warty_evolution = AffectsEmailCommand.getBugTarget(
     ...     'ubuntu/warty/evolution')
     >>> ISourcePackage.providedBy(warty_evolution)

@@ -3,7 +3,7 @@
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).get(16)
 
 Let's define a helper function to make it easier to construct a view.
@@ -87,12 +87,12 @@ assigned.
 Using the advanced form we can also query for closed bugs reported by someone.
 Let's first close a bug setting its status to 'Invalid'.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug_task = reported_bugtasks[1]
     >>> print bug_task.distribution.name
     ubuntu
@@ -229,7 +229,7 @@ There are helper methods to calculate links to the Open, Critical,
 Unassigned, and In Progress bug lists.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
@@ -310,8 +310,8 @@ bug counts, is also available.
 Adding another bug will update the totals returned by
 packagebugs_search_view.total_bug_counts.
 
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     BugTaskImportance)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> import transaction
     >>> bug_params = CreateBugParams(
     ...     owner=name16,
@@ -465,7 +465,7 @@ that bug as being one of the bugs on which he has commented. The bug will be
 listed three times since there are three BugTasks for that particular bug (see
 bug 1357):
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'Some message', 'Contents')
     <Message at ...>

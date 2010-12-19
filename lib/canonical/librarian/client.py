@@ -126,8 +126,8 @@ class FileUploadClient:
             name = name.encode('utf-8')
 
         # Import in this method to avoid a circular import
-        from canonical.launchpad.database import LibraryFileContent
-        from canonical.launchpad.database import LibraryFileAlias
+        from canonical.launchpad.database.librarian import LibraryFileContent
+        from canonical.launchpad.database.librarian import LibraryFileAlias
 
         self._connect()
         try:
@@ -248,7 +248,8 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if not response.startswith('200'):
-                raise UploadFailed('Server said: ' + response)
+                raise UploadFailed(
+                    'Could not upload %s. Server said: %s' % (name, response))
 
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
@@ -314,7 +315,7 @@ class FileDownloadClient:
         :raises: `DownloadFailed` if the alias is invalid or
             inaccessible.
         """
-        from canonical.launchpad.database import LibraryFileAlias
+        from canonical.launchpad.database.librarian import LibraryFileAlias
         from sqlobject import SQLObjectNotFound
         try:
             lfa = LibraryFileAlias.get(aliasID)

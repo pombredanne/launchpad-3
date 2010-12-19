@@ -12,7 +12,6 @@ __all__ = [
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
-    ObjectDeletedEvent,
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.objectdelta import ObjectDelta
@@ -24,11 +23,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import (
-    LeftJoin,
-    )
 from storm.locals import (
-    ClassAlias,
     Desc,
     SQL,
     )
@@ -56,9 +51,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from lp.blueprints.adapters import SpecificationDelta
-from lp.blueprints.interfaces.specification import (
-    ISpecification,
-    ISpecificationSet,
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -66,6 +59,11 @@ from lp.blueprints.interfaces.specification import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.blueprints.model.specificationbug import SpecificationBug
@@ -76,14 +74,13 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
-from lp.blueprints.model.sprint import Sprint
-from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.interfaces.product import IProduct
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -155,8 +152,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    mentoring_offers = SQLMultipleJoin(
-            'MentoringOffer', joinColumn='specification', orderBy='id')
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
@@ -188,7 +183,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
-    # attributes
     @property
     def target(self):
         """See ISpecification."""
@@ -196,25 +190,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return self.product
         return self.distribution
 
-    def retarget(self, product=None, distribution=None):
+    def setTarget(self, target):
         """See ISpecification."""
-        assert not (product and distribution)
-        assert (product or distribution)
+        if IProduct.providedBy(target):
+            self.product = target
+            self.distribution = None
+        elif IDistribution.providedBy(target):
+            self.product = None
+            self.distribution = target
+        else:
+            raise AssertionError("Unknown target: %s" % target)
 
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        if product:
-            assert product.getSpecification(self.name) is None
-        elif distribution:
-            assert distribution.getSpecification(self.name) is None
-
-        # if we are not changing anything, then return
-        if self.product == product and self.distribution == distribution:
+    def retarget(self, target):
+        """See ISpecification."""
+        if self.target == target:
             return
 
-        # we must lose any goal we have set and approved/declined because we
-        # are moving to a different product that will have different
-        # policies and drivers
+        self.validateMove(target)
+
+        # We must lose any goal we have set and approved/declined because we
+        # are moving to a different target that will have different
+        # policies and drivers.
         self.productseries = None
         self.distroseries = None
         self.goalstatus = SpecificationGoalStatus.PROPOSED
@@ -222,11 +218,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self.date_goal_proposed = None
         self.milestone = None
 
-        # set the new values
-        self.product = product
-        self.distribution = distribution
+        self.setTarget(target)
         self.priority = SpecificationPriority.UNDEFINED
         self.direction_approved = False
+
+    def validateMove(self, target):
+        """See ISpecification."""
+        if target.getSpecification(self.name) is not None:
+            raise TargetAlreadyHasSpecification(target, self.name)
 
     @property
     def goal(self):
@@ -265,6 +264,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # the goal should now also not have a decider
         self.goal_decider = None
         self.date_goal_decided = None
+        if goal is not None and goal.personHasDriverRights(proposer):
+            self.acceptBy(proposer)
 
     def acceptBy(self, decider):
         """See ISpecification."""
@@ -290,45 +291,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         fb = SpecificationFeedback.selectBy(
             specification=self, reviewer=person)
         return fb.prejoin(['requester'])
-
-    def canMentor(self, user):
-        """See ICanBeMentored."""
-        if user is None:
-            return False
-        if self.is_complete:
-            return False
-        if bool(self.isMentor(user)):
-            return False
-        if not user.teams_participated_in:
-            return False
-        return True
-
-    def isMentor(self, user):
-        """See ICanBeMentored."""
-        return MentoringOffer.selectOneBy(
-            specification=self, owner=user) is not None
-
-    def offerMentoring(self, user, team):
-        """See ICanBeMentored."""
-        # if an offer exists, then update the team
-        mentoringoffer = MentoringOffer.selectOneBy(
-            specification=self, owner=user)
-        if mentoringoffer is not None:
-            mentoringoffer.team = team
-            return mentoringoffer
-        # if no offer exists, create one from scratch
-        mentoringoffer = MentoringOffer(owner=user, team=team,
-            specification=self)
-        notify(ObjectCreatedEvent(mentoringoffer, user=user))
-        return mentoringoffer
-
-    def retractMentoring(self, user):
-        """See ICanBeMentored."""
-        mentoringoffer = MentoringOffer.selectOneBy(
-            specification=self, owner=user)
-        if mentoringoffer is not None:
-            notify(ObjectDeletedEvent(mentoringoffer, user=user))
-            MentoringOffer.delete(mentoringoffer.id)
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""
@@ -425,6 +387,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
                      SpecificationImplementationStatus.INFORMATIONAL) and
                     (self.definition_status ==
                      SpecificationDefinitionStatus.APPROVED)))
+
+    @property
+    def lifecycle_status(self):
+        """Combine the is_complete and is_started emergent properties."""
+        if self.is_complete:
+            return SpecificationLifecycleStatus.COMPLETE
+        elif self.is_started:
+            return SpecificationLifecycleStatus.STARTED
+        else:
+            return SpecificationLifecycleStatus.NOTSTARTED
 
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
@@ -589,6 +561,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # sprint linking
     def linkSprint(self, sprint, user):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -601,6 +575,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -693,7 +669,7 @@ class HasSpecificationsMixin:
 
     def _specification_sort(self, sort):
         """Return the storm sort order for 'specifications'.
-        
+
         :param sort: As per HasSpecificationsMixin.specifications.
         """
         # sort by priority descending, by default
@@ -706,7 +682,7 @@ class HasSpecificationsMixin:
 
     def _preload_specifications_people(self, query):
         """Perform eager loading of people and their validity for query.
-        
+
         :param query: a string query generated in the 'specifications'
             method.
         :return: A DecoratedResultSet with Person precaching setup.
@@ -915,6 +891,7 @@ class SpecificationSet(HasSpecificationsMixin):
     @property
     def coming_sprints(self):
         """See ISpecificationSet."""
+        from lp.blueprints.model.sprint import Sprint
         return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 

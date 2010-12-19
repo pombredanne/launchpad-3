@@ -64,6 +64,7 @@ def reset_logging():
     Logging(Runner()).global_setup()
 
 
+
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec
 

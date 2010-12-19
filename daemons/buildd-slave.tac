@@ -13,7 +13,7 @@ from canonical.buildd.binarypackage import BinaryPackageBuildManager
 from canonical.buildd.sourcepackagerecipe import (
     SourcePackageRecipeBuildManager)
 from canonical.buildd.translationtemplates import TranslationTemplatesBuildManager
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 from twisted.web import server, resource, static
 from ConfigParser import SafeConfigParser
@@ -36,7 +36,7 @@ application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(builddslaveService)
+readyservice.ReadyService().setServiceParent(builddslaveService)
 
 root = resource.Resource()
 root.putChild('rpc', slave)

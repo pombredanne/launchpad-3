@@ -15,13 +15,13 @@
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
-        <h1 tal:define="subscribed view/userIsSubscribed">
+        <h1 tal:define="subscribed view/user_is_subscribed">
           <tal:action condition="subscribed">Unsubscribe from</tal:action>
           <tal:action condition="not:subscribed">Subscribe to</tal:action>
           bug #<span tal:replace="context/bug/id" />
         </h1>
 
-        <p tal:condition="not: view/userIsSubscribed">
+        <p tal:condition="not: view/user_is_subscribed">
           If you subscribe to a bug it shows up on your
           personal pages, you receive copies of all comments by email,
           and notification of any changes to the status of the bug upstream
@@ -34,33 +34,8 @@
           duplicates.
         </p>
 
-        <form action="" method="POST">
-
-          <div class="field">
-            <div>
-              <div tal:content="structure view/subscription_widget">
-                <input type="radio" />
-              </div>
-            </div>
-
-          </div>
-
-          <div class="actions">
-            <input type="hidden" name="next_url"
-                   tal:condition="view/next_url | nothing"
-                   tal:attributes="value view/next_url" />
-            <input tal:condition="not: view/userIsSubscribed"
-                   type="submit"
-                   name="subscribe"
-                   value="Continue" />
-            <input tal:condition="view/userIsSubscribed"
-                   type="submit"
-                   name="unsubscribe"
-                   value="Continue" />
-                   or <a tal:condition="view/cancel_url | nothing"
-                         tal:attributes="href view/cancel_url">Cancel</a>
-          </div>
-        </form>
+        <div metal:use-macro="context/@@launchpad_form/form">
+        </div>
 
       </div>
     </div>

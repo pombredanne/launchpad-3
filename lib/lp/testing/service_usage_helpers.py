@@ -4,11 +4,12 @@
 """Helper functions dealing with IServiceUsage."""
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
+from lp.code.enums import BranchType
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
 from lp.testing import (
     login,
     logout,
@@ -27,7 +28,28 @@ def set_service_usage(pillar_name, **kw):
             pillar.official_malone = (service_usage == ServiceUsage.LAUNCHPAD)
             if service_usage == ServiceUsage.EXTERNAL:
                 pillar.bugtracker = factory.makeBugTracker()
+
+        # if we're setting codehosting on product things get trickier.
+        elif attr == 'codehosting_usage' and IProduct.providedBy(pillar):
+            if service_usage == ServiceUsage.LAUNCHPAD:
+                branch = factory.makeProductBranch(product=pillar)
+                product_series = factory.makeProductSeries(
+                    product=pillar,
+                    branch=branch)
+                pillar.development_focus = product_series
+            elif service_usage == ServiceUsage.EXTERNAL:
+                branch = factory.makeProductBranch(
+                    product=pillar,
+                    branch_type=BranchType.MIRRORED)
+                product_series = factory.makeProductSeries(
+                    product=pillar,
+                    branch=branch)
+                pillar.development_focus = product_series
+            elif service_usage == ServiceUsage.UNKNOWN:
+                branch = factory.makeProductBranch(product=pillar)
+                product_series = factory.makeProductSeries(
+                    product=pillar)
+                pillar.development_focus = product_series
         else:
             setattr(pillar, attr, service_usage)
-    #transaction.commit()
     logout()

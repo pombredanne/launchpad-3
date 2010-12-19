@@ -609,7 +609,7 @@ including the distribution name automatically.
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    Archives cannot have the same name as its distribution.
+    A PPA cannot have the same name as its distribution.
 
 Providing a new name, 'edge', Celso can create a new PPA and it
 immediately sent to it.

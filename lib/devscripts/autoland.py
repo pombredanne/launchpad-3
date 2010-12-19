@@ -28,7 +28,7 @@ class LaunchpadBranchLander:
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root='edge'):
+    def load(cls, service_root='production'):
         # XXX: JonathanLange 2009-09-24: No unit tests.
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
         # there's no easy way to delete it and try again.
@@ -160,21 +160,35 @@ class MergeProposal:
         # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text, testfix=False, no_qa=False,
+    def build_commit_message(self, commit_text, testfix=False, no_qa=False,
                            incremental=False, rollback=None):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
 
-        tags = ''.join([
+        tags = [
             get_testfix_clause(testfix),
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
             get_qa_clause(bugs, no_qa,
                 incremental, rollback=rollback),
-            ])
+            ]
 
-        return '%s %s' % (tags, commit_text)
+        # Make sure we don't add duplicated tags to commit_text.
+        commit_tags = tags[:]
+        for tag in tags:
+            if tag in commit_text:
+                commit_tags.remove(tag)
+
+        if commit_tags:
+            return '%s %s' % (''.join(commit_tags), commit_text)
+        else:
+            return commit_text
+
+    def set_commit_message(self, commit_message):
+        """Set the Launchpad-style commit message for a merge proposal."""
+        self._mp.commit_message = commit_message
+        self._mp.lp_save()
 
 
 def get_testfix_clause(testfix=False):

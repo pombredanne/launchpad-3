@@ -33,14 +33,14 @@ asyncronously.
 
 Simply opening a bug elsewhere won't increase the count.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution != bugtarget
     True
 
     >>> bug = filebug(bugtarget, 'Example Bug')
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
     ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
     >>> view.bugs_fixed_elsewhere_count
@@ -50,7 +50,7 @@ But if we mark the bug as fixed in the other, the count will increase
 by one.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(elsewhere)

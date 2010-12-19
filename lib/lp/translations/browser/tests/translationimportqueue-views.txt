@@ -5,8 +5,8 @@ On this section, we are going to test the edit view class for an
 ITranslationImportQueueEntry object.
 
     >>> from zope.component import getUtility, getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.layers import setFirstLayer
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.browser.translationimportqueue import (

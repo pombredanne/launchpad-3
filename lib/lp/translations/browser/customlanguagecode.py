@@ -17,9 +17,7 @@ __all__ = [
 import re
 
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
     stepthrough,
@@ -27,6 +25,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode,

@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import (
+from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivity,
     IScriptActivitySet,
     )

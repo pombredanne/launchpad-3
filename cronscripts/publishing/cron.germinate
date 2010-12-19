@@ -37,10 +37,21 @@ cd $GERMINATEROOT
 # Clean up temporary files
 rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* NETBOOK-*
 rm -f all_* all.sources_*
+rm -rf dists
 
-# Grab a local copy of Sources files
+# Grab local copies of Sources and Packages files, to avoid problems in case
+# the archive changes under our feet.
 for component in main universe restricted multiverse; do
-  zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > archive.ubuntu.com_"$suite"_"$component"_Sources;
+  base="dists/$suite/$component"
+  mkdir -p "$base/source"
+  zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
+  for arch in i386 amd64 powerpc armel; do
+    mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
+    zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
+      > "$base/binary-$arch/Packages"
+    zcat "$ARCHIVEROOT/$base/debian-installer/binary-$arch/Packages.gz" \
+      > "$base/debian-installer/binary-$arch/Packages"
+  done
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
@@ -50,15 +61,9 @@ for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   for arch in i386 amd64 powerpc armel; do
-    # Grab local copy of Packages and InstallerPackages files
-    for component in main universe restricted multiverse; do
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_Packages
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/debian-installer/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_InstallerPackages
-    done
-
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+    germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
 
     # The structure file is generally useful; keep per distro/suite/arch
     # copies for convenience

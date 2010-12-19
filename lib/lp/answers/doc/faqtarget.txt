@@ -31,8 +31,8 @@ That method is only available to a user who has 'launchpad.Append' on
 the target.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> check_permission('launchpad.Append', target)
     False
 

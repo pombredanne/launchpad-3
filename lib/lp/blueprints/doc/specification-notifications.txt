@@ -8,8 +8,8 @@ changed, this will change in the future though.
 Changing the status:
 
     >>> from zope.component import getMultiAdapter
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> login('foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')

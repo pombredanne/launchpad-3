@@ -13,10 +13,12 @@ from unittest import TestLoader
 
 import pytz
 import transaction
+from zope.component import getUtility
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 
@@ -152,6 +154,12 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
             pofile=self.external_pofile, potmsgset=self.external_potmsgset)
 
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
+
+        self._refreshSuggestiveTemplatesCache()
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Refresh the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_getExternalTranslations(self):
         transaction.commit()

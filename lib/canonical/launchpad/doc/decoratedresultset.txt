@@ -15,7 +15,7 @@ and so on.
 
 First, we'll create the un-decorated result set of all distributions:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from storm.store import Store
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> store = Store.of(ubuntu)
@@ -75,10 +75,10 @@ just work like normally:
 
 There was a bug in the Storm API whereby calling count (or other aggregates)
 on a storm ResultSet does not respect the distinct
-config option (https://bugs.edge.launchpad.net/storm/+bug/217644):
+config option (https://bugs.launchpad.net/storm/+bug/217644):
 
-    >>> from canonical.launchpad.database import (BinaryPackageRelease,
-    ...     BinaryPackagePublishingHistory)
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     >>> results = store.find(BinaryPackageRelease,
     ...     BinaryPackageRelease.id == 
     ...         BinaryPackagePublishingHistory.binarypackagereleaseID)

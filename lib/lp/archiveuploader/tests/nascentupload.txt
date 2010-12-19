@@ -12,8 +12,8 @@ We need to be logged into the security model in order to get any further
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.series import SeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
@@ -455,7 +455,7 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
-  ERROR: Exception while accepting:
+  INFO: Exception while accepting:
   The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
   cannot upload the same version within the same distribution. You
   have to modify the source version and re-upload.
@@ -482,86 +482,6 @@ queue entry in the database.
   >>> hoary.getQueueItems(
   ...     status=PackageUploadStatus.REJECTED, name="ed").count()
   1
-
-
-=== Building From ACCEPTED queue ===
-
-XXX cprov 20060728: Building from ACCEPTED is special condition, not
-really used in production. We should remove the support for this use
-case, see further info in bug #55774.
-
-Next we send in the binaries, since the source should be in ACCEPTED the
-binary should go straight there too. Note that we are not specifying
-any build, so it should be created appropriately, it is what happens
-with staged security uploads:
-
-XXX cprov 20070404: we are using a modified sync policy because we
-need unsigned changes and binaries uploads (same as security, but also
-accepts non-security uploads)
-
-  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
-  >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
-
-  >>> ed_bin = NascentUpload.from_changesfile_path(
-  ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
-  ...      modified_sync_policy, mock_logger_quiet)
-
-  >>> ed_bin.process()
-  >>> ed_bin.is_rejected
-  False
-
-  >>> success = ed_bin.do_accept()
-
-  >>> ed_bin.queue_root.status.name
-  'NEW'
-
-A build was created to represent the relationship between ed_src
-(waiting in ACCEPTED queue) and the just uploaded ed_bin:
-
-  >>> ed_build = ed_bin.queue_root.builds[0].build
-
-  >>> ed_spr.id  == ed_build.source_package_release.id
-  True
-
-  >>> ed_build.title
-  u'i386 build of ed 0.2-20 in ubuntu hoary RELEASE'
-
-  >>> ed_build.status.name
-  'FULLYBUILT'
-
-Binary control file attributes are stored as text in the
-BinaryPackageRelease record.
-
-  >>> ed_bpr = ed_build.binarypackages[0]
-
-  >>> ed_bpr.depends
-  u'libc6 (>= 2.6-1)'
-
-  >>> ed_bpr.suggests
-  u'emacs'
-
-  >>> ed_bpr.conflicts
-  u'vi'
-
-  >>> ed_bpr.replaces
-  u'vim'
-
-  >>> ed_bpr.provides
-  u'ed'
-
-  >>> ed_bpr.essential
-  False
-
-  >>> ed_bpr.pre_depends
-  u'dpkg'
-
-  >>> ed_bpr.enhances
-  u'bash'
-
-  >>> ed_bpr.breaks
-  u'emacs'
 
 
 === Staged Source and Binary upload with multiple binaries ===
@@ -613,12 +533,18 @@ Once we have a new queue entry we are able to accept it, step 2:
   >>> multibar_src_queue.status.name
   'ACCEPTED'
 
-We can just assume the source was published by step 3 and 4 for
-simplicity and claim 'build from ACCEPTED' feature.
+Then the source gets accepted and published, step 3 and 4:
+
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.interfaces.publishing import IPublishingSet
+  >>> getUtility(IPublishingSet).newSourcePublication(
+  ...     multibar_src_queue.archive, multibar_spr,
+  ...     sync_policy.distroseries, multibar_spr.component,
+  ...     multibar_spr.section, PackagePublishingPocket.RELEASE)
+  <SourcePackagePublishingHistory at ...>
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
@@ -636,8 +562,8 @@ and organises them as an ordinary binary upload having a changesfile
 and the collection of DEB files produced.
 
 At this point slave-scanner moves the upload to the appropriate path
-(/srv/launchpad.net/builddmaster) and invokes process-upload.py with
-the 'buildd' upload policy and the build record id.
+(/srv/launchpad.net/builddmaster). A cron job invokes process-upload.py
+with the 'buildd' upload policy and processes all files in that directory.
 
   >>> buildd_policy = getPolicy(
   ...     name='buildd', distro='ubuntu', distroseries='hoary')
@@ -814,8 +740,8 @@ sigining key reference as an IGPGKey:
   False
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import (
-  ...    IGPGKey, IPersonSet)
+  >>> from lp.registry.interfaces.gpg import IGPGKey
+  >>> from lp.registry.interfaces.person import IPersonSet
 
   >>> verifyObject(IGPGKey, bar_ok.changes.dsc.signingkey)
   True
@@ -844,7 +770,7 @@ rights to all components from 'ubuntu-team' to 'mark':
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> from canonical.launchpad.database import ArchivePermission
+  >>> from lp.soyuz.model.archivepermission import ArchivePermission
   >>> new_uploader = getUtility(IPersonSet).getByName('mark')
   >>> for permission in ArchivePermission.select():
   ...     permission.person = new_uploader
@@ -889,8 +815,8 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from lp.soyuz.enums import ArchivePermissionType
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=name16,

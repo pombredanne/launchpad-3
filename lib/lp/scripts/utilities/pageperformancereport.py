@@ -6,16 +6,21 @@
 __metaclass__ = type
 __all__ = ['main']
 
+import bz2
+import cPickle
 from cgi import escape as html_quote
+import copy
 from ConfigParser import RawConfigParser
+import csv
 from datetime import datetime
+import gzip
+import math
 import os.path
 import re
-import subprocess
 from textwrap import dedent
+import textwrap
 import time
 
-import numpy
 import simplejson as json
 import sre_constants
 import zc.zservertracelog.tracereport
@@ -52,26 +57,192 @@ class Category:
 
     Requests belong to a Category if the URL matches a regular expression.
     """
-    def __init__(self, title, regexp, timeout):
+
+    def __init__(self, title, regexp):
         self.title = title
         self.regexp = regexp
         self._compiled_regexp = re.compile(regexp, re.I | re.X)
-        self.times = Times(timeout)
 
-    def add(self, request):
-        """Add a request to a Category if it belongs.
-
-        Does nothing if the request does not belong in this Category.
-        """
-        if self._compiled_regexp.search(request.url) is not None:
-            self.times.add(request)
+    def match(self, request):
+        """Return true when the request match this category."""
+        return self._compiled_regexp.search(request.url) is not None
 
     def __cmp__(self, other):
         return cmp(self.title.lower(), other.title.lower())
 
+    def __deepcopy__(self, memo):
+        # We provide __deepcopy__ because the module doesn't handle
+        # compiled regular expression by default.
+        return Category(self.title, self.regexp)
+
+
+class OnlineStatsCalculator:
+    """Object that can compute count, sum, mean, variance and median.
+
+    It computes these value incrementally and using minimal storage
+    using the Welford / Knuth algorithm described at
+    http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+    """
+
+    def __init__(self):
+        self.count = 0
+        self.sum = 0
+        self.M2 = 0.0 # Sum of square difference
+        self.mean = 0.0
+
+    def update(self, x):
+        """Incrementally update the stats when adding x to the set.
+
+        None values are ignored.
+        """
+        if x is None:
+            return
+        self.count += 1
+        self.sum += x
+        delta = x - self.mean
+        self.mean = float(self.sum)/self.count
+        self.M2 += delta*(x - self.mean)
+
+    @property
+    def variance(self):
+        """Return the population variance."""
+        if self.count == 0:
+            return 0
+        else:
+            return self.M2/self.count
+
+    @property
+    def std(self):
+        """Return the standard deviation."""
+        if self.count == 0:
+            return 0
+        else:
+            return math.sqrt(self.variance)
+
+    def __add__(self, other):
+        """Adds this and another OnlineStatsCalculator.
+
+        The result combines the stats of the two objects.
+        """
+        results = OnlineStatsCalculator()
+        results.count = self.count + other.count
+        results.sum = self.sum + other.sum
+        if self.count > 0 and other.count > 0:
+            # This is 2.1b in Chan, Tony F.; Golub, Gene H.; LeVeque,
+            # Randall J. (1979), "Updating Formulae and a Pairwise Algorithm
+            # for Computing Sample Variances.",
+            # Technical Report STAN-CS-79-773,
+            # Department of Computer Science, Stanford University,
+            # ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf .
+            results.M2 = self.M2 + other.M2 + (
+                (float(self.count) / (other.count * results.count)) *
+                ((float(other.count) / self.count) * self.sum - other.sum)**2)
+        else:
+            results.M2 = self.M2 + other.M2 # One of them is 0.
+        if results.count > 0:
+            results.mean = float(results.sum) / results.count
+        return results
+
+
+class OnlineApproximateMedian:
+    """Approximate the median of a set of elements.
+
+    This implements a space-efficient algorithm which only sees each value
+    once. (It will hold in memory log bucket_size of n elements.)
+
+    It was described and analysed in
+    D. Cantone and  M.Hofri,
+    "Analysis of An Approximate Median Selection Algorithm"
+    ftp://ftp.cs.wpi.edu/pub/techreports/pdf/06-17.pdf
+
+    This algorithm is similar to Tukey's median of medians technique.
+    It will compute the median among bucket_size values. And the median among
+    those.
+    """
+
+    def __init__(self, bucket_size=9):
+        """Creates a new estimator.
+
+        It approximates the median by finding the median among each
+        successive bucket_size element. And then using these medians for other
+        rounds of selection.
+
+        The bucket size should be a low odd-integer.
+        """
+        self.bucket_size = bucket_size
+        # Index of the median in a completed bucket.
+        self.median_idx = (bucket_size-1)//2
+        self.buckets = []
+
+    def update(self, x, order=0):
+        """Update with x."""
+        if x is None:
+            return
+
+        i = order
+        while True:
+            # Create bucket on demand.
+            if i >= len(self.buckets):
+                for n in range((i+1)-len(self.buckets)):
+                    self.buckets.append([])
+            bucket = self.buckets[i]
+            bucket.append(x)
+            if len(bucket) == self.bucket_size:
+                # Select the median in this bucket, and promote it.
+                x = sorted(bucket)[self.median_idx]
+                # Free the bucket for the next round.
+                del bucket[:]
+                i += 1
+                continue
+            else:
+                break
+
+    @property
+    def median(self):
+        """Return the median."""
+        # Find the 'weighted' median by assigning a weight to each
+        # element proportional to how far they have been selected.
+        candidates = []
+        total_weight = 0
+        for i, bucket in enumerate(self.buckets):
+            weight = self.bucket_size ** i
+            for x in bucket:
+                total_weight += weight
+                candidates.append([x, weight])
+        if len(candidates) == 0:
+            return 0
+
+        # Each weight is the equivalent of having the candidates appear
+        # that number of times in the array.
+        # So buckets like [[1, 2], [2, 3], [4, 2]] would be expanded to
+        # [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4,
+        # 4, 4, 4, 4, 4] and we find the median of that list (2).
+        # We don't expand the items to conserve memory.
+        median = (total_weight-1) / 2
+        weighted_idx = 0
+        for x, weight in sorted(candidates):
+            weighted_idx += weight
+            if weighted_idx > median:
+                return x
+
+    def __add__(self, other):
+        """Merge two approximators together.
+
+        All candidates from the other are merged through the standard
+        algorithm, starting at the same level. So an item that went through
+        two rounds of selection, will be compared with other items having
+        gone through the same number of rounds.
+        """
+        results = OnlineApproximateMedian(self.bucket_size)
+        results.buckets = copy.deepcopy(self.buckets)
+        for i, bucket in enumerate(other.buckets):
+            for x in bucket:
+                results.update(x, i)
+        return results
+
 
 class Stats:
-    """Bag to hold request statistics.
+    """Bag to hold and compute request statistics.
 
     All times are in seconds.
     """
@@ -81,122 +252,270 @@ class Stats:
     mean = 0 # Mean time per hit.
     median = 0 # Median time per hit.
     std = 0 # Standard deviation per hit.
-    var = 0 # Variance per hit.
-    ninetyninth_percentile_time = 0
     histogram = None # # Request times histogram.
 
     total_sqltime = 0 # Total time spent waiting for SQL to process.
     mean_sqltime = 0 # Mean time spend waiting for SQL to process.
     median_sqltime = 0 # Median time spend waiting for SQL to process.
     std_sqltime = 0 # Standard deviation of SQL time.
-    var_sqltime = 0 # Variance of SQL time
 
     total_sqlstatements = 0 # Total number of SQL statements issued.
     mean_sqlstatements = 0
     median_sqlstatements = 0
     std_sqlstatements = 0
-    var_sqlstatements = 0
 
-empty_stats = Stats() # Singleton.
+    @property
+    def ninetyninth_percentile_time(self):
+        """Time under which 99% of requests are rendered.
 
-
-class Times:
-    """Collection of request times."""
-    def __init__(self, timeout):
-        self.total_hits = 0
-        self.total_time = 0
-        self.request_times = []
-        self.sql_statements = []
-        self.sql_times = []
-        self.ticks = []
-        self.histogram_width = int(1.5*timeout)
-
-    def add(self, request):
-        """Add the application time from the request to the collection."""
-        self.total_hits += 1
-        self.total_time += request.app_seconds
-        self.request_times.append(request.app_seconds)
-        if request.sql_statements is not None:
-            self.sql_statements.append(request.sql_statements)
-        if request.sql_seconds is not None:
-            self.sql_times.append(request.sql_seconds)
-        if request.ticks is not None:
-            self.ticks.append(request.ticks)
-
-    _stats = None
-
-    def stats(self):
-        """Generate statistics about our request times.
-
-        Returns a `Stats` instance.
-
-        The histogram is a list of request counts per 1 second bucket.
-        ie. histogram[0] contains the number of requests taking between 0 and
-        1 second, histogram[1] contains the number of requests taking between
-        1 and 2 seconds etc. histogram is None if there are no requests in
-        this Category.
+        This is estimated as 3 std deviations from the mean. Given that
+        in a daily report, many URLs or PageIds won't have 100 requests, it's
+        more useful to use this estimator.
         """
-        if not self.total_hits:
-            return empty_stats
+        return self.mean + 3*self.std
 
-        if self._stats is not None:
-            return self._stats
+    @property
+    def relative_histogram(self):
+        """Return an histogram where the frequency is relative."""
+        if self.histogram:
+            return [[x, float(f)/self.total_hits] for x, f in self.histogram]
+        else:
+            return None
 
-        stats = Stats()
+    def text(self):
+        """Return a textual version of the stats."""
+        return textwrap.dedent("""
+        <Stats for %d requests:
+            Time:     total=%.2f; mean=%.2f; median=%.2f; std=%.2f
+            SQL time: total=%.2f; mean=%.2f; median=%.2f; std=%.2f
+            SQL stmt: total=%.f;  mean=%.2f; median=%.f; std=%.2f
+            >""" % (
+                self.total_hits, self.total_time, self.mean, self.median,
+                self.std, self.total_sqltime, self.mean_sqltime,
+                self.median_sqltime, self.std_sqltime,
+                self.total_sqlstatements, self.mean_sqlstatements,
+                self.median_sqlstatements, self.std_sqlstatements))
 
-        stats.total_hits = self.total_hits
 
-        # Time stats
-        array = numpy.asarray(self.request_times, numpy.float32)
-        stats.total_time = numpy.sum(array)
-        stats.mean = numpy.mean(array)
-        stats.median = numpy.median(array)
-        stats.std = numpy.std(array)
-        stats.var = numpy.var(array)
-        # This is an approximation which may not be true: we don't know if we
-        # have a std distribution or not. We could just find the 99th
-        # percentile by counting. Shock. Horror; however this appears pretty
-        # good based on eyeballing things so far - once we're down in the 2-3
-        # second range for everything we may want to revisit.
-        stats.ninetyninth_percentile_time = stats.mean + stats.std*3
-        capped_times = (min(a_time, self.histogram_width) for a_time in
-            self.request_times)
-        array = numpy.fromiter(capped_times, numpy.float32,
-            len(self.request_times))
-        histogram = numpy.histogram(
-            array, normed=True,
-            range=(0, self.histogram_width), bins=self.histogram_width)
-        stats.histogram = zip(histogram[1], histogram[0])
+class OnlineStats(Stats):
+    """Implementation of stats that can be computed online.
 
-        # SQL time stats.
-        array = numpy.asarray(self.sql_times, numpy.float32)
-        stats.total_sqltime = numpy.sum(array)
-        stats.mean_sqltime = numpy.mean(array)
-        stats.median_sqltime = numpy.median(array)
-        stats.std_sqltime = numpy.std(array)
-        stats.var_sqltime = numpy.var(array)
+    You call update() for each request and the stats are updated incrementally
+    with minimum storage space.
+    """
 
-        # SQL query count.
-        array = numpy.asarray(self.sql_statements, numpy.int)
-        stats.total_sqlstatements = int(numpy.sum(array))
-        stats.mean_sqlstatements = numpy.mean(array)
-        stats.median_sqlstatements = numpy.median(array)
-        stats.std_sqlstatements = numpy.std(array)
-        stats.var_sqlstatements = numpy.var(array)
+    def __init__(self, histogram_width):
+        self.time_stats = OnlineStatsCalculator()
+        self.time_median_approximate = OnlineApproximateMedian()
+        self.sql_time_stats = OnlineStatsCalculator()
+        self.sql_time_median_approximate = OnlineApproximateMedian()
+        self.sql_statements_stats = OnlineStatsCalculator()
+        self.sql_statements_median_approximate = OnlineApproximateMedian()
+        self._histogram = [
+            [x, 0] for x in range(histogram_width)]
 
-        # Cache for next invocation.
-        self._stats = stats
-        return stats
+    @property
+    def total_hits(self):
+        return self.time_stats.count
 
-    def __str__(self):
-        results = self.stats()
-        total, mean, median, std, histogram = results
-        hstr = " ".join("%2d" % v for v in histogram)
-        return "%2.2f %2.2f %2.2f %s" % (
-            total, mean, median, std, hstr)
+    @property
+    def total_time(self):
+        return self.time_stats.sum
 
-    def __cmp__(self, b):
-        return cmp(self.total_time, b.total_time)
+    @property
+    def mean(self):
+        return self.time_stats.mean
+
+    @property
+    def median(self):
+        return self.time_median_approximate.median
+
+    @property
+    def std(self):
+        return self.time_stats.std
+
+    @property
+    def total_sqltime(self):
+        return self.sql_time_stats.sum
+
+    @property
+    def mean_sqltime(self):
+        return self.sql_time_stats.mean
+
+    @property
+    def median_sqltime(self):
+        return self.sql_time_median_approximate.median
+
+    @property
+    def std_sqltime(self):
+        return self.sql_time_stats.std
+
+    @property
+    def total_sqlstatements(self):
+        return self.sql_statements_stats.sum
+
+    @property
+    def mean_sqlstatements(self):
+        return self.sql_statements_stats.mean
+
+    @property
+    def median_sqlstatements(self):
+        return self.sql_statements_median_approximate.median
+
+    @property
+    def std_sqlstatements(self):
+        return self.sql_statements_stats.std
+
+    @property
+    def histogram(self):
+        if self.time_stats.count:
+            return self._histogram
+        else:
+            return None
+
+    def update(self, request):
+        """Update the stats based on request."""
+        self.time_stats.update(request.app_seconds)
+        self.time_median_approximate.update(request.app_seconds)
+        self.sql_time_stats.update(request.sql_seconds)
+        self.sql_time_median_approximate.update(request.sql_seconds)
+        self.sql_statements_stats.update(request.sql_statements)
+        self.sql_statements_median_approximate.update(request.sql_statements)
+
+        idx = int(min(len(self.histogram)-1, request.app_seconds))
+        self.histogram[idx][1] += 1
+
+    def __add__(self, other):
+        """Merge another OnlineStats with this one."""
+        results = copy.deepcopy(self)
+        results.time_stats += other.time_stats
+        results.time_median_approximate += other.time_median_approximate
+        results.sql_time_stats += other.sql_time_stats
+        results.sql_time_median_approximate += (
+            other.sql_time_median_approximate)
+        results.sql_statements_stats += other.sql_statements_stats
+        results.sql_statements_median_approximate += (
+            other.sql_statements_median_approximate)
+        for i, (n, f) in enumerate(other._histogram):
+            results._histogram[i][1] += f
+        return results
+
+
+class RequestTimes:
+    """Collect statistics from requests.
+
+    Statistics are updated by calling the add_request() method.
+
+    Statistics for mean/stddev/total/median for request times, SQL times and
+    number of SQL statements are collected.
+
+    They are grouped by Category, URL or PageID.
+    """
+
+    def __init__(self, categories, options):
+        self.by_pageids = options.pageids
+        self.top_urls = options.top_urls
+        # We only keep in memory 50 times the number of URLs we want to
+        # return. The number of URLs can go pretty high (because of the
+        # distinct query parameters).
+        #
+        # Keeping all in memory at once is prohibitive. On a small but
+        # representative sample, keeping 50 times the possible number of
+        # candidates and culling to 90% on overflow, generated an identical
+        # report than keeping all the candidates in-memory.
+        #
+        # Keeping 10 times or culling at 90% generated a near-identical report
+        # (it differed a little in the tail.)
+        #
+        # The size/cull parameters might need to change if the requests
+        # distribution become very different than what it currently is.
+        self.top_urls_cache_size = self.top_urls * 50
+
+        # Histogram has a bin per second up to 1.5 our timeout.
+        self.histogram_width = int(options.timeout*1.5)
+        self.category_times = [
+            (category, OnlineStats(self.histogram_width))
+            for category in categories]
+        self.url_times = {}
+        self.pageid_times = {}
+
+    def add_request(self, request):
+        """Add request to the set of requests we collect stats for."""
+        for category, stats in self.category_times:
+            if category.match(request):
+                stats.update(request)
+
+        if self.by_pageids:
+            pageid = request.pageid or 'Unknown'
+            stats = self.pageid_times.setdefault(
+                pageid, OnlineStats(self.histogram_width))
+            stats.update(request)
+
+        if self.top_urls:
+            stats = self.url_times.setdefault(
+                request.url, OnlineStats(self.histogram_width))
+            stats.update(request)
+            #  Whenever we have more URLs than we need to, discard 10%
+            # that is less likely to end up in the top.
+            if len(self.url_times) > self.top_urls_cache_size:
+                cutoff = int(self.top_urls_cache_size*0.90)
+                self.url_times = dict(
+                    sorted(self.url_times.items(),
+                    key=lambda (url, stats): stats.total_time,
+                    reverse=True)[:cutoff])
+
+    def get_category_times(self):
+        """Return the times for each category."""
+        return self.category_times
+
+    def get_top_urls_times(self):
+        """Return the times for the Top URL by total time"""
+        # Sort the result by total time
+        return sorted(
+            self.url_times.items(),
+            key=lambda (url, stats): stats.total_time,
+            reverse=True)[:self.top_urls]
+
+    def get_pageid_times(self):
+        """Return the times for the pageids."""
+        # Sort the result by pageid
+        return sorted(self.pageid_times.items())
+
+    def __add__(self, other):
+        """Merge two RequestTimes together."""
+        results = copy.deepcopy(self)
+        for other_category, other_stats in other.category_times:
+            for i, (category, stats) in enumerate(self.category_times):
+                if category.title == other_category.title:
+                    results.category_times[i] = (
+                        category, stats + other_stats)
+                    break
+            else:
+                results.category_times.append(
+                    (other_category, copy.deepcopy(other_stats)))
+
+        url_times = results.url_times
+        for url, stats in other.url_times.items():
+            if url in url_times:
+                url_times[url] += stats
+            else:
+                url_times[url] = copy.deepcopy(stats)
+        # Only keep top_urls_cache_size entries.
+        if len(self.url_times) > self.top_urls_cache_size:
+            self.url_times = dict(
+                sorted(
+                    url_times.items(),
+                    key=lambda (url, stats): stats.total_time,
+                    reverse=True)[:self.top_urls_cache_size])
+
+        pageid_times = results.pageid_times
+        for pageid, stats in other.pageid_times.items():
+            if pageid in pageid_times:
+                pageid_times[pageid] += stats
+            else:
+                pageid_times[pageid] = copy.deepcopy(stats)
+
+        return results
 
 
 def main():
@@ -235,6 +554,11 @@ def main():
         # Default to 12: the staging timeout.
         default=12, type="int",
         help="The configured timeout value : determines high risk page ids.")
+    parser.add_option(
+        "--merge", dest="merge",
+        default=False, action='store_true',
+        help="Files are interpreted as pickled stats and are aggregated for" +
+        "the report.")
 
     options, args = parser.parse_args()
 
@@ -249,6 +573,9 @@ def main():
             parser.error(
                 "--from timestamp %s is before --until timestamp %s"
                 % (options.from_ts, options.until_ts))
+    if options.from_ts is not None or options.until_ts is not None:
+        if options.merge:
+            parser.error('--from and --until cannot be used with --merge')
 
     for filename in args:
         if not os.path.exists(filename):
@@ -266,7 +593,7 @@ def main():
     for option in script_config.options('categories'):
         regexp = script_config.get('categories', option)
         try:
-            categories.append(Category(option, regexp, options.timeout))
+            categories.append(Category(option, regexp))
         except sre_constants.error, x:
             log.fatal("Unable to compile regexp %r (%s)" % (regexp, x))
             return 1
@@ -275,18 +602,25 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    pageid_times = {}
-    url_times = {}
+    times = RequestTimes(categories, options)
 
-    parse(args, categories, pageid_times, url_times, options)
+    if options.merge:
+        for filename in args:
+            log.info('Merging %s...' % filename)
+            f = bz2.BZ2File(filename, 'r')
+            times += cPickle.load(f)
+            f.close()
+    else:
+        parse(args, times, options)
 
-    # Truncate the URL times to the top N.
+    category_times = times.get_category_times()
+
+    pageid_times = []
+    url_times= []
     if options.top_urls:
-        sorted_urls = sorted(
-            ((times, url) for url, times in url_times.items()
-                if times.total_hits > 0), reverse=True)
-        url_times = [(url, times)
-            for times, url in sorted_urls[:options.top_urls]]
+        url_times = times.get_top_urls_times()
+    if options.pageids:
+        pageid_times = times.get_pageid_times()
 
     def _report_filename(filename):
         return os.path.join(options.directory, filename)
@@ -295,7 +629,7 @@ def main():
     if options.categories:
         report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), categories, None, None)
+        html_report(open(report_filename, 'w'), category_times, None, None)
 
     # Pageid only report.
     if options.pageids:
@@ -313,7 +647,8 @@ def main():
     if options.categories and options.pageids:
         report_filename = _report_filename('combined.html')
         html_report(
-            open(report_filename, 'w'), categories, pageid_times, url_times)
+            open(report_filename, 'w'),
+            category_times, pageid_times, url_times)
 
     # Report of likely timeout candidates
     report_filename = _report_filename('timeout-candidates.html')
@@ -321,6 +656,35 @@ def main():
     html_report(
         open(report_filename, 'w'), None, pageid_times, None,
         options.timeout - 2)
+
+    # Save the times cache for later merging.
+    report_filename = _report_filename('stats.pck.bz2')
+    log.info("Saving times database in %s", report_filename)
+    stats_file = bz2.BZ2File(report_filename, 'w')
+    cPickle.dump(times, stats_file, protocol=cPickle.HIGHEST_PROTOCOL)
+    stats_file.close()
+
+    # Output metrics for selected categories.
+    report_filename = _report_filename('metrics.dat')
+    log.info('Saving category_metrics %s', report_filename)
+    metrics_file = open(report_filename, 'w')
+    writer = csv.writer(metrics_file, delimiter=':')
+    date = options.until_ts or options.from_ts or datetime.utcnow()
+    date = time.mktime(date.timetuple())
+
+    for option in script_config.options('metrics'):
+        name = script_config.get('metrics', option)
+        for category, stats in category_times:
+            if category.title == name:
+                writer.writerows([
+                    ("%s_99" % option, "%f@%d" % (
+                        stats.ninetyninth_percentile_time, date)),
+                    ("%s_mean" % option, "%f@%d" % (stats.mean, date))])
+                break
+        else:
+            log.warning("Can't find category %s for metric %s" % (
+                option, name))
+    metrics_file.close()
 
     return 0
 
@@ -332,17 +696,9 @@ def smart_open(filename, mode='r'):
     """
     ext = os.path.splitext(filename)[1]
     if ext == '.bz2':
-        p = subprocess.Popen(
-            ['bunzip2', '-c', filename],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        p.stdin.close()
-        return p.stdout
+        return bz2.BZ2File(filename, 'r')
     elif ext == '.gz':
-        p = subprocess.Popen(
-            ['gunzip', '-c', filename],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        p.stdin.close()
-        return p.stdout
+        return gzip.GzipFile(filename, 'r')
     else:
         return open(filename, mode)
 
@@ -363,7 +719,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, pageid_times, url_times, options):
+def parse(tracefiles, times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -444,35 +800,7 @@ def parse(tracefiles, categories, pageid_times, url_times, options):
                         log.debug("Parsed %d requests", total_requests)
 
                     # Add the request to any matching categories.
-                    if options.categories:
-                        for category in categories:
-                            category.add(request)
-
-                    # Add the request to the times for that pageid.
-                    if options.pageids:
-                        pageid = request.pageid
-                        try:
-                            times = pageid_times[pageid]
-                        except KeyError:
-                            times = Times(options.timeout)
-                            pageid_times[pageid] = times
-                        times.add(request)
-
-                    # Add the request to the times for that URL.
-                    if options.top_urls:
-                        url = request.url
-                        # Hack to remove opstats from top N report. This
-                        # should go into a config file if we end up with
-                        # more pages that need to be ignored because
-                        # they are just noise.
-                        if not (url is None or url.endswith('+opstats')):
-                            try:
-                                times = url_times[url]
-                            except KeyError:
-                                times = Times(options.timeout)
-                                url_times[url] = times
-                            times.add(request)
-
+                    times.add_request(request)
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
             except MalformedLine, x:
@@ -491,7 +819,6 @@ def parse_extension_record(request, args):
     elif prefix == 't':
         if len(args) != 4:
             raise MalformedLine("Wrong number of arguments %s" % (args,))
-        request.ticks = int(args[1])
         request.sql_statements = int(args[2])
         request.sql_seconds = float(args[3]) / 1000
     else:
@@ -500,12 +827,12 @@ def parse_extension_record(request, args):
 
 
 def html_report(
-    outf, categories, pageid_times, url_times,
+    outf, category_times, pageid_times, url_times,
     ninetyninth_percentile_threshold=None):
     """Write an html report to outf.
 
     :param outf: A file object to write the report to.
-    :param categories: Categories to report.
+    :param category_times: The time statistics for categories.
     :param pageid_times: The time statistics for pageids.
     :param url_times: The time statistics for the top XXX urls.
     :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
@@ -575,20 +902,17 @@ def html_report(
 
             <th class="clickable">Mean Time (secs)</th>
             <th class="clickable">Time Standard Deviation</th>
-            <th class="clickable">Time Variance</th>
             <th class="clickable">Median Time (secs)</th>
             <th class="sorttable_nosort">Time Distribution</th>
 
             <th class="clickable">Total SQL Time (secs)</th>
             <th class="clickable">Mean SQL Time (secs)</th>
             <th class="clickable">SQL Time Standard Deviation</th>
-            <th class="clickable">SQL Time Variance</th>
             <th class="clickable">Median SQL Time (secs)</th>
 
             <th class="clickable">Total SQL Statements</th>
             <th class="clickable">Mean SQL Statements</th>
             <th class="clickable">SQL Statement Standard Deviation</th>
-            <th class="clickable">SQL Statement Variance</th>
             <th class="clickable">Median SQL Statements</th>
 
             </tr>
@@ -600,9 +924,8 @@ def html_report(
     # Store our generated histograms to output Javascript later.
     histograms = []
 
-    def handle_times(html_title, times):
-        stats = times.stats()
-        histograms.append(stats.histogram)
+    def handle_times(html_title, stats):
+        histograms.append(stats.relative_histogram)
         print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
@@ -611,7 +934,6 @@ def html_report(
             <td class="numeric 99pc_under">%.2f</td>
             <td class="numeric mean_time">%.2f</td>
             <td class="numeric std_time">%.2f</td>
-            <td class="numeric var_time">%.2f</td>
             <td class="numeric median_time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
@@ -619,30 +941,27 @@ def html_report(
             <td class="numeric total_sqltime">%.2f</td>
             <td class="numeric mean_sqltime">%.2f</td>
             <td class="numeric std_sqltime">%.2f</td>
-            <td class="numeric var_sqltime">%.2f</td>
             <td class="numeric median_sqltime">%.2f</td>
 
-            <td class="numeric total_sqlstatements">%d</td>
+            <td class="numeric total_sqlstatements">%.f</td>
             <td class="numeric mean_sqlstatements">%.2f</td>
             <td class="numeric std_sqlstatements">%.2f</td>
-            <td class="numeric var_sqlstatements">%.2f</td>
             <td class="numeric median_sqlstatements">%.2f</td>
             </tr>
             """ % (
                 html_title,
                 stats.total_hits, stats.total_time,
                 stats.ninetyninth_percentile_time,
-                stats.mean, stats.std, stats.var, stats.median,
+                stats.mean, stats.std, stats.median,
                 len(histograms) - 1,
                 stats.total_sqltime, stats.mean_sqltime,
-                stats.std_sqltime, stats.var_sqltime, stats.median_sqltime,
+                stats.std_sqltime, stats.median_sqltime,
                 stats.total_sqlstatements, stats.mean_sqlstatements,
-                stats.std_sqlstatements, stats.var_sqlstatements,
-                stats.median_sqlstatements))
+                stats.std_sqlstatements, stats.median_sqlstatements))
 
     # Table of contents
     print >> outf, '<ol>'
-    if categories:
+    if category_times:
         print >> outf, '<li><a href="#catrep">Category Report</a></li>'
     if pageid_times:
         print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
@@ -650,22 +969,21 @@ def html_report(
         print >> outf, '<li><a href="#topurlrep">Top URL Report</a></li>'
     print >> outf, '</ol>'
 
-    if categories:
+    if category_times:
         print >> outf, '<h2 id="catrep">Category Report</h2>'
         print >> outf, table_header
-        for category in categories:
+        for category, times in category_times:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
                 html_quote(category.title), html_quote(category.regexp))
-            handle_times(html_title, category.times)
+            handle_times(html_title, times)
         print >> outf, table_footer
 
     if pageid_times:
         print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
         print >> outf, table_header
-        for pageid, times in sorted(pageid_times.items()):
-            pageid = pageid or 'None'
+        for pageid, times in pageid_times:
             if (ninetyninth_percentile_threshold is not None and
-                (times.stats().ninetyninth_percentile_time <
+                (times.ninetyninth_percentile_time <
                 ninetyninth_percentile_threshold)):
                 continue
             handle_times(html_quote(pageid), times)
@@ -733,4 +1051,3 @@ def html_report(
         </body>
         </html>
         """)
-

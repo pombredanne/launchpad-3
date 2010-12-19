@@ -5,9 +5,9 @@ that makes it easy to check if a user has the requested permission on a
 given object.  This is the same check available in TALES as
 something/required:permission.Name.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.get(12)
@@ -60,8 +60,8 @@ The access level of a principal also specifies whether or not it has
 access to private objects.  For instance, the above principal has
 permission to read private and non-private objects (READ_PRIVATE).
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_1 = getUtility(IBugSet).get(1)
     >>> bug_1.setPrivate(True, sample_person)
@@ -79,24 +79,16 @@ access to that bug, though.
     >>> check_permission('launchpad.View', bug_1)
     False
 
-Now consider a principal authorized to create OAuth tokens. Whenever
-it's not creating OAuth tokens, it has a level of permission
-equivalent to READ_PUBLIC.
+A token used for desktop integration has a level of permission
+equivalent to WRITE_PUBLIC.
 
-    >>> principal.access_level = AccessLevel.GRANT_PERMISSIONS
+    >>> principal.access_level = AccessLevel.DESKTOP_INTEGRATION
     >>> setupInteraction(principal)
     >>> check_permission('launchpad.View', bug_1)
-    False
+    True
 
     >>> check_permission('launchpad.Edit', sample_person)
-    False
-
-This may seem useless from a security standpoint, since once a
-malicious client is authorized to create OAuth tokens, it can escalate
-its privileges at any time by creating a new token for itself. The
-security benefit is more subtle: by discouraging feature creep in
-clients that have this super-access level, we reduce the risk that a
-bug in a _trusted_ client will enable privilege escalation attacks.
+    True
 
 Users logged in through the web application have full access, which
 means they can read/change any object they have access to.

@@ -22,7 +22,7 @@ from zope.component import getUtility
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.debsync import do_import
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
 # setup core values and defaults

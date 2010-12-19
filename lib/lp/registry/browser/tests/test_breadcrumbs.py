@@ -105,25 +105,31 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEqual(self.milestone.name, last_crumb.text)
 
 
-class TestPollBreadcrumb(BaseBreadcrumbTestCase):
-    """Test breadcrumbs for an `IPoll`."""
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+
+
+class TestNameblacklistBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for +nameblacklist."""
 
     def setUp(self):
-        super(TestPollBreadcrumb, self).setUp()
-        self.team = self.factory.makeTeam(displayname="Poll Team")
-        name = "pollo-poll"
-        title = "Marco Pollo"
-        proposition = "Be mine"
-        self.poll = self.factory.makePoll(
-            team=self.team,
-            name=name,
-            title=title,
-            proposition=proposition)
+        super(TestNameblacklistBreadcrumb, self).setUp()
+        self.name_blacklist_set = getUtility(INameBlacklistSet)
+        self.registry_expert = self.factory.makeRegistryExpert()
+        login_person(self.registry_expert)
 
-    def test_poll(self):
-        crumbs = self.getBreadcrumbsForObject(self.poll)
-        last_crumb = crumbs[-1]
-        self.assertEqual(self.poll.title, last_crumb.text)
+    def test_nameblacklist(self):
+        expected = [('Name Blacklist', 'http://launchpad.dev/+nameblacklist')]
+        self.assertBreadcrumbs(expected, self.name_blacklist_set)
+
+    def test_nameblacklist_edit(self):
+        blacklist = self.name_blacklist_set.getByRegExp(u'blacklist')
+        expected = [
+            ('Name Blacklist',
+             'http://launchpad.dev/+nameblacklist'),
+            ('Edit a blacklist expression',
+             'http://launchpad.dev/+nameblacklist/1/+edit'),
+            ]
+        self.assertBreadcrumbs(expected, blacklist, view_name='+edit')
 
 
 def test_suite():

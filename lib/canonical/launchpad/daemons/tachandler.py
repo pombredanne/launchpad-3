@@ -1,15 +1,12 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Test harness for TAC (Twisted Application Configuration) files."""
 
 __metaclass__ = type
 
 __all__ = [
     'TacTestSetup',
-    'ReadyService',
     'TacException',
     'kill_by_pidfile',
     'remove_if_exists',
@@ -32,8 +29,8 @@ from fixtures import Fixture
 from twisted.application import service
 from twisted.python import log
 
-# This file is used by launchpad-buildd, so it cannot import any
-# Launchpad code!
+from canonical.launchpad.daemons import readyservice
+
 
 def _kill_may_race(pid, signal_number):
     """Kill a pid accepting that it may not exist."""
@@ -45,6 +42,7 @@ def _kill_may_race(pid, signal_number):
             return
         # Some other issue (e.g. different user owns it)
         raise
+
 
 def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
@@ -117,8 +115,6 @@ twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.pardir, os.pardir, os.pardir, os.pardir, 'bin', 'twistd'))
 
-LOG_MAGIC = 'daemon ready!'
-
 
 class TacException(Exception):
     """Error raised by TacTestSetup."""
@@ -147,9 +143,10 @@ class TacTestSetup(Fixture):
                     "Could not kill stale process %s." % (self.pidfile,))
 
         # setUp() watches the logfile to determine when the daemon has fully
-        # started. If it sees an old logfile, then it will find the LOG_MAGIC
-        # string and return immediately, provoking hard-to-diagnose race
-        # conditions. Delete the logfile to make sure this does not happen.
+        # started. If it sees an old logfile, then it will find the
+        # readyservice.LOG_MAGIC string and return immediately, provoking
+        # hard-to-diagnose race conditions. Delete the logfile to make sure
+        # this does not happen.
         remove_if_exists(self.logfile)
 
         self.setUpRoot()
@@ -186,12 +183,12 @@ class TacTestSetup(Fixture):
     def _hasDaemonStarted(self):
         """Has the daemon started?
 
-        Startup is recognized by the appearance of LOG_MAGIC in the log
-        file.
+        Startup is recognized by the appearance of readyservice.LOG_MAGIC in
+        the log file.
         """
         if os.path.exists(self.logfile):
             with open(self.logfile, 'r') as logfile:
-                return LOG_MAGIC in logfile.read()
+                return readyservice.LOG_MAGIC in logfile.read()
         else:
             return False
 
@@ -203,8 +200,8 @@ class TacTestSetup(Fixture):
 
         :raises TacException: Timeout.
         """
-        # Watch the log file for LOG_MAGIC to signal that startup has
-        # completed.
+        # Watch the log file for readyservice.LOG_MAGIC to signal that startup
+        # has completed.
         now = time.time()
         deadline = now + 20
         while now < deadline and not self._hasDaemonStarted():
@@ -255,12 +252,3 @@ class TacTestSetup(Fixture):
     @property
     def logfile(self):
         raise NotImplementedError
-
-
-class ReadyService(service.Service):
-    """Service that logs a 'ready!' message once the reactor has started."""
-
-    def startService(self):
-        from twisted.internet import reactor
-        reactor.addSystemEventTrigger('after', 'startup', log.msg, LOG_MAGIC)
-        service.Service.startService(self)

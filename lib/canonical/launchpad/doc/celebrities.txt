@@ -1,13 +1,15 @@
-= Launchpad Celebrities =
+Launchpad Celebrities
+=====================
 
 https://dev.launchpad.net/LaunchpadCelebrities
 
 There are a number of special objects, some of which exist in the
 database, which we want to give easy access to in the code. To this end,
-there is an ILaunchpadCelebrities utility available that gives access
-to these well-known objects through attributes.
+there is an ILaunchpadCelebrities utility available that gives access to
+these well-known objects through attributes.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -17,7 +19,8 @@ to these well-known objects through attributes.
     True
 
 
-== admin ==
+admin
+-----
 
 The 'admins' team contain the user who have super-power over all of
 Launchpad. This team is accessible through the admin attribute.
@@ -28,7 +31,8 @@ Launchpad. This team is accessible through the admin attribute.
     True
 
 
-== vcs-imports ==
+vcs-imports
+-----------
 
 The vcs-imports celebrity owns the branches created by importd.
 
@@ -37,17 +41,19 @@ The vcs-imports celebrity owns the branches created by importd.
     True
 
 
-== bazaar-experts ==
+bazaar-experts
+--------------
 
-The bazaar-experts celebrity effectively has admin type privileges
-for branches, and branch related objects.
+The bazaar-experts celebrity effectively has admin type privileges for
+branches, and branch related objects.
 
     >>> bazaar_experts = personset.getByName('bazaar-experts')
     >>> celebs.bazaar_experts == bazaar_experts
     True
 
 
-== english ==
+english
+-------
 
 The English language is used in many places.  It's the native language
 for translation, as well as for Launchpad itself.
@@ -57,27 +63,30 @@ for translation, as well as for Launchpad itself.
     True
 
 
-== registry_experts ==
+registry_experts
+----------------
 
-The registry_experts celebrity has permissions to perform registry gardening
-operations.
+The registry_experts celebrity has permissions to perform registry
+gardening operations.
 
     >>> registry = personset.getByName('registry')
     >>> celebs.registry_experts == registry
     True
 
 
-== buildd_admin ==
+buildd_admin
+------------
 
-The buildd_admin celebrity has permission to perform routine task
-in the buildfarm.
+The buildd_admin celebrity has permission to perform routine task in the
+buildfarm.
 
     >>> buildd_admin = personset.getByName('launchpad-buildd-admins')
     >>> celebs.buildd_admin == buildd_admin
     True
 
 
-== bug_watch_updater ==
+bug_watch_updater
+-----------------
 
 The bug_watch_updater celebrity updates the bug watches.
 
@@ -86,54 +95,43 @@ The bug_watch_updater celebrity updates the bug watches.
     True
 
 
-== sourceforge_tracker ==
+sourceforge_tracker
+-------------------
 
 For all the products using SourceForge, we have a single registered
 tracker
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> sf_tracker = getUtility(IBugTrackerSet).getByName('sf')
     >>> celebs.sourceforge_tracker == sf_tracker
     True
 
 
-== janitor ==
+janitor
+-------
 
 We have the Launchpad Janitor which takes care of expiring old
-questions, team memberships when they reach their expiry date,
-and old incomplete bugtasks.
+questions, team memberships when they reach their expiry date, and old
+incomplete bugtasks.
 
     >>> janitor = personset.getByName('janitor')
     >>> celebs.janitor == janitor
     True
 
 
-== launchpad ==
+launchpad
+---------
 
 The Launchpad product itself.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> celebs.launchpad == launchpad
     True
 
 
-== mailing_list_experts ==
-
-There is a 'Mailing List Experts' team that has administrative power
-over mailing lists.
-
-    >>> mailing_list_experts = personset.getByName('mailing-list-experts')
-    >>> celebs.mailing_list_experts == mailing_list_experts
-    True
-
-The Launchpad Administrators team is a member of that team.
-
-    >>> celebs.admin.inTeam(mailing_list_experts)
-    True
-
-
-== obsolete_junk ==
+obsolete_junk
+-------------
 
 The 'Obsolete Junk' project is used to hold undeletable objects like
 productseries that other projects no longer want.
@@ -143,23 +141,25 @@ productseries that other projects no longer want.
     True
 
 
-== commercial_admin ==
+commercial_admin
+----------------
 
-There is a 'Commercial Subscription Admins' team that has
-administrative power over the license review process and
-has the ability to de-activate projects.
+There is a 'Commercial Subscription Admins' team that has administrative
+power over the license review process and has the ability to de-activate
+projects.
 
     >>> commercial_admin = personset.getByName('commercial-admins')
     >>> celebs.commercial_admin == commercial_admin
     True
 
 
-== Savannah bug tracker ==
+Savannah bug tracker
+--------------------
 
-There is a 'Savannah Bug Tracker' bugtracker which represents the
-bug tracker for all registered Savannah projects.
+There is a 'Savannah Bug Tracker' bugtracker which represents the bug
+tracker for all registered Savannah projects.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> savannah_tracker = getUtility(IBugTrackerSet).getByName(
     ...     'savannah')
     >>> celebs.savannah_tracker == savannah_tracker
@@ -173,7 +173,8 @@ http://savannah.nognu.org/
     http://savannah.nognu.org/
 
 
-== Gnome Bugzilla ==
+Gnome Bugzilla
+--------------
 
 There is a 'Gnome Bugzilla' celebrity, which is used to represent the
 Gnome Bugzilla instance by the checkwatches script.
@@ -183,27 +184,29 @@ Gnome Bugzilla instance by the checkwatches script.
     True
 
 
-== PPA key guard ==
+PPA key guard
+-------------
 
-There is a 'PPA key guard' celebrity which owns all PPA
-'signing_keys'.
+There is a 'PPA key guard' celebrity which owns all PPA 'signing_keys'.
 
     >>> ppa_key_guard = personset.getByName('ppa-key-guard')
     >>> celebs.ppa_key_guard == ppa_key_guard
     True
 
 
-== Ubuntu branches ==
+Ubuntu branches
+---------------
 
-There's a celebrity that is the only Person allowed to set the official branch
-for a source package. It's called ubuntu-branches.
+There's a celebrity that is the only Person allowed to set the official
+branch for a source package. It's called ubuntu-branches.
 
     >>> ubuntu_branches = personset.getByName('ubuntu-branches')
     >>> celebs.ubuntu_branches == ubuntu_branches
     True
 
 
-== Ubuntu security team ==
+Ubuntu security team
+--------------------
 
 There is a celebrity representing the 'ubuntu-security' team, which is
 mainly used for granting special permissions on the ubuntu primary
@@ -214,24 +217,28 @@ archive.
     True
 
 
-== Ubuntu technical board ==
+Ubuntu technical board
+----------------------
 
-There's a celebrity for the Ubuntu technical board, the 'techboard' team. It's
-used for determining who is allowed to create new package sets.
+There's a celebrity for the Ubuntu technical board, the 'techboard'
+team. It's used for determining who is allowed to create new package
+sets.
 
     >>> ubuntu_techboard = personset.getByName('techboard')
     >>> print ubuntu_techboard.name
     techboard
+
     >>> celebs.ubuntu_techboard == ubuntu_techboard
     True
 
 
-== Person celebrities ==
+Person celebrities
+------------------
 
-Each person celebrity has a corresponding "in_" attribute in IPersonRoles, to
-check if a person has that role. If the attributes differ, IPersonRoles needs
-to be synced to ILaunchpadCelebrities by adding/removing the appropriate
-"in_" attribute(s).
+Each person celebrity has a corresponding "in_" attribute in
+IPersonRoles, to check if a person has that role. If the attributes
+differ, IPersonRoles needs to be synced to ILaunchpadCelebrities by
+adding/removing the appropriate "in_" attribute(s).
 
     >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
     >>> def get_person_celebrity_names():
@@ -243,31 +250,38 @@ to be synced to ILaunchpadCelebrities by adding/removing the appropriate
     ...         if name.startswith("in_"):
     ...             yield name
 
-Treating the lists as sets and determining their difference gives us a clear
-picture of what is missing where.
+Treating the lists as sets and determining their difference gives us a
+clear picture of what is missing where.
 
     >>> person_celebrity_names = set(get_person_celebrity_names())
     >>> person_roles_names = set(get_person_roles_names())
     >>> print "Please add to IPersonRoles: " + (
     ...       ", ".join(list(person_celebrity_names - person_roles_names)))
     Please add to IPersonRoles:
+
     >>> print "Please remove from IPersonRoles: " + (
     ...       ", ".join(list(person_roles_names - person_celebrity_names)))
     Please remove from IPersonRoles:
 
 
-== Detecting if a person is a celebrity ==
+Detecting if a person is a celebrity
+------------------------------------
 
 We can ask if a person has celebrity status.
 
     >>> celebs.isCelebrityPerson(ubuntu_techboard.name)
     True
+
     >>> celebs.isCelebrityPerson(obsolete_junk.name)
     False
+
     >>> celebs.isCelebrityPerson('admins')
     True
+
     >>> celebs.isCelebrityPerson('admin')
     False
+
     >>> celebs.isCelebrityPerson('janitor')
     True
+
 

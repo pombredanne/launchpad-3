@@ -1,12 +1,9 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-import unittest
-
+import os.path
 import transaction
 from zope.component import getUtility
 
@@ -15,19 +12,20 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 
 
-class TestCanSetStatusBase(TestCaseWithFactory):
+class TestCanSetStatusBase:
     """Base for tests that check that canSetStatus works ."""
 
     layer = LaunchpadZopelessLayer
@@ -168,7 +166,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             [False, False, False, False, False, False, False])
 
 
-class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
+class TestCanSetStatusPOTemplate(TestCanSetStatusBase, TestCaseWithFactory):
     """Test canStatus applied to an entry with a POTemplate."""
 
     def setUp(self):
@@ -182,7 +180,7 @@ class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
             productseries=self.productseries, potemplate=self.potemplate)
 
 
-class TestCanSetStatusPOFile(TestCanSetStatusBase):
+class TestCanSetStatusPOFile(TestCanSetStatusBase, TestCaseWithFactory):
     """Test canStatus applied to an entry with a POFile."""
 
     def setUp(self):
@@ -255,13 +253,14 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
             distroseries=self.distroseries)
         return (l10n_sourcepackage, pot)
 
-    def _getGuessedPOFile(self, source_name, template_name):
+    def _getGuessedPOFile(self, source_name, template_path):
         """Return new POTemplate and matched POFile for package and template.
         """
+        template_name = os.path.basename(template_path)
         package, pot = self.createSourcePackageAndPOTemplate(
             source_name, template_name)
         queue_entry = self.queue.addOrUpdateEntry(
-            '%s.po' % template_name, template_name, True, self.uploaderperson,
+            '%s.po' % template_path, template_name, True, self.uploaderperson,
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
         pofile = queue_entry.getGuessedPOFile()
@@ -295,6 +294,26 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
             'kde-l10n-ca-valencia', 'template')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(catalan_valencia, pofile.language)
+
+    def test_KDE4_language_subvariant(self):
+        # PO file 'sr@test/something.po' in a package named like
+        # 'kde-l10n-sr' belong in the 'something' translation domain
+        # for "sr@test" language translations.
+        serbian_test = self.factory.makeLanguage('sr@test')
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'sr@test/template')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian_test, pofile.language)
+
+    def test_KDE4_language_at_sign(self):
+        # PO file 'blah@test/something.po' in a package named like
+        # 'kde-l10n-sr' belong in the 'something' translation domain
+        # for "sr" language translations.
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'source/blah@test/template')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian, pofile.language)
 
 
 class TestProductOwnerEntryImporter(TestCaseWithFactory):
@@ -336,14 +355,76 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
         self.assertEqual(self.old_owner, old_entry.importer)
 
 
-def test_suite():
-    """Add only specific test cases and leave out the base case."""
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOTemplate))
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFile))
-    suite.addTest(
-        unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
-    suite.addTest(unittest.makeSuite(TestGetGuessedPOFile))
-    suite.addTest(unittest.makeSuite(TestProductOwnerEntryImporter))
-    return suite
+class TestTranslationImportQueue(TestCaseWithFactory):
+    """Tests for `TranslationImportQueue`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTranslationImportQueue, self).setUp()
+        self.productseries = self.factory.makeProductSeries()
+        self.importer = self.factory.makePerson()
+        self.import_queue = getUtility(ITranslationImportQueue)
+
+    def _makeFile(self, extension=None, directory=None):
+        """Create a file with arbitrary name and content.
+
+        Returns a tuple (name, content).
+        """
+        filename = self.factory.getUniqueString()
+        if extension is not None:
+            filename = "%s.%s" % (filename, extension)
+        if directory is not None:
+            filename = os.path.join(directory, filename)
+        content = self.factory.getUniqueString()
+        return (filename, content)
+
+    def _getQueuePaths(self):
+        entries = self.import_queue.getAllEntries(target=self.productseries)
+        return [entry.path for entry in entries]
+
+    def test_addOrUpdateEntriesFromTarball_baseline(self):
+        # Files from a tarball are placed in the queue.
+        files = dict((
+            self._makeFile('pot'),
+            self._makeFile('po'),
+            self._makeFile('xpi'),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertContentEqual(files.keys(), self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_only_translation_files(self):
+        # Only files with the right extensions are added.
+        files = dict((
+            self._makeFile(),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertEqual([], self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path(self):
+        # File names are store with full path.
+        files = dict((
+            self._makeFile('pot', 'directory'),
+            ))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        self.assertEqual(files.keys(), self._getQueuePaths())
+
+    def test_addOrUpdateEntriesFromTarball_path_leading_slash(self):
+        # Leading slashes are stripped from path names.
+        path, content = self._makeFile('pot', '/directory')
+        files = dict(((path, content),))
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        self.import_queue.addOrUpdateEntriesFromTarball(
+            tarfile_content, True, self.importer,
+            productseries=self.productseries)
+        stripped_path = path.lstrip('/')
+        self.assertEqual([stripped_path], self._getQueuePaths())

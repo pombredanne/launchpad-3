@@ -20,7 +20,7 @@ in ubuntu.
 For further info about DDTP see:
   https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']

@@ -4,10 +4,10 @@ This widget combines radio buttons and a DateTimeWidget. It allows you to
 choose to publish an announcement immediately, at a predetermined date in the
 future, or to manually publish it later.
 
+    >>> from zope.schema import Field
     >>> from canonical.launchpad.testing.pages import extract_text
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.announcementdate import AnnouncementDateWidget
-    >>> from zope.schema import Field
     >>> field = Field(__name__='foo', title=u'Foo')
     >>> widget = AnnouncementDateWidget(field, LaunchpadTestRequest())
     >>> print extract_text(widget())

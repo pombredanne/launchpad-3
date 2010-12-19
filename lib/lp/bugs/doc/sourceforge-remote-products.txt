@@ -21,8 +21,8 @@ project without a remote_product set.
 If we add a Product and link it to a SourceForge project,
 getSFLinkedProductsWithNoneRemoteProduct() will return it.
 
-    >>> from transaction import commit
     >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> from transaction import commit
     >>> factory = LaunchpadObjectFactory()
 
     >>> product_1 = factory.makeProduct(name='my-first-product')

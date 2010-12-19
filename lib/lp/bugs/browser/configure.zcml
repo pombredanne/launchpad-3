@@ -397,7 +397,7 @@
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         facet="bugs"
-        permission="launchpad.Edit"
+        permission="launchpad.BugSupervisor"
         name="+configure-bugtracker"
         template="../../app/templates/generic-edit.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
@@ -791,7 +791,8 @@
             module="lp.bugs.browser.bugtracker"
             classes="
                 BugTrackerNavigation
-                BugTrackerSetNavigation"/>
+                BugTrackerSetNavigation
+                BugTrackerComponentGroupNavigation"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             name="+index"/>
@@ -799,6 +800,16 @@
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             path_expression="string:${name}"
             parent_utility="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            rootsite="bugs"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"
+            path_expression="string:+components/${name}"
+            attribute_to_parent="bug_tracker"
+            rootsite="bugs"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
+            path_expression="name"
+            attribute_to_parent="component_group"
             rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"

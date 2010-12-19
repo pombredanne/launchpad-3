@@ -310,7 +310,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """test_getByURL works with production values."""
         branch_set = getUtility(IBranchLookup)
         branch = self.makeProductBranch()
-        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        self.pushConfig('codehosting', lp_url_hosts='production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
         self.assertIs(None, branch2)
         branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
@@ -318,8 +318,6 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp:~aa/b/c')
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrls(self):

@@ -4,10 +4,11 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
+__all__ = ['Diff', 'IncrementalDiff', 'PreviewDiff', 'StaticDiff']
 
-import sys
+from contextlib import nested
 from cStringIO import StringIO
+import sys
 
 from uuid import uuid1
 
@@ -18,6 +19,7 @@ from bzrlib.patches import (
     parse_patches,
     Patch,
     )
+from bzrlib.plugins.difftacular.generate_diff import diff_ignore_branches
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import (
@@ -44,10 +46,12 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
+    IIncrementalDiff,
     IPreviewDiff,
     IStaticDiff,
     IStaticDiffSource,
     )
+from lp.codehosting.bzrutils import read_locked
 
 
 class Diff(SQLBase):
@@ -194,9 +198,14 @@ class Diff(SQLBase):
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
+        return klass.fromFileAtEnd(diff_content, filename)
+
+    @classmethod
+    def fromFileAtEnd(cls, diff_content, filename=None):
+        """Make a Diff from a file object that is currently at its end."""
         size = diff_content.tell()
         diff_content.seek(0)
-        return klass.fromFile(diff_content, size, filename)
+        return cls.fromFile(diff_content, size, filename)
 
     @classmethod
     def fromFile(cls, diff_content, size, filename=None):
@@ -257,6 +266,30 @@ class Diff(SQLBase):
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
 
+    @classmethod
+    def generateIncrementalDiff(cls, old_revision, new_revision,
+            source_branch, ignore_branches):
+        """Return a Diff whose contents are an incremental diff.
+
+        The Diff's contents will show the changes made between old_revision
+        and new_revision, except those changes introduced by the
+        ignore_branches.
+
+        :param old_revision: The `Revision` to show changes from.
+        :param new_revision: The `Revision` to show changes to.
+        :param source_branch: The bzr branch containing these revisions.
+        :param ignore_brances: A collection of branches to ignore merges from.
+        :return: a `Diff`.
+        """
+        diff_content = StringIO()
+        read_locks = [read_locked(branch) for branch in [source_branch] +
+                ignore_branches]
+        with nested(*read_locks):
+            diff_ignore_branches(
+                source_branch, ignore_branches, old_revision.revision_id,
+                new_revision.revision_id, diff_content)
+        return cls.fromFileAtEnd(diff_content)
+
 
 class StaticDiff(SQLBase):
     """A diff from one revision to another."""
@@ -303,6 +336,36 @@ class StaticDiff(SQLBase):
         diff = self.diff
         SQLBase.destroySelf(self)
         diff.destroySelf()
+
+
+class IncrementalDiff(Storm):
+    """See `IIncrementalDiff."""
+
+    implements(IIncrementalDiff)
+
+    delegates(IDiff, context='diff')
+
+    __storm_table__ = 'IncrementalDiff'
+
+    id = Int(primary=True, allow_none=False)
+
+    diff_id = Int(name='diff', allow_none=False)
+
+    diff = Reference(diff_id, 'Diff.id')
+
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
+
+    branch_merge_proposal = Reference(
+        branch_merge_proposal_id, "BranchMergeProposal.id")
+
+    old_revision_id = Int(name='old_revision', allow_none=False)
+
+    old_revision = Reference(old_revision_id, 'Revision.id')
+
+    new_revision_id = Int(name='new_revision', allow_none=False)
+
+    new_revision = Reference(new_revision_id, 'Revision.id')
 
 
 class PreviewDiff(Storm):

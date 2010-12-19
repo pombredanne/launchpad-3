@@ -11,7 +11,7 @@ is set, a new bug subscription is created as well.
     >>> print target.bug_supervisor
     None
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByEmail("no-priv@canonical.com")
     >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")

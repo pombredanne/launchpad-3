@@ -3,13 +3,7 @@
 
 """queue tool base class tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
-__all__ = [
-    'upload_bar_source',
-    ]
-
 
 import hashlib
 import os
@@ -27,10 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.database import (
-    LibraryFileAlias,
-    PackageUploadBuild,
-    )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
@@ -38,7 +29,7 @@ from canonical.librarian.testing.server import (
     )
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, 
+    DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -66,6 +57,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
+from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
     )
@@ -184,7 +176,7 @@ class TestQueueTool(TestQueueBase):
         actions we want to see the help, not available actions will be
         reported.
         """
-        queue_action = self.execute_command('help')
+        self.execute_command('help')
         self.assertEqual(
             ['Running: "help"',
              '\tinfo : Present the Queue item including its contents. ',
@@ -196,13 +188,13 @@ class TestQueueTool(TestQueueBase):
              '\tfetch : Fetch the contents of a queue item. '],
             self.test_output)
 
-        queue_action = self.execute_command('help fetch')
+        self.execute_command('help fetch')
         self.assertEqual(
             ['Running: "help fetch"',
              '\tfetch : Fetch the contents of a queue item. '],
             self.test_output)
 
-        queue_action = self.execute_command('help foo')
+        self.execute_command('help foo')
         self.assertEqual(
             ['Running: "help foo"',
              'Not available action(s): foo'],
@@ -288,7 +280,7 @@ class TestQueueTool(TestQueueBase):
         # We need to upload a new source package to do this because the
         # sample data is horribly broken with published sources also in
         # the NEW queue.  Doing it this way guarantees a nice set of data.
-        bar_src = self.uploadPackage()
+        self.uploadPackage()
 
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
@@ -317,7 +309,7 @@ class TestQueueTool(TestQueueBase):
 
     def testAcceptingSourceCreateBuilds(self):
         """Check if accepting a source package creates build records."""
-        bar_src = self.uploadPackage()
+        self.uploadPackage()
 
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
@@ -397,7 +389,7 @@ class TestQueueTool(TestQueueBase):
             changesfile="suite/bar_1.0-2/bar_1.0-2_source.changes")
 
         # Now accept the new bar upload with the queue tool.
-        queue_action = self.execute_command('accept bar', no_mail=False)
+        self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
         bugs_fixed_header = bar2_src.changes._dict['Launchpad-bugs-fixed']
@@ -640,7 +632,7 @@ class TestQueueTool(TestQueueBase):
             2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 1: try to accept both.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
@@ -655,7 +647,7 @@ class TestQueueTool(TestQueueBase):
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 2: try to accept the remaining item in UNAPPROVED.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertErrorAcceptingDuplicate()
@@ -664,7 +656,7 @@ class TestQueueTool(TestQueueBase):
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         # It failed and te item remains in UNAPPROVED.
@@ -673,7 +665,7 @@ class TestQueueTool(TestQueueBase):
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 4: The only possible destiny for the remaining item it REJECT.
-        queue_action = self.execute_command(
+        self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertQueueLength(
@@ -936,8 +928,6 @@ class TestQueueTool(TestQueueBase):
         When overriding the component, the archive may change, so we check
         that here and make sure it's disallowed.
         """
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to partner when required.
         self.assertRaises(
             CommandRunnerError, self.execute_command,
@@ -1026,7 +1016,7 @@ class TestQueueToolInJail(TestQueueBase):
 
         bug 67014: Don't complain if files are the same
         """
-        queue_action = self.execute_command('fetch 1')
+        self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
@@ -1049,7 +1039,7 @@ class TestQueueToolInJail(TestQueueBase):
         """
         CLOBBERED = "you're clobbered"
 
-        queue_action = self.execute_command('fetch 1')
+        self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
@@ -1088,7 +1078,7 @@ class TestQueueToolInJail(TestQueueBase):
         FAKE_DEB_CONTENT = "Fake DEB"
         fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
         fillLibrarianFile(90, FAKE_DEB_CONTENT)
-        queue_action = self.execute_command('fetch pmount')
+        self.execute_command('fetch pmount')
 
         # Check the files' names.
         files = sorted(self._listfiles())
@@ -1110,7 +1100,7 @@ class TestQueueToolInJail(TestQueueBase):
         We can specify multiple items to fetch, even mixing IDs and names.
         e.g. queue fetch alsa-utils 1 3
         """
-        queue_action = self.execute_command('fetch 3 mozilla-firefox')
+        self.execute_command('fetch 3 mozilla-firefox')
         files = self._listfiles()
         files.sort()
         self.assertEqual(

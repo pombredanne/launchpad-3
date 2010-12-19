@@ -57,6 +57,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Int,
     Text,
@@ -71,13 +72,9 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -88,6 +85,12 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+   )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
@@ -120,6 +123,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -559,13 +563,14 @@ class CodeReviewNewRevisions:
     """
     implements(ICodeReviewNewRevisions)
 
-    def __init__(self, revisions, date, branch):
+    def __init__(self, revisions, date, branch, diff):
         self.revisions = revisions
         self.branch = branch
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+        self.diff = diff
 
         # Other standard IComment attributes are not used.
         self.extra_css_class = None
@@ -613,10 +618,21 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = merge_proposal.getRevisionsSinceReviewStart()
+        groups = list(merge_proposal.getRevisionsSinceReviewStart())
         source = DecoratedBranch(merge_proposal.source_branch)
-        comments = [CodeReviewNewRevisions(list(revisions), date, source)
-            for date, revisions in groups]
+        comments = []
+        if getFeatureFlag('code.incremental_diffs.enabled'):
+            ranges = [
+                (revisions[0].revision.getLefthandParent(),
+                 revisions[-1].revision)
+                for revisions in groups]
+            diffs = merge_proposal.getIncrementalDiffs(ranges)
+        else:
+            diffs = [None] * len(groups)
+        for revisions, diff in zip(groups, diffs):
+            newrevs = CodeReviewNewRevisions(
+                revisions, revisions[-1].revision.date_created, source, diff)
+            comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
@@ -965,20 +981,51 @@ class MergeProposalEditView(LaunchpadEditFormView,
                         % revision_name)
 
 
-class BranchMergeProposalResubmitView(MergeProposalEditView,
+class ResubmitSchema(IBranchMergeProposal):
+
+    break_link = Bool(
+        title=u'Start afresh',
+        description=(
+            u'Do not show old conversation and do not link to superseded'
+            ' proposal.'),
+        default=False,)
+
+
+class BranchMergeProposalResubmitView(LaunchpadFormView,
                                       UnmergedRevisionsMixin):
     """The view to resubmit a proposal to merge."""
 
-    schema = IBranchMergeProposal
+    schema = ResubmitSchema
+    for_input = True
     page_title = label = "Resubmit proposal to merge"
-    field_names = []
+    field_names = [
+        'source_branch',
+        'target_branch',
+        'prerequisite_branch',
+        'description',
+        'break_link',
+        ]
+
+    def initialize(self):
+        self.cancel_url = canonical_url(self.context)
+        super(BranchMergeProposalResubmitView, self).initialize()
+
+    @property
+    def initial_values(self):
+        UNSET = object()
+        items = ((key, getattr(self.context, key, UNSET)) for key in
+                  self.field_names if key != 'break_link')
+        return dict(item for item in items if item[1] is not UNSET)
 
     @action('Resubmit', name='resubmit')
-    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(self.user)
+        proposal = self.context.resubmit(
+            self.user, data['source_branch'], data['target_branch'],
+            data['prerequisite_branch'], data['description'],
+            data['break_link'])
         self.next_url = canonical_url(proposal)
+        return proposal
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):

@@ -245,7 +245,7 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('thread-%s.request' % threadid, 'w')
+        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:
@@ -456,9 +456,11 @@ class LaunchpadBrowserPublication(
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
 
-        # For opstats, where we really don't want to have any DB access at all,
-        # ensure that all flag lookups will stop early.
-        if pageid in ('RootObject:OpStats', 'RootObject:+opstats'):
+        # For status URLs, where we really don't want to have any DB access
+        # at all, ensure that all flag lookups will stop early.
+        if pageid in (
+            'RootObject:OpStats', 'RootObject:+opstats',
+            'RootObject:+haproxy'):
             request.features = NullFeatureController()
             features.per_thread.features = request.features
 
@@ -466,8 +468,9 @@ class LaunchpadBrowserPublication(
         # to control the hard timeout, and they trigger DB access, but our
         # DB tracers are not safe for reentrant use, so we must do this
         # outside of the SQL stack. We must also do it after traversal so that
-        # the view is known and can be used in scope resolution. As we actually
-        # stash the pageid after afterTraversal, we need to do this even later.
+        # the view is known and can be used in scope resolution. As we
+        # actually stash the pageid after afterTraversal, we need to do this
+        # even later.
         da.set_permit_timeout_from_features(True)
         da._get_request_timeout()
 

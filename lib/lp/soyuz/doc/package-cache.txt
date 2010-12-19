@@ -21,7 +21,7 @@ DistributionSourcePackageCache table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, binpkgnames, binpkgsummaries and binpkgdescriptions.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
@@ -215,7 +215,7 @@ cache when it's updated.
   >>> warty.searchPackages('foobar').count()
   1
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.distroseriespackagecache import (
   ...      DistroSeriesPackageCache)
 
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -304,7 +304,7 @@ for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 With empty cache contents in Archive table we can't even find a PPA by
@@ -438,7 +438,7 @@ information will be available, no packages information will be cached.
 We insert a new source cache with texts containing punctuation and
 duplicated words pointing to Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
   >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
 
   >>> unclean_cache = DistributionSourcePackageCache(
@@ -614,7 +614,7 @@ The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
 objects uses a DistroSeriesPackageCache record to present summary and
 description for the context binary package.
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+  >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
   >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
 
   >>> primary_cache = DistroSeriesPackageCache(

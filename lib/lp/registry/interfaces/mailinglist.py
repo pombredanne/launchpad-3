@@ -808,6 +808,17 @@ class IMessageApprovalSet(Interface):
         :rtype: sequence of MessageApproval
         """
 
+    def acknowledgeMessagesWithStatus(status):
+        """Acknowledge all the MessageApprovals with the matching status.
+
+        This changes the statuses APPROVAL_PENDING to APPROVED,
+        REJECTION_PENDING to REJECTED and DISCARD_PENDING to DISCARD.  It is
+        illegal to call this function when the status is not one of these
+        states.
+
+        :param status: A PostedMessageStatus enum value.
+        """
+
 
 class IHeldMessageDetails(Interface):
     """Details on a held message.

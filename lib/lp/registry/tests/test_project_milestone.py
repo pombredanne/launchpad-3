@@ -23,11 +23,11 @@ from canonical.testing.layers import (
     )
 from lazr.restfulclient.errors import ClientError
 
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationPriority,
     )
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

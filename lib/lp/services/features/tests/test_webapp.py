@@ -5,13 +5,22 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+
+from canonical.config import config
 from canonical.testing import layers
 from lp.services.features import webapp
-from lp.testing import TestCase
+from lp.testing import (
+    login_as,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 class TestScopesFromRequest(TestCase):
+
+    layer = layers.BaseLayer
 
     def test_pageid_scope_normal(self):
         request = LaunchpadTestRequest()
@@ -38,4 +47,47 @@ class TestScopesFromRequest(TestCase):
         scopes = webapp.ScopesFromRequest(request)
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
-        self.assertFalse(scopes.lookup('pageid:foo'))
+        self.assertFalse(scopes.lookup('pageid:foo:bar'))
+
+    def test_default(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.assertTrue(scopes.lookup('default'))
+
+    def test_server(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.assertFalse(scopes.lookup('server.lpnet'))
+        config.push('ensure_lpnet', dedent("""\
+            [launchpad]
+            is_lpnet: True
+            """))
+        try:
+            self.assertTrue(scopes.lookup('server.lpnet'))
+        finally:
+            config.pop('ensure_lpnet')
+
+    def test_server_missing_key(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        # There is no such key in the config, so this returns False.
+        self.assertFalse(scopes.lookup('server.pink'))
+
+
+class TestDBScopes(TestCaseWithFactory):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def test_team_scope_outside_team(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.factory.loginAsAnyone()
+        self.assertFalse(scopes.lookup('team:nonexistent'))
+
+    def test_team_scope_in_team(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[member])
+        login_as(member)
+        self.assertTrue(scopes.lookup('team:%s' % team.name))

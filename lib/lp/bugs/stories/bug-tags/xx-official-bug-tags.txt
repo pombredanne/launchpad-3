@@ -71,6 +71,17 @@ The link is also available for the bug supervisor.
     >>> print bug_super_browser.url
     http://bugs.launchpad.dev/youbuntu/+manage-official-tags
 
+The bug supervisor can also set the tags for the product.
+
+    >>> bug_super_browser.getControl('Official Bug Tags').value = 'foo bar'
+    >>> bug_super_browser.getControl('Save').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
+    >>> print bug_super_browser.getControl('Official Bug Tags').value
+    bar foo
+
 == Official Tags on Bug Pages ==
 
 Official tags are displayed using a different style from unofficial ones.
@@ -101,8 +112,8 @@ They are grouped together at the beginning of the list.
 
 The tags portlet displays a mix of official and unofficial tags.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> firesocks = factory.makeProduct(name='firesocks')
     >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')

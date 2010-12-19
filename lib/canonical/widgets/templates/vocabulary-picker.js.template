@@ -1,4 +1,4 @@
-YUI().use('node', 'lp.app.picker', 'plugin', function(Y) {
+LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
     if (Y.UA.ie) {
         return;
     }

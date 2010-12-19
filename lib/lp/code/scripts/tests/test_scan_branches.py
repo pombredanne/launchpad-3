@@ -6,8 +6,6 @@
 """Test the scan_branches script."""
 
 
-from __future__ import with_statement
-
 from storm.locals import Store
 import transaction
 
