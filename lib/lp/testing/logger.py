@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'MockLogger',
-    'TestLogger',
     ]
 
 import logging
@@ -66,22 +65,3 @@ class MockLogger:
 
     def exception(self, *args):
         self.log(*args, **{'exc_info': True})
-
-
-class TestLogger:
-    """Imitates a logger, but records output."""
-
-    def __init__(self, outfile=None):
-        self.output = []
-
-    def log(self, prefix, msg, *args):
-        # The standard logger takes a template string as the first
-        # argument, but we must only attempt to use it as one if we have
-        # arguments. Otherwise logging of messages with string formatting
-        # sequences will die.
-        if len(args) > 0:
-            msg %= args
-        self.output.append('%s %s' % (prefix, msg))
-
-    def debug(self, *args):
-        self.log('DEBUG', *args)
