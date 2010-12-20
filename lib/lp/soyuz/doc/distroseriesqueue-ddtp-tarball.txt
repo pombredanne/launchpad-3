@@ -177,16 +177,11 @@ previous upload:
 Do the publish, i.e process the CustomUpload decompressing and writing
 the tarball contents in the archive, collect and check debug message:
 
-  >>> class MockLogger:
-  ...    def debug(self, message):
-  ...        print 'DEBUG: %s' % message
-  ...    def error(self, message):
-  ...        print 'ERROR: %s' % message
-
 The umask must be 022 in order to perform the upload.
 
   >>> old_mask = os.umask(022)
-  >>> pub_records = queue_item.realiseUpload(MockLogger())
+  >>> from lp.services.log.logger import FakeLogger
+  >>> pub_records = queue_item.realiseUpload(FakeLogger())
   DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
   >>> print '%03o' % os.umask(old_mask)
   022
