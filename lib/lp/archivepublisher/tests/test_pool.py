@@ -11,7 +11,6 @@ import shutil
 from tempfile import mkdtemp
 import unittest
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.archivepublisher.diskpool import (
     DiskPool,
     poolify,
