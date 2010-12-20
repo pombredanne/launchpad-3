@@ -215,15 +215,16 @@ class FormattersAPI:
         If there are opening parens in the url that are matched by closing
         parens at the start of the trailer, those closing parens should be
         part of the url."""
+        assert trailers != '', ( "Trailers must not be an empty string.")
         opencount = url.count('(')
         closedcount = url.count(')')
         missing = opencount - closedcount
         slice_idx = 0
-        while slice_idx < missing:
-            if trailers[slice_idx] == ')':
-                slice_idx += 1
-            else:
-                break
+        while slice_idx <  missing:
+                if trailers[slice_idx] == ')':
+                    slice_idx += 1
+                else:
+                    break
         url += trailers[:slice_idx]
         trailers = trailers[slice_idx:]
         return url, trailers
@@ -242,9 +243,10 @@ class FormattersAPI:
         if match:
             trailers = match.group(1)
             url = url[:-len(trailers)]
+            return FormattersAPI._handle_parens_in_trailers(url, trailers)
         else:
-            trailers = ''
-        return FormattersAPI._handle_parens_in_trailers(url, trailers)
+            # No match, return URL with empty string for trailers
+            return url, ''
 
     @staticmethod
     def _linkify_url_should_be_ignored(url):
