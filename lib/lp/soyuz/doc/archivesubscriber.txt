@@ -112,7 +112,7 @@ Subscriptions also contain some date information:
 An email is sent to the subscribed person when the ArchiveSubscriber
 entry is created:
 
-    >>> print_emails(include_reply_to=True)
+    >>> print_emails(include_reply_to=True) #doctest: -NORMALIZE_WHITESPACE
     From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
     Reply-To: Celso Providelo <celso.providelo@canonical.com>
@@ -123,8 +123,8 @@ entry is created:
     --------------------------------------
     <BLANKLINE>
     Celso Providelo has granted you access to a private software archive
-    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted
-    by Launchpad and has the following description:
+    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted by
+    Launchpad and has the following description:
     <BLANKLINE>
     packages to help my friends.
     <BLANKLINE>
@@ -141,7 +141,6 @@ entry is created:
     ignore this email. However, if you have any concerns you can contact the
     Launchpad team by emailing feedback@launchpad.net
     <BLANKLINE>
-    <BLANKLINE>
     Regards,
     The Launchpad team
     ----------------------------------------
@@ -151,7 +150,7 @@ the e-mail does not contain the description.
 
     >>> cprov_private_ppa.description = None
     >>> unused = cprov_private_ppa.newSubscription(fredsmith, cprov)
-    >>> print_emails(include_reply_to=True)
+    >>> print_emails(include_reply_to=True) #doctest: -NORMALIZE_WHITESPACE
     From: Celso Providelo <noreply@launchpad.net>
     To: fred@example.com
     Reply-To: Celso Providelo <celso.providelo@canonical.com>
@@ -162,8 +161,8 @@ the e-mail does not contain the description.
     --------------------------------------
     <BLANKLINE>
     Celso Providelo has granted you access to a private software archive
-    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted
-    by Launchpad.
+    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted by
+    Launchpad.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
     view your access details by visiting this link:

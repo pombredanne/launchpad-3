@@ -121,7 +121,6 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
     registry_experts = Attribute("The Registry Administrators team.")
