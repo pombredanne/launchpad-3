@@ -11,6 +11,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_destructor_operation,
     exported,
     )
 from lazr.restful.fields import Reference
@@ -85,6 +86,7 @@ class IBugSubscriptionFilterAttributes(Interface):
 class IBugSubscriptionFilterMethods(Interface):
     """Methods of `IBugSubscriptionFilter`."""
 
+    @export_destructor_operation()
     def delete():
         """Delete this bug subscription filter."""
 

@@ -9,6 +9,7 @@ from functools import partial
 from urlparse import urlparse
 
 from lazr.restfulclient.errors import BadRequest
+from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
 
@@ -19,6 +20,10 @@ from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
@@ -26,10 +31,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
-    )
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
-    BugTaskStatus,
     )
 
 
@@ -201,3 +202,11 @@ class TestBugSubscriptionFilterAPIModifications(
         self.assertEqual(
             set([BugTaskImportance.LOW, BugTaskImportance.HIGH]),
             self.subscription_filter.importances)
+
+    def test_delete(self):
+        # Subscription filters can be deleted.
+        self.ws_subscription_filter.lp_delete()
+        transaction.begin()
+        self.assertRaises(
+            LostObjectError, getattr, self.subscription_filter,
+            "find_all_tags")
