@@ -988,7 +988,7 @@ BugMessage""" % sqlvalues(self.id))
             # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None:
+            if pillar.official_malone and pillar.bug_supervisor is None:
                 also_notified_subscribers.add(pillar.owner)
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
