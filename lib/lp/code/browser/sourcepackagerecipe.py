@@ -14,6 +14,7 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+from operator import attrgetter
 
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
@@ -24,6 +25,9 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from storm.locals import Store
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.widget import Widget
+from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -33,6 +37,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import (
+    Field,
     Choice,
     List,
     Text,
@@ -75,10 +80,12 @@ from lp.app.browser.launchpadform import (
     )
 from lp.code.errors import (
     BuildAlreadyPending,
+    NoLinkedBranch,
     NoSuchBranch,
     PrivateBranchRecipe,
     TooNewRecipeFormat,
     )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
@@ -88,6 +95,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
 
@@ -360,7 +368,95 @@ class RecipeTextValidatorMixin:
             self.setFieldError('recipe_text', str(error))
 
 
-class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
+class RelatedBranchesWidget(Widget):
+    """A widget to render the related branches for a recipe."""
+    implements(IView)
+
+    __call__ = ViewPageTemplateFile(
+        '../templates/sourcepackagerecipe-related-branches.pt')
+
+    related_package_branches = []
+    related_series_branches = []
+
+    def hasInput(self):
+        return True
+
+    def setRenderedValue(self, value):
+        self.related_package_branches = value['related_package_branches']
+        self.related_series_branches = value['related_series_branches']
+
+
+class RecipeRelatedBranchesMixin(LaunchpadFormView):
+    """A class to find related branches for a recipe's base branch."""
+
+    custom_widget('related-branches', RelatedBranchesWidget)
+
+    def extendFields(self):
+        """See `LaunchpadFormView`.
+
+        Adds a related branches field to the form.
+        """
+        self.form_fields += form.Fields(Field(__name__='related-branches'))
+        self.form_fields['related-branches'].custom_widget = (
+            self.custom_widgets['related-branches'])
+        self.widget_errors['related-branches'] = ''
+
+    def setUpWidgets(self, context=None):
+        # Adds a new related branches widget.
+        super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
+        self.widgets['related-branches'].display_label = False
+        self.widgets['related-branches'].setRenderedValue(dict(
+                related_package_branches=self.related_package_branches,
+                related_series_branches=self.related_series_branches))
+
+    @cachedproperty
+    def related_series_branches(self):
+        """Find development branches related to the base branch's product."""
+        result = set()
+        branch_to_check = self.getBranch()
+        product = branch_to_check.product
+
+        # We include the development focus branch.
+        dev_focus_branch = ICanHasLinkedBranch(product).branch
+        if dev_focus_branch is not None:
+            result.add(dev_focus_branch)
+
+        # Now any branches for the product's series.
+        for series in product.series:
+            try:
+                branch = ICanHasLinkedBranch(series).branch
+                if branch is not None:
+                    result.add(branch)
+            except NoLinkedBranch:
+                # If there's no branch for a particular series, we don't care.
+                pass
+        # We don't want to include the source branch.
+        result.discard(branch_to_check)
+        return sorted(result, key=attrgetter('unique_name'))
+
+    @cachedproperty
+    def related_package_branches(self):
+        """Find branches for the base branch's product's distro src pkgs."""
+        result = set()
+        branch_to_check = self.getBranch()
+        product = branch_to_check.product
+
+        for sourcepackage in product.distrosourcepackages:
+            try:
+                branch = ICanHasLinkedBranch(sourcepackage).branch
+                if branch is not None:
+                    result.add(branch)
+            except NoLinkedBranch:
+                # If there's no branch for a particular source package,
+                # we don't care.
+                pass
+        # We don't want to include the source branch.
+        result.discard(branch_to_check)
+        return sorted(result, key=attrgetter('unique_name'))
+
+
+class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
+                                 RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
@@ -389,6 +485,10 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         # the input isn't listed as 'required' otherwise the validator gets
         # all confused when we want to create a new PPA.
         archive_widget._displayItemForMissingValue = False
+
+    def getBranch(self):
+        """The branch on which the recipe is built."""
+        return self.context
 
     @property
     def initial_values(self):
@@ -461,9 +561,14 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                     self.setFieldError('ppa_name', error)
 
 
-class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
+class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
+                                  RecipeTextValidatorMixin,
                                   LaunchpadEditFormView):
     """View for editing Source Package Recipes."""
+
+    def getBranch(self):
+        """The branch on which the recipe is built."""
+        return self.context.base_branch
 
     @property
     def title(self):
