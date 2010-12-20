@@ -143,6 +143,10 @@ class BufferLogger(FakeLogger):
                 for line in thing.splitlines():
                     self.log(line)
 
+    def getLogOutput(self):
+        self.buffer.seek(0)
+        return self.buffer.readlines()
+
 
 class OopsHandler(logging.Handler):
     """Handler to log to the OOPS system."""

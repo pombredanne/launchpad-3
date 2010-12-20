@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -53,7 +54,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.logger import TestLogger
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -242,11 +242,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         owner = self.factory.makePerson(name='eric')
         self.factory.makeSourcePackageRecipe(
             owner=owner, name=u'funky-recipe', build_daily=True)
-        logger = TestLogger()
+        logger = BufferLogger()
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
         self.assertEqual(
-            ['DEBUG Build for eric/funky-recipe requested'],
-            logger.output)
+            ['DEBUG: Build for eric/funky-recipe requested\n'],
+            logger.getLogOutput())
 
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(
