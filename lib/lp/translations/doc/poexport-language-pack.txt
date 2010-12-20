@@ -65,16 +65,16 @@ to None.
 
 Check that the log looks ok.
 
-    >>> print logger.buffer.getvalue()
-    Selecting PO files for export
-    Number of PO files to export: 12
-    Exporting PO file ... (1/12)
-    Exporting PO file ... (2/12)
+    >>> print logger.getLogBuffer()
+    DEBUG: Selecting PO files for export
+    INFO:  Number of PO files to export: 12
+    DEBUG: Exporting PO file ... (1/12)
+    DEBUG: Exporting PO file ... (2/12)
     ...
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
+    INFO:  Adding timestamp file
+    INFO:  Adding mapping file
+    INFO:  Done.
+    DEBUG: Upload complete, file alias: ...
 
     # Get the generated tarball.
 
@@ -332,19 +332,19 @@ PO files.
 
 Check that the log looks ok.
 
-    >>> print logger.buffer.getvalue()
-    Selecting PO files for export
-    Number of PO files to export: 4
-    Exporting PO file ... (1/4)
-    Exporting PO file ... (2/4)
-    Exporting PO file ... (3/4)
-    Exporting PO file ... (4/4)
-    Exporting XPI template files.
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
-    Registered the language pack.
+    >>> print logger.getLogBuffer()
+    DEBUG: Selecting PO files for export
+    INFO:  Number of PO files to export: 4
+    DEBUG: Exporting PO file ... (1/4)
+    DEBUG: Exporting PO file ... (2/4)
+    DEBUG: Exporting PO file ... (3/4)
+    DEBUG: Exporting PO file ... (4/4)
+    INFO:  Exporting XPI template files.
+    INFO:  Adding timestamp file
+    INFO:  Adding mapping file
+    INFO:  Done.
+    DEBUG: Upload complete, file alias: ...
+    INFO:  Registered the language pack.
 
     # Get the generated tarball.
 
