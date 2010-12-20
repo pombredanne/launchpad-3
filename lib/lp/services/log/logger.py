@@ -31,7 +31,7 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
-        print >> output_file, prefix, msg % stuff
+        print >> output_file, prefix, str(msg) % stuff
 
         if 'exc_info' in kw:
             traceback.print_exc(file=output_file)
@@ -75,7 +75,7 @@ class BufferLogger(FakeLogger):
         self.buffer = StringIO()
 
     def message(self, prefix, msg, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
+        self.buffer.write('%s: %s\n' % (prefix, str(msg) % stuff))
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
