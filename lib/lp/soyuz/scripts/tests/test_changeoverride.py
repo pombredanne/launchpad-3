@@ -122,10 +122,10 @@ class TestChangeOverride(unittest.TestCase):
 
         # Overrides initialization output.
         self.assertEqual(
-            changer.logger.buffer.getvalue(),
-            "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'base'\n"
-            "INFO Override Priority to: 'EXTRA'")
+            changer.logger.getLogBuffer(),
+            "INFO: Override Component to: 'main'\n"
+            "INFO: Override Section to: 'base'\n"
+            "INFO: Override Priority to: 'EXTRA'\n")
 
     def patchedChanger(self, source_only=False, source_and_binary=False,
                        binary_and_source=False, package_name='foo'):
@@ -154,7 +154,7 @@ class TestChangeOverride(unittest.TestCase):
         changer.processChildrenChange = fakeProcessChildrenChange
 
         # Consume the initialisation logging.
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         return changer
 
@@ -174,28 +174,28 @@ class TestChangeOverride(unittest.TestCase):
         changer = self.patchedChanger()
         changer.mainTask()
         self.assertEqual(
-            changer.logger.read(),
-            "INFO Binary change for 'foo'")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: Binary change for 'foo'\n")
 
         changer = self.patchedChanger(source_only=True)
         changer.mainTask()
         self.assertEqual(
-            changer.logger.read(),
-            "INFO Source change for 'foo'")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: Source change for 'foo'\n")
 
         changer = self.patchedChanger(binary_and_source=True)
         changer.mainTask()
         self.assertEqual(
-            changer.logger.read(),
-            "INFO Source change for 'foo'\n"
-            "INFO Binary change for 'foo'")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: Source change for 'foo'\n"
+            "INFO: Binary change for 'foo'\n")
 
         changer = self.patchedChanger(source_and_binary=True)
         changer.mainTask()
         self.assertEqual(
-            changer.logger.read(),
-            "INFO Source change for 'foo'\n"
-            "INFO Children change for 'foo'")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: Source change for 'foo'\n"
+            "INFO: Children change for 'foo'\n")
 
     def test_changeoverride_multiple_targets(self):
         """`ChangeOverride` can operate on multiple targets.
@@ -206,10 +206,10 @@ class TestChangeOverride(unittest.TestCase):
         changer = self.patchedChanger(package_name='foo bar baz')
         changer.mainTask()
         self.assertEqual(
-            changer.logger.read(),
-            "INFO Binary change for 'foo'\n"
-            "INFO Binary change for 'bar'\n"
-            "INFO Binary change for 'baz'")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: Binary change for 'foo'\n"
+            "INFO: Binary change for 'bar'\n"
+            "INFO: Binary change for 'baz'\n")
 
     def assertCurrentBinary(self, distroarchseries, name, version,
                             component_name, section_name, priority_name):
@@ -266,24 +266,24 @@ class TestChangeOverride(unittest.TestCase):
 
         changer = self.getChanger(
             component="universe", section="web", priority='extra')
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         # Override the source.
         changer.processSourceChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo - 1.0/main/base' source overridden")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo - 1.0/main/base' source overridden\n")
         self.assertCurrentSource(
             self.warty, 'boingo', '1.0', 'universe', 'web')
 
         # Override the binaries.
         changer.processBinaryChange('boingo-bin')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' binary "
                 "overridden in warty/hppa\n"
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
@@ -292,13 +292,13 @@ class TestChangeOverride(unittest.TestCase):
         # Override the source children.
         changer.processChildrenChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
-            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO: 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' binary "
                 "overridden in warty/hppa\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
@@ -314,7 +314,7 @@ class TestChangeOverride(unittest.TestCase):
         source = self.test_publisher.getPubSource(
             sourcename="boingo", version='0.8', distroseries=self.warty,
             pocket=PackagePublishingPocket.SECURITY)
-        binaries = self.test_publisher.getPubBinaries(
+        self.test_publisher.getPubBinaries(
             'boingo-bin', pub_source=source, distroseries=self.warty,
             pocket=PackagePublishingPocket.SECURITY)
 
@@ -325,18 +325,18 @@ class TestChangeOverride(unittest.TestCase):
         changer = self.getChanger(
             suite='warty-security', component="universe", section="web",
             priority='extra')
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         # Override the security source and its binaries.
         changer.processSourceChange('boingo')
         changer.processChildrenChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo - 0.8/main/base' source overridden\n"
-            "INFO 'boingo-bin-0.8/main/base/STANDARD' binary "
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo - 0.8/main/base' source overridden\n"
+            "INFO: 'boingo-bin-0.8/main/base/STANDARD' binary "
                 "overridden in warty/hppa\n"
-            "INFO 'boingo-bin-0.8/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            "INFO: 'boingo-bin-0.8/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
 
         # Use a more precise lookup approach to reach and verify the
         # overridden security publications.
@@ -367,7 +367,7 @@ class TestChangeOverride(unittest.TestCase):
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             package_version='0.9')
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         # No 'boingo_0.9' source available.
         self.assertRaises(
@@ -382,11 +382,11 @@ class TestChangeOverride(unittest.TestCase):
         # 'boingo-data_0.9' is available and will be overridden.
         changer.processBinaryChange('boingo-data')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' binary "
                 "overridden in warty/hppa\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
@@ -401,22 +401,22 @@ class TestChangeOverride(unittest.TestCase):
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             arch_tag='i386')
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         # Source overrides are not affect by architecture restriction.
         changer.processSourceChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo - 1.0/main/base' source overridden")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo - 1.0/main/base' source overridden\n")
         self.assertCurrentSource(
             self.warty, 'boingo', '1.0', 'universe', 'web')
 
         # Binary overrides are restricted by architecture.
         changer.processBinaryChange('boingo-bin')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
@@ -425,10 +425,10 @@ class TestChangeOverride(unittest.TestCase):
         # Source-children overrides are also restricted by architecture.
         changer.processChildrenChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
-                "overridden in warty/i386")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
@@ -443,20 +443,20 @@ class TestChangeOverride(unittest.TestCase):
 
         changer = self.getChanger(
             component="main", section="base", priority='standard')
-        changer.logger.read()
+        changer.logger.clearLogBuffer()
 
         changer.processSourceChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo - 1.0/main/base' remained the same")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo - 1.0/main/base' remained the same\n")
         self.assertCurrentSource(
             self.warty, 'boingo', '1.0', 'main', 'base')
 
         changer.processBinaryChange('boingo-bin')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' remained the same\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
         self.assertCurrentBinary(
@@ -464,11 +464,11 @@ class TestChangeOverride(unittest.TestCase):
 
         changer.processChildrenChange('boingo')
         self.assertEqual(
-            changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
-            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' remained the same\n"
-            "INFO 'boingo-data-0.9/main/base/STANDARD' remained the same")
+            changer.logger.getLogBufferAndClear(),
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO: 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' remained the same\n"
+            "INFO: 'boingo-data-0.9/main/base/STANDARD' remained the same\n")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-data', '0.9', 'main', 'base', 'STANDARD')
         self.assertCurrentBinary(

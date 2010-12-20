@@ -82,3 +82,17 @@ class BufferLogger(FakeLogger):
             for thing in exception:
                 for line in thing.splitlines():
                     self.log(line)
+
+    def getLogBuffer(self):
+        """Return the existing log messages."""
+        return self.buffer.getvalue()
+
+    def clearLogBuffer(self):
+        """Clear out the existing log messages."""
+        self.buffer = StringIO()
+
+    def getLogBufferAndClear(self):
+        """Return the existing log messages and clear the buffer."""
+        messages = self.getLogBuffer()
+        self.clearLogBuffer()
+        return messages
