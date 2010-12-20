@@ -45,7 +45,8 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
         factory = LaunchpadObjectFactory()
         self.product_owner = factory.makePerson(name="product-owner")
         self.product = factory.makeProduct(owner=self.product_owner)
-        self.product_subscriber = factory.makePerson(name="product-subscriber")
+        self.product_subscriber = factory.makePerson(
+            name="product-subscriber")
         self.product.addBugSubscription(
             self.product_subscriber, self.product_subscriber)
         self.bug_subscriber = factory.makePerson(name="bug-subscriber")
@@ -285,4 +286,5 @@ class TestNotificationsForRegistrants(TestCaseWithFactory):
             recipient.person.name
             for recipient in latest_notification.recipients)
         self.assertEqual(all_subscribers, notified_people)
-        self.assertThat(all_subscribers, Not(Contains(self.distro_owner.name)))
+        self.assertThat(
+            all_subscribers, Not(Contains(self.distro_owner.name)))
