@@ -269,15 +269,15 @@ class BugContextMenu(ContextMenu):
                 'changes'))
 
     def nominate(self):
-        """Return the 'Target/Nominate for release' Link."""
+        """Return the 'Target/Nominate for series' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to release"
+            text = "Target to series"
             return Link('+nominate', text, icon='milestone')
         elif (check_permission("launchpad.BugSupervisor", target) or
             self.user is None):
-            text = 'Nominate for release'
+            text = 'Nominate for series'
             return Link('+nominate', text, icon='milestone')
         else:
             return Link('+nominate', '', enabled=False, icon='milestone')

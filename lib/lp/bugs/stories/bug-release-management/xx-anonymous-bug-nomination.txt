@@ -5,7 +5,7 @@ launchpad.Edit permission is required to do so.:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12')
 
-    >>> anon_browser.getLink('Nominate for release').click()
+    >>> anon_browser.getLink('Nominate for series').click()
     Traceback (most recent call last):
       ...
     Unauthorized:...'launchpad.Edit'...
