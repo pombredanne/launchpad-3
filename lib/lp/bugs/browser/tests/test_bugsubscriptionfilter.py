@@ -118,7 +118,7 @@ class TestBugSubscriptionFilterAPI(
             self.subscription,
             self.subscription_filter.structural_subscription)
 
-    def test_modify_tags(self):
+    def test_modify_tags_fields(self):
         # Two tags-related fields - find_all_tags and tags - can be
         # modified. The other two tags-related fields - include_any_tags and
         # exclude_any_tags - are not exported because the tags field provides
@@ -150,3 +150,25 @@ class TestBugSubscriptionFilterAPI(
         self.assertEqual(
             set(["*", "-*", "foo", "-bar"]),
             self.subscription_filter.tags)
+
+    def test_modify_description(self):
+        # The description can be modified.
+        transaction.commit()
+
+        # Create a service for the filter owner.
+        service = self.factory.makeLaunchpadService(self.owner)
+        get_ws_object = partial(ws_object, service)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
+
+        # Current state.
+        self.assertEqual(
+            None, self.subscription_filter.description)
+
+        # Modify, save, and start a new transaction.
+        ws_subscription_filter.description = u"It's late."
+        ws_subscription_filter.lp_save()
+        transaction.begin()
+
+        # Updated state.
+        self.assertEqual(
+            u"It's late.", self.subscription_filter.description)
