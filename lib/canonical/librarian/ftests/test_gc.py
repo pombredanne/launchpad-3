@@ -41,7 +41,7 @@ class TestLibrarianGarbageCollection(TestCase):
     def setUp(self):
         super(TestLibrarianGarbageCollection, self).setUp()
         self.client = LibrarianClient()
-        librariangc.log = BufferLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
         # A value we use in a number of tests. This represents the
         # stay of execution hard coded into the garbage collector.
@@ -631,6 +631,7 @@ class TestBlobCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestBlobCollection, self).setUp()
         # Add in some sample data
         cur = cursor()
 
@@ -754,12 +755,12 @@ class TestBlobCollection(TestCase):
         self.con = connect(config.librarian_gc.dbuser)
         self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-        librariangc.log = MockLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
     def tearDown(self):
         self.con.rollback()
         self.con.close()
-        librariangc.log = None
+        super(TestBlobCollection, self).tearDown()
 
     def test_DeleteExpiredBlobs(self):
         # Delete expired blobs from the TemporaryBlobStorage table
