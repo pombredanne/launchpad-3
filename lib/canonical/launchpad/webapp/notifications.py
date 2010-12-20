@@ -16,7 +16,6 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.interface import implements
 from zope.session.interfaces import ISession
 
@@ -114,7 +113,6 @@ class NotificationResponse:
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
     >>> response.addDebugNotification('Debug')
     >>> response.addInfoNotification('Info')
-    >>> response.addNoticeNotification('Notice')
     >>> response.addWarningNotification('Warning')
 
     And an odd one to test Bug #54987
@@ -127,11 +125,10 @@ class NotificationResponse:
 
     >>> for notification in response.notifications:
     ...     print "%d -- %s" % (notification.level, notification.message)
-    25 -- <b>&lt;Fnord&gt;</b>
+    20 -- <b>&lt;Fnord&gt;</b>
     10 -- Whatever
     10 -- Debug
     20 -- Info
-    25 -- Notice
     30 -- Warning
     40 -- Error
 
@@ -144,7 +141,7 @@ class NotificationResponse:
     >>> for notification in ISession(request)[SESSION_KEY]['notifications']:
     ...     print "%d -- %s" % (notification.level, notification.message)
     ...     break
-    25 -- <b>&lt;Fnord&gt;</b>
+    20 -- <b>&lt;Fnord&gt;</b>
 
     If there are no notifications, the session is not touched. This ensures
     that we don't needlessly burden the session storage.
@@ -172,7 +169,7 @@ class NotificationResponse:
     # which would be bad.
     _notifications = None
 
-    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
+    def addNotification(self, msg, level=BrowserNotificationLevel.INFO):
         """See `INotificationResponse`."""
         self.notifications.append(
             Notification(level, escape(msg)))
@@ -236,10 +233,6 @@ class NotificationResponse:
     def addInfoNotification(self, msg):
         """See `INotificationResponse`."""
         self.addNotification(msg, BrowserNotificationLevel.INFO)
-
-    def addNoticeNotification(self, msg):
-        """See `INotificationResponse`."""
-        self.addNotification(msg, BrowserNotificationLevel.NOTICE)
 
     def addWarningNotification(self, msg):
         """See `INotificationResponse`."""
@@ -334,8 +327,6 @@ class NotificationTestView1(LaunchpadView):
                 structured('Debug notification <b>%d</b>' % count))
             response.addInfoNotification(
                 structured('Info notification <b>%d</b>' % count))
-            response.addNoticeNotification(
-                structured('Notice notification <b>%d</b>' % count))
             response.addWarningNotification(
                 structured('Warning notification <b>%d</b>' %count))
             response.addErrorNotification(

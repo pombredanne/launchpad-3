@@ -276,9 +276,9 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     @property
     def add_question_url(self):
-        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
+        launchpad = getUtility(ILaunchpadCelebrities).launchpad
         return canonical_url(
-            rosetta,
+            launchpad,
             view_name='+addquestion',
             rootsite='answers')
 

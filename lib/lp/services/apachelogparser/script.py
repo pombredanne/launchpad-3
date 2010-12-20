@@ -9,6 +9,7 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lazr.utils import safe_hasattr
 from lp.app.errors import NotFoundError
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
@@ -102,6 +103,10 @@ class ParseApacheLogs(LaunchpadCronScript):
             fd.close()
             create_or_update_parsedlog_entry(first_line, parsed_bytes)
             self.txn.commit()
-            self.logger.info('Finished parsing %s' % fd)
+            if safe_hasattr(fd, 'name'):
+                name = fd.name
+            else:
+                name = fd
+            self.logger.info('Finished parsing %s' % name)
 
         self.logger.info('Done parsing apache log files')

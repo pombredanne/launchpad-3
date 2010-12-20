@@ -23,10 +23,6 @@
     tal:content="structure notification/message"
   >A warning notification message</div>
   <div class="informational message"
-    tal:repeat="notification notifications/notice"
-    tal:content="structure notification/message"
-  >A notice notification message</div>
-  <div class="informational message"
     tal:repeat="notification notifications/info"
     tal:content="structure notification/message"
   >An info notification message</div>

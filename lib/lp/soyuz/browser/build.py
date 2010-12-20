@@ -296,7 +296,7 @@ class BuildRetryView(BuildView):
 
             # Invoke context method to retry the build record.
             self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
+            self.request.response.addInfoNotification('Build retried')
 
         self.request.response.redirect(canonical_url(self.context))
 
