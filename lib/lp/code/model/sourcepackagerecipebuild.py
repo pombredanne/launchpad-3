@@ -61,9 +61,6 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,
-    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
@@ -96,7 +93,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        return getUtility(IComponentSet)[default_component_dependency_name]
+        # Since recipes only build into PPAs, they should always build
+        # in main. This will need to change once other archives are
+        # supported.
+        return getUtility(IComponentSet)['main']
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')

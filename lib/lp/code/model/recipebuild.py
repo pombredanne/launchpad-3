@@ -48,7 +48,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 class RecipeBuildRecord(namedtuple(
     'RecipeBuildRecord',
-    """sourcepackagename, recipeowner, archive, recipebuild,
+    """sourcepackagename, recipeowner, archive, recipe,
         most_recent_build_time""")):
     # We need to implement our own equality check since __eq__ is broken on
     # SourcePackageRecipe. It's broken there because __eq__ is broken,
@@ -56,7 +56,7 @@ class RecipeBuildRecord(namedtuple(
     def __eq__(self, other):
         return (self.sourcepackagename == other.sourcepackagename
             and self.recipeowner == other.recipeowner
-            and self.recipebuild.recipe.name == other.recipebuild.recipe.name
+            and self.recipe.name == other.recipe.name
             and self.archive == other.archive
             and self.most_recent_build_time == other.most_recent_build_time)
 
@@ -64,13 +64,13 @@ class RecipeBuildRecord(namedtuple(
         return (
             hash(self.sourcepackagename.name) ^
             hash(self.recipeowner.name) ^
-            hash(self.recipebuild.recipe.name) ^
+            hash(self.recipe.name) ^
             hash(self.archive.name) ^
             hash(self.most_recent_build_time))
 
     @property
     def distro_source_package(self):
-        return self.recipebuild.distribution.getSourcePackage(
+        return self.archive.distribution.getSourcePackage(
             self.sourcepackagename)
 
 
@@ -104,7 +104,7 @@ class RecipeBuildRecordSet:
                  BinaryPackageBuild.package_build_id),
             Join(Archive,
                  Archive.id ==
-                 PackageBuild.archive_id),
+                 SourcePackageRecipe.daily_build_archive_id),
             Join(BuildFarmJob,
                  BuildFarmJob.id ==
                  PackageBuild.build_farm_job_id),
@@ -119,7 +119,7 @@ class RecipeBuildRecordSet:
         result_set = store.using(*tables).find(
                 (SourcePackageName,
                     Person,
-                    SourcePackageRecipeBuild,
+                    SourcePackageRecipe,
                     Archive,
                     Max(BuildFarmJob.date_finished),
                     ),
@@ -127,7 +127,7 @@ class RecipeBuildRecordSet:
             ).group_by(
                 SourcePackageName,
                 Person,
-                SourcePackageRecipeBuild,
+                SourcePackageRecipe,
                 Archive,
             ).order_by(
                 SourcePackageName.name,
@@ -136,11 +136,11 @@ class RecipeBuildRecordSet:
                 )
 
         def _makeRecipeBuildRecord(values):
-            (sourcepackagename, recipeowner, recipebuild, archive,
+            (sourcepackagename, recipeowner, recipe, archive,
                 date_finished) = values
             return RecipeBuildRecord(
                 sourcepackagename, recipeowner,
-                archive, recipebuild,
+                archive, recipe,
                 date_finished)
 
         return RecipeBuildRecordResultSet(

@@ -1,4 +1,5 @@
-= A team's home page =
+A team's home page
+==================
 
 The home page of a public team is visible to everyone.
 
@@ -58,17 +59,6 @@ The page contains a few interesting details about team membership.
     ...     find_tag_by_id(browser.contents, 'contact-languages'))
     Languages:
     English
-
-The polls portlet is only shown if current polls exist.
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'polls'))
-    Polls
-    A random poll that never closes...
-    Show polls
-
-    >>> browser.open('http://launchpad.dev/~launchpad')
-    >>> print find_tag_by_id(browser.contents, 'polls')
-    None
 
 The subteam-of portlet is not shown if the team is not a subteam.
 
@@ -190,7 +180,8 @@ team.  Notice that the output of mugshots is batched.
     ...
 
 
-== Team admins ==
+Team admins
+-----------
 
 Team owners and admins can see a link to approve and decline applicants.
 
@@ -207,7 +198,8 @@ Team owners and admins can see a link to approve and decline applicants.
     <Link text='Approve or decline members' url='.../+editproposedmembers'>
 
 
-== Non members ==
+Non members
+-----------
 
 No Privileges Person is not a member of the Ubuntu team.
 
@@ -220,7 +212,8 @@ No Privileges Person is not a member of the Ubuntu team.
 He can see the contact address, and the link explains the email
 will actually go to the team's administrators.
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'contact-email'))
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'contact-email'))
     Email:
     support@ubuntu.com
     >>> content = find_tag_by_id(user_browser.contents, 'contact-user')

@@ -1103,8 +1103,7 @@ addOrUpdateEntry()
 addOrUpdateEntry adds a new entry to the import queue so we can handle it
 later with poimport script.
 
-    >>> from lp.translations.utilities.translation_export import (
-    ...     LaunchpadWriteTarFile)
+    >>> from lp.services.tarfile_helpers import LaunchpadWriteTarFile
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> potemplate_subset = potemplate_set.getSubset(
     ...     productseries=evolution_productseries)

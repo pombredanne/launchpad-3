@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.services.log.logger import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.archivepublisher.config import Config
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.ftparchive import (
     f_touch,
@@ -68,7 +68,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive
-        self._config = Config(self._distribution)
+        self._config = getPubConfig(self._archive)
         self._config.setupArchiveDirs()
         self._sampledir = os.path.join(
             config.root, "lib", "lp", "archivepublisher", "tests",
@@ -121,19 +121,6 @@ class TestFTPArchive(TestCaseWithFactory):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
         return fa
-
-    def test_NoLucilleConfig(self):
-        # Distroseries without a lucille configuration get ignored
-        # and trigger a warning, they don't break the publisher
-        logger = BufferLogger()
-        publisher = Publisher(
-            logger, self._config, self._dp, self._archive)
-        self.factory.makeDistroSeries(self._distribution, name="somename")
-        fa = FTPArchiveHandler(logger, self._config, self._dp,
-                               self._distribution, publisher)
-        fa.createEmptyPocketRequests(fullpublish=True)
-        self.assertEquals("WARNING: Distroseries somename in ubuntutest doesn't "
-            "have a lucille configuration.\n", logger.buffer.getvalue())
 
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:

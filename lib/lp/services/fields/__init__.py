@@ -22,6 +22,7 @@ __all__ = [
     'ILocationField',
     'INoneableTextLine',
     'IPasswordField',
+    'IRestrictedBytes',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -45,6 +46,7 @@ __all__ = [
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
+    'RestrictedBytes',
     'SearchTag',
     'StrippedTextLine',
     'Summary',
@@ -225,6 +227,10 @@ class IBaseImageUpload(IBytes):
 
         Raise FieldNotBoundError if the field is not bound to any object.
         """
+
+
+class IRestrictedBytes(IBytes):
+    """A marker interface used for restricted LibraryFileAlias fields."""
 
 
 class StrippedTextLine(TextLine):
@@ -836,3 +842,8 @@ class PublicPersonChoice(PersonChoice):
         else:
             # The vocabulary prevents the revealing of private team names.
             raise PrivateTeamNotAllowed(value)
+
+
+class RestrictedBytes(Bytes):
+    """A field for restricted LibraryFileAlias records."""
+    implements(IRestrictedBytes)

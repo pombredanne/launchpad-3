@@ -715,14 +715,20 @@ class BrowserTestCase(TestCaseWithFactory):
         else:
             return self.getUserBrowser(url, self.user)
 
-    def getMainText(
-            self, context, view_name=None, rootsite=None, no_login=False):
-        """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
+    def getMainContent(self, context, view_name=None, rootsite=None,
+                       no_login=False):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
         browser = self.getViewBrowser(
             context, view_name, rootsite=rootsite, no_login=no_login)
-        return extract_text(find_main_content(browser.contents))
+        return find_main_content(browser.contents)
+
+    def getMainText(self, context, view_name=None, rootsite=None,
+                    no_login=False):
+        """Return the main text of a context's page."""
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(
+            self.getMainContent(context, view_name, rootsite, no_login))
 
 
 class WindmillTestCase(TestCaseWithFactory):

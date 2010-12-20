@@ -206,11 +206,6 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.poll import (
-    IPollSet,
-    PollAlgorithm,
-    PollSecrecy,
-    )
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -728,16 +723,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             for member in members:
                 naked_team.addMember(member, owner)
         return team
-
-    def makePoll(self, team, name, title, proposition,
-                 poll_type=PollAlgorithm.SIMPLE):
-        """Create a new poll which starts tomorrow and lasts for a week."""
-        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
-        datecloses = dateopens + timedelta(days=7)
-        return getUtility(IPollSet).new(
-            team, name, title, proposition, dateopens, datecloses,
-            PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=poll_type)
 
     def makeTranslationGroup(self, owner=None, name=None, title=None,
                              summary=None, url=None):
@@ -2295,7 +2280,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         A RecipeBuildRecord is a named tuple. Some records will be created
         with archive of type ArchivePurpose.PRIMARY, others with type
-        ArchivePurpose.PPA.
+        ArchivePurpose.PPA. Some build records with be created with a build
+        status of fully built and some will be created with the daily build
+        option set to True and False. Only those records with daily build set
+        to True and build status to fully built are returned.
         :param num_recent_records: the number of records within the specified
          time window.
         :param num_records_outside_epoch: the number of records outside the
@@ -2308,12 +2296,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         sourcepackage = self.makeSourcePackage(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
-        recipeowner = self.makePerson()
-        recipe = self.makeSourcePackageRecipe(
-            build_daily=True,
-            owner=recipeowner,
-            name="Recipe_"+sourcepackagename.name,
-            distroseries=distroseries)
 
         records = []
         records_outside_epoch = []
@@ -2323,44 +2305,60 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 purpose = ArchivePurpose.PPA
             else:
                 purpose = ArchivePurpose.PRIMARY
-            archive = self.makeArchive(purpose=purpose)
-            sprb = self.makeSourcePackageRecipeBuild(
-                requester=recipeowner,
-                recipe=recipe,
-                archive=archive,
-                sourcepackage=sourcepackage,
-                distroseries=distroseries)
-            spr = self.makeSourcePackageRelease(
-                source_package_recipe_build=sprb,
-                archive=archive,
-                sourcepackagename=sourcepackagename,
-                distroseries=distroseries)
-            binary_build = self.makeBinaryPackageBuild(
-                    source_package_release=spr)
-            naked_build = removeSecurityProxy(binary_build)
-            naked_build.queueBuild()
-            naked_build.status = BuildStatus.FULLYBUILT
+            archive = self.makeArchive(
+                purpose=purpose, distribution=distroseries.distribution)
+            # Make some daily and non-daily recipe builds.
+            for daily in (True, False):
+                recipeowner = self.makePerson()
+                recipe = self.makeSourcePackageRecipe(
+                    build_daily=daily,
+                    owner=recipeowner,
+                    name="Recipe_%s_%d" % (sourcepackagename.name, x),
+                    daily_build_archive=archive,
+                    distroseries=distroseries)
+                sprb = self.makeSourcePackageRecipeBuild(
+                    requester=recipeowner,
+                    recipe=recipe,
+                    sourcepackage=sourcepackage,
+                    distroseries=distroseries)
+                spr = self.makeSourcePackageRelease(
+                    source_package_recipe_build=sprb,
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
 
-            from random import randrange
-            offset = randrange(0, epoch_days)
-            now = datetime.now(UTC)
-            if x >= num_recent_records:
-                offset = epoch_days + 1 + offset
-            naked_build.date_finished = (
-                now - timedelta(days=offset))
-            naked_build.date_started = (
-                naked_build.date_finished - timedelta(minutes=5))
-            rbr = RecipeBuildRecord(
-                removeSecurityProxy(sourcepackagename),
-                removeSecurityProxy(recipeowner),
-                removeSecurityProxy(archive),
-                removeSecurityProxy(sprb),
-                naked_build.date_finished.replace(tzinfo=None))
+                # Make some complete and incomplete builds.
+                for build_status in (
+                    BuildStatus.FULLYBUILT,
+                    BuildStatus.NEEDSBUILD,
+                    ):
+                    binary_build = self.makeBinaryPackageBuild(
+                            source_package_release=spr)
+                    naked_build = removeSecurityProxy(binary_build)
+                    naked_build.queueBuild()
+                    naked_build.status = build_status
 
-            if x < num_recent_records:
-                records.append(rbr)
-            else:
-                records_outside_epoch.append(rbr)
+                    from random import randrange
+                    offset = randrange(0, epoch_days)
+                    now = datetime.now(UTC)
+                    if x >= num_recent_records:
+                        offset = epoch_days + 1 + offset
+                    naked_build.date_finished = (
+                        now - timedelta(days=offset))
+                    naked_build.date_started = (
+                        naked_build.date_finished - timedelta(minutes=5))
+                    rbr = RecipeBuildRecord(
+                        removeSecurityProxy(sourcepackagename),
+                        removeSecurityProxy(recipeowner),
+                        removeSecurityProxy(archive),
+                        removeSecurityProxy(recipe),
+                        naked_build.date_finished.replace(tzinfo=None))
+
+                    # Only return fully completed daily builds.
+                    if daily and build_status == BuildStatus.FULLYBUILT:
+                        if x < num_recent_records:
+                            records.append(rbr)
+                        else:
+                            records_outside_epoch.append(rbr)
         # We need to explicitly commit because if don't, the records don't
         # appear in the slave datastore.
         transaction.commit()

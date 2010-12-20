@@ -224,9 +224,8 @@ class UploadProcessor:
         build = buildfarm_job.getSpecificJob()
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. "
-                "Moving to failed.", build.status.name)
-            self.moveProcessedUpload(upload_path, "failed", logger)
+                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                build.status.name)
             return
         self.log.debug("Build %s found" % build.id)
         try:
