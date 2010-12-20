@@ -251,8 +251,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         logger = BufferLogger()
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
         self.assertEqual(
-            ['DEBUG: Build for eric/funky-recipe requested\n'],
-            logger.getLogOutput())
+            'DEBUG: Build for eric/funky-recipe requested\n',
+            logger.getLogBuffer())
 
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(

@@ -157,8 +157,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual(1, exporter._exportToBranch.call_count)
 
-        exporter.logger.output_file.seek(0)
-        message = exporter.logger.output_file.read()
+        message = exporter.logger.getLogBuffer()
         self.assertTrue(message.startswith("ERROR"))
         self.assertTrue("GruesomeException" in message)
 
