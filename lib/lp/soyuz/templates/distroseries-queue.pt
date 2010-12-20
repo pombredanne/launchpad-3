@@ -232,11 +232,8 @@
           style="display:none">
         <td/>
         <td tal:condition="view/availableActions"/>
-        <td>
-          <a tal:attributes="href file/libraryfile/http_url">
-            <tal:filename content="file/libraryfile/filename"/>
-          </a>
-          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+        <td tal:define="libraryfilealias file/libraryfile">
+          <metal:file use-macro="template/macros/package-file"/>
         </td>
         <td colspan="6"/>
       </tr>
@@ -252,11 +249,8 @@
             style="display:none">
           <td/>
           <td tal:condition="view/availableActions"/>
-          <td>
-            <a tal:attributes="href file/libraryfile/http_url">
-              <tal:filename replace="file/libraryfile/filename"/>
-            </a>
-            (<tal:size replace="file/libraryfile/content/filesize/fmt:bytes" />)
+          <td tal:define="libraryfilealias file/libraryfile">
+            <metal:file use-macro="template/macros/package-file"/>
             <span style="color: red" tal:condition="is_new">NEW</span>
           </td>
           <td tal:content="version"/>
@@ -274,12 +268,8 @@
           style="display:none">
         <td/>
         <td tal:condition="view/availableActions"></td>
-        <td>
-          <a tal:attributes="href custom/libraryfilealias/http_url">
-            <tal:filename content="custom/libraryfilealias/filename"/>
-          </a>
-          (<tal:size replace="
-                custom/libraryfilealias/content/filesize/fmt:bytes" />)
+        <td tal:define="libraryfilealias custom/libraryfilealias">
+          <metal:file use-macro="template/macros/package-file"/>
         </td>
         <td colspan="6"/>
       </tr>
@@ -300,6 +290,18 @@
     </tal:diffs>
     </tal:upload>
 
+</metal:macro>
+
+<metal:macro define-macro="package-file">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
+      no link will be created.
+  </tal:comment>
+  <a tal:attributes="href libraryfilealias/http_url">
+    <tal:filename content="libraryfilealias/filename"/>
+  </a>
+  (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
 </metal:macro>
 
 <metal:macro define-macro="package-iconlist">
