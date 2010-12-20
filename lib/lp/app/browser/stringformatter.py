@@ -220,7 +220,7 @@ class FormattersAPI:
         closedcount = url.count(')')
         missing = opencount - closedcount
         slice_idx = 0
-        while slice_idx <  missing:
+        while slice_idx < missing:
             if trailers[slice_idx] == ')':
                 slice_idx += 1
             else:
