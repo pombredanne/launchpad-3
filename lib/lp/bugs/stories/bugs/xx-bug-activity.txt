@@ -52,7 +52,7 @@ page.
     ...     """Print all the comments on the page."""
     ...     comment_divs = find_tags_by_class(page, 'boardComment')
     ...     for div_tag in comment_divs[subset]:
-    ...         print extract_text(div_tag) #.replace("&#8594;", "--")
+    ...         print extract_text(div_tag).replace("&\x238594;", "=>")
     ...         print '-' * 8
 
     >>> user_browser.open(
@@ -66,7 +66,7 @@ page.
     on 2007-12-18
     Changed in thunderbird:
     status:
-    Unknown &#8594; New
+    Unknown => New
     --------
     No Privileges Person
     ...
@@ -111,7 +111,7 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     - Nonsensical bugs are useless
     + A new title for this bug
     visibility:
-    public &#8594; private
+    public => private
     --------
 
 Changes to a bug's security_related field will be displayed as
@@ -129,12 +129,12 @@ that changes are grouped together if they occur at similar times.
     Foo Bar
     ... ago
     security vulnerability:
-    no &#8594; yes
+    no => yes
     summary:
     - Nonsensical bugs are useless
     + A new title for this bug
     visibility:
-    public &#8594; private
+    public => private
     --------
 
 Changes to the bug's description will simply be displayed as 'description:
@@ -231,13 +231,13 @@ We'll add a milestone to Redfish to demonstrate this.
     ...
     Changed in redfish:
     assignee:
-    nobody &#8594; Foo Bar (name16)
+    nobody => Foo Bar (name16)
     importance:
-    Undecided &#8594; High
+    Undecided => High
     milestone:
-    none &#8594; foo
+    none => foo
     status:
-    New &#8594; Confirmed
+    New => Confirmed
     --------
 
 If a change is made to a bug task which is targeted to a distro source
@@ -253,7 +253,7 @@ package, the name of the package and the distro will be displayed.
     ... ago
     Changed in mozilla-firefox (Ubuntu):
     status:
-    New &#8594; Confirmed
+    New => Confirmed
     --------
 
 If a change has a comment associated with it it will be displayed in the
@@ -275,11 +275,11 @@ bundled with that comment in the UI.
     Lookit, a change!
     Changed in mozilla-firefox (Ubuntu):
     importance:
-    Medium &#8594; Low
+    Medium => Low
     status:
-    New &#8594; Confirmed
+    New => Confirmed
     status:
-    Confirmed &#8594; New
+    Confirmed => New
     --------
 
 If a target of a bug task is changed the old and new value will be shown.
@@ -297,7 +297,7 @@ If a target of a bug task is changed the old and new value will be shown.
     #2
     ...
     affects:
-    mozilla-firefox (Ubuntu) &#8594; linux-source-2.6.15 (Ubuntu)
+    mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
     Changed in mozilla-firefox (Ubuntu):
     ...
     --------
