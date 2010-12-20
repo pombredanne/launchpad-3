@@ -209,6 +209,21 @@ class TestLinkifyingProtocols(TestCase):
             'data:text/<wbr></wbr>plain,test</a></p>')
         self.assertEqual(expected_html, html)
 
+    def test_no_link_with_linkify_text_false(self):
+        test_string = "This doesn't become a link: http://www.example.com/"
+        html = FormattersAPI(test_string).text_to_html(linkify_text=False)
+        expected_html = (
+            "<p>This doesn't become a link: http://www.example.com/</p>")
+        self.assertEqual(expected_html, html)
+
+    def test_no_link_html_code_with_linkify_text_false(self):
+        test_string = '<a href="http://example.com/">http://example.com/</a>'
+        html = FormattersAPI(test_string).text_to_html(linkify_text=False)
+        expected_html = (
+            '<p>&lt;a href="http://example.com/"&gt;'
+            'http://example.com/&lt;/a&gt;</p>')
+        self.assertEqual(expected_html, html)
+
 
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
