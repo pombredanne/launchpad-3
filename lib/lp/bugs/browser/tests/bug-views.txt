@@ -1,6 +1,8 @@
-= Bug Filing Pages =
+Bug Filing Pages
+================
 
-== Filing a Bug ==
+Filing a Bug
+------------
 
 There are three objects on which you can file a bug. An
 ObjectCreatedEvent is published when the bug is filed. Let's register
@@ -121,7 +123,8 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> launchbag.clear()
 
-== Adding Comments ==
+Adding Comments
+---------------
 
 Let's flush all changes so far to ensure we're looking at a consistent view of
 the database.
@@ -168,7 +171,8 @@ grab a new view to actually see them:
      (2, u'name16', u'I can reproduce this bug.')]
 
 
-== Description and Comment Display ==
+Description and Comment Display
+-------------------------------
 
 When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
@@ -219,9 +223,11 @@ indentical to the second, we really only display one comment:
     >>> on_created_listener.unregister()
 
 
-= Bug Portlets =
+Bug Portlets
+============
 
-== Duplicates Portlet ==
+Duplicates Portlet
+------------------
 
 The duplicate bugs portlet lists duplicates of the current bug. If the
 duplicate bug affects the current context, the link to the dupe will
@@ -270,7 +276,8 @@ and see how the returned link changes.
     ...
 
 
-== Bug Attachments ==
+Bug Attachments
+---------------
 
 We show bug attachments in two lists: patches and non-patch attachments.
 Sequences with data about patch and non-patch attachments are provided
@@ -306,7 +313,8 @@ librarian file of the attachment.
      u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/4/+files/...']
 
 
-== Bug Navigation ==
+Bug Navigation
+--------------
 
 The +subscribe link has different text depending on if the user is
 subscribed to the bug, or if a team the user of a member of is
@@ -434,7 +442,8 @@ can't know if the user is subscribed or not.
     'Subscribe'
 
 
-== BugTasks and Nominations Table ==
+BugTasks and Nominations Table
+------------------------------
 
 A table is rendered at the top of the bug page which shows both bugtasks
 and nominations. This table is rendered with the
@@ -611,7 +620,7 @@ Initially, the normal edit page is shown, with a single button.
 
     >>> bug_edit.view.render()
     EDIT BUG
-    >>> bug.field_names
+    >>> bug_edit.view.field_names
     ['title', 'description', 'tags']
     >>> [action.label for action in bug_edit.view.actions]
     ['Change']
@@ -676,7 +685,7 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't been used by Mozilla Firefox before. 
+    The tag "new-tag" hasn't been used by Mozilla Firefox before.
     <input ...Create the new tag...>
 
     >>> bug_edit.wasRedirected()
@@ -713,7 +722,8 @@ should exist.
     u'** Tags added: new-tag'
 
 
-== Displaying BugActivity interleaved with comments ==
+Displaying BugActivity interleaved with comments
+------------------------------------------------
 
 BugTaskView offers a means for us to get a list of comments and activity
 for a bug, ordered by date.
@@ -863,7 +873,8 @@ comment.
                     status: New => Confirmed
 
 
-== Getting the list of possible duplicates for a new bug ==
+Getting the list of possible duplicates for a new bug
+-----------------------------------------------------
 
 It's possible to get a list of the possible duplicates for a new bug by
 using the +filebug-show-similar view of a BugTarget.
