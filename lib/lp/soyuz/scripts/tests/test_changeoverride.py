@@ -10,11 +10,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts import FakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.interfaces.section import ISectionSet
@@ -24,22 +24,6 @@ from lp.soyuz.scripts.changeoverride import (
     )
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-
-
-class LocalLogger(FakeLogger):
-    """Local log facility """
-
-    def __init__(self):
-        self.logs = []
-
-    def read(self):
-        """Return printable log contents and reset current log."""
-        content = "\n".join(self.logs)
-        self.logs = []
-        return content
-
-    def message(self, prefix, *stuff, **kw):
-        self.logs.append("%s %s" % (prefix, ' '.join(stuff)))
 
 
 class TestChangeOverride(unittest.TestCase):
@@ -108,7 +92,7 @@ class TestChangeOverride(unittest.TestCase):
 
         changer = ChangeOverride(
             name='change-override', test_args=test_args)
-        changer.logger = LocalLogger()
+        changer.logger = BufferLogger()
         changer.setupLocation()
         return changer
 
@@ -138,7 +122,7 @@ class TestChangeOverride(unittest.TestCase):
 
         # Overrides initialization output.
         self.assertEqual(
-            changer.logger.read(),
+            changer.logger.buffer.getvalue(),
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'")

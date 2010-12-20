@@ -94,7 +94,6 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -228,6 +227,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
@@ -2398,7 +2398,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             class Changes:
                 architectures = ['source']
-            logger = QuietFakeLogger()
+            logger = BufferLogger()
             policy = BuildDaemonUploadPolicy()
             policy.distroseries = self.makeDistroSeries()
             policy.archive = self.makeArchive()

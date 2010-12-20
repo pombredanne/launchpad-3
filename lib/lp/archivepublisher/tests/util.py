@@ -12,18 +12,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 
 
-__all__ = ['FakeLogger']
-
-
-class FakeLogger:
-
-    def debug(self, *args, **kwargs):
-        pass
-
-    def error(self, *args, **kwargs):
-        pass
-
-
 class FakeDistribution:
 
     def __init__(self, name, conf):

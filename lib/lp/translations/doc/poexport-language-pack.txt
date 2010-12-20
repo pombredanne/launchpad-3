@@ -22,23 +22,7 @@ Some initialisation tasks:
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 
-    # This is a dummy logger class to capture the export's log messages.
-
-    >>> class FakeLogger:
-    ...     def __init__(self):
-    ...         self.messages = []
-    ...
-    ...     def log(self, *stuff):
-    ...         self.messages.append(' '.join(stuff))
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff)
-    ...
-    ...         for line in traceback.format_exception(*sys.exc_info()):
-    ...             if line.strip():
-    ...                 self.log(line)
+    >>> from lp.services.log.logger import BufferLogger
 
 This is handy for examining the tar files that are generated.
 
@@ -69,7 +53,7 @@ When a new language pack export is requested, you can select to use the
 Librarian to store the language pack. That is noted with output_file set
 to None.
 
-    >>> logger = FakeLogger()
+    >>> logger = BufferLogger()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='hoary',
@@ -81,7 +65,7 @@ to None.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
+    >>> print logger.buffer.getvalue()
     Selecting PO files for export
     Number of PO files to export: 12
     Exporting PO file ... (1/12)
@@ -335,7 +319,7 @@ PO files.
     >>> print series.language_pack_base
     None
 
-    >>> logger = FakeLogger()
+    >>> logger = BufferLogger()
     >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
@@ -348,7 +332,7 @@ PO files.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
+    >>> print logger.buffer.getvalue()
     Selecting PO files for export
     Number of PO files to export: 4
     Exporting PO file ... (1/4)

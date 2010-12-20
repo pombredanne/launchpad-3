@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
@@ -22,6 +21,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     map_branch_contents,
     TestCaseWithFactory,
@@ -147,7 +147,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # cope well with non-ASCII exception strings.
         productseries = self.factory.makeProductSeries()
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         boom = u'\u2639'
         exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
 
@@ -167,7 +167,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # branch.  The exporter deals with that by calling
         # _handleUnpushedBranch.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         productseries.translations_branch = self.factory.makeBranch()
 
@@ -194,7 +194,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
     def test_handleUnpushedBranch_mails_branch_owner(self):
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         branch_owner = self.factory.makePerson(email=email)
@@ -226,7 +226,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # was not exercised by the full-script test.  Ensure that it has
         # the database privileges that it requires.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         branch_owner = self.factory.makePerson(email=email)
@@ -247,7 +247,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # Notifying a branch owner that is a team can require other
         # database privileges.  The script also has these privileges.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         team_member = self.factory.makePerson(email=email)

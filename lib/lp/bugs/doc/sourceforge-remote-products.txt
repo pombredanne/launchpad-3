@@ -39,7 +39,7 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
 We'll use a test version of SourceForgeRemoteProductFinder that won't
 try to access SourceForge.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.registry.tests.sfremoteproductfinder import (
     ...     TestSFRemoteProductFinder)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer

@@ -15,10 +15,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import (
-    BufferLogger,
-    QuietFakeLogger,
-    )
+from lp.services.log.logger import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
@@ -82,7 +79,7 @@ class TestFTPArchive(TestCaseWithFactory):
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
         self._tempdir = self._config.temproot
-        self._logger = QuietFakeLogger()
+        self._logger = BufferLogger()
         self._dp = DiskPool(self._pooldir, self._tempdir, self._logger)
         self._publisher = SamplePublisher(self._archive)
 

@@ -254,7 +254,7 @@ monkey-patch the Roundup ExternalBugTrackerClass in order to set its
 batch size. We will also monkey-patch urllib2.urlopen again so that no
 requests are actually made.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs import externalbugtracker
 
     >>> transaction.commit()

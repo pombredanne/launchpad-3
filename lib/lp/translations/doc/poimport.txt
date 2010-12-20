@@ -35,7 +35,7 @@ We need this for the Librarian to work properly.
 
 Here's a fake logger to capture any errors that happen.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
 
 Login as an admin to be able to do changes to the import queue.
 
