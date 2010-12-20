@@ -221,10 +221,10 @@ class FormattersAPI:
         missing = opencount - closedcount
         slice_idx = 0
         while slice_idx <  missing:
-                if trailers[slice_idx] == ')':
-                    slice_idx += 1
-                else:
-                    break
+            if trailers[slice_idx] == ')':
+                slice_idx += 1
+            else:
+                break
         url += trailers[:slice_idx]
         trailers = trailers[slice_idx:]
         return url, trailers
