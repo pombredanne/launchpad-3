@@ -135,6 +135,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(spb.distroseries.distribution, spb.distribution)
 
+    def test_current_component(self):
+        # Since recipes build only into PPAs, they always build in main.
+        # PPAs lack indices for other components.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual('main', spb.current_component.name)
+
     def test_is_private(self):
         # A source package recipe build is currently always public.
         spb = self.makeSourcePackageRecipeBuild()
