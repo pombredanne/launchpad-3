@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from cStringIO import StringIO
+import logging
 import sys
 import traceback
 
@@ -19,9 +20,17 @@ class FakeLogger:
     """Emulates a proper logger, just printing everything out the given file.
     """
 
+    loglevel = logging.DEBUG
+
     def __init__(self, output_file=None):
         """The default output_file is sys.stdout."""
         self.output_file = output_file
+
+    def setLevel(self, loglevel):
+        self.loglevel = loglevel
+
+    def getEffectiveLevel(self):
+        return self.loglevel
 
     def message(self, prefix, msg, *stuff, **kw):
         # We handle the default output file here because sys.stdout
@@ -40,12 +49,14 @@ class FakeLogger:
         self.message('log>', *stuff, **kw)
 
     def warning(self, *stuff, **kw):
-        self.message('WARNING', *stuff, **kw)
+        if self.loglevel <= logging.WARN:
+            self.message('WARNING', *stuff, **kw)
 
     warn = warning
 
     def error(self, *stuff, **kw):
-        self.message('ERROR', *stuff, **kw)
+        if self.loglevel <= logging.ERROR:
+            self.message('ERROR', *stuff, **kw)
 
     exception = error
 
@@ -55,10 +66,12 @@ class FakeLogger:
     fatal = critical
 
     def info(self, *stuff, **kw):
-        self.message('INFO', *stuff, **kw)
+        if self.loglevel <= logging.INFO:
+            self.message('INFO', *stuff, **kw)
 
     def debug(self, *stuff, **kw):
-        self.message('DEBUG', *stuff, **kw)
+        if self.loglevel <= logging.DEBUG:
+            self.message('DEBUG', *stuff, **kw)
 
 
 class DevNullLogger(FakeLogger):
