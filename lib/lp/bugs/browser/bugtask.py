@@ -861,7 +861,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         def group_activities_by_target(activities):
             activities = sorted(
-                activities, key=attrgetter("target", "attribute"))
+                activities, key=attrgetter(
+                    "target", "datechanged", "attribute"))
             return [
                 {"target": target, "activity": list(activity)}
                 for target, activity in groupby(

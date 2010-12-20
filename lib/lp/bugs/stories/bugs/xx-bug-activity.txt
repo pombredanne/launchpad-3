@@ -116,7 +116,8 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
 Changes to a bug's security_related field will be displayed as
 'security vulnerability' changes, with values of 'yes' or 'no'. Note
-that changes are grouped together if they occur at similar times.
+that changes are grouped together if they occur at similar times, but
+are still shown in the order the changes were made.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
@@ -128,13 +129,10 @@ that changes are grouped together if they occur at similar times.
     >>> print_comments(admin_browser.contents)
     Foo Bar
     ... ago
+    summary:
+    ...
     security vulnerability:
     no => yes
-    summary:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    visibility:
-    public => private
     --------
 
 Changes to the bug's description will simply be displayed as 'description:
@@ -150,10 +148,10 @@ updated', since such changes can be quite long.
     >>> print_comments(admin_browser.contents)
     Foo Bar
     ... ago
+    summary:
+    ...
     description:
     updated
-    security vulnerability:
-    ...
     --------
 
 Changes to the bug's tags will be show in the form tags removed or tags
@@ -169,12 +167,10 @@ added.
     >>> print_comments(admin_browser.contents)
     Foo Bar
     ... ago
-    description:
+    summary:
     ...
     tags:
     added: tag1 tag2 tag3
-    visibility:
-    ...
     --------
 
 When two similar activities are grouped into the same comment - like
@@ -191,15 +187,13 @@ made.
     >>> print_comments(admin_browser.contents)
     Foo Bar
     ... ago
-    description:
+    summary:
     ...
     tags:
     added: tag1 tag2 tag3
     tags:
     added: tag4
     removed: tag3
-    visibility:
-    ...
     --------
 
 Changes to a BugTask's attributes will show up listed under the task's
@@ -227,7 +221,7 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> print_comments(admin_browser.contents)
     Foo Bar
     ... ago
-    description:
+    summary:
     ...
     Changed in redfish:
     assignee:
@@ -274,10 +268,10 @@ bundled with that comment in the UI.
     #2
     Lookit, a change!
     Changed in mozilla-firefox (Ubuntu):
-    importance:
-    Medium => Low
     status:
     New => Confirmed
+    importance:
+    Medium => Low
     status:
     Confirmed => New
     --------
