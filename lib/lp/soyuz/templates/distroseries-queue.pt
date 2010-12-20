@@ -298,10 +298,15 @@
     :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
       no link will be created.
   </tal:comment>
-  <a tal:attributes="href libraryfilealias/http_url">
-    <tal:filename content="libraryfilealias/filename"/>
-  </a>
-  (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
+  <tal:unexpired tal:condition="libraryfilealias/content">
+    <a tal:attributes="href libraryfilealias/http_url">
+      <tal:filename replace="libraryfilealias/filename"/>
+    </a>
+    (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
+  </tal:unexpired>
+  <tal:expired tal:condition="not:libraryfilealias/content">
+    <span tal:content="libraryfilealias/filename"/>
+  </tal:expired>
 </metal:macro>
 
 <metal:macro define-macro="package-iconlist">
