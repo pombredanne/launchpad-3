@@ -17,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-<<<<<<< TREE
-=======
-from canonical.launchpad.scripts.logger import BufferLogger
->>>>>>> MERGE-SOURCE
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
