@@ -61,7 +61,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
             ['assignee'], user=self.user))
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 1, 'email not sent')
-        rationale = 'You have been assigned a bug task for a public bug by Sample Person'
+        rationale = (
+            'Sample Person (name12) has assigned this bug to you for Rebirth')
         msg = stub.test_emails[-1][2]
         self.assertTrue(rationale in msg,
                         '%s not in\n%s\n' % (rationale, msg))
