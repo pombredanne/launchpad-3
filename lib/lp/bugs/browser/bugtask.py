@@ -35,7 +35,6 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'calculate_heat_display',
-    'COMMENT_ACTIVITY_GROUPING_WINDOW',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
@@ -57,10 +56,7 @@ from math import (
     floor,
     log,
     )
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import re
 import urllib
 
@@ -208,7 +204,10 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
-from lp.bugs.browser.bugcomment import build_comments_from_chunks
+from lp.bugs.browser.bugcomment import (
+    build_comments_from_chunks,
+    group_comments_with_activity,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -468,75 +467,6 @@ def target_has_expirable_bugs_listing(target):
     else:
         # This context is not a supported bugtarget.
         return False
-
-
-COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
-
-
-def group_comments_with_activity(comments, activities):
-    """Group comments and activity together for human consumption.
-
-    Generates a stream of comment instances (with the activity grouped within)
-    or `list`s of grouped activities.
-
-    :param comments: An iterable of `BugComment` instances.
-    :param activities: An iterable of `BugActivity` instances.
-    """
-    window = COMMENT_ACTIVITY_GROUPING_WINDOW
-
-    comment_kind = "comment"
-    comments = (
-        (comment.datecreated, comment.owner, comment_kind, comment)
-        for comment in comments)
-    activity_kind = "activity"
-    activity = (
-        (activity.datechanged, activity.person, activity_kind, activity)
-        for activity in activities)
-    events = sorted(chain(comments, activity), key=itemgetter(0, 1))
-
-    def gen_event_windows(events):
-        """Generate event windows.
-
-        Yields `(window_index, kind, event)` tuples, where `window_index` is
-        an integer, and is incremented each time the windowing conditions are
-        triggered.
-
-        :param events: An iterable of `(date, actor, kind, event)` tuples in
-            order.
-        """
-        window_comment, window_actor = None, None
-        window_index, window_end = 0, None
-        for date, actor, kind, event in events:
-            window_ended = (
-                # A window may contain only one comment.
-                (window_comment is not None and kind is comment_kind) or
-                # All events must have happened within a given timeframe.
-                (window_end is None or date >= window_end) or
-                # All events within the window must belong to the same actor.
-                (window_actor is None or actor != window_actor))
-            if window_ended:
-                window_comment, window_actor = None, actor
-                window_index, window_end = window_index + 1, date + window
-            if kind is comment_kind:
-                window_comment = event
-            yield window_index, kind, event
-
-    event_windows = gen_event_windows(events)
-    event_windows_grouper = groupby(event_windows, itemgetter(0))
-    for window_index, window_group in event_windows_grouper:
-        window_group = [
-            (kind, event) for (index, kind, event) in window_group]
-        for kind, event in window_group:
-            if kind is comment_kind:
-                window_comment = event
-                window_comment.activity.extend(
-                    event for (kind, event) in window_group
-                    if kind is activity_kind)
-                yield window_comment
-                # There's only one comment per window.
-                break
-        else:
-            yield [event for (kind, event) in window_group]
 
 
 class BugTargetTraversalMixin:

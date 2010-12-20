@@ -6,18 +6,24 @@
 __metaclass__ = type
 __all__ = [
     'BugComment',
-    'BugCommentView',
-    'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
-    'BugCommentXHTMLRepresentation',
+    'BugCommentBoxView',
     'BugCommentBreadcrumb',
+    'BugCommentView',
+    'BugCommentXHTMLRepresentation',
     'build_comments_from_chunks',
+    'group_comments_with_activity',
     ]
 
 from datetime import (
     datetime,
     timedelta,
     )
+from itertools import (
+    chain,
+    groupby,
+    )
+from operator import itemgetter
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 from pytz import utc
@@ -44,6 +50,9 @@ from lp.bugs.interfaces.bugmessage import (
     IBugComment,
     IBugMessageSet,
     )
+
+
+COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
@@ -84,6 +93,72 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
         # we get the text set up for display.
         comment.setupText(truncate=truncate)
     return comments
+
+
+def group_comments_with_activity(comments, activities):
+    """Group comments and activity together for human consumption.
+
+    Generates a stream of comment instances (with the activity grouped within)
+    or `list`s of grouped activities.
+
+    :param comments: An iterable of `BugComment` instances.
+    :param activities: An iterable of `BugActivity` instances.
+    """
+    window = COMMENT_ACTIVITY_GROUPING_WINDOW
+
+    comment_kind = "comment"
+    comments = (
+        (comment.datecreated, comment.owner, comment_kind, comment)
+        for comment in comments)
+    activity_kind = "activity"
+    activity = (
+        (activity.datechanged, activity.person, activity_kind, activity)
+        for activity in activities)
+    events = sorted(chain(comments, activity), key=itemgetter(0, 1))
+
+    def gen_event_windows(events):
+        """Generate event windows.
+
+        Yields `(window_index, kind, event)` tuples, where `window_index` is
+        an integer, and is incremented each time the windowing conditions are
+        triggered.
+
+        :param events: An iterable of `(date, actor, kind, event)` tuples in
+            order.
+        """
+        window_comment, window_actor = None, None
+        window_index, window_end = 0, None
+        for date, actor, kind, event in events:
+            window_ended = (
+                # A window may contain only one comment.
+                (window_comment is not None and kind is comment_kind) or
+                # All events must have happened within a given timeframe.
+                (window_end is None or date >= window_end) or
+                # All events within the window must belong to the same actor.
+                (window_actor is None or actor != window_actor))
+            if window_ended:
+                window_comment, window_actor = None, actor
+                window_index, window_end = window_index + 1, date + window
+            if kind is comment_kind:
+                window_comment = event
+            yield window_index, kind, event
+
+    event_windows = gen_event_windows(events)
+    event_windows_grouper = groupby(event_windows, itemgetter(0))
+    for window_index, window_group in event_windows_grouper:
+        window_group = [
+            (kind, event) for (index, kind, event) in window_group]
+        for kind, event in window_group:
+            if kind is comment_kind:
+                window_comment = event
+                window_comment.activity.extend(
+                    event for (kind, event) in window_group
+                    if kind is activity_kind)
+                yield window_comment
+                # There's only one comment per window.
+                break
+        else:
+            yield [event for (kind, event) in window_group]
 
 
 class BugComment:
@@ -206,8 +281,6 @@ class BugComment:
         'authenticated' rather than 'public' as email addresses are
         obfuscated for unauthenticated users.
         """
-        from lp.bugs.browser.bugtask import COMMENT_ACTIVITY_GROUPING_WINDOW
-
         now = datetime.now(tz=utc)
 
         # The major factor in how long we can cache a bug comment is the

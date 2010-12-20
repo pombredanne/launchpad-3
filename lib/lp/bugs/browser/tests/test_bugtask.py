@@ -33,10 +33,10 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
+from lp.bugs.browser.bugcomment import group_comments_with_activity
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
-    group_comments_with_activity,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -172,10 +172,10 @@ class TestGroupCommentsWithActivities(TestCase):
             self.now + timedelta(minutes=counter)
             for counter in count(1))
 
-    def group(self, comments, activities, window=timedelta(minutes=5)):
+    def group(self, comments, activities):
         return list(
             group_comments_with_activity(
-                comments=comments, activities=activities, window=window))
+                comments=comments, activities=activities))
 
     def test_empty(self):
         # Given no comments or activities the result is also empty.
