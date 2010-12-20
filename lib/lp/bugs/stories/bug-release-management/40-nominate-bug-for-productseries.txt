@@ -33,7 +33,7 @@ errors, and we'll give an example of one shortly.
 
     >>> nominater_browser.getControl("Beta").selected = True
     >>> nominater_other_browser.getControl("Beta").selected = True
-    >>> nominater_browser.getControl("Submit").click()
+    >>> nominater_browser.getControl("Nominate").click()
 
     >>> for tag in find_tags_by_class(nominater_browser.contents, 'message'):
     ...     print tag
@@ -42,7 +42,7 @@ errors, and we'll give an example of one shortly.
 Now, if the nominater, having the form open in another browser window,
 accidentally nominates the bug for Beta a second time, an error is raised.
 
-    >>> nominater_other_browser.getControl("Submit").click()
+    >>> nominater_other_browser.getControl("Nominate").click()
 
     >>> for tag in find_tags_by_class(nominater_other_browser.contents,
     ...     'message'):
@@ -57,7 +57,7 @@ approved and targeted to the release.
     ...     "http://launchpad.dev/widget/+bug/%s/+nominate" % bug.id)
 
     >>> admin_browser.getControl("Trunk").selected = True
-    >>> admin_browser.getControl("Submit").click()
+    >>> admin_browser.getControl("Target").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag
