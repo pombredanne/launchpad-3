@@ -306,10 +306,10 @@ the series and the CSS class to present them wth.
 
     >>> for styled_series in view.styled_series:
     ...     print styled_series['series'].name, styled_series['css_class']
-    breezy-autotest unhighlighted
-    grumpy unhighlighted
-    hoary highlighted
-    warty unhighlighted
+    breezy-autotest
+    grumpy
+    hoary highlight
+    warty
 
 
 Distribution +ppas

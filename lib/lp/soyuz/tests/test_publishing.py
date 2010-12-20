@@ -26,7 +26,7 @@ from canonical.testing.layers import (
     )
 from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
-from lp.archivepublisher.config import Config
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -571,7 +571,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         super(TestNativePublishingBase, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
@@ -956,6 +956,25 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
 
+    def test_ppa_override_no_ancestry(self):
+        # Test a PPA publication with no ancestry is 'main'
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph.overrideFromAncestry()
+        self.assertEquals(spph.component.name, 'main')
+
+    def test_ppa_override_with_ancestry(self):
+        # Test a PPA publication with ancestry
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2.overrideFromAncestry()
+        self.assertEquals(spph2.component.name, 'main')
 
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""
