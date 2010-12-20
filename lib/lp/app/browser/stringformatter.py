@@ -479,7 +479,7 @@ class FormattersAPI:
     # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self):
+    def text_to_html(self, linkify_text=True):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -512,9 +512,10 @@ class FormattersAPI:
 
         text = ''.join(output)
 
-        # Linkify the text.
-        text = re_substitute(self._re_linkify, self._linkify_substitution,
-                             break_long_words, text)
+        # Linkify the text, if allowed.
+        if linkify_text is True:
+            text = re_substitute(self._re_linkify, self._linkify_substitution,
+                break_long_words, text)
 
         return text
 
