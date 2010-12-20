@@ -122,29 +122,34 @@ class TestBugSubscriptionFilterAPI(
             self.subscription,
             self.subscription_filter.structural_subscription)
 
+
+class TestBugSubscriptionFilterAPIModifications(
+    TestBugSubscriptionFilterBase, TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterAPIModifications, self).setUp()
+        transaction.commit()
+        self.service = self.factory.makeLaunchpadService(self.owner)
+        self.ws_subscription_filter = ws_object(
+            self.service, self.subscription_filter)
+
     def test_modify_tags_fields(self):
         # Two tags-related fields - find_all_tags and tags - can be
         # modified. The other two tags-related fields - include_any_tags and
         # exclude_any_tags - are not exported because the tags field provides
         # a more intuitive way to update them (from the perspective of an API
         # consumer).
-        transaction.commit()
-
-        # Create a service for the filter owner.
-        service = self.factory.makeLaunchpadService(self.owner)
-        get_ws_object = partial(ws_object, service)
-        ws_subscription_filter = get_ws_object(self.subscription_filter)
-
-        # Current state.
         self.assertFalse(self.subscription_filter.find_all_tags)
         self.assertFalse(self.subscription_filter.include_any_tags)
         self.assertFalse(self.subscription_filter.exclude_any_tags)
         self.assertEqual(set(), self.subscription_filter.tags)
 
         # Modify, save, and start a new transaction.
-        ws_subscription_filter.find_all_tags = True
-        ws_subscription_filter.tags = ["foo", "-bar", "*", "-*"]
-        ws_subscription_filter.lp_save()
+        self.ws_subscription_filter.find_all_tags = True
+        self.ws_subscription_filter.tags = ["foo", "-bar", "*", "-*"]
+        self.ws_subscription_filter.lp_save()
         transaction.begin()
 
         # Updated state.
@@ -157,20 +162,12 @@ class TestBugSubscriptionFilterAPI(
 
     def test_modify_description(self):
         # The description can be modified.
-        transaction.commit()
-
-        # Create a service for the filter owner.
-        service = self.factory.makeLaunchpadService(self.owner)
-        get_ws_object = partial(ws_object, service)
-        ws_subscription_filter = get_ws_object(self.subscription_filter)
-
-        # Current state.
         self.assertEqual(
             None, self.subscription_filter.description)
 
         # Modify, save, and start a new transaction.
-        ws_subscription_filter.description = u"It's late."
-        ws_subscription_filter.lp_save()
+        self.ws_subscription_filter.description = u"It's late."
+        self.ws_subscription_filter.lp_save()
         transaction.begin()
 
         # Updated state.
@@ -179,19 +176,11 @@ class TestBugSubscriptionFilterAPI(
 
     def test_modify_statuses(self):
         # The statuses field can be modified.
-        transaction.commit()
-
-        # Create a service for the filter owner.
-        service = self.factory.makeLaunchpadService(self.owner)
-        get_ws_object = partial(ws_object, service)
-        ws_subscription_filter = get_ws_object(self.subscription_filter)
-
-        # Current state.
         self.assertEqual(set(), self.subscription_filter.statuses)
 
         # Modify, save, and start a new transaction.
-        ws_subscription_filter.statuses = ["New", "Triaged"]
-        ws_subscription_filter.lp_save()
+        self.ws_subscription_filter.statuses = ["New", "Triaged"]
+        self.ws_subscription_filter.lp_save()
         transaction.begin()
 
         # Updated state.
@@ -201,19 +190,11 @@ class TestBugSubscriptionFilterAPI(
 
     def test_modify_importances(self):
         # The importances field can be modified.
-        transaction.commit()
-
-        # Create a service for the filter owner.
-        service = self.factory.makeLaunchpadService(self.owner)
-        get_ws_object = partial(ws_object, service)
-        ws_subscription_filter = get_ws_object(self.subscription_filter)
-
-        # Current state.
         self.assertEqual(set(), self.subscription_filter.importances)
 
         # Modify, save, and start a new transaction.
-        ws_subscription_filter.importances = ["Low", "High"]
-        ws_subscription_filter.lp_save()
+        self.ws_subscription_filter.importances = ["Low", "High"]
+        self.ws_subscription_filter.lp_save()
         transaction.begin()
 
         # Updated state.
