@@ -23,7 +23,6 @@ from unittest import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
@@ -31,6 +30,7 @@ from canonical.librarian.testing.server import (
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
     SyncSource,
     SyncSourceError,
