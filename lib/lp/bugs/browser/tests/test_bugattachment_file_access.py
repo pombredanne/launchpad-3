@@ -4,6 +4,10 @@
 __metaclass__ = type
 
 import re
+from urlparse import (
+    parse_qs,
+    urlparse,
+    )
 
 import transaction
 from zope.component import (
@@ -12,6 +16,7 @@ from zope.component import (
     )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
+from zope.security.management import endInteraction
 
 from canonical.launchpad.browser.librarian import (
     SafeStreamOrRedirectLibraryFileAliasView,
@@ -24,12 +29,16 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lazr.restfulclient.errors import Unauthorized as RestfulUnauthorized
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
 import lp.services.features
 from lp.services.features.flags import NullFeatureController
 from lp.testing import (
+    launchpadlib_for,
+    launchpadlib_for_anonymous,
     login_person,
     TestCaseWithFactory,
+    ws_object,
     )
 
 
@@ -149,3 +158,69 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         next_view()
         self.assertEqual(
             'attachment', request.response.getHeader('Content-Disposition'))
+
+
+class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
+    """Tests access to bug attachments via the webservice."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestWebserviceAccessToBugAttachmentFiles, self).setUp()
+        self.bug_owner = self.factory.makePerson()
+        getUtility(ILaunchBag).clear()
+        login_person(self.bug_owner)
+        self.bug = self.factory.makeBug(owner=self.bug_owner)
+        self.bugattachment = self.factory.makeBugAttachment(
+            bug=self.bug, filename='foo.txt', data='file content')
+
+    def test_anon_access_to_public_bug_attachment(self):
+        # Attachments of public bugs can be accessed by anonymous users.
+        #
+        # Need to endInteraction() because launchpadlib_for_anonymous() will
+        # setup a new one.
+        endInteraction()
+        launchpad = launchpadlib_for_anonymous('test', version='devel')
+        ws_bug = ws_object(launchpad, self.bug)
+        ws_bugattachment = ws_bug.attachments[0]
+        self.assertEqual(
+            'file content', ws_bugattachment.data.open().read())
+
+    def test_user_access_to_private_bug_attachment(self):
+        # Users having access to private bugs can also read attachments
+        # of these bugs.
+        self.bug.setPrivate(True, self.bug_owner)
+        other_user = self.factory.makePerson()
+        launchpad = launchpadlib_for('test', self.bug_owner, version='devel')
+        ws_bug = ws_object(launchpad, self.bug)
+        ws_bugattachment = ws_bug.attachments[0]
+
+        # The attachment contains a link to a HostedBytes resource;
+        # accessing this link results normally in a redirect to a
+        # Librarian URL.  We cannot simply access these Librarian URLS
+        # for restricted Librarian files because the host name used in
+        # the URLs is different for each file, and our test envireonment
+        # does not support wildcard DNS. So let's disable the redirection
+        # mechanism in our client's HTTP connection and inspect the
+        # the Librarian URL.
+        launchpad._browser._connection.follow_redirects = False
+        response, content = launchpad._browser.get(
+            ws_bugattachment.data._wadl_resource._url, return_response=True)
+        self.assertEqual(303, response.status)
+        parsed_url = urlparse(response['location'])
+        self.assertEqual('https', parsed_url.scheme)
+        mo = re.search(
+            r'^i\d+\.restricted\.localhost:58000$', parsed_url.netloc)
+        self.assertIsNot(None, mo)
+        mo = re.search(r'^/\d+/foo\.txt$', parsed_url.path)
+        self.assertIsNot(None, mo)
+        params = parse_qs(parsed_url.query)
+        self.assertEqual(['token'], params.keys())
+
+        # If a user which cannot access the private bug itself tries to
+        # to access the attachemnt, an Unauthorized error is raised.
+        other_launchpad = launchpadlib_for(
+            'test_unauthenticated', other_user, version='devel')
+        self.assertRaises(
+            RestfulUnauthorized, other_launchpad._browser.get,
+            ws_bugattachment.data._wadl_resource._url)
