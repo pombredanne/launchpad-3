@@ -123,3 +123,32 @@ class TestBugSubscriptionFilterAPI(
         self.assertEqual(
             self.subscription,
             self.subscription_filter.structural_subscription)
+
+    def test_modify_tags(self):
+        # The tags-related fields - find_all_tags, include_any_tags,
+        # exclude_any_tags, tags - can all be modified.
+        transaction.commit()
+        # Create a service for the filter owner.
+        service = self.factory.makeLaunchpadService(self.owner)
+        get_ws_object = partial(ws_object, service)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
+
+        self.assertFalse(ws_subscription_filter.find_all_tags)
+        ws_subscription_filter.find_all_tags = True
+        self.assertFalse(ws_subscription_filter.include_any_tags)
+        ws_subscription_filter.include_any_tags = True
+        self.assertFalse(ws_subscription_filter.exclude_any_tags)
+        ws_subscription_filter.exclude_any_tags = True
+        self.assertEqual([], ws_subscription_filter.tags)
+        ws_subscription_filter.tags = ["foo", "-bar"]
+
+        # Save and start a new transaction.
+        ws_subscription_filter.lp_save()
+        transaction.begin()
+
+        self.assertTrue(self.subscription_filter.find_all_tags)
+        self.assertTrue(self.subscription_filter.include_any_tags)
+        self.assertTrue(self.subscription_filter.exclude_any_tags)
+        self.assertEqual(
+            set(["*", "-*", "foo", "-bar"]),
+            self.subscription_filter.tags)
