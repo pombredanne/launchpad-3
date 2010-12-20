@@ -19,7 +19,6 @@ import os
 import socket
 import tempfile
 import transaction
-import urllib2
 import xmlrpclib
 
 from sqlobject import (
@@ -40,6 +39,7 @@ from twisted.internet import (
     reactor as default_reactor,
     )
 from twisted.web import xmlrpc
+from twisted.web.client import downloadPage
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -213,12 +213,35 @@ class BuilderSlave(object):
         return self._with_timeout(self._server.callRemote(
             'ensurepresent', sha1sum, url, username, password))
 
-    def getFile(self, sha_sum):
-        """Construct a file-like object to return the named file."""
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        file_url = urlappend(self._file_cache_url, sha_sum)
-        return urllib2.urlopen(file_url)
+    def getFile(self, sha_sum, file_to_write):
+        """Fetch a file from the builder.
+
+        :param sha_sum: The sha of the file (which is also its name on the 
+            builder)
+        :param file_to_write: A file name or file-like object to write
+            the file to
+        :return: A Deferred that calls back when the download is done, or
+            errback with the error string.
+        """
+        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
+        # If desired we can pass a param "timeout" here but let's leave
+        # it at the default value if it becomes obvious we need to
+        # change it.
+        return downloadPage(file_url, file_to_write, followRedirect=0)
+
+    def getFiles(self, filemap):
+        """Fetch many files from the builder.
+
+        :param filemap: A Dictionary containing key values of the builder
+            file name to retrieve, which maps to a value containing the
+            file name or file object to write the file to.
+
+        :return: A DeferredList that calls back when the download is done.
+        """
+        dl = defer.gatherResults([
+            self.getFile(builder_file, filemap[builder_file])
+            for builder_file in filemap])
+        return dl
 
     def resume(self, clock=None):
         """Resume the builder in an asynchronous fashion.
@@ -373,7 +396,7 @@ class Builder(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    builderok = BoolCol(dbName='builderok', notNull=True)
+    _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
     speedindex = IntCol(dbName='speedindex')
@@ -427,6 +450,16 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
+
+    def _getBuilderok(self):
+        return self._builderok
+
+    def _setBuilderok(self, value):
+        self._builderok = value
+        if value is True:
+            self.resetFailureCount()
+
+    builderok = property(_getBuilderok, _setBuilderok)
 
     def gotFailure(self):
         """See `IBuilder`."""
@@ -512,39 +545,27 @@ class Builder(SQLBase):
         else:
             d = defer.succeed(None)
 
-        def resume_done(ignored):
+        def ping_done(ignored):
             return self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
-        def eb_slave_failure(failure):
-            failure.trap(BuildSlaveFailure)
-            e = failure.value
-            self.failBuilder(
-                "Exception (%s) when setting up to new job" % (e,))
-
-        def eb_cannot_fetch_file(failure):
-            failure.trap(CannotFetchFile)
-            e = failure.value
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (self.name, self.url, e.file_url, e.error_information)
-            raise BuildDaemonError(message)
-
-        def eb_socket_error(failure):
-            failure.trap(socket.error)
-            e = failure.value
-            error_message = "Exception (%s) when setting up new job" % (e,)
-            d = self.handleTimeout(logger, error_message)
-            return d.addBoth(lambda ignored: failure)
+        def resume_done(ignored):
+            # Before we try and contact the resumed slave, we're going
+            # to send it a message.  This is to ensure it's accepting
+            # packets from the outside world, because testing has shown
+            # that the first packet will randomly fail for no apparent
+            # reason.  This could be a quirk of the Xen guest, we're not
+            # sure.  We also don't care about the result from this message,
+            # just that it's sent, hence the "addBoth".
+            # See bug 586359.
+            if self.virtualized:
+                d = self.slave.echo("ping")
+            else:
+                d = defer.succeed(None)
+            d.addBoth(ping_done)
+            return d
 
         d.addCallback(resume_done)
-        d.addErrback(eb_slave_failure)
-        d.addErrback(eb_cannot_fetch_file)
-        d.addErrback(eb_socket_error)
         return d
 
     def failBuilder(self, reason):
@@ -609,38 +630,40 @@ class Builder(SQLBase):
         """See IBuilder."""
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
-        try:
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            slave_file = self.slave.getFile(file_sha1)
-            copy_and_close(slave_file, out_file)
-            # If the requested file is the 'buildlog' compress it using gzip
-            # before storing in Librarian.
-            if file_sha1 == 'buildlog':
+
+        def got_file(ignored, filename, out_file, out_file_name):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
                 out_file = open(out_file_name)
-                filename += '.gz'
-                out_file_name += '.gz'
-                gz_file = gzip.GzipFile(out_file_name, mode='wb')
-                copy_and_close(out_file, gz_file)
-                os.remove(out_file_name.replace('.gz', ''))
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
 
-            # Reopen the file, seek to its end position, count and seek
-            # to beginning, ready for adding to the Librarian.
-            out_file = open(out_file_name)
-            out_file.seek(0, 2)
-            bytes_written = out_file.tell()
-            out_file.seek(0)
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.  getFile() closes the file
+                # object.
+                os.remove(out_file_name)
 
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                filename, bytes_written, out_file,
-                contentType=filenameToContentType(filename),
-                restricted=private)
-        finally:
-            # Finally, remove the temporary file
-            out_file.close()
-            os.remove(out_file_name)
+            return library_file.id
 
-        return library_file.id
+        d = self.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
+        return d
 
     def isAvailable(self):
         """See `IBuilder`."""
@@ -848,7 +871,7 @@ class BuilderSet(object):
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=manual)
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -896,5 +919,5 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(builderok=True, processor=processor,
+        return Builder.selectBy(_builderok=True, processor=processor,
                                 virtualized=virtualized)

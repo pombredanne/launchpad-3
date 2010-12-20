@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'launchpadlib_credentials_for',
     'launchpadlib_for',
+    'launchpadlib_for_anonymous',
     'oauth_access_token_for',
     ]
 
@@ -17,6 +18,7 @@ import tempfile
 
 from launchpadlib.credentials import (
     AccessToken,
+    AnonymousAccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
@@ -116,6 +118,21 @@ def launchpadlib_credentials_for(
 def _clean_up_cache(cache):
     """"Clean up a temporary launchpadlib cache directory."""
     shutil.rmtree(cache, ignore_errors=True)
+
+
+def launchpadlib_for_anonymous(
+    consumer_name, version=None, service_root="http://api.launchpad.dev/"):
+    """Create a Launchpad object for the anonymous user.
+
+    :param consumer_name: An OAuth consumer name.
+    :param version: The version of the web service to access.
+    :param service_root: The root URL of the web service to access.
+
+    :return: A launchpadlib.Launchpad object.
+    """
+    token = AnonymousAccessToken()
+    credentials = Credentials(consumer_name, access_token=token)
+    return Launchpad(credentials, service_root, version=version)
 
 
 def launchpadlib_for(

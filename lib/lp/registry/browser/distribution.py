@@ -741,9 +741,9 @@ class DistributionAddView(LaunchpadFormView):
         "domainname",
         "members",
         "official_malone",
-        "official_blueprints",
+        "blueprints_usage",
         "official_rosetta",
-        "official_answers",
+        "answers_usage",
         ]
 
     @property
@@ -787,9 +787,9 @@ class DistributionEditView(RegistryEditFormView):
         'mugshot',
         'official_malone',
         'enable_bug_expiration',
-        'official_blueprints',
+        'blueprints_usage',
         'official_rosetta',
-        'official_answers',
+        'answers_usage',
         'translation_focus',
         ]
 
@@ -829,13 +829,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

@@ -107,7 +107,9 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
-from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -120,11 +122,14 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.services.osutils import override_environ
 from lp.services import features
 from lp.services.features.flags import FeatureController
-from lp.services.features.model import getFeatureStore, FeatureFlag
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -149,6 +154,7 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
+    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
@@ -427,6 +433,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
                                                     text):
+
         def normalise_whitespace(text):
             return ' '.join(text.split())
         pattern = re.compile(
@@ -488,14 +495,27 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
+    def attachLibrarianLog(self, fixture):
+        """Include the logChunks from fixture in the test details."""
+        # Evaluate the log when called, not later, to permit the librarian to
+        # be shutdown before the detail is rendered.
+        chunks = fixture.logChunks()
+        content = Content(UTF8_TEXT, lambda:chunks)
+        self.addDetail('librarian-log', content)
+
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         from lp.testing.factory import ObjectFactory
+        from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        if LibrarianLayer.librarian_fixture is not None:
+            self.addCleanup(
+                self.attachLibrarianLog,
+                LibrarianLayer.librarian_fixture)
         set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
@@ -541,7 +561,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
@@ -682,9 +702,10 @@ class BrowserTestCase(TestCaseWithFactory):
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
 
-    def getViewBrowser(self, context, view_name=None, no_login=False):
+    def getViewBrowser(self, context, view_name=None, no_login=False,
+                       rootsite=None):
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name)
+        url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
         logout()
         if no_login:
             from canonical.launchpad.testing.pages import setupBrowser
@@ -694,12 +715,20 @@ class BrowserTestCase(TestCaseWithFactory):
         else:
             return self.getUserBrowser(url, self.user)
 
-    def getMainText(self, context, view_name=None):
+    def getMainContent(self, context, view_name=None, rootsite=None,
+                       no_login=False):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
+        browser = self.getViewBrowser(
+            context, view_name, rootsite=rootsite, no_login=no_login)
+        return find_main_content(browser.contents)
+
+    def getMainText(self, context, view_name=None, rootsite=None,
+                    no_login=False):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
-        return extract_text(find_main_content(browser.contents))
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(
+            self.getMainContent(context, view_name, rootsite, no_login))
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -712,7 +741,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
@@ -743,16 +772,17 @@ class YUIUnitTestCase(WindmillTestCase):
         client = self.client
         client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string
@@ -816,7 +846,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -834,7 +864,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -861,6 +891,7 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
+
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
@@ -1098,6 +1129,29 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def monkey_patch(context, **kwargs):
+    """In the ContextManager scope, monkey-patch values.
+
+    The context may be anything that supports setattr.  Packages,
+    modules, objects, etc.  The kwargs are the name/value pairs for the
+    values to set.
+    """
+    old_values = {}
+    not_set = object()
+    for name, value in kwargs.iteritems():
+        old_values[name] = getattr(context, name, not_set)
+        setattr(context, name, value)
+    try:
+        yield
+    finally:
+        for name, value in old_values.iteritems():
+            if value is not_set:
+                delattr(context, name)
+            else:
+                setattr(context, name, value)
 
 
 def unlink_source_packages(product):

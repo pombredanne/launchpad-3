@@ -248,7 +248,8 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if not response.startswith('200'):
-                raise UploadFailed('Server said: ' + response)
+                raise UploadFailed(
+                    'Could not upload %s. Server said: %s' % (name, response))
 
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)

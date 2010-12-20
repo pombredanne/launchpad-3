@@ -59,7 +59,7 @@ from lp.registry.scripts.distributionmirror_prober import (
     RequestManager,
     restore_http_proxy,
     should_skip_host,
-    UnknownURLScheme,
+    UnknownURLSchemeAfterRedirect,
     )
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
@@ -79,8 +79,7 @@ class HTTPServerTestSetup(TacTestSetup):
     def tacfile(self):
         return os.path.abspath(os.path.join(
             os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/distributionmirror_http_server.tac'
-            ))
+            'daemons/distributionmirror_http_server.tac'))
 
     @property
     def pidfile(self):
@@ -195,7 +194,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, UnknownURLScheme)
+        return self.assertFailure(deferred, UnknownURLSchemeAfterRedirect)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -617,6 +616,13 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         self.callbacks = MirrorCDImageProberCallbacks(
             mirror, warty, flavour, log_file)
 
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+
     def test_mirrorcdimageseries_creation_and_deletion(self):
         callbacks = self.callbacks
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
@@ -644,10 +650,16 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         # some times.
         self.failUnlessEqual(
             set(self.callbacks.expected_failures),
-            set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
+            set([
+                BadResponseCode,
+                ProberTimeout,
+                ConnectionSkipped,
+                UnknownURLSchemeAfterRedirect,
+                ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
-                      ConnectionSkipped()]
+                      ConnectionSkipped(),
+                      UnknownURLSchemeAfterRedirect('https://localhost')]
         for exception in exceptions:
             failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
                 [(defer.FAILURE, Failure(exception))])
@@ -684,6 +696,13 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         url = 'foo'
         self.callbacks = ArchiveMirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
+
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
@@ -752,6 +771,13 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
         # to interfere with each other, though, so we'll clean
         # RequestManager.host_locks here.
         RequestManager.host_locks.clear()
+
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')

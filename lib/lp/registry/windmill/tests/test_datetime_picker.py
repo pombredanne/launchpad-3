@@ -23,7 +23,7 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
         """Test the calendar widget's general functionality.
 
         This test ensures that, with Javascript enabled, an input field
-        with the 'yui-calendar' class will get an extra 'choose...' link
+        with the 'yui3-calendar' class will get an extra 'choose...' link
         which opens up a calendar widget. The extra class 'withtime' is
         used to optionally include time fields.
         """

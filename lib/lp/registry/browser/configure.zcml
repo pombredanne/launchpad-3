@@ -600,75 +600,6 @@
             name="karmacontext-macros"
             template="../templates/karmacontext-macros.pt"/>
     </facet>
-    <facet
-        facet="overview">
-        <browser:menus
-            module="lp.registry.browser.poll"
-            classes="
-                PollOverviewMenu
-                PollActionNavigationMenu
-                PollEditNavigationMenu"/>
-        <browser:defaultView
-            for="lp.registry.interfaces.poll.IPoll"
-            name="+index"/>
-        <browser:navigation
-            module="lp.registry.browser.poll"
-            classes="
-                PollNavigation"/>
-        <browser:url
-            for="lp.registry.interfaces.poll.IPoll"
-            path_expression="string:+poll/${name}"
-            attribute_to_parent="team"/>
-        <browser:pages
-            for="lp.registry.interfaces.poll.IPoll"
-            permission="zope.Public"
-            class="lp.registry.browser.poll.PollView">
-            <browser:page
-                name="+index"
-                template="../templates/poll-index.pt"/>
-        </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.poll.IPoll"
-            permission="zope.Public"
-            class="lp.registry.browser.poll.BasePollView">
-            <browser:page
-                name="+portlet-details"
-                template="../templates/poll-portlet-details.pt"/>
-            <browser:page
-                name="+portlet-options"
-                template="../templates/poll-portlet-options.pt"/>
-        </browser:pages>
-        <browser:page
-            name="+vote"
-            for="lp.registry.interfaces.poll.IPoll"
-            permission="launchpad.AnyPerson"
-            class="lp.registry.browser.poll.PollVoteView"/>
-        <browser:page
-            name="+edit"
-            for="lp.registry.interfaces.poll.IPoll"
-            class="lp.registry.browser.poll.PollEditView"
-            permission="launchpad.Edit"
-            template="../templates/poll-edit.pt"/>
-        <browser:page
-            name="+newoption"
-            for="lp.registry.interfaces.poll.IPoll"
-            class="lp.registry.browser.poll.PollOptionAddView"
-            permission="launchpad.Edit"
-            template="../templates/poll-newoption.pt"/>
-        <browser:defaultView
-            for="lp.registry.interfaces.poll.IPollOption"
-            name="+edit"/>
-        <browser:url
-            for="lp.registry.interfaces.poll.IPollOption"
-            path_expression="string:+option/${id}"
-            attribute_to_parent="poll"/>
-        <browser:page
-            name="+edit"
-            for="lp.registry.interfaces.poll.IPollOption"
-            class="lp.registry.browser.poll.PollOptionEditView"
-            permission="launchpad.Edit"
-            template="../templates/polloption-edit.pt"/>
-    </facet>
     <browser:url
         for="lp.registry.interfaces.announcement.IAnnouncement"
         path_expression="string:+announcement/${id}"
@@ -1080,12 +1011,6 @@
             template="../templates/team-index.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.person.TeamIndexView"
-            permission="zope.Public"
-            name="+portlet-polls"
-            template="../templates/team-portlet-polls.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             class="lp.registry.browser.team.TeamMapView"
             name="+map"
@@ -1127,7 +1052,7 @@
             template="../templates/team-portlet-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.person.PersonIndexView"
+            class="lp.registry.browser.person.TeamIndexView"
             permission="zope.Public"
             name="+portlet-membership"
             template="../templates/team-portlet-membership.pt"/>
@@ -1145,7 +1070,7 @@
             template="../templates/team-contactaddress.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.MailingListManager"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.team.TeamMailingListConfigurationView"
             name="+mailinglist"
             template="../templates/team-mailinglist.pt"/>
@@ -1197,12 +1122,6 @@
             class="lp.registry.browser.person.PersonView"
             name="+polls"
             template="../templates/team-polls.pt"/>
-        <browser:page
-            name="+newpoll"
-            for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.PollAddView"
-            permission="launchpad.Edit"
-            template="../templates/team-newpoll.pt"/>
         <browser:page
             name="+members"
             for="lp.registry.interfaces.person.ITeam"
@@ -1376,15 +1295,6 @@
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        name="+review"/>
-    <browser:page
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        class="canonical.launchpad.browser.MailingListsReviewView"
-        name="+review"
-        template="../templates/mailinglists-review.pt"
-        permission="launchpad.Admin"/>
     <browser:page
         name="+moderation"
         for="lp.registry.interfaces.mailinglist.IMessageApproval"
@@ -1607,10 +1517,6 @@
     <adapter
         factory="lp.registry.browser.nameblacklist.NameBlacklistSetBreadcrumb"
         />
-    <adapter
-        factory="lp.registry.browser.nameblacklist.NameBlacklistBreadcrumb"
-        />
-
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
@@ -1682,6 +1588,17 @@
             ProductSeriesNavigation"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeries"
+        path_expression="name"
+        attribute_to_parent="product"/>
+    <!-- lazr.restful requires that canonical_url() provide a url for
+         ITimelinProductSeries. It has been configured to return the
+         same url as IProductSeries. This won't cause a problem when
+         navigating to the url, since ProductNavigation.traverse() just
+         returns an IProductSeries object, and browser:url only affects
+         canonical_url().
+    -->
+    <browser:url
+        for="lp.registry.interfaces.productseries.ITimelineProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
     <adapter
@@ -2301,7 +2218,9 @@
         name="+portlet-structural-subscribers"
         facet="bugs"
         permission="zope.Public"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
         template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+
     <browser:url
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"

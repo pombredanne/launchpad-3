@@ -479,9 +479,6 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -1323,7 +1320,6 @@ class DummyPOFile(POFileMixIn):
         self.id = None
         self.potemplate = potemplate
         self.language = language
-        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None

@@ -19,11 +19,14 @@ __all__ = ['python', 'ipython']
 import os
 import sys
 
+from pytz import utc
 import transaction
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp import canonical_url
 
 from lp.answers.model.question import Question
 from lp.blueprints.model.specification import Specification

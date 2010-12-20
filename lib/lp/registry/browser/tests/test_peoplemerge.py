@@ -15,6 +15,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.testing import (
+    celebrity_logged_in,
     login_celebrity,
     login_person,
     person_logged_in,
@@ -95,12 +96,13 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.target_team = self.factory.makeTeam()
         login_celebrity('registry_experts')
 
-    def getView(self):
-        form = {
-            'field.dupe_person': self.dupe_team.name,
-            'field.target_person': self.target_team.name,
-            'field.actions.deactivate_members_and_merge': 'Merge',
-            }
+    def getView(self, form=None):
+        if form is None:
+            form = {
+                'field.dupe_person': self.dupe_team.name,
+                'field.target_person': self.target_team.name,
+                'field.actions.deactivate_members_and_merge': 'Merge',
+                }
         return create_initialized_view(
             self.person_set, '+adminteammerge', form=form)
 
@@ -130,7 +132,35 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         super_team = self.factory.makeTeam()
         login_celebrity('admin')
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_celebrity('registry_experts')
+        login_person(self.dupe_team.teamowner)
+        form = {
+            'field.dupe_person': self.dupe_team.name,
+            'field.target_person': self.target_team.name,
+            'field.actions.merge': 'Merge',
+            }
+        view = self.getView()
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
+
+    def test_owner_delete_team_with_super_teams(self):
+        # Super team memberships are removed.
+        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
+        super_team = self.factory.makeTeam()
+        login_celebrity('admin')
+        self.dupe_team.join(super_team, self.dupe_team.teamowner)
+        login_person(self.dupe_team.teamowner)
+        view = self.getView()
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
+
+    def test_registry_delete_team_with_super_teams(self):
+        # Registry admins can delete teams with super team memberships.
+        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
+        super_team = self.factory.makeTeam()
+        # Use admin to avoid the team invitation dance. The Registry admin
+        # is logged back in.
+        with celebrity_logged_in('admin'):
+            self.dupe_team.join(super_team, super_team.teamowner)
         view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)

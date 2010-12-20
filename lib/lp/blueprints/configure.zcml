@@ -152,7 +152,7 @@
   <!-- Specification -->
 
   <class class="lp.blueprints.model.specification.Specification">
-    <allow interface="lp.blueprints.interfaces.specification.ISpecification"/>
+    <allow interface="lp.blueprints.interfaces.specification.ISpecificationPublic"/>
     <!-- We allow any authenticated person to update the whiteboard -->
     <require
         permission="launchpad.AnyPerson"
@@ -162,6 +162,7 @@
          methods -->
     <require
         permission="launchpad.Edit"
+        interface="lp.blueprints.interfaces.specification.ISpecificationEditRestricted"
         set_attributes="name title summary definition_status specurl
                         superseded_by milestone product distribution
                         approver assignee drafter man_days

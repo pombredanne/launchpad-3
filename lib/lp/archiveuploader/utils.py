@@ -60,7 +60,7 @@ source_file_exts = [
     'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
     '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
+    r"([^_]+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
 re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
 re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
 re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")

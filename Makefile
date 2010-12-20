@@ -53,7 +53,7 @@ BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema: build clean_codehosting
+schema: build
 	$(MAKE) -C database/schema
 	$(RM) -r /var/tmp/fatsam
 
@@ -131,6 +131,12 @@ pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
 inplace: build
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	mkdir -p /var/tmp/bzrsync
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
+	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 build: compile apidoc jsbuild css_combine
 
@@ -162,7 +168,6 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
-	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -368,7 +373,7 @@ clean: clean_js clean_buildout
 	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
-	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -rf $(CODEHOSTING_ROOT)
 	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
@@ -394,14 +399,6 @@ clean: clean_js clean_buildout
 
 realclean: clean
 	$(RM) TAGS tags
-
-clean_codehosting:
-	$(RM) -r $(CODEHOSTING_ROOT)
-	mkdir -p $(CODEHOSTING_ROOT)/mirrors
-	mkdir -p $(CODEHOSTING_ROOT)/push-branches
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	mkdir -p /var/tmp/bzrsync
-	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
 	mkdir -p doc/zcml/namespaces.zope.org

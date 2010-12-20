@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
   <tal:description
     define="global description context/description/fmt:obfuscate-email/fmt:shorten/320" />
-<tr class="noted"
+<tr class="lesser"
     tal:attributes="title description">
   <td class="icon left">
     <img alt="" src="/@@/question" />
@@ -20,7 +20,7 @@
       />
       (<span tal:replace="context/status/title">Approved</span>)
     </div>
-    <div class="lesser">
+    <div>
       posted
       <span
         tal:attributes="title context/datecreated/fmt:datetime"

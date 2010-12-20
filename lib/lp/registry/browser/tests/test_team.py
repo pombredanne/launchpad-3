@@ -135,3 +135,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertEqual(
             "You can't add a team that doesn't have any active members.",
             view.errors[0])
+
+
+class TestTeamIndexView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamIndexView, self).setUp()
+        self.team = self.factory.makeTeam(name='test-team')
+        login_person(self.team.teamowner)
+
+    def test_add_member_step_title(self):
+        view = create_initialized_view(self.team, '+index')
+        self.assertEqual('Search', view.add_member_step_title)

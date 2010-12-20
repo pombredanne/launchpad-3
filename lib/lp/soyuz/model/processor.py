@@ -38,6 +38,9 @@ class Processor(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
 
+    def __repr__(self):
+        return "<Processor %r>" % self.title
+
 
 class ProcessorFamily(SQLBase):
     implements(IProcessorFamily)
@@ -54,6 +57,9 @@ class ProcessorFamily(SQLBase):
         """See `IProcessorFamily`."""
         return Processor(family=self, name=name, title=title,
             description=description)
+
+    def __repr__(self):
+        return "<ProcessorFamily %r>" % self.title
 
 
 class ProcessorFamilySet:

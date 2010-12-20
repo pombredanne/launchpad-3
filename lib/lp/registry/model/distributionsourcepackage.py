@@ -101,11 +101,12 @@ def is_upstream_link_allowed(spph):
 
 class DistributionSourcePackageProperty:
 
-    def __init__(self, attrname):
+    def __init__(self, attrname, default=None):
         self.attrname = attrname
+        self.default = default
 
     def __get__(self, obj, class_):
-        return getattr(obj._self_in_database, self.attrname, None)
+        return getattr(obj._self_in_database, self.attrname, self.default)
 
     def __set__(self, obj, value):
         if obj._self_in_database is None:
@@ -152,6 +153,8 @@ class DistributionSourcePackage(BugTargetBase,
     po_message_count = DistributionSourcePackageProperty('po_message_count')
     is_upstream_link_allowed = DistributionSourcePackageProperty(
         'is_upstream_link_allowed')
+    enable_bugfiling_duplicate_search = DistributionSourcePackageProperty(
+        'enable_bugfiling_duplicate_search', default=True)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -607,3 +610,4 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_count = Int()
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
+    enable_bugfiling_duplicate_search = Bool()

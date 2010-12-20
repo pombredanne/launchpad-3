@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail.commands import get_error_message
-from canonical.launchpad.mail.handlers import mail_handlers
+from canonical.launchpad.mail.helpers import ensure_sane_signature_timestamp
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -51,6 +51,7 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
@@ -60,6 +61,7 @@ non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
 # Match trailing whitespace.
 trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
+
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
@@ -159,14 +161,23 @@ def _authenticateDkim(signed_message):
     return True
 
 
-def authenticateEmail(mail):
+def authenticateEmail(mail,
+    signature_timestamp_checker=None):
     """Authenticates an email by verifying the PGP signature.
 
     The mail is expected to be an ISignedMessage.
+
+    If this completes, it will set the current security principal to be the
+    message sender.
+
+    :param signature_timestamp_checker: This callable is
+        passed the message signature timestamp, and it can raise an exception if
+        it dislikes it (for example as a replay attack.)  This parameter is
+        intended for use in tests.  If None, ensure_sane_signature_timestamp
+        is used.
     """
 
     signature = mail.signature
-    signed_content = mail.signedContent
 
     name, email_addr = parseaddr(mail['From'])
     authutil = getUtility(IPlacelessAuthUtility)
@@ -206,10 +217,18 @@ def authenticateEmail(mail):
     gpghandler = getUtility(IGPGHandler)
     try:
         sig = gpghandler.getVerifiedSignature(
-            canonicalise_line_endings(signed_content), signature)
+            canonicalise_line_endings(mail.signedContent), signature)
     except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
+
+    if signature_timestamp_checker is None:
+        signature_timestamp_checker = ensure_sane_signature_timestamp
+    # If this fails, we return an error to the user rather than just treating
+    # it as untrusted, so they can debug or understand the problem.
+    signature_timestamp_checker(
+        sig.timestamp,
+        'incoming mail verification')
 
     for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
@@ -255,7 +274,8 @@ def report_oops(file_alias_url=None, error_msg=None):
     return request.oopsid
 
 
-def handleMail(trans=transaction):
+def handleMail(trans=transaction,
+    signature_timestamp_checker=None):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
     # pylint: disable-msg=W0631
@@ -358,7 +378,8 @@ def handleMail(trans=transaction):
                     continue
 
                 try:
-                    principal = authenticateEmail(mail)
+                    principal = authenticateEmail(
+                        mail, signature_timestamp_checker)
                 except InvalidSignature, error:
                     _handle_user_error(error, mail)
                     continue

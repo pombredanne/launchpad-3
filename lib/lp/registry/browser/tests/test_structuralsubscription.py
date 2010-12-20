@@ -3,8 +3,6 @@
 
 """Tests for structural subscription traversal."""
 
-import unittest
-
 from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
@@ -37,6 +35,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class FakeLaunchpadRequest(FakeRequest):
@@ -261,6 +260,7 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
             self.assertIs(
                 None, form_fields.get('bug_notification_level'))
 
+
 class TestProductSeriesAdvancedSubscriptionFeatures(
     TestStructuralSubscriptionAdvancedFeaturesBase):
     """Test advanced subscription features for ProductSeries."""
@@ -293,5 +293,66 @@ class TestMilestoneAdvancedSubscriptionFeatures(
         self.target = self.factory.makeMilestone()
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestStructuralSubscriptionView(TestCaseWithFactory):
+    """General tests for the StructuralSubscriptionView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_next_url_set_to_context(self):
+        # When the StructuralSubscriptionView form is submitted, the
+        # view's next_url is set to the canonical_url of the current
+        # target.
+        target = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(target, name='+subscribe')
+            self.assertEqual(
+                canonical_url(target), view.next_url,
+                "Next URL does not match target's canonical_url.")
+
+
+class TestStructuralSubscribersPortletViewBase(TestCaseWithFactory):
+    """General tests for the StructuralSubscribersPortletView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscribersPortletViewBase, self).setUp()
+        self.setUpTarget()
+        self.view = create_initialized_view(
+            self.target, name='+portlet-structural-subscribers')
+
+    def setUpTarget(self):
+        project = self.factory.makeProject()
+        self.target = self.factory.makeProduct(project=project)
+
+    def test_target_label(self):
+        # The target_label attribute of StructuralSubscribersPortletView
+        # returns the correct label for the current
+        # StructuralSubscriptionTarget.
+        self.assertEqual(
+            "To all %s bugs" % self.target.title, self.view.target_label)
+
+    def test_parent_target_label(self):
+        # The parent_target_label attribute of
+        # StructuralSubscribersPortletView returns the correct label for
+        # the current parent StructuralSubscriptionTarget.
+        self.assertEqual(
+            "To all %s bugs" % self.target.parent_subscription_target.title,
+            self.view.parent_target_label)
+
+
+class TestSourcePackageStructuralSubscribersPortletView(
+    TestStructuralSubscribersPortletViewBase):
+
+    def setUpTarget(self):
+        distribution = self.factory.makeDistribution()
+        sourcepackage = self.factory.makeSourcePackageName()
+        self.target = distribution.getSourcePackage(sourcepackage.name)
+
+    def test_target_label(self):
+        # For DistributionSourcePackages the target_label attribute uses
+        # the target's displayname rather than its title.
+        self.assertEqual(
+            "To all bugs in %s" % self.target.displayname,
+            self.view.target_label)

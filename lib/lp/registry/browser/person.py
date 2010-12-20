@@ -105,6 +105,7 @@ from lazr.uri import (
     URI,
     )
 import pytz
+from storm.expr import Join
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
@@ -242,6 +243,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -282,10 +284,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.poll import (
-    IPollSet,
-    IPollSubset,
-    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -303,6 +301,10 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
+    )
+from lp.registry.model.milestone import (
+    Milestone,
+    milestone_sort_key,
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
@@ -555,10 +557,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
-
-    @stepthrough('+poll')
-    def traverse_poll(self, name):
-        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
@@ -1328,17 +1326,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show member photos'
         return Link(target, text, icon='team')
 
-    def polls(self):
-        target = '+polls'
-        text = 'Show polls'
-        return Link(target, text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def add_poll(self):
-        target = '+newpoll'
-        text = 'Create a poll'
-        return Link(target, text, icon='add')
-
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
@@ -1348,7 +1335,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
             self.person.displayname)
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.MailingListManager')
+    @enabled_with_permission('launchpad.Moderate')
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list
@@ -1423,8 +1410,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'moderate_mailing_list',
         'editlanguages',
         'map',
-        'polls',
-        'add_poll',
         'join',
         'leave',
         'add_my_teams',
@@ -1445,7 +1430,7 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members', 'ppas']
+    links = ['profile', 'members', 'ppas']
 
 
 class TeamMembershipView(LaunchpadView):
@@ -1553,7 +1538,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
+        self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()
 
@@ -1825,12 +1810,12 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
             # email is sent to the user.
             data['password'] = 'invalid'
             self.person.setPreferredEmail(None)
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
                     self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)
@@ -2133,8 +2118,12 @@ class RelevantMilestonesMixin:
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
-        milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
-            self.searchUnbatched())
+        prejoins = [
+            (Milestone, Join(Milestone, BugTask.milestone == Milestone.id))]
+        milestones = [
+            bugtask.milestone
+            for bugtask in self.searchUnbatched(prejoins=prejoins)]
+        milestones = sorted(milestones, key=milestone_sort_key, reverse=True)
         return [
             dict(title=milestone.title, value=milestone.id, checked=False)
             for milestone in milestones]
@@ -2150,7 +2139,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs related to a person.
 
         :param extra_params: A dict that provides search params added to
@@ -2181,7 +2170,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
         return context.searchTasks(
             assignee_params, subscriber_params, owner_params,
-            commenter_params)
+            commenter_params, prejoins=prejoins)
 
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
@@ -2210,7 +2199,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Assigned bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs assigned to a person."""
         if context is None:
             context = self.context
@@ -2222,7 +2211,8 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['assignee'] = context
 
         sup = super(PersonAssignedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -2267,7 +2257,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs commented on by a person."""
         if context is None:
             context = self.context
@@ -2279,7 +2269,8 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_commenter'] = context
 
         sup = super(PersonCommentedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2312,7 +2303,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the bugs reported by a person."""
         if context is None:
             context = self.context
@@ -2327,7 +2318,8 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_reporter'] = context
 
         sup = super(PersonReportedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2368,7 +2360,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Subscribed bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the bugs subscribed to by a person."""
         if context is None:
             context = self.context
@@ -2380,7 +2372,8 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['subscriber'] = context
 
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2691,7 +2684,7 @@ class PersonLanguagesView(LaunchpadFormView):
     @property
     def answers_url(self):
         return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
+            getUtility(ILaunchpadCelebrities).launchpad,
             rootsite='answers')
 
 
@@ -2927,21 +2920,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ''
 
     @cachedproperty
-    def openpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getOpenPolls()
-
-    @cachedproperty
-    def closedpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getClosedPolls()
-
-    @cachedproperty
-    def notyetopenedpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getNotYetOpenedPolls()
-
-    @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
@@ -3109,19 +3087,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
-
-    @property
-    def should_show_polls_portlet(self):
-        menu = TeamOverviewMenu(self.context)
-        return (
-            self.has_current_polls or self.closedpolls
-            or menu.add_poll().enabled)
-
-    @property
-    def has_current_polls(self):
-        """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
-        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -3485,7 +3450,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3552,6 +3517,13 @@ class TeamIndexView(PersonIndexView):
         if self.context.visibility == PersonVisibility.PUBLIC:
             return 'portlet'
         return 'portlet private'
+
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
 
 
 class PersonCodeOfConductEditView(LaunchpadView):

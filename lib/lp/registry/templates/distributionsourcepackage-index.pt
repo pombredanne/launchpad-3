@@ -231,10 +231,7 @@
       </p>
     </div>
 <script type="text/javascript">
-YUI({
-        base: '../../lib/yui/current/build/',
-        filter: 'raw'
-    }).use('node', 'event', 'lazr.effects', function(Y) {
+    LPS.use('node', 'event', 'lazr.effects', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.

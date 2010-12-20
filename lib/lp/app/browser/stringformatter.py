@@ -201,6 +201,34 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # Don't look up the bug or display anything about the bug, just
+        # linkify to the general bug url.
+        url = '/bugs/%s' % bugnum
+        # The text will have already been cgi escaped.
+        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+
+    @staticmethod
+    def _handle_parens_in_trailers(url, trailers):
+        """Move closing parens from the trailer back into the url if needed.
+
+        If there are opening parens in the url that are matched by closing
+        parens at the start of the trailer, those closing parens should be
+        part of the url."""
+        opencount = url.count('(')
+        closedcount = url.count(')')
+        missing = opencount - closedcount
+        slice_idx = 0
+        while slice_idx < missing:
+            if trailers[slice_idx] == ')':
+                slice_idx += 1
+            else:
+                break
+        url += trailers[:slice_idx]
+        trailers = trailers[slice_idx:]
+        return url, trailers
+
+    @staticmethod
     def _split_url_and_trailers(url):
         """Given a URL return a tuple of the URL and punctuation trailers.
 
@@ -216,15 +244,31 @@ class FormattersAPI:
             url = url[:-len(trailers)]
         else:
             trailers = ''
-        return url, trailers
+        return FormattersAPI._handle_parens_in_trailers(url, trailers)
 
     @staticmethod
-    def _linkify_bug_number(text, bugnum, trailers=''):
-        # Don't look up the bug or display anything about the bug, just
-        # linkify to the general bug url.
-        url = '/bugs/%s' % bugnum
-        # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+    def _linkify_url_should_be_ignored(url):
+        """Don't linkify URIs consisting of just the protocol."""
+
+        protocol_bases = [
+            'about',
+            'gopher',
+            'http',
+            'https',
+            'sftp',
+            'news',
+            'ftp',
+            'mailto',
+            'irc',
+            'jabber',
+            'apt',
+            'data',
+            ]
+
+        for base in protocol_bases:
+            if url in ('%s' % base, '%s:' % base, '%s://' % base):
+                return True
+        return False
 
     @staticmethod
     def _linkify_substitution(match):
@@ -235,16 +279,22 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = match.group('url')
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            full_url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(full_url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                cgi.escape(url, quote=True),
-                add_word_breaks(cgi.escape(url)),
-                cgi.escape(trailers))
+            if not FormattersAPI._linkify_url_should_be_ignored(url):
+                link_string = ('<a rel="nofollow" '
+                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                                    'url': cgi.escape(url, quote=True),
+                                    'linked_text': add_word_breaks(cgi.escape(url)),
+                                    'trailers': cgi.escape(trailers)
+                                    })
+                return link_string
+            else:
+                return full_url
         elif match.group('faq') is not None:
             # This is *BAD*.  We shouldn't be doing database lookups to
             # linkify text.
@@ -360,7 +410,7 @@ class FormattersAPI:
     _re_linkify = re.compile(r'''
       (?P<url>
         \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt|data)
         :
         (?:
           (?:
@@ -423,11 +473,13 @@ class FormattersAPI:
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
 
-    # a pattern to match common trailing punctuation for URLs that we
-    # don't want to include in the link.
+    # There is various punctuation that can occur at the end of a link that
+    # shouldn't be included. The regex below matches on the set of characters
+    # we don't generally want. See also _handle_parens_in_trailers, which
+    # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self):
+    def text_to_html(self, linkify_text=True):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -460,9 +512,10 @@ class FormattersAPI:
 
         text = ''.join(output)
 
-        # Linkify the text.
-        text = re_substitute(self._re_linkify, self._linkify_substitution,
-                             break_long_words, text)
+        # Linkify the text, if allowed.
+        if linkify_text is True:
+            text = re_substitute(self._re_linkify, self._linkify_substitution,
+                break_long_words, text)
 
         return text
 

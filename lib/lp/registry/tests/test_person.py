@@ -67,6 +67,7 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -226,7 +227,7 @@ class TestPersonTeams(TestCaseWithFactory):
     def test_inTeam_person_string_missing_team(self):
         # If a check against a string is done, the team lookup is implicit:
         # treat a missing team as an empty team so that any pages that choose
-        # to do this don't blow up unnecessarily. Similarly feature flags 
+        # to do this don't blow up unnecessarily. Similarly feature flags
         # team: scopes depend on this.
         self.assertFalse(self.user.inTeam('does-not-exist'))
 
@@ -428,12 +429,12 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(TestCase):
+class TestPersonSet(TestCaseWithFactory):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        super(TestPersonSet, self).setUp()
         login(ANONYMOUS)
         self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
@@ -456,6 +457,31 @@ class TestPersonSet(TestCase):
             person2 is None,
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
+
+    def test_getPrecachedPersonsFromIDs(self):
+        # The getPrecachedPersonsFromIDs() method should only make one
+        # query to load all the extraneous data. Accessing the
+        # attributes should then cause zero queries.
+        person_ids = [
+            self.factory.makePerson().id
+            for i in range(3)]
+
+        with StormStatementRecorder() as recorder:
+            persons = list(self.person_set.getPrecachedPersonsFromIDs(
+                person_ids, need_karma=True, need_ubuntu_coc=True,
+                need_location=True, need_archive=True,
+                need_preferred_email=True, need_validity=True))
+        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+
+        with StormStatementRecorder() as recorder:
+            for person in persons:
+                person.is_valid_person
+                person.karma
+                person.is_ubuntu_coc_signer
+                person.location
+                person.archive
+                person.preferredemail
+        self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
 
 class KarmaTestMixin:
@@ -598,6 +624,36 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         login_person(person)
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
+
+    def _doMerge(self, test_team, target_team):
+        test_team.deactivateAllMembers(
+            comment='',
+            reviewer=test_team.teamowner)
+        self.person_set.merge(test_team, target_team)
+
+    def test_team_without_super_teams_is_fine(self):
+        # A team with no members and no super teams
+        # merges without errors.
+        test_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        self._doMerge(test_team, target_team)
+
+    def test_team_with_super_teams_raises_error(self):
+        # A team with no members but with superteams
+        # raises an assertion error.
+        test_team = self.factory.makeTeam()
+        super_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        test_team.join(super_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError,
+            self._doMerge,
+            test_team,
+            target_team)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

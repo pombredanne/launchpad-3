@@ -1052,103 +1052,11 @@ You can also search for an email address and get the teams with a match.
     [(u'Ubuntu Team', u'Mark Shuttleworth')]
 
 
-=== ValidTeamMember ===
-
-With the exception of all teams that have this team as a member and the
-team itself, all valid persons and teams are valid members.
-
-    >>> login('foo.bar@canonical.com')
-    >>> team = person_set.getByName('ubuntu-team')
-    >>> team2 = person_set.getByName('guadamen')
-    >>> person = person_set.getByName('name16')
-
-ValidTeamMember needs a context:
-
-    >>> vocab = get_naked_vocab(None, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-ValidTeamMember's context must implement ITeam:
-
-    >>> vocab = get_naked_vocab(person, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-'name16' is a valid member for 'ubuntu-team':
-
-    >>> vocab = get_naked_vocab(team, "ValidTeamMember")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-'ubuntu-team' is not a valid member for itself:
-
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18', u'ubuntu-security']
-
-'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member
-of 'ubuntu-team'.
-
-    >>> team2 in vocab
-    False
-    >>> [person.name for person in vocab.search('guadamen')]
-    []
-
-
-=== ValidTeamOwner ===
-
-With the exception of the team itself and all teams owned by that team,
-all valid persons and teams are valid owners for the team in context.
-
-ValidTeamOwner needs a context.
-
-    >>> vocab = get_naked_vocab(None, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-ValidTeamOwner's context must provide IPerson or IPersonSet.
-
-    >>> get_naked_vocab(team, "ValidTeamOwner")
-    <...ValidTeamOwnerVocabulary...
-    >>> get_naked_vocab(person_set, "ValidTeamOwner")
-    <...ValidTeamOwnerVocabulary...
-    >>> get_naked_vocab(firefox, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-'ubuntu-team' is not a valid owner for itself.
-
-    >>> vocab = get_naked_vocab(team, "ValidTeamOwner")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18', u'ubuntu-security']
-
-'name16' is a valid owner for 'ubuntu-team'.
-
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-
 === ValidPerson ===
 
 All 'valid' persons who are not a team.
 
+    >>> login('foo.bar@canonical.com')
     >>> vocab = get_naked_vocab(None, "ValidPerson")
     >>> vocab.displayname
     'Select a Person'

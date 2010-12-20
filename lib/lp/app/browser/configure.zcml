@@ -551,6 +551,14 @@
       name="fmt"
       />
 
+  <!-- TALES query: namespace -->
+  <adapter
+      for="zope.app.form.interfaces.IWidget"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.launchpadform.WidgetHasStructuredDoc"
+      name="query"
+      />
+
   <adapter
       factory="lp.app.browser.tales.LaunchpadLayerToMainTemplateAdapter"
       />

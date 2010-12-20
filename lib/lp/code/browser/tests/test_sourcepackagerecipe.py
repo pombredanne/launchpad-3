@@ -7,10 +7,12 @@
 __metaclass__ = type
 
 
+from BeautifulSoup import BeautifulSoup
 from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 from textwrap import dedent
 
 from mechanize import LinkNotFoundError
@@ -25,8 +27,10 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    get_radio_button_text_for_field,
     )
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -39,13 +43,18 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
+from lp.testing.views import create_initialized_view
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
+    celebrity_logged_in,
     login,
     person_logged_in,
     )
@@ -82,6 +91,139 @@ class TestCaseForRecipe(BrowserTestCase):
             description=u'This recipe builds a foo for disto bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa)
+
+    def createRelatedBranches(self, base_branch=None, nr_series_branches=5,
+                              nr_package_branches=5):
+        """Create a recipe base branch and some others associated with it.
+        The other branches are:
+          - series branches: a set of branches associated with product
+            series of the same product as the recipe base branch.
+          - package branches: a set of branches associated with packagesource
+            entities of the same product as the recipe base branch.
+        """
+        related_series_branches = set()
+        related_package_branches = set()
+        if base_branch is None:
+            naked_product = removeSecurityProxy(
+                self.factory.makeProduct(owner=self.chef))
+        else:
+            naked_product = removeSecurityProxy(base_branch.product)
+
+        if nr_series_branches > 0:
+            # Add a development branch
+            naked_product.development_focus.name = 'trunk'
+            devel_branch = self.factory.makeProductBranch(
+                product=naked_product, name='trunk', owner=self.chef)
+            linked_branch = ICanHasLinkedBranch(naked_product)
+            linked_branch.setBranch(devel_branch)
+            related_series_branches.add(devel_branch)
+
+            # Add some product series
+            for x in range(nr_series_branches-1):
+                branch = self.factory.makeBranch(
+                    product=naked_product, owner=self.chef)
+                self.factory.makeProductSeries(
+                    product=naked_product, branch=branch)
+                related_series_branches.add(branch)
+
+        if nr_package_branches > 0:
+            distro = self.factory.makeDistribution()
+            distroseries = self.factory.makeDistroSeries(
+                distribution=distro)
+
+            for x in range(nr_package_branches):
+                sourcepackagename = self.factory.makeSourcePackageName()
+
+                suitesourcepackage = self.factory.makeSuiteSourcePackage(
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries,
+                    pocket=PackagePublishingPocket.RELEASE)
+                naked_sourcepackage = removeSecurityProxy(
+                    suitesourcepackage)
+
+                branch = self.factory.makePackageBranch(
+                    owner=self.chef, sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
+                linked_branch = ICanHasLinkedBranch(naked_sourcepackage)
+                with celebrity_logged_in('admin'):
+                    linked_branch.setBranch(branch, self.chef)
+
+                series = self.factory.makeProductSeries(
+                    product=naked_product)
+                self.factory.makePackagingLink(
+                    distroseries=distroseries, productseries=series,
+                    sourcepackagename=sourcepackagename)
+                related_package_branches.add(branch)
+
+        if base_branch is None:
+            # Create the 'source' branch ie the base branch of a recipe.
+            base_branch = self.factory.makeProductBranch(
+                                            product=naked_product)
+        return (
+            base_branch,
+            sorted(related_series_branches, key=attrgetter('unique_name')),
+            sorted(related_package_branches, key=attrgetter('unique_name')))
+
+    def checkRelatedBranches(self, related_series_branches,
+                             related_package_branches, browser_contents):
+        """Check that the browser contents contain the correct branch info."""
+        login(ANONYMOUS)
+        soup = BeautifulSoup(browser_contents)
+
+        # The related branches collapsible section needs to be there.
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIsNot(related_branches, None)
+
+        # Check the related package branches.
+        branch_table = soup.find(
+            'table', {'id': 'related-package-branches-listing'})
+        rows = branch_table.tbody.findAll('tr')
+
+        package_branches_info = []
+        root_url = canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='code')
+        root_url = root_url.rstrip('/')
+        for row in rows:
+            branch_links = row.findAll('a')
+            self.assertEqual(2, len(branch_links))
+            package_branches_info.append(
+                '%s%s' % (root_url, branch_links[0]['href']))
+            package_branches_info.append(branch_links[0].renderContents())
+            package_branches_info.append(
+                '%s%s' % (root_url, branch_links[1]['href']))
+            package_branches_info.append(branch_links[1].renderContents())
+        expected_branch_info = []
+        for branch in related_package_branches:
+            expected_branch_info.append(
+                canonical_url(branch, rootsite='code'))
+            expected_branch_info.append(branch.displayname)
+            expected_branch_info.append(
+                canonical_url(branch.sourcepackage, rootsite='code'))
+            expected_branch_info.append(branch.sourcepackage.name)
+        self.assertEqual(package_branches_info, expected_branch_info)
+
+        # Check the related series branches.
+        branch_table = soup.find(
+            'table', {'id': 'related-series-branches-listing'})
+        rows = branch_table.tbody.findAll('tr')
+
+        series_branches_info = []
+        for row in rows:
+            branch_links = row.findAll('a')
+            self.assertEqual(2, len(branch_links))
+            series_branches_info.append(
+                '%s%s' % (root_url, branch_links[0]['href']))
+            series_branches_info.append(branch_links[0].renderContents())
+            series_branches_info.append(branch_links[1]['href'])
+            series_branches_info.append(branch_links[1].renderContents())
+        expected_branch_info = []
+        for branch in related_series_branches:
+            expected_branch_info.append(
+                canonical_url(branch, rootsite='code'))
+            expected_branch_info.append(branch.displayname)
+            expected_branch_info.append(canonical_url(branch.owner))
+            expected_branch_info.append(branch.owner.displayname)
+        self.assertEqual(series_branches_info, expected_branch_info)
 
 
 def get_message_text(browser, index):
@@ -141,7 +283,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -291,7 +433,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+                # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
@@ -301,8 +443,29 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
-            "The recipe text is not a valid bzr-builder recipe. "
-            "End of line while looking for '#'")
+            "Error parsing recipe:1:1:"
+            " End of line while looking for '#'.")
+
+    def test_create_recipe_usage(self):
+        # The error for a recipe with invalid instruction parameters should
+        # include instruction usage.
+        branch = self.factory.makeBranch(name='veggies')
+        package_branch = self.factory.makeBranch(name='packaging')
+
+        browser = self.createRecipe(
+            dedent('''\
+                # bzr-builder format 0.2 deb-version 0+{revno}
+                %(branch)s
+                merge
+                ''' % {
+                    'branch': branch.bzr_identity,
+                }),
+            branch=branch)
+        self.assertEqual(
+            'Error parsing recipe:3:6: '
+            'End of line while looking for the branch id.\n'
+            'Usage: merge NAME BRANCH [REVISION]',
+            get_message_text(browser, 2))
 
     def test_create_recipe_no_distroseries(self):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
@@ -312,8 +475,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
-            extract_text(find_tags_by_class(browser.contents, 'message')[2]),
-            'You must specify at least one series for daily builds.')
+            'You must specify at least one series for daily builds.',
+            get_message_text(browser, 2))
 
     def test_create_recipe_bad_base_branch(self):
         # If a user tries to create source package recipe with a bad base
@@ -390,6 +553,198 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
+    def test_new_recipe_with_no_related_branches(self):
+        # The Related Branches section should not appear if there are no
+        # related branches.
+        branch = self.makeBranch()
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        # There shouldn't be a related-branches section if there are no
+        # related branches..
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIs(related_branches, None)
+
+    def test_new_recipe_with_package_branches(self):
+        # The series branches table should not appear if there are none.
+        (branch, related_series_branches, related_package_branches) = (
+            self.createRelatedBranches(nr_series_branches=0))
+        browser = self.getUserBrowser(
+            canonical_url(branch, view_name='+new-recipe'), user=self.chef)
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-package-branches-listing'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-series-branches-listing'})
+        self.assertIs(related_branches, None)
+
+    def test_new_recipe_with_series_branches(self):
+        # The package branches table should not appear if there are none.
+        (branch, related_series_branches, related_package_branches) = (
+            self.createRelatedBranches(nr_package_branches=0))
+        browser = self.getUserBrowser(
+            canonical_url(branch, view_name='+new-recipe'), user=self.chef)
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-series-branches-listing'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-package-branches-listing'})
+        self.assertIs(related_branches, None)
+
+    def test_new_recipe_view_related_branches(self):
+        # The view class should provide the expected related branches for
+        # rendering.
+        (branch, related_series_branches,
+            related_package_branches) = self.createRelatedBranches()
+        with person_logged_in(self.chef):
+            view = create_initialized_view(branch, "+new-recipe")
+            self.assertEqual(
+                related_series_branches, view.related_series_branches)
+            self.assertEqual(
+                related_package_branches, view.related_package_branches)
+
+    def test_new_recipe_with_related_branches(self):
+        # The related branches should be rendered correctly on the page.
+        (branch, related_series_branches,
+            related_package_branches) = self.createRelatedBranches()
+        browser = self.getUserBrowser(
+            canonical_url(branch, view_name='+new-recipe'), user=self.chef)
+        self.checkRelatedBranches(
+            related_series_branches, related_package_branches,
+            browser.contents)
+
+    def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
+        # If the user creating a recipe has no existing PPAs, the selector
+        # isn't shown, but the field to enter a new PPA name is.
+        self.user = self.factory.makePerson(password='test')
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has an initial value.
+        self.assertEqual('ppa', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertIs(None, ppa_chooser)
+        # There is a hidden option to say create a new ppa.
+        ppa_options = content.find(attrs={'name': 'field.use_ppa'})
+        self.assertEqual('input', ppa_options.name)
+        self.assertEqual('hidden', ppa_options['type'])
+        self.assertEqual('create-new', ppa_options['value'])
+
+    def test_ppa_selector_shown_if_user_has_ppas(self):
+        # If the user creating a recipe has existing PPAs, the selector is
+        # shown, along with radio buttons to decide whether to use an existing
+        # ppa or to create a new one.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has no initial value.
+        self.assertEqual('', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertEqual('select', ppa_chooser.name)
+        ppa_options = list(
+            get_radio_button_text_for_field(content, 'use_ppa'))
+        self.assertEqual(
+            ['(*) Use an existing PPA',
+             '( ) Create a new PPA for this recipe'''],
+            ppa_options)
+
+    def test_create_new_ppa(self):
+        # If the user doesn't have any PPAs, a new once can be created.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = self.user.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
+    def test_create_new_ppa_duplicate(self):
+        # If a new PPA is being created, and the user already has a ppa of the
+        # name specifed an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        # Make a PPA called 'ppa' using the default.
+        self.user.createPPA(name='foo')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create a new PPA').click()
+        browser.getControl(name='field.ppa_name').value = 'foo'
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You already have a PPA named 'foo'.")
+
+    def test_create_new_ppa_missing_name(self):
+        # If a new PPA is being created, and the user has not specified a
+        # name, an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl(name='field.ppa_name').value = ''
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You need to specify a name for the PPA.")
+
+    def test_create_new_ppa_owned_by_recipe_owner(self):
+        # The new PPA that is created is owned by the recipe owner.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        team = self.factory.makeTeam(
+            name='vikings', members=[self.user],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        branch = self.factory.makeAnyBranch(owner=team)
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl(name='field.owner').value = ['vikings']
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~vikings/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = team.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
@@ -446,7 +801,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -506,7 +861,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -646,7 +1001,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -667,10 +1022,85 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             get_message_text(browser, 1),
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
+    def test_edit_recipe_with_no_related_branches(self):
+        # The Related Branches section should not appear if there are no
+        # related branches.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        # There shouldn't be a related-branches section if there are no
+        # related branches.
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIs(related_branches, None)
+
+    def test_edit_recipe_with_package_branches(self):
+        # The series branches table should not appear if there are none.
+        with person_logged_in(self.chef):
+            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+            self.createRelatedBranches(
+                    base_branch=recipe.base_branch, nr_series_branches=0)
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-package-branches-listing'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-series-branches-listing'})
+        self.assertIs(related_branches, None)
+
+    def test_edit_recipe_with_series_branches(self):
+        # The package branches table should not appear if there are none.
+        with person_logged_in(self.chef):
+            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+            self.createRelatedBranches(
+                    base_branch=recipe.base_branch, nr_package_branches=0)
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        soup = BeautifulSoup(browser.contents)
+        related_branches = soup.find('fieldset', {'id': 'related-branches'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-series-branches-listing'})
+        self.assertIsNot(related_branches, None)
+        related_branches = soup.find(
+            'table', {'id': 'related-package-branches-listing'})
+        self.assertIs(related_branches, None)
+
+    def test_edit_recipe_view_related_branches(self):
+        # The view class should provide the expected related branches for
+        # rendering.
+        with person_logged_in(self.chef):
+            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+            (branch, related_series_branches,
+                related_package_branches) = self.createRelatedBranches(
+                    base_branch=recipe.base_branch)
+            view = create_initialized_view(recipe, "+edit")
+            self.assertEqual(
+                related_series_branches, view.related_series_branches)
+            self.assertEqual(
+                related_package_branches, view.related_package_branches)
+
+    def test_edit_recipe_with_related_branches(self):
+        # The related branches should be rendered correctly on the page.
+        with person_logged_in(self.chef):
+            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+            (branch, related_series_branches,
+                related_package_branches) = self.createRelatedBranches(
+                    base_branch=recipe.base_branch)
+        browser = self.getUserBrowser(
+            canonical_url(recipe, view_name='+edit'), user=self.chef)
+        self.checkRelatedBranches(
+            related_series_branches, related_package_branches,
+            browser.contents)
+
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_index(self):
         recipe = self.makeRecipe()
@@ -695,20 +1125,94 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Distribution series: Secret Squirrel
 
             Latest builds
-            Status Time Distribution series Archive
+            Status When complete Distribution series Archive
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+
+    def test_index_success_with_buildlog(self):
+        # The buildlog is shown if it is there.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+            Request build\(s\)""", self.getMainText(recipe))
+
+    def test_index_success_with_binary_builds(self):
+        # Binary builds are shown after the recipe builds if there are any.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+        package_name = self.factory.getOrMakeSourcePackageName('chocolate')
+        source_package_release = self.factory.makeSourcePackageRelease(
+            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
+            source_package_recipe_build=build, version='0+r42')
+        builder = self.factory.makeBuilder()
+        binary_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release,
+            distroarchseries=self.squirrel.nominatedarchindep,
+            processor=builder.processor)
+        binary_build.queueBuild()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+              chocolate - 0\+r42 in .* \(estimated\) i386
+            Request build\(s\)""", self.getMainText(recipe))
+
+    def test_index_success_with_completed_binary_build(self):
+        # Binary builds show their buildlog too.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+        package_name = self.factory.getOrMakeSourcePackageName('chocolate')
+        source_package_release = self.factory.makeSourcePackageRelease(
+            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
+            source_package_recipe_build=build, version='0+r42')
+        builder = self.factory.makeBuilder()
+        binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release,
+            distroarchseries=self.squirrel.nominatedarchindep,
+            processor=builder.processor))
+        binary_build.queueBuild()
+        binary_build.status = BuildStatus.FULLYBUILT
+        binary_build.date_started = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             This recipe has not been built yet.""", self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
@@ -717,7 +1221,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
@@ -735,7 +1239,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.factory.makeBuilder()
         pattern = """\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
 
@@ -925,8 +1429,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         view = self.makeBuildView()
         self.assertTrue(view.estimate)
         view.context.buildqueue_record.job.start()
+        clear_property_cache(view)
         self.assertTrue(view.estimate)
         removeSecurityProxy(view.context).date_finished = datetime.now(utc)
+        clear_property_cache(view)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -945,11 +1451,13 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             recipe_build=build)
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, utc)
         self.factory.makeBuilder()
+        clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
         queue_entry.job.start()
+        clear_property_cache(view)
         self.assertEqual(
             queue_entry.job.date_started + queue_entry.estimated_duration,
             view.eta)

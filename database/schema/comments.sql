@@ -136,6 +136,14 @@ COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked t
 COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
 COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
 
+-- SubunitStream
+
+COMMENT ON TABLE SubunitStream IS 'Raw gz compressed subunit streams.';
+COMMENT ON COLUMN SubunitStream.uploader IS 'The account used to upload the stream.';
+COMMENT ON COLUMN SubunitStream.date_created IS 'The date of the upload.';
+COMMENT ON COLUMN SubunitStream.branch IS 'The branch which the stream was created on/for/with.';
+COMMENT ON COLUMN SubunitStream.stream IS 'The library file alias which contains the stream content.';
+
 -- BranchSubscription
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
@@ -527,6 +535,7 @@ COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matchin
 COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
 COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+COMMENT ON COLUMN DistributionSourcePackage.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- DistributionSourcePackageCache
 
@@ -711,7 +720,7 @@ COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remot
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-
+COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -1439,7 +1448,8 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment fro
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest/nest-part instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.source_directory IS 'The location in the branch to nest, if this is a nest-part instruction.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
 

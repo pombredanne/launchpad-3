@@ -60,6 +60,7 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationSort,
     )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
@@ -73,13 +74,13 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
-from lp.blueprints.model.sprint import Sprint
-from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.product import IProduct
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -182,7 +183,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
-    # attributes
     @property
     def target(self):
         """See ISpecification."""
@@ -190,25 +190,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return self.product
         return self.distribution
 
-    def retarget(self, product=None, distribution=None):
+    def setTarget(self, target):
         """See ISpecification."""
-        assert not (product and distribution)
-        assert (product or distribution)
+        if IProduct.providedBy(target):
+            self.product = target
+            self.distribution = None
+        elif IDistribution.providedBy(target):
+            self.product = None
+            self.distribution = target
+        else:
+            raise AssertionError("Unknown target: %s" % target)
 
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        if product:
-            assert product.getSpecification(self.name) is None
-        elif distribution:
-            assert distribution.getSpecification(self.name) is None
-
-        # if we are not changing anything, then return
-        if self.product == product and self.distribution == distribution:
+    def retarget(self, target):
+        """See ISpecification."""
+        if self.target == target:
             return
 
-        # we must lose any goal we have set and approved/declined because we
-        # are moving to a different product that will have different
-        # policies and drivers
+        self.validateMove(target)
+
+        # We must lose any goal we have set and approved/declined because we
+        # are moving to a different target that will have different
+        # policies and drivers.
         self.productseries = None
         self.distroseries = None
         self.goalstatus = SpecificationGoalStatus.PROPOSED
@@ -216,11 +218,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self.date_goal_proposed = None
         self.milestone = None
 
-        # set the new values
-        self.product = product
-        self.distribution = distribution
+        self.setTarget(target)
         self.priority = SpecificationPriority.UNDEFINED
         self.direction_approved = False
+
+    def validateMove(self, target):
+        """See ISpecification."""
+        if target.getSpecification(self.name) is not None:
+            raise TargetAlreadyHasSpecification(target, self.name)
 
     @property
     def goal(self):
@@ -259,6 +264,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # the goal should now also not have a decider
         self.goal_decider = None
         self.date_goal_decided = None
+        if goal is not None and goal.personHasDriverRights(proposer):
+            self.acceptBy(proposer)
 
     def acceptBy(self, decider):
         """See ISpecification."""
@@ -554,6 +561,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # sprint linking
     def linkSprint(self, sprint, user):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -566,6 +575,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -658,7 +669,7 @@ class HasSpecificationsMixin:
 
     def _specification_sort(self, sort):
         """Return the storm sort order for 'specifications'.
-        
+
         :param sort: As per HasSpecificationsMixin.specifications.
         """
         # sort by priority descending, by default
@@ -671,7 +682,7 @@ class HasSpecificationsMixin:
 
     def _preload_specifications_people(self, query):
         """Perform eager loading of people and their validity for query.
-        
+
         :param query: a string query generated in the 'specifications'
             method.
         :return: A DecoratedResultSet with Person precaching setup.
@@ -880,6 +891,7 @@ class SpecificationSet(HasSpecificationsMixin):
     @property
     def coming_sprints(self):
         """See ISpecificationSet."""
+        from lp.blueprints.model.sprint import Sprint
         return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 

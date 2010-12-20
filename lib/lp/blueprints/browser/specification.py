@@ -96,6 +96,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -129,7 +130,7 @@ class NewSpecificationView(LaunchpadFormView):
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
-            propose_goal_with_automatic_approval(spec, series, self.user)
+            spec.proposeGoal(series, self.user)
         # Propose the specification as a sprint topic, if specified.
         sprint = data.get('sprint')
         if sprint is not None:
@@ -603,8 +604,7 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         self.context.whiteboard = data['whiteboard']
-        propose_goal_with_automatic_approval(
-            self.context, data['distroseries'], self.user)
+        self.context.proposeGoal(data['distroseries'], self.user)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -619,23 +619,12 @@ class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         self.context.whiteboard = data['whiteboard']
-        propose_goal_with_automatic_approval(
-            self.context, data['productseries'], self.user)
+        self.context.proposeGoal(data['productseries'], self.user)
         self.next_url = canonical_url(self.context)
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-def propose_goal_with_automatic_approval(specification, series, user):
-    """Proposes the given specification as a goal for the given series. If
-    the given user has permission, the proposal is approved automatically.
-    """
-    specification.proposeGoal(series, user)
-    # If the proposer has permission, approve the goal automatically.
-    if series is not None and check_permission('launchpad.Driver', series):
-        specification.acceptBy(user)
 
 
 class SpecificationGoalDecideView(LaunchpadFormView):
@@ -688,29 +677,17 @@ class SpecificationRetargetingView(LaunchpadFormView):
                 self.request.form.get("field.target"))
             return
 
-        if target.getSpecification(self.context.name) is not None:
+        try:
+            self.context.validateMove(target)
+        except TargetAlreadyHasSpecification:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
                 target.displayname)
-            return
 
     @action(_('Retarget Blueprint'), name='retarget')
-    def register_action(self, action, data):
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        target = data['target']
-        if target.getSpecification(self.context.name) is not None:
-            return '%s already has a blueprint called %s' % (
-                target.displayname, self.context.name)
-        product = distribution = None
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        else:
-            raise AssertionError('Unknown target.')
-        self.context.retarget(product=product, distribution=distribution)
+    def retarget_action(self, action, data):
+        self.context.retarget(data['target'])
         self._nextURL = canonical_url(self.context)
 
     @property
@@ -775,6 +752,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
         SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
         NEW = SpecificationDefinitionStatus.NEW
         self.context.superseded_by = data['superseded_by']
+        # XXX: salgado, 2010-11-24, bug=680880: This logic should be in model
+        # code.
         if data['superseded_by'] is not None:
             # set the state to superseded
             self.context.definition_status = SUPERSEDED

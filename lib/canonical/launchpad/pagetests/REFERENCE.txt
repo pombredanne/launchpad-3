@@ -1,4 +1,5 @@
-= Kiko's wonderfully incomplete testbrowser reference manual for dummies =
+Kiko's wonderfully incomplete testbrowser reference manual for dummies
+======================================================================
 
 Opening pages:
 
@@ -31,7 +32,8 @@ Manipulating content:
     True
 
 
-== Debugging ==
+Debugging
+---------
 
 If you need to debug a pagetest, you can use the convenient 'stop()' method
 exported into pagetest globals.  This is essentially the same as importing pdb
@@ -49,7 +51,8 @@ continue in your pagetest because once the testrunner db is wiped, your
 appserver will be unhappy.
 
 
-== Parsing content ==
+Parsing content
+---------------
 
 Parsing specific sections of pages:
 
@@ -73,7 +76,7 @@ Printing text from images:
     >>> print extract_text(html_string, extract_image_text=True)
     Here's some text with an image.
 
-    >>> html_string = "<img src="/@@/bar" alt="Alt text works too." />"
+    >>> html_string = """<img src="/@@/bar" alt="Alt text works too." />"""
     >>> print extract_text(html_string, extract_image_text=True)
     Alt text works too.
 
@@ -110,21 +113,22 @@ Finding contents by element class or IDs:
 
 Using BeautifulSoup in all its glory:
 
-  >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
-  >>> anon_browser.open("http://launchpad.dev/~name16")
-  >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
-  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
-  >>> print soup.renderContents()
-  <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
+    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+    >>> anon_browser.open("http://launchpad.dev/~name16")
+    >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
+    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> print soup.renderContents()
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
 
-  >>> strainer = SoupStrainer({'class': ['error']})
-  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
-  >>> for tag in soup:
-  ...     print extract_text(tag)
-  Quantities must be greater than or equal 0.
+    >>> strainer = SoupStrainer({'class': ['error']})
+    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> for tag in soup:
+    ...     print extract_text(tag)
+    Quantities must be greater than or equal 0.
 
 
-== Links ==
+Links
+-----
 
 Manipulating links:
 
@@ -163,7 +167,8 @@ Extracting link pointers:
     u'http://launchpad.dev/foo'
 
 
-== Form Controls ==
+Form Controls
+-------------
 
 Basics:
 
@@ -202,7 +207,8 @@ Posting without submit buttons:
     'http://where-you-went-after-posting/'
 
 
-== Committing transactions ==
+Committing transactions
+-----------------------
 
 The transaction module is already imported into your pagetest's globals, so
 just do:
@@ -213,24 +219,24 @@ just do:
 You do not need to be logged in to do this.
 
 
-== Gotchas ==
+Gotchas
+-------
 
 If you get:
 
-    AttributeError: 'zope.thread.local' object has no attribute 'interaction'
+    AttributeError: 'thread._local' object has no attribute 'interaction'
 
 This means you are trying to getUtility() and aren't logged in.
 Use something like this:
 
-If you get:
-
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
+
+If you get:
 
     AssertionError: newInteraction called while another interaction is
     active.
 
 This means you forgot to log out:
 
-   >>> logout()
-
+    >>> logout()

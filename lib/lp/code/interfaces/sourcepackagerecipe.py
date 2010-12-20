@@ -63,7 +63,7 @@ from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+    # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
     %s
     ''')
 
@@ -120,8 +120,7 @@ class ISourcePackageRecipeView(Interface):
     @operation_parameters(
         archive=Reference(schema=IArchive),
         distroseries=Reference(schema=IDistroSeries),
-        pocket=Choice(vocabulary=PackagePublishingPocket,)
-        )
+        pocket=Choice(vocabulary=PackagePublishingPocket,))
     @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
@@ -148,6 +147,7 @@ class ISourcePackageRecipeEdit(Interface):
         This requires deleting any rows with non-nullable foreign key
         references to this object.
         """
+
 
 class ISourcePackageRecipeEditableAttributes(IHasOwner):
     """ISourcePackageRecipe attributes that can be edited.

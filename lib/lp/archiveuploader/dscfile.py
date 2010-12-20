@@ -430,11 +430,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             archives = [self.policy.archive]
 
+        archives = [archive for archive in archives if archive is not None]
+
         library_file = None
         for archive in archives:
             try:
-                library_file = self.policy.distro.getFileByName(
-                    filename, source=True, binary=False, archive=archive)
+                library_file = archive.getFileByName(filename)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive

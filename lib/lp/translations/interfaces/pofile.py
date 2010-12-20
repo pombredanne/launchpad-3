@@ -66,9 +66,6 @@ class IPOFile(IRosettaStats):
         title=_('Language of this PO file.'),
         vocabulary='Language', required=True)
 
-    variant = TextLine(
-        title=_('The language variant for this translation file.'))
-
     title = TextLine(
         title=_('The translation file title.'), required=True, readonly=True)
 

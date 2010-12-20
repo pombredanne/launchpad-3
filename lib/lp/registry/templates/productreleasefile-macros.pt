@@ -26,7 +26,7 @@
                       define="last_downloaded lfa/last_downloaded">
         <span tal:replace="lfa/hits/fmt:intcomma">10</span>
         <br />
-        <span class="extra-discreet greyed-out">
+        <span class="lesser greyed-out">
           last downloaded
           <strong tal:condition="not:last_downloaded/days">
             today

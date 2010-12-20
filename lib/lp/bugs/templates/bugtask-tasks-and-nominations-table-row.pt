@@ -38,7 +38,7 @@
     </td>
     <td tal:condition="not:indent_task">
       <span tal:attributes="id string:bugtarget-picker-${row_id}">
-        <span class="yui-activator-data-box">
+        <span class="yui3-activator-data-box">
           <span title="This project&rsquo;s license has not been specified.">
             <a tal:attributes="href context/target/fmt:url;
                                title view/target_link_title;
@@ -46,10 +46,10 @@
                tal:content="context/bugtargetdisplayname" />
           </span>
         </span>
-        <button class="lazr-btn yui-activator-act yui-activator-hidden">
+        <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
           Edit
         </button>
-        <div class="yui-activator-message-box yui-activator-hidden" />
+        <div class="yui3-activator-message-box yui3-activator-hidden" />
       </span>
     </td>
 
@@ -131,7 +131,7 @@
 
       <tal:has_no_watch condition="not: context/bugwatch">
         <span tal:attributes="id string:assignee-picker-${row_id}">
-          <span class="yui-activator-data-box">
+          <span class="yui3-activator-data-box">
             <a tal:condition="context/assignee"
                tal:attributes="href context/assignee/fmt:url;
                                class context/assignee/image:sprite_css"
@@ -140,10 +140,10 @@
               Unassigned
             </tal:unassigned>
           </span>
-          <button class="lazr-btn yui-activator-act yui-activator-hidden">
+          <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
             Edit
           </button>
-          <div class="yui-activator-message-box yui-activator-hidden" />
+          <div class="yui3-activator-message-box yui3-activator-hidden" />
         </span>
       </tal:has_no_watch>
     </td>

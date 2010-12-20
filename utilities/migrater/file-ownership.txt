@@ -1047,7 +1047,7 @@ reg ./zcml/distribution.zcml
     ./mail/errortemplates/num-arguments-mismatch.txt
     ./mail/errortemplates/no-such-bug.txt
     ./mail/errortemplates/security-parameter-mismatch.txt
-    ./mail/errortemplates/not-gpg-signed.txt
+    ./mail/errortemplates/unauthenticated-bug-creation.txt
     ./mail/errortemplates/key-not-registered.txt
     ./mail/errortemplates/oops.txt
     ./mail/errortemplates/branchmergeproposal-exists.txt
