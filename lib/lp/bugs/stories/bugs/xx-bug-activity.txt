@@ -292,6 +292,4 @@ If a target of a bug task is changed the old and new value will be shown.
     ...
     affects:
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
-    Changed in mozilla-firefox (Ubuntu):
-    ...
     --------
