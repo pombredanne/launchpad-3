@@ -968,7 +968,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         if len(newest_comments) > 0:
             # Find first newest comment in the event list.
             first_newest_comment = newest_comments[0]
-            for index, event in events:
+            for index, event in enumerate(events):
                 if event.get("comment") is first_newest_comment:
                     num_hidden = (
                         len(self.visible_comments)
@@ -979,6 +979,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                         'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
+                    break
 
         return events
 
