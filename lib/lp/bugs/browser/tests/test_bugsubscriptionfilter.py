@@ -27,6 +27,10 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 
 
 class TestBugSubscriptionFilterBase:
@@ -172,3 +176,47 @@ class TestBugSubscriptionFilterAPI(
         # Updated state.
         self.assertEqual(
             u"It's late.", self.subscription_filter.description)
+
+    def test_modify_statuses(self):
+        # The statuses field can be modified.
+        transaction.commit()
+
+        # Create a service for the filter owner.
+        service = self.factory.makeLaunchpadService(self.owner)
+        get_ws_object = partial(ws_object, service)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
+
+        # Current state.
+        self.assertEqual(set(), self.subscription_filter.statuses)
+
+        # Modify, save, and start a new transaction.
+        ws_subscription_filter.statuses = ["New", "Triaged"]
+        ws_subscription_filter.lp_save()
+        transaction.begin()
+
+        # Updated state.
+        self.assertEqual(
+            set([BugTaskStatus.NEW, BugTaskStatus.TRIAGED]),
+            self.subscription_filter.statuses)
+
+    def test_modify_importances(self):
+        # The importances field can be modified.
+        transaction.commit()
+
+        # Create a service for the filter owner.
+        service = self.factory.makeLaunchpadService(self.owner)
+        get_ws_object = partial(ws_object, service)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
+
+        # Current state.
+        self.assertEqual(set(), self.subscription_filter.importances)
+
+        # Modify, save, and start a new transaction.
+        ws_subscription_filter.importances = ["Low", "High"]
+        ws_subscription_filter.lp_save()
+        transaction.begin()
+
+        # Updated state.
+        self.assertEqual(
+            set([BugTaskImportance.LOW, BugTaskImportance.HIGH]),
+            self.subscription_filter.importances)
