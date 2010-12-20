@@ -245,10 +245,17 @@ class POTMsgSet(SQLBase):
             self._cached_singular_text = self.msgid_singular.msgid
             return self._cached_singular_text
 
-        # Singular text is stored as an "English translation."
-        translation_message = self.getCurrentTranslationMessage(
-            potemplate=None,
-            language=getUtility(ILaunchpadCelebrities).english)
+        # Singular text is stored as an "English translation." Search on
+        # both sides.
+        # XXX henninge 2010-12-14, bug=690196 This may still need some
+        # re-thinking. Maybe even add "getAnyCurrentTranslation".
+        translation_message = self.getCurrentTranslation(
+            None, getUtility(ILaunchpadCelebrities).english,
+            TranslationSide.UBUNTU)
+        if translation_message is None:
+            translation_message = self.getCurrentTranslation(
+                None, getUtility(ILaunchpadCelebrities).english,
+                TranslationSide.UPSTREAM)
         if translation_message is not None:
             msgstr0 = translation_message.msgstr0
             if msgstr0 is not None:
@@ -334,6 +341,18 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
             None, language, current=True)
+
+    def getOtherTranslation(self, language, side):
+        """See `IPOTMsgSet`."""
+        traits = getUtility(
+            ITranslationSideTraitsSet).getTraits(side)
+        return self.getCurrentTranslation(
+            None, language, traits.other_side_traits.side)
+
+    def getSharedTranslation(self, language, side):
+        """See `IPOTMsgSet`."""
+        return self.getCurrentTranslation(
+            None, language, side)
 
     def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
@@ -487,12 +506,12 @@ class POTMsgSet(SQLBase):
 
     def hasTranslationChangedInLaunchpad(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        imported_translation = self.getImportedTranslationMessage(
-            potemplate, language)
-        current_translation = self.getCurrentTranslationMessage(
-            potemplate, language)
-        return (imported_translation is not None and
-                imported_translation != current_translation)
+        other_translation = self.getOtherTranslation(
+            language, potemplate.translation_side)
+        current_translation = self.getCurrentTranslation(
+            potemplate, language, potemplate.translation_side)
+        return (other_translation is not None and
+                other_translation != current_translation)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
@@ -1239,6 +1258,8 @@ class POTMsgSet(SQLBase):
                         lock_timestamp=None):
         """Set the current translation.
 
+        https://dev.launchpad.net/Translations/Specs/setCurrentTranslation
+
         :param pofile: The `POFile` to set the translation in.
         :param submitter: The `Person` who produced this translation.
         :param origin: The translation's `RosettaTranslationOrigin`.
@@ -1373,6 +1394,7 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
+                    traits.other_side_traits.setFlag(incumbent_message, False)
                     traits.other_side_traits.setFlag(message, True)
             else:
                 raise AssertionError(
@@ -1603,8 +1625,8 @@ class POTMsgSet(SQLBase):
         if not self.is_translation_credit:
             return
 
-        shared_upstream_translation = self.getCurrentTranslation(
-            None, pofile.language, TranslationSide.UPSTREAM)
+        shared_upstream_translation = self.getSharedTranslation(
+            pofile.language, TranslationSide.UPSTREAM)
 
         if shared_upstream_translation is not None:
             return

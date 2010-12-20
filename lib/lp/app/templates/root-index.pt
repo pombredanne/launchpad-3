@@ -216,6 +216,10 @@
                       tal:attributes="href apphomes/answers">Find answers</a>
                   </li>
                   <li>
+                    <a class="sprite ppa-icon"
+                      href="/ubuntu/+ppas">Browse Ubuntu PPAs</a>
+                  </li>
+                  <li>
                      <a class="sprite tour" href="/+tour">Take the tour</a>
                    </li>
                 </ul>

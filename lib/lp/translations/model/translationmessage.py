@@ -398,6 +398,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
+        # XXX henninge 2010-12-14 bug=690254: This method still needs some
+        # thought on how it relates to the new model.
+
         if self.potemplate is None:
             # Already converged.
             return

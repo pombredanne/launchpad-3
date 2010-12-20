@@ -802,15 +802,21 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.status == PackagePublishingStatus.PENDING, (
             "Cannot override published records.")
 
-        # If there is an published ancestry, use its component, otherwise
-        # use the original upload component.
-        ancestry = self.getAncestry()
-        if ancestry is not None:
-            component = ancestry.component
-        else:
-            component = self.sourcepackagerelease.component
+        # If there is published ancestry, use its component, otherwise
+        # use the original upload component. Since PPAs only use main,
+        # we don't need to check the ancestry.
+        if not self.archive.is_ppa:
+            ancestry = self.getAncestry()
+            if ancestry is not None:
+                component = ancestry.component
+            else:
+                component = self.sourcepackagerelease.component
 
-        self.component = component
+            self.component = component
+
+        assert self.component in (
+            self.archive.getComponentsForSeries(self.distroseries))
+
 
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""

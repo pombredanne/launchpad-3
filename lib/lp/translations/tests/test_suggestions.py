@@ -9,7 +9,6 @@ from datetime import (
     )
 import unittest
 
-import gettextpo
 from pytz import timezone
 import transaction
 from zope.component import getUtility
@@ -197,8 +196,8 @@ class TestTranslationSuggestions(unittest.TestCase):
             is_current_upstream=True, lock_timestamp=None)
         current_translation = potmsgset.getCurrentTranslationMessage(
             self.foo_template, self.foo_nl.language)
-        imported_translation = potmsgset.getImportedTranslationMessage(
-            self.foo_template, self.foo_nl.language)
+        imported_translation = potmsgset.getOtherTranslation(
+            self.foo_nl.language, self.foo_template.translation_side)
 
         self.assertEquals(
             current_translation, imported_translation,

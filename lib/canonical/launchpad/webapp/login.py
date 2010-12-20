@@ -119,7 +119,7 @@ class UnauthorizedView(SystemErrorView):
             target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
-            # to use the ``addNoticeNotification`` method.
+            # to use the ``addInfoNotification`` method.
             allowUnauthenticatedSession(self.request)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
@@ -365,7 +365,7 @@ class OpenIDCallbackView(OpenIDLogin):
             # The authentication failed (or was canceled), but the user is
             # already logged in, so we just add a notification message and
             # redirect.
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 _(u'Your authentication failed but you were already '
                    'logged into Launchpad.'))
             self._redirect()

@@ -15,32 +15,32 @@
     <div metal:fill-slot="main"
          tal:define="dailybuilds view/batchnav/currentBatch">
 
-      <tal:block tal:condition="not:dailybuilds">
-        <p id="no-builds">No recently completed daily builds found.</p>
-      </tal:block>
+    <form method="get" name="filter" id="filter_form"
+          style="padding-bottom: 0.5em"
+          tal:attributes="action view/form_action|request/URL">
+      Select the number of recently completed builds to display:
+      <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
+      <noscript>
+        <input type="submit" value="Filter"/>
+      </noscript>
+    </form>
 
-      <tal:block tal:condition="dailybuilds">
+    <script type="text/javascript">
+      function submit_filter() {
+          getElement('filter_form').submit();
+      }
 
-        <form method="get" name="filter" id="filter_form"
-              style="padding-bottom: 0.5em"
-              tal:attributes="action view/form_action|request/URL">
-          Select the number of recently completed builds to display:
-          <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
-          <noscript>
-            <input type="submit" value="Filter"/>
-          </noscript>
-        </form>
+      function hookUpFilterSubmission () {
+          connect('field.when_completed_filter', 'onchange', submit_filter);
+      }
+      registerLaunchpadFunction(hookUpFilterSubmission);
+    </script>
 
-        <script type="text/javascript">
-          function submit_filter() {
-              getElement('filter_form').submit();
-          }
+    <tal:block tal:condition="not:dailybuilds">
+      <p id="no-builds">No recently completed daily builds found.</p>
+    </tal:block>
 
-          function hookUpFilterSubmission () {
-              connect('field.when_completed_filter', 'onchange', submit_filter);
-          }
-          registerLaunchpadFunction(hookUpFilterSubmission);
-        </script>
+    <tal:block tal:condition="dailybuilds">
 
         <tal:needs-batch condition="view/batchnav/has_multiple_pages">
           <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper"/>
@@ -69,14 +69,13 @@
           <tbody>
             <tr tal:repeat="dailybuild dailybuilds">
               <td>
-                <a tal:replace="structure dailybuild/recipebuild/distribution/fmt:link">distribution</a>
                 <a tal:attributes="href dailybuild/distro_source_package/fmt:url"
                   tal:content="dailybuild/sourcepackagename/name">source package name</a>
               </td>
 
               <td>
-                <a href="recipe" tal:attributes="href dailybuild/recipebuild/recipe/fmt:url">
-                <span tal:replace="dailybuild/recipebuild/recipe/name">
+                <a href="recipe" tal:attributes="href dailybuild/recipe/fmt:url">
+                <span tal:replace="dailybuild/recipe/name">
                   recipe
                 </span>
                 </a>

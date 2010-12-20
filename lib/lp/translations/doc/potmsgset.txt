@@ -245,8 +245,8 @@ At this time, there is no current or imported translation and no suggestions.
     >>> print upstream_potmsgset.getCurrentTranslationMessage(
     ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> print upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     None
     >>> list(upstream_potmsgset.getLocalTranslationMessages(
     ...          evolution_potemplate, catalan))
@@ -290,8 +290,8 @@ At this time, there is no current or imported translation and no suggestions.
     >>> print upstream_potmsgset.getCurrentTranslationMessage(
     ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> print upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     None
     >>> list(upstream_potmsgset.getLocalTranslationMessages(
     ...     evolution_potemplate, catalan))
@@ -339,8 +339,8 @@ Current translation is now unset, as is imported.
     ...     evolution_potemplate, catalan)
     >>> print current
     None
-    >>> imported = upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> imported = upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     >>> print imported
     None
 
@@ -871,8 +871,8 @@ submission already for it.
     ...     pmount_man_template, pofile.language)
     >>> print current
     None
-    >>> imported = potmsgset_untranslated.getImportedTranslationMessage(
-    ...     pmount_man_template, pofile.language)
+    >>> imported = potmsgset_untranslated.getOtherTranslation(
+    ...     pofile.language, pmount_man_template.translation_side)
     >>> print imported
     None
 

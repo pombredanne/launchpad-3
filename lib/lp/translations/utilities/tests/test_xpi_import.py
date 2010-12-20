@@ -257,9 +257,9 @@ class XpiTestCase(unittest.TestCase):
         # With this first import, upstream and Ubuntu translations must match.
         self.assertEquals(
             translation.translations,
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations)
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations)
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
             u'foozilla.menu.accesskey', context='main/subdir/test2.dtd')
@@ -274,9 +274,9 @@ class XpiTestCase(unittest.TestCase):
             unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations,
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations,
             [u'M'])
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
@@ -292,9 +292,9 @@ class XpiTestCase(unittest.TestCase):
             unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations,
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations,
             [u'm'])
 
     def test_GetLastTranslator(self):

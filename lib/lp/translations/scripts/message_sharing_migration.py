@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'MessageSharingMerge'
+    'MessageSharingMerge',
     ]
 
 
@@ -78,7 +78,7 @@ def merge_translationtemplateitems(subordinate, representative,
 
     This adds all of the subordinate's TranslationTemplateItems to the
     representative's set of TranslationTemplateItems.
-    
+
     Any duplicates are deleted, so after this, the subordinate will no
     longer have any TranslationTemplateItems.
     """
@@ -127,8 +127,8 @@ def sacrifice_flags(message, incumbents=None):
 
     :param message: a `TranslationMessage` to drop flags on.
     :param incumbents: a sequence of reference messages.  If any of
-        these has either is_current_ubuntu or is_current_upstream set, that same
-        flag will be dropped on message (if set).
+        these has either is_current_ubuntu or is_current_upstream set, that
+        same flag will be dropped on message (if set).
     """
     if incumbents:
         for incumbent in incumbents:
@@ -458,8 +458,7 @@ class MessageSharingMerge(LaunchpadScript):
         """Get list of ids for `template`'s `POTMsgSet`s."""
         return [
             potmsgset.id
-            for potmsgset in template.getPOTMsgSets(False, prefetch=False)
-            ]
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False)]
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
@@ -505,8 +504,7 @@ class MessageSharingMerge(LaunchpadScript):
         tm = removeSecurityProxy(tm)
         msgstr_ids = tuple([
             getattr(tm, 'msgstr%dID' % form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
-            ])
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
 
         return (tm.potemplateID, tm.languageID) + msgstr_ids
 

@@ -81,6 +81,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    render_radio_widget_part,
     ReturnToReferrerMixin,
     )
 from lp.app.browser.tales import MenuAPI
@@ -913,31 +914,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
-
-        def render(widget, term_value, current_value, label=None):
-            term = widget.vocabulary.getTerm(term_value)
-            if term.value == current_value:
-                render = widget.renderSelectedItem
-            else:
-                render = widget.renderItem
-            if label is None:
-                label = term.title
-            value = term.token
-            return render(index=term.value,
-                          text=label,
-                          value=value,
-                          name=widget.name,
-                          cssClass='')
-
         widget = self.widgets['rcs_type']
         vocab = widget.vocabulary
         current_value = widget._getFormValue()
-        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
-        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
-                                   'SVN')
-        self.rcs_type_git = render(widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render(widget, vocab.HG, current_value)
-        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_cvs = render_radio_widget_part(
+            widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render_radio_widget_part(
+            widget, vocab.BZR_SVN, current_value, 'SVN')
+        self.rcs_type_git = render_radio_widget_part(
+            widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render_radio_widget_part(
+            widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render_radio_widget_part(
+            widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
 
         widget = self.widgets['branch_type']
@@ -947,7 +936,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         (self.branch_type_link,
          self.branch_type_create,
          self.branch_type_import) = [
-            render(widget, value, current_value)
+            render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
 
     def _validateLinkLpBzr(self, data):
