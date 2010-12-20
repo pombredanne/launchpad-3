@@ -86,12 +86,6 @@ class TestBugSubscriptionFilterAPI(
             self.subscription_filter.find_all_tags,
             ws_subscription_filter.find_all_tags)
         self.assertEqual(
-            self.subscription_filter.include_any_tags,
-            ws_subscription_filter.include_any_tags)
-        self.assertEqual(
-            self.subscription_filter.exclude_any_tags,
-            ws_subscription_filter.exclude_any_tags)
-        self.assertEqual(
             self.subscription_filter.description,
             ws_subscription_filter.description)
         self.assertEqual(
@@ -125,27 +119,31 @@ class TestBugSubscriptionFilterAPI(
             self.subscription_filter.structural_subscription)
 
     def test_modify_tags(self):
-        # The tags-related fields - find_all_tags, include_any_tags,
-        # exclude_any_tags, tags - can all be modified.
+        # Two tags-related fields - find_all_tags and tags - can be
+        # modified. The other two tags-related fields - include_any_tags and
+        # exclude_any_tags - are not exported because the tags field provides
+        # a more intuitive way to update them (from the perspective of an API
+        # consumer).
         transaction.commit()
+
         # Create a service for the filter owner.
         service = self.factory.makeLaunchpadService(self.owner)
         get_ws_object = partial(ws_object, service)
         ws_subscription_filter = get_ws_object(self.subscription_filter)
 
-        self.assertFalse(ws_subscription_filter.find_all_tags)
-        ws_subscription_filter.find_all_tags = True
-        self.assertFalse(ws_subscription_filter.include_any_tags)
-        ws_subscription_filter.include_any_tags = True
-        self.assertFalse(ws_subscription_filter.exclude_any_tags)
-        ws_subscription_filter.exclude_any_tags = True
-        self.assertEqual([], ws_subscription_filter.tags)
-        ws_subscription_filter.tags = ["foo", "-bar"]
+        # Current state.
+        self.assertFalse(self.subscription_filter.find_all_tags)
+        self.assertFalse(self.subscription_filter.include_any_tags)
+        self.assertFalse(self.subscription_filter.exclude_any_tags)
+        self.assertEqual(set(), self.subscription_filter.tags)
 
-        # Save and start a new transaction.
+        # Modify, save, and start a new transaction.
+        ws_subscription_filter.find_all_tags = True
+        ws_subscription_filter.tags = ["foo", "-bar", "*", "-*"]
         ws_subscription_filter.lp_save()
         transaction.begin()
 
+        # Updated state.
         self.assertTrue(self.subscription_filter.find_all_tags)
         self.assertTrue(self.subscription_filter.include_any_tags)
         self.assertTrue(self.subscription_filter.exclude_any_tags)

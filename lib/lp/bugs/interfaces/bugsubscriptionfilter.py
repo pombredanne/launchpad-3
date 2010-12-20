@@ -49,14 +49,12 @@ class IBugSubscriptionFilterAttributes(Interface):
         Bool(
             title=_("All given tags must be found, or any."),
             required=True, default=False))
-    include_any_tags = exported(
-        Bool(
-            title=_("Include any tags."),
-            required=True, default=False))
-    exclude_any_tags = exported(
-        Bool(
-            title=_("Exclude all tags."),
-            required=True, default=False))
+    include_any_tags = Bool(
+        title=_("Include any tags."),
+        required=True, default=False)
+    exclude_any_tags = Bool(
+        title=_("Exclude all tags."),
+        required=True, default=False)
 
     description = exported(
         Text(
