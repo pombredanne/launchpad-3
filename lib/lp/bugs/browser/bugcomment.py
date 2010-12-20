@@ -44,7 +44,6 @@ from lp.bugs.interfaces.bugmessage import (
     IBugComment,
     IBugMessageSet,
     )
-from lp.registry.interfaces.person import IPersonSet
 
 
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
@@ -207,11 +206,20 @@ class BugComment:
         'authenticated' rather than 'public' as email addresses are
         obfuscated for unauthenticated users.
         """
+        from lp.bugs.browser.bugtask import COMMENT_ACTIVITY_GROUPING_WINDOW
+
         now = datetime.now(tz=utc)
-        # The major factor in how long we can cache a bug comment is
-        # the timestamp. The rendering of the timestamp changes every
-        # minute for the first hour because we say '7 minutes ago'.
-        if self.datecreated > now - timedelta(hours=1):
+
+        # The major factor in how long we can cache a bug comment is the
+        # timestamp. For up to 5 minutes comments and activity can be grouped
+        # together as related, so do not cache.
+        if self.datecreated > now - COMMENT_ACTIVITY_GROUPING_WINDOW:
+            # Don't return 0 because that indicates no time limit.
+            return -1
+
+        # The rendering of the timestamp changes every minute for the first
+        # hour because we say '7 minutes ago'.
+        elif self.datecreated > now - timedelta(hours=1):
             return 60
 
         # Don't cache for long if we are waiting for synchronization.

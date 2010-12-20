@@ -35,11 +35,11 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'calculate_heat_display',
+    'COMMENT_ACTIVITY_GROUPING_WINDOW',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'get_visible_comments',
-    'group_comments_with_activity',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     ]
@@ -470,8 +470,10 @@ def target_has_expirable_bugs_listing(target):
         return False
 
 
-def group_comments_with_activity(
-    comments, activities, window=timedelta(minutes=5)):
+COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
+
+
+def group_comments_with_activity(comments, activities):
     """Group comments and activity together for human consumption.
 
     Generates a stream of comment instances (with the activity grouped within)
@@ -480,6 +482,8 @@ def group_comments_with_activity(
     :param comments: An iterable of `BugComment` instances.
     :param activities: An iterable of `BugActivity` instances.
     """
+    window = COMMENT_ACTIVITY_GROUPING_WINDOW
+
     comment_kind = "comment"
     comments = (
         (comment.datecreated, comment.owner, comment_kind, comment)
