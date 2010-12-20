@@ -11,11 +11,11 @@ import shutil
 from tempfile import mkdtemp
 import unittest
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.archivepublisher.diskpool import (
     DiskPool,
     poolify,
     )
-from lp.archivepublisher.tests.util import FakeLogger
 
 
 class MockFile:
@@ -82,7 +82,8 @@ class TestPool(unittest.TestCase):
     def setUp(self):
         self.pool_path = mkdtemp()
         self.temp_path = mkdtemp()
-        self.pool = DiskPool(self.pool_path, self.temp_path, FakeLogger())
+        self.pool = DiskPool(
+            self.pool_path, self.temp_path, QuietFakeLogger())
 
     def tearDown(self):
         shutil.rmtree(self.pool_path)
