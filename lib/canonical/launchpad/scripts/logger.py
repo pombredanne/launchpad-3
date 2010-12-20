@@ -352,7 +352,7 @@ def _logger(
     # Make it print output in a standard format, suitable for
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=out_stream)
+    hdlr = logging.StreamHandler(out_stream)
     # We set the level on the handler rather than the logger, so other
     # handlers with different levels can be added for things like debug
     # logs.
