@@ -1490,6 +1490,12 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
         return SimpleTerm(obj, obj.name, title)
 
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # Pillar names are always lowercase.
+        return super(PillarVocabularyBase, self).getTermByToken(
+            token.lower())
+
     def __contains__(self, obj):
         raise NotImplementedError
 
