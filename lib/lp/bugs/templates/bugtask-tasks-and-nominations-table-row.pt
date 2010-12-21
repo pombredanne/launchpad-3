@@ -162,10 +162,10 @@
            tal:attributes="href context/milestone/fmt:url | nothing"
            tal:content="context/milestone/title | nothing" />
         <a tal:condition="view/user_can_edit_milestone"
-           tal:attributes="href editstatus_url">
-          <img class="editicon" src="/@@/edit"
-               tal:attributes="style view/style_for_edit_milestone"/>
-        </a>
+           tal:attributes="href editstatus_url"
+          ><img class="editicon" src="/@@/edit"
+                tal:attributes="style view/style_for_edit_milestone"
+          /></a>
       </div>
     </td>
 
