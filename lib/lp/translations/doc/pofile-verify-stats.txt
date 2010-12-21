@@ -23,7 +23,7 @@ it directly.
     >>> from lp.services.mail.stub import test_emails
     >>> from lp.translations.scripts.verify_pofile_stats import (
     ...     VerifyPOFileStatsProcess)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> logger = FakeLogger()
     >>> VerifyPOFileStatsProcess(transaction, logger).run()
     INFO Starting verification of POFile stats at id 0

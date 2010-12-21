@@ -467,7 +467,7 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestRoundup)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
