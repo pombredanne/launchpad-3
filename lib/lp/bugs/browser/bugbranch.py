@@ -96,7 +96,7 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    @action('Delete', name='delete')
+    @action('Unlink', name='delete')
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
