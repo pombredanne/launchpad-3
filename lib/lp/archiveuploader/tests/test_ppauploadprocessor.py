@@ -1079,7 +1079,6 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             'specified in DSC are broken or missing, skipping package '
             'unpack verification.')
 
-        self.log.lines = []
         # The same happens with higher versions of 'bar' depending on the
         # unofficial 'orig.tar.gz'.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
