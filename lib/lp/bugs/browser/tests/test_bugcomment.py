@@ -129,7 +129,7 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([comment], grouped)
         self.assertEqual([activity], comment.activity)
 
-    def test_interleaved_activity_with_comments_by_common_actor(self):
+    def test_interleaved_activity_with_comment_by_common_actor(self):
         # Activities shortly before and after a comment are grouped into the
         # comment's activity.
         actor = PersonStub()
