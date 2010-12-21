@@ -389,3 +389,22 @@ class TestStructuralSubscriptionAPI(TestCaseWithFactory):
         self.assertEqual(
             ws_subscription_filter.structural_subscription.self_link,
             self.ws_subscription.self_link)
+
+    def test_bug_filters(self):
+        # The bug_filters property is a collection of IBugSubscriptionFilter
+        # instances previously created by newBugFilter().
+        bug_filter_links = lambda: set(
+            bug_filter.self_link for bug_filter in (
+                self.ws_subscription.bug_filters))
+        self.assertEqual(set(), bug_filter_links())
+        # A new filter appears in the bug_filters collection.
+        ws_subscription_filter1 = self.ws_subscription.newBugFilter()
+        self.assertEqual(
+            set([ws_subscription_filter1.self_link]),
+            bug_filter_links())
+        # A second new filter also appears in the bug_filters collection.
+        ws_subscription_filter2 = self.ws_subscription.newBugFilter()
+        self.assertEqual(
+            set([ws_subscription_filter1.self_link,
+                 ws_subscription_filter2.self_link]),
+            bug_filter_links())

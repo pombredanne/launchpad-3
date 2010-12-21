@@ -129,10 +129,10 @@ class IStructuralSubscription(Interface):
         required=True, readonly=True,
         title=_("The structure to which this subscription belongs.")))
 
-    bug_filters = CollectionField(
+    bug_filters = exported(CollectionField(
         title=_('List of bug filters that narrow this subscription.'),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))
+        value_type=Reference(schema=Interface)))
 
     @export_factory_operation(Interface, [])
     def newBugFilter():
