@@ -1062,9 +1062,6 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 
 -- Distribution
 
-COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.mirror_admin IS 'Person or team with privileges to mark a mirror as official.';
 COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distroseries has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distroseries for backporting, for example, or for the current release management team on the current development focus release.';
@@ -1087,9 +1084,6 @@ COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of ack
 
 -- DistroSeries
 
-COMMENT ON COLUMN DistroSeries.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distro release';
 COMMENT ON COLUMN DistroSeries.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distroseries page, above the distroseries description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroSeries.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
 COMMENT ON COLUMN DistroSeries.hide_all_translations IS 'Whether we should hid
