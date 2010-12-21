@@ -183,6 +183,10 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    IHasCustomLanguageCodes,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -1722,6 +1726,28 @@ class ViewLanguage(AnonymousAuthorization):
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
+
+
+class AdminCustomLanguageCodes(OnlyRosettaExpertsAndAdmins):
+    """Controls administration of custom language codes.
+
+    Rosetta experts and Launchpad administrators can administer custom
+    language codes.
+    """
+
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IHasCustomLanguageCodes
+
+
+class AdminCustomLanguageCode(OnlyRosettaExpertsAndAdmins):
+    """Controls administration for a custom language code.
+
+    Rosetta experts and Launchpad administrators can administer a custom
+    language code.
+    """
+
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = ICustomLanguageCode
 
 
 class AccessBranch(AuthorizationBase):

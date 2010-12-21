@@ -1042,9 +1042,9 @@
     <browser:page
         name="+remove"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
-        permission="launchpad.Admin"
+        permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/customlanguagecode-remove.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
 
 <!-- IHasCustomLanguageCodes -->
@@ -1062,7 +1062,7 @@
         layer="lp.translations.publisher.TranslationsLayer"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
         template="../templates/customlanguagecode-add.pt"
-        permission="launchpad.Admin"/>
+        permission="launchpad.TranslationsAdmin"/>
 
     </facet>
 
