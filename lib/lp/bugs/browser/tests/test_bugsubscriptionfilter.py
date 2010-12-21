@@ -13,7 +13,6 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -45,7 +44,6 @@ class TestBugSubscriptionFilterBase:
             self.subscription = self.structure.addBugSubscription(
                 self.owner, self.owner)
             self.subscription_filter = self.subscription.newBugFilter()
-        flush_database_updates()
 
 
 class TestBugSubscriptionFilterNavigation(
