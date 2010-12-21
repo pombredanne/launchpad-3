@@ -9,12 +9,14 @@ from difflib import unified_diff
 import unittest
 
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     login,
+    person_logged_in,
     test_tales,
     TestCaseWithFactory,
     )
@@ -172,6 +174,38 @@ class TestDiffFormatter(TestCaseWithFactory):
         diff = self.factory.makeDiff()
         self.assertEqual(
             diff.diff_text.getURL(), test_tales('diff/fmt:url', diff=diff))
+
+
+class TestSourcePackageRecipeBuild(TestCaseWithFactory):
+    """Test the formatter for SourcePackageRecipeBuilds."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_link(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=ppa)
+        self.assertThat(
+            test_tales('build/fmt:link', build=build),
+            Equals(
+                '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
+                '+build/%s">%s recipe build [eric/ppa]</a>'
+                % (build.id, build.recipe.base_branch.unique_name)))
+
+    def test_link_no_recipe(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=ppa)
+        with person_logged_in(build.recipe.owner):
+            build.recipe.destroySelf()
+        self.assertThat(
+            test_tales('build/fmt:link', build=build),
+            Equals(
+                '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
+                '+build/%s">build for deleted recipe [eric/ppa]</a>'
+                % (build.id, )))
 
 
 def test_suite():
