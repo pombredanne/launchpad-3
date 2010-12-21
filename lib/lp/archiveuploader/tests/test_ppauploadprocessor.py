@@ -44,7 +44,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
