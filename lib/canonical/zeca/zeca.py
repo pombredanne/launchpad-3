@@ -1,20 +1,21 @@
-""" Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-GPG Key Information Server Prototype.
+"""GPG Key Information Server Prototype.
 
-It follows the URL schem of PKS/SKS systems
+It follows the standard URL schema for PKS/SKS systems
 
 It implements the operations:
 
- - 'index' : Key index information
- - 'get': Public Key ASCII armored
+ - 'index' : returns key index information
+ - 'get': returns an ASCII armored public key
+ - 'add': adds a key to the collection (does not update the index)
 
-It does not depend on GPG stuff it simply serves
-the information stored in files at a given HOME
-(default to /home/keys/) with the following
-name format:
+It only depends on GPG for key submission; for retrieval and searching
+it just looks for files in the root (eg. /var/tmp/zeca). The files
+are named like this:
 
-0x<keyid>.<operation>
+0x<keyid|fingerprint>.<operation>
 
 Example:
 
@@ -28,16 +29,54 @@ $ gpg --export -a cprov > 0x681B6469.get
 
 __metaclass__ = type
 
-__all__ = ['Zeca', 'KeyServer', 'LookUp']  
+__all__ = [
+    'KeyServer',
+    'LookUp',
+    'SubmitKey',
+    'Zeca',
+    ]
 
+import glob
 import os
 import cgi
 
-from twisted.web import server
 from twisted.web.resource import Resource
-from twisted.internet import reactor
 
-GREETING = 'Copyright 2004-2005 Canonical Ltd.\n'
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler, MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected)
+
+
+GREETING = 'Copyright 2004-2009 Canonical Ltd.\n'
+
+
+def locate_key(root, suffix):
+    """Find a key file in the root with the given suffix.
+
+    This does some globbing to possibly find a fingerprint-named key
+    file when given a key ID.
+
+    :param root: The root directory in which to look.
+    :param suffix: The key ID or fingerprint, of the form
+        0x<FINGERPRINT|KEYID>.<METHOD>
+    :returns: An absolute path to the key file.
+    """
+    path = os.path.join(root, suffix)
+
+    if not os.path.exists(path):
+        # GPG might request a key ID from us, but we name the keys by
+        # fingerprint. Let's glob.
+        if suffix.startswith('0x'):
+            suffix = suffix[2:]
+        keys = glob.glob(os.path.join(root, '*'+suffix))
+        if len(keys) == 1:
+            path = keys[0]
+        else:
+            return None
+
+    return path
 
 
 class Zeca(Resource):
@@ -63,10 +102,8 @@ class LookUp(Resource):
     def __init__(self, root):
         Resource.__init__(self)
         self.root = root
-    
+
     def render_GET(self, request):
-        # XXX cprov 20050513
-        # WTF is that way to recover the HTTP GET attributes
         try:
             action = request.args['op'][0]
             keyid = request.args['search'][0]
@@ -74,7 +111,7 @@ class LookUp(Resource):
             return 'Invalid Arguments %s' % request.args
 
         return self.processRequest(action, keyid)
-    
+
     def processRequest(self, action, keyid):
         if (action not in self.permitted_actions) or not keyid:
             return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
@@ -87,32 +124,64 @@ class LookUp(Resource):
 
         filename = '%s.%s' % (keyid, action)
 
-        path = os.path.join(self.root, filename)
-        
-        try:
-            fp = open(path)
-        except IOError:
-            content = 'Key Not Found'
+        path = locate_key(self.root, filename)
+        if path is not None:
+            content = cgi.escape(open(path).read())
         else:
-            content = cgi.escape(fp.read())
-            fp.close()
+            content = 'Key Not Found'
 
         page += '<pre>\n%s\n</pre>\n</html>' % content
 
         return page
 
 
-if __name__ == "__main__":
-    from canonical.config import config
+SUBMIT_KEY_PAGE = """
+<html>
+  <head>
+    <title>Submit a key</title>
+  </head>
+  <body>
+    <h1>Submit a key</h1>
+    <p>%(banner)s</p>
+    <form method="post">
+      <textarea name="keytext" rows="20" cols="66"></textarea> <br>
+      <input type="submit" value="Submit">
+    </form>
+  </body>
+</html>
+"""
 
-    root = config.zeca.root
-    
-    zeca = Zeca()
-    keyserver = KeyServer()
-    keyserver.putChild('lookup', LookUp(root))
-    zeca.putChild('pks', keyserver)
-    
-    site = server.Site(zeca)
-    reactor.listenTCP(11371, site)
-    reactor.run()
 
+class SubmitKey(Resource):
+    isLeaf = True
+
+    def __init__(self, root):
+        Resource.__init__(self)
+        self.root = root
+
+    def render_GET(self, request):
+        return SUBMIT_KEY_PAGE % {'banner': ''}
+
+    def render_POST(self, request):
+        try:
+            keytext = request.args['keytext'][0]
+        except KeyError:
+            return 'Invalid Arguments %s' % request.args
+        return self.storeKey(keytext)
+
+    def storeKey(self, keytext):
+        gpghandler = getUtility(IGPGHandler)
+        try:
+            key = gpghandler.importPublicKey(keytext)
+        except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
+                MoreThanOneGPGKeyFound), err:
+            return SUBMIT_KEY_PAGE % {'banner': str(err)}
+
+        filename = '0x%s.get' % key.fingerprint
+        path = os.path.join(self.root, filename)
+
+        fp = open(path, 'w')
+        fp.write(keytext)
+        fp.close()
+
+        return SUBMIT_KEY_PAGE % {'banner': 'Key added'}

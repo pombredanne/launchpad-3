@@ -1,0 +1,210 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+  >
+
+  <securedutility
+      class="canonical.launchpad.xmlrpc.application.PrivateApplication"
+      provides="canonical.launchpad.interfaces.launchpad.IPrivateApplication">
+      <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateApplication"/>
+  </securedutility>
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.AuthServerApplication"
+    provides="canonical.launchpad.interfaces.launchpad.IAuthServerApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
+    interface="canonical.launchpad.interfaces.authserver.IAuthServer"
+    class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.CodehostingApplication"
+    provides="lp.code.interfaces.codehosting.ICodehostingApplication">
+    <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="lp.code.interfaces.codehosting.ICodehostingApplication"
+    interface="lp.code.interfaces.codehosting.ICodehostingAPI"
+    class="lp.code.xmlrpc.codehosting.CodehostingAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
+    provides="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication">
+    <allow interface="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
+    interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
+    class="lp.code.xmlrpc.codeimportscheduler.CodeImportSchedulerAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.PrivateMaloneApplication"
+    provides="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"
+    interface="lp.bugs.interfaces.externalbugtracker.IExternalBugTrackerTokenAPI"
+    class="lp.bugs.xmlrpc.bug.ExternalBugTrackerTokenAPI"
+    permission="zope.Public"
+    />
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.FileBugGotProductAndDistro">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class
+      class="canonical.launchpad.xmlrpc.faults.FileBugMissingProductOrDistribution"
+      >
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchDistribution">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPackage">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchProduct">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPerson">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchBug">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.RequiredParameterMissing">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchCreationForbidden">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchUrl">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchUniqueNameConflict">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchTeamMailingList">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.UnexpectedStatusReport">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BadStatus">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoLinkedBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchProductSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchIdentifier">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchNameInUse">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.CannotHaveLinkedBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidProductIdentifier">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotInTeam">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoBranchWithID">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoUrlForBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.PathTranslationError">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidPath">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.PermissionDenied">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotFound">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchUniqueName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchDistroSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSourcePackageName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.AccountSuspended">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+</configure>

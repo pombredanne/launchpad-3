@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -8,12 +12,13 @@
     <!-- <browser:defaultSkin name="zope.app.rotterdam.Rotterdam" /> -->
 
     <!-- <include package="zope.app.exception.browser" /> -->
-    <include package="zope.app.traversing.browser" />
+    <include package="zope.traversing.browser" />
+    <!--
     <include package="zope.app.security.browser" />
-
+      -->
     <!-- <include package="zope.app.container.browser" /> -->
     <include package="zope.app.form.browser" />
-
+<!--
     <include package="zope.app.component.browser" />
-
+-->
 </configure>

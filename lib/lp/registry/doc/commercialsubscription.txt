@@ -1,0 +1,626 @@
+========================
+Commercial Subscriptions
+========================
+
+The CommercialSubscription class is used to track whether a project,
+which does not qualify for free hosting, has an unexpired subscription.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> login('no-priv@canonical.com')
+
+An open source project should not have a commercial subscription,
+indicated by 'None'.
+
+    >>> product_set = getUtility(IProductSet)
+    >>> bzr = product_set.getByName('bzr')
+    >>> print bzr.commercial_subscription
+    None
+
+Redeem a voucher and check that the commercial_subscription
+attribute is correct.
+
+    >>> owner = bzr.owner
+    >>> owner.isTeam()
+    False
+    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
+    >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+    >>> print bzr.commercial_subscription.sales_system_id
+    asdf123
+
+Commercial subscriptions have zope.Public permissions for reading.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('zope.Public', bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+
+For modification, launchpad.Commerical is required.  Anonymous users,
+regular users, and the project owner all are denied.
+
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login_person(owner)
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+A member of the commercial admins team does have modification privileges.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> commercial_admin = celebs.commercial_admin
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = getUtility(ILaunchBag).user
+    >>> commercial_member.inTeam(commercial_admin)
+    True
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    True
+
+
+The expiration date can be extended by redeeming another voucher.  In
+real life this would be done nearer to the expiration date.  For
+testing consistency, let's force the start and expiry dates to a known
+date and use a known time as the current time.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import date, datetime, timedelta
+    >>> from pytz import UTC
+    >>> login('no-priv@canonical.com')
+    >>> now = datetime(2008, 1, 10, tzinfo=UTC)
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo456
+
+The start date should not have changed.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+
+The difference between the expiration dates is one year -- 365 days
+for 2009.
+
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> expiry_diff == timedelta(365)
+    True
+
+A voucher can be redeemed for any number of months (as reported by the
+Salesforce proxy).  Test for a 6 month subscription.
+
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 6,
+    ...     'notes', current_datetime=now)
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo457
+
+The start date did not change.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+
+The expiration date has been increased by six months, from Jan-15-2010
+to Jul-15-2010.
+
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> expiry_diff == (datetime(2010,7,15) - datetime(2010,1,15))
+    True
+
+Time calculations are sometimes prone to wrapping problems.  Let's
+ensure they wrap properly.
+
+End the subscription in November and add one month.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 1,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2009-12-15 ...
+
+End the subscription in November and add two months.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 2,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-01-15...
+
+End the subscription in November and add 11 months.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 11,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-10-15...
+
+Ensure wrapping to the start of the next month works when the
+expiration date would normally be an invalid day of the month.  A
+subscription that expires on the October 31 and is extended by four
+months will be calculated as the last day of February, not the
+nonexistent February 31.
+
+    >>> subscription.date_expires = datetime(2009,10,31,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-02-28...
+
+And when the new date is in a leap year, the last day of February is
+the 29th.
+
+    >>> subscription.date_expires = datetime(2011,10,31,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2012-02-29...
+
+Extending a subscription after it has expired sets the date started to
+the current date.
+
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> now = datetime(2010, 1, 1, tzinfo=UTC)
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2011-01-01...
+    >>> print subscription.date_starts
+    2010-01-01...
+
+If the original subscription has not expired the start date is not affected.
+
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> now = datetime(2009, 1, 1, tzinfo=UTC)
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-01-15...
+    >>> print subscription.date_starts
+    2008-01-15...
+
+The commercial_subscription_is_due attribute is true if the license
+does not qualify for free hosting and the commercial subscription
+is inactive or about to expire.  The is_permitted attribute is
+true if the project either has a qualifying license or has an active
+commercial subscription. The qualifies_for_free_hosting attribute is
+true, if automatically qualifying licenses are the only ones selected,
+or if the license has been reviewed and been manually approved.
+
+The commercial subscription is about to expire here.
+
+    >>> login('foo.bar@canonical.com')
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+    >>> bzr.licenses
+    ()
+    >>> # The commercial subscription is due within 30 days of expiration.
+    >>> subscription.date_expires = (
+    ...     datetime.now(UTC) + timedelta(29))
+    >>> bzr.qualifies_for_free_hosting
+    False
+    >>> bzr.commercial_subscription_is_due
+    True
+    >>> bzr.commercial_subscription.is_active
+    True
+    >>> bzr.is_permitted
+    True
+
+The subscription will not expire for more than 30 days so a new
+subscription is not due yet.
+
+    >>> subscription.date_expires = (
+    ...     datetime.now(UTC) + timedelta(31))
+    >>> bzr.commercial_subscription_is_due
+    False
+
+Make the subscription no longer active.
+
+    >>> # Make the subscription last 0 seconds.
+    >>> subscription.date_expires = subscription.date_starts
+    >>> bzr.commercial_subscription.is_active
+    False
+    >>> bzr.commercial_subscription_is_due
+    True
+    >>> bzr.is_permitted
+    False
+
+The qualifies_for_free_hosting attribute is False
+if the product has License.OTHER_PROPRIETARY.
+
+    >>> from lp.registry.interfaces.product import License
+    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
+    >>> bzr.qualifies_for_free_hosting
+    False
+    >>> bzr.licenses = [License.GNU_GPL_V2]
+    >>> bzr.qualifies_for_free_hosting
+    True
+
+The license_approved attribute is used to manually approve an
+OTHER_OPEN_SOURCE license or a project with additional license info
+as being "good enough" to use Launchpad. The license_approved property
+can only be set on a product that does not have OTHER_PROPRIETARY
+included as one of the licenses.
+
+    >>> bzr.license_info = 'bar'
+    >>> bzr.license_reviewed = True
+    >>> bzr.license_approved = True
+
+    >>> bzr.license_info
+    u'bar'
+    >>> bzr.license_reviewed
+    True
+    >>> bzr.license_approved
+    True
+
+Setting license_approved implies that the license has been reviewed,
+so license_reviewed is set automatically.
+
+    >>> bzr.license_reviewed = False
+    >>> bzr.license_approved = True
+    >>> bzr.license_reviewed
+    True
+
+Set the bzr license to Other/Open Source and Other/Proprietary.  It
+may not be approved because Other/Proprietary requires a commercial
+subscription.
+
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
+    >>> bzr.license_reviewed = True
+    >>> bzr.license_approved = True
+    Traceback (most recent call last):
+    ...
+    AssertionError: Projects with 'Other/Proprietary' licenses may not be...
+
+A project with an Other/Open Source license or additional license info that
+is reviewed, but not approved requires a commercial subscription.
+
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting
+    False
+
+If the licenses or license_info attributes are changed, the
+license_reviewed and license_approved attributes are reset to false.
+
+    >>> bzr.license_approved = True
+    >>> bzr.license_reviewed = True
+    >>> bzr.license_info = 'foo'
+    >>> bzr.license_approved
+    False
+    >>> bzr.license_reviewed
+    False
+
+    >>> bzr.license_approved = True
+    >>> bzr.license_reviewed = True
+    >>> bzr.licenses = [License.BSD]
+    >>> bzr.license_approved
+    False
+    >>> bzr.license_reviewed
+    False
+
+When the products license is OTHER_OPEN_SOURCE or the license_info
+attribute contains a description of another license, the product
+requires approval for free hosting. The qualifies_for_free_hosting
+attribute is false for products that have licenses that required
+approval, but were not approved.
+
+However, qualifies_for_free_hosting remains true until
+it has been reviewed (license_reviewed is set to true). The
+OTHER_PROPRIETARY license does not need to be reviewed as do the
+OTHER_OPEN_SOURCE license or an unknown license in license_info.
+
+    >>> bzr.license_approved
+    False
+    >>> bzr.license_info = 'blah'
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
+
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (False, True)
+
+    >>> bzr.license_info = ''
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
+
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (False, True)
+
+When the license is manually approved, a product qualifies for free
+hosting; there is no commercial subscription due.
+
+    >>> bzr.license_approved = True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
+
+=======================
+Product License Reviews
+=======================
+
+The forReview() method allows searching for products whose license needs to
+be reviewed. You can search by text in the Product table's full text index
+as well as the license_info field. The results are ordered by date ceated
+then display name.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import timedelta
+    >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
+    >>> flush_database_updates()
+    >>> for product in product_set.forReview(search_text='gnome'):
+    ...     print product.displayname
+    python gnome2 dev
+    Evolution
+    GNOME Terminal
+    Gnome Applets
+    gnomebaker
+
+You can search for whether the product is active or not.
+
+    >>> for product in product_set.forReview(active=False):
+    ...     print product.name
+    python-gnome2-dev
+    unassigned
+
+You can search for whether the product is marked reviewed or not.
+
+    >>> for product in product_set.forReview(license_reviewed=True):
+    ...     print product.name
+    python-gnome2-dev
+    unassigned
+    alsa-utils
+    rosetta
+    obsolete-junk
+
+You can search for products by license. This will match products with
+any one of the licenses listed.
+
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.BSD]):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.MIT]):
+    ...     print product.name
+    bzr
+
+You can also search for projects that have zero licenses. This is also
+convenient for searching for projects with at least one license.
+
+    >>> for product in product_set.forReview(
+    ...     has_zero_licenses=True, search_text='firefox|a52dec|bzr|derby'):
+    ...     print product.name
+    firefox
+    a52dec
+    >>> for product in product_set.forReview(
+    ...     has_zero_licenses=False, search_text='firefox|a52dec|bzr|derby'):
+    ...     print product.name
+    bzr
+    derby
+
+You can search for products whose license_info field is empty or not empty.
+This OR the licenses search field must match.
+
+    >>> for product in product_set.forReview(license_info_is_empty=True):
+    ...     print product.name
+    tomcat
+    python-gnome2-dev
+    unassigned
+    arch-mirrors
+    firefox
+    ...
+    >>> for product in product_set.forReview(license_info_is_empty=False):
+    ...     print product.name
+    mega-money-maker
+    obsolete-junk
+    >>> for product in product_set.forReview(license_info_is_empty=False,
+    ...                                      licenses=[License.GNU_GPL_V2]):
+    ...     print product.name
+    bzr
+    mega-money-maker
+    obsolete-junk
+
+It is possible to search for problem project that have been reviewed, but
+not approved
+
+    >>> for product in product_set.forReview(
+    ...     license_reviewed=True, license_approved=False):
+    ...     print product.name
+    python-gnome2-dev
+    unassigned
+    alsa-utils
+    rosetta
+
+You can search for products based on a date range in which the product
+was created.
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_after=bzr.datecreated,
+    ...     created_before=bzr.datecreated):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_before=bzr.datecreated-timedelta(seconds=1)):
+    ...     print product.name
+
+You can search for products based on the expiration date of
+its commercial subscription.
+
+    >>> date_expires = bzr.commercial_subscription.date_expires
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
+    ...     print product.name
+
+You can also search using a datetime.date object, since that is what
+the web form delivers.
+
+    >>> one_day = timedelta(days=1)
+    >>> date_expires = date_expires.date()
+    >>> early_date = date(1980, 1, 1)
+    >>> late_date = date_expires + timedelta(days=365 * 100)
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires + one_day,
+    ...     created_after=early_date,
+    ...     created_before=late_date,
+    ...     subscription_modified_after=early_date,
+    ...     subscription_modified_before=late_date):
+    ...     print product.name
+    bzr
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=bzr.datecreated.date(),
+    ...     created_before=bzr.datecreated.date() + one_day):
+    ...     print product.name
+    bzr
+
+You can search for products based on the date of that
+its commercial subscription was modified, which only
+happens when a voucher is redeemed.
+
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified,
+    ...     subscription_modified_before=date_last_modified):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified
+    ...                                 +timedelta(seconds=1)):
+    ...     print product.name
+
+All the products are returned when no parameters are passed in.
+
+    >>> from lp.registry.model.product import Product
+    >>> product_set.forReview().count() == Product.select().count()
+    True
+
+The license_info_is_empty parameter only accepts True, False, or None.
+
+    >>> product_set.forReview(license_info_is_empty='foo').count()
+    Traceback (most recent call last):
+    ...
+    AssertionError...
+
+The full text search will not match strings with dots in their name
+but a clause is included to search specifically for the name.
+
+    >>> new_product = factory.makeProduct(name="abc.com")
+    >>> for product in product_set.forReview(search_text="abc.com"):
+    ...     print product.name
+    abc.com
+
+The use of 'forReview' is limited to users with launchpad.Commercial
+permission.
+
+Anonymous users cannot access 'forReview'.
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Moderate', product_set)
+    False
+    >>> gnome = product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
+
+No Privileges Person cannot access 'forReview'.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Moderate', product_set)
+    False
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
+
+But if we add No Privileges Person to the Registry Experts team he can
+access it.
+
+    >>> login('foo.bar@canonical.com')
+    >>> registry_member = factory.makePerson()
+    >>> registry = celebs.registry_experts
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.Moderate', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    python-gnome2-dev
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+
+An admin can access 'forReview'.
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Moderate', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    python-gnome2-dev
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+
+Members of the registry experts celebrity have permission to review
+IProduct and IProjectGroup objects and access an IProjectGroupSet.
+
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+
+    >>> project_set = getUtility(IProjectGroupSet)
+    >>> product = factory.makeProduct(name='dog')
+    >>> project = factory.makeProject(name='cat')
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.Moderate', project_set)
+    True
+    >>> check_permission('launchpad.Moderate', project)
+    True
+    >>> check_permission('launchpad.Moderate', product)
+    True

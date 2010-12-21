@@ -1,0 +1,339 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+>
+<body>
+  <div metal:fill-slot="main">
+
+  <script type="text/javascript">
+/*
+ * When step 2 of this wizard has search results, we want to hide the
+ * details widgets until the user states that the project they are
+ * registering is not a duplicate.
+ */
+LPS.use('node', 'lazr.effects', function(Y) {
+    Y.on('domready', function() {
+        /* These two regexps serve slightly different purposes.  The first
+         * finds the leftmost run of valid url characters for the autofill
+         * operation.  The second validates the entire string, used for
+         * explicit entry into the URL field.  These are simple enough to keep
+         * in sync so it doesn't bother me that we repeat most of it.  Note
+         * that while both ignore case, only the first one should be global in
+         * order to utilize the RegExp.lastIndex behavior of .exec().
+         */
+        var valid_urls = new RegExp('^[a-z0-9][-.+a-z0-9]*', 'ig');
+        var valid_char = new RegExp('^[a-z0-9][-.+a-z0-9]*$', 'i');
+
+        /* Handle key presses in the Name field for autofilling the URL
+         * field.  By ensuring that field.name exists, we only do this when
+         * we're on step 1 of the wizard.
+         *
+         * XXX BarryWarsaw 12-May-2009
+         * http://yuilibrary.com/projects/yui3/ticket/2423101
+         * Note that we have to use the more verbose way of getting field.name
+         * because Y.one() doesn't like the dots in the Zope field names.
+         */
+        var url_field = Y.one(Y.DOM.byId('field.name'));
+        if (url_field) {
+            var name_field = Y.one(Y.DOM.byId('field.displayname'));
+            function autofill(e) {
+                var name_value = name_field.get('value');
+                if (name_value == '') {
+                    /* When Name is empty, clear URL. */
+                    url_field.set('value', '');
+                }
+                else {
+                    /* Fill the URL field with as much of the left part of the
+                     * string as matches the regexp.  If the regexp doesn't
+                     * match (say because there's illegal stuff at the front),
+                     * don't change the current URL field.  We have to reset
+                     * lastIndex each time we get here so that search begins
+                     * at the front of the string.
+                     */
+                    valid_urls.lastIndex = 0;
+                    var match = valid_urls.exec(name_value);
+                    if (match) {
+                        var slice = name_value.slice(0, valid_urls.lastIndex);
+                        url_field.set('value', slice);
+                    }
+                }
+            }
+            name_field.on('keyup', autofill);
+            /* Prevent invalid characters from being input into the URL field.
+             */
+            url_field.on('keypress', function(e) {
+                /* Handling key events is madness.  For a glimpse, see
+                 * http://unixpapa.com/js/key.html
+                 *
+                 * Additional spice for the insanity stew is given by the
+                 * rhino book, page 428.  This code is basically a rip and
+                 * remix of those two texts.
+                 */
+                var event = e || window.event;
+                var code = e.charCode || e.keyCode;
+
+                if (/* Check for special characters. */
+                    e.which == 0 || e.which == null ||
+                    /* Check for function keys (Firefox only). */
+                    e.charCode == 0 ||
+                    /* Check for ctrl or alt held down. */
+                    e.ctrlKey || e.altKey ||
+                    /* Check for ASCII control character */
+                    32 > code)
+                {
+                    return true;
+                }
+                var char = String.fromCharCode(code);
+                var new_value = url_field.get('value') + char;
+                if (new_value.search(valid_char) >= 0) {
+                    /* The character is valid. */
+                    return true;
+                }
+                e.preventDefault();
+                e.returnValue = false;
+                return false;
+            });
+            /* Explicitly typing into the URL field disables autofilling. */
+            url_field.on('keyup', function(e) {
+                if (url_field.get('value') == '') {
+                    /* The user cleared the URL field; turn on autofill. */
+                    name_field.on('keyup', autofill);
+                }
+                else {
+                    /* Honor the user's URL; turn off autofill. */
+                    name_field.detach('keyup', autofill);
+                }
+            });
+        }
+
+        /* Handle the reveals when there are search results. */
+        var details_buttons = Y.one('#registration-details-buttons');
+        var form_actions = Y.one('#launchpad-form-actions');
+        var form_widgets = Y.one('#launchpad-form-widgets');
+        var search_results = Y.one('#search-results');
+        var step_title = Y.one('#step-title');
+        var title = Y.one('#registration-details-title');
+
+        /* This is the magic hidden widget used by the MultiStepView. */
+        var marker = Y.one(Y.DOM.byId('field.__visited_steps__'));
+
+        var separator = Y.one('#registration-separator');
+        function show_separator(flag) {
+            if (!separator) {
+                /* The separator is not on the page, because there were no
+                 * search results.
+                 */
+                return;
+            }
+            if (flag) {
+                separator.removeClass('unseen');
+            }
+            else {
+                separator.addClass('unseen');
+            }
+        }
+
+        /* When the 'No' button is clicked, we swap in the registration
+         * details for the search results.  It really doesn't look good
+         * to leave the search results there.
+         */
+        function complete_registration(e) {
+            var expander = Y.one('#search-results-expander');
+
+            /* Slide in the search results and hide them under a link. */
+            expander.removeClass('unseen');
+            expander.on('click', function(e) {
+                e.preventDefault();
+
+                var arrow = Y.one('#search-results-arrow');
+                if (arrow.getAttribute('src') == '/@@/treeCollapsed') {
+                    /* The search results are currently hidden.  Slide them
+                     * out and turn the arrow to point downward.
+                     */
+                    arrow.setAttribute('src', '/@@/treeExpanded');
+                    arrow.setAttribute('title', 'Hide search results');
+                    arrow.setAttribute('alt', 'Hide search results');
+                    Y.lazr.effects.slide_out(search_results).run();
+                    show_separator(true);
+                }
+                else {
+                    /* The search results are currently displayed.  Slide them
+                     * in and turn the arrow to point rightward.
+                     */
+                    arrow.setAttribute('src', '/@@/treeCollapsed');
+                    arrow.setAttribute('title', 'Show search results');
+                    arrow.setAttribute('alt', 'Show search results');
+                    Y.lazr.effects.slide_in(search_results).run();
+                    show_separator(false);
+                }
+            });
+
+            /* Hide the 'No' button, but slide out the search results, so the
+             * user has a clue that Something Is Happening.
+             */
+            details_buttons.addClass('unseen');
+
+            /* Slide out the registration details widgets, but add an 'end'
+             * event handler so that the height style left by lazr.effects is
+             * removed when the animation is done.  We're never going to slide
+             * the form widgets back in, and the height style causes the
+             * license widget to dive under the Complete Registration button.
+             * See bug 391138 for details.
+             */
+            var anim = Y.lazr.effects.slide_out(form_widgets);
+            anim.on('end', function() {
+                form_widgets.setStyle('height', null);
+            });
+            anim.run();
+
+            /* Toggle the visibility of the various other widgets. */
+            form_actions.removeClass('unseen');
+            title.removeClass('unseen');
+
+            /* Set the H2 title to something more appropriate for the
+             * selected task.
+             */
+            step_title.set('innerHTML', 'Step 2 (of 2) Registration details');
+
+            var reset_height = search_results.getComputedStyle('height');
+            search_results.setStyle('height', reset_height);
+            Y.lazr.effects.slide_in(search_results).run();
+
+            /* Append a special marker to the hidden state widget.  See
+             * ProjectAddStepTwo.search_results_count() for details.
+             */
+            var steps = marker.getAttribute('value');
+            if (0 > steps.search(new RegExp('hidesearch'))) {
+                marker.setAttribute('value', steps + "|hidesearch");
+            }
+        }
+
+        /* The details button is only visible when JavaScript is enabled, but
+         * the H3 separator is only visible when JavaScript is disabled.
+         * Neither is displayed on the step 1 page.
+         */
+        show_separator(false);
+
+        if (details_buttons) {
+            details_buttons.removeClass('unseen');
+            details_buttons.on('click', complete_registration);
+        }
+
+        /* If there are search results, hide the registration details. */
+        if (search_results) {
+            form_widgets.addClass('unseen');
+            form_actions.addClass('unseen');
+            title.addClass('unseen');
+        }
+
+        /* Finally, if we've been here before (e.g. there was an error in
+         * submitting step 2), jump to continuing the registration.
+         */
+         if (marker.getAttribute('value').search(/hidesearch/) >= 0) {
+            complete_registration(null);
+         }
+    })
+});
+  </script>
+
+    <div id="staging-message" style="font-size: larger; background: #e0f0d0;
+        padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
+       -webkit-border-radius: 5px; margin-bottom: 1em;"
+      tal:condition="not: is_demo">
+      You can <strong>test Launchpad's features</strong> at <a
+      href="https://staging.launchpad.net/">staging.launchpad.net</a>
+      <form style="display: inline; font-size: smaller"
+            action="https://staging.launchpad.net/">
+        <input type="submit" value="Oh, I want to create a test project" />
+      </form>
+    </div>
+
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:step fill-slot="extra_info">
+      <div style="float: right;">Not sure what to do?
+        <a href="https://help.launchpad.net/Feedback">Contact us</a>
+      </div>
+
+      <div tal:condition="view/is_step/1">
+        <p>
+          Launchpad projects are shared by all communities to encourage
+          collaboration between developers, translators, packagers, and other
+          contributors.
+        </p>
+
+        <p>
+          You do not need to register a project to:
+        </p>
+
+        <ul class="bulleted">
+          <li><a href="https://help.launchpad.net/Teams">Register
+            a team</a></li>
+          <li><a href="https://help.launchpad.net/Packaging/PPA">Activate
+            a PPA</a></li>
+          <li><a href="https://help.launchpad.net/Code/PersonalBranches">Access
+            your personal branches</a> (sandbox, repo)</li>
+          <li><a href="https://help.launchpad.net/Translations/YourProject">Translate
+            a project</a> that is already registered</li>
+          <li><a href="https://help.launchpad.net/ProjectGroups">Request a project group</a></li>
+        </ul>
+      </div>
+
+      <h2 class="legend" id="step-title">Step
+          <tal:step_number tal:replace="view/step_number"/>
+          (of <tal:total_steps tal:replace="view/total_steps"/>):
+          <tal:step_description tal:replace="view/step_description"/></h2>
+      </metal:step>
+
+      <metal:extra metal:fill-slot="extra_top">
+        <a href="" id="search-results-expander" class="js-action unseen">
+          <img id="search-results-arrow" src="/@@/treeCollapsed"
+               title="Show search results" alt="Show search results"/>
+          Possible duplicate projects
+        </a>
+
+        <div tal:condition="view/search_results_count"
+             id="search-results">
+          <div style="font-size: larger; margin-bottom: 1em; max-width: 60em;">
+          <img src="/@@/info" />
+          There are similar projects already registered in Launchpad.
+          Is project
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
+          one of these?
+          </div>
+
+          <table tal:define="results view/search_results">
+            <tbody>
+              <tr tal:repeat="pillar_name results"
+                  tal:replace="structure pillar_name/@@+listing-simple">
+              </tr>
+            </tbody>
+          </table>
+          <div id="registration-details-buttons" class="unseen">
+            <input type="button"
+                   value="No, this is a new project"/>
+            or <a tal:attributes="href view/cancel_url">Cancel</a>
+          </div>
+        </div>
+
+        <div id="registration-details-title"
+             style="font-size: larger; max-width: 60em;"
+             tal:condition="view/is_step/2">
+          <h3 id="registration-separator"
+              style="margin-top: 3em;"
+              tal:condition="view/search_results_count"
+              >Registration details</h3>
+          Select the licenses for project
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
+          and complete the registration.  You may also update the project's
+          title and summary.
+        </div>
+      </metal:extra>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Convert numbers to an arbitrary base numbering scheme
 
 This file is based on work from the Python Cookbook and is under the Python
@@ -7,7 +10,7 @@ license.
 __all__ = ['base']
 
 import string
-abc = string.digits + string.letters
+abc = string.digits + string.ascii_letters
 
 def base(number, radix):
     """Inverse function to int(str,radix) and long(str,radix)
@@ -30,8 +33,8 @@ def base(number, radix):
     This method is useful for shrinking sha1 and md5 hashes, but keeping
     them in simple ASCII suitable for URL's etc.
 
-    >>> import sha, md5
-    >>> s = sha.new('foo').hexdigest()
+    >>> import hashlib
+    >>> s = hashlib.sha1('foo').hexdigest()
     >>> s
     '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33'
     >>> i = long(s, 16)
@@ -39,7 +42,7 @@ def base(number, radix):
     68123873083688143418383284816464454849230703155L
     >>> base(i, 62)
     '1HyPQr2xj1nmnkQXBCJXUdQoy5l'
-    >>> base(int(md5.new('foo').hexdigest(), 16), 62)
+    >>> base(int(hashlib.md5('foo').hexdigest(), 16), 62)
     '5fX649Stem9fET0lD46zVe'
 
     A sha1 hash can be compressed to 27 characters or less

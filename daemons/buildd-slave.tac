@@ -1,4 +1,6 @@
-# Copyright Canonical Limited
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 
 # Buildd Slave implementation
@@ -6,8 +8,12 @@
 # passed through to the twistd log too. this could get dangerous/big
 
 from twisted.application import service, strports
-from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
-from canonical.launchpad.daemons import tachandler
+from canonical.buildd import XMLRPCBuildDSlave
+from canonical.buildd.binarypackage import BinaryPackageBuildManager
+from canonical.buildd.sourcepackagerecipe import (
+    SourcePackageRecipeBuildManager)
+from canonical.buildd.translationtemplates import TranslationTemplatesBuildManager
+from canonical.launchpad.daemons import readyservice
 
 from twisted.web import server, resource, static
 from ConfigParser import SafeConfigParser
@@ -20,13 +26,17 @@ conf = SafeConfigParser()
 conf.read(conffile)
 slave = XMLRPCBuildDSlave(conf)
 
-slave.registerBuilder(DebianBuildManager,"debian")
+# 'debian' is the old name. It remains here for compatibility.
+slave.registerBuilder(BinaryPackageBuildManager, "debian")
+slave.registerBuilder(BinaryPackageBuildManager, "binarypackage")
+slave.registerBuilder(SourcePackageRecipeBuildManager, "sourcepackagerecipe")
+slave.registerBuilder(TranslationTemplatesBuildManager, 'translation-templates')
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(builddslaveService)
+readyservice.ReadyService().setServiceParent(builddslaveService)
 
 root = resource.Resource()
 root.putChild('rpc', slave)
@@ -41,5 +51,5 @@ strports.service(slave.slave._config.get("slave","bindport"),
 #
 # python
 # import xmlrpclib
-# s = xmlrpclib.Server("http://localhost:8221/")
+# s = xmlrpclib.ServerProxy("http://localhost:8221/rpc")
 # s.echo("Hello World")

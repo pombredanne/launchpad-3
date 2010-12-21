@@ -1,3 +1,7 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -10,183 +14,120 @@
     -->
     <include file="bug-5133.zcml" />
 
-    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="
-          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
+          canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.webapp.publisher.RedirectionView">
+    <class class="canonical.launchpad.webapp.publisher.RedirectionView">
       <allow attributes="browserDefault __call__" />
-    </content>
-
-    <!-- links -->
-    <content class="canonical.launchpad.webapp.menu.LinkData">
-        <allow interface="canonical.launchpad.interfaces.ILinkData" />
-    </content>
+    </class>
 
     <adapter
-        for="canonical.launchpad.interfaces.ILinkData"
-        provides="canonical.launchpad.interfaces.ILink"
+        for="zope.interface.Interface
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
+        />
+
+    <adapter
+        for="zope.publisher.interfaces.http.IHTTPRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
+        />
+    <adapter
+        for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
+        />
+    <adapter
+        for="canonical.launchpad.layers.FeedsLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
+        />
+
+    <!-- lazr.batchnavigator hook -->
+    <adapter
+        factory='.batching.FiniteSequenceAdapter' />
+
+    <adapter
+        factory='.batching.FiniteSequenceAdapter'
+        for='storm.zope.interfaces.ISQLObjectResultSet' />
+
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundReferenceSet' />
+
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundIndirectReferenceSet' />
+
+    <!-- links -->
+    <class class="canonical.launchpad.webapp.menu.LinkData">
+        <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
+    </class>
+
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILinkData"
+        provides="canonical.launchpad.webapp.interfaces.ILink"
         factory="canonical.launchpad.webapp.menu.MenuLink"
         />
 
-    <content class="canonical.launchpad.webapp.menu.MenuLink">
+    <adapter
+        for="*"
+        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
+        />
+
+    <class class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILink"
+            interface="canonical.launchpad.webapp.interfaces.ILink"
             />
-    </content>
+    </class>
 
     <adapter
-        for="canonical.launchpad.interfaces.ILinkData"
-        provides="canonical.launchpad.interfaces.IFacetLink"
+        for="canonical.launchpad.webapp.interfaces.ILinkData"
+        provides="canonical.launchpad.webapp.interfaces.IFacetLink"
         factory="canonical.launchpad.webapp.menu.FacetLink"
         />
 
-    <content class="canonical.launchpad.webapp.menu.FacetLink">
+    <class class="canonical.launchpad.webapp.menu.FacetLink">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IFacetLink"
+            interface="canonical.launchpad.webapp.interfaces.IFacetLink"
             />
-    </content>
+    </class>
 
     <!-- Launchpad root object -->
     <utility
-        provides="canonical.launchpad.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         component="canonical.launchpad.webapp.publisher.rootObject"
         />
 
     <adapter
-        provides="canonical.launchpad.interfaces.ICanonicalUrlData"
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
         />
 
-    <!-- TALES namespaces. -->
-
-    <!-- TALES lp: namespace (should be deprecated) -->
     <adapter
-        for="zope.publisher.interfaces.IApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestAPI"
-        name="lp"
-        />
-
-    <!-- TALES enum-value: namespace -->
-    <adapter
-        for="canonical.lp.dbschema.Item"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.EnumValueAPI"
-        name="enumvalue"
-        />
-
-    <!-- TALES menu: namespace -->
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MenuAPI"
-        name="menu"
-        />
-
-    <!-- TALES count: namespace -->
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CountAPI"
-        name="count"
-        />
-
-    <!-- TALES htmlform: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
-        name="htmlform"
-        />
-
-    <!-- TALES fmt: namespace -->
-
-    <!-- The next directive is registered for all dicts, but we really only
-         want it to apply to the page template's CONTEXTS dict.
-      -->
-    <adapter
-        for="dict"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"
-        name="fmt"
-        />
-
-    <!-- The next directive should be registered for 'int' only.
-        However, there's a bug in adapter registration that stops
-        this working.  To be fixed in ZopeX3 RSN.
-        XXX: SteveAlexander, 2005-05-21.
-        -->
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
-        name="lp"
-        />
-
-    <adapter
-        for="datetime.datetime"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DateTimeFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="datetime.timedelta"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DurationFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="basestring"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="types.NoneType"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.NoneFormatter"
-        name="fmt"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
-        name="required"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
     <!-- Authentication. -->
@@ -197,28 +138,13 @@
         />
 
     <subscriber
-        for="canonical.launchpad.interfaces.IAfterTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
-        handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        handler="canonical.launchpad.rest.me.cache_me_link_when_principal_identified"
         />
 
     <subscriber
@@ -238,7 +164,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+        provides="canonical.launchpad.interfaces.launchpad.IPasswordEncryptor"
         permission="zope.Public"
         />
 
@@ -251,41 +177,70 @@
     <!-- Session machinery. -->
     <utility
         component="canonical.launchpad.webapp.session.idmanager"
-        provides="zope.app.session.interfaces.IClientIdManager"
+        provides="zope.session.interfaces.IClientIdManager"
         />
     <utility
         component="canonical.launchpad.webapp.pgsession.data_container"
-        provides="zope.app.session.interfaces.ISessionDataContainer"
+        provides="zope.session.interfaces.ISessionDataContainer"
         />
 
-    <!-- We want the changelog available on the debug view too, so people
-    can see when their patches make it to the dogfood server. -->
+    <!-- Storm Store selector. -->
+    <utility
+        component="canonical.launchpad.webapp.adapter.StoreSelector"
+        provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
+    </utility>
 
-    <browser:page
-        layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="changelog.html"
-        template="../templates/debug-root-changelog.pt"
-        class="canonical.launchpad.webapp.changelog.ChangeLog"
-        permission="zope.Public"
+    <!-- Storm Store adapters, adapting a Storm subclass or instance
+         to the correct Store for that tables replication set.
+      -->
+    <adapter
+        provides="canonical.launchpad.interfaces.lpstorm.IStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_store"
         />
+    <adapter
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_master_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.lpstorm.ISlaveStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_slave_store"
+        />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
+    <adapter
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterObject"
+        for="zope.interface.Interface"
+        trusted="yes"
+        factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
+        />
+    <class class="storm.store.Store">
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IStore" />
+        <allow attributes="get" />
+    </class>
+    <class class="canonical.database.sqlbase.SQLBase">
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IDBObject" />
+    </class>
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
+    <browser:favicon for="*" file="../images/launchpad.png" />
 
     <!-- LaunchBag Utility -->
     <utility
         factory="canonical.launchpad.webapp.launchbag.LaunchBag"
-        provides="canonical.launchpad.interfaces.IOpenLaunchBag"
+        provides="canonical.launchpad.webapp.interfaces.IOpenLaunchBag"
         permission="zope.Public"
         />
 
-    <content class="canonical.launchpad.webapp.launchbag.LaunchBag">
+    <class class="canonical.launchpad.webapp.launchbag.LaunchBag">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILaunchBag"
+            interface="canonical.launchpad.webapp.interfaces.ILaunchBag"
             />
-    </content>
+    </class>
 
     <browser:page
         for="*"
@@ -296,52 +251,24 @@
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
-        /@@/favicon.png to access resource and resourceDirectory -->
+        /@@/launchpad-icon-small to access the images directory -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
-
-    <!-- RDF page template macros -->
     <browser:page
-        for="*"
-        name="rdf_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
+        name=""
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        template="../templates/rdf-macros.pt"
-        />
-
-    <content
-        class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
-        <factory id="zope.da.LaunchpadDA" />
-        <require
-            permission="zope.app.rdb.Use"
-            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapter"
-            />
-        <require
-            permission="zope.ManageServices"
-            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
-            />
-    </content>
-
-    <!-- Launchpad publication machinery. We have customized publication
-    and requests that need to be hooked up.
-    -->
-    <publisher
-        name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserFactory"
-        methods="GET POST HEAD"
-        mimetypes="*"
-        priority="15"
         />
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserResponse"
-        provides="zope.app.session.interfaces.ISession"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"
+        provides="zope.session.interfaces.ISession"
         factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
         />
 
@@ -349,10 +276,23 @@
     We don't just use the response attribute, as this makes our tests harder
     to write -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserRequest"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
+
+    <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
+    <!-- It also works for the legacy SQLObject interface. -->
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result"
+        for="storm.zope.interfaces.ISQLObjectResultSet" />
 
     <!--These pages are used for testing BrowserNotificationMessages
         They are protected with admin privileges rather than being installed
@@ -360,39 +300,69 @@
         to view and adjust the visual rendering of the notifications.
     -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 
-    <!-- the SIGUSR1 handler -->
-
+    <!-- Signal handlers -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sighup.setup_sighup"
+        />
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
+
+    <!-- Confirm the database is the correct revision level -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.database.revision.confirm_dbrevision_on_startup"
+        />
+
+    <!-- Confirm that no main thread event handlers use the connection cache -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
+        />
+
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.adapter.set_launchpad_default_timeout"
         />
 
     <subscriber
@@ -405,4 +375,71 @@
         handler="canonical.launchpad.webapp.sigusr1.end_request"
         />
 
+    <class class="canonical.launchpad.webapp.publication.LoginRoot">
+      <allow
+        attributes="publishTraverse"
+        />
+    </class>
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.VocabularyPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="lp.services.fields.PublicPersonChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.PersonPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        lp.code.vocabularies.branch.BranchVocabularyBase"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      permission="zope.Public"
+      />
+
+    <!-- A simple view used by the page tests. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+whichdb"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
+    <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <!-- Create a namespace to render the form of any LaunchpadFormView-->
+    <view
+        name="form" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
+        />
+
+    <!-- Registrations to support +haproxy status url. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+haproxy"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.haproxy.HAProxyStatusView"
+        />
 </configure>

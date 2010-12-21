@@ -1,10 +1,14 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope">
-    
+
     <!-- Configuration related to datetime classes in Launchpad. -->
     <adapter
-        for="canonical.launchpad.interfaces.IHasDateCreated"
-        provides="canonical.launchpad.interfaces.IAging"
+        for="canonical.launchpad.interfaces.launchpad.IHasDateCreated"
+        provides="canonical.launchpad.interfaces.launchpad.IAging"
         factory="canonical.launchpad.components.cdatetime.AgingAdapter" />
 
 </configure>

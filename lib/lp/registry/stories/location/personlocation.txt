@@ -1,0 +1,18 @@
+Person Locations
+================
+
+People can have a location and time zone in Launchpad.  In some cases, a
+person has a time zone, but no location. We test that their home page renders
+without problems.
+
+    >>> login('test@canonical.com')
+    >>> zzz = factory.makePerson(name='zzz', time_zone='Africa/Maseru',
+    ...                          latitude=None, longitude=None)
+    >>> logout()
+
+Any person can see another person's time zone if their is also
+location data set, otherwise the location portlet does not show up.
+
+    >>> anon_browser.open('http://launchpad.dev/~zzz')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'portlet-map'))

@@ -1,6 +1,0 @@
-<tal:dummy define="dummy python:request.response.setHeader('content-type',
-'text/plain')" />
-User-agent: *
-Disallow:
-
-

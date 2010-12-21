@@ -12,10 +12,9 @@ If you want to make this email address the contact email of
 '%(team)s', please click on the link below and follow the
 instructions.
 
-   %(appurl)s/token/%(longstring)s
+    %(token_url)s
 
 Thanks,
 
-The Launchpad Team 
-launchpad@ubuntu.com
+The Launchpad Team
 

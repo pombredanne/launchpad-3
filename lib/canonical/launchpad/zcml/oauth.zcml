@@ -1,0 +1,51 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="launchpad">
+
+  <class class="canonical.launchpad.database.oauth.OAuthConsumer">
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumer"/>
+  </class>
+
+  <class class="canonical.launchpad.database.oauth.OAuthConsumerSet">
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
+  </class>
+
+  <securedutility
+      class="canonical.launchpad.database.oauth.OAuthConsumerSet"
+      provides="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet">
+      <allow
+          interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.database.oauth.OAuthRequestToken">
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthRequestToken"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.oauth.IOAuthRequestToken"/>
+  </class>
+
+  <securedutility
+      class="canonical.launchpad.database.oauth.OAuthRequestTokenSet"
+      provides="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet">
+      <allow
+          interface="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.database.oauth.OAuthAccessToken">
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
+  </class>
+
+  <class class="canonical.launchpad.database.oauth.OAuthNonce">
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthNonce"/>
+  </class>
+</configure>

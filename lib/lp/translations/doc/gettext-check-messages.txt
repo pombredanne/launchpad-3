@@ -1,0 +1,222 @@
+= Checking messages against gettext =
+
+Before accepting a translation message, Launchpad runs it through
+gettext to check for certain errors.  For example, if the message is
+marked as a C format string in the template, using the c-format flag,
+the set of % conversion specifiers in the translation should be
+compatible with those of the original English string in the template.
+Other languages such as Python have similar format string capabilities
+with corresponding flags.
+
+But sometimes it is possible for invalid messages to make it into the
+database.  It may be due to a bug in Launchpad, or it could be due to a
+gettext update that notices incompatibilities that earlier versions
+didn't.
+
+
+== Test setup ==
+
+Here we use an instrumented version of the script that counts messages
+checked instead of real time.  This gets around the indeterminate commit
+points that would otherwise be in the output.
+
+    >>> from datetime import datetime
+    >>> from pytz import timezone
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> from canonical.database.sqlbase import quote
+    >>> from lp.translations.scripts.gettext_check_messages import (
+    ...     GettextCheckMessages)
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.faketransaction import FakeTransaction
+
+    >>> class InstrumentedGettextCheckMessages(GettextCheckMessages):
+    ...     _commit_interval = 3
+    ...     def _get_time(self):
+    ...         return self._check_count
+
+    >>> def run_checker(options, commit_interval=None):
+    ...     """Create and run an instrumented `GettextCheckMessages`."""
+    ...     checker = InstrumentedGettextCheckMessages(
+    ...         'gettext-check-messages-test', test_args=options)
+    ...     checker.logger = FakeLogger()
+    ...     checker.txn = FakeTransaction(log_calls=True)
+    ...     if commit_interval is not None:
+    ...         checker._commit_interval = commit_interval
+    ...     checker.main()
+
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+
+    >>> UTC = timezone('UTC')
+
+    >>> nl_file = factory.makePOFile('nl')
+    >>> template = nl_file.potemplate
+
+A sample translatable message is flagged as containing a C-style format
+string.  This means that any "%d" sequences and such are significant.
+So gettext will check those in the translations for compatibility with
+those in the original message.
+
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate=template, singular=u'%d n', sequence=1)
+    >>> potmsgset.flagscomment = 'c-format'
+    >>> potmsgset.flags
+    [u'c-format']
+
+The sample message has an imported translation, and a current
+translation in Launchpad that differs from the imported one.
+
+    >>> current_message = factory.makeTranslationMessage(
+    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    ...     reviewer=template.owner, translations=[u'%d c'])
+    >>> current_message = removeSecurityProxy(current_message)
+
+    >>> imported_message = factory.makeTranslationMessage(
+    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    ...     reviewer=template.owner, translations=[u'%d i'],
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> imported_message = removeSecurityProxy(imported_message)
+
+    >>> imported_message.is_current = False
+    >>> current_message.is_imported = False
+    >>> imported_message.is_imported = True
+    >>> current_message.is_current = True
+
+
+== Basic operation ==
+
+The gettext_check_message script goes through a given set of messages
+and re-does the gettext check.  Which messages it checks is specified as
+a plain SQL WHERE clause.
+
+    >>> run_checker(['-vv', "-w id=%s" % quote(current_message.id)])
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    DEBUG Commit point.
+    COMMIT
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 0
+    INFO Messages disabled: 0
+    INFO Commit points: ...
+
+
+== Detecting errors ==
+
+If a translation fails to validate against its potmsgset, the script
+detects the problem when it checks that message.
+
+    >>> current_message.is_current
+    True
+
+    >>> current_message.translations = [u'%s c']
+
+    >>> run_checker(["-w id=%s" % quote(current_message.id)])
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    INFO ... (current): format specifications ... are not the same
+    DEBUG Commit point.
+    COMMIT
+    DEBUG Commit point.
+    COMMIT
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 1
+    INFO Messages disabled: 1
+    INFO Commit points: ...
+
+The failed message is demoted to a mere suggestion.
+
+    >>> current_message.is_current
+    False
+
+
+== Output ==
+
+Besides current messages, the script's output also distinguishes
+imported ones, and ones that are completely unused. The imported message
+happens to produce validation errors.
+
+    >>> imported_message.translations = [u'%s %s i']
+
+In this example we'd like to see a nicely predictable ordering, so we
+add a sort order using the -o option.
+
+    >>> run_checker(['-w', 'potmsgset=%s' % quote(potmsgset), '-o',  'id'])
+    DEBUG Checking messages matching:  potmsgset=...
+    DEBUG Checking message ...
+    INFO ... (unused): format specifications ... are not the same
+    DEBUG Commit point.
+    COMMIT
+    DEBUG Checking message ...
+    INFO ... (imported): number of format specifications ... does not match...
+    DEBUG Commit point.
+    COMMIT
+    INFO Done.
+    INFO Messages checked: 2
+    INFO Validation errors: 2
+    INFO Messages disabled: 0
+    INFO Commit points: 2
+
+In this case the imported message is checked twice: once all by itself
+and once as a potential alternative to the current message.  That's why
+the number of validation errors is greater than the number of messages
+checked.
+
+The script also notes when a message is both current and imported.
+
+    >>> imported_message.is_current = True
+    >>> run_checker(["-w id=%s" % quote(imported_message.id)])
+    DEBUG ...
+    INFO ... (current, imported): number of format specifications ...
+
+
+== Dry runs ==
+
+The --dry-run option makes the script abort all its database changes.
+
+    >>> current_message.is_current = True
+
+    >>> run_checker(["-w id=%s" % quote(current_message.id), '--dry-run'])
+    INFO Dry run.  Not making any changes.
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    INFO ... (current): format specifications ... are not the same
+    DEBUG Commit point.
+    ABORT
+    DEBUG Commit point.
+    ABORT
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 1
+    INFO Messages disabled: 1
+    INFO Commit points: 2
+
+
+== Commit points ==
+
+To avoid long-running transactions and potential locks, the script
+commits regularly.  Normally this happens every few seconds.  For the
+purpose of this test we count messages checked.  If we set the commit
+interval to 1, we get a commit after every message plus one at the end
+to close things off neatly.
+
+    >>> run_checker(["-w potmsgset=%s" % quote(potmsgset)], commit_interval=1)
+    DEBUG Checking messages matching:  potmsgset=...
+    DEBUG Checking message ...
+    INFO ... (...): number of format specifications ...
+    DEBUG Commit point.
+    COMMIT
+    DEBUG Checking message ...
+    INFO ... (...): format specifications ... are not the same
+    DEBUG Commit point.
+    COMMIT
+    DEBUG Commit point.
+    COMMIT
+    INFO Done.
+    INFO Messages checked: 2
+    INFO Validation errors: 2
+    INFO Messages disabled: 0
+    INFO Commit points: 3

@@ -1,398 +1,298 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <vocabulary
-    name="BinaryAndSourcePackageName"
-    factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
-    />
+  <class class="zope.schema.vocabulary.SimpleVocabulary">
+    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+  </class>
 
-  <vocabulary
-    name="BinaryPackageName"
-    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-    />
+  <class class="zope.schema.vocabulary.SimpleTerm">
+    <allow interface="zope.schema.interfaces.ITitledTokenizedTerm"/>
+  </class>
 
-  <vocabulary
-    name="Bounty"
-    factory="canonical.launchpad.vocabularies.BountyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchLifecycleStatus"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
+  <securedutility
     name="Bug"
-    factory="canonical.launchpad.vocabularies.BugVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.BugVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="BugAttachmentType"
-    factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.BugVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
-    />
 
-  <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
+  <securedutility
+    name="BugNominatableSeries"
+    component="canonical.launchpad.vocabularies.BugNominatableSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.BugNominatableProductSeriesVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="BugTaskImportance"
-    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.BugNominatableDistroSeriesVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
+
+  <securedutility
     name="BugTracker"
-    factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="BugTrackerType"
-    factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.BugTrackerVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
+
+  <securedutility
+    name="WebBugTracker"
+    component="canonical.launchpad.vocabularies.WebBugTrackerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.WebBugTrackerVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+  <securedutility
     name="BugWatch"
-    factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.BugWatchVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
+  <class class="canonical.launchpad.vocabularies.BugWatchVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
       name="Component"
-      factory="canonical.launchpad.vocabularies.ComponentVocabulary"
-      />
+      component="canonical.launchpad.vocabularies.ComponentVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
+  <class class="canonical.launchpad.vocabularies.ComponentVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
       name="CountryName"
-      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
-      />
+      component="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="CveStatus"
-    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.CountryNameVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="Distribution"
-    factory="canonical.launchpad.vocabularies.DistributionVocabulary"
-    />
 
-  <vocabulary
+  <securedutility
     name="DistributionUsingMalone"
-    factory="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="DistroRelease"
-    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="DistributionReleaseStatus"
-    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
-    />
 
-  <vocabulary
-    name="FilteredDistroArchRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchReleaseVocabulary"
-    />
+  <securedutility
+    name="FilteredDeltaLanguagePack"
+    component="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="FilteredDistroRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="FilteredProductSeries"
-    factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
-    />
 
-  <vocabulary
-    name="FutureSprint"
-    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
-    />
+   <securedutility
+    name="FilteredDistroArchSeries"
+    component="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+   </securedutility>
 
-  <vocabulary
-    name="GPGKeyAlgorithm"
-    factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
-    />
+   <class class="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary">
+     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+   </class>
 
-  <vocabulary
-    name="InfestationStatus"
-    factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
-    />
 
-  <vocabulary
-    name="KarmaCategory"
-    factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
-    />
+  <securedutility
+    name="FilteredFullLanguagePack"
+    component="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
+  <class class="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
+    name="FilteredLanguagePack"
+    component="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="Language"
-    factory="canonical.launchpad.vocabularies.LanguageVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.LanguageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="Milestone"
-    factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.LanguageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="MirrorContent"
-    factory="canonical.launchpad.vocabularies.MirrorContentVocabulary"
-    />
 
-  <vocabulary
-    name="MirrorPulseType"
-    factory="canonical.launchpad.vocabularies.MirrorPulseTypeVocabulary"
-    />
+  <securedutility
+    name="TranslatableLanguage"
+    component="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="MirrorSpeed"
-    factory="canonical.launchpad.vocabularies.MirrorSpeedVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="MirrorStatus"
-    factory="canonical.launchpad.vocabularies.MirrorStatusVocabulary"
-    />
 
-  <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
-    />
-
-  <vocabulary
+  <securedutility
     name="PackageRelease"
-    factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.PackageReleaseVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="PersonAccountToMerge"
-    factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
-    />
 
-  <vocabulary
-    name="PersonActiveMembership"
-    factory="canonical.launchpad.vocabularies.PersonActiveMembershipVocabulary"
-    />
+  <securedutility
+    name="PPA"
+    component="canonical.launchpad.vocabularies.PPAVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.PPAVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
-    />
 
-  <vocabulary
-    name="POTemplateName"
-    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
-    />
+  <securedutility
+    name="ProjectProductsUsingMalone"
+    component="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="Product"
-    factory="canonical.launchpad.vocabularies.ProductVocabulary"
-    />
-
-  <vocabulary
-    name="ProductBranch"
-    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
-    />
-
-  <vocabulary
-    name="ProductRelease"
-    factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
-    />
-
-  <vocabulary
-    name="ProductSeries"
-    factory="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
-    />
-
-  <vocabulary
-    name="Project"
-    factory="canonical.launchpad.vocabularies.ProjectVocabulary"
-    />
-
-  <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
-    />
-
-  <vocabulary
-    name="RemoteBugTaskImportance"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
-    />
-
-  <vocabulary
-    name="ShipItFlavour"
-    factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
-    />
-
-  <vocabulary
-    name="SourcePackageName"
-    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
-    />
-
-  <vocabulary
-    name="Specification"
-    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDependencies"
-    factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDepCandidates"
-    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationPriority"
-    factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationGoalStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
-    />
-
-  <vocabulary
-    name="Sprint"
-    factory="canonical.launchpad.vocabularies.SprintVocabulary"
-    />
-
-  <vocabulary
-    name="SprintSpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TeamSubscriptionPolicy"
-    factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
-    />
-
-  <vocabulary
-    name="TicketPriority"
-    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="TicketStatus"
-    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TimezoneName"
-    factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
-    />
-
-  <vocabulary
+  <securedutility
     name="TranslationGroup"
-    factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="TranslationPermission"
-    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.TranslationGroupVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="ValidPersonOrTeam"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-    />
 
-  <vocabulary
-    name="ValidAssignee"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-    />
+  <securedutility
+    name="TranslationMessage"
+    component="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="ValidMaintainer"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.TranslationMessageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
-    name="ValidOwner"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-    />
 
-  <vocabulary
-    name="ValidTeamMember"
-    factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
-    />
+  <securedutility
+    name="TranslationTemplate"
+    component="canonical.launchpad.vocabularies.TranslationTemplateVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
-    name="ValidTeamOwner"
-    factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
-    />
+  <class class="canonical.launchpad.vocabularies.TranslationTemplateVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
-  <vocabulary
+
+  <securedutility
     name="Processor"
-    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <vocabulary
+  <class class="canonical.launchpad.vocabularies.ProcessorVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="ProcessorFamily"
-    factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
-    />
+    component="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
-    />
+  <class class="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
 </configure>

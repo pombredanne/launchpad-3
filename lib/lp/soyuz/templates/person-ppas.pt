@@ -1,0 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <div tal:define="ppas context/ppas" tal:condition="ppas">
+    <table>
+      <tal:ppa_line tal:repeat="ppa ppas">
+        <tr tal:condition="ppa/required:launchpad.View">
+          <td tal:content="structure ppa/fmt:link"></td>
+        </tr>
+      </tal:ppa_line>
+    </table>
+  </div>
+</tal:root>

@@ -1,66 +1,68 @@
-#!/usr/bin/env python
-"""Copyright Canonical Limited 2005
- Author: Daniel Silverstone <daniel.silverstone@canonical.com>
-         Celso Providelo <celso.providelo@canonical.com>
- Simple tool to upload arbitrary files into Librarian
-"""
-from canonical.lp import initZopeless
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from zope.component import getUtility
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.helpers import filenameToContentType
+# pylint: disable-msg=W0403
+"""Simple tool to upload arbitrary files into Librarian."""
 
-from optparse import OptionParser
+import _pythonpath
 
+import logging
 import os
 
-def addfile(filepath, client):
-    """Add a file to librarian."""        
-    # verify filepath
-    if not filepath:
-        print 'Filepath is required'
-        return
+from zope.component import getUtility
 
-    # open given file
-    try:
-        fd = open(filepath)
-    except IOError:
-        print 'Could not open:', filepath
-        return
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.helpers import filenameToContentType
+from lp.services.scripts.base import (
+    LaunchpadScript, LaunchpadScriptFailure)
 
-    # XXX: cprov 20050613
-    # os.fstat(fd) presents an strange behavior
-    flen = os.stat(filepath).st_size
-    filename = os.path.basename(filepath)
-    ftype = filenameToContentType(filename)
 
-    alias = client.addFile(filename, flen, fd, contentType=ftype)
+class LibrarianUploader(LaunchpadScript):
+    description = "Upload a file to librarian."
+    usage = "usage: %prog <f|--file> <filename>"
+    loglevel = logging.INFO
 
-    print 'Added as', alias
+    def add_my_options(self):
+        self.parser.set_defaults(format='simple')
+        self.parser.add_option(
+        "-f", "--file", dest="filepath", metavar="FILE",
+        help="filename to upload")
 
-    # commit previous transactions
-    tm.commit()
+    def main(self):
+        """Upload file, commit the transaction and prints the file URL."""
+        if self.options.filepath is None:
+            raise LaunchpadScriptFailure('File not provided.')
+
+        library_file = self.upload_file(self.options.filepath)
+
+        self.txn.commit()
+        self.logger.info(library_file.http_url)
+
+    def upload_file(self, filepath):
+        """Upload given file to Librarian.
+
+        :param filepath: path to the file on disk that should be uploaded to
+            Librarian.
+        :raise: `LaunchpadScriptFailure` if the given filepath could not be
+            opened.
+        :return: the `LibraryFileAlias` record corresponding to the uploaded
+            file.
+        """
+        try:
+            file = open(filepath)
+        except IOError:
+            raise LaunchpadScriptFailure('Could not open: %s' % filepath)
+
+        flen = os.stat(filepath).st_size
+        filename = os.path.basename(filepath)
+        ftype = filenameToContentType(filename)
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, flen, file, contentType=ftype)
+        return library_file
+
 
 if __name__ == '__main__':
-    # Parse the commandline...
-    parser = OptionParser()
-    parser.add_option("-f","--file", dest="filepath",
-                      help="filename to import",
-                      metavar="FILE",
-                      default=None)
-    
-    (options,args) = parser.parse_args()
-    
-    filepath = options.filepath
-
-    # setup a transaction manager to LPDB
-    tm = initZopeless()
-
-    # load the zcml configuration
-    execute_zcml_for_scripts()
-    
-    # get an librarian client instance
-    client = getUtility(ILibrarianClient)
-
-    addfile(filepath, client)
+    script = LibrarianUploader('librarian-uploader')
+    script.run()

@@ -1,7 +1,11 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0702
+
 """Logging setup for scripts.
 
-Don't import from this module. Import it from canonical.scripts.
+Don't import from this module. Import it from canonical.launchpad.scripts.
 
 Parts of this may be moved into canonical.launchpad somewhere if it is
 to be used for non-script stuff.
@@ -10,39 +14,120 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options']
+__all__ = [
+    'log',
+    'logger',
+    'logger_options',
+    'OopsHandler',
+    'LaunchpadFormatter',
+    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
+    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
+    ]
 
-import logging
-import re
-import sha
-import sys
-import traceback
-import time
-from optparse import OptionParser
+
 from cStringIO import StringIO
-from datetime import datetime, timedelta
-from pytz import utc
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import hashlib
+import logging
+from logging.handlers import WatchedFileHandler
+from optparse import OptionParser
+import os.path
+import re
+import sys
+import time
+import traceback
 
+from pytz import utc
 from zope.component import getUtility
 
 from canonical.base import base
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import (
+    globalErrorUtility,
+    ScriptRequest,
+    )
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from lp.services.log import loglevels
 
-class LibrarianFormatter(logging.Formatter):
+
+# Reexport our custom loglevels for old callsites. These callsites
+# should be importing the symbols from lp.services.log.loglevels
+DEBUG2 = loglevels.DEBUG2
+DEBUG3 = loglevels.DEBUG3
+DEBUG4 = loglevels.DEBUG4
+DEBUG5 = loglevels.DEBUG5
+DEBUG6 = loglevels.DEBUG6
+DEBUG7 = loglevels.DEBUG7
+DEBUG8 = loglevels.DEBUG8
+DEBUG9 = loglevels.DEBUG9
+
+
+class OopsHandler(logging.Handler):
+    """Handler to log to the OOPS system."""
+
+    def __init__(self, script_name, level=logging.WARN):
+        logging.Handler.__init__(self, level)
+        # Context for OOPS reports.
+        self.request = ScriptRequest(
+            [('script_name', script_name), ('path', sys.argv[0])])
+        self.setFormatter(LaunchpadFormatter())
+
+    def emit(self, record):
+        """Emit a record as an OOPS."""
+        try:
+            msg = record.getMessage()
+            # Warnings and less are informational OOPS reports.
+            informational = (record.levelno <= logging.WARN)
+            with globalErrorUtility.oopsMessage(msg):
+                globalErrorUtility._raising(
+                    sys.exc_info(), self.request, informational=informational)
+        except Exception:
+            self.handleError(record)
+
+
+class LaunchpadFormatter(logging.Formatter):
+    """logging.Formatter encoding our preferred output format."""
+
+    def __init__(self, fmt=None, datefmt=None):
+        if fmt is None:
+            if config.isTestRunner():
+                # Don't output timestamps in the test environment
+                fmt = '%(levelname)-7s %(message)s'
+            else:
+                fmt = '%(asctime)s %(levelname)-7s %(message)s'
+        if datefmt is None:
+            datefmt = "%Y-%m-%d %H:%M:%S"
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self.converter = time.gmtime # Output should be UTC
+
+
+class LibrarianFormatter(LaunchpadFormatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
     a URL rather than emitting the traceback directly.
 
     The traceback will be emitted as a fallback if the Librarian cannot be
     contacted.
+
+    XXX bug=641103 StuartBishop -- This class should die. Remove it and
+    replace with LaunchpadFormatter, fixing the test fallout.
     """
+
     def formatException(self, ei):
         """Format the exception and store it in the Librian.
-        
+
         Returns the URL, or the formatted exception if the Librarian is
         not available.
         """
         traceback = logging.Formatter.formatException(self, ei)
+        # Uncomment this line to stop exception storage in the librarian.
+        # Useful for debugging tests.
+        # return traceback
         try:
             librarian = getUtility(ILibrarianClient)
         except LookupError:
@@ -54,29 +139,26 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
-  
+            exception_string = ei[0].__name__
+
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
-            filename = base(
-                    long(sha.new(traceback).hexdigest(),16), 62
-                    ) + '.txt'
+            filename = base(long(
+                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),
-                    expires=expiry
-                    )
+                    expires=expiry)
             return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
-        except:
+        except Exception:
             # Exceptions raised by the Formatter get swallowed, but we want
             # to know about them. Since we are already spitting out exception
             # information, we can stuff our own problems in there too.
             return '%s\n\nException raised in formatter:\n%s\n' % (
                     traceback,
-                    logging.Formatter.formatException(self, sys.exc_info())
-                    )
+                    logging.Formatter.formatException(self, sys.exc_info()))
 
 
 def logger_options(parser, default=logging.INFO):
@@ -130,32 +212,77 @@ def logger_options(parser, default=logging.INFO):
     # Undocumented use of the optparse module
     parser.defaults['verbose'] = False
 
-    def counter(option, opt_str, value, parser, inc):
-        parser.values.loglevel = (
-                getattr(parser.values, 'loglevel', default) + inc
-                )
+    def inc_loglevel(option, opt_str, value, parser):
+        current_level = getattr(parser.values, 'loglevel', default)
+        if current_level < 10:
+            inc = 1
+        else:
+            inc = 10
+        parser.values.loglevel = current_level + inc
         parser.values.verbose = (parser.values.loglevel < default)
-        # Reset the global log
-        global log
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
+
+    def dec_loglevel(option, opt_str, value, parser):
+        current_level = getattr(parser.values, 'loglevel', default)
+        if current_level <= 10:
+            dec = 1
+        else:
+            dec = 10
+        parser.values.loglevel = current_level - dec
+        parser.values.verbose = (parser.values.loglevel < default)
+        # Reset the global log.
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
-            "-v", "--verbose", dest="loglevel", default=default,
-            action="callback", callback=counter, callback_args=(-10, ),
-            help="Increase verbosity. May be specified multiple times."
-            )
+        "-v", "--verbose", dest="loglevel", default=default,
+        action="callback", callback=dec_loglevel,
+        help="Increase stderr verbosity. May be specified multiple times.")
     parser.add_option(
-            "-q", "--quiet",
-            action="callback", callback=counter, callback_args=(10, ),
-            help="Decrease verbosity. May be specified multiple times."
-            )
+        "-q", "--quiet", action="callback", callback=inc_loglevel,
+        help="Decrease stderr verbosity. May be specified multiple times.")
+
+    debug_levels = ', '.join([
+        v for k, v in sorted(logging._levelNames.items(), reverse=True)
+            if isinstance(k, int)])
+
+    def log_file(option, opt_str, value, parser):
+        try:
+            level, path = value.split(':', 1)
+        except ValueError:
+            level, path = logging.INFO, value
+
+        if isinstance(level, int):
+            pass
+        elif level.upper() not in logging._levelNames:
+            parser.error(
+                "'%s' is not a valid logging level. Must be one of %s" % (
+                    level, debug_levels))
+        else:
+            level = logging._levelNames[level.upper()]
+
+        if not path:
+            parser.error("Path to log file not specified")
+
+        path = os.path.abspath(path)
+        try:
+            open(path, 'a')
+        except Exception:
+            parser.error("Unable to open log file %s" % path)
+
+        parser.values.log_file = path
+        parser.values.log_file_level = level
+
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
+
     parser.add_option(
-            "--log-file", action="store", type="string",
-            help="Send log to the given file, rather than stderr."
-            )
+        "--log-file", type="string", action="callback", callback=log_file,
+        metavar="LVL:FILE", default=None,
+        help="Send log messages to FILE. LVL is one of %s" % debug_levels)
+    parser.set_default('log_file_level', None)
 
     # Set the global log
-    global log
     log._log = _logger(default, out_stream=sys.stderr)
 
 
@@ -170,7 +297,7 @@ def logger(options=None, name=None):
     >>> logger_options(parser)
     >>> options, args = parser.parse_args(['-v', '-v', '-q', '-q', '-q'])
     >>> log = logger(options)
-    >>> log.debug("Not shown - I'm too quiet")
+    >>> log.debug('Not shown - too quiet')
 
     Cleanup:
 
@@ -182,11 +309,13 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    if options.log_file:
-        out_stream = open(options.log_file, 'a')
-        return _logger(options.loglevel, out_stream=out_stream, name=name)
+    log_file = getattr(options, 'log_file', None)
+    log_file_level = getattr(options, 'log_file_level', None)
 
-    return _logger(options.loglevel, out_stream=sys.stderr, name=name)
+    return _logger(
+        options.loglevel, out_stream=sys.stderr, name=name,
+        log_file=log_file, log_file_level=log_file_level)
+
 
 def reset_root_logger():
     root_logger = logging.getLogger()
@@ -198,7 +327,10 @@ def reset_root_logger():
             pass
         root_logger.removeHandler(hdlr)
 
-def _logger(level, out_stream, name=None):
+
+def _logger(
+    level, out_stream, name=None,
+    log_file=None, log_file_level=logging.DEBUG):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
@@ -209,12 +341,6 @@ def _logger(level, out_stream, name=None):
         name = sys.argv[0]
         name = re.sub('.py[oc]?$', '', name)
 
-    # Clamp the loglevel
-    if level < logging.DEBUG:
-        level = logging.DEBUG
-    elif level > logging.CRITICAL:
-        level = logging.CRITICAL
-
     # We install our custom handlers and formatters on the root logger.
     # This means that if the root logger is used, we still get correct
     # formatting. The root logger should probably not be used.
@@ -223,32 +349,37 @@ def _logger(level, out_stream, name=None):
     # reset state of root logger
     reset_root_logger()
 
-    # Make it print output in a standard format, suitable for 
+    # Make it print output in a standard format, suitable for
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=out_stream)
-    if config.default_section == 'testrunner':
-        # Don't output timestamps in the test environment
-        fmt = '%(levelname)-7s %(message)s'
-    else:
-        fmt='%(asctime)s %(levelname)-7s %(message)s'
-    formatter = LibrarianFormatter(
-        fmt=fmt,
-        # Put date back if we need it, but I think just time is fine and
-        # saves space.
-        datefmt="%H:%M:%S",
-        )
-    formatter.converter = time.gmtime # Output should be UTC
+    hdlr = logging.StreamHandler(out_stream)
+    # We set the level on the handler rather than the logger, so other
+    # handlers with different levels can be added for things like debug
+    # logs.
+    root_logger.setLevel(0)
+    hdlr.setLevel(level)
+    formatter = LibrarianFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
+
+    # Add an optional aditional log file.
+    if log_file is not None:
+        handler = WatchedFileHandler(log_file, encoding="UTF8")
+        handler.setFormatter(formatter)
+        handler.setLevel(log_file_level)
+        root_logger.addHandler(handler)
 
     # Create our logger
     logger = logging.getLogger(name)
 
-    logger.setLevel(level)
-
-    global log
+    # Set the global log
     log._log = logger
+
+    # Inform the user the extra log file is in operation.
+    if log_file is not None:
+        log.info(
+            "Logging %s and higher messages to %s" % (
+                logging.getLevelName(log_file_level), log_file))
 
     return logger
 
@@ -284,7 +415,3 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
-
-
-
-

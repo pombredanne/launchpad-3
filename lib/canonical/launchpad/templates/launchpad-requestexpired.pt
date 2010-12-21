@@ -1,27 +1,30 @@
-<tal:layout define="columns1 default">
-<html metal:use-macro="context/@@main_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/locationless"
+  i18n:domain="launchpad"
+>
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div class="top-portlet" metal:fill-slot="main">
       <h1 class="exception">Timeout error</h1>
-    </metal:heading>
-    <div metal:fill-slot="main">
       <p>
         Sorry, something just went wrong in Launchpad.
+      </p>
+      <p>
         We&#8217;ve recorded what happened,
         and we&#8217;ll fix it as soon as possible.
         Apologies for the inconvenience.
       </p>
       <p>
         Trying again in a couple of minutes might work.
-        If it doesn&#8217;t, and this is blocking your work, let us know on the
-        <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-        >launchpad-users mailing list</a> (requires subscription).
-        Include the error <abbr>ID</abbr>
-        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
-        in your message.
+      </p>
+      <p>
+        (Error <abbr>ID</abbr>:
+        <tal:oops replace="structure view/oops_id_text" />)
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
   </body>
 </html>
-</tal:layout>

@@ -1,0 +1,158 @@
+= Finding Similar Bugs =
+
+The normal bug search requires all the specified keywords to be present
+in the found bugs. This works quite well in general, but not when you
+want to find bugs similar to a given bug summary when filing a new bug;
+then the search is too restrictive.
+
+To address this use case, IBugTask.findSimilar can be used, which uses
+nl_phrase_search in order to construct a suitable search string.
+
+It doesn't make much sense to find bugs similar to an empty string, so
+no results will be returned.
+
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, '', product=firefox)
+    >>> similar_bugs.count()
+    0
+
+Also, of course, if the given summary isn't similar to any other bugs,
+no results are returned.
+
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, 'nosimilarbugs', product=firefox)
+    >>> similar_bugs.count()
+    0
+
+Now, let's enter a real bug summary, which doesn't match any other
+exactly. We can see that it still manages to find a bug.
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Can't display SVG", product=firefox)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    Firefox does not support SVG
+
+
+Above we specified that only bugs against Firefox should be searched. If
+we specify Evolution, no bugs will be returned, since no similar bugs
+are found there.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Can't display SVG", product=evolution)
+    >>> similar_bugs.count()
+    0
+
+We can also search for distribution bugs:
+
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Thunderbird SVG",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    Firefox does not support SVG
+    Thunderbird crashes
+
+As well as limiting it to a specific source package:
+
+
+    >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Can't display SVG",
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_thunderbird.sourcepackagename)
+    >>> similar_bugs.count()
+    0
+
+
+== Private bugs ==
+
+Only bugs that the user has access to view will be searched. If we set
+the Firefox bug to private, and repeat the search as a user who isn't
+allowed to view it, only the Thunderbird bug will be returned this time.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> login('test@canonical.com')
+    >>> firefox_svg_bug = getUtility(IBugSet).get(1)
+    >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+    >>> syncUpdate(firefox_svg_bug)
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', firefox_svg_bug)
+    False
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     no_priv, "Thunderbird SVG",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    Thunderbird crashes
+
+    >>> login('test@canonical.com')
+    >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+    >>> syncUpdate(firefox_svg_bug)
+
+
+== Ordering of search results ==
+
+Since the search uses OR to match bugs against the entered phrase, many
+bugs will be returned by a search. Since we usually want to display on
+a few number of bugs to the user, it's important that the results are
+ordered in a way that the bugs matching the phrase best are first in the
+list.
+
+When searching for similar bugs, the results are ordered by ranking the
+results of the fulltext search on the Bug table, so bugs that have a
+summary or description that match the phrase will be displayed first.
+
+Due to the sample data assuming a way-to-wide search facility, this test
+has been narrowed - see bug 612384.
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Another test bug for Thunderbird",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    another test bug
+    >>> #Thunderbird crashes
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Another Thunderbird crash",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    Thunderbird crashes
+    >>> #another test bug
+
+== Not returning the same bug ==
+
+findSimilarBugs() does not include the bug of the bugtask upon which
+it is invoked.
+
+    >>> orig_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+
+    >>> dupe_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+    >>> dupe_bug.markAsDuplicate(orig_bug)
+
+    >>> similar_bugs = orig_bug.default_bugtask.findSimilarBugs(firefox.owner)
+    >>> orig_bug in similar_bugs
+    False

@@ -1,24 +1,16 @@
-<div tal:condition="not:view/logged_in" class="login">
-  <tal:block condition="view/login_shown">
-    Not logged in &#8212;
-    <a tal:attributes="href view/login_url">
-      Log In / Register
-    </a>
-  </tal:block>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div id="logincontrol" tal:condition="view/login_shown"
+><a tal:attributes="href view/login_url">Log in / Register</a></div>
+<div id="logincontrol" tal:condition="view/logged_in">
+  <form action="+logout" method="post">
+    <input type="hidden" name="loggingout" value="1" />
+    <a tal:replace="structure request/lp:person/fmt:name_link" /> &bull;
+    <input type="submit" name="logout" value="Log Out" />
+  </form>
 </div>
-<form
-  tal:condition="view/logged_in"
-  action="+logout"
-  class="login"
-  method="post"
->
-  <input type="hidden" name="loggingout" value="1" />
-  Logged in as
-    <a
-      tal:attributes="href string:/people/${request/lp:person/name}"
-      tal:content="request/lp:person/browsername"
-    >User's browser name
-    </a>
-    &ndash;
-  <input type="submit" value="Log Out" />
-</form>
+</tal:root>

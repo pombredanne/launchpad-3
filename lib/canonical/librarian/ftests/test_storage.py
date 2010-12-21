@@ -1,7 +1,7 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-import sha
+import hashlib
 import shutil
 import tempfile
 import unittest
@@ -9,26 +9,25 @@ import unittest
 from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
-from canonical.database.sqlbase import begin, flush_database_updates
-from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import LaunchpadLayer
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.testing.layers import LaunchpadZopelessLayer
+
 
 class LibrarianStorageDBTests(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestSetup().setUp('librarian')
+        self.layer.switchDbUser('librarian')
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        LaunchpadZopelessTestSetup().tearDown()
 
     def test_addFile(self):
         data = 'data ' * 50
-        digest = sha.sha(data).hexdigest()
+        digest = hashlib.sha1(data).hexdigest()
         newfile = self.storage.startAddFile('file1', len(data))
         newfile.srcDigest = digest
         newfile.append(data)
@@ -38,7 +37,6 @@ class LibrarianStorageDBTests(unittest.TestCase):
     def test_addFiles_identical(self):
         # Start adding two files with identical data
         data = 'data ' * 5000
-        digest = sha.sha(data).hexdigest()
         newfile1 = self.storage.startAddFile('file1', len(data))
         newfile2 = self.storage.startAddFile('file2', len(data))
         newfile1.append(data)
@@ -65,14 +63,13 @@ class LibrarianStorageDBTests(unittest.TestCase):
     def test_alias(self):
         # Add a file (and so also add an alias)
         data = 'data ' * 50
-        digest = sha.sha(data).hexdigest()
         newfile = self.storage.startAddFile('file1', len(data))
         newfile.mimetype = 'text/unknown'
         newfile.append(data)
         fileid, aliasid = newfile.store()
 
         # Check that its alias has the right mimetype
-        fa = self.storage.getFileAlias(aliasid)
+        fa = self.storage.getFileAlias(aliasid, None, '/')
         self.assertEqual('text/unknown', fa.mimetype)
 
         # Re-add the same file, with the same name and mimetype...
@@ -82,7 +79,8 @@ class LibrarianStorageDBTests(unittest.TestCase):
         fileid2, aliasid2 = newfile2.store()
 
         # Verify that we didn't get back the same alias ID
-        self.assertNotEqual(fa.id, self.storage.getFileAlias(aliasid2).id)
+        self.assertNotEqual(fa.id,
+            self.storage.getFileAlias(aliasid2, None, '/').id)
 
     def test_clientProvidedDuplicateIDs(self):
         # This test checks the new behaviour specified by LibrarianTransactions
@@ -119,8 +117,8 @@ class LibrarianStorageDBTests(unittest.TestCase):
         fileid2, aliasid2 = newfile2.store()
 
         # Create rows in the database for these files.
-        content1 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6661)
-        content2 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6662)
+        LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6661)
+        LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6662)
 
         flush_database_updates()
         # And no errors should have been raised!

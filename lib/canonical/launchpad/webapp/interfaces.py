@@ -1,16 +1,399 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
 import logging
 
-from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationService, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.schema import Int, Text, Object, Datetime, TextLine
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
+import zope.app.publication.interfaces
+from zope.app.security.interfaces import (
+    IAuthentication,
+    IPrincipal,
+    IPrincipalSource,
+    )
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.traversing.interfaces import IContainmentRoot
 
 from canonical.launchpad import _
+# Import only added to allow change to land.  Needs to be removed when shipit
+# is updated.
+from lp.app.errors import UnexpectedFormData
+
+
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
+
+
+class ILaunchpadContainer(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(scope):
+        """Return True if this context is within the given scope."""
+
+
+class ILaunchpadRoot(IContainmentRoot):
+    """Marker interface for the root object of Launchpad."""
+
+
+class ILaunchpadApplication(Interface):
+    """Marker interface for a launchpad application.
+
+    Rosetta, Malone and Soyuz are launchpad applications.  Their root
+    application objects will provide an interface that extends this
+    interface.
+    """
+    title = Attribute('Title')
+
+
+class ILaunchpadProtocolError(Interface):
+    """Marker interface for a Launchpad protocol error exception."""
+
+
+class IAuthorization(Interface):
+    """Authorization policy for a particular object and permission."""
+
+    def checkUnauthenticated():
+        """Returns True if an unauthenticated user has that permission
+        on the adapted object.  Otherwise returns False.
+        """
+
+    def checkAccountAuthenticated(account):
+        """Returns True if the account has that permission on the adapted
+        object.  Otherwise returns False.
+
+        The argument `account` is the account who is authenticated.
+        """
+
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
+
+
+#
+# Menus and Facets
+#
+
+class IMenu(Interface):
+    """Public interface for facets, menus, extra facets and extra menus."""
+
+    def iterlinks(request_url=None):
+        """Iterate over the links in this menu.
+
+        request_url, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+        """
+
+
+class IMenuBase(IMenu):
+    """Common interface for facets, menus, extra facets and extra menus."""
+
+    context = Attribute('The object that has this menu.')
+
+    request = Attribute('The request the menus is used in.')
+
+
+class IFacetMenu(IMenuBase):
+    """Main facet menu for an object."""
+
+    def iterlinks(request_url=None, selectedfacetname=None):
+        """Iterate over the links in this menu.
+
+        :param request_url: A `URI` or None. It is used to decide whether a
+            menu link points to the page being requested, in which case it
+            will not be linked.
+
+        :param selectedfacetname: A str. The link with that name will be
+            marked as 'selected'.
+        """
+
+    defaultlink = Attribute(
+        "The name of the default link in this menu.  That is, the one that "
+        "will be selected if no others are selected.  It is None if there "
+        "is no default link.")
+
+
+class IApplicationMenu(IMenuBase):
+    """Application menu for an object."""
+
+
+class IContextMenu(IMenuBase):
+    """Context menu for an object."""
+
+
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
+
+    title = Attribute("The title of the menu as it appears on the page.")
+
+
+class ILinkData(Interface):
+    """An object with immutable attributes that represents the data a
+    programmer provides about a link in a menu.
+    """
+
+    target = Attribute("The place this link should link to.  This may be "
+        "a path relative to the context of the menu this link appears in, "
+        "or an absolute path, or an absolute URL.")
+
+    text = Attribute(
+        "The text of this link, as appears underlined on a page.")
+
+    summary = Attribute(
+        "The summary text of this link, as appears as a tooltip on the link.")
+
+    icon = Attribute("The name of the icon to use.")
+
+    enabled = Attribute("Boolean to say whether this link is enabled.")
+
+    site = Attribute(
+        "The name of the site this link is to, or None for the current site.")
+
+    menu = Attribute(
+        "The `INavigationMenu` associated with the page this link points to.")
+
+    # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
+    # action menu is not used anymore and we move to use inline navigation.
+    sort_key = Attribute(
+        "The sort key to use when rendering it with a group of links.")
+
+
+class ILink(ILinkData):
+    """An object that represents a link in a menu.
+
+    The attributes name, url and linked may be set by the menus infrastructure.
+    """
+
+    name = Attribute("The name of this link in Python data structures.")
+
+    url = Attribute(
+        "The full url this link points to.  Set by the menus infrastructure. "
+        "None before it is set.")
+
+    path = Attribute("The path portion of the URL.")
+
+    linked = Attribute(
+        "A boolean value saying whether this link should appear as a "
+        "clickable link in the UI.  The general rule is that a link to "
+        "the current page should not be shown linked.  Defaults to True.")
+
+    enabled = Attribute(
+        "Boolean to say whether this link is enabled.  Can be read and set.")
+
+    escapedtext = Attribute("Text string, escaped as necessary.")
+
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
+
+    def render():
+        """Return a HTML representation of the link."""
+
+
+class IFacetLink(ILink):
+    """A link in a facet menu.
+
+    It has a 'selected' attribute that is set by the menus infrastructure,
+    and indicates whether the link is the selected facet.
+    """
+
+    selected = Attribute(
+        "A boolean value saying whether this link is the selected facet menu "
+        "item.  Defaults to False.")
+
+
+class IStructuredString(Interface):
+    """An object that represents a string that is to retain its html structure
+    in a menu's link text.
+    """
+
+    escapedtext = Attribute("The escaped text for display on a web page.")
+
+
+class IBreadcrumb(Interface):
+    """A breadcrumb link."""
+
+    url = Attribute('Absolute url of this breadcrumb.')
+
+    text = Attribute('Text of this breadcrumb.')
+
+
+#
+# Canonical URLs
+#
+
+class ICanonicalUrlData(Interface):
+    """Tells you how to work out a canonical url for an object."""
+
+    rootsite = Attribute(
+        'The root id to use.  None means to use the base of the current '
+        'request.')
+
+    inside = Attribute('The object this path is relative to.  None for root.')
+
+    path = Attribute('The path relative to "inside", not starting with a /.')
+
+
+class NoCanonicalUrl(TypeError):
+    """There was no canonical URL registered for an object.
+
+    Arguments are:
+      - The object for which a URL was sought
+      - The object that did not have ICanonicalUrlData
+    """
+    def __init__(self, object_url_requested_for, broken_link_in_chain):
+        TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
+            (object_url_requested_for, broken_link_in_chain)
+            )
+
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
+class ILaunchBag(Interface):
+    person = Attribute('IPerson, or None')
+    project = Attribute('IProjectGroup, or None')
+    product = Attribute('IProduct, or None')
+    distribution = Attribute('IDistribution, or None')
+    distroseries = Attribute('IDistroSeries, or None')
+    distroarchseries = Attribute('IDistroArchSeries, or None')
+    sourcepackage = Attribute('ISourcepackage, or None')
+    sourcepackagereleasepublishing = Attribute(
+        'ISourcepackageReleasePublishing, or None')
+    bug = Attribute('IBug, or None')
+    bugtask = Attribute('IBugTask, or None')
+
+    account = Attribute('Currently authenticated IAccount, or None')
+    user = Attribute('Currently authenticated IPerson, or None')
+    login = Attribute('The login used by the authenticated person, or None')
+
+    time_zone = Attribute("The user's time zone")
+
+    developer = Bool(
+        title=u'True if a member of the launchpad developers celebrity'
+        )
+
+
+class IOpenLaunchBag(ILaunchBag):
+    def add(ob):
+        '''Stick the object into the correct attribute of the ILaunchBag,
+        or ignored, or whatever'''
+    def clear():
+        '''Empty the bag'''
+    def setLogin(login):
+        '''Set the login to the given value.'''
+    def setDeveloper():
+        '''Set the developer flag.
+
+        Because we use this during exception handling, we need this set
+        and cached at the start of the transaction in case our database
+        connection blows up.
+        '''
+
+#
+# Request
+#
+
+class IBasicLaunchpadRequest(Interface):
+    stepstogo = Attribute(
+        'The StepsToGo object for this request, allowing you to inspect and'
+        ' alter the remaining traversal steps.')
+
+    traversed_objects = Attribute(
+        'List of traversed objects.  This is appended to during traversal.')
+
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
+
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
+
+    def getRootURL(rootsite):
+        """Return this request's root URL.
+
+        If rootsite is not None, then return the root URL for that rootsite,
+        looked up from our config.
+        """
+
+    def getNearest(*some_interfaces):
+        """Searches for the last traversed object to implement one of
+        the given interfaces.
+
+        Returns an (object, matching_interface) tuple.  If the object
+        implements more than one of the interfaces, the first one is
+        returned.
+
+        If no matching object is found, the tuple (None, None) is returned.
+        """
+
+
+class IBrowserFormNG(Interface):
+    """Interface to manipulate submitted form data."""
+
+    def __contains__(name):
+        """Return True if a field named name was submitted."""
+
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
+    def getOne(name, default=None):
+        """Return the value of the field name.
+
+        If the field wasn't submitted return the default value.
+        If more than one value was submitted, raises UnexpectedFormData.
+        """
+
+    def getAll(name, default=None):
+        """Return the list of values submitted under field name.
+
+        If the field wasn't submitted return the default value. (If default
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+
+        This method should always return a list, if only one value was
+        submitted, it will be returned in a list.
+        """
+
+
+class ILaunchpadBrowserApplicationRequest(
+    IBasicLaunchpadRequest,
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for LP browser requests."""
+
+    form_ng = Object(
+        title=u'IBrowserFormNG object containing the submitted form data',
+        schema=IBrowserFormNG)
 
 
 class IPrincipalIdentifiedEvent(Interface):
@@ -19,6 +402,8 @@ class IPrincipalIdentifiedEvent(Interface):
     """
     principal = Attribute('The principal')
     request = Attribute('The request')
+    login = Attribute(
+        'The login id that was used.  For example, an email address.')
 
 
 class ILoggedInEvent(Interface):
@@ -41,9 +426,10 @@ class CookieAuthLoggedInEvent:
 
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
-    def __init__(self, principal, request):
+    def __init__(self, principal, request, login):
         self.principal = principal
         self.request = request
+        self.login = login
 
 
 class BasicAuthLoggedInEvent:
@@ -67,15 +453,18 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationService):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -84,8 +473,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
@@ -95,50 +491,87 @@ class IPlacelessLoginSource(IPrincipalSource):
         """
 
 
+# We have to define this here because importing from launchpad.interfaces
+# would create circular dependencies.
+class OAuthPermission(DBEnumeratedType):
+    """The permission granted by the user to the OAuth consumer."""
+
+    UNAUTHORIZED = DBItem(10, """
+        No Access
+
+        The application will not be allowed to access Launchpad on your
+        behalf.
+        """)
+
+    READ_PUBLIC = DBItem(20, """
+        Read Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        but only for reading non-private data.
+        """)
+
+    WRITE_PUBLIC = DBItem(30, """
+        Change Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing non-private data.
+        """)
+
+    READ_PRIVATE = DBItem(40, """
+        Read Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading anything, including private data.
+        """)
+
+    WRITE_PRIVATE = DBItem(50, """
+        Change Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing anything, including private data.
+        """)
+
+    DESKTOP_INTEGRATION = DBItem(60, """
+        Integrate an entire system
+
+        Every application running on your desktop will have read-write
+        access to your Launchpad account, including to your private
+        data. You should not allow this unless you trust the computer
+        you're using right now.
+        """)
+
+class AccessLevel(DBEnumeratedType):
+    """The level of access any given principal has."""
+    use_template(OAuthPermission, exclude='UNAUTHORIZED')
+
+
 class ILaunchpadPrincipal(IPrincipal):
     """Marker interface for launchpad principals.
 
     This is used for the launchpad.AnyPerson permission.
     """
 
+    access_level = Choice(
+        title=_("The level of access this principal has."),
+        vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
-        
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
+    account = Attribute("The IAccount the principal represents.")
 
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as, defaulting to the
-        default Launchpad user.
-       
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
+    person = Attribute("The IPerson the principal represents.")
+
 
 #
 # Browser notifications
 #
 
 class BrowserNotificationLevel:
-    """Matches the standard logging levels, with the addition of notice
-    (which we should probably add to our log levels as well)
-    """
-    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
-    # https://launchpad.net/bugs/36287
+    """Matches the standard logging levels."""
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
-    NOTICE = logging.INFO + 5 # action had effects you might not have intended
     WARNING = logging.WARNING # action will not be successful unless you ...
     ERROR = logging.ERROR     # the previous action did not succeed, and why
 
-    ALL_LEVELS = (DEBUG, INFO, NOTICE, WARNING, ERROR)
+    ALL_LEVELS = (DEBUG, INFO, WARNING, ERROR)
 
 
 class INotification(Interface):
@@ -155,7 +588,7 @@ class INotificationList(Interface):
 
     def __getitem__(index_or_levelname):
         """Retrieve an INotification by index, or a list of INotification
-        instances by level name (DEBUG, NOTICE, INFO, WARNING, ERROR).
+        instances by level name (DEBUG, INFO, WARNING, ERROR).
         """
 
     def __iter__():
@@ -174,21 +607,30 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """Append the given message to the list of notifications
+    def addNotification(msg, level=BrowserNotificationLevel.INFO):
+        """Append the given message to the list of notifications.
 
-        msg may be an XHTML fragment suitable for inclusion in a block
-        tag such as <div>. It may also contain standard Python string
-        replacement markers to be filled out by the keyword arguments
-        (ie. %(foo)s). The keyword arguments inserted this way are
-        automatically HTML quoted.
+        A plain string message will be CGI escaped.  Passing a message
+        that provides the `IStructuredString` interface will return a
+        unicode string that has been properly escaped.  Passing an
+        instance of a Zope internationalized message will cause the
+        message to be translated, then CGI escaped.
 
-        level is one of the BrowserNotificationLevels: DEBUG, INFO, NOTICE,
-        WARNING, ERROR.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
+
+        :param level: One of the `BrowserNotificationLevel` values: DEBUG,
+            INFO, WARNING, ERROR.
+        """
+
+    def removeAllNotifications():
+        """Remove all notifications.
+
+        This will be used when rendering an error page.
         """
 
     notifications = Object(
@@ -196,62 +638,57 @@ class INotificationResponse(Interface):
             schema=INotificationList
             )
 
-    def addDebugNotification(msg, **kw):
-        """Shortcut to addNotification(msg, DEBUG, **kw)"""
+    def addDebugNotification(msg):
+        """Shortcut to addNotification(msg, DEBUG)."""
 
-    def addInfoNotification(msg, **kw):
-        """Shortcut to addNotification(msg, INFO, **kw)"""
+    def addInfoNotification(msg):
+        """Shortcut to addNotification(msg, INFO)."""
 
-    def addNoticeNotification(msg, **kw):
-        """Shortcut to addNotification(msg, NOTICE, **kw)"""
+    def addWarningNotification(msg):
+        """Shortcut to addNotification(msg, WARNING)."""
 
-    def addWarningNotification(msg, **kw):
-        """Shortcut to addNotification(msg, WARNING, **kw)"""
+    def addErrorNotification(msg):
+        """Shortcut to addNotification(msg, ERROR)."""
 
-    def addErrorNotification(msg, **kw):
-        """Shortcut to addNotification(msg, ERROR, **kw)"""
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
 
-    def redirect(location, status=None):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
 
- 
+
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
+
+
 class IErrorReport(Interface):
-    id = TextLine(description=u"the name of this error report")
-    type = TextLine(description=u"the type of the exception that occurred")
-    value = TextLine(description=u"the value of the exception that occurred")
-    time = Datetime(description=u"the time at which the exception occurred")
-    tb_text = Text(description=u"a text version of the traceback")
-    username = TextLine(description=u"the user associated with the request")
-    url = TextLine(description=u"the URL for the failed request")
-    req_vars = Attribute('the request variables')
+    id = TextLine(description=u"The name of this error report.")
+    type = TextLine(description=u"The type of the exception that occurred.")
+    value = TextLine(description=u"The value of the exception that occurred.")
+    time = Datetime(description=u"The time at which the exception occurred.")
+    pageid = TextLine(
+        description=u"""
+            The context class plus the page template where the exception
+            occurred.
+            """)
+    branch_nick = TextLine(description=u"The branch nickname.")
+    revno = TextLine(description=u"The revision number of the branch.")
+    tb_text = Text(description=u"A text version of the traceback.")
+    username = TextLine(description=u"The user associated with the request.")
+    url = TextLine(description=u"The URL for the failed request.")
+    req_vars = Attribute("The request variables.")
 
 
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
-        description=u"""an identifier for the exception, or None if no 
+        description=u"""an identifier for the exception, or None if no
         exception has occurred""")
 
 #
 # Batch Navigation
 #
-
-class IBatchNavigator(Interface):
-    """A batch navigator for a specified set of results."""
-
-    batch = Attribute("The IBatch for which navigation links are provided.")
-
-    def prevBatchURL():
-        """Return a URL to the previous chunk of results."""
-
-    def nextBatchURL():
-        """Return a URL to the next chunk of results."""
-
-    def batchPageURLs():
-        """Return a list of links representing URLs to pages of
-        results."""
-
 
 class ITableBatchNavigator(IBatchNavigator):
     """A batch navigator for tabular listings."""
@@ -263,3 +700,190 @@ class ITableBatchNavigator(IBatchNavigator):
         "A dict keyed by column name. If the value is True, that column will "
         "be shown in the list, otherwise it won't.")
 
+
+#
+# LaunchpadFormView widget layout
+#
+
+class IAlwaysSubmittedWidget(Interface):
+    """A widget that is always submitted (such as a checkbox or radio
+    button group).  It doesn't make sense to show a 'Required' or
+    'Optional' marker for such widgets.
+    """
+
+
+class ISingleLineWidgetLayout(Interface):
+    """A widget that is displayed in a single table row next to its label."""
+
+
+class IMultiLineWidgetLayout(Interface):
+    """A widget that is displayed on its own table row below its label."""
+
+
+class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
+    """A widget that is displayed like a check box with label to the right."""
+
+
+class IPrimaryContext(Interface):
+    """The primary context that used to determine the tabs for the web UI."""
+    context = Attribute('The primary context.')
+
+
+#
+# Database policies
+#
+
+MAIN_STORE = 'main' # The main database.
+ALL_STORES = frozenset([MAIN_STORE])
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
+    def getStore(name, flavor):
+        """Retrieve a Store.
+
+        :param name: one of ALL_STORES.
+
+        :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
+        """
+
+    def install():
+        """Hook called when policy is pushed onto the `IStoreSelector`."""
+
+    def uninstall():
+        """Hook called when policy is popped from the `IStoreSelector`."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+class DisallowedStore(Exception):
+    """A request was made to access a Store that has been disabled
+    by the current policy.
+    """
+
+
+class ReadOnlyModeViolation(Exception):
+    """An attempt was made to write to a slave Store in read-only mode.
+
+    This can happen in legacy code where writes are being made to an
+    object retrieved from the default Store rather than casting the
+    object to a writable version using IMasterObject(obj).
+    """
+
+
+class ReadOnlyModeDisallowedStore(DisallowedStore, ReadOnlyModeViolation):
+    """A request was made to access a Store that cannot be granted
+    because we are running in read-only mode.
+    """
+
+
+class IStoreSelector(Interface):
+    """Get a Storm store with a desired flavor.
+
+    Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
+
+    The master is writable and up to date, but we should not use it
+    whenever possible because there is only one master and we don't want
+    it to be overloaded.
+
+    The slave is read only replica of the master and may lag behind the
+    master. For many purposes such as serving unauthenticated web requests
+    and generating reports this is fine. We can also have as many slave
+    databases as we are prepared to pay for, so they will perform better
+    because they are less loaded.
+    """
+    def push(dbpolicy):
+        """Install an `IDatabasePolicy` as the default for this thread."""
+
+    def pop():
+        """Uninstall the most recently pushed `IDatabasePolicy` from
+        this thread.
+
+        Returns the `IDatabasePolicy` removed.
+        """
+
+    def get_current():
+        """Return the currently installed `IDatabasePolicy`."""
+
+    def get(name, flavor):
+        """Retrieve a Storm Store.
+
+        Results should not be shared between threads, as which store is
+        returned for a given name or flavor can depend on thread state
+        (eg. the HTTP request currently being handled).
+
+        If a SLAVE_FLAVOR is requested, the MASTER_FLAVOR may be returned
+        anyway.
+
+        The DEFAULT_FLAVOR flavor may return either a master or slave
+        depending on process state. Application code using the
+        DEFAULT_FLAVOR flavor should assume they have a MASTER and that
+        a higher level will catch the exception raised if an attempt is
+        made to write changes to a read only store. DEFAULT_FLAVOR exists
+        for backwards compatibility, and new code should explicitly state
+        if they want a master or a slave.
+
+        :raises MasterUnavailable:
+
+        :raises DisallowedStore:
+        """
+
+
+class IWebBrowserOriginatingRequest(Interface):
+    """Marker interface for converting webservice requests into webapp ones.
+
+    It's used in the webservice domain for calculating webapp URLs, for
+    instance, `ProxiedLibraryFileAlias`.
+    """
+
+
+# XXX mars 2010-07-14 bug=598816
+#
+# We need a conditional import of the request events until the real events
+# land in the Zope mainline.
+#
+# See bug 598816 for the details.
+
+try:
+    from zope.publisher.interfaces import StartRequestEvent
+except ImportError:
+    class IStartRequestEvent(Interface):
+        """An event that gets sent before the start of a request."""
+
+        request = Attribute("The request the event is about")
+
+
+    class StartRequestEvent:
+        """An event fired once at the start of requests.
+
+        :ivar request: The request the event is for.
+        """
+        implements(IStartRequestEvent)
+
+        def __init__(self, request):
+            self.request = request

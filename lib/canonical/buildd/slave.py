@@ -1,29 +1,51 @@
-# Copyright Canonical Limited
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #      and Adam Conrad <adam.conrad@canonical.com>
 
 # Buildd Slave implementation
 
-from os.path import isdir, exists
-from os import mkdir, symlink, kill, environ, remove
-from signal import SIGKILL
-import xmlrpclib
 __metaclass__ = type
 
+import hashlib
 import os
-import xmlrpclib
-import sha
+import re
 import urllib2
+import xmlrpclib
 
 from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+# cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
+# importfascist-check denies its import. When we migrate to python2.5,
+# we can use os.SEEK_END. See bug #239213.
+SEEK_END = 2
+
 devnull = open("/dev/null", "r")
 
 
-# XXX 20050628 cprov
+def _sanitizeURLs(text_seq):
+    """A generator that deletes URL passwords from a string sequence.
+
+    This generator removes user/password data from URLs if embedded
+    in the latter as follows: scheme://user:passwd@netloc/path.
+
+    :param text_seq: A sequence of strings (that may contain URLs).
+    :return: A (sanitized) line stripped of authentication credentials.
+    """
+    # This regular expression will be used to remove authentication
+    # credentials from URLs.
+    password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
+
+    for line in text_seq:
+        sanitized_line = password_re.sub(r'://\2', line)
+        yield sanitized_line
+
+
+# XXX cprov 2005-06-28:
 # RunCapture can be replaced with a call to
 #
 #   twisted.internet.utils.getProcessOutputAndValue
@@ -65,15 +87,20 @@ class RunCapture(protocol.ProcessProtocol):
         # already died.
         if self.killCall and self.killCall.active():
             self.killCall.cancel()
-            
-        # notify the slave, it'll perform the required actions     
+
+        # notify the slave, it'll perform the required actions
         self.notify(statusobject.value.exitCode)
 
 
 class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
-    
+
     def __init__(self, slave, buildid):
+        """Create a BuildManager.
+
+        :param slave: A `BuildDSlave`.
+        :param buildid: Identifying string for this build.
+        """
         object.__init__(self)
         self._buildid = buildid
         self._slave = slave
@@ -81,44 +108,66 @@ class BuildManager(object):
         self._cleanpath = slave._config.get("allmanagers", "cleanpath")
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
-        
+        self.is_archive_private = False
+        self.home = os.environ['HOME']
+
     def runSubProcess(self, command, args):
         """Run a sub process capturing the results in the log."""
         self._subprocess = RunCapture(self._slave, self.iterate)
-        self._slave.log("RUN: %s %r\n" % (command,args))
+        self._slave.log("RUN: %s %r\n" % (command, args))
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
-            self._subprocess, command, args, env=os.environ, 
-            path=os.environ["HOME"], childFDs=childfds)
+            self._subprocess, command, args, env=os.environ,
+            path=self.home, childFDs=childfds)
 
-    def _unpackChroot(self, chroottarfile):
-        """Unpack the buld chroot."""
-        self.runSubProcess(self._unpackpath,
-                           ["unpack-chroot", self._buildid, chroottarfile])
+    def doUnpack(self):
+        """Unpack the build chroot."""
+        self.runSubProcess(
+            self._unpackpath,
+            ["unpack-chroot", self._buildid, self._chroottarfile])
 
     def doCleanup(self):
         """Remove the build tree etc."""
-        self.runSubProcess( self._cleanpath,
-                        ["remove-build", self._buildid])
+        self.runSubProcess(self._cleanpath, ["remove-build", self._buildid])
+
+        # Sanitize the URLs in the buildlog file if this is a build
+        # in a private archive.
+        if self.is_archive_private:
+            self._slave.sanitizeBuildlog(self._slave.cachePath("buildlog"))
 
     def doMounting(self):
         """Mount things in the chroot, e.g. proc."""
         self.runSubProcess( self._mountpath,
                             ["mount-chroot", self._buildid])
-        
+
     def doUnmounting(self):
         """Unmount the chroot."""
         self.runSubProcess( self._umountpath,
                             ["umount-chroot", self._buildid])
 
     def initiate(self, files, chroot, extra_args):
-        """Initiate a build given the input files"""
-        os.mkdir("%s/build-%s" % (os.environ["HOME"], self._buildid))
+        """Initiate a build given the input files.
+
+        Please note: the 'extra_args' dictionary may contain a boolean
+        value keyed under the 'archive_private' string. If that value
+        evaluates to True the build at hand is for a private archive.
+        """
+        os.mkdir("%s/build-%s" % (self.home, self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
-                        "%s/build-%s/%s" % (os.environ["HOME"],
+                        "%s/build-%s/%s" % (self.home,
                                             self._buildid, f))
-        self._unpackChroot(self._slave.cachePath(chroot))
+        self._chroottarfile = self._slave.cachePath(chroot)
+
+        # Check whether this is a build in a private archive and
+        # whether the URLs in the buildlog file should be sanitized
+        # so that they do not contain any embedded authentication
+        # credentials.
+        if extra_args.get('archive_private'):
+            self.is_archive_private = True
+
+        self.runSubProcess(
+            "/bin/echo", ["echo", "Forking build subprocess..."])
 
     def iterate(self, success):
         """Perform an iteration of the slave.
@@ -140,7 +189,7 @@ class BuildManager(object):
         # 10 s ~ 40 s, and returns None as exit_code, instead of the normal
         # interger. See further info on DebianBuildermanager.iterate in
         # debian.py
-        # XXX cprov 20050902:
+        # XXX cprov 2005-09-02:
         # we may want to follow the canonical.tachandler kill process style,
         # which sends SIGTERM to the process wait a given timeout and if was
         # not killed sends a SIGKILL. IMO it only would be worth if we found
@@ -149,7 +198,7 @@ class BuildManager(object):
         # alternativelly to simply send SIGTERM, we can pend a request to
         # send SIGKILL to the process if nothing happened in 10 seconds
         # see base class process
-        self._subprocess.killCall = reactor.callLater(10, self.kill) 
+        self._subprocess.killCall = reactor.callLater(10, self.kill)
 
     def kill(self):
         """Send SIGKILL to child process
@@ -159,7 +208,7 @@ class BuildManager(object):
         try:
             self._subprocess.transport.signalProcess('KILL')
         except process.ProcessExitedAlready:
-            self._slave.log("ABORTING: Process Exited Already\n")            
+            self._slave.log("ABORTING: Process Exited Already\n")
 
 class BuilderStatus:
     """Status values for the builder."""
@@ -169,10 +218,10 @@ class BuilderStatus:
     WAITING = "BuilderStatus.WAITING"
     ABORTING = "BuilderStatus.ABORTING"
     ABORTED = "BuilderStatus.ABORTED"
-    
+
     UNKNOWNSUM = "BuilderStatus.UNKNOWNSUM"
     UNKNOWNBUILDER = "BuilderStatus.UNKNOWNBUILDER"
-    
+
 
 class BuildStatus:
     """Status values for builds themselves."""
@@ -199,10 +248,10 @@ class BuildDSlave(object):
         self.waitingfiles = {}
         self.builddependencies = ""
         self._log = None
-        
+
         if not os.path.isdir(self._cachepath):
             raise ValueError("FileCache path is not a dir")
-        
+
     def getArch(self):
         """Return the Architecture tag for the slave."""
         return self._config.get("slave","architecturetag")
@@ -211,7 +260,25 @@ class BuildDSlave(object):
         """Return the path in the cache of the file specified."""
         return os.path.join(self._cachepath, file)
 
-    def ensurePresent(self, sha1sum, url=None):
+    def setupAuthHandler(self, url, username, password):
+        """Set up a BasicAuthHandler to open the url.
+
+        :param url: The URL that needs authenticating.
+        :param username: The username for authentication.
+        :param password: The password for authentication.
+        :return: The OpenerDirector instance.
+
+        This helper installs a urllib2.HTTPBasicAuthHandler that will deal
+        with any HTTP basic authentication required when opening the
+        URL.
+        """
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, url, username, password)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        opener = urllib2.build_opener(handler)
+        return opener
+
+    def ensurePresent(self, sha1sum, url=None, username=None, password=None):
         """Ensure we have the file with the checksum specified.
 
         Optionally you can provide the librarian URL and
@@ -223,15 +290,24 @@ class BuildDSlave(object):
             extra_info = 'Cache'
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
+                if username:
+                    opener = self.setupAuthHandler(
+                        url, username, password).open
+                else:
+                    opener = urllib2.urlopen
                 try:
-                    f = urllib2.urlopen(url)
+                    f = opener(url)
+                # Don't change this to URLError without thoroughly
+                # testing for regressions. For now, just suppress
+                # the PyLint warnings.
+                # pylint: disable-msg=W0703
                 except Exception, info:
                     extra_info = 'Error accessing Librarian: %s' % info
-                    self.log(extra_info, exc_info=True)
+                    self.log(extra_info)
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
-                    check_sum = sha.sha()
+                    check_sum = hashlib.sha1()
                     for chunk in iter(lambda: f.read(256*1024), ''):
                         of.write(chunk)
                         check_sum.update(chunk)
@@ -246,7 +322,7 @@ class BuildDSlave(object):
 
     def storeFile(self, content):
         """Take the provided content and store it in the file cache."""
-        sha1sum = sha.sha(content).hexdigest()
+        sha1sum = hashlib.sha1(content).hexdigest()
         present, info = self.ensurePresent(sha1sum)
         if present:
             return sha1sum
@@ -254,6 +330,15 @@ class BuildDSlave(object):
         f.write(content)
         f.close()
         return sha1sum
+
+    def addWaitingFile(self, path):
+        """Add a file to the cache and store its details for reporting."""
+        fn = os.path.basename(path)
+        f = open(path)
+        try:
+            self.waitingfiles[fn] = self.storeFile(f.read())
+        finally:
+            f.close()
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""
@@ -267,10 +352,12 @@ class BuildDSlave(object):
 
     def abort(self):
         """Abort the current build."""
-        # XXX: dsilvers: 2005/01/21: Current abort mechanism doesn't wait
+        # XXX: dsilvers: 2005-01-21: Current abort mechanism doesn't wait
         # for abort to complete. This is potentially an issue in a heavy
-        # load situation
+        # load situation.
         if self.builderstatus != BuilderStatus.BUILDING:
+            # XXX: Should raise a known Fault so that the client can make
+            # useful decisions about the error!
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
         self.builderstatus = BuilderStatus.ABORTING
@@ -289,34 +376,70 @@ class BuildDSlave(object):
             os.remove(self.cachePath("buildlog"))
             self._log = None
         self.waitingfiles = {}
+        self.builddependencies = ""
         self.manager = None
         self.buildstatus = BuildStatus.OK
 
     def log(self, data):
         """Write the provided data to the log."""
         if self._log is not None:
-            self._log.write(data);
+            self._log.write(data)
             self._log.flush()
         if data.endswith("\n"):
             data = data[:-1]
         print "Build log: " + data
 
     def getLogTail(self):
-        """Return the tail of the log."""
-        ret = ""
-        if self._log is not None:
-            rlog = None
+        """Return the tail of the log.
+
+        If the buildlog is not yet opened for writing (self._log is None),
+        return a empty string.
+
+        It safely tries to open the 'buildlog', if it doesn't exist, due to
+        job cleanup or buildlog sanitization race-conditions, it also returns
+        an empty string.
+
+        When the 'buildlog' is present it return up to 2 KiB character of
+        the end of the file.
+
+        The returned content will be 'sanitized', see `_sanitizeURLs` for
+        further information.
+        """
+        if self._log is None:
+            return ""
+
+        rlog = None
+        try:
             try:
                 rlog = open(self.cachePath("buildlog"), "r")
-                rlog.seek(0,2)
+            except IOError:
+                ret = ""
+            else:
+                # We rely on good OS practices that keep the file handler
+                # usable once it's opened. So, if open() is ok, a subsequent
+                # seek/tell/read will be safe.
+                rlog.seek(0, SEEK_END)
                 count = rlog.tell()
                 if count > 2048:
                     count = 2048
-                rlog.seek(-count, 2)
+                rlog.seek(-count, SEEK_END)
                 ret = rlog.read(count)
-            finally:
-                if rlog is not None:
-                    rlog.close()
+        finally:
+            if rlog is not None:
+                rlog.close()
+
+        if self.manager.is_archive_private:
+            # This is a build in a private archive. We need to scrub
+            # the URLs contained in the buildlog excerpt in order to
+            # avoid leaking passwords.
+            log_lines = ret.splitlines()
+
+            # Please note: we are throwing away the first line (of the
+            # excerpt to be scrubbed) because it may be cut off thus
+            # thwarting the detection of embedded passwords.
+            clean_content_iter = _sanitizeURLs(log_lines[1:])
+            ret = '\n'.join(clean_content_iter)
+
         return ret
 
     def startBuild(self, manager):
@@ -337,7 +460,6 @@ class BuildDSlave(object):
         """Cease building because the builder has a problem."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to BUILDERFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.BUILDERFAIL
 
     def chrootFail(self):
@@ -348,21 +470,24 @@ class BuildDSlave(object):
         """
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to CHROOTFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.CHROOTFAIL
 
     def buildFail(self):
         """Cease building because the package failed to build."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to PACKAGEFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.PACKAGEFAIL
+
+    def buildOK(self):
+        """Having passed all possible failure states, mark a build as OK."""
+        if self.builderstatus != BuilderStatus.BUILDING:
+            raise ValueError("Slave is not BUILDING when set to OK")
+        self.buildstatus = BuildStatus.OK
 
     def depFail(self, dependencies):
         """Cease building due to a dependency issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
         self.builddependencies = dependencies
 
@@ -370,7 +495,6 @@ class BuildDSlave(object):
         """Give-back package due to a transient buildd/archive issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to GIVENBACK")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.GIVENBACK
 
     def buildComplete(self):
@@ -381,21 +505,57 @@ class BuildDSlave(object):
             raise ValueError("Slave is not BUILDING when told build is "
                              "complete")
         self.builderstatus = BuilderStatus.WAITING
-        self.buildstatus = BuildStatus.OK
-        
+
+    def sanitizeBuildlog(self, log_path):
+        """Removes passwords from buildlog URLs.
+
+        Because none of the URLs to be processed are expected to span
+        multiple lines and because build log files are potentially huge
+        they will be processed line by line.
+
+        :param log_path: The path to the buildlog file that is to be
+            sanitized.
+        :type log_path: ``str``
+        """
+        # First move the buildlog file that is to be sanitized out of
+        # the way.
+        unsanitized_path = self.cachePath(
+            os.path.basename(log_path) + '.unsanitized')
+        os.rename(log_path, unsanitized_path)
+
+        # Open the unsanitized buildlog file for reading.
+        unsanitized_file = open(unsanitized_path)
+
+        # Open the file that will hold the resulting, sanitized buildlog
+        # content for writing.
+        sanitized_file = None
+
+        try:
+            sanitized_file = open(log_path, 'w')
+
+            # Scrub the buildlog file line by line
+            clean_content_iter = _sanitizeURLs(unsanitized_file)
+            for line in clean_content_iter:
+                sanitized_file.write(line)
+        finally:
+            # We're done with scrubbing, close the file handles.
+            unsanitized_file.close()
+            if sanitized_file is not None:
+                sanitized_file.close()
+
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     """XMLRPC build daemon slave management interface"""
 
     def __init__(self, config):
-        xmlrpc.XMLRPC.__init__(self)
+        xmlrpc.XMLRPC.__init__(self, allowNone=True)
         # The V1.0 new-style protocol introduces string-style protocol
         # versions of the form 'MAJOR.MINOR', the protocol is '1.0' for now
         # implying the presence of /filecache/ /filecache/buildlog and
         # the reduced and optimised XMLRPC interface.
         self.protocolversion = '1.0'
         self.slave = BuildDSlave(config)
-        self._builders = {}    
+        self._builders = {}
         print "Initialised"
 
     def registerBuilder(self, builderclass, buildertag):
@@ -432,10 +592,10 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # keep the result code sane
         return ('', )
-    
+
     def status_BUILDING(self):
         """Handler for xmlrpc_status BUILDING.
-        
+
         Returns the build id and up to one kilobyte of log tail
         """
         tail = self.slave.getLogTail()
@@ -443,7 +603,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def status_WAITING(self):
         """Handler for xmlrpc_status WAITING.
-        
+
         Returns the build id and the set of files waiting to be returned
         unless the builder failed in which case we return the buildstatus
         and the build id but no file set.
@@ -471,9 +631,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         return (self.buildid, )
 
-    def xmlrpc_ensurepresent(self, sha1sum, url):
+    def xmlrpc_ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
-        return self.slave.ensurePresent(sha1sum, url)
+        return self.slave.ensurePresent(sha1sum, url, username, password)
 
     def xmlrpc_abort(self):
         """Abort the current build."""
@@ -493,7 +653,8 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # check requested builder
         if not builder in self._builders:
-            return (BuilderStatus.UNKNOWNBUILDER, None)
+            extra_info = "%s not in %r" % (builder, self._builders.keys())
+            return (BuilderStatus.UNKNOWNBUILDER, extra_info)
         # check requested chroot availability
         chroot_present, info = self.slave.ensurePresent(chrootsum)
         if not chroot_present:

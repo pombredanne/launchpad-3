@@ -1,4 +1,7 @@
 #! /bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 set -e
 set -u
@@ -7,7 +10,9 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
-SEEDS=http://people.ubuntu.com/~cjwatson/seeds
+
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
 ## Check to see if another germinate run is in progress
 
@@ -17,48 +22,52 @@ if lockfile -! -l 43200 -r 0 "${LOCKFILE}"; then
   exit 1
 fi
 
-## XXX cprov 20060609: We need to retrieve 'development' distrorelease
-## from helper script. See bug # 49174
-suite=edgy
+cleanup () {
+  rm -f "$LOCKFILE"
+}
+
+trap cleanup EXIT
+
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-*
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* NETBOOK-*
 rm -f all_* all.sources_*
+rm -rf dists
 
-# Grab a local copy of Sources files
-for component in main universe restricted; do 
-  zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > "$suite"_"$component"_Sources;
+# Grab local copies of Sources and Packages files, to avoid problems in case
+# the archive changes under our feet.
+for component in main universe restricted multiverse; do
+  base="dists/$suite/$component"
+  mkdir -p "$base/source"
+  zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
+  for arch in i386 amd64 powerpc armel; do
+    mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
+    zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
+      > "$base/binary-$arch/Packages"
+    zcat "$ARCHIVEROOT/$base/debian-installer/binary-$arch/Packages.gz" \
+      > "$base/debian-installer/binary-$arch/Packages"
+  done
 done
 
-for distro in ubuntu kubuntu edubuntu xubuntu; do
-  DISTRO="$(echo $distro | tr a-z A-Z)"
-  case "$distro" in 
-      ubuntu)
-	  germinate_suite="$suite"
-	  ;;
-      kubuntu|edubuntu|xubuntu)
-	  germinate_suite="$distro"-"$suite"
-	  ;;
-      *)
-	  echo "Unknown distro $distro";
-	  exit 1
-	  ;;
-  esac
-  # We use the STRUCTURE file to figure out which tasks to generate.
-  wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
-  for arch in i386 amd64 powerpc hppa sparc ia64; do
-    # Grab local copy of Packages and InstallerPackages files
-    for component in main universe restricted; do
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > "$suite"_"$component"_Packages
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/debian-installer/binary-$arch/Packages.gz > "$suite"_"$component"_InstallerPackages
-    done
+> "$MISCROOT/more-extra.override.$suite.main.new"
 
+germinate_components=main,universe,restricted,multiverse
+for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
+  DISTRO="$(echo $distro | tr a-z A-Z)"
+  germinate_suite="$distro.$suite"
+  for arch in i386 amd64 powerpc armel; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c main,universe,restricted -a $arch >> germinate.output 2>&1
+    germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+
+    # The structure file is generally useful; keep per distro/suite/arch
+    # copies for convenience
+    cp structure structure_"$distro"_"$suite"_"$arch"
 
     # Keep per distro/suite/arch copies of 'all' and 'all.sources' for anastacia
     cp all all_"$distro"_"$suite"_"$arch"
@@ -68,45 +77,64 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
     cp minimal minimal_"$distro"_"$suite"_"$arch"
     cp standard standard_"$distro"_"$suite"_"$arch"
 
-    # Keep amalagmated copies of 'all', 'all.sources' and 'desktop' and 'standard'
-    # [These are used for generation of 'Task: lines']
+    # Keep amalgamated copies of 'all' and 'all.sources', just for convenience
     cat all >> ALL; cat all.sources >> ALL.sources
-    # We need to generate Task fields for everything in the ship/server-ship
-    # seeds (which includes standard, desktop, and server tasks) except for
-    # boot and minimal.
-    for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
-      wget -q -O "$DISTRO-$seed.seedtext" "$SEEDS/$germinate_suite/$seed"
-      cat "$seed" >> "$DISTRO-$seed"
+
+    # We need to fetch a number of seeds so that we can generate Task fields
+    # for them. This changes over time and differs from derivative to
+    # derivative, so it's best to just fetch them all.
+    taskseeds="$(cut -d: -f1 structure | xargs -n1 | sort -u)"
+
+    for seed in $taskseeds; do
+      cp "$seed" "$seed"_"$distro"_"$suite"_"$arch"
     done
     echo " ********************************************************************** " >> germinate.output
     echo "" >> germinate.output
     echo -n "."
+
+    ## Generate apt-ftparchive 'extra' overrides for Task: fields
+    for seed in $taskseeds; do
+      if ! grep -iq '^Task-' "$seed.seedtext"; then
+	continue
+      fi
+      # If the seed contains Task-Name header, override the normal behavior
+      if grep -iq '^Task-Name:' "$seed.seedtext"; then
+	task=$(grep '^Task-Name:' "$seed.seedtext" | cut -d: -f2)
+      elif grep -iq '^Task-Per-Derivative:' "$seed.seedtext"; then
+	task="$distro-$seed"
+      else
+	# If a seed is not per-derivative, then we only honour it for Ubuntu,
+	# and its task name is archive-global.
+	if [ "$distro" = ubuntu ]; then
+	  task="$seed"
+	else
+	  continue
+	fi
+      fi
+      if grep -iq '^Task-Seeds:' "$seed.seedtext"; then
+	scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
+      else
+	scanseeds="$seed"
+      fi
+      for scanseed in $scanseeds; do
+	egrep -v -- "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+      done
+    done
+
+    # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
+    if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
+      # Keep a copy, just for convenience
+      cp build-essential build-essential_"$distro"_"$suite"_"$arch"
+      egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+    fi
   done
 done
 echo " done."
 
-## Generate apt-ftparchive 'extra' overrides for Task: $distro-{desktop,standard}
-> "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu; do
-  DISTRO=$(echo $distro | tr a-z A-Z)
-  for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
-    if ! grep -iq '^Task-' "$DISTRO-$seed.seedtext"; then
-      continue
-    fi
-    if grep -iq '^Task-Per-Derivative:' "$DISTRO-$seed.seedtext"; then
-      task="$distro-$seed"
-    else
-      # If a seed is not per-derivative, then we only honour it for Ubuntu,
-      # and its task name is archive-global.
-      if [ "$distro" = ubuntu ]; then
-        task="$seed"
-      else
-        continue
-      fi
-    fi
-    egrep -v -- "^(-|Package| )" "$DISTRO-$seed" | awk '{print $1}' | sed -e "s/$/  Task  $task/" | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
-  done
-done
-mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
+# now generate the Supported extra overrides
+$MAINTAINCE_CHECK $suite > "$MISCROOT/more-extra.override.$suite.main.supported" 2> _maintenance-check.stderr
+if [ $? -eq 0 ]; then
+    cat "$MISCROOT/more-extra.override.$suite.main.supported" >> "$MISCROOT/more-extra.override.$suite.main.new"
+fi
 
-rm -f ${LOCKFILE}
+mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"

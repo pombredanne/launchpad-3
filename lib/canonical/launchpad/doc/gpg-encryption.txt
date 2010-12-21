@@ -5,19 +5,19 @@ This document describes the current procedure to encrypt and
 decrypt contents in Launchpad, and demonstrates that the methods
 can support Unicode contents.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.launchpad.ftests import import_secret_test_key
+    >>> from canonical.launchpad.ftests import (
+    ...     import_public_test_keys, import_secret_test_key, decrypt_content)
     >>> import transaction
     >>> import_public_test_keys()
-    >>> import_secret_test_key()
+    >>> key = import_secret_test_key()
 
     >>> transaction.commit()
 
 Sample Person has public and secret keys set.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> bag = getUtility(ILaunchBag)
 
@@ -28,20 +28,20 @@ Sample Person has public and secret keys set.
     >>> bag.user.name
     u'name12'
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
 
 Let's use a unicode content, it can't be directly typed as
 unicode, because doctest system seems to be reencoding the test
-content, let's use cryptic form. 
+content, let's use cryptic form.
 
     >>> content = u'\ufcber'
 
-Note, gpgkeys is ordered (by GPGKey.id), we can slice it without
-generating warnings: (its is also valid for Person.inactivegpgkeys
+Note, gpg_keys is ordered (by GPGKey.id), we can slice it without
+generating warnings: (its is also valid for Person.inactive_gpg_keys
 property, since both are generating using GPGKeyset.getGPGKeys)
- 
-    >>> fingerprint = bag.user.gpgkeys[0].fingerprint
+
+    >>> fingerprint = bag.user.gpg_keys[0].fingerprint
 
 Note fingerprint is also unicode.
 
@@ -57,7 +57,7 @@ Storing the raw password may compromise the security, but is the
 only way we can decrypt the cipher content.
 
     >>> password = 'test'
-    >>> plain = gpghandler.decryptContent(cipher, password)
+    >>> plain = decrypt_content(cipher, password)
 
 voilá, the same content shows up again. 
     
@@ -69,7 +69,7 @@ Verify if the encrytion process support passing another charset string
     >>> content = u'a\xe7ucar'
     >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
     ... fingerprint)
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     >>> plain.decode('iso-8859-1')
     u'a\xe7ucar'
 
@@ -86,7 +86,7 @@ Decrypt a unicode content:
     >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
     ... fingerprint)
     >>> cipher = unicode(cipher)
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     Traceback (most recent call last):
     ...
     TypeError: Content cannot be Unicode.
@@ -114,7 +114,7 @@ What about a message encrypted for an unknown key.
     ... =LQK5
     ... -----END PGP MESSAGE-----
     ... """
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     >>> plain is None
     True
 

@@ -1,0 +1,505 @@
+Distribution Soyuz
+==================
+
+Distributions are built by the Soyuz build system which creates many
+objects for the distribution.
+
+
+Guessing package names
+----------------------
+
+IDistribution allows us to retrieve packages by name, returning a tuple
+of Source/BinaryPackageName instances published within this
+distribution:
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+
+    >>> distroset = getUtility(IDistributionSet)
+    >>> gentoo = distroset.getByName("gentoo")
+    >>> ubuntu = distroset.get(1)
+
+    >>> source_name, bin_name = ubuntu.guessPackageNames('pmount')
+    >>> ISourcePackageName.providedBy(source_name)
+    True
+
+    >>> IBinaryPackageName.providedBy(bin_name)
+    True
+
+    >>> source_name.name, bin_name.name
+    (u'pmount', u'pmount')
+
+Prevents wrong usage by and assertion error:
+
+    >>> name_tuple = ubuntu.guessPackageNames(ubuntu)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Expected string. Got: <Distribution ...>
+
+Raises NotFoundError for following conditions:
+
+    >>> name_tuple = ubuntu.guessPackageNames('@#$')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Invalid package name: @#$'
+
+    >>> name_tuple = ubuntu.guessPackageNames('zeca')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: zeca'
+
+    >>> name_tuple = ubuntu.guessPackageNames('1234')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: 1234'
+
+Packages only published in PPAs will not be found in the Ubuntu archive.
+Here, 'at' is published in mark's PPA only:
+
+    >>> from lp.soyuz.tests.ppa import publishToPPA
+    >>> ubuntutest = distroset.getByName("ubuntutest")
+    >>> publishToPPA(
+    ...     person_name='cprov',
+    ...     sourcepackage_name='at', sourcepackage_version='0.00',
+    ...     binarypackage_version='3.14156',
+    ...     distribution_name='ubuntutest',
+    ...     distroseries_name='hoary-test',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+    >>> name_tuple = ubuntutest.guessPackageNames('at')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package at not published in ubuntutest'
+
+It also raises NotFoundError on distributions with no series:
+
+    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
+
+A distroseries can only be created by the distro owner or the admin
+team.
+
+    >>> gentoo.newSeries('gentoo-two', 'Gentoo Two',
+    ...                  'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
+    ...                  '2.0', None, gentoo.owner)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Moderate')
+
+    >>> login('mark@example.com')
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
+    >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
+    ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
+    ...                               '2.0', None, gentoo.owner)
+
+    # Reverting the logged in user.
+
+    >>> login(ANONYMOUS)
+
+Even if we add a series to Gentoo, no packages have ever been published
+in it, and therefore guessPackageNames will still fail:
+
+    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package pmount not published in Gentoo'
+
+It will find packages that are at the PENDING publishing state in
+addition to PUBLISHED ones:
+
+    >>> login("admin@canonical.com")
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(
+    ...     ubuntu['breezy-autotest'])
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="pendingpackage",
+    ...     status=PackagePublishingStatus.PENDING)
+    >>> login(ANONYMOUS)
+    >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
+    >>> print source.name
+    pendingpackage
+
+It also works if we look for a package name which is the name of both
+binary and source packages but for which only the source is published:
+
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')
+    >>> print bin_name
+    None
+
+    >>> source_name.name
+    u'alsa-utils'
+
+It's possible for a binary package to have the same name as a source
+package, yet not be derived from that source package. In this case, we
+want to prefer the source package with that name.
+
+First, we need a function to help testing:
+
+    >>> def print_guessed_names(package_name):
+    ...     source, binary = ubuntu.guessPackageNames(package_name)
+    ...     print "source: %r" % source.name
+    ...     print "binary: %r" % getattr(binary, 'name', None)
+
+Note that source packages can produces lots of differently named binary
+packages so only return a match if it's got the same name as the source
+package rather than returning an arbitrary binary package:
+
+Both iceweasel and mozilla-firefox source packages produce mozilla-
+firefox binary packages.
+
+    >>> print_guessed_names('mozilla-firefox')
+    source: u'mozilla-firefox'
+    binary: u'mozilla-firefox'
+
+    >>> print_guessed_names('iceweasel')
+    source: u'iceweasel'
+    binary: None
+
+If we don't get a hit on the source package we search binary packages.
+Because there is a many to one relationship from binary packages to
+source packages we can always return a source package name even if it
+differs:
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux-source-2.6.15'
+    binary: u'linux-2.6.12'
+
+If there are multiple matching binary packages, the source of the latest
+publication is used. If we create a new 'linux' source with a 'linux-2.6.12'
+binary, 'linux' will be returned instead of 'linux-source-2.6.15'.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> hoary = test_publisher.setUpDefaultDistroSeries(
+    ...     ubuntu.getSeries('hoary'))
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> unused = hoary['i386'].addOrUpdateChroot(fake_chroot)
+    >>> login('admin@canonical.com')
+    >>> test_publisher.getPubBinaries(
+    ...     'linux-2.6.12', architecturespecific=True)
+    [<BinaryPackagePublishingHistory ...>]
+    >>> login(ANONYMOUS)
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux'
+    binary: u'linux-2.6.12'
+
+
+Handling Personal Package Archives
+----------------------------------
+
+`IDistribution` provides a series of methods to lookup PPAs:
+
+ * getAllPPAs
+ * searchPPAs
+ * getPendingAcceptancePPAs
+ * getPendingPublicationPPAs
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+
+
+Iteration over all PPAs
+~~~~~~~~~~~~~~~~~~~~~~~
+
+getAllPPAs method provides all returns, as the suggests, all PPAs for
+the distribution in question:
+
+    >>> [archive.owner.name for archive in ubuntu.getAllPPAs()]
+    [u'cprov', u'mark', u'no-priv']
+
+    >>> [archive.owner.name for archive in debian.getAllPPAs()]
+    []
+
+
+Searching PPAs
+~~~~~~~~~~~~~~
+
+Via searchPPAs, the callsites are able to look for PPA given a string
+matching Person.fti or PPA Archive.fti (description content) and also
+restrict the result to active/inactive (whether the PPA contains or not
+valid publications).
+
+searchPPAs also considers the packages caches available for PPAs, for
+further information see doc/package-cache.txt.
+
+There is only one 'active' PPA:
+
+    >>> cprov.archive.getPublishedSources().count()
+    4
+
+    >>> mark.archive.getPublishedSources().count()
+    1
+
+    >>> no_priv.archive.getPublishedSources().count()
+    0
+
+    >>> result = ubuntu.searchPPAs()
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'mark']
+
+PPAs can be reached passing a filter matching (via fti) its description
+and its  'contents description' (see package-cache.txt).
+
+    >>> for owner in [cprov, mark, no_priv]:
+    ...     print "%s: %s" % (owner.name, owner.archive.description)
+    cprov: packages to help my friends.
+    mark: packages to help the humanity (you know, ubuntu)
+    no-priv: I am not allowed to say, I have no privs.
+
+    >>> result = ubuntu.searchPPAs(text='friend')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov']
+
+    >>> result = ubuntu.searchPPAs(text='oink')
+    >>> [archive.owner.name for archive in result]
+    []
+
+    >>> result = ubuntu.searchPPAs(text='packages')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'mark']
+
+    >>> result = ubuntu.searchPPAs(text='help')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'mark']
+
+Including 'inactive' PPAs:
+
+    >>> result = ubuntu.searchPPAs(show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'mark', u'no-priv']
+
+    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'no-priv']
+
+    >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'mark']
+
+The searchPPAs() method only returns the PPAs of active users.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+
+    >>> login('admin@canonical.com')
+    >>> account = IMasterObject(no_priv.account)
+    >>> account.status = AccountStatus.SUSPENDED
+    >>> transaction.commit()
+
+    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> [archive for archive in result]
+    []
+
+    >>> account.status = AccountStatus.ACTIVE
+    >>> transaction.commit()
+
+
+Retrieving only pending-acceptance PPAs
+---------------------------------------
+
+'getPendingAcceptancePPAs' lookup will only return PPA which have
+Package Upload (queue) records in ACCEPTED state, it it used in
+'process-accepted' in '--ppa' mode to avoid quering all PPAs:
+
+Nothing is pending-acceptance in sampledata:
+
+    >>> ubuntu.getPendingAcceptancePPAs().count()
+    0
+
+Create a NEW PackageUpload record for cprov PPA:
+
+    >>> hoary = ubuntu['hoary']
+    >>> login('mark@example.com')
+    >>> queue = hoary.createQueueEntry(
+    ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+    ...      changesfilename='foo', changesfilecontent='bar')
+    >>> queue.status.name
+    'NEW'
+
+Records in NEW do not make cprov PPA pending-acceptance:
+
+    >>> ubuntu.getPendingAcceptancePPAs().count()
+    0
+
+Neither in UNAPPROVED:
+
+    >>> queue.setUnapproved()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(queue)
+    >>> queue.status.name
+    'UNAPPROVED'
+
+    >>> ubuntu.getPendingAcceptancePPAs().count()
+    0
+
+Only records in ACCEPTED does:
+
+    >>> queue.setAccepted()
+    >>> syncUpdate(queue)
+    >>> queue.status.name
+    'ACCEPTED'
+
+    >>> pending_ppas = ubuntu.getPendingAcceptancePPAs()
+    >>> [pending_ppa] = pending_ppas
+    >>> pending_ppa.id == cprov.archive.id
+    True
+
+Records in DONE also do not trigger pending-acceptance state in PPAs:
+
+    >>> queue.setDone()
+    >>> syncUpdate(queue)
+    >>> queue.status.name
+    'DONE'
+
+    >>> ubuntu.getPendingAcceptancePPAs().count()
+    0
+
+
+Retrieving only pending-acceptance PPAs
+---------------------------------------
+
+'getPendingPublicationPPAs'lookup will only return PPA which have
+PENDING publishing records, it's used in 'publish-distro' in '--ppa'
+mode to avoiding querying all PPAs.
+
+Nothing is pending-publication in sampledata:
+
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+
+We can make Celso's PPA pending publication by copying a published
+source to another location within the PPA.
+
+    >>> cprov_src = cprov.archive.getPublishedSources()[0]
+
+    >>> warty = ubuntu['warty']
+    >>> pocket_release = PackagePublishingPocket.RELEASE
+    >>> src_pub = cprov_src.copyTo(warty, pocket_release, cprov.archive)
+    >>> print src_pub.status.name
+    PENDING
+
+    >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+    >>> pending_ppa.id == cprov.archive.id
+    True
+
+Publishing the record will exclude Celso's PPA from pending-publication
+state:
+
+    >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+
+We can also make Celso's PPA pending publication by deleting a published
+source.
+
+    >>> login("celso.providelo@canonical.com")
+    >>> cprov_src.requestDeletion(cprov, 'go away !')
+    >>> src_pub = cprov_src
+
+    >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+    >>> pending_ppa.id == cprov.archive.id
+    True
+
+    >>> login('mark@example.com')
+    >>> from canonical.database.constants import UTC_NOW
+    >>> src_pub.scheduleddeletiondate = UTC_NOW
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+
+A binary pending publication also moves a PPA to the pending-publication
+state. In order to test this behaviour we will copy some binaries within
+Celso's PPA.
+
+    >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
+    >>> pending_binaries = cprov_bin.copyTo(
+    ...     warty, pocket_release, cprov.archive)
+
+The copied binaries are pending publication, thus Celso's PPA gets
+listed in the PPA pending-publication results.
+
+    >>> for pub in pending_binaries:
+    ...     print pub.status.name
+    PENDING
+    PENDING
+
+    >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+    >>> pending_ppa.id == cprov.archive.id
+    True
+
+Publishing the binaries will exclude Celso's PPA from pending-
+publication results:
+
+    >>> for pub in pending_binaries:
+    ...     pub.status = PackagePublishingStatus.PUBLISHED
+
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+
+A binary deletion will also make Celso's PPA pending publication.
+
+    >>> login("celso.providelo@canonical.com")
+    >>> cprov_bin.requestDeletion(cprov, 'go away !')
+    >>> bin_pub = cprov_bin
+
+    >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+    >>> pending_ppa.id == cprov.archive.id
+    True
+
+    >>> login('mark@example.com')
+    >>> bin_pub.scheduleddeletiondate = UTC_NOW
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+
+
+Distribution Archives
+---------------------
+
+`IDistribution.all_distro_archives` returns all archives associated with
+the distribution.  This list does not, therefore, include PPAs.
+
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> for archive in ubuntutest.all_distro_archives:
+    ...     print archive.purpose.title
+    Primary Archive
+    Partner Archive
+
+`IDistribution.getArchiveByComponent` retrieves an IArchive given a
+component name.  If the component is unknown, None is returned.
+
+    >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
+    >>> print partner_archive.displayname
+    Partner Archive for Ubuntu Test
+
+    >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
+    >>> print other_archive
+    None
+
+Multiple components, specially the debian-compatibility ones points to
+the PRIMARY archive. This relationship is established so we can import
+their packages in the correct archive.
+
+    >>> main_archive = ubuntutest.getArchiveByComponent('main')
+    >>> print main_archive.displayname
+    Primary Archive for Ubuntu Test
+
+    >>> non_free_archive = ubuntutest.getArchiveByComponent('non-free')
+    >>> print non_free_archive.displayname
+    Primary Archive for Ubuntu Test
+
+    >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
+    >>> print contrib_archive.displayname
+    Primary Archive for Ubuntu Test

@@ -1,10 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
-# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 
 ################################################################################
+
+import _pythonpath
 
 import commands
 import optparse
@@ -16,18 +19,22 @@ import dak_utils
 
 import apt_pkg
 
-import _pythonpath
-
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
-                                          SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import PackagePublishingStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 from contrib.glock import GlobalLock
 
@@ -185,12 +192,12 @@ def game_over():
 #     else:
 #         print "No dependency problem found."
 #     print
-    
+
 ################################################################################
 
 def options_init():
     global Options
-    
+
     parser = optparse.OptionParser()
     logger_options(parser)
     parser.add_option("-a", "--architecture", dest="architecture",
@@ -231,12 +238,12 @@ def options_init():
     if not Options.reason:
         Options.reason = ""
 
-    # XXX: 'dak rm' use to check here whether or not we're removing
-    # from anything other than << unstable.  This never got ported
+    # XXX malcc 2006-08-03: 'dak rm' used to check here whether or not we're
+    # removing from anything other than << unstable.  This never got ported
     # to ubuntu anyway, but it might be nice someday.
 
     # Additional architecture checks
-    # XXX - parse_args
+    # XXX James Troup 2006-01-30: parse_args.
     if Options.architecture and 0:
         dak_utils.warn("'source' in -a/--argument makes no sense and is ignored.")
 
@@ -257,17 +264,15 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
-
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     if not Options.distro:
         Options.distro = "ubuntu"
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.suite = Options.distro.currentrelease.name
+        Options.suite = Options.distro.currentseries.name
 
     Options.architecture = dak_utils.split_args(Options.architecture)
     Options.component = dak_utils.split_args(Options.component)
@@ -275,7 +280,7 @@ def init():
 
     return arguments
 
-################################################################################    
+################################################################################
 
 def summary_to_remove(to_remove):
     # Generate the summary of what's to be removed
@@ -314,7 +319,7 @@ def summary_to_remove(to_remove):
 
     return summary
 
-################################################################################   
+################################################################################
 
 def what_to_remove(packages):
     to_remove = []
@@ -326,41 +331,42 @@ def what_to_remove(packages):
 
     for removal in packages:
         for suite in Options.suite:
-            distrorelease = Options.distro.getRelease(suite)
+            distro_series = Options.distro.getSeries(suite)
 
             if Options.sourceonly:
                 bpp_list = []
             else:
                 if Options.binaryonly:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(removal)
                 else:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(sourcename=removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(
+                        sourcename=removal)
 
             for bpp in bpp_list:
-                    package=bpp.binarypackagerelease.binarypackagename.name
-                    version=bpp.binarypackagerelease.version
-                    architecture=bpp.distroarchrelease.architecturetag
-                    if Options.architecture and \
-                           architecture not in Options.architecture:
-                        continue
-                    if Options.component and \
-                           bpp.component.name not in Options.component:
-                        continue
-                    d = dak_utils.Dict(type="binary",publishing=bpp,
-                                       package=package, version=version,
-                                       architecture=architecture)
-                    to_remove.append(d)
+                package=bpp.binarypackagerelease.binarypackagename.name
+                version=bpp.binarypackagerelease.version
+                architecture=bpp.distroarchseries.architecturetag
+                if (Options.architecture and
+                    architecture not in Options.architecture):
+                    continue
+                if (Options.component and
+                    bpp.component.name not in Options.component):
+                    continue
+                d = dak_utils.Dict(
+                    type="binary", publishing=bpp, package=package,
+                    version=version, architecture=architecture)
+                to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distrorelease.getPublishedReleases(removal):
-                    package=spp.sourcepackagerelease.sourcepackagename.name
-                    version=spp.sourcepackagerelease.version
-                    if Options.component and \
-                           spp.component.name not in Options.component:
+                for spp in distro_series.getPublishedSources(removal):
+                    package = spp.sourcepackagerelease.sourcepackagename.name
+                    version = spp.sourcepackagerelease.version
+                    if (Options.component and
+                        spp.component.name not in Options.component):
                         continue
-                    d = dak_utils.Dict(type="source",publishing=spp,
-                                       package=package, version=version,
-                                       architecture="source")
+                    d = dak_utils.Dict(
+                        type="source",publishing=spp, package=package,
+                        version=version, architecture="source")
                     to_remove.append(d)
 
     return to_remove
@@ -376,9 +382,9 @@ def do_removal(removal):
     """
     current = removal["publishing"]
     if removal["type"] == "binary":
-        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
+        real_current = BinaryPackagePublishingHistory.get(current.id)
     else:
-        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+        real_current = SourcePackagePublishingHistory.get(current.id)
     real_current.status = PackagePublishingStatus.SUPERSEDED
     real_current.datesuperseded = UTC_NOW
 
@@ -429,7 +435,8 @@ def main ():
     suites_list = dak_utils.join_with_commas_and(Options.suite);
 
     # Log first; if it all falls apart I want a record that we at least tried.
-    logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')     # XXX
+    # XXX malcc 2006-08-03: de-hardcode me harder
+    logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')
     logfile.write("==================================="
                   "======================================\n")
     logfile.write("[Date: %s] [ftpmaster: %s]\n" % (date, whoami))

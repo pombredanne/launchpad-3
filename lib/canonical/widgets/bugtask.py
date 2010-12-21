@@ -1,29 +1,42 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
 
 __metaclass__ = type
 
-
-import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
-from zope.interface import implements
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.interface import implements, Interface
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
-from zope.schema.interfaces import ValidationError
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
+from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
-from canonical.launchpad.interfaces import IBugWatch, ILaunchBag
+from z3c.ptcompat import ViewPageTemplateFile
+
+from canonical.launchpad import _
+from lp.services.fields import URIField
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.popup import SinglePopupWidget
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.browser.tales import TeamFormatterAPI
+from canonical.widgets.helpers import get_widget_template
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.popup import VocabularyPickerWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from lp.app.errors import NotFoundError, UnexpectedFormData
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
+
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -43,17 +56,23 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-
-        self.assignee_chooser_widget = SinglePopupWidget(
+        self.assignee_chooser_widget = VocabularyPickerWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
+        self.setUpNames()
 
-        # Set some values that will be used as values for the input
-        # widgets.
-        self.assigned_to = "assigned_to"
-        self.assign_to_me = "assign_to_me"
-        self.assign_to_nobody = "assign_to_nobody"
-        self.assign_to = "assign_to"
+    def setUpNames(self):
+        """Set up the names used by this widget."""
+        self.assigned_to = "%s.assigned_to" % self.name
+        self.assign_to_me = "%s.assign_to_me" % self.name
+        self.assign_to_nobody = "%s.assign_to_nobody" % self.name
+        self.assign_to = "%s.assign_to" % self.name
+        self.assignee_chooser_widget.onKeyPress = (
+            "selectWidget('%s', event)" % self.assign_to)
+
+    def setPrefix(self, prefix):
+        Widget.setPrefix(self, prefix)
+        self.assignee_chooser_widget.setPrefix(prefix)
+        self.setUpNames()
 
     def validate(self):
         """
@@ -63,27 +82,16 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form.get(self.name + ".option") == self.assign_to:
+        option = self.request.form_ng.getOne(self.name + ".option")
+        if option == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Missing value for assignee")
-                        )
+                        ValidationError("Missing value for assignee"))
             if not self.assignee_chooser_widget.hasValidInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Assignee not found")
-                        )
-            #try:
-                # A ConversionError is expected if the user provides
-                # an assignee value that doesn't exist in the
-                # assignee_chooser_widget's vocabulary.
-            #except ConversionError:
-                # Turn the ConversionError into a WidgetInputError.
-            #    raise WidgetInputError(
-            #        self.assignee_chooser_widget.name,
-            #        self.assignee_chooser_widget.label,
-            #        ValidationError("Assignee not found"))
+                        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""
@@ -102,9 +110,9 @@ class BugTaskAssigneeWidget(Widget):
         """See zope.app.form.interfaces.IInputWidget."""
         self.validate()
 
-        form = self.request.form
+        form = self.request.form_ng
 
-        assignee_option = form.get(self.name + ".option")
+        assignee_option = form.getOne(self.name + ".option")
         if assignee_option == self.assign_to:
             # The user has chosen to use the assignee chooser widget
             # to select an assignee.
@@ -166,14 +174,15 @@ class BugTaskAssigneeWidget(Widget):
         """Return a display value for current IBugTask.assignee.
 
         If no IBugTask.assignee, return None.
+        If the assignee is not viewable, return u'<hidden>'.
         """
         field = self.context
         bugtask = field.context
-        if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+        if not bugtask.assignee:
+            return None
+        display_value = (
+            TeamFormatterAPI(bugtask.assignee).unique_displayname(None))
+        return display_value
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.
@@ -187,7 +196,7 @@ class BugTaskAssigneeWidget(Widget):
         """
         # Give form values in the request precedence in deciding which
         # radio button should be selected.
-        selected_option = self.request.form.get(self.name + ".option")
+        selected_option = self.request.form_ng.getOne(self.name + ".option")
         if selected_option:
             return selected_option
 
@@ -208,22 +217,63 @@ class BugTaskAssigneeWidget(Widget):
             else:
                 return self.assigned_to
 
+    def showUnassignOption(self):
+        """Should the "unassign bugtask" option be shown?
+
+        To avoid user confusion, we show this option only if the user
+        can set the bug task assignee to None or if there is currently
+        no assignee set.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return context.userCanUnassign(user) or context.assignee is None
+
+    def showPersonChooserWidget(self):
+        """Should the person chooser widget bw shown?
+
+        The person chooser is shown only if the user can assign at least
+        one other person or team in addition to himself.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return user is not None and (
+            context.userCanSetAnyAssignee(user) or
+            user.teams_participated_in.count() > 0)
+
+
+class BugWatchEditForm(Interface):
+    """Form field definition for the bug watch widget.
+
+    Used to edit the bug watch on the bugtask edit page.
+    """
+
+    url = URIField(
+        title=_('URL'), required=True,
+        allowed_schemes=['http', 'https'],
+        description=_("""The URL at which to view the remote bug."""))
+
 
 class BugTaskBugWatchWidget(RadioWidget):
     """A widget for linking a bug watch to a bug task."""
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
-        # Use javascript to select the correct radio button if he enters
-        # a remote bug.
+        self.url_widget = CustomWidgetFactory(URIWidget)
+        setUpWidget(
+            self, 'url', BugWatchEditForm['url'], IInputWidget,
+            context=field.context)
+        self.setUpJavascript()
+
+    def setUpJavascript(self):
+        """Set up JS to select the "new bugwatch" option automatically."""
         select_js = "selectWidget('%s.%s', event)" % (
             self.name, self._new_bugwatch_value)
-        self.remotebug_widget = CustomWidgetFactory(
-            TextWidget, extra='onKeyPress="%s"' % select_js)
-        for field_name in ['bugtracker', 'remotebug']:
-            setUpWidget(
-                self, field_name, IBugWatch[field_name], IInputWidget,
-                context=field.context)
+        self.url_widget.extra = 'onKeyPress="%s"' % select_js
+
+    def setPrefix(self, prefix):
+        RadioWidget.setPrefix(self, prefix)
+        self.url_widget.setPrefix(prefix)
+        self.setUpJavascript()
 
     _messageNoValue = "None, the status of the bug is updated manually."
     _new_bugwatch_value = 'NEW'
@@ -235,9 +285,13 @@ class BugTaskBugWatchWidget(RadioWidget):
         watch, otherwise look up an existing one.
         """
         if form_value == self._new_bugwatch_value:
-            bugtracker = self.bugtracker_widget.getInputValue()
             try:
-                remotebug = self.remotebug_widget.getInputValue()
+                url = self.url_widget.getInputValue()
+                bugtracker, remote_bug = getUtility(
+                    IBugWatchSet).extractBugTrackerAndBug(url)
+                bugtask = self.context.context
+                return bugtask.bug.addWatch(
+                    bugtracker, remote_bug, getUtility(ILaunchBag).user)
             except WidgetInputError, error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
@@ -245,9 +299,10 @@ class BugTaskBugWatchWidget(RadioWidget):
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            bugtask = self.context.context
-            return bugtask.bug.addWatch(
-                bugtracker, remotebug, getUtility(ILaunchBag).user)
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+                raise WidgetInputError(
+                    self.context.__name__, self.label,
+                    'Invalid bug tracker URL.')
         else:
             return RadioWidget._toFieldValue(self, form_value)
 
@@ -258,7 +313,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         one uses getInputValue(), which it shouldn't do.
         """
         if not self._renderedValueSet():
-            return self.request.form.get(self.name, self._missing)
+            return self.request.form_ng.getOne(self.name, self._missing)
         else:
             return self._toFormValue(self._data)
 
@@ -268,26 +323,23 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
         """Join the input tag with the label."""
-        here = os.path.dirname(__file__)
-        template_path = os.path.join(
-            here, 'templates', 'bugtask-bugwatch-widget.txt')
-        row_template = open(template_path).read()
+        row_template = get_widget_template('bugtask-bugwatch-widget.txt')
         return row_template % {
             'input_tag': option_tag,
             'input_id': input_id,
             'input_label': label}
 
-    #XXX: This method is mostly copied from RadioWidget.renderItems() and
+    #XXX: Bjorn Tillenius 2006-04-26:
+    #     This method is mostly copied from RadioWidget.renderItems() and
     #     modified to actually work. RadioWidget.renderItems() should be
     #     fixed upstream so that we can override it and only do the last
     #     part locally, the part after "# Add an option for creating...".
     #     http://www.zope.org/Collectors/Zope3-dev/592
-    #     -- Bjorn Tillenius, 2006-04-26
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
-        #XXX: This works around the fact that we incorrectly gets the form
-        #     value instead of a valid field value.
-        #     -- Bjorn Tillenius, 2006-04-26
+        # XXX: Bjorn Tillenius 2006-04-26
+        #      This works around the fact that we incorrectly gets the form
+        #      value instead of a valid field value.
         if value == self._missing:
             value = self.context.missing_value
         elif (isinstance(value, basestring) and
@@ -300,8 +352,8 @@ class BugTaskBugWatchWidget(RadioWidget):
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
             and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
         elif value != self.context.missing_value:
             values = [value]
         else:
@@ -325,8 +377,7 @@ class BugTaskBugWatchWidget(RadioWidget):
 
         # Add an option for creating a new bug watch.
         option_text = (
-            '<div>%s</div><div>Remote Bug #%s</div>' % (
-                self.bugtracker_widget(), self.remotebug_widget()))
+            '<div>URL: %s</div>' % self.url_widget())
         if value == self._new_bugwatch_value:
             option = self.renderSelectedItem(
                 self._new_bugwatch_value, option_text,
@@ -384,6 +435,66 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
+class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
+    """A widget for associating a bugtask with a SourcePackageName.
+
+    It accepts both binary and source package names.
+    """
+
+    def getDistribution(self):
+        """Get the distribution used for package validation.
+
+        The package name has be to published in the returned distribution.
+        """
+        field = self.context
+        distribution = field.context.distribution
+        if distribution is None and field.context.distroseries is not None:
+            distribution = field.context.distroseries.distribution
+        assert distribution is not None, (
+            "BugTaskSourcePackageNameWidget should be used only for"
+            " bugtasks on distributions or on distribution series.")
+        return distribution
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        distribution = self.getDistribution()
+
+        try:
+            source, binary = distribution.guessPackageNames(input)
+        except NotFoundError:
+            try:
+                return self.convertTokensToValues([input])[0]
+            except InvalidValue:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        return source
+
+
+class BugTaskAlsoAffectsSourcePackageNameWidget(
+    BugTaskSourcePackageNameWidget):
+    """Package widget for +distrotask.
+
+    This widgets works the same as `BugTaskSourcePackageNameWidget`,
+    except that it gets the distribution from the request.
+    """
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`"""
+        distribution_name = self.request.form.get('field.distribution')
+        if distribution_name is None:
+            raise UnexpectedFormData(
+                "field.distribution wasn't in the request")
+        distribution = getUtility(IDistributionSet).getByName(
+            distribution_name)
+        if distribution is None:
+            raise UnexpectedFormData(
+                "No such distribution: %s" % distribution_name)
+        return distribution
+
+
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
 
@@ -401,10 +512,10 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user.gif", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.browsername)))
+                contents="%s %s" % (person_img, escape(assignee.displayname)))
         else:
             if bugtask.target_uses_malone:
                 return renderElement('i', contents='not assigned')
@@ -435,12 +546,26 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''

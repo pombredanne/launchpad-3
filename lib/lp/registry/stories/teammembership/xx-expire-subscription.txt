@@ -1,0 +1,46 @@
+We want to simulate an expired subscription. This can't be done through
+the web UI, because we explicitly check that the expiration date is in
+the future.
+
+We can't use the browser instance to test this directly because the form
+value for the year 2000 is not available in HTML, but we can encode the
+variables:
+
+    >>> import urllib
+    >>> browser = setupBrowser(auth="Basic mark@example.com:test")
+    >>> browser.open("http://launchpad.dev/~name20/+member/name12",
+    ...              urllib.urlencode({
+    ...                   "admin": "no",
+    ...                   "membership.expirationdate": "2000-01-01",
+    ...                   "comment": "",
+    ...                   "change": "Change",
+    ...                   "editactive": 1}))
+    >>> browser.contents
+    <BLANKLINE>
+    ...
+    ...Invalid expiration: Please pick a date after...
+    ...
+
+Let's do it under the wraps:
+
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembership
+    >>> sampleperson = Person.byName('name12')
+    >>> team = Person.byName('name20')
+    >>> tm = TeamMembership.selectOneBy(
+    ...     personID=sampleperson.id, teamID=team.id)
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS) # login() because we need a zope interaction.
+    >>> ignored = tm.setStatus(TeamMembershipStatus.EXPIRED, team.teamowner)
+    >>> logout()
+
+Persist the change:
+
+    >>> tm.syncUpdate()
+
+And make sure that Sample Person is now an EXPIRED member of this team.
+
+    >>> sampleperson in team.expiredmembers
+    True
+

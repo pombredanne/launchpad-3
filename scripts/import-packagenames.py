@@ -1,18 +1,18 @@
-#!/usr/bin/python
+#!/usr/bin/python -S
 #
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Python imports
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import sys
 import re
-from string import strip
 from optparse import OptionParser
 
-# LP imports
 from canonical.lp import initZopeless
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 
-# launchpad imports
-from canonical.launchpad.database import SourcePackageName
-from canonical.launchpad.database import BinaryPackageName
 
 class BaseNameList:
     """Base for Packages name list"""
@@ -22,19 +22,19 @@ class BaseNameList:
         self.list = []
         self._buildlist()
         self.list.sort()
-        
+
     def _buildlist(self):
         try:
             f = open(self.filename)
         except IOError:
-            print 'file %s not found. Exiting...' %self.filename
+            print 'file %s not found. Exiting...' % self.filename
             sys.exit(1)
-            
+
         for line in f:
-            line = self._check_format(strip(line))
+            line = self._check_format(line.strip())
             if line:
                 if not self._valid_name(line):
-                    print ' - Invalid package name: %s' %line
+                    print ' - Invalid package name: %s' % line
                     continue
                 self.list.append(line)
 
@@ -94,16 +94,17 @@ class ProcessNames:
     def commit(self):
         print '\t\t@ Commiting...'
         self.ztm.commit()
-        
-        
+
+
     def processSource(self):
+        from lp.registry.model.sourcepackagename import SourcePackageName
         if not self.source_list:
             return
 
         spnl = SourcePackageNameList(self.source_list).list
-        
+
         for name in spnl:
-            print '\t@ Evaluationg SourcePackageName %s' %name
+            print '\t@ Evaluationg SourcePackageName %s' % name
             SourcePackageName.ensure(name)
             if self.count.step():
                 self.commit()
@@ -119,7 +120,7 @@ class ProcessNames:
         bpnl = BinaryPackageNameList(self.binary_list).list
 
         for name in bpnl:
-            print '\t@ Evaluationg BinaryPackageName %s' %name
+            print '\t@ Evaluationg BinaryPackageName %s' % name
             BinaryPackageName.ensure(name)
             if self.count.step():
                 self.commit()
@@ -132,24 +133,23 @@ if __name__ == '__main__':
 
     parser = OptionParser()
 
-    parser.add_option("-s", "--source-file", dest="source_file",
-                      help="SourcePackageName list file",
-                      default=None)
+    parser.add_option(
+        "-s", "--source-file", dest="source_file",
+        help="SourcePackageName list file")
 
-    parser.add_option("-b", "--binary-file", dest="binary_file",
-                      help="BinaryPackageName list file",
-                      default=None)
+    parser.add_option(
+        "-b", "--binary-file", dest="binary_file",
+        help="BinaryPackageName list file")
 
-    parser.add_option("-c", "--commit-interval", dest="commit_interval",
-                      help="DB commit interval. Default 0 performs not commit.",
-                      default=0)
+    parser.add_option(
+        "-c", "--commit-interval", dest="commit_interval", default=0,
+        help="DB commit interval. Default 0 performs not commit.")
 
-    (options,args) = parser.parse_args()
+    (options, args) = parser.parse_args()
 
-
-    processor = ProcessNames(options.source_file,
-                             options.binary_file,
-                             int(options.commit_interval))
+    processor = ProcessNames(
+        options.source_file, options.binary_file,
+        int(options.commit_interval))
 
     processor.processSource()
     processor.processBinary()

@@ -1,0 +1,56 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-bugfilters">
+  <a id="bugtarget-bugfilters-link"
+     tal:attributes="href context/fmt:url/+bugtarget-portlet-bugfilters-stats">
+  </a>
+  <table class="bug-links">
+    <tbody id="bugfilters-portlet-content"
+           tal:content="structure context/@@+bugtarget-portlet-bugfilters-info" />
+    <tbody tal:define="menu context/menu:bugs">
+      <tr tal:define="subscribe_link menu/subscribe|nothing"
+          tal:condition="python: subscribe_link and subscribe_link.enabled">
+        <td class="bugs-count" style="padding-top: 1em">
+          <a tal:attributes="href subscribe_link/url">
+            <img tal:attributes="src subscribe_link/icon_url" />
+          </a>
+        </td>
+        <td class="bugs-link">
+          <a tal:attributes="href subscribe_link/url"
+             tal:content="subscribe_link/escapedtext" />
+        </td>
+      </tr>
+      <tr tal:define="review_nominations_link context/menu:bugs/nominations|nothing"
+          tal:condition="review_nominations_link">
+        <td class="bugs-count" style="padding-top: 1em">
+          <a tal:attributes="href review_nominations_link/url">
+            <img tal:attributes="src review_nominations_link/icon_url" />
+          </a>
+        </td>
+        <td class="bugs-link">
+          <a tal:attributes="href review_nominations_link/url"
+             tal:content="review_nominations_link/escapedtext" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <script type="text/javascript">
+    LPS.use('io-base', 'node', function(Y) {
+        Y.on('domready', function() {
+            var url = Y.one('#bugtarget-bugfilters-link').getAttribute('href');
+            var handlers = {
+                success: function(transactionid, response, arguments) {
+                    Y.one('#bugfilters-portlet-content').set(
+                        'innerHTML', response.responseText);
+                },
+                failure: function() {
+                    Y.one('#bugfilters-portlet-content').set('innerHTML', '');
+                }
+            };
+            var request = Y.io(url, {on: handlers});
+        });
+    });
+  </script>
+</div>

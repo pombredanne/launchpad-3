@@ -1,0 +1,73 @@
+=============================
+Batching subscription updates
+=============================
+
+To reduce the possibility of timeouts, Mailman batches its requests for
+mailing list subscription information.  Normally the batch size is big enough
+to include all the mailing lists that might get created during an integration
+test, but we can reduce that to a batch size of 1 and still see that all
+mailing lists are getting updated properly.
+
+Three mailing lists are created.
+
+    >>> from lp.services.mailman.testing import helpers
+
+    >>> team_one = helpers.create_list('alpha')
+    >>> team_two = helpers.create_list('bravo')
+    >>> team_three = helpers.create_list('charlie')
+
+Now we'll restart Mailman with a batch size of 1.
+
+    >>> from canonical.testing.layers import LayerProcessController
+    >>> from lp.services.mailman import runmailman
+    >>> runmailman.stop_mailman(
+    ...     quiet=True, config=LayerProcessController.appserver_config)
+    >>> qrunner_watcher.wait_for_shutdown()
+
+    >>> LayerProcessController.appserver_config.push('batching test',
+    ...     """
+    ...     [mailman]
+    ...     subscription_batch_size: 1
+    ...     """)
+    >>> LayerProcessController.appserver_config.validate()
+    True
+
+    >>> runmailman.start_mailman(
+    ...     quiet=True, config=LayerProcessController.appserver_config)
+    >>> qrunner_watcher.wait_for_restart()
+
+Anne now subscribes to all three mailing lists.
+
+    >>> helpers.subscribe('Anne', 'alpha')
+    >>> helpers.subscribe('Anne', 'bravo')
+    >>> helpers.subscribe('Anne', 'charlie')
+
+And indeed, she is now a member of all three mailing lists.
+
+    >>> from Mailman.MailList import MailList
+    >>> alpha = MailList('alpha', lock=False)
+    >>> bravo = MailList('bravo', lock=False)
+    >>> charlie = MailList('charlie', lock=False)
+
+    # Mailman predates Python's boolean.
+    >>> alpha.isMember('anne.person@example.com')
+    1
+    >>> bravo.isMember('anne.person@example.com')
+    1
+    >>> charlie.isMember('anne.person@example.com')
+    1
+
+
+Clean up
+========
+
+    >>> runmailman.stop_mailman(
+    ...     quiet=True, config=LayerProcessController.appserver_config)
+    >>> qrunner_watcher.wait_for_shutdown()
+
+    >>> ignore = LayerProcessController.appserver_config.pop(
+    ...     'batching test')
+
+    >>> runmailman.start_mailman(
+    ...     quiet=True, config=LayerProcessController.appserver_config)
+    >>> qrunner_watcher.wait_for_restart()

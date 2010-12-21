@@ -1,5 +1,5 @@
 All mails sent to Launchpad can be accessed with the IMailBox utility.
-There are two different IMailBox utilities available. One, TestMailBox,
+There are three different IMailBox utilities available. One, TestMailBox,
 is configured for tests, and operates on stub.test_emails. This means
 that every mail you send in a test can be accessed by using this mail
 box.
@@ -14,9 +14,20 @@ It also supports POP3 over ssl:
     <mail:pop3MailBox
         host="somehost" user="someuser" password="secret" ssl="true" />
 
+The third is the DirectoryMailBox and can be configured to operate for
+interactive testing of the email processing.  There is an example config
+located at: configs/development/directory-testing-mailbox.zcml.example.  To
+get this picked up by the process email cronscript, you need to copy it to the
+directory above the working tree and call it +testing-mailbox.zcml (actually
+you could call it anything that matches +*.zcml loaded from script.zcml).
+
+There is a helper function create_mail_for_directoryMailBox that has been
+added to the globs in `make harness`, and can be found in the file
+lib/canonical/launchpad/testing/mail.py.
+
 Let's look at the one we use in tests:
 
-    >>> from canonical.launchpad.interfaces import IMailBox
+    >>> from canonical.launchpad.interfaces.mailbox import IMailBox
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:

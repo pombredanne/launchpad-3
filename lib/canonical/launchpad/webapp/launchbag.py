@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 LaunchBag
 
@@ -7,22 +9,33 @@ The collection of stuff we have traversed.
 __metaclass__ = type
 
 import pytz
-
-from zope.interface import implements
+from zope import thread
 from zope.component import getUtility
-import zope.security.management
-import zope.thread
-from zope.app.session.interfaces import ISession
+from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-        IOpenLaunchBag, ILaunchBag,
-        ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution,
-        IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
-        ISpecification, IBugTask)
-from canonical.launchpad.webapp.interfaces import ILoggedInEvent
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    ILoggedInEvent,
+    IOpenLaunchBag,
+    )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
 
 _utc_tz = pytz.timezone('UTC')
+
 
 class LaunchBag:
 
@@ -30,20 +43,19 @@ class LaunchBag:
 
     # Map Interface to attribute name.
     _registry = {
-        ILaunchpadApplication: 'site',
         IPerson: 'person',
-        IProject: 'project',
+        IProjectGroup: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
-        IDistroRelease: 'distrorelease',
-        IDistroArchRelease: 'distroarchrelease',
+        IDistroSeries: 'distroseries',
+        IDistroArchSeries: 'distroarchseries',
         ISourcePackage: 'sourcepackage',
         ISpecification: 'specification',
         IBug: 'bug',
         IBugTask: 'bugtask',
         }
 
-    _store = zope.thread.local()
+    _store = thread.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
@@ -52,7 +64,7 @@ class LaunchBag:
     @property
     def login(self):
         return getattr(self._store, 'login', None)
-    
+
     def setDeveloper(self, is_developer):
         '''See IOpenLaunchBag.'''
         self._store.developer = is_developer
@@ -62,23 +74,14 @@ class LaunchBag:
         return getattr(self._store, 'developer', False)
 
     @property
+    @block_implicit_flushes
+    def account(self):
+        return IAccount(get_current_principal(), None)
+
+    @property
+    @block_implicit_flushes
     def user(self):
-        interaction = zope.security.management.queryInteraction()
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError, 'Too many principals'
-        else:
-            try:
-                person = IPerson(principals[0])
-            except TypeError:
-                person = None
-            return person
+        return IPerson(get_current_principal(), None)
 
     def add(self, obj):
         store = self._store
@@ -91,10 +94,7 @@ class LaunchBag:
         for attribute in self._registry.values():
             setattr(store, attribute, None)
         store.login = None
-
-    @property
-    def site(self):
-        return self._store.site
+        store.time_zone = None
 
     @property
     def person(self):
@@ -112,19 +112,19 @@ class LaunchBag:
 
     @property
     def product(self):
-        return self._store.product
+        return getattr(self._store, "product", None)
 
     @property
     def distribution(self):
-        return self._store.distribution
+        return getattr(self._store, "distribution", None)
 
     @property
-    def distrorelease(self):
-        return self._store.distrorelease
+    def distroseries(self):
+        return self._store.distroseries
 
     @property
-    def distroarchrelease(self):
-        return self._store.distroarchrelease
+    def distroarchseries(self):
+        return self._store.distroarchseries
 
     @property
     def sourcepackage(self):
@@ -147,18 +147,17 @@ class LaunchBag:
 
     @property
     def bugtask(self):
-        return self._store.bugtask
+        return getattr(self._store, "bugtask", None)
 
     @property
-    def timezone(self):
-        user = self.user
-        if user and user.timezone:
-            try:
-                return pytz.timezone(user.timezone)
-            except KeyError:
-                pass # unknown timezone name
-        # fall back to UTC
-        return _utc_tz
+    def time_zone(self):
+        if getattr(self._store, "time_zone", None) is None:
+            if self.user and self.user.time_zone:
+                self._store.time_zone = pytz.timezone(self.user.time_zone)
+            else:
+                # fall back to UTC
+                self._store.time_zone = _utc_tz
+        return self._store.time_zone
 
 
 class LaunchBagView(object):
@@ -169,18 +168,18 @@ class LaunchBagView(object):
 
 
 def set_login_in_launchbag_when_principal_identified(event):
-    """Subscriber for IPrincipalIdentifiedEvent that sets 'login' in launchbag.
+    """This IPrincipalIdentifiedEvent subscriber sets 'login' in launchbag.
     """
     launchbag = getUtility(IOpenLaunchBag)
+    # Basic auths principal identified event is also an ILoggedInEvent.
+    # Cookie auth seperates these two events.
     loggedinevent = ILoggedInEvent(event, None)
     if loggedinevent is None:
         # We must be using session auth.
-        session = ISession(event.request)
-        authdata = session['launchpad.authenticateduser']
-        assert authdata['personid'] == event.principal.id
-        launchbag.setLogin(authdata['login'])
+        launchbag.setLogin(event.login)
     else:
         launchbag.setLogin(loggedinevent.login)
+
 
 def set_developer_in_launchbag_before_traversal(event):
     """Subscriber for IBeforeTraverseEvent
@@ -198,11 +197,13 @@ def set_developer_in_launchbag_before_traversal(event):
         is_developer = user.inTeam(celebrities.launchpad_developers)
         launchbag.setDeveloper(is_developer)
 
+
 def reset_login_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that sets 'login' in launchbag to None.
     """
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(None)
+
 
 def reset_developer_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that resets the developer flag."""

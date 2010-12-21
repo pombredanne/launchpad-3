@@ -40,7 +40,7 @@ and it is difficult for them to pass their information and patches to
 upstream directly.
 
 Malone explicitly tracks the status of a bug both upstream and in any
-distributions registered in the Launchpad. This makes it possible, for
+distributions registered in Launchpad. This makes it possible, for
 example, to see immediately if a fix has been found for a given bug by any
 of the participating distributions, or upstream. The bug page shows this
 information very prominently.
@@ -82,11 +82,11 @@ not associated with a sourcepackage can be thought of as "untriaged" bugs.
 In some cases, we should be able to know not only which source package, but
 also the precise binary package that manifests the bug.
 
-Milestones and DistroReleases
+Milestones and DistroSeries
 
 In addition, it's important to be able to know which bugs need to be fix for
 a given release of the distribution, or a given milestone upstream. Malone
-allows us to specify a milestone or a distrorelease by which a bug needs to
+allows us to specify a milestone or a distroseries by which a bug needs to
 be fixed, which allows QA teams to keep track of the progress they are
 making towards a release.
 
@@ -100,7 +100,7 @@ whether a bug is found in a particular version of a package or not.
 Future
 
  1. Bazaar Integration
-    Malone is part of the Launchpad, a web based portal for open source
+    Malone is part of Launchpad, a web based portal for open source
     developers. Another component of that portal is the Bazaar, a repository
     of data and metadata about code stored in the Bazaar revision control
     system. We hope that Bazaar will be embraced by the open source world,

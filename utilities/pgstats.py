@@ -1,5 +1,8 @@
-#!/usr/bin/env python
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Generate some statistics about a PostgreSQL database suitable for
 emailing via cron
@@ -8,7 +11,7 @@ emailing via cron
 __metaclass__ = type
 
 import sys
-import psycopg
+import psycopg2
 
 def percentage(num, total):
     """Return a percentage string of num/total"""
@@ -48,7 +51,7 @@ def pgstattuple(cur, table):
 
 
 def main(dbname):
-    con = psycopg.connect("dbname=%s" % dbname)
+    con = psycopg2.connect("dbname=%s" % dbname)
     cur = con.cursor()
 
     print 'Statistics for %s' % dbname
@@ -116,7 +119,8 @@ def main(dbname):
                 print_row('', statstr(stat))
 
     # Unused indexes, ignoring primary keys.
-    # TODO: We should identify constraints used to enforce uniqueness too
+    # XXX Stuart Bishop 2005-06-28:
+    # We should identify constraints used to enforce uniqueness too
     cur.execute("""
         SELECT relname, indexrelname
             FROM pg_stat_user_indexes AS u JOIN pg_indexes AS i

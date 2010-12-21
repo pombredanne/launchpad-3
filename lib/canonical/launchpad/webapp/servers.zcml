@@ -1,11 +1,8 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-    <!-- This is the XMLRPC server, set up to do ZODB-free publication.  -->
-    <utility
-        name="XMLRPC"
-        component="canonical.launchpad.webapp.servers.xmlrpc"
-        provides="zope.app.server.servertype.IServerType"
-        />
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
 
+<configure xmlns="http://namespaces.zope.org/zope">
     <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
     <utility
         name="HTTP"
@@ -29,4 +26,11 @@
         component="canonical.launchpad.webapp.servers.debughttp"
         provides="zope.app.server.servertype.IServerType"
         />
+
+    <utility
+        name="PrivateXMLRPC"
+        component="canonical.launchpad.webapp.servers.privatexmlrpc"
+        provides="zope.app.server.servertype.IServerType"
+        />
+
 </configure>

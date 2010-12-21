@@ -1,5 +1,7 @@
-#!/usr/bin/env python
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # A script to import metadata about the Zope 3 specs into Launchpad
 
@@ -14,19 +16,22 @@ import _pythonpath
 from zope.component import getUtility
 from BeautifulSoup import BeautifulSoup
 
-from canonical.lp import initZopeless
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationGoalStatus, SpecificationDelivery,
-    SpecificationPriority)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, ISpecificationSet)
+from canonical.lp import initZopeless
+from lp.blueprints.enums import (
+    SpecificationStatus,
+    SpecificationGoalStatus,
+    SpecificationDelivery,
+    SpecificationPriority,
+    )
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 
 
-WIKI_BASE = 'http://www.zope.org/Wikis/DevSite/Projects/ComponentArchitecture/'
+WIKI_BASE = 'http://wiki.zope.org/zope3/'
 PROPOSAL_LISTS = ['Zope3Proposals', 'OldProposals', 'DraftProposals']
 specroot = WIKI_BASE + 'Zope3Proposals'
-specroot = WIKI_BASE + 'OldProposals'
 
 at_replacements = ['_at_', '(at)', '&#64;']
 author_email_pat = re.compile('[-.A-Za-z0-9]+(?:@|%s)[-.A-Za-z0-9]+' %
@@ -34,6 +39,8 @@ author_email_pat = re.compile('[-.A-Za-z0-9]+(?:@|%s)[-.A-Za-z0-9]+' %
                                         for replacement in at_replacements]))
 
 def getTextContent(tag):
+    if tag is None:
+        return ''
     if isinstance(tag, basestring):
         return tag
     return ''.join([e for e in tag.recursiveChildGenerator()
@@ -89,7 +96,7 @@ class ZopeSpec:
     def parseSpec(self):
         contents = urllib2.urlopen(self.url).read()
         soup = BeautifulSoup(contents)
-        contentdivs = soup('div', {'id': 'content'})
+        contentdivs = soup('div', {'class': 'content'})
         assert len(contentdivs) == 1
         contentdiv = contentdivs[0]
 
@@ -125,7 +132,7 @@ class ZopeSpec:
             if author_headers:
                 author = author_headers[0].findNext().renderContents()
                 self.parseAuthorEmails(author)
-        
+
     @property
     def lpname(self):
         # add dashes before capitalised words
@@ -148,9 +155,9 @@ class ZopeSpec:
                        'IsAcceptedProposal']:
             if status in self.statuses:
                 return SpecificationStatus.APPROVED
-        # WIP => BRAINDUMP
+        # WIP => DISCUSSION
         if 'IsWorkInProgress' in self.statuses:
-            return SpecificationStatus.BRAINDUMP
+            return SpecificationStatus.DISCUSSION
         for status in ['IsSupercededProposal', 'IsReplaced']:
             if status in self.statuses:
                 return SpecificationStatus.SUPERSEDED
@@ -193,18 +200,18 @@ class ZopeSpec:
         return SpecificationDelivery.UNKNOWN
 
     def syncSpec(self):
+        zope = getUtility(IProductSet).getByName('zope')
+        zope_dev = getUtility(IPersonSet).getByName('zope-dev')
         # has the spec been created?
         lpspec = getUtility(ISpecificationSet).getByURL(self.url)
         if not lpspec:
-            zope = getUtility(IProductSet).getByName('zope')
-            zope_dev = getUtility(IPersonSet).getByName('zope-dev')
             lpspec = getUtility(ISpecificationSet).new(
                 name=self.lpname,
                 title=self.title,
                 specurl=self.url,
                 summary=self.summary,
                 priority=SpecificationPriority.UNDEFINED,
-                status=self.lpstatus,
+                status=SpecificationStatus.NEW,
                 owner=zope_dev,
                 product=zope)
 
@@ -212,8 +219,17 @@ class ZopeSpec:
         lpspec.title = self.title
         lpspec.summary = self.summary
         lpspec.status = self.lpstatus
-        lpspec.goalstatus = self.lpgoalstatus
+        newgoalstatus = self.lpgoalstatus
+        if newgoalstatus != lpspec.goalstatus:
+            if newgoalstatus == SpecificationGoalStatus.PROPOSED:
+                lpspec.proposeGoal(None, zope_dev)
+            elif newgoalstatus == SpecificationGoalStatus.ACCEPTED:
+                lpspec.acceptBy(zope_dev)
+            elif newgoalstatus == SpecificationGoalStatus.DECLINED:
+                lpspec.declineBy(zope_dev)
         lpspec.delivery = self.lpdelivery
+        lpspec.updateLifecycleStatus(zope_dev)
+
         # set the assignee to the first author email with an LP account
         for author in sorted(self.authors):
             person = getUtility(IPersonSet).getByEmail(author)
@@ -225,7 +241,7 @@ class ZopeSpec:
 def iter_spec_urls(url=specroot):
     contents = urllib2.urlopen(url)
     soup = BeautifulSoup(contents)
-    contentdivs = soup('div', {'id': 'content'})
+    contentdivs = soup('div', {'class': 'content'})
     assert len(contentdivs) == 1
     contentdiv = contentdivs[0]
     listofspecs = contentdiv('ul')[0]
@@ -237,14 +253,14 @@ def iter_spec_urls(url=specroot):
         specanchor = anchors[0]
         href = specanchor['href']
         # broken wiki link => ignore
-        if 'editform?page=' in href:
+        if 'createform?page=' in href:
             continue
         title = getTextContent(specanchor)
         summary = ''.join([getTextContent(tag)
                                for tag in specanchor.nextSiblingGenerator()])
         yield ZopeSpec(href, title, summary.strip())
 
-        
+
 def main(argv):
     execute_zcml_for_scripts()
     ztm = initZopeless()

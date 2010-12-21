@@ -1,47 +1,136 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'alreadyInstalledMsg',
+    'begin',
+    'block_implicit_flushes',
+    'clear_current_connection_cache',
+    'commit',
+    'ConflictingTransactionManagerError',
+    'connect',
+    'convert_storm_clause_to_string',
+    'cursor',
+    'expire_from_cache',
+    'flush_database_caches',
+    'flush_database_updates',
+    'get_transaction_timestamp',
+    'ISOLATION_LEVEL_AUTOCOMMIT',
+    'ISOLATION_LEVEL_DEFAULT',
+    'ISOLATION_LEVEL_READ_COMMITTED',
+    'ISOLATION_LEVEL_SERIALIZABLE',
+    'quote',
+    'quote_like',
+    'quoteIdentifier',
+    'quote_identifier',
+    'RandomiseOrderDescriptor',
+    'reset_store',
+    'rollback',
+    'session_store',
+    'SQLBase',
+    'sqlvalues',
+    'StupidCache',
+    'ZopelessTransactionManager',
+    ]
 
-import psycopg
-import thread
-import warnings
-import time
+
 from datetime import datetime
+import re
+from textwrap import dedent
+import warnings
 
-from sqlos import SQLOS
-from sqlos.adapter import PostgresAdapter
-
-from sqlobject import connectionForURI, SQLObjectNotFound
+from lazr.restful.interfaces import IRepresentationCache
+import psycopg2
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+import pytz
 from sqlobject.sqlbuilder import sqlrepr
-from sqlobject.styles import Style
-
+import storm
+from storm.databases.postgres import compile as postgres_compile
+from storm.expr import (
+    compile as storm_compile,
+    State,
+    )
+from storm.locals import (
+    Store,
+    Storm,
+    )
+from storm.zope.interfaces import IZStorm
+import transaction
+from twisted.python.util import mergeFunctionMetadata
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.interfaces import ISQLBase
+from lp.services.propertycache import clear_property_cache
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
-           'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
-           'flush_database_updates', 'flush_database_caches', 'cursor',
-           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
-           'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache']
-
-# As per badly documented psycopg 1 constants
-AUTOCOMMIT_ISOLATION=0
-READ_COMMITTED_ISOLATION=1
-SERIALIZABLE_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
-
-# First, let's monkey-patch SQLObject a little, to stop its getID function from
-# returning None for security-proxied SQLObjects!
-import zope.security.proxy
-import sqlobject.main
-sqlobject.main.isinstance = zope.security.proxy.isinstance
+# Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
+# use SERIALIZABLE unless we override, but psycopg2 will not.
+ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
 
 
-class LaunchpadStyle(Style):
+# XXX 20080313 jamesh:
+# When quoting names in SQL statements, PostgreSQL treats them as case
+# sensitive.  Storm includes a list of reserved words that it
+# automatically quotes, which includes a few of our table names.  We
+# remove them here due to case mismatches between the DB and Launchpad
+# code.
+postgres_compile.remove_reserved_words(['language', 'section'])
+
+
+class StupidCache:
+    """A Storm cache that never evicts objects except on clear().
+
+    This class is basically equivalent to Storm's standard Cache class
+    with a very large size but without the overhead of maintaining the
+    LRU list.
+
+    This provides caching behaviour equivalent to what we were using
+    under SQLObject.
+    """
+
+    def __init__(self, size):
+        self._cache = {}
+
+    def clear(self):
+        self._cache.clear()
+
+    def add(self, obj_info):
+        if obj_info not in self._cache:
+            self._cache[obj_info] = obj_info.get_obj()
+
+    def remove(self, obj_info):
+        if obj_info in self._cache:
+            del self._cache[obj_info]
+            return True
+        return False
+
+    def set_size(self, size):
+        pass
+
+    def get_cached(self):
+        return self._cache.keys()
+
+
+def _get_sqlobject_store():
+    """Return the store used by the SQLObject compatibility layer."""
+    # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
+    # around a particularly convoluted circular import.
+    from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+
+class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
     """A SQLObject style for launchpad.
 
     Python attributes and database columns are lowercase.
@@ -69,175 +158,119 @@ class LaunchpadStyle(Style):
 
     # dsilvers: 20050322: If you take this method out; then RelativeJoin
     # instances in our SQLObject classes cause the following error:
-    # AttributeError: 'LaunchpadStyle' object has no attribute 'tableReference'
+    # AttributeError: 'LaunchpadStyle' object has no attribute
+    # 'tableReference'
     def tableReference(self, table):
         """Return the tablename mapped for use in RelativeJoin statements."""
         return table.__str__()
 
 
-class SQLBase(SQLOS):
-    """Base class to use instead of SQLObject/SQLOS.
-
-    Annoying hack to allow us to use SQLOS features in Zope, and plain
-    SQLObject outside of Zope.  ("Zope" in this case means the Zope 3 Component
-    Architecture, i.e. the basic suite of services should be accessible via
-    zope.component.getService)
-
-    By default, this will act just like SQLOS.  Use a
-    ZopelessTransactionManager object to disable all the tricksy
-    per-thread connection stuff that SQLOS does.
+class SQLBase(storm.sqlobject.SQLObjectBase):
+    """Base class emulating SQLObject for legacy database classes.
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
-    _randomiseOrder = config.randomise_select_results
+
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
 
-    def reset(self):
-        if not self._SO_createValues:
-            return
-        self._SO_writeLock.acquire()
-        try:
-            self.dirty = False
-            self._SO_createValues = {}
-        finally:
-            self._SO_writeLock.release()
+    def __init__(self, *args, **kwargs):
+        """Extended version of the SQLObjectBase constructor.
 
+        We we force use of the the master Store.
 
-class _ZopelessConnectionDescriptor(object):
-    """Descriptor for SQLObject._connection.
-
-    It provides per-thread transactions.  If implicitActivate is set (the
-    default), then these transactions will be created on-demand if they don't
-    already exist.  If implicitActivate is not set, then this will return None
-    for a thread until `_activate` is called, and after `_deactivate` is called.
-    """
-    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
-                 debug=False, implicitActivate=True, reconnect=False,
-                 isolation=DEFAULT_ISOLATION):
-        self.connectionURI = connectionURI
-        self.sqlosAdapter = sqlosAdapter
-        self.transactions = {}
-        self.debug = debug
-        self.implicitActivate = implicitActivate
-        self.reconnect = reconnect
-        self.alreadyActivated = False
-        self.isolation = isolation
-
-    def _reconnect(self):
-        first = True
-        conn = None
-        while True:
-            if first:
-                first = False
-            else:
-                # Sleep so that we aren't completely hammering things.
-                time.sleep(1)
-
-            # Be neat and tidy: try to close the remains of any previous
-            # attempt.
-            if conn is not None:
-                try:
-                    conn.close()
-                except psycopg.Error:
-                    pass
-                conn = None
-
-            # Make a connection, and a cursor.  If this fails, just loop and try
-            # again.
-            try:
-                conn = connectionForURI(self.connectionURI).makeConnection()
-                cur = conn.cursor()
-            except psycopg.Error:
-                continue
-
-            # Check that the cursor really works, making sure to close it
-            # afterwards.  If it doesn't, back to the top...
-            try:
-                try:
-                    cur.execute('SELECT 1;')
-                except psycopg.Error:
-                    continue
-            finally:
-                cur.close()
-
-            # Great!  We have a working connection.  We're done once we
-            # have reset the transaction isolation level
-            conn.set_isolation_level(self.isolation)
-            return conn
-
-    def _activate(self):
-        """Activate SQLBase._connection for the current thread."""
-        tid = thread.get_ident()
-        assert tid not in self.transactions, (
-            "Already activated the connection descriptor for this thread.")
-
-        # Build a connection (retrying if necessary)
-        if self.reconnect and self.alreadyActivated:
-            conn = self._reconnect()
-        else:
-            conn = connectionForURI(self.connectionURI).makeConnection()
-            conn.set_isolation_level(self.isolation)
-            self.alreadyActivated = True
-
-        # Wrap it in SQLOS's loving arms.
-        adapted = self.sqlosAdapter(conn)
-        adapted.debug = self.debug
-
-        # Create a Transaction, and put it in the transactions dict.
-        self.transactions[tid] = adapted.transaction()
-
-    def _deactivate(self):
-        """Deactivate SQLBase._connection for the current thread."""
-        del self.transactions[thread.get_ident()]
-
-    def __get__(self, inst, cls=None):
-        """Return Transaction object for this thread (if it exists) or None."""
-        tid = thread.get_ident()
-        if self.implicitActivate and tid not in self.transactions:
-            self._activate()
-        return self.transactions.get(thread.get_ident(), None)
-
-    def __set__(self, inst, value):
-        """Do nothing
-
-        This used to issue a warning but it seems to be spurious.
+        We refetch any parameters from different stores from the
+        correct master Store.
         """
-        pass
+        from canonical.launchpad.interfaces.lpstorm import IMasterStore
+        # Make it simple to write dumb-invalidators - initialised
+        # _cached_properties to a valid list rather than just-in-time creation.
+        self._cached_properties = []
+        store = IMasterStore(self.__class__)
+
+        # The constructor will fail if objects from a different Store
+        # are passed in. We need to refetch these objects from the correct
+        # master Store if necessary so the foreign key references can be
+        # constructed.
+        # XXX StuartBishop 2009-03-02 bug=336867: We probably want to remove
+        # this code - there are enough other places developers have to be
+        # aware of the replication # set boundaries. Why should
+        # Person(..., account=an_account) work but
+        # some_person.account = an_account fail?
+        for key, argument in kwargs.items():
+            argument = removeSecurityProxy(argument)
+            if not isinstance(argument, Storm):
+                continue
+            argument_store = Store.of(argument)
+            if argument_store is not store:
+                new_argument = store.find(
+                    argument.__class__, id=argument.id).one()
+                assert new_argument is not None, (
+                    '%s not yet synced to this store' % repr(argument))
+                kwargs[key] = new_argument
+
+        store.add(self)
+        try:
+            self._create(None, **kwargs)
+        except:
+            store.remove(self)
+            raise
 
     @classmethod
-    def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitActivate=True, reconnect=False,
-                isolation=DEFAULT_ISOLATION):
-        if isinstance(sqlClass.__dict__.get('_connection'),
-                _ZopelessConnectionDescriptor):
-            # ZopelessTransactionManager.__new__ should now prevent this from
-            # happening, so raise an error if it somehow does anyway.
-            raise RuntimeError, "Already installed _connection descriptor."
-        cls.sqlClass = sqlClass
-        descriptor = cls(
-                connectionURI, debug=debug, implicitActivate=implicitActivate,
-                reconnect=reconnect, isolation=isolation
-                )
-        sqlClass._connection = descriptor
-        return descriptor
+    def _get_store(cls):
+        from canonical.launchpad.interfaces.lpstorm import IStore
+        return IStore(cls)
 
-    @classmethod
-    def uninstall(cls):
-        # Explicitly close all connections we opened.
-        descriptor = cls.sqlClass.__dict__.get('_connection')
-        for trans in descriptor.transactions.itervalues():
-            try:
-                trans.rollback()
-            except psycopg.Error:
-                pass
-            trans._dbConnection._connection.close()
+    def __repr__(self):
+        # XXX jamesh 2008-05-09:
+        # This matches the repr() output for the sqlos.SQLOS class.
+        # A number of the doctests rely on this formatting.
+        return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
-        # Remove the _connection descriptor.  This assumes there was no
-        # _connection in this particular class to start with (which is true for
-        # SQLBase, but wouldn't be true for SQLOS)
-        del cls.sqlClass._connection
+    def destroySelf(self):
+        from canonical.launchpad.interfaces.lpstorm import IMasterObject
+        my_master = IMasterObject(self)
+        if self is my_master:
+            super(SQLBase, self).destroySelf()
+        else:
+            my_master.destroySelf()
+
+    def __eq__(self, other):
+        """Equality operator.
+
+        Objects compare equal if:
+            - They are the same instance, or
+            - They have the same class and id, and the id is not None.
+
+        These rules allows objects retrieved from different stores to
+        compare equal. The 'is' comparison is to support newly created
+        objects that don't yet have an id (and by definition only exist
+        in the Master store).
+        """
+        naked_self = removeSecurityProxy(self)
+        naked_other = removeSecurityProxy(other)
+        return (
+            (naked_self is naked_other)
+            or (naked_self.__class__ == naked_other.__class__
+                and naked_self.id is not None
+                and naked_self.id == naked_other.id))
+
+    def __ne__(self, other):
+        """Inverse of __eq__."""
+        return not (self == other)
+
+    def __storm_flushed__(self):
+        """Invalidate the web service cache."""
+        cache = getUtility(IRepresentationCache)
+        cache.delete(self)
+
+    def __storm_invalidated__(self):
+        """Flush cached properties."""
+        # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
+        # tested, but the entire test suite blows up awesomely if it's broken.
+        # It's entirely unclear where tests for this should be.
+        clear_property_cache(self)
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
@@ -249,117 +282,206 @@ class ConflictingTransactionManagerError(Exception):
 
 
 class ZopelessTransactionManager(object):
-    """Object to use in scripts and tests if you want transactions.
-
-    This behaviour used to be in SQLBase, but as more methods and
-    attributes became needed, a new class was created to avoid
-    namespace pollution.
-    """
+    """Compatibility shim for initZopeless()"""
 
     _installed = None
-    alreadyInited = False
+    _CONFIG_OVERLAY_NAME = 'initZopeless config overlay'
 
-    def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitBegin=True, isolation=DEFAULT_ISOLATION):
+    def __init__(self):
+        raise AssertionError("ZopelessTransactionManager should not be "
+                             "directly instantiated.")
+
+    @classmethod
+    def _get_zopeless_connection_config(self, dbname, dbhost):
+        # This method exists for testability.
+
+        # This is only used by scripts, so we must connect to the read-write
+        # DB here -- that's why we use rw_main_master directly.
+        main_connection_string = dbconfig.rw_main_master
+
+        # Override dbname and dbhost in the connection string if they
+        # have been passed in.
+        if dbname is not None:
+            main_connection_string = re.sub(
+                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
+        else:
+            match = re.search(r'dbname=(\S*)', main_connection_string)
+            if match is not None:
+                dbname = match.group(1)
+
+        if dbhost is not None:
+            main_connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
+        else:
+            match = re.search(r'host=(\S*)', main_connection_string)
+            if match is not None:
+                dbhost = match.group(1)
+        return main_connection_string, dbname, dbhost
+
+    @classmethod
+    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
+
+        main_connection_string, dbname, dbhost = (
+            cls._get_zopeless_connection_config(dbname, dbhost))
+
+        assert dbuser is not None, '''
+            dbuser is now required. All scripts must connect as unique
+            database users.
+            '''
+
+        isolation_level = {
+            ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
+            ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
+            ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            rw_main_master: %(main_connection_string)s
+            isolation_level: %(isolation_level)s
+            """ % vars())
+
+        if dbuser:
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
+                """ % vars())
+
         if cls._installed is not None:
-            if (cls._installed.connectionURI != connectionURI or
-                cls._installed.sqlClass != sqlClass or
-                cls._installed.debug != debug):
+            if cls._config_overlay != overlay:
                 raise ConflictingTransactionManagerError(
                         "A ZopelessTransactionManager with different "
-                        "settings is already installed"
-                )
-            # There's an identical ZopelessTransactionManager already installed,
-            # so return that one, but also emit a warning.
-            warnings.warn(alreadyInstalledMsg, stacklevel=2)
-            return cls._installed
-        cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
-                                        implicitBegin, isolation)
+                        "settings is already installed")
+            # There's an identical ZopelessTransactionManager already
+            # installed, so return that one, but also emit a warning.
+            warnings.warn(alreadyInstalledMsg, stacklevel=3)
+        else:
+            config.push(cls._CONFIG_OVERLAY_NAME, overlay)
+            cls._config_overlay = overlay
+            cls._dbname = dbname
+            cls._dbhost = dbhost
+            cls._dbuser = dbuser
+            cls._isolation = isolation
+            cls._reset_stores()
+            cls._installed = cls
         return cls._installed
 
-    def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
-                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
-        # For some reason, Python insists on calling __init__ on anything
-        # returned from __new__, even if it's not a newly constructed object
-        # (i.e. type.__call__ calls __init__, rather than object.__new__ like
-        # you'd expect).
-        if self.alreadyInited:
-            return
-        self.alreadyInited = True
+    @staticmethod
+    def _reset_stores():
+        """Reset the active stores.
 
-        # XXX: Importing a module-global and assigning it as an instance
-        #      attribute smells funny.  Why not just use transaction.manager
-        #      instead of self.manager?
-        from transaction import manager
-        self.manager = manager
-        desc = _ZopelessConnectionDescriptor.install(
-            connectionURI, debug=debug, implicitActivate=implicitBegin,
-            reconnect=not implicitBegin, isolation=isolation)
-        self.sqlClass = sqlClass
-        self.desc = desc
-        # The next two instance variables are used for the check in __new__
-        self.connectionURI = connectionURI
-        self.debug = debug
-        self.implicitBegin = implicitBegin
-        if self.implicitBegin:
-            self.begin()
+        This is required for connection setting changes to be made visible.
+        """
+        for name, store in getUtility(IZStorm).iterstores():
+            connection = store._connection
+            if connection._state == storm.database.STATE_CONNECTED:
+                if connection._raw_connection is not None:
+                    connection._raw_connection.close()
 
-    def uninstall(self):
-        _ZopelessConnectionDescriptor.uninstall()
-        # We delete self.sqlClass to make sure this instance isn't still
-        # used after uninstall was called, which is a little bit of a hack.
-        self.manager.free(self.manager.get())
-        del self.sqlClass
-        self.__class__._installed = None
+                # This method assumes that calling transaction.abort() will
+                # call rollback() on the store, but this is no longer the
+                # case as of jamesh's fix for bug 230977; Stores are not
+                # registered with the transaction manager until they are
+                # used. While storm doesn't provide an API which does what
+                # we want, we'll go under the covers and emit the
+                # register-transaction event ourselves. This method is
+                # only called by the test suite to kill the existing
+                # connections so the Store's reconnect with updated
+                # connection settings.
+                store._event.emit('register-transaction')
 
-    def _dm(self):
-        assert hasattr(self, 'sqlClass'), 'initZopeless not called'
-        return self.sqlClass._connection._dm
+                connection._raw_connection = None
+                connection._state = storm.database.STATE_DISCONNECTED
+        transaction.abort()
 
-    def begin(self):
-        if not self.implicitBegin:
-            self.desc._activate()
-        clear_current_connection_cache()
-        txn = self.manager.begin()
-        txn.join(self._dm())
-        self.sqlClass._connection._connection.set_isolation_level(
-                self.desc.isolation
-                )
+    @classmethod
+    def uninstall(cls):
+        """Uninstall the ZopelessTransactionManager.
 
-    def commit(self):
-        self.manager.get().commit()
+        This entails removing the config overlay and resetting the store.
+        """
+        assert cls._installed is not None, (
+            "ZopelessTransactionManager not installed")
+        config.pop(cls._CONFIG_OVERLAY_NAME)
+        cls._reset_stores()
+        cls._installed = None
 
-        # We always remove the existing transaction & connection, for
-        # simplicity.  SQLObject does connection pooling, and we don't have any
-        # indication that reconnecting every transaction would be a performance
-        # problem anyway.
-        self.desc._deactivate()
+    @classmethod
+    def set_isolation_level(cls, isolation):
+        """Set the transaction isolation level.
 
-        if self.implicitBegin:
-            self.begin()
+        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
+        ISOLATION_LEVEL_READ_COMMITTED or
+        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
+        must be done before any other queries are issued in the
+        current transaction, this method automatically issues a
+        rollback to ensure this is the case.
+        """
+        assert cls._installed is not None, (
+            "ZopelessTransactionManager not installed")
+        cls.uninstall()
+        cls.initZopeless(cls._dbname, cls._dbhost, cls._dbuser, isolation)
 
-    def abort(self):
-        objects = list(self._dm().objects)
-        self.manager.get().abort()
-        for obj in objects:
-            obj.reset()
-            obj.expire()
-        self.desc._deactivate()
-        if self.implicitBegin:
-            self.begin()
+    @staticmethod
+    def conn():
+        store = _get_sqlobject_store()
+        # Use of the raw connection will not be coherent with Storm's
+        # cache.
+        connection = store._connection
+        connection._ensure_connected()
+        return connection._raw_connection
+
+    @staticmethod
+    def begin():
+        """Begin a transaction."""
+        transaction.begin()
+
+    @staticmethod
+    def commit():
+        """Commit the current transaction."""
+        transaction.commit()
+
+    @staticmethod
+    def abort():
+        """Abort the current transaction."""
+        transaction.abort()
+
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
-    """Clear SQLObject's object cache for the current connection."""
-    # XXX: There is a different hack for (I think?) similar reasons in
-    #      canonical.publication.  This should probably share code with
-    #      that one.
-    #        - Andrew Bennetts, 2005-02-01
+    """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.
+    """
+    _get_sqlobject_store().invalidate()
 
-    # Don't break if _connection is a FakeZopelessConnectionDescriptor
-    if getattr(SQLBase._connection, 'cache', None) is not None:
-        for c in SQLBase._connection.cache.allSubCaches():
-            c.clear()
+
+def expire_from_cache(obj):
+    """Expires a single object from the SQLObject cache.
+    SQLObject compatibility - DEPRECATED."""
+    _get_sqlobject_store().invalidate(obj)
+
+
+def get_transaction_timestamp():
+    """Get the timestamp for the current transaction on the MAIN DEFAULT
+    store. DEPRECATED - if needed it should become a method on the store.
+    """
+    timestamp = _get_sqlobject_store().execute(
+        "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'").get_one()[0]
+    return timestamp.replace(tzinfo=pytz.timezone('UTC'))
 
 
 def quote(x):
@@ -404,19 +526,29 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
+
+    This function also special cases set objects, which SQLObject's
+    sqlrepr() doesn't know how to handle.
+
+    >>> quote(set([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    else:
-        return sqlrepr(x, 'postgres')
+    elif isinstance(x, set):
+        # SQLObject can't cope with sets, so convert to a list, which it
+        # /does/ know how to handle.
+        x = list(x)
+    return sqlrepr(x, 'postgres')
+
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
-    TODO: Including the single quotes was a stupid decision.
-    -- StuartBishop 2004/11/24
+    XXX: StuartBishop 2004-11-24:
+    Including the single quotes was a stupid decision.
 
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the
@@ -447,8 +579,9 @@ def quote_like(x):
 
     """
     if not isinstance(x, basestring):
-        raise TypeError, 'Not a string (%s)' % type(x)
+        raise TypeError('Not a string (%s)' % type(x))
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
 
 def sqlvalues(*values, **kwvalues):
     """Return a tuple of converted sql values for each value in some_tuple.
@@ -483,17 +616,17 @@ def sqlvalues(*values, **kwvalues):
     ...
     TypeError: Use either positional or keyword values with sqlvalue.
 
-    """
+    """ # ' <- fix syntax highlighting
     if (values and kwvalues) or (not values and not kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
     if values:
-        return tuple([quote(item) for item in values])
+        return tuple(quote(item) for item in values)
     elif kwvalues:
-        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+        return dict((key, quote(value)) for key, value in kwvalues.items())
 
 
-def quoteIdentifier(identifier):
+def quote_identifier(identifier):
     r'''Quote an identifier, such as a table name.
 
     In SQL, identifiers are quoted using " rather than ' which is reserved
@@ -512,8 +645,58 @@ def quoteIdentifier(identifier):
     '''
     return '"%s"' % identifier.replace('"','""')
 
+
+quoteIdentifier = quote_identifier # Backwards compatibility for now.
+
+
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
+
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
+
+
 def flush_database_updates():
-    """Flushes all pending database updates for the current connection.
+    """Flushes all pending database updates.
 
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
@@ -535,15 +718,13 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    # XXX: turn that comment into a doctest
-    #        - Andrew Bennetts, 2005-02-16
-    # https://launchpad.ubuntu.com/malone/bugs/452
-    #        - Brad Bollenbach, 2005-04-20
-    for object in list(SQLBase._connection._dm.objects):
-        object.syncUpdate()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
+
 
 def flush_database_caches():
-    """Flush all cached values from the database for the current connection.
+    """Flush all database caches.
 
     SQLObject caches field values from the database in SQLObject
     instances.  If SQL statements are issued that change the state of
@@ -554,141 +735,137 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    for cache in SQLBase._connection.cache.allSubCaches():
-        # iterate over all the live objects
-        for obj in cache.cache.values():
-            try:
-                obj.sync()
-            except SQLObjectNotFound:
-                obj.expire()
-        # update all non-expired sqlobjects in the expiredCache dict.
-        for value in cache.expiredCache.values():
-            obj = value()
-            if obj is None or obj._expired:
-                continue
-            try:
-                obj.sync()
-            except SQLObjectNotFound:
-                obj.expire()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
+        store.invalidate()
+
+
+def block_implicit_flushes(func):
+    """A decorator that blocks implicit flushes on the main store."""
+    def block_implicit_flushes_decorator(*args, **kwargs):
+        from canonical.launchpad.webapp.interfaces import DisallowedStore
+        try:
+            store = _get_sqlobject_store()
+        except DisallowedStore:
+            return func(*args, **kwargs)
+        store.block_implicit_flushes()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            store.unblock_implicit_flushes()
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
+
+
+def reset_store(func):
+    """Function decorator that resets the main store."""
+    def reset_store_decorator(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _get_sqlobject_store().reset()
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
-# XXX: Make these use and work with Zope 3's transaction machinery instead!
-#        - Andrew Bennetts, 2005-02-11
 
 def begin():
     """Begins a transaction."""
-    ZopelessTransactionManager._installed.begin()
+    transaction.begin()
+
 
 def rollback():
-    ZopelessTransactionManager._installed.abort()
+    transaction.abort()
+
 
 def commit():
-    ZopelessTransactionManager._installed.commit()
+    transaction.commit()
 
-def connect(user, dbname=None):
-    """Return a fresh DB-API connecction to the database.
+
+def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
+    """Return a fresh DB-API connection to the MAIN MASTER database.
+
+    DEPRECATED - if needed, this should become a method on the Store.
 
     Use None for the user to connect as the default PostgreSQL user.
     This is not the default because the option should be rarely used.
 
     Default database name is the one specified in the main configuration file.
     """
-    con_str = 'dbname=%s' % (dbname or config.dbname)
-    if user:
-        con_str += ' user=%s' % user
-    if config.dbhost:
-        con_str += ' host=%s' % config.dbhost
-    return psycopg.connect(con_str)
-
-def cursor():
-    '''Return a cursor from the current database connection.
-
-    This is useful for code that needs to issue database queries
-    directly rather than using the SQLObject interface
-    '''
-    return SQLBase._connection._connection.cursor()
+    con = psycopg2.connect(connect_string(user, dbname))
+    con.set_isolation_level(isolation)
+    return con
 
 
-class FakeZopelessTransactionManager:
-    # XXX: There really should be a formal interface that both this and
-    # ZopelessTransactionManager implement.
-    #   -- Andrew Bennetts, 2005-07-12
+def connect_string(user, dbname=None):
+    """Return a PostgreSQL connection string.
 
-    def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
-        assert ZopelessTransactionManager._installed is None
-        ZopelessTransactionManager._installed = self
-        self.desc = FakeZopelessConnectionDescriptor.install(None)
-        self.implicitBegin = implicitBegin
-        if self.implicitBegin:
-            self.begin()
-
-    @classmethod
-    def install(cls):
-        fztm = cls()
-        ZopelessTransactionManager._installed = fztm
-        FakeZopelessConnectionDescriptor.install(None)
-        return fztm
-
-    def uninstall(self):
-        assert ZopelessTransactionManager._installed is self
-        FakeZopelessConnectionDescriptor.uninstall()
-        ZopelessTransactionManager._installed = None
-
-    # XXX: Ideally I'd be able to re-use some of the ZopelessTransactionManager
-    #      implementation of begin, commit and abort.
-    #   -- Andrew Bennetts, 2005-07-12
-    def begin(self):
-        if not self.implicitBegin:
-            self.desc._activate()
-        self.desc.begin()
-
-    def commit(self, sub=False):
-        self.desc.commit()
-        self.desc._deactivate()
-        if self.implicitBegin:
-            self.begin()
-
-    def abort(self, sub=False):
-        self.desc.rollback()
-        self.desc._deactivate()
-        if self.implicitBegin:
-            self.begin()
-
-
-class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
-    """A helper class for testing.
-
-    Use this if you want to know if commit or rollback was called.
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
     """
-    _obsolete = True
-    activated = False
-    begun = False
-    rolledback = False
-    committed = False
+    from canonical import lp
+    # We start with the config string from the config file, and overwrite
+    # with the passed in dbname or modifications made by db_options()
+    # command line arguments. This will do until db_options gets an overhaul.
+    con_str_overrides = []
+    # We must connect to the read-write DB here, so we use rw_main_master
+    # directly.
+    con_str = dbconfig.rw_main_master
+    assert 'user=' not in con_str, (
+            'Connection string already contains username')
+    if user is not None:
+        con_str_overrides.append('user=%s' % user)
+    if lp.dbhost is not None:
+        con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
+        con_str_overrides.append('host=%s' % lp.dbhost)
+    if dbname is None:
+        dbname = lp.get_dbname() # Note that lp.dbname may be None.
+    if dbname is not None:
+        con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
+        con_str_overrides.append('dbname=%s' % dbname)
 
-    def __get__(self, inst, cls=None):
-        return self
-
-    def _activate(self):
-        assert not self.activated
-        self.activated = True
-
-    def _deactivate(self):
-        assert self.activated
-        self.activated = False
-
-    def begin(self):
-        assert self.activated
-        self.begun = True
-
-    def rollback(self):
-        assert self.activated
-        self.rolledback = True
-
-    def commit(self):
-        assert self.activated
-        self.committed = True
+    con_str = ' '.join([con_str] + con_str_overrides)
+    return con_str
 
 
+class cursor:
+    """A DB-API cursor-like object for the Storm connection.
+
+    DEPRECATED - use of this class is deprecated in favour of using
+    Store.execute().
+    """
+
+    def __init__(self):
+        self._connection = _get_sqlobject_store()._connection
+        self._result = None
+
+    def execute(self, query, params=None):
+        self.close()
+        if isinstance(params, dict):
+            query = query % sqlvalues(**params)
+        elif params is not None:
+            query = query % sqlvalues(*params)
+        self._result = self._connection.execute(query)
+
+    @property
+    def rowcount(self):
+        return self._result._raw_cursor.rowcount
+
+    def fetchone(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_one()
+
+    def fetchall(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_all()
+
+    def close(self):
+        if self._result is not None:
+            self._result.close()
+            self._result = None
+
+
+def session_store():
+    """Return a store connected to the session DB."""
+    return getUtility(IZStorm).get('session', 'launchpad-session:')

@@ -1,0 +1,180 @@
+= Publisher Configuration Provider =
+
+The config module has a function to provide a modified publisher configuration
+that provides the right paths for its publication according to the given
+archive.
+
+We will use a helper function for dumping publisher configurations.
+
+    >>> config_attributes = [
+    ...     'distroroot',
+    ...     'archiveroot',
+    ...     'poolroot',
+    ...     'distsroot',
+    ...     'overrideroot',
+    ...     'cacheroot',
+    ...     'miscroot',
+    ...     'temproot',
+    ... ]
+
+    >>> def dump_config(config):
+    ...     for attr_name in config_attributes:
+    ...         print '%s: %s' % (attr_name, getattr(config, attr_name))
+
+
+== Primary ==
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+    >>> from lp.archivepublisher.config import getPubConfig
+    >>> primary_config = getPubConfig(ubuntutest.main_archive)
+
+    >>> dump_config(primary_config)
+    distroroot:      /var/tmp/archive
+    archiveroot:     /var/tmp/archive/ubuntutest
+    poolroot:        /var/tmp/archive/ubuntutest/pool
+    distsroot:       /var/tmp/archive/ubuntutest/dists
+    overrideroot:    /var/tmp/archive/ubuntutest-overrides
+    cacheroot:       /var/tmp/archive/ubuntutest-cache
+    miscroot:        /var/tmp/archive/ubuntutest-misc
+    temproot:        /var/tmp/archive/ubuntutest-temp
+
+
+== PPAs ==
+
+Adjust Celso's PPA to point to a configured distribution and built its
+publisher configuration.
+
+    >>> # cprov 20061127: We should *never* be able to change a PPA
+    >>> # distribution, however 'ubuntu' is not prepared for publication, thus
+    >>> # we have to override the PPA to 'ubuntutest' in order to perform the
+    >>> # tests.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_archive = cprov.archive
+    >>> cprov_archive.distribution = ubuntutest
+
+    >>> ppa_config = getPubConfig(cprov_archive)
+
+The base Archive publication location is set in the current Launchpad
+configuration file:
+
+    >>> from canonical.config import config
+    >>> ppa_config.distroroot == config.personalpackagearchive.root
+    True
+
+A PPA repository topology will follow:
+
+<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
+
+And some paths are not used for PPA workflow, so they are set to
+None, so they won't get created:
+
+    >>> dump_config(ppa_config)
+    distroroot:      /var/tmp/ppa.test/
+    archiveroot:     /var/tmp/ppa.test/cprov/ppa/ubuntutest
+    poolroot:        /var/tmp/ppa.test/cprov/ppa/ubuntutest/pool
+    distsroot:       /var/tmp/ppa.test/cprov/ppa/ubuntutest/dists
+    overrideroot:    None
+    cacheroot:       None
+    miscroot:        None
+    temproot:        /var/tmp/archive/ubuntutest-temp
+
+There is a separate location for private PPAs that is used if the
+archive is marked as private:
+
+    >>> (config.personalpackagearchive.private_root !=
+    ...  config.personalpackagearchive.root)
+    True
+
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name='myprivateppa',
+    ...     distribution=cprov_archive.distribution)
+    >>> cprov_private_ppa.private = True
+    >>> cprov_private_ppa.buildd_secret = "secret"
+    >>> p3a_config = getPubConfig(cprov_private_ppa)
+
+    >>> (p3a_config.distroroot ==
+    ...  config.personalpackagearchive.private_root)
+    True
+
+    >>> dump_config(p3a_config)
+    distroroot:      /var/tmp/ppa
+    archiveroot:     /var/tmp/ppa/cprov/myprivateppa/ubuntutest
+    poolroot:        /var/tmp/ppa/cprov/myprivateppa/ubuntutest/pool
+    distsroot:       /var/tmp/ppa/cprov/myprivateppa/ubuntutest/dists
+    overrideroot:    None
+    cacheroot:       None
+    miscroot:        None
+    temproot:        /var/tmp/archive/ubuntutest-temp
+
+
+== Partner ==
+
+The publisher config for PARTNER contains only 'partner' in its
+components.  This prevents non-partner being published in the partner
+archive.
+
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'partner')
+
+    >>> partner_config = getPubConfig(partner_archive)
+
+    >>> dump_config(partner_config)
+    distroroot:      /var/tmp/archive
+    archiveroot:     /var/tmp/archive/ubuntutest-partner
+    poolroot:        /var/tmp/archive/ubuntutest-partner/pool
+    distsroot:       /var/tmp/archive/ubuntutest-partner/dists
+    overrideroot:    None
+    cacheroot:       None
+    miscroot:        None
+    temproot:        /var/tmp/archive/ubuntutest-temp
+
+
+== DEBUG ==
+
+The publisher configuration for DEBUG archives points to directories
+besides PRIMARY repository ones, but the distribution part is
+modified to be clearly different than the PRIMARY one.
+
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> debug_archive = getUtility(IArchiveSet).new(
+    ...     purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
+    ...     distribution=ubuntutest)
+
+    >>> debug_config = getPubConfig(debug_archive)
+
+    >>> dump_config(debug_config)
+    distroroot:      /var/tmp/archive
+    archiveroot:     /var/tmp/archive/ubuntutest-debug
+    poolroot:        /var/tmp/archive/ubuntutest-debug/pool
+    distsroot:       /var/tmp/archive/ubuntutest-debug/dists
+    overrideroot:    None
+    cacheroot:       None
+    miscroot:        None
+    temproot:        /var/tmp/archive/ubuntutest-temp
+
+
+== COPY ==
+
+In the case of copy archives (used for rebuild testing) the archiveroot
+is of the form distroroot/distroname-archivename/distroname
+
+    >>> copy_archive = getUtility(IArchiveSet).new(
+    ...     purpose=ArchivePurpose.COPY, owner=ubuntutest.owner,
+    ...     distribution=ubuntutest, name="rebuildtest99")
+
+    >>> copy_config = getPubConfig(copy_archive)
+
+    >>> dump_config(copy_config)
+    distroroot:      /var/tmp/archive
+    archiveroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest
+    poolroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/pool
+    distsroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/dists
+    overrideroot:    /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-overrides
+    cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
+    miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
+    temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp

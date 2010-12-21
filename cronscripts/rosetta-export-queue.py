@@ -1,42 +1,24 @@
-#!/usr/bin/python
-# Copyright 2005 Canonical Ltd. All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
-import logging
-import sys
-from optparse import OptionParser
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
+from lp.translations.scripts.po_export_queue import process_queue
+from lp.services.scripts.base import LaunchpadCronScript
 
-from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.scripts.po_export_queue import process_queue
 
-def main(args):
-    parser = OptionParser()
-    logger_options(parser, logging.WARNING)
-    options, args = parser.parse_args()
-    logger = logger_from_options(options)
+class RosettaExportQueue(LaunchpadCronScript):
+    def main(self):
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
+        process_queue(self.txn, self.logger)
 
-    lockfile_path = '/var/lock/rosetta-export-queue.lock'
-    lockfile = LockFile(lockfile_path, logger=logger)
-
-    try:
-        lockfile.acquire()
-    except OSError:
-        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
-        return 0
-
-    try:
-        ztm = initZopeless()
-        execute_zcml_for_scripts()
-        process_queue(ztm, logger)
-        logger.info('Done.')
-        return 0
-    finally:
-        lockfile.release()
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    script = RosettaExportQueue('rosetta-export-queue', dbuser='poexport')
+    script.lock_and_run()
 

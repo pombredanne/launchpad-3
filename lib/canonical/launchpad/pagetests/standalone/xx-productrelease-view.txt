@@ -1,7 +1,0 @@
-Check that we can view the productrelease.
-
-  >>> print http(r"""
-  ... GET /products/firefox/milestones/0.9 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

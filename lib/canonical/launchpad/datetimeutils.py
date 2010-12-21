@@ -1,9 +1,14 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Various functions that are useful for handling dates/datetimes."""
 
 __metaclass__ = type
 
-from datetime import date, timedelta
+from datetime import (
+    date,
+    timedelta,
+    )
 
 
 def make_mondays_between(start, end):

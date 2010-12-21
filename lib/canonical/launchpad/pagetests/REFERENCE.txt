@@ -1,0 +1,242 @@
+Kiko's wonderfully incomplete testbrowser reference manual for dummies
+======================================================================
+
+Opening pages:
+
+    >>> browser.open('http://foo.launchpad.dev/bar')
+
+    >>> anon_browser.open('http://launchpad.dev/no-such-url')
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
+Authentication:
+
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+branding')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Manipulating content:
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    <BLANKLINE>
+    <html xmlns="http://www.w3.org/1999/xhtml"...
+    ...
+    Some page content here
+    ...
+
+    >>> "foo" in browser.contents
+    True
+
+
+Debugging
+---------
+
+If you need to debug a pagetest, you can use the convenient 'stop()' method
+exported into pagetest globals.  This is essentially the same as importing pdb
+and calling pdb.set_trace(), but it's less typing.
+
+The interesting thing here is that once stopped, you can fire up your browser
+and see the page exactly as the pagetest sees it, by doing this:
+
+    * Add a stop() call at the point you want to look at
+    * Go to a different shell and type: make LPCONFIG=testrunner run_all
+    * Once the appserver starts up, hit your page with your browser
+
+The only gotcha is that you should stop the second appserver before you
+continue in your pagetest because once the testrunner db is wiped, your
+appserver will be unhappy.
+
+
+Parsing content
+---------------
+
+Parsing specific sections of pages:
+
+    >>> portlet = find_portlet(browser.contents, "Portlet Title")
+    >>> print extract_text(portlet)
+    Portlet Title
+    Contents
+
+    >>> main_content = find_main_content(browser.contents)
+    >>> print extract_text(main_content)
+    XXX
+
+    >>> get_feedback_messages(browser.contents)
+    [u"There's no person with the name or email address 'invalid-assignee'."]
+
+Printing text from images:
+
+    >>> html_string = """
+    ... <p>Here's some text <img src="/@@/foo" title="with an image"/>.</p>
+    ... """
+    >>> print extract_text(html_string, extract_image_text=True)
+    Here's some text with an image.
+
+    >>> html_string = """<img src="/@@/bar" alt="Alt text works too." />"""
+    >>> print extract_text(html_string, extract_image_text=True)
+    Alt text works too.
+
+Printing tabs, action items and comments:
+
+    >>> print_tab_links()
+    XXX
+    >>> print_action_links()
+    XXX
+    >>> print_comments()
+    XXX
+
+Finding contents by element class or IDs:
+
+    >>> tags = find_tags_by_class(browser.contents, 'warning message')
+    >>> print extract_text(tags[0])
+    You did something bad
+    >>> print extract_text(tags[1])
+    Two bad things in fact
+
+    >>> tag = first_tag_by_class(browser.contents, 'warning message')
+    >>> print extract_text(tag)
+    You did something bad
+
+    >>> tag = find_tag_by_id(browser.contents, 'my-div')
+    >>> print extract_text(tags)
+    That div contained bogus information
+    >>> print tag.renderContent()
+    <b>That div contained bogus information.</b>
+
+    >>> subtag = tag.find('a', text="Go to bar")
+    >>> subtag['href']
+    '/bar'
+
+Using BeautifulSoup in all its glory:
+
+    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+    >>> anon_browser.open("http://launchpad.dev/~name16")
+    >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
+    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> print soup.renderContents()
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
+
+    >>> strainer = SoupStrainer({'class': ['error']})
+    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> for tag in soup:
+    ...     print extract_text(tag)
+    Quantities must be greater than or equal 0.
+
+
+Links
+-----
+
+Manipulating links:
+
+    >>> link = browser.getLink('Link text')
+    >>> link.url
+    '/foo'
+    >>> link.text
+    'Link text'
+
+    >>> link = browser.getLink(url='/foo')
+
+    >>> second_foo_link = browser.getLink(url='/foo', index=1)
+    XXX: you'd love this to work, right? Well get bug 145746 fixed!
+
+    >>> browser.getLink(url='/no-such-link')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> link.click()
+    >>> browser.url
+    'http://where-you-went/'
+    >>> browser.title
+    'Bogus titles R us'
+
+Going back:
+
+    >>> link.goBack()
+    >>> link.goBack(2)
+
+Extracting link pointers:
+
+    >>> extract_link_from_tag(link)
+    u'/foo'
+    >>> extract_link_from_tag(link, 'http://launchpad.dev/blah/blah/')
+    u'http://launchpad.dev/foo'
+
+
+Form Controls
+-------------
+
+Basics:
+
+    >>> control = browser.getControl('Label')
+    >>> control = browser.getControl(name='field.foo')
+    >>> control = browser.getControl(name='no-such-name')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> browser.getControl('Button label').click()
+    >>> browser.url
+    'http://where-you-went-after-posting/'
+
+Form control attributes:
+
+    >>> browser.getControl('Checkbox label').selected
+    True
+
+    >>> browser.getControl('Input label').value
+    'text in my input'
+
+    >>> browser.getControl(name='field.multiple_checkboxes').value
+    ['GPL', 'BSD']
+
+    >>> browser.getControl(name='field.select_control').displayValue
+    ['Option one']
+
+    >>> browser.getControl(name='field.radiobuttons').value = ['BSD']
+
+Posting without submit buttons:
+
+    >>> browser.getControl("Text field").value = "something"
+    >>> browser.getForm(id="text_form").submit()
+    >>> browser.url
+    'http://where-you-went-after-posting/'
+
+
+Committing transactions
+-----------------------
+
+The transaction module is already imported into your pagetest's globals, so
+just do:
+
+
+    >>> transaction.commit()
+
+You do not need to be logged in to do this.
+
+
+Gotchas
+-------
+
+If you get:
+
+    AttributeError: 'thread._local' object has no attribute 'interaction'
+
+This means you are trying to getUtility() and aren't logged in.
+Use something like this:
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+
+If you get:
+
+    AssertionError: newInteraction called while another interaction is
+    active.
+
+This means you forgot to log out:
+
+    >>> logout()

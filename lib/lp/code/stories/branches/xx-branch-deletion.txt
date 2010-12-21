@@ -1,0 +1,115 @@
+= Deleting branches =
+
+Branches that have no revisions or links to other Launchpad objects
+can be deleted.  The main use for this is to allow users to delete
+branches that have been created in error.
+
+    >>> from lp.code.enums import BranchType
+    >>> login(ANONYMOUS)
+    >>> alice = factory.makePerson(name="alice", password="test",
+    ...                            email="alice@example.com")
+    >>> product = factory.makeProduct(
+    ...     name='earthlynx', displayname="Earth Lynx", owner=alice)
+    >>> branch = factory.makeProductBranch(
+    ...     product=product, branch_type=BranchType.HOSTED)
+    >>> productseries = factory.makeProductSeries(
+    ...     product=product, branch=branch)
+    >>> login_person(alice)
+    >>> product.development_focus = productseries
+    >>> logout()
+
+    >>> browser = setupBrowser(auth="Basic alice@example.com:test")
+    >>> browser.open('http://code.launchpad.dev/earthlynx')
+    >>> browser.getLink("Register a branch").click()
+    >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
+    >>> browser.getControl('Name').value = 'to-delete'
+    >>> browser.getControl('Register Branch').click()
+    >>> print browser.title
+    to-delete : Code : Earth Lynx
+
+The newly created branch has an action 'Delete branch'.
+
+    >>> delete_link = browser.getLink('Delete branch')
+    >>> print delete_link.url
+    http://code.launchpad.dev/~alice/earthlynx/to-delete/+delete
+
+When the user clicks on the link, they are informed what will happen if they
+delete the branch.
+
+    >>> delete_link.click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Delete branch
+    Earth Lynx...
+    Branch deletion is permanent.
+    or Cancel
+
+Once the branch has been deleted, the user is taken back to the code
+listing for deleted branch's product, and a message is shown saying that
+the branch has been deleted.
+
+    >>> browser.getControl('Delete').click()
+    >>> print browser.url
+    http://code.launchpad.dev/earthlynx
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Branch ~alice/earthlynx/to-delete deleted...
+
+If the branch is junk, then the user is taken back to the code listing for
+the deleted branch's owner.
+
+    >>> browser.open('http://code.launchpad.dev/~alice')
+    >>> browser.getLink("Register a branch").click()
+    >>> browser.getControl('Hosted').click()
+    >>> browser.getControl('Name').value = 'to-delete'
+    >>> browser.getControl('Register Branch').click()
+    >>> browser.getLink('Delete branch').click()
+    >>> browser.getControl('Delete').click()
+    >>> print browser.url
+    http://code.launchpad.dev/~alice
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Branch ~alice/+junk/to-delete deleted...
+
+Branches that are stacked upon cannot be deleted.
+
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> stacked_upon = factory.makeAnyBranch()
+    >>> stacked = factory.makeAnyBranch(stacked_on=stacked_upon)
+    >>> branch_location = canonical_url(stacked_upon)
+    >>> logout()
+
+Even if you are an admin.
+
+    >>> admin_browser.open(branch_location)
+    >>> admin_browser.getLink('Delete branch').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Delete branch...
+    This branch cannot be deleted as it has 1 branch sharing revisions.
+
+However, you can delete a branch that's the official branch of a source
+package.
+
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> login(ANONYMOUS)
+    >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> ignored = removeSecurityProxy(ubuntu_branches).addMember(
+    ...     alice, ubuntu_branches.teamowner)
+    >>> login_person(alice)
+    >>> branch = factory.makePackageBranch(owner=alice)
+    >>> package = branch.sourcepackage
+    >>> package.setBranch(
+    ...     PackagePublishingPocket.RELEASE, branch, branch.registrant)
+    >>> branch_url = canonical_url(branch)
+    >>> logout()
+    >>> browser.open(branch_url)
+    >>> browser.getLink('Delete branch').click()
+    >>> browser.getControl('Delete').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Branch ... deleted...

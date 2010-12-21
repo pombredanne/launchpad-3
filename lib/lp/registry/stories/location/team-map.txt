@@ -1,0 +1,86 @@
+The map of a team's members
+===========================
+
+The map depends on a stream of XML-formatted data, giving the locations of
+all members of the team. We show that this stream works for teams with, and
+without, mapped members.
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"...
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+      <participant
+        displayname="Colin Watson"
+        name="kamion"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+            src=&quot;/@@/person-logo&quot; /&gt;"
+        url="/~kamion"
+        local_time="..."
+        lat="52.2"
+        lng="0.3"/>
+    </participants>
+    <BLANKLINE>
+
+    >>> anon_browser.open('http://launchpad.dev/~name21/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"...
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+    </participants>
+    <BLANKLINE>
+
+The team index page has a map with data limited to 24 members and uses
+a slightly different URL.  We can see the URL works though there isn't
+enough test data to demonstrate the limit but that is done in the view
+test.
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdataltd')
+    >>> print anon_browser.contents
+    <?xml version="1.0"...
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+      <participant
+        displayname="Colin Watson"
+        name="kamion"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+                src=&quot;/@@/person-logo&quot; /&gt;"
+        url="/~kamion"
+        local_time="..."
+        lat="52.2"
+        lng="0.3"/>
+    </participants>
+    <BLANKLINE>
+
+
++mapdata
+--------
+
+The display name of all team participants will be escaped to prevent
+XSS attacks on any callsite of +mapdata.
+
+    >>> from canonical.testing.layers import MemcachedLayer
+
+    >>> admin_browser.open('http://launchpad.dev/~kamion/+edit')
+    >>> admin_browser.getControl('Display Name').value = (
+    ...     "<script>alert('Colin \"nasty\"');</script>")
+    >>> admin_browser.getControl('Save Changes').click()
+
+    >>> MemcachedLayer.purge()
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"...
+    ...displayname="&amp;lt;script&amp;gt;alert('Colin
+        &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
+    ...

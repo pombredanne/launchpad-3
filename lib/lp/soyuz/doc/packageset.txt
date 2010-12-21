@@ -1,0 +1,1157 @@
+= Package sets =
+
+The `Packageset` table allows the specification of a package set. These
+facilitate the grouping of packages for purposes like the control of upload
+permissions, the calculation of build and runtime package dependencies etc.
+
+Initially, package sets will be used to enforce upload permissions to source
+packages. Later they may be put to other uses as well. Please see also the
+following URL for user stories and scenarios:
+https://dev.launchpad.net/VersionThreeDotO/Soyuz/StoryCards#packagesetacl
+
+It is also possible to define hierarchical relationships between package
+sets i.e. include package sets into other package sets and remove them
+respectively.
+
+This effectively allows the users to arrange package sets in a directed
+acyclic graph (DAG, http://en.wikipedia.org/wiki/Directed_acyclic_graph)
+where each arc/edge (A,B) carries the following meaning:
+package set 'A' includes another package set 'B' as a subset.
+
+The following passage may also make it easier to understand the nomenclature
+used (from http://en.wikipedia.org/wiki/Glossary_of_graph_theory):
+
+    "If v is reachable from u, then u is a predecessor of v and v is a
+     successor of u. If there is an arc/edge from u to v, then u is a direct
+     predecessor of v, and v is a direct successor of u."
+
+
+== Package set basics ==
+
+So, let's start by creating a few package sets.
+
+    >>> from zope.component import getUtility
+    >>> from lp.soyuz.interfaces.packageset import (
+    ...     IPackagesetSet)
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> person1 = factory.makePerson(
+    ...     name='hacker', displayname=u'Happy Hacker')
+    >>> person2 = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen Schmidt',
+    ...     email='js@example.com')
+    >>> ps_factory = getUtility(IPackagesetSet)
+    >>> umbrella_ps = ps_factory.new(
+    ...     u'umbrella', u'Umbrella set, contains all packages', person1)
+    >>> kernel_ps = ps_factory.new(
+    ...     u'kernel', u'Contains all OS kernel packages', person2)
+
+Now 'juergen' and 'hacker' have a package set each.
+
+    >>> ps_factory.getByOwner(person1).count() == 1
+    True
+    >>> ps_factory.getByOwner(person2).count() == 1
+    True
+
+We need to define a few functions that make it easy to look at package set
+related data.
+
+    >>> import operator
+    >>> def sort_by_id(iterable):
+    ...     return sorted(iterable, key=operator.attrgetter('id'))
+    >>> def print_data(iterable):
+    ...     for datum in sort_by_id(iterable):
+    ...          print('%3d -> %s' % (datum.id, datum.name))
+    >>> def resultsets_are_equal(rs1, rs2):
+    ...     rs1 = list(rs1.order_by('name'))
+    ...     rs2 = list(rs2.order_by('name'))
+    ...     return rs1 == rs2
+
+
+Package sets can be looked up by name as follows:
+
+    >>> umbrella = ps_factory['umbrella']
+    >>> print_data((umbrella,))
+    1 -> umbrella
+
+In order to facilitate utilisation of package set related functionality
+via the web services API we need to have a get() method that returns the
+first N (N=50 by default) package sets sorted by name.
+Since we only have 2 package sets at this point only these will be shown.
+
+    >>> for datum in ps_factory.get():
+    ...     print('%3d -> %s' % (datum.id, datum.name))
+    2 -> kernel
+    1 -> umbrella
+
+In a next step we will associate source package names with the package sets
+just created.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+First associate *all* source package names with the umbrella package set.
+
+    >>> all_spns = store.find(SourcePackageName)
+    >>> umbrella_ps.add(all_spns)
+
+Let's see what we got:
+
+    >>> umbrella_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
+    >>> umbrella_src_names = sorted(spn.name for spn in umbrella_spns)
+    >>> print_data(umbrella_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
+
+Now let's put a few selected source package names into the 'kernel' package
+set:
+
+    >>> kernel_spns = store.find(
+    ...     SourcePackageName, SourcePackageName.name.like('li%'))
+    >>> kernel_ps.add(kernel_spns)
+    >>> kernel_spns = kernel_ps.sourcesIncluded(direct_inclusion=True)
+    >>> print_data(kernel_spns)
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+
+Adding source package names to a package set repeatedly has no effect.
+
+    >>> umbrella_ps.add(kernel_spns)
+    >>> umbrella_spns2 = umbrella_ps.sourcesIncluded(direct_inclusion=True)
+    >>> print_data(umbrella_spns2)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
+
+Removing source package names is easy.
+
+    >>> umbrella_ps.remove(kernel_spns)
+    >>> remaining_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
+
+The 'umbrella' package set includes all source names. From that set the
+'kernel' package set (that includes merely two source names) is deducted.
+What the following shows is that the package set substraction method works.
+
+    >>> print_data(remaining_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
+
+Trying to remove source package names that are *not* associated with a
+package set from the latter has no effect.
+
+    >>> umbrella_ps.remove(kernel_spns)
+    >>> remaining_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
+    >>> print_data(remaining_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
+
+Add the removed source package names back to 'umbrella'.
+
+    >>> umbrella_ps.add(kernel_spns)
+
+
+== Package set hierarchies ==
+
+The next step in organizing package sets is to arrange them in a hierarchy
+i.e. for package sets to include others as subsets.
+
+We need more package sets to play with however.
+
+    >>> gnome_ps = ps_factory.new(
+    ...     u'gnome', u'Contains all gnome desktop packages', person2)
+    >>> mozilla_ps = ps_factory.new(
+    ...     u'mozilla', u'Contains all mozilla packages', person2)
+    >>> firefox_ps = ps_factory.new(
+    ...     u'firefox', u'Contains all firefox packages', person2)
+    >>> thunderbird_ps = ps_factory.new(
+    ...     u'thunderbird', u'Contains all thunderbird packages', person2)
+    >>> languagepack_ps = ps_factory.new(
+    ...     u'languagepack', u'Contains all language packs', person2)
+    >>> store.commit()
+
+Now we can set up the package set hierarchy.
+
+    >>> umbrella_ps.add((gnome_ps,))
+    >>> mozilla_ps.add((firefox_ps, thunderbird_ps, languagepack_ps))
+    >>> umbrella_ps.add((mozilla_ps,))
+    >>> gnome_ps.add((languagepack_ps,))
+
+The 'umbrella' package set has two *direct* successors..
+
+    >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
+     3 -> gnome
+     4 -> mozilla
+
+.. but five successors in total. The 'firefox' and 'thunderbird' package
+sets are included via 'mozilla' whereas the 'languagepack' package set comes
+in via 'gnome' and/or 'mozilla'.
+
+    >>> u_successors = umbrella_ps.setsIncluded()
+    >>> print_data(u_successors)
+     3 -> gnome
+     4 -> mozilla
+     5 -> firefox
+     6 -> thunderbird
+     7 -> languagepack
+
+These are the *direct* predecessors of the 'languagepack' package set.
+
+    >>> print_data(languagepack_ps.setsIncludedBy(direct_inclusion=True))
+     3 -> gnome
+     4 -> mozilla
+
+These are *all* predecessors of the 'languagepack' package set. Please not
+that the 'umbrella' package set is listed as well.
+
+    >>> print_data(languagepack_ps.setsIncludedBy())
+     1 -> umbrella
+     3 -> gnome
+     4 -> mozilla
+
+When 'mozilla' stops including 'languagepack' it is still included by
+'umbrella' (via the 'gnome' package set).
+
+    >>> mozilla_ps.remove((languagepack_ps,))
+    >>> print_data(mozilla_ps.setsIncluded())
+      5 -> firefox
+      6 -> thunderbird
+
+    >>> print_data(languagepack_ps.setsIncludedBy(direct_inclusion=True))
+     3 -> gnome
+    >>> print_data(languagepack_ps.setsIncludedBy())
+     1 -> umbrella
+     3 -> gnome
+
+The 'umbrella' successors are still the same ('languagepack' is still
+included via 'gnome').
+
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.setsIncluded())
+    True
+
+Removing direct successors is pretty tolerant i.e. if you try to remove 'Q'
+from 'P' and 'Q' is *not* a *direct* successor of 'P' nothing will happen.
+
+    >>> umbrella_ps.remove((languagepack_ps,))
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.setsIncluded())
+    True
+
+What happens if we remove a package set from the database?
+
+    >>> print_data(umbrella_ps.setsIncluded())
+      3 -> gnome
+      4 -> mozilla
+      5 -> firefox
+      6 -> thunderbird
+      7 -> languagepack
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> store.remove(gnome_ps)
+
+We removed the 'gnome' package set and see that all the relationships it
+participated in were cleaned up as well.
+
+It does not show up as a predecessor for the 'languagepack' package set
+any more.
+
+    >>> print_data(languagepack_ps.setsIncludedBy(direct_inclusion=True))
+    >>> print_data(languagepack_ps.setsIncludedBy())
+
+It is also not included by the 'umbrella' package set any longer. Please
+note that 'languagepack' also ceased to be included by 'umbrella' because
+the link between them ('gnome') is gone.
+
+    >>> print_data(umbrella_ps.setsIncluded())
+      4 -> mozilla
+      5 -> firefox
+      6 -> thunderbird
+
+
+== Package set hierarchies and source names ==
+
+In order to demonstrate how included package sets play together
+with source package names we'll "populate" the former.
+
+    >>> def populate(packageset, pattern):
+    ...     rs = store.find(
+    ...         SourcePackageName, SourcePackageName.name.like(pattern))
+    ...     packageset.add(rs)
+
+    >>> populate(mozilla_ps, 'moz%a')
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+    16 -> mozilla
+
+    >>> populate(firefox_ps, '%fire%')
+    >>> populate(firefox_ps, '%ice%')
+    >>> print_data(firefox_ps.sourcesIncluded(direct_inclusion=True))
+     1 -> mozilla-firefox
+    26 -> iceweasel
+
+If we wanted the string source names as opposed to the `ISourcePackageName`
+instances we could get them as follows:
+
+    >>> sorted(firefox_ps.getSourcesIncluded(direct_inclusion=True))
+    [u'iceweasel', u'mozilla-firefox']
+
+Populate the 'thunderbird' package set with sources.
+
+    >>> populate(thunderbird_ps , '%thunder%')
+    >>> populate(thunderbird_ps , '%ice%')
+    >>> print_data(thunderbird_ps.sourcesIncluded(direct_inclusion=True))
+    18 -> thunderbird
+    26 -> iceweasel
+
+When looking at *all* source package names the 'mozilla' package set is
+associated with we see
+
+    * 'mozilla' i.e. the source package name it is *directly* associated
+      with but also
+    * the union set of source package names of its successor package sets
+
+    >>> print_data(mozilla_ps.sourcesIncluded())
+     1 -> mozilla-firefox
+    16 -> mozilla
+    18 -> thunderbird
+    26 -> iceweasel
+
+We can get the string source package names as follows:
+
+    >>> sorted(mozilla_ps.getSourcesIncluded())
+    [u'iceweasel', u'mozilla', u'mozilla-firefox', u'thunderbird']
+
+We extend the package set hierarchy by including 'languagepack' into
+'thunderbird' ..
+
+    >>> populate(languagepack_ps , 'lang%')
+    >>> thunderbird_ps.add((languagepack_ps,))
+
+.. and see that the 'thunderbird' package set is (indirectly) associated
+with the 'language-pack-de' source package name.
+
+    >>> print_data(thunderbird_ps.sourcesIncluded(direct_inclusion=True))
+    18 -> thunderbird
+    26 -> iceweasel
+    >>> print_data(thunderbird_ps.sourcesIncluded())
+    18 -> thunderbird
+    25 -> language-pack-de
+    26 -> iceweasel
+
+Furthermore, the 'language-pack-de' source package name is picked up by its
+predecessor 'mozilla' as well.
+
+    >>> print_data(mozilla_ps.sourcesIncluded())
+     1 -> mozilla-firefox
+    16 -> mozilla
+    18 -> thunderbird
+    25 -> language-pack-de
+    26 -> iceweasel
+
+Let's see what sources the 'umbrella' and the 'mozilla' package set have in
+common:
+
+    >>> print_data(umbrella_ps.sourcesSharedBy(mozilla_ps))
+      1 -> mozilla-firefox
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+     26 -> iceweasel
+
+The same shared sources (but in string form) are obtained as follows:
+
+    >>> sorted(umbrella_ps.getSourcesSharedBy(mozilla_ps))
+    [u'iceweasel', u'language-pack-de', u'mozilla', u'mozilla-firefox',
+     u'thunderbird']
+
+If we ask the question the other way around the answer should be the same.
+
+    >>> print_data(mozilla_ps.sourcesSharedBy(umbrella_ps))
+      1 -> mozilla-firefox
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+     26 -> iceweasel
+
+Now we only want to see the directly included sources they have in common.
+
+    >>> print_data(
+    ...     umbrella_ps.sourcesSharedBy(mozilla_ps, direct_inclusion=True))
+     16 -> mozilla
+
+The same shared sources (but in string form) are obtained as follows:
+
+    >>> sorted(
+    ...     umbrella_ps.getSourcesSharedBy(mozilla_ps, direct_inclusion=True))
+    [u'mozilla']
+
+Again, asking the question the other way around works as well.
+
+    >>> print_data(
+    ...     mozilla_ps.sourcesSharedBy(umbrella_ps, direct_inclusion=True))
+     16 -> mozilla
+
+How many sources are in the 'mozilla' package set but not in 'umbrella'?
+
+    >>> mozilla_ps.sourcesNotSharedBy(umbrella_ps).count()
+    0
+
+    >>> len(list(mozilla_ps.getSourcesNotSharedBy(umbrella_ps)))
+    0
+
+What sources are included by the 'mozilla' package set but not by 'firefox'?
+
+    >>> print_data(mozilla_ps.sourcesNotSharedBy(firefox_ps))
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+
+     >>> sorted(mozilla_ps.getSourcesNotSharedBy(firefox_ps))
+     [u'language-pack-de', u'mozilla', u'thunderbird']
+
+What sources are *directly* included by 'mozilla' but not by 'firefox'?
+
+    >>> print_data(
+    ...     mozilla_ps.sourcesNotSharedBy(firefox_ps, direct_inclusion=True))
+     16 -> mozilla
+
+    >>> sorted(
+    ...     mozilla_ps.getSourcesNotSharedBy(
+    ...         firefox_ps, direct_inclusion=True))
+    [u'mozilla']
+
+Sometimes it's interesting to see what package sets include a certain
+source package name.
+
+    >>> from lp.soyuz.interfaces.packageset import (
+    ...     IPackagesetSet)
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+
+Which package sets include 'mozilla-firefox' either directly or indirectly?
+
+    >>> firefox_spn = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> ps_set = getUtility(IPackagesetSet)
+    >>> print_data(ps_set.setsIncludingSource(firefox_spn))
+      1 -> umbrella
+      4 -> mozilla
+      5 -> firefox
+
+Which package sets include 'mozilla-firefox' directly? Remember that
+'umbrella' includes *all* source package names directly.
+
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn, direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+
+We can filter the package sets by series:
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['hoary']))
+      1 -> umbrella
+      4 -> mozilla
+      5 -> firefox
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['warty']))
+   
+It is also possible to ask the same question by providing the mere name of
+the source package.
+
+    >>> print_data(
+    ...     ps_set.setsIncludingSource('mozilla-firefox',
+    ...     direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+
+If the source package for a given name cannot be found an exception is
+raised.
+
+    >>> print_data(ps_set.setsIncludingSource('this-will-fail'))
+    Traceback (most recent call last):
+    ...
+    NoSuchSourcePackageName: No such source package: 'this-will-fail'.
+
+    >>> store.commit()
+
+
+== Various errors ==
+
+Here's what happens if we try to add something that is not a source package
+name or package set:
+
+    >>> mozilla_ps.add('This will fail'.split())
+    Traceback (most recent call last):
+    ...
+    AssertionError: Not all data was handled.
+
+Likewise for removal:
+
+    >>> mozilla_ps.remove(range(10))
+    Traceback (most recent call last):
+    ...
+    AssertionError: Not all data was handled.
+
+An attempt to add cycles to the package set graph also results in a failure:
+
+    >>> mozilla_ps.add((umbrella_ps,))
+    Traceback (most recent call last):
+    ...
+    InternalError: Package set umbrella already includes mozilla.
+    Adding (mozilla -> umbrella) would introduce a cycle in the
+    package set graph (DAG).
+    <BLANKLINE>
+
+    >>> store.rollback()
+
+== Amending package sets ==
+
+There are some methods that will enable the caller to add and delete
+package sets.  They currently require launchpad.Edit permission to
+use, which enforces the user to be an admin or a member of the "techboard"
+(Ubuntu Technical Board) team.
+
+    >>> from zope.security.checker import canAccess
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     TeamMembershipStatus)
+    >>> restricted_methods = ('new',)
+    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+    >>> techboard = removeSecurityProxy(techboard)
+
+Ordinary users have no access:
+
+    >>> login('js@example.com')
+    >>> canAccess(ps_factory, 'new')
+    False
+
+Admins have access:
+
+    >>> login("foo.bar@canonical.com")
+    >>> canAccess(ps_factory, 'new')
+    True
+
+Now add "test@canonical.com" to the techboard team and log in as him.
+
+    >>> ignored = techboard.addMember(
+    ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
+    ...     force_team_add=True)
+    >>> login_person(person2)
+
+Create a new package set.
+
+    >>> kde_ps = ps_factory.new(
+    ...     u'kde', u'Contains all KDE packages', person2)
+
+
+== Package sets and permissions ==
+
+As it stands package sets will first be used for governing source package
+uploads i.e. in conjunction with `ArchivePermission` data.
+
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+    >>> ap_set = getUtility(IArchivePermissionSet)
+
+So, let's assign upload permissions for the 'mozilla' package set to our
+happy hacker.
+
+    >>> def print_permission(result_set):
+    ...     for perm in result_set.order_by(
+    ...         'person, permission, packageset, explicit'):
+    ...         person = perm.person.name
+    ...         pset = perm.packageset.name
+    ...         permission = perm.permission.name
+    ...         archive = perm.archive.name
+    ...         if perm.explicit == True:
+    ...             ptype = 'explicit'
+    ...         else:
+    ...             ptype = 'implicit'
+    ...         print(
+    ...             '%10s %10s: %12s -> %16s (%s)'
+    ...             % (archive, person, pset, permission, ptype))
+
+Introduce a copy archive that will be used to disambiguate archive
+permissions.
+
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=person1, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='copy-archive',
+    ...     enabled=False, require_virtualized=False)
+
+Since we just created the copy archive there will be no permissions
+associated with it.
+
+    >>> permissions = ap_set.packagesetsForUploader(rebuild_archive, person1)
+    >>> print_permission(permissions)
+
+Next we set up a permission for the Ubuntu main archive.
+
+    >>> ubuntu_archive = ubuntu.main_archive
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person1, mozilla_ps)
+
+Now we see that person 'hacker' has upload permissions to the 'mozilla'
+package set.
+
+    >>> permissions = ap_set.packagesetsForUploader(
+    ...     ubuntu_archive, person1)
+    >>> print_permission(permissions)
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+The generic checkAuthenticated() method works as well.
+
+    >>> permissions = ap_set.checkAuthenticated(
+    ...     person1, ubuntu_archive, ArchivePermissionType.UPLOAD,
+    ...     mozilla_ps)
+    >>> permission = permissions[0]
+
+    >>> print permission.person.name
+    hacker
+    >>> print permission.package_set_name
+    mozilla
+    >>> print permission.permission.name
+    UPLOAD
+    >>> permission.explicit
+    False
+
+Since the permission above was granted for 'hacker' on the main Ubuntu
+archive the copy archive still has no permissions associated with it.
+
+    >>> nothing = ap_set.packagesetsForUploader(rebuild_archive, person1)
+    >>> print_permission(nothing)
+
+'juergen' is now getting granted upload permissions for the same package set
+but for the copy archive.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     rebuild_archive, person2, mozilla_ps)
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     rebuild_archive, mozilla_ps))
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
+
+Now 'hacker' may upload packages associated with the 'mozilla' package set
+in the Ubuntu main archive ..
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person1)
+    True
+
+but not in the copy archive.
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     rebuild_archive, 'mozilla-firefox', person1)
+    False
+
+Conversely 'juergen' is entitled to uploading 'mozilla' packages in the copy
+archive ..
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     rebuild_archive, 'mozilla-firefox', person2)
+    True
+
+but not in the Ubuntu main archive.
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person2)
+    False
+
+The 'package_set_name' property allows easy access to the package set
+name.
+
+    >>> [archp] = permissions
+    >>> archp.package_set_name
+    u'mozilla'
+
+'hacker' is also listed as one of the 'mozilla' uploaders. Please note that
+the upload privilege to the same package set but in a different archive does
+not show in the listing below since we only want to see permissions that
+apply to the Ubuntu archive.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     rebuild_archive, person1, mozilla_ps)
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, mozilla_ps))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, person1))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'mozilla-firefox', person1))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+'hacker' has upload privileges for 'mozilla' in the copy archive.
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     rebuild_archive, mozilla_ps))
+    copy-archive     hacker:      mozilla ->           UPLOAD (implicit)
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
+
+Now we delete them..
+
+    >>> ap_set.deletePackagesetUploader(
+    ...     rebuild_archive, person1, mozilla_ps)
+
+.. and the 'hacker' privileges are gone.
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     rebuild_archive, mozilla_ps))
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
+
+The analogous permissions for the Ubuntu archive are unaffected by the
+deletion.
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, mozilla_ps))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+Furthermore, 'hacker' will be listed as an uploader for any included
+package set as long as the latter does not have its own permission with
+the 'explicit' flag set.
+
+    >>> print_data(mozilla_ps.setsIncluded())
+      5 -> firefox
+      6 -> thunderbird
+      7 -> languagepack
+
+When we ask for the 'firefox' uploaders, 'hacker' will not be listed although
+'mozilla' includes 'firefox'.
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, firefox_ps))
+
+If we ask for uploaders while considering the inclusions between package
+sets, 'hacker' will be listed as an uploader for 'firefox' by virtue of
+the fact that the latter is included by 'mozilla' and 'hacker' is an
+uploader for mozilla.
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+If we add a permission for 'firefox' things will stay the same i.e. 'hacker'
+is still listed as an uploader. Please note the different package sets
+('mozilla' and 'firefox') although we are looking for 'firefox' uploaders.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, firefox_ps)
+
+Please note also how any permissions granted for the copy archive are
+ignored in the listing below since we are asking for permissions applying
+to the Ubuntu archive.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     rebuild_archive, person2, firefox_ps)
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+Once 'mozilla' stops including 'firefox', user 'hacker' is not listed as
+an uploader for 'firefox'.
+
+    >>> mozilla_ps.remove((firefox_ps,))
+    >>> print_data(mozilla_ps.setsIncluded())
+      6 -> thunderbird
+      7 -> languagepack
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+Ulploaders with explicit permissions will be listed along with the other
+uploaders.
+
+    >>> mark = getUtility(IPersonSet).getByName("mark")
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, mark, firefox_ps, True)
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+Persons can have both explicit or non-explicit permissions for package sets.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, mark, thunderbird_ps)
+    >>> print_permission(
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
+
+Sometimes it's handy to know what permissions apply for a given source
+package irrespective of the person.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSource(ubuntu_archive, 'mozilla-firefox'))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+If we make the 'mozilla' package set include 'firefox' again and ask the same
+question without insisiting on direct permissions we also see the permission
+granting 'hacker' upload privileges to 'mozilla' (since the latter is now
+a parent package set of 'firefox' and that includes the 'mozilla-firefox'
+source package (directly)).
+
+    >>> mozilla_ps.add((firefox_ps,))
+    >>> print_permission(
+    ...     ap_set.packagesetsForSource(
+    ...         ubuntu_archive, 'mozilla-firefox', direct_permissions=False))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+Attempting to create an explicit permission when a non-explicit one exists
+already will fail.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, mark, thunderbird_ps, True)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'thunderbird' already exists for
+    mark but with a different 'explicit' flag value (False).
+
+And the other way around:
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, mark, firefox_ps)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'firefox' already exists for
+    mark but with a different 'explicit' flag value (True).
+
+Removing package set based permissions is straight-forward.
+
+    >>> ap_set.deletePackagesetUploader(
+    ...     ubuntu_archive, mark, firefox_ps, True)
+    >>> print_permission(
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
+
+
+    >>> ap_set.deletePackagesetUploader(
+    ...     ubuntu_archive, mark, thunderbird_ps)
+    >>> print_permission(ap_set.packagesetsForUploader(
+    ...     ubuntu_archive, mark))
+
+An attempt to look up package set based permission by something else than
+by a package set (name) results in a failure.
+
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, 12345))
+    Traceback (most recent call last):
+    ...
+    ValueError: Not a package set: int
+
+Create a package set based permission for a team.
+
+    >>> techboardp = (
+    ...     ap_set.newPackagesetUploader(
+    ...         ubuntu_archive, techboard, kde_ps))
+
+An attempt to create a new permission for a 'techboard' team member
+  * for the same package set
+  * but with a conflicting 'explicit' flag value
+will fail.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, kde_ps, True)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'kde' already exists for
+    techboard but with a different 'explicit' flag value (False).
+
+An attempt to create the same permission repeatedly should just return
+the existing one.
+
+    >>> sameone = (
+    ...     ap_set.newPackagesetUploader(
+    ...         ubuntu_archive, techboard, kde_ps))
+    >>> techboardp.id == sameone.id
+    True
+
+Creating a "compatible" permission for person 'juergen' succeeds although
+there is one in place for 'techboard' already (and 'juergen' belongs to
+the 'techboard' team).
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
+    primary  techboard:          kde ->           UPLOAD (implicit)
+
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, kde_ps)
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
+    primary  techboard:          kde ->           UPLOAD (implicit)
+    primary    juergen:          kde ->           UPLOAD (implicit)
+
+
+== Checking package set based upload permissions ==
+
+The 'mozilla' package set includes the 'firefox' subset and hence the
+'mozilla-firefox' source package name indirectly.
+
+    >>> mozilla_ps.add((firefox_ps,))
+    >>> print_data(mozilla_ps.sourcesIncluded())
+      1 -> mozilla-firefox
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+     26 -> iceweasel
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+     16 -> mozilla
+
+'hacker' is authorized to upload to the 'mozilla' package set..
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, mozilla_ps))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+.. and hence listed as a *potential* uploader of the 'mozilla-firefox'
+source package.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'mozilla-firefox', person1))
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+
+'juergen' is allowed to upload to the 'firefox' package set that includes
+the 'mozilla-firefox' source package name directly ..
+
+    >>> print_data(firefox_ps.sourcesIncluded(direct_inclusion=True))
+      1 -> mozilla-firefox
+     26 -> iceweasel
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+.. and thus also listed as a possible uploader of the 'mozilla-firefox'
+source package.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'mozilla-firefox', person2))
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+Fetching the permissions for a non-existent source package name will fail
+as follows:
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'vapour-ware', person2))
+    Traceback (most recent call last):
+    ...
+    NoSuchSourcePackageName: No such source package: 'vapour-ware'.
+
+Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person1)
+    True
+
+How about 'juergen'?
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person2)
+    True
+
+And the unprivileged user?
+
+    >>> unprivileged = getUtility(IPersonSet).getByName("no-priv")
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', unprivileged)
+    False
+
+So, what we see is that the package set inclusion hierarchy is honored as
+long as there are no explicit permissions for the package sets involved.
+
+Let's
+
+  * create a super-special package set
+  * populate it with the 'mozilla-firefox' package
+  * grant an explicit permission to the unprivileged person
+
+and see how that changes things.
+
+    >>> login("foo.bar@canonical.com")
+    >>> specialist_ps = ps_factory.new(
+    ...     u'specialists-only', u'Packages that require special care.',
+    ...     person1)
+    >>> store.commit()
+
+    >>> specialist_ps.add((firefox_spn,))
+    >>> print_data(
+    ...     ps_set.setsIncludingSource('mozilla-firefox',
+    ...     direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+      9 -> specialists-only
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, unprivileged, specialist_ps, True)
+
+Please note that there's a package set now that includes 'mozilla-firefox'
+and has an explicit permission.
+
+    >>> for ps in sort_by_id(ps_set.setsIncludingSource(
+    ...     'mozilla-firefox', direct_inclusion=True)):
+    ...     print_permission(
+    ...         ap_set.uploadersForPackageset(ubuntu_archive, ps))
+    primary    juergen:      firefox     ->           UPLOAD (implicit)
+    primary    no-priv: specialists-only ->           UPLOAD (explicit)
+
+Is 'hacker' still allowed to upload 'mozilla-firefox'?
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person1)
+    False
+
+How about 'juergen'?
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person2)
+    False
+
+Now neither 'hacker' nor 'juergen' are allowed to upload. All non-explicit
+permissions are ignored in the presence of explicit ones.
+
+The 'unprivileged' person who holds an explicit permission for the
+'specialists-only' package set (including the 'mozilla-firefox' source)
+is allowed to upload.
+
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', unprivileged)
+    True
+
+
+== Methods for the Launchpad web services API ==
+
+The following methods are used to expose the package set functionality
+via the Launchpad web services API.
+
+Let's create a few package sets first.
+
+    >>> gnome_ps = ps_factory.new(
+    ...     u'gnome', u'Contains all gnome desktop packages', person2)
+    >>> xwin_ps = ps_factory.new(
+    ...     u'x-win', u'Contains all X windows packages', person2)
+    >>> universe_ps = ps_factory.new(
+    ...     u'universe', u'Contains all universe packages', person2)
+    >>> multiverse_ps = ps_factory.new(
+    ...     u'multiverse', u'Contains all multiverse packages', person2)
+
+The new package sets are added to 'umbrella' by passing their names. Please
+note that non-existent package sets (e.g. 'not-there') are simply ignored.
+
+    >>> to_be_added = (
+    ...     u'gnome', u'x-win', u'universe', u'multiverse', u'not-there')
+    >>> umbrella_ps.addSubsets(to_be_added)
+    >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
+      4 -> mozilla
+     10 -> gnome
+     11 -> x-win
+     12 -> universe
+     13 -> multiverse
+
+Package subsets can be removed in a similar fashion. Non-existent sets
+or sets which are not (direct) subsets are ignored again.
+
+    >>> to_be_removed = (u'umbrella', u'universe', u'multiverse', u'not-mine')
+    >>> umbrella_ps.removeSubsets(to_be_removed)
+    >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
+      4 -> mozilla
+     10 -> gnome
+     11 -> x-win
+
+Source package names can be added by merely specifying their names.
+
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+     16 -> mozilla
+
+    >>> mozilla_ps.addSources(('cdrkit', 'foobar', 'emacs'))
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+     16 -> mozilla
+     23 -> foobar
+     24 -> cdrkit
+
+It also possible to remove source package names by their names.
+
+    >>> mozilla_ps.removeSources(('mozilla', 'zope', 'firefox'))
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+     23 -> foobar
+     24 -> cdrkit

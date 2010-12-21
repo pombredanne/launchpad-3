@@ -1,0 +1,71 @@
+= The set of people and teams =
+
+The set of people and teams in Launchpad is represented by the
+collection found at /people.  By default it lists the (up to) 50
+people with the most karma, not including people with no karma.
+
+    >>> people = webservice.get("/people").jsonBody()
+    >>> len(people['entries'])
+    4
+
+
+== Custom operations ==
+
+But it also offer operations to filter that list.  For example, the
+find operation will search for people and teams matching the given
+search text.
+
+    >>> search = webservice.get(
+    ...     "/people?ws.op=find&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    [u'salgado']
+
+There are also operations to search only for people or only for teams.
+
+    >>> search = webservice.get(
+    ...     "/people?ws.op=findTeam&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    []
+
+    >>> search = webservice.get(
+    ...     "/people?ws.op=findPerson&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    [u'salgado']
+
+    >>> results = webservice.get(
+    ...     "/people?ws.op=findPerson&text="
+    ...     "&created_after=2008-06-27&created_before=2008-07-01").jsonBody()
+    >>> sorted(person['name'] for person in results['entries'])
+    [u'bac']
+
+It's possible to get a list of teams by virtue of which a person
+belongs to a particular team.
+
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> response = webservice.named_get(
+    # ...     '/~salgado', 'findPathToTeam',
+    # ...     team=webservice.getAbsoluteUrl('/~mailing-list-experts'))
+
+    # >>> path = response.jsonBody()
+    # >>> path['total_size']
+    # 2
+    # >>> [person['name'] for person in path['entries']]
+    # [u'admins', u'mailing-list-experts']
+
+If you know the email address of a person/team, it's possible to
+retrieve it using that email.
+
+    >>> daf = webservice.get(
+    ...     "/people?ws.op=getByEmail&email=daf@canonical.com").jsonBody()
+    >>> daf['name']
+    u'daf'
+
+When looking up a person by email address, you have to provide a valid
+email address.
+
+    >>> print webservice.get(
+    ...     "/people?ws.op=getByEmail&email=daf@")
+    HTTP/1.1 400 Bad Request
+    ...
+    email: Invalid email 'daf@'.

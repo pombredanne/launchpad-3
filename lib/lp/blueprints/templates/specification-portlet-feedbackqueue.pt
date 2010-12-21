@@ -1,0 +1,28 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<div
+  tal:define="fbreqs context/feedbackrequests"
+  tal:condition="fbreqs"
+  id="portlet-feedback"
+>
+    <h2>Feedback requests</h2>
+    <div>
+      <ul style="list-style: none; padding-left: 0;">
+        <li tal:repeat="fbreq fbreqs">
+        <tal:requester replace="structure fbreq/requester/fmt:link" />
+        requested feedback from
+        <strong tal:content="structure fbreq/reviewer/fmt:link" />:
+        <span
+          tal:condition="fbreq/queuemsg"
+          tal:content="structure fbreq/queuemsg/fmt:text-to-html"
+          style="font-style:italic; text-indent:2em;"
+        />
+        </li>
+      </ul>
+    </div>
+
+</div>
+</tal:root>

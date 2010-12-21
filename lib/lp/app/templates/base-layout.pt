@@ -1,0 +1,192 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="master"
+  tal:define="
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    release modules/lp.app.versioninfo/release;
+    version string:Launchpad ${release} (r${revno});
+    devmode modules/canonical.config/config/devmode;
+    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+    is_demo modules/canonical.config/config/launchpad/is_demo;
+    is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+    site_message modules/canonical.config/config/launchpad/site_message;
+    icingroot string:${rooturl}+icing/rev${revno};
+    icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    features request/features;
+    feature_scopes request/features/scopes;
+    CONTEXTS python:{'template':template, 'context': context, 'view':view};
+  "
+><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en" lang="en" dir="ltr">
+  <head tal:define="
+    yui string:${icingroot}/yui/current/build;
+    lazr_js string:${icingroot}/lazr/build;
+    lp_js string:${icingroot}/build">
+    <title tal:content="view/fmt:pagetitle">Page Title</title>
+    <link rel="shortcut icon" href="/@@/launchpad.png" />
+
+    <tal:atomfeeds define="feed_links view/feed_links | nothing">
+      <link rel="alternate" type="application/atom+xml"
+        tal:repeat="link feed_links"
+        tal:attributes="title link/title;
+                        href link/href"/>
+    </tal:atomfeeds>
+
+    <metal:launchpad-stylesheet
+      use-macro="context/@@+base-layout-macros/launchpad-stylesheet-3-0" />
+
+    <style tal:condition="is_demo" type="text/css">
+      html, body {background-image: url(/@@/demo) !important;}
+    </style>
+
+    <tal:comment condition="nothing">
+      This CSS collapses the contents of collapsible fieldsets,
+      without the flashing that would result from doing it in JavaScript.
+      activateCollapsibles() removes the class="collapsed" from fieldsets, to
+      re-show their divs, once the children themselves have been collapsed.
+    </tal:comment>
+    <style type="text/css">
+      fieldset.collapsed div, fieldset div.collapsed {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">
+        fieldset.collapsible div, fieldset div.collapsed {display: block;}
+      </style>
+    </noscript>
+
+    <metal:page-javascript
+        use-macro="context/@@+base-layout-macros/page-javascript" />
+    <metal:block define-slot="head_epilogue"></metal:block>
+  </head>
+
+  <body id="document"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname}
+      ${view/macro:pagetype}
+      ${view/context/fmt:public-private-css}
+      yui3-skin-sam">
+        <script type="text/javascript"
+          tal:condition="python: is_lpnet">
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-12833497-1']);
+          _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
+          _gaq.push(['_trackPageview']);
+
+          (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+          })();
+        </script>
+    <div class="yui-d0">
+      <div id="locationbar" class="login-logout">
+        <tal:login replace="structure context/@@login_status" />
+      </div><!--id="locationbar"-->
+
+      <div id="watermark" class="watermark-apps-portlet"
+           tal:condition="view/macro:pagehas/applicationtabs">
+        <div class="flowed-block">
+          <span tal:replace="structure view/watermark:logo"></span>
+        </div>
+        <div class="flowed-block wide">
+          <h2 tal:replace="structure view/watermark:heading">
+            Celso Providelo
+          </h2>
+          <metal:heading_nav
+            use-macro="context/@@+base-layout-macros/application-buttons"/>
+        </div>
+      </div>
+
+      <div class="yui-t4"
+        tal:omit-tag="not: view/macro:pagehas/portlets">
+        <div id="maincontent" class="yui-main">
+          <div class="yui-b"
+            tal:attributes="
+              lang view/lang|default_language|default;
+              xml:lang view/lang|default_language|default;
+              dir view/dir|string:ltr">
+            <div class="context-publication"
+              tal:condition="view/macro:pagehas/applicationtabs">
+              <h1
+                tal:condition="view/label|nothing"
+                tal:content="view/label"
+                metal:define-slot="heading"
+                >Page Label
+              </h1>
+              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+                ProjectName > Branches > Merge Proposals > fix-for-navigation
+              </tal:breadcrumbs>
+              <div id="registration" class="registering">
+                <metal:registering define-slot="registering" />
+              </div>
+            </div>
+
+            <tal:maintenance
+              replace="structure context/@@+maintenancemessage" />
+            <tal:notifications
+              define="notifications request/notifications"
+              condition="notifications">
+              <metal:notifications
+                use-macro="context/@@+base-layout-macros/notifications"/>
+            </tal:notifications>
+              <metal:main define-slot="main" />
+          </div><!-- yui-b -->
+        </div><!-- yui-main -->
+
+        <div id="side-portlets" class="yui-b side"
+          tal:condition="view/macro:pagehas/portlets">
+          <metal:portlets define-slot="side" />
+        </div><!-- yui-b side -->
+      </div><!-- yui-t4 -->
+
+      <metal:footer
+        use-macro="context/@@+base-layout-macros/footer"/>
+    </div><!-- yui-d0-->
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:void(0);"></iframe>
+      </div>
+      <div id="help-footer">
+        <span id="help-close"></span>
+      </div>
+    </div>
+
+    <metal:lp-client-cache
+      use-macro="context/@@+base-layout-macros/lp-client-cache" />
+  </body>
+</html>
+
+<tal:template>
+  <tal:comment
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests;"
+    replace="structure string:&lt;!--
+    Facet name: ${view/menu:selectedfacetname}
+    Page type: ${view/macro:pagetype}
+    Has global search: ${view/macro:pagehas/globalsearch}
+    Has application tabs: ${view/macro:pagehas/applicationtabs}
+    Has side portlets: ${view/macro:pagehas/portlets}
+
+    At least ${log}
+
+    Features: ${request/features/usedFlags} 
+    in scopes ${request/features/usedScopes} 
+
+    r${revno}
+  --&gt;" />
+</tal:template>
+</metal:page>

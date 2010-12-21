@@ -1,4 +1,12 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.launchpad.utilities.geoip import *
-from canonical.launchpad.utilities.gpghandler import *
+# pylint: disable-msg=W0401
+
 from canonical.launchpad.utilities.celebrities import *
+from canonical.launchpad.utilities.gpghandler import *
+from canonical.launchpad.utilities.looptuner import *
+from canonical.launchpad.utilities.orderingcheck import *
+from canonical.launchpad.utilities.searchservice import *
+
+

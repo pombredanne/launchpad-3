@@ -1,8 +1,8 @@
 = Navigation components =
 
-To say how objects get traversed, how their breadcrumbs appear, and what their
-canonical url looks like, you use navigation components.  These are defined
-in `canonical/launchpad/browser/`, alongside the view classes.
+You use navigation components to specify how objects get traversed and
+what their canonical url looks like, .  These are defined in
+`canonical/launchpad/browser/`, alongside the view classes.
 
 To define a navigation component, write a class that derives from
 canonical.launchpad.webapp.Navigation.
@@ -46,31 +46,10 @@ catch-all 'traverse()' method.
 
 You can also say that a new browser UI layer applies for this object.
 
-  newlayer = MaloneLayer
-
-You can also say how the breadcrumb will look for this object, if it has one.
-
-  def breadcrumb(self):
-      return 'This is the %s object' % self.context.name
-
-The text of the breadcrumb is html-escaped before being rendered on the web
-page.  You can return None to say that the object has no breadcrumb.  The
-default is to have no breadcrumb.
-
-You can associate a special breadcrumb with a stepthrough traversal too.  You
-do this by writing a breadcrumb method, and then making a reference to that
-when you define the stepthrough traversal method.
-
-   def breadcrumb_source(self):
-       return 'Packages for %s' % self.context.displayname
-
-   @stepthrough('+source', breadcrumb_source)
-   def traverse_source(self, name):
-       return self.context.getSourcePackage(name)
+  newlayer = BugsLayer
 
 
 == Demonstrating a navigation class ==
-
 
 In order to demonstrate a navigation class, we need to create an interface
 for the thing being navigated.  Rather than use a standard Launchpad interface,
@@ -110,7 +89,10 @@ we'll define one here.
     ...         return self.travstack
     ...
     ...     def consume(self):
-    ...         return self.travstack.pop()
+    ...         try:
+    ...             return self.travstack.pop()
+    ...         except IndexError:
+    ...             return None
 
     >>> class Request(object):
     ...     implements(IBrowserRequest)
@@ -118,20 +100,14 @@ we'll define one here.
     ...     def __init__(self):
     ...         self.response = Response()
     ...         self.traversal_stack = []
-    ...         self.breadcrumbs = []
     ...         self.traversed_objects = []
+    ...         self.query_string = None
     ...
     ...     @property
     ...     def stepstogo(self):
     ...         return StepsToGo(self.traversal_stack)
     ...
-    ...     def getAndClearBreadcrumbs(self):
-    ...         old_breadcrumbs = self.breadcrumbs
-    ...         self.breadcrumbs = []
-    ...         return [(breadcrumb.url, breadcrumb.text)
-    ...                 for breadcrumb in old_breadcrumbs]
-    ...
-    ...     def getURL(self, idx=None):
+    ...     def getURL(self, idx=None, path_only=False):
     ...         return 'URL %s' % idx
     ...
     ...     def getNearest(self, *some_interfaces):
@@ -141,6 +117,12 @@ we'll define one here.
     ...                     return (context, iface)
     ...         else:
     ...             return None, None
+    ...
+    ...     def get(self, name):
+    ...         if name == 'QUERY_STRING':
+    ...             return self.query_string
+    ...         else:
+    ...             return None
 
     >>> request = Request()
 
@@ -212,8 +194,6 @@ in Python we usually aim for having just one way to do something, often we're
 dealing with traversing content objects using a variety of methods, some of
 which return None to indicate 'not found' and some that raise NotFoundError.
 
-We'll also add a simple breadcrumb.
-
 
     >>> class ThingSetNavigation(Navigation):
     ...
@@ -224,8 +204,6 @@ We'll also add a simple breadcrumb.
     ...     def traverse(self, name):
     ...         return self.context.getThing(name)
     ...
-    ...     def breadcrumb(self):
-    ...         return 'Breadcrumb for <<the thingset>>'
 
     >>> navigation = ThingSetNavigation(thingset, request)
 
@@ -238,12 +216,7 @@ The name doesn't begin with a 't', so it isn't found.
     ...
     NotFound: ...ThingSet...name: 'xxx'
 
-Note that the breadcrumb is set in the request, even though we got an error.
-
-    >>> request.getAndClearBreadcrumbs()
-    [('URL 1', 'Breadcrumb for <<the thingset>>')]
-
-Also, note that the request has been put onto the INewLayer layer.
+Note that the request has been put onto the INewLayer layer.
 
     >>> INewLayer.providedBy(request)
     True
@@ -253,25 +226,15 @@ The name begins with a 't', so the thing's value is TTT.
     >>> navigation.publishTraverse(request, 'ttt')
     <Thing 'TTT'>
 
-The request.breadcrumbs looks like this:
-
-    >>> request.getAndClearBreadcrumbs()
-    [('URL 1', 'Breadcrumb for <<the thingset>>')]
-
 The name begins with a 't', so the thing's value is THINGVIEW.
 
     >>> navigation.publishTraverse(request, 'thingview')
     <Thing 'THINGVIEW'>
 
-The request.breadcrumbs looks like this:
-
-    >>> request.getAndClearBreadcrumbs()
-    [('URL 1', 'Breadcrumb for <<the thingset>>')]
-
 
 == ZCML for browser:navigation ==
 
-The zcml processor `browser:navigation` processes navigation classes.
+The zcml processor `browser:navigation` registers navigation classes.
 
     >>> class ThingSetView:
     ...
@@ -286,8 +249,8 @@ The zcml processor `browser:navigation` processes navigation classes.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:navigation
     ...       module="canonical.launchpad.ftests"
     ...       classes="ThingSetNavigation"
@@ -302,6 +265,14 @@ The zcml processor `browser:navigation` processes navigation classes.
     ...       />
     ... </configure>
     ... """)
+
+Once registered, we can look the navigation up using getMultiAdapter().
+
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> navigation = getMultiAdapter(
+    ...     (thingset, LaunchpadTestRequest()), IBrowserPublisher, name='')
 
 This time, we get the view object for the page that was registered.
 
@@ -328,7 +299,7 @@ tried.
 Let's create a subclass of ThingSetNavigation, and add a 'stepto'.
 
     >>> from canonical.launchpad.webapp import stepto
-    >>> from canonical.launchpad.interfaces import NotFoundError
+    >>> from lp.app.errors import NotFoundError
 
     >>> class ThingSetNavigation2(ThingSetNavigation):
     ...
@@ -418,26 +389,6 @@ Check that the request's state is as it should be.
     >>> request.traversal_stack
     ['prince']
 
-We need to test it with a breadcrumb too.
-
-    >>> class ThingSetNavigation3WithBreadcrumb(ThingSetNavigation):
-    ...
-    ...     def breadcrumb_toad(self):
-    ...         return 'A Toad'
-    ...
-    ...     @stepthrough('toad', breadcrumb=breadcrumb_toad)
-    ...     def traverse_toad(self, name):
-    ...         return 'the toad called %s' % name
-
-    >>> request.traversal_stack = ['prince', 'charming']
-    >>> request.breadcrumbs = []
-    >>> navigation3b = ThingSetNavigation3WithBreadcrumb(thingset, request)
-    >>> navigation3b.publishTraverse(request, 'toad')
-    'the toad called charming'
-
-    >>> request.getAndClearBreadcrumbs()
-    [('URL 1', 'Breadcrumb for <<the thingset>>'), ('URL 1', 'A Toad')]
-
 
 == redirection ==
 
@@ -490,21 +441,21 @@ Let's make another navigation class to test redirection.
     >>> navigation4.publishTraverse(request, 'tree')
     <...RedirectionView...>
     >>> navigation4.publishTraverse(request, 'tree')()
-    ''
+    u''
     >>> request.response.redirected_to
     'trees'
     >>> print request.response.status
     301
 
     >>> navigation4.publishTraverse(request, 'toad')()
-    ''
+    u''
     >>> request.response.redirected_to
     'toads'
     >>> print request.response.status
     None
 
     >>> navigation4.publishTraverse(request, 'something')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/another/place'
     >>> print request.response.status
@@ -512,19 +463,52 @@ Let's make another navigation class to test redirection.
 
     >>> request.traversal_stack = ['tundra']
     >>> navigation4.publishTraverse(request, 'outerspace')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/siberia/tundra'
     >>> print request.response.status
     None
 
     >>> navigation4.publishTraverse(request, 'here')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/there'
     >>> print request.response.status
     301
 
+
+== Redirecting subtrees ==
+
+There are situations, especially during refactoring, where you want
+to keep old URLs working but have them redirect to the new URL, complete
+with the remainder of the URL and or query string.
+
+    >>> class ThingSetNavigation5(ThingSetNavigation):
+    ...     def traverse(self, name):
+    ...         return self.redirectSubTree('http://ubuntu.com/%s' % name)
+    ...
+    ...     @stepto('+foo')
+    ...     def traverse_foo(self):
+    ...         return self.redirectSubTree('http://wiki.canonical.com', status=303)
+
+    >>> navigation5 = ThingSetNavigation5(thingset, request)
+    >>> navigation5.publishTraverse(request, 'jobs')
+    <...RedirectionView...>
+    >>> navigation5.publishTraverse(request, 'jobs')()
+    u''
+    >>> request.response.redirected_to
+    'http://ubuntu.com/jobs'
+    >>> print request.response.status
+    301
+
+    >>> request.traversal_stack = ['LaunchpadMeeting']
+    >>> request.query_string = 'hilight=Time'
+    >>> navigation5.publishTraverse(request, '+foo')()
+    u''
+    >>> request.response.redirected_to
+    'http://wiki.canonical.com/LaunchpadMeeting?hilight=Time'
+    >>> print request.response.status
+    303
 
 
 Make a clean request.
@@ -575,7 +559,7 @@ Check out the traversals defined directly.
     'diplodocus called frank'
 
     >>> ubernav.publishTraverse(request, 'topology')()
-    ''
+    u''
     >>> request.response.redirected_to
     'topologies'
 
@@ -600,17 +584,17 @@ Check those from ThingSetNavigation3:
 Check those from ThingSetNavigation4:
 
     >>> ubernav.publishTraverse(request, 'tree')()
-    ''
+    u''
     >>> request.response.redirected_to
     'trees'
 
     >>> ubernav.publishTraverse(request, 'toad')()
-    ''
+    u''
     >>> request.response.redirected_to
     'toads'
 
     >>> ubernav.publishTraverse(request, 'ttt')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/another/place'
 
@@ -659,11 +643,11 @@ Check those from ThingSetNavigation4:
     >>> class DupeNames(Navigation):
     ...
     ...     @stepto('foo')
-    ...     def doit(self):
+    ...     def doit_foo(self):
     ...         return 'foo'
     ...
     ...     @stepto('bar')
-    ...     def doit(self):
+    ...     def doit_bar(self):
     ...         return 'bar'
 
     >>> instance_of_dupenames = DupeNames(thingset, request)
@@ -672,89 +656,7 @@ Check those from ThingSetNavigation4:
     >>> instance_of_dupenames.publishTraverse(request, 'bar')
     'bar'
 
-The doit() method still works though.
+The doit_*() methods still work though.
 
-    >>> instance_of_dupenames.doit()
+    >>> instance_of_dupenames.doit_bar()
     'bar'
-
-
-== Inspecting the traversed objects ==
-
-As the object heirarchy is traversed, a list of the traversed objects
-is built up in the request.
-
-Create a navigation class for IThing's:
-
-    >>> class ThingNavigation(Navigation):
-    ...     usedfor = IThing
-    ... 
-    ...     @stepto('foo')
-    ...     def traverse_foo(self):
-    ...         return 'bar'
-    ...
-    ...     @stepto('something')
-    ...     def traverse_something(self):
-    ...         return Thing('something')
-
-
-Traverse from the thingset to a particular thing:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'ttt')
-    >>> navigation2 = ThingNavigation(thing, request)
-    >>> navigation2.publishTraverse(request, 'foo')
-    'bar'
-
-
-The traversed objects are available, in the order they were traversed:
-
-    >>> request.traversed_objects
-    [<ThingSet>, <Thing 'TTT'>]
-
-We can ask the request for the nearest traversed object that
-implements a particular interface:
-
-    >>> request.getNearest(IThingSet)
-    (<ThingSet>, <InterfaceClass __builtin__.IThingSet>)
-    >>> request.getNearest(IThing)
-    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
-
-The second argument is the matched interface.  This is useful when
-multiple interfaces are passed to getNearest():
-
-    >>> request.getNearest(IThingSet, IThing)
-    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
-
-If more than one object of a particular interface type has been
-traversed, the most recently traversed one is returned:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'ttt')
-    >>> navigation2 = ThingNavigation(thing, request)
-    >>> thing2 = navigation2.publishTraverse(request, 'something')
-    >>> navigation3 = ThingNavigation(thing2, request)
-    >>> navigation3.publishTraverse(request, 'foo')
-    'bar'
-
-    >>> request.traversed_objects
-    [<ThingSet>, <Thing 'TTT'>, <Thing 'something'>]
-    >>> request.getNearest(IThing)
-    (<Thing 'something'>, <InterfaceClass __builtin__.IThing>)
-
-If a particular interface has not been traversed, the tuple
-(None, None) is returned:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'xyz')
-    Traceback (most recent call last):
-    ...
-    NotFound: ...ThingSet..., name: 'xyz'
-    >>> request.getNearest(IThing)
-    (None, None)
-
-Note that a tuple is returned in the error case so that the result can
-unpacked unconditionally, rather than needing to check for an error
-return before unpacking.

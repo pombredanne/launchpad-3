@@ -1,0 +1,52 @@
+Edit person location information
+================================
+
+A person's location is only editable by people who have launchpad.Edit on
+the person, which is that person and admins.
+
+    >>> login('test@canonical.com')
+    >>> zzz = factory.makePerson(
+    ...     name='zzz', time_zone='Africa/Maseru', email='zzz@foo.com',
+    ...     latitude=None, longitude=None, password='test')
+    >>> logout()
+
+A user cannot set another user's location.
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+A user can set his own location:
+
+    >>> self_browser = setupBrowser(auth="Basic zzz@foo.com:test")
+    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.getControl(name='field.location.latitude').value = (
+    ...     '39.48')
+    >>> self_browser.getControl(name='field.location.longitude').value = (
+    ...     '-0.40')
+    >>> self_browser.getControl(name='field.location.time_zone').value = [
+    ...     'Europe/Madrid']
+    >>> self_browser.getControl('Update').click()
+
+    >>> login('zzz@foo.com')
+    >>> zzz.latitude
+    39.4...
+    >>> zzz.longitude
+    -0.4...
+    >>> zzz.time_zone
+    u'Europe/Madrid'
+    >>> logout()
+
+The user can change his location:
+
+    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.getControl(name='field.location.latitude').value
+    '39.48'
+
+And so can a Launchpad admin:
+
+    >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> admin_browser.getControl(name='field.location.latitude').value
+    '39.48'

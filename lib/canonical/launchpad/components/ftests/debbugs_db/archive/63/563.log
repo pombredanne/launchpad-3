@@ -1,0 +1,377 @@
+
+debian-devel@pixar.com
+
+Subject: Bug#563: tar -x fails to overwrite or check for symlinks
+Reply-To: iwj10@cus.cam.ac.uk (Ian Jackson), debian-bugs@pixar.com
+Resent-To: debian-devel@pixar.com
+Resent-From: iwj10@cus.cam.ac.uk (Ian Jackson)
+Resent-Sender: iwj10@cus.cam.ac.uk
+Resent-Date: Fri, 03 Mar 1995 15:48:01 GMT
+Resent-Message-ID: <debian-bugs-handler.563.030315345717004@pixar.com>
+X-Debian-PR-Package: tar
+X-Debian-PR-Keywords: 
+Received: via spool for debian-bugs; Fri, 03 Mar 1995 15:48:01 GMT
+Received: with rfc822 via encapsulated-mail id 030315345717004;
+          Fri, 03 Mar 1995 15:34:58 GMT
+Received: from pixar.com by mongo.pixar.com with smtp
+	(Smail3.1.28.1 #15) id m0rkZLk-0005pqC; Fri, 3 Mar 95 07:33 PST
+Received: from bootes.cus.cam.ac.uk by pixar.com with SMTP id AA20800
+  (5.65c/IDA-1.4.4 for <debian-bugs@pixar.com>); Fri, 3 Mar 1995 07:32:46 -0800
+Received: by bootes.cus.cam.ac.uk
+	(Smail-3.1.29.0 #30) id m0rkYPp-000C0dC; Fri, 3 Mar 95 14:33 GMT
+Received: by chiark (Smail3.1.28.1 #3)
+	id m0rkP9u-0002gOZ; Fri, 3 Mar 95 04:40 GMT
+Message-Id: <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+Date: Fri, 3 Mar 95 04:40 GMT
+From: iwj10@cus.cam.ac.uk (Ian Jackson)
+To: Debian bugs submission address <debian-bugs@pixar.com>
+
+Package: tar
+Version: 1.11.2-1 (and others?)
+
+chiark:~/junk> rm a b
+chiark:~/junk> ln -s a b
+chiark:~/junk> ll a b
+/bin/ls: a: No such file or directory
+lrwxrwxrwx   1 ian      ian             1 Mar  3 04:35 b -> a
+chiark:~/junk> tar vvcf t b
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+
+OK so far.
+
+chiark:~/junk> tar vvxf t
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+tar: Could not create symlink to a : File exists
+
+Ooops.  tar should have overwritten b (silently).
+
+chiark:~/junk> rm b
+chiark:~/junk> echo hi >b
+chiark:~/junk> tar vvxf t
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+tar: Could not create symlink to a : File exists
+
+It can't overwrite a plain file with link.
+
+chiark:~/junk> ll a b
+/bin/ls: a: No such file or directory
+-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 b
+chiark:~/junk> tar vvcf t b
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+
+OK, put the file in the archive.
+
+chiark:~/junk> tar vvxf t
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+
+And we can extract it.
+
+chiark:~/junk> rm a b
+rm: a: No such file or directory
+chiark:~/junk> ln -s a b
+
+Make the link.
+
+chiark:~/junk> tar vvxf t
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+chiark:~/junk> ll a b
+-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 a
+lrwxrwxrwx   1 ian      ian             1 Mar  3 04:37 b -> a
+
+Now when we extract it follows the link !  Aargh !  This is horrible.
+
+chiark:~/junk> rm a b
+chiark:~/junk>
+
+Ian.
+
+
+
+-t
+
+From: iwj10@thor.cam.ac.uk (Ian Jackson)
+To: iwj10@cus.cam.ac.uk (Ian Jackson)
+Subject: Bug#563: Acknowledgement (was: tar -x fails to overwrite or check for symlinks)
+In-Reply-To: <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+References: <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+
+Thank you for the problem report you have sent regarding Debian GNU/Linux.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the developers' mailing list for
+their attention; they will reply in due course.
+
+If you wish to submit further information on your problem, please send
+it to debian-bugs@pixar.com, but please ensure that the Subject
+line of your message starts with "Bug#563" or "Re: Bug#563" so that
+we can identify it as relating to the same problem.
+
+Please do not to reply to the address at the top of this message,
+unless you wish to report a problem with the bug-tracking system.
+
+Ian Jackson
+(maintainer, debian-bugs)
+
+
+
+From nobody@pixar.com Fri Mar  3 15:34:54 1995
+Return-Path: <nobody@pixar.com>
+Received: from mongo.pixar.com [138.72.50.60] 
+	by bootes.cus.cam.ac.uk with smtp 
+	(Smail-3.1.29.0 #30) id m0rkZMw-000C2UC; Fri, 3 Mar 95 15:34 GMT
+Received: by mongo.pixar.com (Smail3.1.28.1 #15)
+	id m0rkZLm-0005NTC; Fri, 3 Mar 95 07:33 PST
+Message-Id: <m0rkZLm-0005NTC@mongo.pixar.com>
+Date: Fri, 3 Mar 95 07:33 PST
+From: nobody@pixar.com (SVR4 nobody uid)
+To: iwj10@cus.cam.ac.uk
+Errors-To: iwj10@cus.cam.ac.uk
+X-Debian-Bugs: This is an autoforward from debian-bugs
+
+XFrom cus.cam.ac.uk!iwj10 Fri Mar  3 07:33:06 1995
+XReturn-Path: <iwj10@cus.cam.ac.uk>
+XReceived: from pixar.com by mongo.pixar.com with smtp
+X	(Smail3.1.28.1 #15) id m0rkZLk-0005pqC; Fri, 3 Mar 95 07:33 PST
+XReceived: from bootes.cus.cam.ac.uk by pixar.com with SMTP id AA20800
+X  (5.65c/IDA-1.4.4 for <debian-bugs@pixar.com>); Fri, 3 Mar 1995 07:32:46 -0800
+XReceived: by bootes.cus.cam.ac.uk 
+X	(Smail-3.1.29.0 #30) id m0rkYPp-000C0dC; Fri, 3 Mar 95 14:33 GMT
+XReceived: by chiark (Smail3.1.28.1 #3)
+X	id m0rkP9u-0002gOZ; Fri, 3 Mar 95 04:40 GMT
+XMessage-Id: <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+XDate: Fri, 3 Mar 95 04:40 GMT
+XFrom: iwj10@cus.cam.ac.uk (Ian Jackson)
+XTo: Debian bugs submission address <debian-bugs@pixar.com>
+XSubject: tar -x fails to overwrite or check for symlinks
+X
+XPackage: tar
+XVersion: 1.11.2-1 (and others?)
+X
+Xchiark:~/junk> rm a b
+Xchiark:~/junk> ln -s a b
+Xchiark:~/junk> ll a b
+X/bin/ls: a: No such file or directory
+Xlrwxrwxrwx   1 ian      ian             1 Mar  3 04:35 b -> a
+Xchiark:~/junk> tar vvcf t b
+Xlrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+X
+XOK so far.
+X
+Xchiark:~/junk> tar vvxf t
+Xlrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+Xtar: Could not create symlink to a : File exists
+X
+XOoops.  tar should have overwritten b (silently).
+X
+Xchiark:~/junk> rm b
+Xchiark:~/junk> echo hi >b
+Xchiark:~/junk> tar vvxf t
+Xlrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+Xtar: Could not create symlink to a : File exists
+X
+XIt can't overwrite a plain file with link.
+X
+Xchiark:~/junk> ll a b
+X/bin/ls: a: No such file or directory
+X-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 b
+Xchiark:~/junk> tar vvcf t b
+X-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+X
+XOK, put the file in the archive.
+X
+Xchiark:~/junk> tar vvxf t
+X-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+X
+XAnd we can extract it.
+X
+Xchiark:~/junk> rm a b 
+Xrm: a: No such file or directory
+Xchiark:~/junk> ln -s a b
+X
+XMake the link.
+X
+Xchiark:~/junk> tar vvxf t
+X-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+Xchiark:~/junk> ll a b
+X-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 a
+Xlrwxrwxrwx   1 ian      ian             1 Mar  3 04:37 b -> a
+X
+XNow when we extract it follows the link !  Aargh !  This is horrible.
+X
+Xchiark:~/junk> rm a b
+Xchiark:~/junk> 
+X
+XIan.
+
+YReceived: with rfc822 via encapsulated-mail id 030315345717004;
+Y          Fri, 03 Mar 1995 15:34:58 GMT
+
+
+
+<strong>Reply sent</strong> to <code>Bdale Garbee &lt;bdale@gag.com&gt;</code>:<br>
+You have marked bug as forwarded.
+
+
+-t
+
+From: iwj10@thor.cam.ac.uk (Ian Jackson)
+To: Bdale Garbee <bdale@gag.com>
+In-Reply-To: <199604150337.VAA15366@chunks.gag.com>
+References: <199604150337.VAA15366@chunks.gag.com> <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+Subject: Bug#563: marked as forwarded (was: tar -x fails to overwrite or check for symlinks)
+
+Your message dated Sun, 14 Apr 1996 21:37:23 -0600
+with message-id <199604150337.VAA15366@chunks.gag.com>
+and subject line Bug#563
+has caused the Debian bug report #563,
+regarding tar -x fails to overwrite or check for symlinks
+to be marked as having been forwarded to the upstream software
+author(s) pinard@icule.progiciels-bpi.ca.
+
+(NB: If you are a system administrator and have no idea what I'm
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+Ian Jackson
+(maintainer, debian-bugs)
+
+Received: with rfc822 via encapsulated-mail id 030315345717004;
+          Fri, 03 Mar 1995 15:34:58 GMT
+From cus.cam.ac.uk!iwj10 Fri Mar  3 07:33:06 1995
+Return-Path: <iwj10@cus.cam.ac.uk>
+Received: from pixar.com by mongo.pixar.com with smtp
+	(Smail3.1.28.1 #15) id m0rkZLk-0005pqC; Fri, 3 Mar 95 07:33 PST
+Received: from bootes.cus.cam.ac.uk by pixar.com with SMTP id AA20800
+  (5.65c/IDA-1.4.4 for <debian-bugs@pixar.com>); Fri, 3 Mar 1995 07:32:46 -0800
+Received: by bootes.cus.cam.ac.uk
+	(Smail-3.1.29.0 #30) id m0rkYPp-000C0dC; Fri, 3 Mar 95 14:33 GMT
+Received: by chiark (Smail3.1.28.1 #3)
+	id m0rkP9u-0002gOZ; Fri, 3 Mar 95 04:40 GMT
+Message-Id: <m0rkP9u-0002gOZ.ijackson@nyx.cs.du.edu>
+Date: Fri, 3 Mar 95 04:40 GMT
+From: iwj10@cus.cam.ac.uk (Ian Jackson)
+To: Debian bugs submission address <debian-bugs@pixar.com>
+Subject: tar -x fails to overwrite or check for symlinks
+
+Package: tar
+Version: 1.11.2-1 (and others?)
+
+chiark:~/junk> rm a b
+chiark:~/junk> ln -s a b
+chiark:~/junk> ll a b
+/bin/ls: a: No such file or directory
+lrwxrwxrwx   1 ian      ian             1 Mar  3 04:35 b -> a
+chiark:~/junk> tar vvcf t b
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+
+OK so far.
+
+chiark:~/junk> tar vvxf t
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+tar: Could not create symlink to a : File exists
+
+Ooops.  tar should have overwritten b (silently).
+
+chiark:~/junk> rm b
+chiark:~/junk> echo hi >b
+chiark:~/junk> tar vvxf t
+lrwxrwxrwx ian/ian           0 Mar  3 04:35 1995 b -> a
+tar: Could not create symlink to a : File exists
+
+It can't overwrite a plain file with link.
+
+chiark:~/junk> ll a b
+/bin/ls: a: No such file or directory
+-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 b
+chiark:~/junk> tar vvcf t b
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+
+OK, put the file in the archive.
+
+chiark:~/junk> tar vvxf t
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+
+And we can extract it.
+
+chiark:~/junk> rm a b
+rm: a: No such file or directory
+chiark:~/junk> ln -s a b
+
+Make the link.
+
+chiark:~/junk> tar vvxf t
+-rw-rw-r-- ian/ian           3 Mar  3 04:36 1995 b
+chiark:~/junk> ll a b
+-rw-rw-r--   1 ian      ian             3 Mar  3 04:36 a
+lrwxrwxrwx   1 ian      ian             1 Mar  3 04:37 b -> a
+
+Now when we extract it follows the link !  Aargh !  This is horrible.
+
+chiark:~/junk> rm a b
+chiark:~/junk>
+
+Ian.
+
+
+
+From nobody@pixar.com Mon Apr 15 04:38:59 1996
+Return-Path: <nobody@pixar.com>
+Received: from apus.cus.cam.ac.uk [131.111.8.2] (ident = root) 
+	by ursa.cus.cam.ac.uk with smtp 
+	(Smail-3.1.29.0 #77) id m0u8f7y-00011BC; Mon, 15 Apr 96 04:38 BST
+Received: from mongo.pixar.com [138.72.50.60] 
+	by apus.cus.cam.ac.uk with smtp 
+	(Smail-3.1.29.0 #36) id m0u8f7x-00033yC; Mon, 15 Apr 96 04:38 BST
+Received: by mongo.pixar.com (Smail3.1.28.1 #15)
+	id m0u8f6a-0005yDC; Sun, 14 Apr 96 20:37 PDT
+Message-Id: <m0u8f6a-0005yDC@mongo.pixar.com>
+Date: Sun, 14 Apr 96 20:37 PDT
+From: nobody@pixar.com (SVR4 nobody uid)
+To: iwj10@cus.cam.ac.uk
+Errors-To: iwj10@cus.cam.ac.uk
+X-Debian-Bugs-Forwarded: This is an autoforward from debian-bugs-forwarded
+
+XFrom gag.com!bdale Sun Apr 14 20:37:32 1996
+XReturn-Path: <bdale@gag.com>
+XReceived: from pixar.com by mongo.pixar.com with smtp
+X	(Smail3.1.28.1 #15) id m0u8f6a-00063cC; Sun, 14 Apr 96 20:37 PDT
+XReceived: from chunks.gag.com by pixar.com with SMTP id AA20863
+X  (5.67b/IDA-1.5 for debian-bugs-forwarded-pipe@mongo.pixar.com); Sun, 14 Apr 1996 20:37:31 -0700
+XReceived: (from bdale@localhost) by chunks.gag.com (8.6.12/8.6.12) id VAA15366; Sun, 14 Apr 1996 21:37:23 -0600
+XDate: Sun, 14 Apr 1996 21:37:23 -0600
+XFrom: Bdale Garbee <bdale@gag.com>
+XMessage-Id: <199604150337.VAA15366@chunks.gag.com>
+XTo: pinard@icule.progiciels-bpi.ca
+XSubject: Bug#563
+XCc: debian-bugs-forwarded@pixar.com, iwj10@cus.cam.ac.uk
+X
+XBug report sent to upstream maintainer.
+
+YReceived: with rfc822 via encapsulated-mail; Mon, 15 Apr 1996 03:38:59 GMT
+
+
+
+<strong>Forwarded-to-address changed from pinard@icule.progiciels-bpi.ca to pinard@iro.umontreal.ca.</strong>
+Request was from <code>Bdale Garbee &lt;bdale@gag.com&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 24 Aug 1996 07:46:58 +0000
+Received: (qmail-queue invoked from smtpd); 24 Aug 1996 07:25:44 -0000
+Received: from chunks.gag.com (bdale@192.133.104.9)
+  by master.debian.org with SMTP; 24 Aug 1996 07:25:44 -0000
+Received: (from bdale@localhost) by chunks.gag.com (8.7.5/8.7.3) id BAA06277 for control@bugs.debian.org; Sat, 24 Aug 1996 01:21:29 -0600
+Date: Sat, 24 Aug 1996 01:21:29 -0600
+From: Bdale Garbee <bdale@gag.com>
+Message-Id: <199608240721.BAA06277@chunks.gag.com>
+To: control@bugs.debian.org
+
+forwarded 563 pinard@iro.umontreal.ca
+forwarded 783 pinard@iro.umontreal.ca
+forwarded 817 pinard@iro.umontreal.ca
+forwarded 819 pinard@iro.umontreal.ca
+forwarded 822 pinard@iro.umontreal.ca
+forwarded 1110 pinard@iro.umontreal.ca
+forwarded 1144 pinard@iro.umontreal.ca
+forwarded 1174 pinard@iro.umontreal.ca
+
+

@@ -1,8 +1,0 @@
-Check that the index page for a PO Template Name works.
-
-  >>> print http(r"""
-  ... GET /potemplatenames/1 HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

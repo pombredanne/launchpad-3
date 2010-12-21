@@ -1,13 +1,75 @@
-# Copyright 2006 Canonical Ltd., all rights reserved.
-"""XMLRPC API to the application roots."""
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
+
+"""XML-RPC API to the application roots."""
 
 __metaclass__ = type
-__all__ = ['ISelfTest', 'SelfTest', 'IRosettaSelfTest', 'RosettaSelfTest']
 
-from zope.interface import Interface, implements
+__all__ = [
+    'IRosettaSelfTest',
+    'ISelfTest',
+    'PrivateApplication',
+    'RosettaSelfTest',
+    'SelfTest',
+    ]
+
 import xmlrpclib
 
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
+
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IPrivateApplication,
+    IPrivateMaloneApplication,
+    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
+
+
+class PrivateApplication:
+    implements(IPrivateApplication)
+
+    @property
+    def mailinglists(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IMailingListApplication)
+
+    @property
+    def authserver(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IAuthServerApplication)
+
+    @property
+    def codehosting(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ICodehostingApplication)
+
+    @property
+    def codeimportscheduler(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ICodeImportSchedulerApplication)
+
+    @property
+    def bugs(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IPrivateMaloneApplication)
+
+    @property
+    def softwarecenteragent(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ISoftwareCenterAgentApplication)
 
 
 class ISelfTest(Interface):
@@ -18,6 +80,12 @@ class ISelfTest(Interface):
 
     def concatenate(string1, string2):
         """Return the concatenation of the two given strings."""
+
+    def hello():
+        """Return a greeting to the one calling the method."""
+
+    def raise_exception():
+        """Raise an exception."""
 
 
 class SelfTest(LaunchpadXMLRPCView):
@@ -31,6 +99,18 @@ class SelfTest(LaunchpadXMLRPCView):
     def concatenate(self, string1, string2):
         """Return the concatenation of the two given strings."""
         return u'%s %s' % (string1, string2)
+
+    def hello(self):
+        """Return a greeting to the logged in user."""
+        caller = getUtility(ILaunchBag).user
+        if caller is not None:
+            caller_name = caller.displayname
+        else:
+            caller_name = "Anonymous"
+        return "Hello %s." % caller_name
+
+    def raise_exception(self):
+        raise RuntimeError("selftest exception")
 
 
 class IRosettaSelfTest(Interface):

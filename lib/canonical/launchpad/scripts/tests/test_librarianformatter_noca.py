@@ -1,40 +1,22 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Python harness for librarianformatter_noca.txt."""
 
 __metaclass__ = type
 
-import sys
-import time
-import unittest
-import logging
-from urllib2 import urlopen
-from StringIO import StringIO
-
-from zope.testing import doctest
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.functional import FunctionalTestSetup
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import reset_logging
 
-import os.path
-
-this_directory = os.path.dirname(__file__)
 
 def setUp(test):
     # Suck this modules environment into the test environment
-    test.globs.update(globals())
     reset_logging()
 
 def tearDown(test):
     reset_logging()
 
 def test_suite():
-    return doctest.DocFileSuite(
-            'librarianformatter_noca.txt', setUp=setUp, tearDown=tearDown,
-            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-            )
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    return LayeredDocFileSuite(
+        'librarianformatter_noca.txt',
+        setUp=setUp, tearDown=tearDown, stdout_logging=False)

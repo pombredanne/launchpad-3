@@ -6,4 +6,3 @@
  - make it tell the user what changed when it returns to the bug page
    after editing a bug task
 
-

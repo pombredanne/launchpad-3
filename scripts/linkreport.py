@@ -1,5 +1,8 @@
-#!/usr/bin/env python
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Process LinkChecker .csv results for the staging server, stuff them into
 a database and generate a report suitable for spamming developers with.
@@ -7,6 +10,7 @@ a database and generate a report suitable for spamming developers with.
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 import csv, re, sys
@@ -99,7 +103,7 @@ def main(csvfile, log):
     total = len(broken)
 
     # Delete any entries that were not spidered
-    # TODO: Only if older than a threshold -- StuartBishop 20050704
+    # XXX StuartBishop 2005-07-04: Only if older than a threshold.
     for link in CheckedLink.select():
         if link in broken:
             continue
@@ -140,11 +144,17 @@ def main(csvfile, log):
     else:
         # Override this setting - we are only here if email explicitly
         # requested on the command line.
-        config.zopeless.send_email = True
+        send_email_data = """
+            [zopeless]
+            send_email: True
+            """
+        config.push('send_email_data', send_email_data)
         simple_sendmail(
                 "noreply@canonical.com", [options.email], options.subject,
                 rep, {'Keywords': 'LinkChecker', 'X-Fnord': 'Fnord'}
                 )
+        config.pop('send_email_data')
+
 
 def report(title, links, total, brokensince=True):
 
@@ -190,7 +200,7 @@ if __name__ == '__main__':
             "-t", "--to", dest="email", help="Email to ADDRESS",
             metavar="ADDRESS", default=None
             )
-    
+
     options, args = parser.parse_args()
 
     log = logger(options)

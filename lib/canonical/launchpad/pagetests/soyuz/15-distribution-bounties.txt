@@ -1,9 +1,0 @@
-Check if the distribution bounties is not broken.
-
-#  >>> browser.open("http://localhost/distros/ubuntu")
-#  >>> browser.getLink("Bounties").click()
-#  >>> browser.url
-#  'http://localhost/distros/ubuntu/+bounties'
-#  >>> browser.contents
-#  '...Bounties related to Ubuntu...'
-

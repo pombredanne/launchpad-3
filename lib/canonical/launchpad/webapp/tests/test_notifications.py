@@ -1,23 +1,33 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctest import DocTestSuite
+from zope.app.testing import (
+    placelesssetup,
+    ztapi,
+    )
 from zope.interface import implements
-from zope.app.session.interfaces import ISession, ISessionData
-from zope.app.tests import ztapi, placelesssetup
+from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.http import IHTTPApplicationResponse
-from zope.publisher.browser import TestRequest
+from zope.session.interfaces import (
+    ISession,
+    ISessionData,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse
-        )
+    INotificationRequest,
+    INotificationResponse,
+    )
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.notifications import NotificationResponse
+
 
 class MockSession(dict):
     implements(ISession)
@@ -42,7 +52,7 @@ class MockSessionData(dict):
 class MockHTTPApplicationResponse:
     implements(IHTTPApplicationResponse)
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=False):
         """Just report the redirection to the doctest"""
         if status is None:
             status=302
@@ -80,6 +90,7 @@ def setUp(test):
             )
 
     test.globs['MockResponse'] = MockHTTPApplicationResponse
+    test.globs['structured'] = structured
 
 
 def tearDown(test):

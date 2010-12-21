@@ -1,15 +1,67 @@
-<configure xmlns="http://namespaces.zope.org/zope" i18n_domain="launchpad">
-  <content class="canonical.launchpad.database.LibraryFileAlias">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileAlias" />
-  </content>
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
 
-  <content class="canonical.launchpad.database.LibraryFileContent">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileContent" />
-  </content>
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    i18n_domain="launchpad">
+
+  <class class="canonical.launchpad.database.librarian.LibraryFileAlias">
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAlias" />
+  </class>
+
+  <class class="canonical.launchpad.database.librarian.LibraryFileAliasWithParent">
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="mimetype restricted" />
+  </class>
+
+  <class class="canonical.launchpad.database.librarian.LibraryFileContent">
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileContent" />
+  </class>
 
   <securedutility
-    class="canonical.launchpad.database.LibraryFileAliasSet"
-    provides="canonical.launchpad.interfaces.ILibraryFileAliasSet">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileAliasSet" />
+    class="canonical.launchpad.database.librarian.LibraryFileAliasSet"
+    provides="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet">
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet" />
   </securedutility>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
+    name="+index"
+    />
+
+  <browser:page
+    name="+index"
+    facet="overview"
+    permission="zope.Public"
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
+    class="canonical.launchpad.browser.LibraryFileAliasView"
+    />
+
+  <browser:page
+    name="+md5"
+    permission="zope.Public"
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
+    class="canonical.launchpad.browser.LibraryFileAliasMD5View"
+    />
+
+  <!-- StreamOrRedirectLibraryFileAliasView -->
+  <class class="canonical.launchpad.browser.librarian.StreamOrRedirectLibraryFileAliasView">
+    <allow attributes="__call__" />
+    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+  </class>
+
+  <class class="canonical.launchpad.browser.librarian.SafeStreamOrRedirectLibraryFileAliasView">
+    <allow attributes="__call__" />
+    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+  </class>
+
+  <adapter
+    factory="canonical.launchpad.database.librarian.LibraryFileAliasWithParent"
+    provides="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent"
+    trusted="true" />
 </configure>

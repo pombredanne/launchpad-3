@@ -1,9 +1,0 @@
-Get the BinaryAndSourcePackageName vocabulary popup, searching for 'firefox'.
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+filebug/@@popup-window?search=firefox&vocabulary=BinaryAndSourcePackageName&field=field.packagename HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...mozilla-firefox...
-

@@ -1,9 +1,0 @@
-POTemplateName
---------------
-
-
->>> from canonical.launchpad.database import POTemplateNameSet
->>> ptns = POTemplateNameSet()
->>> ptn = ptns['evolution-2.2']
->>> ptn is not None
-True

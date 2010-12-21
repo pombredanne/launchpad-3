@@ -1,0 +1,14 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="privacy"
+  tal:attributes="
+    class python: path('context/private') and 'portlet private' or 'portlet public'
+  "
+>
+  <div tal:condition="not:context/private"
+  >This branch is public</div>
+  <div tal:condition="context/private"
+  >This branch is <strong>private</strong></div>
+</div>

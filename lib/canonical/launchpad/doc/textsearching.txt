@@ -4,7 +4,7 @@ Text Searching
 Introduction
 ------------
 We are currently using tsearch2 to provide full text searching
-capabilities inside the PostgreSQL database. 
+capabilities inside the PostgreSQL database.
 
 Although in a lot of cases simple substring searches using LIKE would be
 fine or even preferred, the disadvantage of using LIKE is that PostgreSQL
@@ -128,7 +128,7 @@ The following examples show the text version of the query using
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
     ...         uncompiled, compiled = cur.fetchone()
-    ...     except:
+    ...     except Exception:
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:
@@ -144,6 +144,12 @@ Queries are lowercased
 
     >>> ftq('Hello')
     hello <=> 'hello'
+
+
+Whitespace is normalized
+
+    >>> ftq('Hello\r\n\tMom\t')
+    hello&mom <=> 'hello' & 'mom'
 
 
 Boolean operations are allowed
@@ -208,7 +214,7 @@ The implicit boolean operation is AND
 
     >>> ftq('hi (mom OR mum)')
     hi&(mom|mum) <=> 'hi' & ( 'mom' | 'mum' )
-    
+
     >>> ftq('(hi OR hello) mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
@@ -261,7 +267,7 @@ operators ()!&|!.
     cool <=> 'cool'
 
     >>> ftq('foo@bar.com')
-    ((foo&bar&com)|foobarcom) <=> 'foo' & 'bar' & 'com' | 'foobarcom'    
+    ((foo&bar&com)|foobarcom) <=> 'foo' & 'bar' & 'com' | 'foobarcom'
 
 
 Some punctuation we pass through to tsearch2 for it to handle.
@@ -317,11 +323,11 @@ Bug #44913 - Unicode characters in the wrong place
 Bug #44913 - Nothing but stopwords in a query needing repair
 
     >>> ftq('a)a')
-    (a)&a <=> None
+    a&a <=> None
 
 
 Stop words (words deemed too common in English to search on) are removed
-from queries by tsearch2. 
+from queries by tsearch2.
 
     >>> ftq("Don't do it harder!")
     don't&do&it&harder <=> 'harder'
@@ -359,7 +365,6 @@ Words are also stemmed by tsearch2 (using the English stemmer).
     administrate <=> 'administr'
 
 
-
 Dud queries are 'repaired', such as doubled operators, trailing operators
 or invalid leading operators
 
@@ -391,28 +396,51 @@ or invalid leading operators
     (hi&mom) <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
-    (hi&mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("(((hi mom")
-    (((hi&mom))) <=> 'hi' & 'mom'
+    ((hi&mom)) <=> 'hi' & 'mom'
 
     >>> ftq("hi mom)")
-    (hi&mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("hi mom)))")
-    (((hi&mom))) <=> 'hi' & 'mom'
+    ((hi&mom)) <=> 'hi' & 'mom'
 
     >>> ftq("hi (mom")
-    hi&(mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("hi) mom")
-    (hi)&mom <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("(foo .") # Bug 43245
-    (foo) <=> 'foo'
+    foo <=> 'foo'
 
     >>> ftq("(foo.")
-    (foo) <=> 'foo'
+    foo <=> 'foo'
+
+    Bug #54972
+
+    >>> ftq("a[a\n[a")
+    ((a&a)|aa)&a <=> 'aa'
+
+    Bug #96698
+
+    >>> ftq("f)(")
+    f <=> 'f'
+
+    Bug #174368
+
+    >>> ftq(")foo(")
+    foo <=> 'foo'
+
+    Bug #160236
+
+    >>> ftq("foo&&bar-baz")
+    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+
+    >>> ftq("foo||bar.baz")
+    foo|((bar&baz)|barbaz) <=> 'foo' | ( 'bar' & 'baz' | 'barbaz' )
 
 
 Phrase Searching
@@ -442,8 +470,6 @@ The rank of a result is calculated using the tsearch2 rank() function.
     gnomebaker                0.28
     python-gnome2-dev         0.14
     evolution                 0.12
-    ubuntu                    0.06
-
 
 You can also build complex multi table queries and mush all the
 ranked results together. This query does a full text search on
@@ -491,3 +517,200 @@ an arbitrary constant that seemed appropriate).
     Bug Title Test            0.70
     Printing doesn't work     0.70
 
+
+== Natural Language Phrase Query ==
+
+The standard boolean searches of tsearch2 are fine, but sometime you
+want more fuzzy searches.
+
+For example, the KDE bug tracker has a guided bug submission form where
+the user first enters the summary of his problem. A list of similar
+bug reports is then displayed. The key here is 'similar', we want bug
+reports that have some words in common with the summary and we want the
+ones that are the most similar listed first. We don't necessarily want
+that all words are matched. So using a boolean AND search is too
+restrictive and using a simple OR search would probably give more noise
+than necessary. The KDE bug tracker is using MySQL fulltext indexes
+which support 'natural language search'.
+
+Unfortunately, tsearch2 doesn't implement a 'similar' or 'fuzzy' match
+operator. But we can implement an algorithm similar to the MySQL one on
+top of the basic boolean search. (The MySQL full text search algorithm
+is described at
+http://dev.mysql.com/doc/refman/5.0/en/fulltext-search.html) Basically,
+the algorithm is simple, it removes stop words, short words and words
+that appear in 50% or more of the rows (since these words are common,
+they have less semantic value.) The remaining terms are then matched
+against rows (probably using an OR search). The returned rows are sorted
+by relevance computed using an algorithm similar to TD-IDF
+(Term Frequency; Inverse Document Frequency).
+
+Implementing something similar with tsearch2 is straightforward:
+tsearch2 to_tsquery() already removes stop-words (it also stems the
+words). Relevance can be computed using the rank() or rank_cd()
+functions. These are not TD-IDF scoring functions, but they take into
+account where the words appeared (in the case of rank()) or proximity
+of the words (in the case of rank_cd()). Both scoring functions can
+normalize based on document length. So the only part left to implement
+is the >50% filtering part. Howevert the > 50% filtering is very expensive,
+and so is processing every single returned item (> 200000 for common queries
+on Ubuntu) - so we are disabling this and reworking from the ground up.
+
+
+=== nl_term_candidates() ===
+
+To find the terms in a search phrase that are canditates for the search,
+we can use the nl_term_candidates() function. This function uses ftq()
+internally to removes stop words and other words that will be ignored
+by tsearch2. All words are also stemmed.
+
+    >>> from canonical.database.nl_search import nl_term_candidates
+
+    >>> nl_term_candidates('When I start firefox, it crashes')
+    [u'start', u'firefox', u'crash']
+
+It returns an empty list when there is only stop-words in the query:
+
+    >>> nl_term_candidates('how do I do this?')
+    []
+
+We also handle expansion of hypenated words (like ftq does):
+
+    >>> nl_term_candidates('firefox foo-bar give me trouble')
+    [u'firefox', u'foo', u'bar', u'foobar', u'give', u'troubl']
+
+Except for the hyphenation character, all non-word caracters are ignored:
+
+    >>> nl_term_candidates(
+    ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) work???")
+    [u'charact', u'insid', u'quot', u'string', u'work']
+
+
+=== nl_phrase_search() ===
+
+To get the actual tsearch2 query that should be run, you will use the
+nl_phrase_search() function. This one takes two mandatory parameters and
+two optional ones. You pass in the search phrase and a database model class.
+
+The original nl_phrase_search has proved slow, so there are now two
+implementations in the core.
+
+First we describe the slow implementation.
+
+The select method of that class will be use to count the number of rows
+that is matched by each term. Term matching 50% or more of the total
+rows will be excluded from the final search.
+
+    >>> from canonical.database.nl_search import nl_phrase_search
+    >>> from canonical.database.sqlbase import quote
+    >>> from lp.answers.model.question import Question
+
+More than 50% of the questions matches firefox:
+
+    >>> question_count = Question.select().count()
+    >>> firefox_questions = Question.select(
+    ...     'fti @@ ftq(%s)' % quote('firefox')).count()
+    >>> float(firefox_questions) / question_count > 0.50
+    True
+
+So firefox will be removed from the final query:
+
+    >>> nl_phrase_search('system is slow when running firefox', Question,
+    ...     fast_enabled=False)
+    u'system|slow|run'
+
+    >>> nl_term_candidates('how do I do this?')
+    []
+    >>> nl_phrase_search('how do I do this?', Question)
+    ''
+
+The fast code path does not remove any terms. Rather it uses an & query over
+all the terms combined with an & query for each ordinal-1 subset of the terms:
+
+    >>> nl_phrase_search('system is slow when running firefox on ubuntu',
+    ...     Question)
+    u'(firefox&run&slow&system&ubuntu)|(run&slow&system&ubuntu)|(firefox&slow&system&ubuntu)|(firefox&run&system&ubuntu)|(firefox&run&slow&ubuntu)|(firefox&run&slow&system)'
+
+Short queries are expanded more simply:
+
+    >>> nl_phrase_search('system is slow', Question)
+    u'slow|system'
+
+
+==== Using other constraints ====
+
+You can pass a third parameter to the function that will be use as
+an additional constraint to determine the total number of rows that
+could be matched. For example, when searching questions on the firefox
+product more than 50% have the word 'get' in (which surprisingly isn't
+considered a stop word by tsearch2). If the constraint uses any
+additional tables, you can pass in list of names of these tables as a
+forth parameter:
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
+
+    >>> firefox_count = Question.select(
+    ...     'product = %s' % firefox_product.id).count()
+    >>> get_questions = Question.select(
+    ...     'fti @@ ftq(%s)' % quote('get')).count()
+    >>> float(get_questions) / firefox_count > 0.50
+    True
+
+    >>> nl_phrase_search(
+    ...     'firefox gets very slow on flickr', Question,
+    ...     "Question.product = %s AND Product.active = 't'" % firefox_product.id,
+    ...     ['Product'], fast_enabled=False)
+    u'slow|flickr'
+
+When the query only has stop words in it, the returned query will be the empty
+string:
+
+    >>> nl_phrase_search('will not do it', Question)
+    ''
+
+When there are no candidate rows, only stemming and stop words removal
+is done.
+
+    >>> Question.select('product = -1').count()
+    0
+    >>> nl_phrase_search('firefox is very slow on flickr', Question,
+    ...                  'product = -1')
+    u'(firefox&flickr&slow)|(flickr&slow)|(firefox&slow)|(firefox&flickr)'
+
+
+==== No keywords filtering with few rows ====
+
+The 50% rule is really useful only when there are many rows. When there
+only very few rows, that keyword elimination becomes a problem since
+keywords could be eliminated. For that reason, when there are less than
+5 candidates rows, keywords elimination is skipped.
+
+For example, there are less than 5 questions filed on the
+mozilla-firefox source package.
+
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_package_questions = Question.select(
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    >>> firefox_package_questions.count() < 5
+    True
+
+And more than half of these contain the keyword "firefox" in them:
+
+    >>> firefox_questions = Question.select(
+    ...     'fti @@ ftq(%s)' % quote('firefox')).count()
+    >>> float(get_questions) / firefox_package_questions.count() > 0.50
+    True
+
+But the keyword is still keep because there are only less than 5
+questions:
+
+    >>> nl_phrase_search(
+    ...     'firefox is slow', Question,
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    u'firefox|slow'

@@ -1,0 +1,110 @@
+==============
+Error recovery
+==============
+
+Under various conditions, reporting status from Mailman to Launchpad can
+fail.  For example, if during construction, the reportStatus() call has
+connectivity problems, the successful creation of the mailing list will
+never be reported, and Launchpad will not know that the list should be
+active.
+
+Another case is where the list is modified, say to give it a welcome
+message, but again the reportStatus() call fails.  In both these cases,
+Mailman and Launchpad should eventually resynchronize their state
+automatically.
+
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('%s/people/+newteam' % root_url)
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Create a mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> from lp.services.mailman.testing import helpers
+    >>> list_one = helpers.review_list('itest-one')
+
+
+Lost construction
+=================
+
+The mailing list is now active, but let's say that the status reporting
+failed.  The mailing list would be in the CONSTRUCTING state.  We
+simulate that here by manually tweaking the list back to that transitory
+state.
+
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.mailinglist import (
+    ...     IMailingListSet,
+    ...     MailingListStatus,
+    ...     )
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('admin@canonical.com')
+    >>> mailing_list_set = getUtility(IMailingListSet)
+    >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
+    >>> itest_one.status = MailingListStatus.CONSTRUCTING
+    >>> transaction.commit()
+
+Now we just wait for Mailman to resynchronize its state with Launchpad.
+
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-one')
+    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+
+However, if the list status on Launchpad is CONSTRUCTING, but the mailing list
+does not actually exist in Mailman, then Mailman will create it.
+
+    >>> browser.open('%s/people/+newteam' % root_url)
+    >>> browser.getControl(name='field.name').value = 'itest-two'
+    >>> browser.getControl('Display Name').value = 'ITest Two'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+    >>> from Mailman.Utils import list_names
+    >>> sorted(list_names())
+    ['itest-one', 'unused_mailman_site_list']
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_two = person_set.getByName('itest-two')
+    >>> itest_two = mailing_list_set.new(team_two, team_two.teamowner)
+    >>> raw_itest_two = removeSecurityProxy(itest_two)
+    >>> raw_itest_two.status = MailingListStatus.CONSTRUCTING
+    >>> raw_itest_two.reviewer = person_set.getByName('foo.bar')
+    >>> raw_itest_two.date_reviewed = UTC_NOW
+
+    >>> transaction.commit()
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-two')
+    >>> sorted(list_names())
+    ['itest-one', 'itest-two', 'unused_mailman_site_list']
+
+    >>> itest_two = mailing_list_set.get('itest-two')
+    >>> itest_two.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+
+
+Lost updates
+============
+
+Another situation can occur if the team owner updates the mailing list,
+say by giving it a welcome message.
+
+    >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+    >>> itest_one.status = MailingListStatus.UPDATING
+    >>> transaction.commit()
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-one')
+    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+
+    >>> logout()

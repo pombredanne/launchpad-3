@@ -1,6 +1,7 @@
-#!/usr/bin/env python
-
-# Copyright 2005 Canonical Ltd
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Queue management script
 
@@ -9,830 +10,36 @@ Tool for handling and visualisation of upload queue records.
 
 import _pythonpath
 
-import os
 import sys
-import tempfile
-from email import message_from_string
-import pytz
-from datetime import datetime
-
 from optparse import OptionParser
-from zope.component import getUtility
 
-from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-
-from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
-    IComponentSet, ISectionSet, QueueInconsistentStateError,
-    IPersonSet)
-
-from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority)
-
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.launchpad.mail import sendmail
-
-from canonical.encoding import ascii_smash, guess as guess_encoding
-
-from canonical.archivepublisher.template_messages import (
-    announce_template, rejection_template)
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.archivepublisher.utils import (
-    safe_fix_maintainer, ParseMaintError)
-
-from canonical.archivepublisher.tagfiles import (
-    parse_tagfile, TagFileParseError)
-
-name_queue_map = {
-    "new": DistroReleaseQueueStatus.NEW,
-    "unapproved": DistroReleaseQueueStatus.UNAPPROVED,
-    "accepted": DistroReleaseQueueStatus.ACCEPTED,
-    "done": DistroReleaseQueueStatus.DONE,
-    "rejected": DistroReleaseQueueStatus.REJECTED
-    }
-
-name_priority_map = {
-    'required': PackagePublishingPriority.REQUIRED,
-    'important': PackagePublishingPriority.IMPORTANT,
-    'standard': PackagePublishingPriority.STANDARD,
-    'optional': PackagePublishingPriority.OPTIONAL,
-    'extra': PackagePublishingPriority.EXTRA,
-    '': None
-    }
-
-
-# XXX cprov 20051219: this code is duplicated thousand times in LP
-# actually it is very handy, it should either be provided by Librarian
-# API or integrated in canonical.helpers. Bug # 29533
-
-def filechunks(file, chunk_size=256*1024):
-    """Return an iterator which reads chunks of the given file."""
-    # We use the two-arg form of the iterator here to form an iterator
-    # which reads chunks from the given file.
-    return iter(lambda: file.read(chunk_size), '')
-
-
-HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
-FOOT_MARGIN = " " * (9+6+1+22+1+22+2)
-RULE = "-" * (12+9+6+1+22+1+22+2)
-FILTERMSG="""
-    Omit the filter for all records.
-    Filter string consists of a queue ID or a pair <name>[/<version>]:
-
-    28
-    apt
-    apt/1
-
-    Use '-e' command line argument for exact matches:
-
-    -e apt
-    -e apt/1.0-1
-"""
-
-
-class QueueActionError(Exception):
-    """Identify Errors occurred within QueueAction class and its children."""
-
-
-class QueueAction:
-    """Queue Action base class.
-
-    Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
-    """
-
-    def __init__(self, distribution_name, distrorelease_name, queue, terms,
-                 announcelist, no_mail=True, exact_match=False):
-        """Initialises passed variables. """
-        self.terms = terms
-        self.exact_match = exact_match
-        self.queue = queue
-        self.no_mail = no_mail
-        self.distribution_name = distribution_name
-        self.distrorelease_name = distrorelease_name
-        self.announcelist = announcelist
-        self.default_sender = "%s <%s>" % (
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
-        self.default_recipient = "%s <%s>" % (
-            config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address)
-
-    @cachedproperty
-    def queue_size(self):
-        """ """
-        return getUtility(IDistroReleaseQueueSet).count(
-            status=self.queue, distrorelease=self.distrorelease)
-
-    def setDefaultContext(self):
-        """Set default distribuiton, distrorelease, announcelist."""
-        # if not found defaults to 'ubuntu'
-        distroset = getUtility(IDistributionSet)
-        try:
-            self.distribution = distroset[self.distribution_name]
-        except NotFoundError, info:
-            self.distribution = distroset['ubuntu']
-
-        if self.distrorelease_name:
-            # defaults to distro.currentrelease if passed distrorelease is
-            # misapplied or not found.
-            try:
-                self.distrorelease = self.distribution[self.distrorelease_name]
-            except NotFoundError, info:
-                raise QueueActionError('Context not found: "%s/%s"'
-                                       % (self.distribution.name,
-                                          self.distrorelease_name))
-        else:
-            self.distrorelease = self.distribution.currentrelease
-
-        if not self.announcelist:
-            self.announcelist = self.distrorelease.changeslist
-
-
-    def initialize(self):
-        """Builds a list of affected records based on the filter argument."""
-        self.setDefaultContext()
-
-        try:
-            term = self.terms[0]
-        except IndexError:
-            # if no argument is passed, present all available results in
-            # the selected queue.
-            term = ''
-
-        # refuse old-style '*' argument since we do not support
-        # wildcards yet.
-        if term == '*':
-            self.printUsage(FILTERMSG)
-
-        if term.isdigit():
-            # retrieve DistroReleaseQueue item by id
-            try:
-                item = getUtility(IDistroReleaseQueueSet).get(int(term))
-            except NotFoundError, info:
-                raise QueueActionError('Queue Item not found: %s' % info)
-
-            if item.status != self.queue:
-                raise QueueActionError(
-                    'Item %s is in queue %s' % (item.id, item.status.name))
-
-            if item.distrorelease != self.distrorelease:
-                raise QueueActionError(
-                    'Item %s is in %s/%s not in %s/%s'
-                    % (item.id, item.distrorelease.distribution.name,
-                       item.distrorelease.name,
-                       self.distrorelease.distribution.name,
-                       self.distrorelease.name))
-
-            self.items = [item]
-            self.items_size = 1
-            self.term = None
-        else:
-            # retrieve DistroReleaseQueue item by name/version key
-            version = None
-            if '/' in term:
-                term, version = term.strip().split('/')
-
-            self.items = self.distrorelease.getQueueItems(
-                status=self.queue, name=term, version=version,
-                exact_match=self.exact_match)
-            self.items_size = self.items.count()
-            self.term = term
-
-    def run(self):
-        """Place holder for command action."""
-        raise NotImplemented('No action implemented.')
-
-    def printTitle(self, action):
-        """Common title/summary presentation method."""
-        print ("%s %s/%s (%s) %s/%s"
-               % (action, self.distribution.name, self.distrorelease.name,
-                  self.queue.name, self.items_size, self.queue_size))
-
-    def printHead(self):
-        """Table head presentation method."""
-        print HEAD
-
-    def printBottom(self):
-        """Displays the table bottom and a small statistic information."""
-        print FOOT_MARGIN + "%d/%d total" % (self.items_size, self.queue_size)
-
-    def printRule(self):
-        """Displays a rule line. """
-        print RULE
-
-    def printUsage(self, extended_info=None):
-        """Display the class docstring as usage message.
-
-        Raise QueueActionError with optional extended_info argument
-        """
-        print self.__doc__
-        raise QueueActionError(extended_info)
-
-    def printItem(self, queue_item):
-        """Print out a one line summary of the queue item provided."""
-        sourceful = queue_item.sources.count() > 0
-        binaryful = queue_item.builds.count() > 0
-        sourcever = queue_item.sourceversion
-        spn = queue_item.displayname
-        local_now = datetime.now(pytz.timezone('UTC'))
-        age = DurationFormatterAPI(
-            local_now - queue_item.datecreated).approximateduration()
-        vis_item = "%8d | " % queue_item.id
-        if sourceful:
-            vis_item += "S"
-        else:
-            vis_item += "-"
-        if binaryful:
-            vis_item += "B | "
-        else:
-            vis_item += "- | "
-        if len(spn) > 20:
-            spn = spn[:20]
-        else:
-            spn += " " * (20 - len(spn))
-        vis_item += spn + " | "
-        sourcever = str(sourcever)
-        if len(sourcever) > 20:
-            sourcever = sourcever[:20]
-        else:
-            sourcever += " " * (20 - len(sourcever))
-        vis_item += sourcever + " | " + age
-        print vis_item
-
-    def printInfo(self, queue_item, only=None):
-        """Displays additional information about the provided queue item.
-
-        Optionally pass a binarypackagename via 'only' argument to display
-        only exact matches within the selected build queue items.
-        """
-        for source in queue_item.sources:
-            spr = source.sourcepackagerelease
-            print ("\t | * %s/%s Component: %s Section: %s"
-                   % (spr.sourcepackagename.name, spr.version,
-                      spr.component.name, spr.section.name))
-
-        for queue_build in queue_item.builds:
-            for bpr in queue_build.build.binarypackages:
-                if only and only != bpr.name:
-                    continue
-                dar = queue_build.build.distroarchrelease
-                binarypackagename = bpr.binarypackagename.name
-                # inspect the publication history of each binary
-                darbp = dar.getBinaryPackage(binarypackagename)
-                if len(darbp.releases):
-                    status_flag = "*"
-                else:
-                    status_flag = "N"
-
-                print ("\t | %s %s/%s/%s Component: %s Section: %s "
-                       "Priority: %s"
-                       % (status_flag, binarypackagename, bpr.version,
-                          dar.architecturetag, bpr.component.name,
-                          bpr.section.name, bpr.priority.name))
-
-        for queue_custom in queue_item.customfiles:
-            print ("\t | * %s Format: %s"
-                   % (queue_custom.libraryfilealias.filename,
-                      queue_custom.customformat.name))
-
-    def printMessage(self, message):
-        """Display formated message."""
-        print "Would be sending a mail:"
-        print "   Subject: %s" % message['Subject']
-        print "   Sender: %s" % message['From']
-        print "   Recipients: %s" % message['To']
-        print "   Bcc: %s" % message['Bcc']
-        print "   Body:"
-        for line in message.get_payload().split("\n"):
-            print line
-
-    def send_email(self, message):
-        """Send the mails provided using the launchpad mail infrastructure."""
-        mail_message = message_from_string(ascii_smash(message))
-        mail_message['X-Katie'] = "Launchpad actually"
-        # XXX cprov 20060711: workaround for bug # 51742, empty 'To:' due
-        # invalid uploader LP email on reject. We always have Bcc:, so, it's
-        # promoted to To:
-        if not mail_message['To']:
-            mail_message['X-Non-LP-Uploader'] = ""
-            mail_message.replace_header('To', self.default_recipient)
-            mail_message.replace_header('Bcc', '')
-
-        if not self.no_mail:
-            sendmail(mail_message)
-            return
-
-        self.printMessage(mail_message)
-
-    # XXX: dsilvers: 20050203: This code is essentially cargo-culted from
-    # nascentupload.py and ideally should be migrated into a database
-    # method.
-    def _components_valid_for(self, person):
-        """Return the set of components this person could upload to."""
-
-        possible_components = set()
-        for acl in self.distribution.uploaders:
-            if person in acl:
-                possible_components.add(acl.component.name)
-
-        return possible_components
-
-    def is_person_in_keyring(self, person):
-        """Return whether or not the specified person is in the keyring."""
-        in_keyring = len(self._components_valid_for(person)) > 0
-        return in_keyring
-
-    # The above were stolen for this code to be useful.
-    def filter_addresses(self, addresslist):
-        """Filter the list of addresses provided based on the distribution's
-        permitted uploaders.
-        """
-        okay = []
-        person_util = getUtility(IPersonSet)
-        for address in addresslist:
-            p = person_util.getByEmail(address)
-            if p is not None:
-                if self.is_person_in_keyring(p):
-                    okay.append(address)
-        return okay
-
-    def find_addresses_from(self, changesfile):
-        """Given a libraryfilealias which is a changes file, find a
-        set of permitted recipients for the current distrorelease.
-        """
-        full_set = set()
-        recipient_addresses = []
-        from_address = self.default_sender
-
-        temp_fd, temp_name = tempfile.mkstemp()
-        temp_fd = os.fdopen(temp_fd, "w")
-
-        changesfile.open()
-        temp_fd.write(changesfile.read())
-        temp_fd.close()
-        changesfile.close()
-
-        try:
-            changes = parse_tagfile(temp_name, allow_unsigned=True)
-        except TagFileParseError, e:
-            os.remove(temp_name)
-        else:
-            os.remove(temp_name)
-
-            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-                changes['maintainer'], 'maintainer')
-            full_set.add(email)
-
-            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-                changes['changed-by'], 'changed-by')
-            full_set.add(email)
-
-            # Finally, filter the set of recipients based on the whitelist
-            recipient_addresses.extend(self.filter_addresses(full_set))
-
-            if email in recipient_addresses:
-                from_address = rfc2047
-
-        # Return the sender for the announce and any recipients for the
-        # accept/reject messages themselves
-        return from_address, recipient_addresses
-
-
-class QueueActionHelp:
-    """Present provided actions summary"""
-    def __init__(self, **kargs):
-        self.kargs = kargs
-        self.kargs['no_mail'] = True
-        self.actions = kargs['terms']
-
-    def initialize(self):
-        """Mock initialization """
-        pass
-
-    def run (self):
-        """Present the actions description summary"""
-        # present summary for specific or all commands
-        if not self.actions:
-            actions_help = queue_actions.items()
-        else:
-            actions_help = [(k, v) for k, v in queue_actions.items()
-                            if k in self.actions]
-        # extract summary from docstring of specified commands
-        for action, wrapper in actions_help:
-            if action is 'help':
-                continue
-            wobj = wrapper(**self.kargs)
-            summary = wobj.__doc__.splitlines()[0]
-            print '\t%s : %s ' % (action, summary)
-
-
-class QueueActionReport(QueueAction):
-    """Present a report about the size of available queues"""
-    def initialize(self):
-        """Mock initialization """
-        self.setDefaultContext()
-
-    def run(self):
-        """Display the queues size."""
-        print "Report for %s/%s" % (self.distribution.name,
-                                    self.distrorelease.name)
-
-        for queue in name_queue_map.values():
-            size = getUtility(IDistroReleaseQueueSet).count(
-                status=queue, distrorelease=self.distrorelease)
-            print "\t%s -> %s entries" % (queue.name, size)
-
-
-class QueueActionInfo(QueueAction):
-    """Present the Queue item including its contents.
-
-    Presents the contents of the selected upload(s).
-
-    queue info <filter>
-    """
-    def run(self):
-        """Present the filtered queue ordered by date."""
-        self.printTitle('Listing')
-        self.printHead()
-        for queue_item in self.items:
-            self.printItem(queue_item)
-            self.printInfo(queue_item)
-        self.printHead()
-        self.printBottom()
-
-
-class QueueActionFetch(QueueAction):
-    """Fetch the contents of a queue item.
-
-    Download the contents of the selected upload(s).
-
-    queue fetch <filter>
-    """
-    def run(self):
-        self.printTitle('Fetching')
-        self.printRule()
-        for queue_item in self.items:
-            print "Constructing %s" % queue_item.changesfile.filename
-            changes_file_alias = queue_item.changesfile
-            changes_file_alias.open()
-            changes_file = open(queue_item.changesfile.filename, "w")
-            changes_file.write(changes_file_alias.read())
-            changes_file.close()
-            changes_file_alias.close()
-
-            file_list = []
-            for source in queue_item.sources:
-                for spr_file in source.sourcepackagerelease.files:
-                    file_list.append(spr_file.libraryfile)
-
-            for build in queue_item.builds:
-                for bpr in build.build.binarypackages:
-                    for bpr_file in bpr.files:
-                        file_list.append(bpr_file.libraryfile)
-
-            for custom in queue_item.customfiles:
-                file_list.append(custom.libraryfilealias)
-
-            for libfile in file_list:
-                print "Constructing %s" % libfile.filename
-                libfile.open()
-                out_file = open(libfile.filename, "w")
-                for chunk in filechunks(libfile):
-                    out_file.write(chunk)
-                out_file.close()
-                libfile.close()
-
-        self.printRule()
-        self.printBottom()
-
-
-class QueueActionReject(QueueAction):
-    """Reject the contents of a queue item.
-
-    Move the selected upload(s) to the REJECTED queue.
-
-    queue reject <filter>
-    """
-    def run(self):
-        """Perform Reject action."""
-        self.printTitle('Rejecting')
-        self.printRule()
-        for queue_item in self.items:
-            print 'Rejecting %s' % queue_item.sourcepackagename.name
-            try:
-                queue_item.setRejected()
-            except QueueInconsistentStateError, info:
-                print ('** %s could not be rejected due %s'
-                       % (queue_item.sourcepackagename.name, info))
-            else:
-                for source in queue_item.sources:
-                    # XXX: dsilvers: 20060203: This needs to be able to
-                    # be given a reason for the rejection, otherwise it's
-                    # not desperately useful.
-                    src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was REJECTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
-
-                    sender, recipients = self.find_addresses_from(
-                        queue_item.changesfile)
-
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
-
-                    replacements = {
-                        "SENDER": sender,
-                        "RECIPIENT": ", ".join(recipients),
-                        "CHANGES": queue_item.changesfilename,
-                        "SUMMARY": summary,
-                        "CHANGESFILE": changescontent,
-                        "DEFAULT_RECIPIENT": self.default_recipient,
-                        }
-
-                    # append an email describing this action.
-                    message = rejection_template % replacements
-                    self.send_email(message)
-
-        self.printRule()
-        self.printBottom()
-
-
-class QueueActionAccept(QueueAction):
-    """Accept the contents of a queue item.
-
-    Move the selected upload(s) to the ACCEPTED queue.
-
-    queue accept <filter>
-    """
-    def run(self):
-        """Perform Accept action."""
-        self.printTitle('Accepting')
-        self.printRule()
-        for queue_item in self.items:
-            print 'Accepting %s' % queue_item.sourcepackagename.name
-            try:
-                queue_item.setAccepted()
-            except QueueInconsistentStateError, info:
-                print ('** %s could not be accepted due %s'
-                       % (queue_item.sourcepackagename.name, info))
-            else:
-                for source in queue_item.sources:
-                    src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was ACCEPTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
-
-                    sender, recipients = self.find_addresses_from(
-                        queue_item.changesfile)
-                    # only announce for acceptation
-                    if self.announcelist is not None:
-                        recipients.append(self.announcelist)
-
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
-
-                    replacements = {
-                        "MAINTAINERFROM": sender,
-                        "SOURCE": src_rel.name,
-                        "VERSION": src_rel.version,
-                        "ARCH": 'source',
-                        "CHANGESFILE": changescontent,
-                        "SUMMARY": summary,
-                        "ANNOUNCE": ", ".join(recipients),
-                        "DEFAULT_RECIPIENT": self.default_recipient
-                        }
-
-                    # append an email describing this action.
-                    message = announce_template % replacements
-                    self.send_email(message)
-
-        self.printRule()
-        self.printBottom()
-
-
-class QueueActionOverride(QueueAction):
-    """Override information in a queue item content.
-
-    queue override <filter> [override_stanza*]
-
-    Where override_stanza is one of:
-    source [<component>]/[<section>]
-    binary [<component>]/[<section>]/[<priority>]
-
-    In each case, when you want to leave an override alone leave it blank.
-
-    So, to set a binary to have section 'editors' but leave the
-    component and priority alone, do:
-
-    queue override <filter> binary /editors/
-
-    Binaries can only be overridden by passing a name filter, so it will
-    only override the binary package which matches the filter.
-
-    Or, to set a source's section to editors, do:
-
-    queue override <filter> source /editors
-    """
-    supported_override_stanzas = ['source', 'binary']
-
-    def run(self):
-        """Perform Override action."""
-        self.printTitle('Overriding')
-        self.printRule()
-
-        try:
-            override_stanza = self.terms[1]
-        except IndexError, info:
-            self.printUsage('Missing override_stanza.')
-            return
-
-        if override_stanza not in self.supported_override_stanzas:
-            self.printUsage('Not supported override_stanza: %s'
-                            % override_stanza)
-            return
-
-        return getattr(self, '_override_' + override_stanza)()
-
-    def _override_source(self):
-        """Overrides sourcepackagereleases selected.
-
-        It doesn't check Component/Section Selection, this is a task
-        for queue state-machine.
-        """
-        try:
-            overrides = self.terms[2]
-            component_name, section_name = overrides.split('/')
-        except IndexError, info:
-            self.printUsage('Missing override_stanza argument')
-        except ValueError, info:
-            self.printUsage('Misapplied override_stanza argument: %s'
-                            % overrides)
-
-        component = None
-        section = None
-        try:
-            if component_name:
-                component = getUtility(IComponentSet)[component_name]
-            if section_name:
-                section = getUtility(ISectionSet)[section_name]
-        except NotFoundError, info:
-            raise QueueActionError('Not Found: %s' % info)
-
-        for queue_item in self.items:
-            # XXX 20060111 cprov: DistroReleaseQueue has only one
-            # respective DistroReleaseQueueSource and lastly to
-            # a single SourcePackageRelease, it's paired to
-            # a Changesfile. So the "for" is fluff.
-            for source in queue_item.sources:
-                source.sourcepackagerelease.override(component=component,
-                                                     section=section)
-                self.printInfo(queue_item)
-
-    def _override_binary(self):
-        """Overrides binarypackagereleases selected"""
-        if not self.term:
-            self.printUsage('Cannot Override BinaryPackage retrieved by ID')
-
-        try:
-            overrides = self.terms[2]
-            component_name, section_name, priority_name = overrides.split('/')
-        except IndexError, info:
-            self.printUsage('Missing "name override_argument" argument')
-        except ValueError, info:
-            self.printUsage('Misapplied override_stanza argument: %s'
-                            % overrides)
-        component = None
-        section = None
-        priority = None
-        try:
-            if component_name:
-                component = getUtility(IComponentSet)[component_name]
-            if section_name:
-                section = getUtility(ISectionSet)[section_name]
-            if priority_name:
-                priority = name_priority_map[priority_name]
-        except (NotFoundError, KeyError), info:
-            raise QueueActionError('Not Found: %s' % info)
-
-        overridden = None
-        for queue_item in self.items:
-            for build in queue_item.builds:
-                # Different than DistroReleaseQueueSources
-                # DistroReleaseQueueBuild points to a Build, that can,
-                # and usually does, point to multiple BinaryPackageReleases.
-                # So we need to carefully select the requested package to be
-                # overridden
-                for binary in build.build.binarypackages:
-                    if binary.name == self.term:
-                        overridden = binary.name
-                        print ("Overriding %s_%s (%s/%s/%s)"
-                               % (binary.name, binary.version,
-                                  binary.component.name, binary.section.name,
-                                  binary.priority.name))
-                        binary.override(component=component, section=section,
-                                        priority=priority)
-                        # break loop, just in case
-                        break
-
-        if not overridden:
-            self.printUsage('No matches for "%s".' % self.term)
-
-        self.printInfo(queue_item, only=overridden)
-
-queue_actions = {
-    'help': QueueActionHelp,
-    'info': QueueActionInfo,
-    'fetch': QueueActionFetch,
-    'accept': QueueActionAccept,
-    'reject': QueueActionReject,
-    'override': QueueActionOverride,
-    'report': QueueActionReport,
-    }
-
-
-class CommandRunnerError(Exception):
-    """Command Runner Failure"""
-
-class CommandRunner:
-    """ """
-    def __init__(self, queue, distribution_name, distrorelease_name,
-                 announcelist, no_mail):
-        self.queue = queue
-        self.distribution_name = distribution_name
-        self.distrorelease_name = distrorelease_name
-        self.announcelist = announcelist
-        self.no_mail = no_mail
-
-    def execute(self, terms, exact_match=False):
-        """Execute a single command iteration.
-
-        Return True if something gets wrong during the operation,
-        False otherwise.
-        """
-        print 'Running: "%s"' % " ".join(terms)
-
-        # check syntax, abort process if anything gets wrong
-        try:
-            action = terms[0]
-            arguments = terms[1:]
-        except IndexError:
-            raise CommandRunnerError('Invalid sentence, use help.')
-
-        # check action availability,
-        try:
-            queue_action = queue_actions[action]
-        except KeyError:
-            raise CommandRunnerError('Unknown Action: %s' % action)
-
-        # perform the required action on queue.
-        try:
-            # be sure to send every args via kargs
-            wrapper = queue_action(distribution_name=self.distribution_name,
-                                   distrorelease_name=self.distrorelease_name,
-                                   announcelist=self.announcelist,
-                                   queue=self.queue,
-                                   no_mail=self.no_mail,
-                                   terms=arguments,
-                                   exact_match=exact_match)
-            wrapper.initialize()
-            wrapper.run()
-        except QueueActionError, info:
-            raise CommandRunnerError(info)
+from canonical.lp import initZopeless
+
+from canonical.launchpad.scripts import logger, logger_options
+from lp.soyuz.scripts.queue import (
+    CommandRunner, CommandRunnerError, name_queue_map)
 
 
 def main():
     parser = OptionParser()
+    logger_options(parser)
 
     parser.add_option("-Q", "--queue",
-                      dest="queue", metavar="QUEUE", default="new",
+                      dest="queue_name", metavar="QUEUE", default="new",
                       help="Which queue to consider")
 
-    parser.add_option("-D", "--distribution",
-                      dest="distribution", metavar="DISTRO", default=None,
+    parser.add_option("-d", "--distribution",
+                      dest="distribution_name", metavar="DISTRO", default=None,
                       help="Which distro to look in")
 
-    parser.add_option("-R", "--distrorelease",
-                      dest="distrorelease", metavar="DISTRORELEASE",
+    parser.add_option("-s", "--suite",
+                      dest="suite_name", metavar="DISTRORELEASE",
                       default=None,
                       help=("Which distrorelease to look in, defaults "
-                            "to distribution 'currentrelease'."))
+                            "to distribution 'currentseries'."))
 
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
@@ -861,22 +68,27 @@ def main():
     parser.add_option("-f", "--file", metavar="FILE", default=None,
                       help="file containing a sequence of command lines.")
 
-    options, args = parser.parse_args()
+    parser.add_option("-c", "--component", dest="component_name",
+                      metavar="COMPONENT", default=None,
+                      help="When overriding, move package to COMPONENT")
 
-    if options.queue not in name_queue_map:
-        print "Unable to map queue name %s" % options.queue
+    parser.add_option("-x", "--section", dest="section_name",
+                      metavar="SECTION", default=None,
+                      help="When overriding, move package to SECTION")
+
+    parser.add_option("-p", "--priority", dest="priority_name",
+                      metavar="PRIORITY", default=None,
+                      help="When overriding, move package to PRIORITY")
+
+    options, args = parser.parse_args()
+    log = logger(options, "ftpmaster.queue")
+
+    if options.queue_name not in name_queue_map:
+        print 'Unable to map queue name "%s"' % options.queue_name
         return 1
 
-    distribution_name = options.distribution
-    distrorelease_name = options.distrorelease
-    exact_match = options.exact_match
-    dryrun = options.dryrun
-    announcelist = options.announcelist
-    ign_errors = options.ignore_errors
-
-
     no_mail = options.dryrun or options.nomail
-    queue = name_queue_map[options.queue]
+    queue = name_queue_map[options.queue_name]
 
     if options.file:
         args_list = [args.strip().split() for args in
@@ -884,19 +96,23 @@ def main():
     else:
         args_list = [args]
 
-    cmd_runner = CommandRunner(queue, distribution_name, distrorelease_name,
-                               announcelist, no_mail)
+    cmd_runner = CommandRunner(
+        queue, options.distribution_name, options.suite_name,
+        options.announcelist, no_mail, options.component_name,
+        options.section_name, options.priority_name, log=log)
 
-    print ("Initialising connection to queue %s" % options.queue)
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    print ("Initialising connection to queue %s" % options.queue_name)
+
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     for single_args in args_list:
         try:
-            cmd_runner.execute(single_args, exact_match)
+            cmd_runner.execute(single_args, options.exact_match)
         except CommandRunnerError, info:
             print (info)
-            if ign_errors:
+            if options.ignore_errors:
                 continue
             ztm.abort()
             print 'Aborting current transaction'

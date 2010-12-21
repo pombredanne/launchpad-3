@@ -1,0 +1,154 @@
+#!/usr/bin/python
+#
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Usage: on-edge [-v] [--edge-only] [--staging-only]
+
+This script consults the edge and staging servers to determine which revisions
+they are running. Once it knows that, it prints a log of all the revisions of
+stable and db-stable respectively that cannot be found on edge or staging.
+
+Note that the stable branch is assumed to be in a directory called 'stable', a
+sibling to the current branch directory. Likewise, db-stable is assumed to be
+in '../db-stable', relative to this branch.
+"""
+
+import optparse
+import os
+import re
+import sys
+
+from bzrlib.branch import Branch
+from bzrlib import errors
+from bzrlib.transport import get_transport
+
+
+class UsageError(Exception):
+    """Raised when the user makes a dumb error."""
+
+
+def get_staging_revision():
+    """Get the revision of db-stable deployed on staging.
+
+    :return: The staging revno as an int. Corresponds to a revision of
+        lp:launchpad/db-stable.
+    """
+    t = get_transport('https://staging.launchpad.net/')
+    last_line = t.get_bytes('successful-updates.txt').splitlines()[-1]
+    return int(last_line.split()[-1])
+
+
+def get_edge_revision():
+    """Get the revision of stable deployed on edge.
+
+    :return: The edge revno as an int. Corresponds to a revision of
+        lp:launchpad/stable.
+    """
+    t = get_transport('https://edge.launchpad.net/')
+    html = t.get_bytes('index.html')
+    revision_re = re.compile(r'\(r(\d+)\)')
+    for line in html.splitlines():
+        matches = revision_re.search(line)
+        if matches:
+            return int(matches.group(1))
+    raise ValueError("Could not find revision number on edge home page")
+
+
+def get_parent_directory():
+    """Return the parent directory of the current branch."""
+    this_file = os.path.abspath(__file__)
+    return os.path.dirname(os.path.dirname(os.path.dirname(this_file)))
+
+
+def revno_str(revno):
+    """Make a dotted string from a revno tuple."""
+    return ".".join(map(str, revno))
+
+
+def print_revisions(branch, end_id):
+    """Output revision messages up to end_id."""
+    rev_iter = branch.iter_merge_sorted_revisions(
+        None, end_id, 'include')
+    for rev_info in rev_iter:
+        (rev_id, depth, revno, end_of_merge) = rev_info
+        if depth > 0:
+            continue
+        revision = branch.repository.get_revision(rev_id)
+        print "r%s:\n%s" % (revno_str(revno), revision.message)
+
+
+def report_difference_to_server(server, branch_path, revno, verbose):
+    """Output if and how the local branch differs from the server."""
+    branch = Branch.open(branch_path)
+    print '%s is running %s r%d.' % (server, branch.nick, revno)
+    try:
+        current_id = branch.dotted_revno_to_revision_id((revno,))
+    except errors.NoSuchRevision:
+        print '%s has newer revisions than %s.' % (server, branch.nick)
+    else:
+        if current_id == branch.last_revision():
+            print '%s is up-to-date.' % (server,)
+        else:
+            if verbose:
+                print_revisions(branch, current_id)
+
+
+automatic_merge_regex = re.compile(
+    "automatic merge from stable[.] "
+    "Revisions:[0-9,\s]*\s+([0-9]+)\s+included")
+
+
+def get_last_automatic_stable_merge_revno(branch_path):
+    """Find out which stable revision was last commited to db-stable."""
+    branch = Branch.open(branch_path)
+    for rev_info in branch.iter_merge_sorted_revisions():
+        (rev_id, depth, revno, end_of_merge) = rev_info
+        if depth > 0:
+            continue
+        revision = branch.repository.get_revision(rev_id)
+        match = automatic_merge_regex.search(revision.message)
+        if match is not None:
+            return (revno_str(revno), match.group(1))
+
+
+def get_opt_parse():
+    parser = optparse.OptionParser(
+        description="Show local revisions that aren't on beta servers.")
+    parser.add_option(
+        '-v', '--verbose', action='store_true', help="Show revision log.")
+    parser.add_option(
+        '--edge', action='store_true',
+        help="Show revisions on edge.")
+    return parser
+
+
+def run(verbose, edge):
+    parent_dir = get_parent_directory()
+    if edge:
+        edge_revision = get_edge_revision()
+        stable_branch = os.path.join(parent_dir, 'stable')
+        report_difference_to_server(
+            'edge', stable_branch, edge_revision, verbose)
+    staging_revision = get_staging_revision()
+    db_stable_branch = os.path.join(parent_dir, 'db-stable')
+    report_difference_to_server(
+        'staging', db_stable_branch, staging_revision, verbose)
+    print "Last automatic merge on db-stable r%s was stable r%s." % (
+        get_last_automatic_stable_merge_revno(db_stable_branch))
+
+
+def main(argv):
+    parser = get_opt_parse()
+    options, args = parser.parse_args(argv)
+    if args:
+        raise UsageError("Don't know what to do with arguments: %s" % args)
+    run(options.verbose, options.edge)
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except UsageError, e:
+        print 'ERROR: %s' % e
+        sys.exit(1)

@@ -1,57 +1,46 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Message related view classes."""
 
 __metaclass__ = type
 
-__all__ = ['MessageAddView']
-
 from zope.interface import implements
-from zope.component import getUtility
-from zope.event import notify
+
+from canonical.launchpad.interfaces.message import IIndexedMessage
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
-from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import TicketStatus
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.interfaces import ILaunchBag, ITicket
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.snapshot import Snapshot
+class BugMessageCanonicalUrlData:
+    """Bug messages have a canonical_url within the primary bugtask."""
+    implements(ICanonicalUrlData)
+    rootsite = 'bugs'
+
+    def __init__(self, bug, message):
+        self.inside = bug.bugtasks[0]
+        self.path = "comments/%d" % list(bug.messages).index(message)
 
 
-class MessageAddView(SQLObjectAddView):
-    """View class for adding an IMessage to an IMessageTarget."""
+class IndexedBugMessageCanonicalUrlData:
+    """An optimized bug message canonical_url implementation.
 
-    def __init__(self, context, request):
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    This implementation relies on the message being decorated with
+    its index and context.
+    """
+    implements(ICanonicalUrlData)
+    rootsite = 'bugs'
 
-    def create(self, *args, **kw):
-        subject = kw.get('subject')
-        content = kw.get('content')
-        owner = kw.get('owner')
-        unmodified_context = Snapshot(self.context, providing=ITicket)
-        msg = self.context.newMessage(owner=owner,
-            subject=subject, content=content)
-        #XXX: The part the does specific things when the context is
-        #     ITicket shouldn't be here. I'll refactor TicketView later
-        #     to handle the adding of comments instead.
-        #     -- Bjorn Tillenius, 2005-11-22
-        if ITicket.providedBy(self.context):
-            resolved = kw.get('resolved', None)
-            if resolved and owner == self.context.owner:
-                self.context.acceptAnswer(owner)
-            notify(SQLObjectModifiedEvent(
-                self.context, unmodified_context,
-                edited_fields=['messages', 'status']))
-        self._nextURL = canonical_url(self.context)
-
-        return msg
-
-    def add(self, ob):
-        return ob
-
-    def nextURL(self):
-        return self._nextURL
+    def __init__(self, message):
+        self.inside = message.inside
+        self.path = "comments/%d" % message.index
 
 
+def message_to_canonical_url_data(message):
+    """This factory creates `ICanonicalUrlData` for BugMessage."""
+    if IIndexedMessage.providedBy(message):
+        return IndexedBugMessageCanonicalUrlData(message)
+    else:
+        if message.bugs.count() == 0:
+            # Will result in a ComponentLookupError
+            return None
+        return BugMessageCanonicalUrlData(message.bugs[0], message)

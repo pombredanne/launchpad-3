@@ -1,72 +1,33 @@
-#!/usr/bin/env python
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 # This script updates the cached stats in the system
 
 import _pythonpath
 
-import sys
-
-from optparse import OptionParser
-
-from zope.component import getUtility
-
-from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IBugTaskSet
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.bugs.scripts.bugtasktargetnamecaches import (
+    BugTaskTargetNameCacheUpdater)
 from canonical.config import config
 
-_default_lock_file = '/var/lock/launchpad-targetnamecacheupdater.lock'
 
-def update_bugtask_targetname_caches():
+class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     """Update the targetnamecache for all IBugTasks.
 
-    This ensures that the cache values are up-to-date even after, for example,
-    an IDistribution being renamed.
+    This ensures that the cache values are up-to-date even after, for
+    example, an IDistribution being renamed.
     """
-    ztm = initZopeless(dbuser=config.targetnamecacheupdater.dbuser,
-                       implicitBegin=False)
-    bugtaskset = getUtility(IBugTaskSet)
-    ztm.begin()
-    # XXX: we use a special API here, which is kinda klunky, but which
-    # allows us to return all bug tasks (even private ones); this should
-    # eventually be changed to a more elaborate permissions scheme,
-    # pending the infrastructure to do so
-    #   -- kiko, 2006-03-23
-    bugtask_ids = [bugtask.id for bugtask in bugtaskset.dangerousGetAllTasks()]
-    ztm.commit()
-    for bugtask_id in bugtask_ids:
-        ztm.begin()
-        bugtask = bugtaskset.get(bugtask_id)
-        bugtask.updateTargetNameCache()
-        ztm.commit()
-
+    def main(self):
+        updater = BugTaskTargetNameCacheUpdater(self.txn, self.logger)
+        updater.run()
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    logger_options(parser)
-    (options, arguments) = parser.parse_args()
-    if arguments:
-        parser.error("Unhandled arguments %s" % repr(arguments))
-    execute_zcml_for_scripts()
+    script = UpdateBugTaskTargetNameCaches(
+        'launchpad-targetnamecacheupdater',
+        dbuser=config.targetnamecacheupdater.dbuser)
+    script.lock_and_run(implicit_begin=False)
 
-    log = logger(options, 'update-bugtask-targetnamecaches')
-    log.info("Updating targetname cache of bugtasks.")
-
-    lockfile = LockFile(_default_lock_file, logger=log)
-    try:
-        lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", _default_lock_file)
-        sys.exit(1)
-
-    try:
-        update_bugtask_targetname_caches()
-    finally:
-        lockfile.release()
-
-    log.info("Finished updating targetname cache of bugtasks.")
-
-    sys.exit(0)

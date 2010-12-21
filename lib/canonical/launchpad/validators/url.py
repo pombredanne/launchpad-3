@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -6,6 +7,7 @@ from textwrap import dedent
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+
 
 def valid_absolute_url(name):
     """validate an absolute URL.
@@ -20,8 +22,14 @@ def valid_absolute_url(name):
     True
     >>> valid_absolute_url('http://www.example.com')
     True
-    >>> valid_absolute_url('whatever://example.com/blah')
+    >>> valid_absolute_url('whatever:/uxample.com/blah')
     False
+
+    # XXX: 2010-04-26, Salgado, bug=570244: This test only works against
+    # python2.6 but we still need to run on python2.5, so we should uncomment
+    # it only when we no longer need to run on 2.5.
+    >>> #valid_absolute_url('whatever://example.com/blah')
+    True
     """
     # Have to import urlparse locally since imports from helpers.py
     # causes this module to be imported, and we can't import stuff from
@@ -29,8 +37,9 @@ def valid_absolute_url(name):
     # as well.
     from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
-    if scheme == 'sftp':
-        return True
+    # note that URL checking is also done inside the database, in
+    # trusted.sql, the valid_absolute_url function, and that code uses
+    # stdlib urlparse, not our customized version.
     if not (scheme and netloc):
         return False
     return True
@@ -66,7 +75,7 @@ def builder_url_validator(url):
     """Return True if the url is valid, or raise a LaunchpadValidationError"""
     if not valid_builder_url(url):
         raise LaunchpadValidationError(_(dedent("""
-            Invalid builder url '%s'. Builder urls must be
+            Invalid builder url '${url}'. Builder urls must be
             http://host/ or http://host:port/ only.
-            """)), url)
+            """), mapping={'url': url}))
     return True

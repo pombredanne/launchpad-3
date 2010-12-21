@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Custom Password widgets.
 
@@ -7,14 +9,19 @@ TODO: Consider folding this back into Zope3 -- StuartBishop 20050520
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.schema.interfaces import ValidationError
-from zope.app.form.interfaces import WidgetInputError
 from zope.app.form.browser import PasswordWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.browser.interfaces import ITextBrowserWidget
+from zope.app.form.interfaces import WidgetInputError
+from zope.component import getUtility
+from zope.interface import implements
+from zope.schema.interfaces import ValidationError
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from canonical.launchpad.webapp.interfaces import IMultiLineWidgetLayout
+
 
 class PasswordMismatch(ValidationError):
     __doc__ = _("Passwords do not match.")
@@ -36,14 +43,15 @@ class PasswordChangeWidget(PasswordWidget):
     Text is not echoed to the user, and two text boxes are used to ensure
     the password is entered correctly.
     """
-
+    implements(ITextBrowserWidget, IMultiLineWidgetLayout)
     type = 'password change'
+    display_label = False
 
     __call__ = ViewPageTemplateFile('templates/passwordchange.pt')
 
     def hasInput(self):
         """We always have input if there is an existing value
-        
+
         No input indicates unchanged.
         """
         if PasswordWidget.hasInput(self):
@@ -61,14 +69,15 @@ class PasswordChangeWidget(PasswordWidget):
     def getInputValue(self):
         """Ensure both text boxes contain the same value and inherited checks
 
-        >>> from zope.publisher.browser import TestRequest
+        >>> from canonical.launchpad.webapp.servers import (
+        ...     LaunchpadTestRequest)
         >>> from zope.schema import Field
         >>> field = Field(__name__='foo', title=u'Foo')
 
         The widget will only return a value if both of the text boxes
         contain the same value. It returns the value encrypted.
 
-        >>> request = TestRequest(form={
+        >>> request = LaunchpadTestRequest(form={
         ...     'field.foo': u'My Password', 'field.foo_dupe': u'My Password'})
         >>> widget = PasswordChangeWidget(field, request)
         >>> crypted_pw = widget.getInputValue()
@@ -76,9 +85,9 @@ class PasswordChangeWidget(PasswordWidget):
         >>> encryptor.validate(u'My Password', crypted_pw)
         True
 
-        Otherwise it raises the exception required by IInputWidget 
+        Otherwise it raises the exception required by IInputWidget
 
-        >>> request = TestRequest(form={
+        >>> request = LaunchpadTestRequest(form={
         ...     'field.foo': u'My Password', 'field.foo_dupe': u'No Match'})
         >>> widget = PasswordChangeWidget(field, request)
         >>> widget.getInputValue()
@@ -86,8 +95,8 @@ class PasswordChangeWidget(PasswordWidget):
             [...]
         WidgetInputError: ('foo', u'Foo', u'Passwords do not match.')
         """
-        value1 = self.request.form.get(self.name, None)
-        value2 = self.request.form.get('%s_dupe' % self.name, None)
+        value1 = self.request.form_ng.getOne(self.name, None)
+        value2 = self.request.form_ng.getOne('%s_dupe' % self.name, None)
         if value1 != value2:
             self._error = WidgetInputError(
                     self.context.__name__, self.label, PasswordMismatch()

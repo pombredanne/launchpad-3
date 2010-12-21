@@ -1,44 +1,51 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import re
 
-from zope.app.form.browser.textwidgets import IntWidget, TextWidget
+from zope.app.form.browser.textwidgets import (
+    IntWidget, TextAreaWidget, TextWidget)
+from zope.app.form.interfaces import ConversionError, WidgetInputError
 from zope.component import getUtility
-from zope.app.form.interfaces import ConversionError
+from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.interfaces import IBugSet, NotFoundError
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from canonical.launchpad.validators import LaunchpadValidationError
+
 
 class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""
-    def setRenderedValue(self, value):
-        """Set the value to be the bug's ID."""
-        display_value = None
-        if value is not None:
-            display_value = value.id
-
-        IntWidget.setRenderedValue(self, display_value)
+    def _toFormValue(self, value):
+        """See zope.app.form.widget.SimpleInputWidget."""
+        if value == self.context.missing_value:
+            return self._missing
+        else:
+            return value.id
 
     def _toFieldValue(self, input):
+        """See zope.app.form.widget.SimpleInputWidget."""
         if input == self._missing:
             return self.context.missing_value
         else:
+            input = input.strip()
+            # Bug ids are often prefixed with '#', but getByNameOrID
+            # doesn't accept such ids.
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
                 raise ConversionError("Not a valid bug number or nickname.")
 
 
-class BugTagsWidget(TextWidget):
-    """A widget for editing bug tags."""
-
-    def __init__(self, field, value_type, request):
-        # We don't use value_type.
-        TextWidget.__init__(self, field, request)
+class BugTagsWidgetBase:
+    """Base class for bug tags widgets."""
 
     def _toFormValue(self, value):
-        """Convert the list of strings to a single, space separated, string."""
+        """Convert a list of strings to a single, space separated, string."""
         if value:
             return u' '.join(value)
         else:
@@ -50,5 +57,54 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return [tag.lower() for tag in input.split()]
+            tags = set(tag.lower()
+                       for tag in re.split(r'[,\s]+', input)
+                       if len(tag) != 0)
+            return sorted(tags)
 
+    def getInputValue(self):
+        try:
+            return self._getInputValue()
+        except WidgetInputError, input_error:
+            # The standard error message isn't useful at all. We look to
+            # see if it's a ConstraintNotSatisfied error and change it
+            # to a better one. For simplicity, we care only about the
+            # first error.
+            validation_errors = input_error.errors
+            for validation_error in validation_errors.args[0]:
+                if isinstance(validation_error, ConstraintNotSatisfied):
+                    self._error = WidgetInputError(
+                        input_error.field_name, input_error.widget_title,
+                        LaunchpadValidationError(
+                            "'%s' isn't a valid tag name. Tags must start "
+                            "with a letter or number and be lowercase. The "
+                            'characters "+", "-" and "." are also allowed '
+                            "after the first character."
+                            % validation_error.args[0]))
+                raise self._error
+            else:
+                raise
+
+    def _getInputValue(self):
+        raise NotImplementedError('_getInputValue must be overloaded')
+
+class BugTagsWidget(BugTagsWidgetBase, TextWidget):
+    """A widget for editing bug tags."""
+
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        TextWidget.__init__(self, field, request)
+
+    def _getInputValue(self):
+        return TextWidget.getInputValue(self)
+
+
+class LargeBugTagsWidget(BugTagsWidgetBase, TextAreaWidget):
+    """A large widget for editing bug tags."""
+
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        TextAreaWidget.__init__(self, field, request)
+
+    def _getInputValue(self):
+        return TextAreaWidget.getInputValue(self)

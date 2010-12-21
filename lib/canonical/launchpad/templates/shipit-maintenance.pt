@@ -1,2 +1,0 @@
-<div class="highlighted">Shipit will be going offline for maintenance
-  <em tal:content="view/timelefttext" />.</div>

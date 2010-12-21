@@ -1,0 +1,119 @@
+POFileBaseView
+==============
+
+POFileBaseView provides different basic information about a POFile and a list
+of its content as TranslatableMessage objects.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.translations.browser.pofile import POFileBaseView
+
+    >>> potemplate = factory.makePOTemplate()
+    >>> pofile = factory.makePOFile('eo', potemplate)
+
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+
+The view provides a statement to be displayed to the user about the
+permissions the user has on the POFile. When not logged in, the user cannot
+work on translations.
+
+    >>> print view.permission_statement
+    You are not logged in.  Please log in to work on translations.
+
+So we'd better log in.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> print view.permission_statement
+    You have full access to this translation.
+
+The view also provides more detailed information about what the user can do.
+
+    >>> print view.user_can_edit
+    True
+    >>> print view.user_can_suggest
+    True
+
+The view has information about the languages plural forms:
+
+    >>> print view.has_plural_form_information
+    True
+    >>> print view.number_of_plural_forms
+    2
+    >>> print view.plural_expression
+    n != 1
+
+The view also know about the contributers to the translations in this POFile
+but currently there have not been any contributions yet.
+
+    >>> print view.contributors
+    ()
+
+So let's make a contribution.
+
+    >>> contributor = factory.makePerson(displayname="Contri Butor")
+    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
+    >>> translation = factory.makeTranslationMessage(pofile, potmsgset,
+    ...     translator=contributor, reviewer=contributor,
+    ...     translations=['A translation made by a contributor.'])
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> print view.contributors[0].displayname
+    Contri Butor
+
+The view has a list of all translations.
+
+    >>> print view.messages[0].getCurrentTranslation().msgstr0.translation
+    A translation made by a contributor.
+
+The view can also tell us about the translation group but the pofile is not
+yet managed by a translation group.
+
+    >>> print view.translation_group
+    None
+
+The view makes a nice statement about this fact, too.
+
+    >>> print view.translation_groups_statement
+    No translation group has been assigned.
+
+So let's create one and let it manage the translations.
+
+    >>> group = factory.makeTranslationGroup(title="Test Translators")
+    >>> potemplate.product.translationgroup = group
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> print view.translation_group.title
+    Test Translators
+
+Who is assigned to do translations into this language? Nobody so far.
+
+    >>> print view.translator
+    None
+
+Let's change that. A single person can be a tanslator
+
+    >>> translator = factory.makeTranslator('eo', group, contributor)
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> print view.translator.displayname
+    Contri Butor
+
+See what statement the view makes now.
+
+    >>> print view.translation_groups_statement
+    This translation is managed by Contri Butor assigned by Test Translators.
+
+Neither the group nor the translator have managed to setup some documentation.
+
+    >>> view.has_any_documentation
+    False
+
+But now the group finally got around to it.
+
+    >>> group.translation_guide_url = "https://launchpad.net/"
+    >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> view.has_any_documentation
+    True

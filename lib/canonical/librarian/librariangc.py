@@ -1,25 +1,119 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Librarian garbage collection routines"""
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+import errno
+import re
 import sys
-import os.path
+from time import time
+import os
+
+from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
+from canonical.database.postgresql import drop_tables, quoteIdentifier
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
-BATCH_SIZE = 1
-
-log = None
+log = None # This is set by cronscripts/librarian-gc.py
 debug = False
+
+def confirm_no_clock_skew(con):
+    """Raise an exception if there is significant clock skew between the
+    database and this machine.
+
+    It is theoretically possible to lose data if there is more than several
+    hours of skew.
+    """
+    cur = con.cursor()
+    cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+    db_now = cur.fetchone()[0]
+    local_now = datetime.utcnow()
+    five_minutes = timedelta(minutes=5)
+
+    if -five_minutes < local_now - db_now < five_minutes:
+        return
+    else:
+        raise Exception("%s clock skew between librarian and database" % (
+            local_now - db_now,
+            ))
+
+
+def delete_expired_blobs(con):
+    """Remove expired TemporaryBlobStorage entries and their corresponding
+       LibraryFileAlias entries.
+
+       We delete the LibraryFileAliases here as the default behavior of the
+       garbage collector could leave them hanging around indefinitely.
+
+       We also delete any linked ApportJob and Job records here.
+    """
+    cur = con.cursor()
+
+    # Generate the list of expired blobs.
+    cur.execute("""
+        SELECT file_alias
+        INTO TEMPORARY TABLE BlobAliasesToDelete
+        FROM LibraryFileAlias, TemporaryBlobStorage
+        WHERE file_alias = LibraryFileAlias.id
+            AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+
+    # Generate the list of expired Jobs. We ignore jobs that have not
+    # finished.
+    cur.execute("""
+        SELECT job
+        INTO TEMPORARY TABLE JobsToDelete
+        FROM Job, ApportJob, TemporaryBlobStorage, LibraryFileAlias
+        WHERE
+            ApportJob.blob = TemporaryBlobStorage.id
+            AND Job.id = ApportJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            AND TemporaryBlobStorage.file_alias = LibraryFileAlias.id
+                AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+
+    # Delete expired ApportJob records.
+    cur.execute("""
+        DELETE FROM ApportJob
+        USING JobsToDelete
+        WHERE ApportJob.job = JobsToDelete.job
+        """)
+
+    # Delete expired Job records.
+    cur.execute("""
+        DELETE FROM Job
+        USING JobsToDelete
+        WHERE Job.id = JobsToDelete.job
+        """)
+
+    # Delete expired blobs.
+    cur.execute("""
+        DELETE FROM TemporaryBlobStorage
+        USING BlobAliasesToDelete
+        WHERE TemporaryBlobStorage.file_alias = BlobAliasesToDelete.file_alias
+        """)
+
+    # Delete LibraryFileAliases referencing expired blobs.
+    cur.execute("""
+        DELETE FROM LibraryFileAlias
+        USING BlobAliasesToDelete
+        WHERE file_alias = LibraryFileAlias.id
+        """)
+    log.info("Removed %d expired blobs" % cur.rowcount)
+    con.commit()
+
 
 def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
-    
+
     This is the first step in a full garbage collection run. We assume files
     are identical if their sha1 hashes and filesizes are identical. For every
     duplicate detected, we make all LibraryFileAlias entries point to one of
@@ -44,16 +138,15 @@ def merge_duplicates(con):
 
         sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
-        # Get a list of our dupes, making sure that the first in the
-        # list is not deleted if possible. Where multiple non-deleted
-        # files exist, we return the most recently added one first, because
-        # this is the version most likely to exist on the staging server
-        # (it should be irrelevant on production).
+        # Get a list of our dupes. Where multiple files exist, we return
+        # the most recently added one first, because this is the version
+        # most likely to exist on the staging server (it should be
+        # irrelevant on production).
         cur.execute("""
             SELECT id
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
-            ORDER BY deleted, datecreated DESC
+            ORDER BY datecreated DESC
             """, vars())
         dupes = [row[0] for row in cur.fetchall()]
 
@@ -77,7 +170,7 @@ def merge_duplicates(con):
         dupe1_id = dupes[0]
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
-            if config.name == 'staging':
+            if config.instance_name == 'staging':
                 log.debug(
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path
@@ -112,9 +205,9 @@ def merge_duplicates(con):
         prime_id = dupes[0]
         other_ids = ', '.join(str(dupe) for dupe in dupes[1:])
         log.debug(
-                "Making LibraryFileAliases referencing %s reference %s instead",
-                other_ids, prime_id
-                )
+            "Making LibraryFileAliases referencing %s reference %s instead",
+            other_ids, prime_id
+            )
         for other_id in dupes[1:]:
             cur.execute("""
                 UPDATE LibraryFileAlias SET content=%(prime_id)s
@@ -125,105 +218,189 @@ def merge_duplicates(con):
         con.commit()
 
 
-def delete_unreferenced_aliases(con):
-    """Delete unreferenced LibraryFileAliases and their LibraryFileContent
+class ExpireAliases:
+    """Expire expired LibraryFileAlias records.
+
+    This simply involves setting the LibraryFileAlias.content to NULL.
+    Unreferenced LibraryFileContent records are cleaned up elsewhere.
+    """
+    implements(ITunableLoop)
+
+    def __init__(self, con):
+        self.con = con
+        self.total_expired = 0
+        self._done = False
+
+    def isDone(self):
+        if self._done:
+            log.info(
+                "Expired %d LibraryFileAlias records." % self.total_expired)
+            return True
+        else:
+            return False
+
+    def __call__(self, chunksize):
+        chunksize = int(chunksize)
+        cur = self.con.cursor()
+        cur.execute("""
+            UPDATE LibraryFileAlias
+            SET content=NULL
+            WHERE id IN (
+                SELECT id FROM LibraryFileAlias
+                WHERE
+                    content IS NOT NULL
+                    AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                        - interval '1 week'
+                LIMIT %d)
+            """ % chunksize)
+        self.total_expired += cur.rowcount
+        if cur.rowcount == 0:
+            self._done = True
+        else:
+            log.debug("Expired %d LibraryFileAlias records." % cur.rowcount)
+        self.con.commit()
+
+
+def expire_aliases(con):
+    """Invoke ExpireLibraryFileAliases."""
+    loop_tuner = DBLoopTuner(ExpireAliases(con), 5, log=log)
+    loop_tuner.run()
+
+
+class UnreferencedLibraryFileAliasPruner:
+    """Delete unreferenced LibraryFileAliases.
+
+    The LibraryFileContent records are left untouched for the code that
+    knows how to delete them and the corresponding files on disk.
 
     This is the second step in a full garbage collection sweep. We determine
-    which LibraryFileContent entries are not being referenced by other objects
-    in the database. If we find one that is not reachable in any way, we
-    remove all its corresponding LibraryFileAlias records from the database
-    if they are all expired (expiry in the past or NULL), and none have been
-    recently accessed (last_access over one week in the past).
-
-    Note that *all* LibraryFileAliases referencing a given LibraryFileContent
-    must be unreferenced for them to be deleted - a single reference will keep
-    the whole set alive.
+    which LibraryFileAlias entries are not being referenced by other objects
+    in the database and delete them, if they are expired (expiry in the past
+    or NULL), and if they have not been recently accessed (last_access over
+    one week in the past).
     """
-    log.info("Deleting unreferenced LibraryFileAliases")
+    implements(ITunableLoop)
 
-    # Generate a set of all our LibraryFileContent ids, except for ones
-    # with expiry dates not yet reached (these lurk in the database until
-    # expired) and those that have been accessed in the last week (currently
-    # in use, so leave them lurking a while longer)
-    cur = con.cursor()
-    cur.execute("""
-        SELECT c.id
-        FROM LibraryFileContent AS c, LibraryFileAlias AS a
-        WHERE c.id = a.content
-        GROUP BY c.id
-        HAVING (max(expires) IS NULL OR max(expires)
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
-                )
-            AND (max(last_accessed) IS NULL OR max(last_accessed)
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
-                )
-        """)
-    content_ids = set(row[0] for row in cur.fetchall())
-    log.info(
-        "Found %d LibraryFileContent entries possibly unreferenced",
-        len(content_ids)
-        )
+    def __init__(self, con):
+        self.con = con # Database connection to use
+        self.total_deleted = 0 # Running total
+        self.index = 1
 
-    # Determine what columns link to LibraryFileAlias
-    # references = [(table, column), ...]
-    references = [
-        tuple(ref[:2]) for ref in listReferences(cur, 'libraryfilealias', 'id')
-        ]
-    assert len(references) > 10, 'Database introspection returned nonsense'
-    log.info("Found %d columns referencing LibraryFileAlias", len(references))
+        log.info("Deleting unreferenced LibraryFileAliases")
 
-    # Remove all referenced LibraryFileContent ids from content_ids
-    for table, column in references:
+        cur = con.cursor()
+
+        drop_tables(cur, "ReferencedLibraryFileAlias")
         cur.execute("""
-            SELECT DISTINCT LibraryFileContent.id
-            FROM LibraryFileContent, LibraryFileAlias, %(table)s
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND LibraryFileAlias.id = %(table)s.%(column)s
-            """ % vars())
-        referenced_ids = set(row[0] for row in cur.fetchall())
-        log.info(
-                "Found %d distinct LibraryFileAlias references in %s(%s)",
-                len(referenced_ids), table, column
-                )
-        content_ids.difference_update(referenced_ids)
+            CREATE TEMPORARY TABLE ReferencedLibraryFileAlias (
+                alias integer)
+            """)
+
+        # Determine what columns link to LibraryFileAlias
+        # references = [(table, column), ...]
+        references = [
+            tuple(ref[:2])
+            for ref in listReferences(cur, 'libraryfilealias', 'id')
+            if ref[0] != 'libraryfiledownloadcount'
+            ]
+        assert len(references) > 10, (
+            'Database introspection returned nonsense')
         log.debug(
-                "Now only %d LibraryFileContents possibly unreferenced",
-                len(content_ids)
-                )
+            "Found %d columns referencing LibraryFileAlias", len(references))
 
-    # Delete unreferenced LibraryFileAliases. Note that this will raise a
-    # database exception if we screwed up and attempt to delete an alias that
-    # is still referenced.
-    content_ids = list(content_ids)
-    for i in range(0, len(content_ids), BATCH_SIZE):
-        in_content_ids = ','.join(
-                (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
-                )
-        # First a sanity check to ensure we aren't removing anything we
-        # shouldn't be.
+        # Find all relevant LibraryFileAlias references and fill in
+        # ReferencedLibraryFileAlias
+        for table, column in references:
+            cur.execute("""
+                INSERT INTO ReferencedLibraryFileAlias
+                SELECT LibraryFileAlias.id
+                FROM LibraryFileAlias, %(table)s
+                WHERE LibraryFileAlias.id = %(table)s.%(column)s
+                """ % {
+                    'table': quoteIdentifier(table),
+                    'column': quoteIdentifier(column)})
+            log.debug("%s.%s references %d LibraryFileContent rows." % (
+                table, column, cur.rowcount))
+            con.commit()
+
+        log.debug("Calculating unreferenced LibraryFileAlias set.")
+        drop_tables(cur, "UnreferencedLibraryFileAlias")
         cur.execute("""
-            SELECT COUNT(*)
-            FROM LibraryFileAlias
-            WHERE content in (%(in_content_ids)s)
-                AND (
-                    expires + '1 week'::interval
-                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                    OR last_accessed + '1 week'::interval
-                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            CREATE TEMPORARY TABLE UnreferencedLibraryFileAlias (
+                id serial PRIMARY KEY,
+                alias integer UNIQUE)
+            """)
+        # Calculate the set of unreferenced LibraryFileAlias.
+        # We also exclude all unexpired and recently accessed
+        # records - we don't remove them even if they are unlinked. We
+        # currently don't remove stuff until it has been expired for
+        # more than one week, but we will change this if disk space
+        # becomes short and it actually will make a noticeable
+        # difference. We handle excluding recently created content
+        # here rather than earlier when creating the
+        # ReferencedLibraryFileAlias table to handle uploads going on
+        # while this script is running.
+        cur.execute("""
+            INSERT INTO UnreferencedLibraryFileAlias (alias)
+            SELECT id AS alias FROM LibraryFileAlias
+            WHERE
+                content IS NULL
+                OR ((expires IS NULL OR
+                     expires <
+                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                             - interval '1 week'
                     )
-            """ % vars())
-        assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
+                    AND last_accessed <
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                            - interval '1 week'
+                    AND date_created <
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                            - interval '1 week'
+                   )
+            EXCEPT
+            SELECT alias FROM ReferencedLibraryFileAlias
+            """)
+        con.commit()
+        drop_tables(cur, "ReferencedLibraryFileAlias")
+        cur.execute(
+            "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
+        self.max_id = cur.fetchone()[0]
         log.debug(
-                "Deleting all LibraryFileAlias references to "
-                "LibraryFileContents %s", in_content_ids
-                )
-        cur.execute("""
-            DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
-            """ % vars())
+            "%d unreferenced LibraryFileContent to remove." % self.max_id)
         con.commit()
 
+    def isDone(self):
+        if self.index > self.max_id:
+            log.info(
+                "Deleted %d LibraryFileAlias records." % self.total_deleted)
+            return True
+        else:
+            return False
 
-def delete_unreferenced_content(con):
+    def __call__(self, chunksize):
+        chunksize = int(chunksize)
+        cur = self.con.cursor()
+        cur.execute("""
+            DELETE FROM LibraryFileAlias
+            WHERE id IN
+                (SELECT alias FROM UnreferencedLibraryFileAlias
+                WHERE id BETWEEN %s AND %s)
+            """, (self.index, self.index + chunksize - 1))
+        deleted_rows = cur.rowcount
+        self.total_deleted += deleted_rows
+        log.debug("Deleted %d LibraryFileAlias records." % deleted_rows)
+        self.con.commit()
+        self.index += chunksize
+
+
+def delete_unreferenced_aliases(con):
+    "Run the UnreferencedLibraryFileAliasPruner."
+    loop_tuner = DBLoopTuner(
+        UnreferencedLibraryFileAliasPruner(con), 5, log=log)
+    loop_tuner.run()
+
+
+class UnreferencedContentPruner:
     """Delete LibraryFileContent entries and their disk files that are
     not referenced by any LibraryFileAlias entries.
 
@@ -231,60 +408,327 @@ def delete_unreferenced_content(con):
     LibraryFileAlias, so all entries in this state are garbage no matter
     what their expires flag says.
     """
-    cur = con.cursor()
-    cur.execute("""
-        SELECT LibraryFileContent.id
-        FROM LibraryFileContent
-        LEFT OUTER JOIN LibraryFileAlias
-            ON LibraryFileContent.id = LibraryFileAlias.content
-        WHERE LibraryFileAlias.content IS NULL
-        """)
-    garbage_ids = [row[0] for row in cur.fetchall()]
+    implements(ITunableLoop)
 
-    for i in range(0, len(garbage_ids), BATCH_SIZE):
-        in_garbage_ids = ','.join(
-            (str(garbage_id) for garbage_id in garbage_ids[i:i+BATCH_SIZE])
-            )
-
-        # Delete old LibraryFileContent entries. Note that this will fail
-        # if we screwed up and still have LibraryFileAlias entries referencing
-        # it.
-        log.debug("Deleting LibraryFileContents %s", in_garbage_ids)
+    def __init__(self, con):
+        self.con = con
+        self.index = 1
+        self.total_deleted = 0
+        cur = con.cursor()
+        drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id in (%s)
-            """ % in_garbage_ids)
+            CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
+                id serial PRIMARY KEY,
+                content integer UNIQUE)
+            """)
+        cur.execute("""
+            INSERT INTO UnreferencedLibraryFileContent (content)
+            SELECT DISTINCT LibraryFileContent.id
+            FROM LibraryFileContent
+            LEFT OUTER JOIN LibraryFileAlias
+                ON LibraryFileContent.id = LibraryFileAlias.content
+            WHERE LibraryFileAlias.content IS NULL
+        """)
+        cur.execute("""
+            SELECT COALESCE(max(id), 0) FROM UnreferencedLibraryFileContent
+            """)
+        self.max_id = cur.fetchone()[0]
+        log.debug(
+            "%d unreferenced LibraryFileContent rows to remove."
+            % self.max_id)
 
-        for garbage_id in garbage_ids[i:i+BATCH_SIZE]:
+    def isDone(self):
+        if self.index > self.max_id:
+            log.info("Deleted %d unreferenced files." % self.total_deleted)
+            return True
+        else:
+            return False
+
+    def __call__(self, chunksize):
+        chunksize = int(chunksize)
+
+        cur = self.con.cursor()
+
+        # Delete unreferenced LibraryFileContent entries.
+        cur.execute("""
+            DELETE FROM LibraryFileContent
+            USING (
+                SELECT content FROM UnreferencedLibraryFileContent
+                WHERE id BETWEEN %s AND %s) AS UnreferencedLibraryFileContent
+            WHERE
+                LibraryFileContent.id = UnreferencedLibraryFileContent.content
+            """, (self.index, self.index + chunksize - 1))
+        rows_deleted = cur.rowcount
+        self.total_deleted += rows_deleted
+        self.con.commit()
+
+        # Remove files from disk. We do this outside the transaction,
+        # as the garbage collector happily deals with files that exist
+        # on disk but not in the DB.
+        cur.execute("""
+            SELECT content FROM UnreferencedLibraryFileContent
+            WHERE id BETWEEN %s AND %s
+            """, (self.index, self.index + chunksize - 1))
+        for content_id in (row[0] for row in cur.fetchall()):
             # Remove the file from disk, if it hasn't already been
-            path = get_file_path(garbage_id)
-            if os.path.exists(path):
-                log.debug("Deleting %s", path)
+            path = get_file_path(content_id)
+            try:
                 os.unlink(path)
+            except OSError, e:
+                if e.errno != errno.ENOENT:
+                    raise
+                if config.librarian_server.upstream_host is None:
+                    # It is normal to have files in the database that
+                    # are not on disk if the Librarian has an upstream
+                    # Librarian, such as on staging. Don't annoy the
+                    # operator with noise in this case.
+                    log.info("%s already deleted", path)
             else:
-                log.info("%s already deleted", path)
+                log.debug("Deleted %s", path)
+        self.con.rollback()
 
-        # And commit the database changes. It may be possible for this to
-        # fail in rare cases, leaving a record in the DB with no corresponding
-        # file on disk, but that is OK as it will all be tidied up next run,
-        # and the file is unreachable anyway so nothing will attempt to
-        # access it between now and the next garbage collection run.
-        con.commit()
+        self.index += chunksize
+
+
+def delete_unreferenced_content(con):
+    """Invoke UnreferencedContentPruner."""
+    loop_tuner = DBLoopTuner(UnreferencedContentPruner(con), 5, log=log)
+    loop_tuner.run()
+
+# XXX gary 2010-04-22 bug=569217
+# We should remove this and use Python 2.6's os.walk once we switch to
+# Python 2.6.
+def _walk(top, topdown=True, onerror=None, followlinks=False):
+    """Directory tree generator.
+
+    For each directory in the directory tree rooted at top (including top
+    itself, but excluding '.' and '..'), yields a 3-tuple
+
+        dirpath, dirnames, filenames
+
+    dirpath is a string, the path to the directory.  dirnames is a list of
+    the names of the subdirectories in dirpath (excluding '.' and '..').
+    filenames is a list of the names of the non-directory files in dirpath.
+    Note that the names in the lists are just names, with no path components.
+    To get a full path (which begins with top) to a file or directory in
+    dirpath, do os.path.join(dirpath, name).
+
+    If optional arg 'topdown' is true or not specified, the triple for a
+    directory is generated before the triples for any of its subdirectories
+    (directories are generated top down).  If topdown is false, the triple
+    for a directory is generated after the triples for all of its
+    subdirectories (directories are generated bottom up).
+
+    When topdown is true, the caller can modify the dirnames list in-place
+    (e.g., via del or slice assignment), and walk will only recurse into the
+    subdirectories whose names remain in dirnames; this can be used to prune
+    the search, or to impose a specific order of visiting.  Modifying
+    dirnames when topdown is false is ineffective, since the directories in
+    dirnames have already been generated by the time dirnames itself is
+    generated.
+
+    By default errors from the os.listdir() call are ignored.  If
+    optional arg 'onerror' is specified, it should be a function; it
+    will be called with one argument, an os.error instance.  It can
+    report the error to continue with the walk, or raise the exception
+    to abort the walk.  Note that the filename is available as the
+    filename attribute of the exception object.
+
+    By default, os.walk does not follow symbolic links to subdirectories on
+    systems that support them.  In order to get this functionality, set the
+    optional argument 'followlinks' to true.
+
+    Caution:  if you pass a relative pathname for top, don't change the
+    current working directory between resumptions of walk.  walk never
+    changes the current directory, and assumes that the client doesn't
+    either.
+
+    Example:
+
+    import os
+    from os.path import join, getsize
+    for root, dirs, files in os.walk('python/Lib/email'):
+        print root, "consumes",
+        print sum([getsize(join(root, name)) for name in files]),
+        print "bytes in", len(files), "non-directory files"
+        if 'CVS' in dirs:
+            dirs.remove('CVS')  # don't visit CVS directories
+    """
+
+    from os.path import join, isdir, islink
+
+    # We may not have read permission for top, in which case we can't
+    # get a list of the files the directory contains.  os.path.walk
+    # always suppressed the exception then, rather than blow up for a
+    # minor reason when (say) a thousand readable directories are still
+    # left to visit.  That logic is copied here.
+    try:
+        # Note that listdir and error are globals in this module due
+        # to earlier import-*.
+        names = os.listdir(top)
+    except error, err:
+        if onerror is not None:
+            onerror(err)
+        return
+
+    dirs, nondirs = [], []
+    for name in names:
+        if isdir(join(top, name)):
+            dirs.append(name)
+        else:
+            nondirs.append(name)
+
+    if topdown:
+        yield top, dirs, nondirs
+    for name in dirs:
+        path = join(top, name)
+        if followlinks or not islink(path):
+            for x in _walk(path, topdown, onerror, followlinks):
+                yield x
+    if not topdown:
+        yield top, dirs, nondirs
+
+
+def delete_unwanted_files(con):
+    """Delete files found on disk that have no corresponding record in the
+    database.
+
+    Files will only be deleted if they were created more than one day ago
+    to avoid deleting files that have just been uploaded but have yet to have
+    the database records committed.
+    """
+    cur = con.cursor()
+
+    # Get the largest id in the database
+    cur.execute("SELECT max(id) from LibraryFileContent")
+    max_id = cur.fetchone()[0]
+
+    # Calculate all stored LibraryFileContent ids that we want to keep.
+    # Results are ordered so we don't have to suck them all in at once.
+    cur.execute("""
+        SELECT id FROM LibraryFileContent ORDER BY id
+        """)
+
+    def get_next_wanted_content_id():
+        result = cur.fetchone()
+        if result is None:
+            return None
+        else:
+            return result[0]
+
+    removed_count = 0
+    content_id = next_wanted_content_id = -1
+
+    hex_content_id_re = re.compile('^[0-9a-f]{8}$')
+    ONE_DAY = 24 * 60 * 60
+
+    # XXX gary 2010-04-22 bug=569217
+    # We should switch back to os.walk once we switch to Python 2.6.
+    for dirpath, dirnames, filenames in _walk(
+        get_storage_root(), followlinks=True):
+
+        # Ignore known and harmless noise in the Librarian storage area.
+        if 'incoming' in dirnames:
+            dirnames.remove('incoming')
+        if 'lost+found' in dirnames:
+            dirnames.remove('lost+found')
+        filenames = set(filenames)
+        filenames.discard('librarian.pid')
+        filenames.discard('librarian.log')
+
+        for dirname in dirnames[:]:
+            if len(dirname) != 2:
+                dirnames.remove(dirname)
+                log.warning(
+                    "Ignoring directory %s that shouldn't be here" % dirname)
+                continue
+            try:
+                int(dirname, 16)
+            except ValueError:
+                dirnames.remove(dirname)
+                log.warning("Ignoring invalid directory %s" % dirname)
+
+        # We need everything in order to ensure we visit files in the
+        # same order we retrieve wanted files from the database.
+        dirnames.sort()
+        filenames = sorted(filenames)
+
+        # Noise in the storage area, or maybe we are looking at the wrong
+        # path?
+        if dirnames and filenames:
+            log.warning(
+                "%s contains both files %r and subdirectories %r. Skipping."
+                % (dirpath, filenames, dirnames))
+            continue
+
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            hex_content_id = ''.join(path.split(os.sep)[-4:])
+            if hex_content_id_re.search(hex_content_id) is None:
+                log.warning(
+                    "Ignoring invalid path %s" % path)
+                continue
+
+            content_id = int(hex_content_id, 16)
+
+            while (next_wanted_content_id is not None
+                    and content_id > next_wanted_content_id):
+
+                next_wanted_content_id = get_next_wanted_content_id()
+
+                if (config.librarian_server.upstream_host is None
+                        and next_wanted_content_id is not None
+                        and next_wanted_content_id < content_id):
+                    log.error(
+                        "LibraryFileContent %d exists in the database but "
+                        "was not found on disk." % next_wanted_content_id)
+
+            file_wanted = (
+                    next_wanted_content_id is not None
+                    and next_wanted_content_id == content_id)
+
+            if not file_wanted:
+                if time() - os.path.getctime(path) < ONE_DAY:
+                    log.debug(
+                        "File %d not removed - created too recently"
+                        % content_id)
+                else:
+                    # File uploaded a while ago but no longer wanted.
+                    os.unlink(path)
+                    log.debug("Deleted %s" % path)
+                    removed_count += 1
+
+    # Report any remaining LibraryFileContent that the database says
+    # should exist but we didn't find on disk.
+    if next_wanted_content_id == content_id:
+        next_wanted_content_id = get_next_wanted_content_id()
+    while next_wanted_content_id is not None:
+        log.error(
+            "LibraryFileContent %d exists in the database but "
+            "was not found on disk." % next_wanted_content_id)
+        next_wanted_content_id = get_next_wanted_content_id()
+
+    log.info(
+            "Deleted %d files from disk that where no longer referenced "
+            "in the db" % removed_count
+            )
 
 
 def get_file_path(content_id):
-    """Return the physical file path to the corresponding LibraryFileContent id
+    """Return the physical file path to the matching LibraryFileContent id.
     """
-    assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
-            content_id,
-            )
-    storage_root = config.librarian.server.root
-    # Do a basic sanity check.
-    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
-        raise RuntimeError(
-                "Librarian file storage not found at %s" % storage_root
-                )
-    path = os.path.join(
-            storage_root, relative_file_path(content_id)
-            )
-    return path
+    assert isinstance(content_id, (int, long)), (
+        'Invalid content_id %s' % repr(content_id))
+    return os.path.join(get_storage_root(), relative_file_path(content_id))
 
+
+def get_storage_root():
+    """Return the path to the root of the Librarian storage area.
+
+    Performs some basic sanity checking to avoid accidents.
+    """
+    storage_root = config.librarian_server.root
+    # Do a basic sanity check.
+    assert os.path.isdir(os.path.join(storage_root, 'incoming')), (
+        '%s is not a Librarian storage area' % storage_root)
+    return storage_root

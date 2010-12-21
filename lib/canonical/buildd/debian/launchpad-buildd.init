@@ -1,9 +1,22 @@
 #!/bin/sh
 #
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # launchpad-buildd
 #               This file is used to start and stop launchpad buildds
 #
 # Author:       Daniel Silverstone <daniel.silverstone@canonical.com>
+
+### BEGIN INIT INFO
+# Provides:          launchpad_buildd
+# Required-Start:    $local_fs $network $syslog $time
+# Required-Stop:     $local_fs $network $syslog $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     false
+# Short-Description: Start/stop launchpad buildds
+### END INIT INFO
 
 set -e
 
@@ -26,7 +39,13 @@ d_start() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
     LOGFILE="$LOGROOT"/"$CONF".log
-    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
+    # prior to karmic, twisted didn't support --umask, and defaulted it well.
+    # we need it to be 022, not 077.
+    case $(lsb_release -sc) in
+	[a-j]*)	UMASK="";;
+	[k-z]*)	UMASK="--umask 022";;
+    esac
+    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE $UMASK"
 }
 
 #
@@ -35,7 +54,7 @@ d_start() {
 d_stop() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
-    test -r $PIDFILE && kill -TERM $(cat $PIDFILE)
+    test -r $PIDFILE && kill -TERM $(cat $PIDFILE) || true
 }
 
 CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
@@ -43,6 +62,11 @@ CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
 case "$1" in
   start)
         echo -n "Starting $DESC:"
+        install -m 755 -o buildd -g buildd -d $PIDROOT
+
+	# Create any missing directories and chown them appropriately
+	install -d -o buildd -g buildd /home/buildd/filecache-default
+
 	for conf in $CONFS; do
 	    echo -n " $conf"
 	    d_start $conf

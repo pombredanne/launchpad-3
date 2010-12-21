@@ -1,6 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 # This script updates the cached source package information in the system.
 # We use this for fast source package searching (as opposed to joining
@@ -8,87 +11,95 @@
 
 import _pythonpath
 
-import sys
-
-from optparse import OptionParser
-
 from zope.component import getUtility
 
-from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.config import config
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.scripts.base import LaunchpadCronScript
 
-default_lock_file = '/var/lock/launchpad-spcache.lock'
 
-def parse_options(args):
-    """Parse a set of command line options.
+class PackageCacheUpdater(LaunchpadCronScript):
+    """Helper class for updating package caches.
 
-    Return an optparse.Values object.
+    It iterates over all distributions, distroseries and archives (including
+    PPAs) updating the package caches to reflect what is currently published
+    in those locations.
     """
-    parser = OptionParser()
-    parser.add_option("-l", "--lockfile", dest="lockfilename",
-        default=default_lock_file,
-        help="The file the script should use to lock the process.")
 
-    # Add the verbose/quiet options.
-    logger_options(parser)
+    def updateDistributionPackageCounters(self, distribution):
+        """Update package counters for a given distribution."""
+        for distroseries in distribution:
+            distroseries.updatePackageCount()
+            self.txn.commit()
+            for arch in distroseries.architectures:
+                arch.updatePackageCount()
+                self.txn.commit()
 
-    (options, args) = parser.parse_args(args)
+    def updateDistributionCache(self, distribution, archive):
+        """Update package caches for the given location.
 
-    return options
+        'archive' can be one of the main archives (PRIMARY, PARTNER or
+        EMBARGOED) or even a PPA.
 
-def main(argv):
-    options = parse_options(argv[1:])
+        This method commits the transaction frequently since it deal with
+        a huge amount of data.
 
-    # Get the global logger for this task.
-    logger_object = logger(options, 'launchpad-stats')
+        PPA archives caches are consolidated in a Archive row to optimize
+        searches across PPAs.
+        """
+        for distroseries in distribution.series:
+            self.updateDistroSeriesCache(distroseries, archive)
 
-    # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(options.lockfilename, logger=logger_object)
-    try:
-        lockfile.acquire()
-    except OSError:
-        logger_object.info("lockfile %s already exists, exiting",
-                           options.lockfilename)
-        return 1
+        distribution.removeOldCacheItems(archive, log=self.logger)
 
-    try:
-        # Setup zcml machinery to be able to use getUtility
-        execute_zcml_for_scripts()
-        ztm = initZopeless(
-                dbuser=config.statistician.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
-                )
+        updates = distribution.updateCompleteSourcePackageCache(
+            archive=archive, ztm=self.txn, log=self.logger)
 
-        # Do the cache update
-        logger_object.debug('Starting the sp cache update')
+        if updates > 0:
+            self.txn.commit()
+
+    def updateDistroSeriesCache(self, distroseries, archive):
+        """Update package caches for the given location."""
+        self.logger.info('%s %s %s starting' % (
+            distroseries.distribution.name, distroseries.name,
+            archive.displayname))
+
+        distroseries.removeOldCacheItems(archive=archive, log=self.logger)
+
+        updates = distroseries.updateCompletePackageCache(
+            archive=archive, ztm=self.txn, log=self.logger)
+
+        if updates > 0:
+            self.txn.commit()
+
+    def main(self):
+        self.logger.debug('Starting the package cache update')
+
+        # Do the package counter and cache update for each distribution.
         distroset = getUtility(IDistributionSet)
-        for distro in distroset:
-            for distrorelease in distro.releases:
-                logger_object.info('%s starting' % distrorelease.name)
-                distrorelease.updatePackageCount()
-                ztm.commit()
-                distrorelease.removeOldCacheItems()
-                ztm.commit()
-                distrorelease.updateCompletePackageCache(ztm=ztm)
-                ztm.commit()
-                for arch in distrorelease.architectures:
-                    arch.updatePackageCount()
-                    ztm.commit()
-            distro.removeOldCacheItems()
-            ztm.commit()
-            distro.updateCompleteSourcePackageCache(ztm=ztm)
-            ztm.commit()
-            logger_object.info('%s done' % distro.name)
-        ztm.commit()
-        logger_object.debug('Finished the sp cache update')
-        return 0
-    finally:
-        lockfile.release()
+        for distribution in distroset:
+            self.logger.info(
+                'Updating %s package counters' % distribution.name)
+            self.updateDistributionPackageCounters(distribution)
+
+            self.logger.info(
+                'Updating %s main archives' % distribution.name)
+            for archive in distribution.all_distro_archives:
+                self.updateDistributionCache(distribution, archive)
+
+            self.logger.info(
+                'Updating %s PPAs' % distribution.name)
+            for archive in distribution.getAllPPAs():
+                self.updateDistributionCache(distribution, archive)
+                archive.updateArchiveCache()
+
+            # Commit any remaining update for a distribution.
+            self.txn.commit()
+            self.logger.info('%s done' % distribution.name)
+
+        self.logger.debug('Finished the package cache update')
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    script = PackageCacheUpdater(
+        'update-cache', dbuser="update-pkg-cache")
+    script.lock_and_run()
 

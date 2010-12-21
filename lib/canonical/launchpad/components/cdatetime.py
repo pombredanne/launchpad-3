@@ -1,14 +1,17 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Date-related Launchpad components."""
 
 __metaclass__ = type
 
 from datetime import datetime
-import pytz
 
+import pytz
 from zope.interface import implements
-from canonical.launchpad.interfaces import IAging
+
+from canonical.launchpad.interfaces.launchpad import IAging
+
 
 SECONDS_PER_HOUR = 3600
 SECONDS_PER_MINUTE = 60
@@ -63,5 +66,5 @@ class AgingAdapter:
                         age = "%d week" % weeks
                         if weeks > 1:
                             age += "s"
-                
+
         return age

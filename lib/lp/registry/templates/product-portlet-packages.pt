@@ -1,0 +1,62 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag=""
+  define="packages view/sourcepackages"
+  condition="view/can_show_portlet">
+
+<div class="portlet" id="portlet-packages">
+  <h2>
+    <span class="see-all"><a
+      tal:attributes="href context/menu:overview/packages/fmt:url">
+      All packages</a></span>
+    Packages in Distributions
+  </h2>
+
+  <tal:has_packages condition="packages">
+
+    <ul
+      tal:content="cache:public, 1 hour">
+      <tal:pair tal:repeat="package packages">
+        <li>
+          <a class="sprite package-source"
+            tal:attributes="href package/fmt:url"
+            tal:content="package/title">apache in ubuntu hoary</a>
+          <br />
+          <span class="registered"
+            tal:define="release package/currentrelease"
+            tal:condition="release">
+          <strong>Version
+            <tal:version content="release/version">2.3</tal:version></strong>
+          uploaded <tal:date replace="release/dateuploaded/fmt:displaydate" />
+          </span>
+        </li>
+      </tal:pair>
+    </ul>
+  </tal:has_packages>
+
+  <tal:has_no_packages condition="not:packages">
+
+    <p>
+      Launchpad doesn't know which Ubuntu packages this project
+      provides.  Links from distribution packages to upstream projects
+      let distribution and upstream maintainers share bugs, patches, and
+      translations efficiently.
+    </p>
+    <div id="suggestions">
+      <p tal:condition="not:view/suggestions">
+        There are no unlinked source packages that are a good match.
+        Can you suggest one?
+      </p>
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div class="actions" metal:fill-slot="buttons">
+          <input tal:replace="structure view/link/render"/>
+        </div>
+      </div>
+    </div>
+
+  </tal:has_no_packages>
+</div>
+</tal:root>

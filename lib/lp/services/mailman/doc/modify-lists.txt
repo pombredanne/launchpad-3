@@ -1,0 +1,29 @@
+===============
+Modifying lists
+===============
+
+A team administrator can make changes to the mailing list, although currently
+the only thing they can change is the list's welcome message.
+
+No Privileges Person creates the mailing list.
+
+    >>> from lp.services.mailman.testing import helpers
+    >>> mailing_list = helpers.create_list('itest-one')
+
+Once the list is created, the team owner can change the welcome message
+through the web.
+
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
+    >>> browser.getControl('Welcome message text').value = (
+    ...     'Salutations team members!')
+    >>> browser.getControl('Save').click()
+    >>> xmlrpc_watcher.wait_for_modification('itest-one')
+
+    >>> from Mailman.MailList import MailList
+    >>> mailing_list = MailList('itest-one', lock=False)
+    >>> mailing_list.Load()
+    >>> mailing_list.welcome_msg
+    'Salutations team members!'

@@ -1,0 +1,219 @@
+Locations for People and Teams
+==============================
+
+The PersonLocation object stores information about the location and time
+zone of a person.  It also remembers who provided that information, and
+when. This is designed to make it possible to have people provide
+location / time zone info for other people in a wiki style.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.location import IObjectWithLocation
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+
+A Person implements the IObjectWithLocation interface.
+
+    >>> login('test@canonical.com')
+    >>> marilize = personset.getByName('marilize')
+    >>> verifyObject(IObjectWithLocation, marilize)
+    True
+
+A Person has a PersonLocation record, if there is any location
+information associated with them. That implements the IPersonLocation
+interface.
+
+    >>> from lp.registry.interfaces.location import IPersonLocation
+    >>> marilize.location
+    <PersonLocation...
+    >>> verifyObject(IPersonLocation, marilize.location)
+    True
+
+In some cases, a person has a time zone, but no location.
+
+    >>> print marilize.time_zone
+    Africa/Maseru
+    >>> print marilize.latitude
+    None
+
+The location for a person is set with the "setLocation" method. This
+requires that the user providing the information is passed as a
+parameter.
+
+A user cannot set another user's location.
+
+    >>> jdub = personset.getByName('jdub')
+    >>> login_person(jdub)
+    >>> cprov = personset.getByName('cprov')
+    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+A user can set his own location.
+
+    >>> login_person(cprov)
+    >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
+
+cprov can change his location information. We need to deal
+with some floating point precision issues here, hence the rounding.
+
+    >>> login_person(cprov)
+    >>> cprov.setLocation(-43.52, -61.93, 'America/Sao_Paulo', cprov)
+    >>> abs(cprov.latitude + 43.52) < 0.001
+    True
+
+Admins can set a user's location.
+
+    >>> admin = personset.getByName('name16')
+    >>> login_person(admin)
+    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', admin)
+    >>> abs(cprov.longitude + 62.1) < 0.001
+    True
+
+We cannot store a location for a team, though.
+
+    >>> guadamen = personset.getByName('guadamen')
+    >>> guadamen.setLocation(34.5, 23.1, 'Africa/Maseru', jdub)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
+Nor can we set only the latitude of a person.
+
+    >>> cprov.setLocation(-43.0, None, 'America/Sao_Paulo', admin)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
+Similarly, we can't set only the longitude.
+
+    >>> cprov.setLocation(None, -43.0, 'America/Sao_Paulo', admin)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
+We can get lists of the participants in a team that do, or do not, have
+locations. Specifically, we mean latitude/longitude data, not time zone
+data.
+
+When we get mapped participants, and unmapped participants, we only mean
+the individuals, not other teams. We'll show that guadamen has a
+sub-team, ubuntu-team, and that it still does not appear in either
+mapped_participants or unmapped_participants (although its members do).
+
+    >>> for member in guadamen.activemembers:
+    ...     if member.teamowner is not None:
+    ...         print member.name
+    ubuntu-team
+    >>> len(guadamen.getMappedParticipants())
+    2
+    >>> for mapped in guadamen.getMappedParticipants():
+    ...     if mapped.teamowner is not None:
+    ...         print mapped.name
+    >>> guadamen.unmapped_participants.count()
+    7
+    >>> for unmapped in guadamen.unmapped_participants:
+    ...     if unmapped.teamowner is not None:
+    ...         print unmapped.name
+
+When we iterate over the mapped_participants in a team, their locations
+have been pre-cached so that we don't hit the database everytime we
+access a person's .location property.
+
+    >>> from lp.services.propertycache import get_property_cache
+    >>> for mapped in guadamen.getMappedParticipants():
+    ...     cache = get_property_cache(mapped)
+    ...     if ("location" not in cache or
+    ...         not verifyObject(IPersonLocation, cache.location)):
+    ...         print 'No cached location on %s' % mapped.name
+
+The mapped_participants methods takes a optional argument to limit the
+number of persons in the returned list.
+
+    >>> mapped = guadamen.getMappedParticipants(limit=1)
+    >>> len(mapped)
+    1
+
+The count of mapped and unmapped members can also be retrieved, which is
+faster than getting the resultset of members.
+
+    >>> guadamen.mapped_participants_count
+    2
+    >>> guadamen.unmapped_participants_count
+    7
+
+The bounds of the mapped members can be retrieved. It is a dict that contains
+the minimum maximum, and central longitudes and latitudes.
+
+    >>> bounds = guadamen.getMappedParticipantsBounds()
+    >>> for key in sorted(bounds):
+    ...     print "%s: %s" % (key, bounds[key])
+    center_lat: 4...
+    center_lng: -30...
+    max_lat: 52...
+    max_lng: 0...
+    min_lat: -43...
+    min_lng: -62...
+
+Calling getMappedParticipantsBounds() on a team without members is an error.
+
+    >>> unmapped_team = factory.makeTeam()
+    >>> unmapped_team.getMappedParticipantsBounds()
+    Traceback (most recent call last):
+     ...
+    AssertionError: This method cannot be called when
+                    mapped_participants_count == 0.
+
+
+Location visibility
+-------------------
+
+Some people may not want their location to be disclosed to others, so
+we provide a way for them to hide their location from other users. By
+default a person's location is visible.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> login_person(salgado)
+    >>> salgado.setLocation(-43.0, -62.1, 'America/Sao_Paulo', salgado)
+    >>> salgado.location.visible
+    True
+    >>> salgado.location.latitude
+    -43...
+
+    >>> login_person(jdub)
+    >>> salgado.location.latitude
+    -43...
+
+But it can be changed through the setLocationVisibility() method. If the
+visibility is set to False, only the person himself will be able to see
+the location data except for time zone.
+
+    >>> login_person(salgado)
+    >>> salgado.setLocationVisibility(False)
+    >>> salgado.location.visible
+    False
+
+    >>> login_person(jdub)
+    >>> print salgado.time_zone
+    America/Sao_Paulo
+    >>> salgado.latitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> salgado.longitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> salgado.location.latitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+A team's .mapped_participants will also exclude the members who made
+their location invisible.
+
+    >>> admins = personset.getByName('admins')
+    >>> salgado in admins.activemembers
+    True
+    >>> salgado in admins.getMappedParticipants()
+    False

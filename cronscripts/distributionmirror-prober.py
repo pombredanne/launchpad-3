@@ -1,241 +1,192 @@
-#!/usr/bin/python
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
 import _pythonpath
 
-import sys
-import optparse
-import itertools
+import os
 from StringIO import StringIO
 
-from twisted.internet import defer, reactor
-from twisted.internet.defer import DeferredSemaphore
+from twisted.internet import reactor
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import initZopeless
-from canonical.lp.dbschema import MirrorContent
-from canonical.launchpad.interfaces import UnableToFetchCDImageFileList
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, ILibraryFileAliasSet)
-from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks,
-    RedirectAwareProberFactory)
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+from lp.services.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp import canonical_url
+from lp.registry.scripts.distributionmirror_prober import (
+    get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
-# Keep this number smaller than 1024 if running on python-2.3.4, as there's a
-# bug (https://launchpad.net/bugs/48301) on this specific version which would
-# break this script if BATCH_SIZE is higher than 1024.
-BATCH_SIZE = 50
-semaphore = DeferredSemaphore(BATCH_SIZE)
+class DistroMirrorProber(LaunchpadCronScript):
+    usage = ('%prog --content-type=(archive|cdimage) [--force] '
+             '[--no-owner-notification] [--max-mirrors=N]')
 
+    def _sanity_check_mirror(self, mirror):
+        """Check that the given mirror is official and has an http_base_url.
+        """
+        assert mirror.isOfficial(), (
+            'Non-official mirrors should not be probed')
+        if mirror.base_url is None:
+            self.logger.warning(
+                "Mirror '%s' of distribution '%s' doesn't have a base URL; "
+                "we can't probe it." % (
+                    mirror.name, mirror.distribution.name))
+            return False
+        return True
 
-def checkComplete(result, key, unchecked_keys):
-    """Check if we finished probing all mirrors, and call reactor.stop()."""
-    unchecked_keys.remove(key)
-    if not len(unchecked_keys):
-        reactor.callLater(0, reactor.stop)
-    # This is added to the deferred with addBoth(), which means it'll be
-    # called if something goes wrong in the end of the callback chain, and in
-    # that case we shouldn't swallow the error.
-    return result
+    def _create_probe_record(self, mirror, logfile):
+        """Create a probe record for the given mirror with the given logfile.
+        """
+        logfile.seek(0)
+        filename = '%s-probe-logfile.txt' % mirror.name
+        log_file = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(logfile.getvalue()),
+            file=logfile, contentType='text/plain')
+        mirror.newProbeRecord(log_file)
 
+    def add_my_options(self):
+        self.parser.add_option('--content-type',
+            dest='content_type', default=None, action='store',
+            help='Probe only mirrors of the given type')
+        self.parser.add_option('--force',
+            dest='force', default=False, action='store_true',
+            help='Force the probing of mirrors that were probed recently')
+        self.parser.add_option('--no-owner-notification',
+            dest='no_owner_notification', default=False, action='store_true',
+            help='Do not send failure notification to mirror owners.')
+        self.parser.add_option('--no-remote-hosts',
+            dest='no_remote_hosts', default=False, action='store_true',
+            help='Do not try to connect to any host other than localhost.')
+        self.parser.add_option('--max-mirrors',
+            dest='max_mirrors', default=None, action='store', type="int",
+            help='Only probe N mirrors.')
 
-def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
-    """Probe an archive mirror for its contents and freshness.
+    def main(self):
+        if self.options.content_type == 'archive':
+            probe_function = probe_archive_mirror
+            content_type = MirrorContent.ARCHIVE
+        elif self.options.content_type == 'cdimage':
+            probe_function = probe_cdimage_mirror
+            content_type = MirrorContent.RELEASE
+        else:
+            raise LaunchpadScriptFailure(
+                'Wrong value for argument --content-type: %s'
+                % self.options.content_type)
 
-    First we issue a set of HTTP HEAD requests on some key files to find out
-    what is mirrored there, then we check if some packages that we know the
-    publishing time are available on that mirror, giving us an idea of when it
-    was last synced to the main archive.
-    """
-    packages_paths = mirror.getExpectedPackagesPaths()
-    sources_paths = mirror.getExpectedSourcesPaths()
-    all_paths = itertools.chain(packages_paths, sources_paths)
-    for release, pocket, component, path in all_paths:
-        url = "%s/%s" % (mirror.http_base_url, path)
-        callbacks = MirrorProberCallbacks(
-            mirror, release, pocket, component, url, logfile)
-        unchecked_mirrors.append(url)
-        prober = ProberFactory(url)
+        orig_proxy = os.environ.get('http_proxy')
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
 
-        prober.deferred.addCallbacks(
-            callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.txn.begin()
 
-        prober.deferred.addCallback(callbacks.updateMirrorStatus)
-        prober.deferred.addErrback(logger.error)
+        # Using a script argument to control a config variable is not a great
+        # idea, but to me this seems better than passing the no_remote_hosts
+        # value through a lot of method/function calls, until it reaches the
+        # probe() method.
+        if self.options.no_remote_hosts:
+            localhost_only_conf = """
+                [distributionmirrorprober]
+                localhost_only: True
+                """
+            config.push('localhost_only_conf', localhost_only_conf)
 
-        prober.deferred.addBoth(checkComplete, url, unchecked_mirrors)
-        semaphore.run(prober.probe)
+        self.logger.info('Probing %s Mirrors' % content_type.title)
 
+        mirror_set = getUtility(IDistributionMirrorSet)
 
-def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
-    """Probe a release or release mirror for its contents.
-    
-    This is done by checking the list of files for each flavour and release
-    returned by mirror.getExpectedCDImagePaths(). If a mirror contains all
-    files for a given release and flavour, then we consider that mirror is
-    actually mirroring that release and flavour.
-    """
-    try:
-        cdimage_paths = mirror.getExpectedCDImagePaths()
-    except UnableToFetchCDImageFileList, e:
-        logger.error(e)
-        return
+        results = mirror_set.getMirrorsToProbe(
+            content_type, ignore_last_probe=self.options.force,
+            limit=self.options.max_mirrors)
+        mirror_ids = [mirror.id for mirror in results]
+        unchecked_keys = []
+        logfiles = {}
+        probed_mirrors = []
 
-    for release, flavour, paths in cdimage_paths:
-        callbacks = MirrorCDImageProberCallbacks(
-            mirror, release, flavour, logfile)
+        for mirror_id in mirror_ids:
+            mirror = mirror_set[mirror_id]
+            if not self._sanity_check_mirror(mirror):
+                continue
 
-        mirror_key = (release, flavour)
-        unchecked_mirrors.append(mirror_key)
-        deferredList = []
-        for path in paths:
-            url = '%s/%s' % (mirror.http_base_url, path)
-            # Use a RedirectAwareProberFactory because CD mirrors are allowed
-            # to redirect, and we need to cope with that.
-            prober = RedirectAwareProberFactory(url)
-            prober.deferred.addErrback(callbacks.logMissingURL, url)
-            d = semaphore.run(prober.probe)
-            deferredList.append(d)
+            # XXX: salgado 2006-05-26:
+            # Some people registered mirrors on distros other than Ubuntu back
+            # in the old times, so now we need to do this small hack here.
+            if not mirror.distribution.full_functionality:
+                self.logger.info(
+                    "Mirror '%s' of distribution '%s' can't be probed --we "
+                    "only probe Ubuntu mirrors."
+                    % (mirror.name, mirror.distribution.name))
+                continue
 
-        deferredList = defer.DeferredList(deferredList, consumeErrors=True)
-        deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
-        deferredList.addCallback(checkComplete, mirror_key, unchecked_mirrors)
+            probed_mirrors.append(mirror)
+            logfile = StringIO()
+            logfiles[mirror_id] = logfile
+            probe_function(mirror, logfile, unchecked_keys, self.logger)
 
+        if probed_mirrors:
+            reactor.run()
+            self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
+        else:
+            self.logger.info('No mirrors to probe.')
 
-def parse_options(args):
-    parser = optparse.OptionParser(
-        usage='%prog --content-type=(archive|release) [--force]')
-    parser.add_option(
-        '--content-type',
-        dest='content_type',
-        default=None,
-        action='store',
-        help='Probe only mirrors of the given type'
-        )
+        disabled_mirrors = []
+        reenabled_mirrors = []
+        # Now that we finished probing all mirrors, we check if any of these
+        # mirrors appear to have no content mirrored, and, if so, mark them as
+        # disabled and notify their owners.
+        expected_iso_images_count = len(get_expected_cdimage_paths())
+        notify_owner = not self.options.no_owner_notification
+        for mirror in probed_mirrors:
+            log = logfiles[mirror.id]
+            self._create_probe_record(mirror, log)
+            if mirror.shouldDisable(expected_iso_images_count):
+                if mirror.enabled:
+                    log.seek(0)
+                    mirror.disable(notify_owner, log.getvalue())
+                    disabled_mirrors.append(canonical_url(mirror))
+            else:
+                # Ensure the mirror is enabled, so that it shows up on public
+                # mirror listings.
+                if not mirror.enabled:
+                    mirror.enabled = True
+                    reenabled_mirrors.append(canonical_url(mirror))
 
-    parser.add_option(
-        '--force',
-        dest='force',
-        default=False,
-        action='store_true',
-        help='Force the probing of mirrors that have been probed recently'
-        )
+        if disabled_mirrors:
+            self.logger.info(
+                'Disabling %s mirror(s): %s'
+                % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
+        if reenabled_mirrors:
+            self.logger.info(
+                'Re-enabling %s mirror(s): %s'
+                % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
+        # XXX: salgado 2007-04-03:
+        # This should be done in LaunchpadScript.lock_and_run() when
+        # the isolation used is ISOLATION_LEVEL_AUTOCOMMIT. Also note
+        # that replacing this with a flush_database_updates() doesn't
+        # have the same effect, it seems.
+        self.txn.commit()
 
-    # Add the verbose/quiet options.
-    logger_options(parser)
-    options, args = parser.parse_args(args)
-    return options
-
-
-def _sanity_check_mirror(mirror, logger):
-    """Check that the given mirror is official and has an http_base_url."""
-    assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
-    if mirror.http_base_url is None:
-        logger.warning(
-            "Mirror '%s' of distribution '%s' doesn't have an http base "
-            "URL, we can't probe it."
-            % (mirror.name, mirror.distribution.name))
-        return False
-    return True
-
-
-def _create_probe_record(mirror, logfile):
-    """Create a probe record for the given mirror with the given logfile."""
-    logfile.seek(0)
-    filename = '%s-probe-logfile.txt' % mirror.name
-    log_file = getUtility(ILibraryFileAliasSet).create(
-        name=filename, size=len(logfile.getvalue()),
-        file=logfile, contentType='text/plain')
-    mirror.newProbeRecord(log_file)
-
-
-def main(argv):
-    options = parse_options(argv[1:])
-    logger_obj = logger(options, 'distributionmirror-prober')
-
-    if options.content_type == 'archive':
-        probe_function = probe_archive_mirror
-        content_type = MirrorContent.ARCHIVE
-    elif options.content_type == 'release':
-        probe_function = probe_release_mirror
-        content_type = MirrorContent.RELEASE
-    else:
-        logger_obj.error('Wrong value for argument --content-type: %s'
-                         % options.content_type)
-        return 1
-
-    logger_obj.info('Probing %s Mirrors' % content_type.title)
-
-    ztm = initZopeless(
-        implicitBegin=False, dbuser=config.distributionmirrorprober.dbuser)
-    execute_zcml_for_scripts()
-
-    mirror_set = getUtility(IDistributionMirrorSet)
-
-    ztm.begin()
-
-    results = mirror_set.getMirrorsToProbe(
-        content_type, ignore_last_probe=options.force)
-    mirror_ids = [mirror.id for mirror in results]
-    unchecked_mirrors = []
-    logfiles = {}
-    probed_mirrors = []
-
-    for mirror_id in mirror_ids:
-        mirror = mirror_set[mirror_id]
-        if not _sanity_check_mirror(mirror, logger_obj):
-            continue
-
-        # XXX: Some people registered mirrors on distros other than Ubuntu
-        # back in the old times, so now we need to do this small hack here.
-        # Guilherme Salgado, 2006-05-26
-        if not mirror.distribution.full_functionality:
-            logger_obj.warning(
-                "Mirror '%s' of distribution '%s' can't be probed --we only "
-                "probe Ubuntu mirrors." 
-                % (mirror.name, mirror.distribution.name))
-            continue
-
-        probed_mirrors.append(mirror)
-        logfile = StringIO()
-        logfiles[mirror_id] = logfile
-        probe_function(mirror, logfile, unchecked_mirrors, logger_obj)
-
-    if probed_mirrors:
-        reactor.run()
-        logger_obj.info('Probed %d mirrors.' % len(probed_mirrors))
-    else:
-        logger_obj.info('No mirrors to probe.')
-    ztm.commit()
-
-    # Now that we finished probing all mirrors, we check if any of these
-    # mirrors appear to have no content mirrored, and, if so, mark them as
-    # disabled and notify their owners.
-    disabled_mirrors_count = 0
-    ztm.begin()
-    for mirror in probed_mirrors:
-        _create_probe_record(mirror, logfiles[mirror.id])
-        if not mirror.hasContent():
-            disabled_mirrors_count += 1
-            mirror.disableAndNotifyOwner()
-
-    ztm.commit()
-
-    if disabled_mirrors_count:
-        logger_obj.info(
-            'Disabled %d mirrors because no content was found on them.'
-            % disabled_mirrors_count)
-    logger_obj.info('Done.')
-    return 0
+        self.logger.info('Done.')
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    script = DistroMirrorProber('distributionmirror-prober',
+                                dbuser=config.distributionmirrorprober.dbuser)
+    script.lock_and_run()
 

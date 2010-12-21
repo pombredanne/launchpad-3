@@ -1,0 +1,14 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  omit-tag="">
+<img alt="" src="/@@/bug" />
+<a href="#" tal:attributes="href context/fmt:url"
+  ><span tal:replace="string:#${context/id}: ${context/title/fmt:shorten/50}"
+         tal:condition="context/required:launchpad.View">
+      #42: Bug Title
+   </span
+   ><span tal:replace="string:#${context/id}: Private Bug"
+          tal:condition="not:context/required:launchpad.View">
+      #42: Private Bug
+   </span></a>
+</tal:root>

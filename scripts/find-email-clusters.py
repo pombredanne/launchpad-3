@@ -1,15 +1,22 @@
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
+import _pythonpath
 
 import sys
 import logging
 import optparse
 
-import _pythonpath
-
 import gpgme
 
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
+from lp.registry.scripts.keyringtrustanalyser import (
+    addOtherKeyring, addTrustedKeyring, findEmailClusters)
+
 
 validity_map = {
     'UNDEFINED': gpgme.VALIDITY_UNDEFINED,
@@ -18,6 +25,7 @@ validity_map = {
     'FULL':      gpgme.VALIDITY_FULL,
     'ULTIMATE':  gpgme.VALIDITY_ULTIMATE,
     }
+
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -87,6 +95,7 @@ def main(argv):
     logger.info('Done')
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

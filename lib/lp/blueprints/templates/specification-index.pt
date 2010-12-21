@@ -1,0 +1,349 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+  <body>
+
+  <tal:registering metal:fill-slot="registering">
+    Registered by
+    <tal:registrant tal:replace="structure context/owner/fmt:link" /> on
+    <tal:registrant_date
+      tal:replace="structure context/datecreated/fmt:approximatedate" />
+  </tal:registering>
+
+
+<div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="informational message">
+    notice goes here
+  </p>
+
+  <p tal:condition="context/superseded_by" class="warning message">
+    This blueprint has been superseded. See the newer blueprint
+    "<b><a tal:content="context/superseded_by/title"
+           tal:attributes="href context/superseded_by/fmt:url">new blueprint
+    title</a></b>" for updated plans.
+  </p>
+
+  <div id="maincontentsub">
+    <div class="top-portlet">
+      <tal:desc replace="structure context/summary/fmt:text-to-html">
+        The blueprint summary will go here.
+      </tal:desc>
+
+      <ul class="horizontal">
+        <li
+            tal:condition="context/specurl">
+          <a class="sprite external-link"
+            tal:attributes="href context/specurl">Read the full specification</a>
+        </li>
+        <tal:block condition="python:context.specurl is None">
+          <li tal:condition="context/required:launchpad.AnyPerson"
+              class="link">
+            <a tal:condition="not:context/specurl" href="+edit"
+            >Set the URL for this specification</a>
+          </li>
+        </tal:block>
+      </ul>
+    </div>
+
+    <div class="yui-g">
+      <div class="yui-u first">
+        <div class="portlet">
+          <h2>Blueprint information</h2>
+
+          <div class="two-column-list">
+            <dl>
+              <dt>Priority:</dt>
+              <dd><tal:block content="context/priority/title"/>
+                <tal:guidance condition="not: context/direction_approved"
+                >(Needs guidance)</tal:guidance>
+                <a tal:define="link context_menu/priority"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl>
+              <dt>Approver:</dt>
+              <dd>
+                <a tal:condition="context/approver"
+                   tal:replace="structure context/approver/fmt:link">Foo Bar</a>
+                <tal:none condition="not: context/approver">None</tal:none>
+                <a tal:define="link context_menu/people"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl>
+              <dt>Definition:</dt>
+              <dd>
+                <tal:definition replace="context/definition_status/title" />
+                <a tal:define="link context_menu/status"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl>
+              <dt>Drafter:</dt>
+              <dd>
+                <a tal:condition="context/drafter"
+                   tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
+                <tal:none condition="not: context/drafter">None</tal:none>
+                <a tal:define="link context_menu/people"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl>
+              <dt>Implementation:</dt>
+              <dd>
+                <img tal:condition="context/informational"
+                     src="/@@/info" alt="Informational"
+                     title="Informational blueprint, no implementation necessary"
+                     id="informational-icon"
+                     />
+                <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
+                <a tal:define="link context_menu/status"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl>
+              <dt>Assignee:</dt>
+              <dd>
+                <a tal:condition="context/assignee"
+                   tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
+                <tal:none condition="not: context/assignee">None</tal:none>
+                <a tal:define="link context_menu/people"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl id="series-goal">
+              <dt>Series goal:</dt>
+              <dd>
+                <tal:block condition="context/goal">
+                <a
+                  tal:condition="context/goal/required:launchpad.Driver"
+                  tal:attributes="href string:${context/fmt:url}/+decide"
+                  tal:content="context/goalstatus/title"
+                >Approved</a>
+                <tal:cannotchange
+                  tal:condition="not: context/goal/required:launchpad.Driver"
+                  tal:replace="context/goalstatus/title"
+                >Approved</tal:cannotchange>
+                for
+                <a tal:condition="context/productseries"
+                   tal:attributes="href context/productseries/fmt:url"
+                   tal:content="context/productseries/name">1.2</a>
+                <a  tal:condition="context/distroseries"
+                    tal:attributes="href context/distroseries/fmt:url"
+                    tal:content="context/distroseries/name">hoary</a>
+                </tal:block>
+                <tal:none condition="not: context/goal">None</tal:none>
+                <a tal:define="link context_menu/proposegoal"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl id="milestone-target">
+              <dt>Milestone target:</dt>
+              <dd>
+              <a tal:attributes="href context/milestone/fmt:url"
+                 tal:condition="context/milestone">
+                <img alt="milestone icon" src="/@@/milestone" />
+                <span tal:replace="context/milestone/name">1.0</span></a>
+                <tal:none condition="not: context/milestone">None</tal:none>
+                <a tal:define="link context_menu/milestone"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url"
+                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+              </dd>
+            </dl>
+
+            <dl tal:condition="context/starter">
+               <dt>Started by</dt>
+               <dd>
+                 <tal:registrant tal:replace="structure context/starter/fmt:link" />
+                  on <tal:started_date
+                    tal:replace="structure context/date_started/fmt:approximatedate" />
+              </dd>
+            </dl>
+
+            <dl tal:condition="context/completer">
+              <dt>Completed by</dt>
+              <dd>
+                 <tal:registrant tal:replace="structure context/completer/fmt:link" />
+                 on <tal:registrant_date
+                   tal:replace="structure context/date_completed/fmt:approximatedate" />
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="yui-u">
+        <div class="portlet">
+          <div id="linked_branches">
+            <h2>Related branches</h2>
+
+            <ul
+              tal:define="branches view/linked_branches"
+              tal:condition="branches">
+              <li tal:repeat="branchlink branches">
+              <tal:branchlink
+                  replace="structure branchlink/branch/fmt:link"/>
+              <a tal:condition="branchlink/required:launchpad.AnyPerson"
+                 tal:attributes="href branchlink/fmt:url"
+                 ><img src="/@@/edit" title="Change this branch link" /></a>
+              </li>
+            </ul>
+
+            <ul class="horizontal"
+              tal:define="link context_menu/linkbranch"
+              tal:condition="link/enabled">
+              <li>
+                <a tal:replace="structure link/fmt:link" />
+              </li>
+            </ul>
+          </div>
+
+          <div id="bug_links" style="margin-top: 1.5em;">
+            <h2>Related bugs</h2>
+
+            <ul tal:condition="view/bug_links">
+              <li tal:repeat="link view/bug_links">
+                <tal:link replace="structure link/bug/fmt:link" />
+              </li>
+            </ul>
+
+            <ul class="horizontal">
+              <li tal:define="link context_menu/linkbug"
+                tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link"/>
+              </li>
+              <li tal:define="link context_menu/unlinkbug"
+                tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link"/>
+              </li>
+            </ul>
+          </div>
+
+            <div style="margin-top: 1.5em;">
+              <h2>Sprints</h2>
+              <ul
+                tal:define="sprint_links context/sprint_links"
+                tal:condition="sprint_links">
+                <li tal:repeat="sprint_link sprint_links">
+                  <tal:approval replace="structure sprint_link/@@+icon-status" />
+                  <a
+                    tal:attributes="href sprint_link/sprint/fmt:url"
+                    tal:content="sprint_link/sprint/name"/>
+                  <a
+                    tal:condition="sprint_link/sprint/required:launchpad.Driver"
+                    tal:attributes="href string:${context/fmt:url}/${sprint_link/sprint/name}"
+                    ><img src="/@@/edit" /></a>
+                </li>
+              </ul>
+
+              <ul class="horizontal">
+                <li tal:define="link context_menu/linksprint"
+                  tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+              </ul>
+            </div>
+
+            <div class="portlet" style="border-top: none;">
+              <h2 tal:condition="not:context/feedbackrequests">Feedback requests</h2>
+
+              <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+
+              <ul class="horizontal">
+                <li tal:define="link context_menu/givefeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+                <li tal:define="link context_menu/requestfeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+              </ul>
+            </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="portlet">
+      <h2>
+        Whiteboard
+        <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
+      </h2>
+
+      <div class="wide"
+           tal:content="structure context/whiteboard/fmt:text-to-html"
+           tal:condition="context/whiteboard">Whiteboard.</div>
+    </div>
+
+    <div class="portlet">
+      <tal:deptree condition="view/has_dep_tree">
+        <h2>Dependency tree</h2>
+
+        <tal:block tal:replace="structure context/@@+deptreeimgtag" />
+
+        <p>
+          * Blueprints in grey have been implemented.
+        </p>
+      </tal:deptree>
+
+      <ul class="horizontal">
+        <li tal:define="link context_menu/adddependency"
+          tal:condition="link/enabled">
+          <a tal:replace="structure link/fmt:link" />
+        </li>
+        <li tal:define="link context_menu/removedependency"
+          tal:condition="link/enabled">
+          <a tal:replace="structure link/fmt:link" />
+        </li>
+      </ul>
+    </div>
+
+      <div tal:condition="context/goal" class="related">
+        <h2>Nearby</h2>
+
+        <ul>
+          <li>
+            <a tal:attributes="href context/goal/fmt:url">
+              Other <tal:goal replace="context/goal/displayname" /> blueprints
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <tal:side metal:fill-slot="side">
+    <tal:menu replace="structure context/@@+global-actions" />
+
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+  </tal:side>
+</body>
+</html>

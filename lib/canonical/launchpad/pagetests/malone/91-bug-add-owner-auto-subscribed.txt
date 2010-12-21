@@ -1,9 +1,0 @@
-The submitter of a bug is automatically subscribed to the bug and will
-thus receive notifications of changes made to the bug report.
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/7 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Foo Bar...

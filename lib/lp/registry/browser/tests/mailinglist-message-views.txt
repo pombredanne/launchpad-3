@@ -1,0 +1,74 @@
+Held message view
+-----------------
+
+The HeldMessageView formats a held message so that it can be moderated by
+the mailing list administrator.
+
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+
+    >>> team, mlist = factory.makeTeamAndMailingList('parrot', 'owner')
+
+    >>> login('admin@canonical.com')
+    >>> message_set = getUtility(IMessageSet)
+    >>> message = message_set.fromEmail("""\
+    ... From: Carlos <carlos@canonical.com>
+    ... To: parrot@lists.launchpad.dev
+    ... Subject: monkey
+    ... Message-ID: <monkey>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... First paragraph.
+    ...
+    ... Second paragraph.
+    ...
+    ... Third paragraph.
+    ... """)
+    >>> held_message = mlist.holdMessage(message)
+    >>> transaction.commit()
+
+    >>> login_person(team.teamowner)
+    >>> view = create_initialized_view(
+    ...     held_message, name='+moderation', principal=team.teamowner)
+    >>> print view.widget_name
+    field.%3Cmonkey%3E
+    >>> print view.message_id
+    <monkey>
+    >>> print view.subject
+    monkey
+    >>> print view.date
+    2000-08-01 01:09:00+00:00
+    >>> print view.author
+    <a href="http://launchpad.dev/~carlos">Carlos &lt;carlos@canonical.com&gt;</a>
+    >>> print view.body_summary
+    First paragraph.
+    >>> print view.body_details
+    <p>
+    Second paragraph.
+    </p>
+    <p>
+    Third paragraph.
+    </p>
+
+
+View helpers
+------------
+
+The view uses a helper method to format the paragraphs.
+
+    >>> paragraphs = []
+    >>> current_paragraph = ['line 1', 'line 2']
+    >>> view._append_paragraph(paragraphs, current_paragraph)
+    >>> for line in paragraphs:
+    ...     print line
+    <p>
+    line 1
+    line 2
+    </p>
+
+The _append_paragraph method ignores empty paragraphs.
+
+    >>> paragraphs = []
+    >>> current_paragraph = []
+    >>> view._append_paragraph(paragraphs, current_paragraph)
+    >>> len(paragraphs)
+    0

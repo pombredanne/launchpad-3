@@ -1,0 +1,78 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="activity-table"
+  tal:attributes="class string:bug-activity">
+  <tal:activity-by-target repeat="activity_dict activity_list">
+    <tal:target define="target activity_dict/target|nothing">
+      <tr tal:condition="target">
+        <td colspan="2">Changed in <tal:target content="target" />: </td>
+      </tr>
+    </tal:target>
+    <tr tal:repeat="activity activity_dict/activity">
+      <td style="text-align: right;">
+        <b><tal:summary replace="activity/change_summary" /></b>:
+      </td>
+      <td>
+        <tal:details replace="structure activity/change_details" />
+      </td>
+    </tr>
+  </tal:activity-by-target>
+</table>
+
+<div 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="activity-box"
+  tal:attributes="class string:boardComment">
+  <div class="boardCommentDetails">
+    <tal:activity_has_person>
+      <tal:activity_person replace="structure activity_person/fmt:link" />
+    </tal:activity_has_person>
+    <span
+      tal:attributes="title activity_date/fmt:datetime"
+      tal:content="activity_date/fmt:displaydate">
+      7 minutes ago
+    </span>
+  </div>
+  <div class="boardBugActivityBody">
+    <metal:activity-table
+        metal:use-macro="context/@@bugcomment-macros/activity-table" />
+  </div>
+</div>
+
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="break"
+  tal:attributes="class string:boardComment"
+  style="border-bottom: 0">
+  <div class="boardCommentDetails">
+    <table>
+      <tbody>
+        <tr>
+          <td>
+            <span class="sprite arrowRight">&nbsp;</span>
+            <span tal:replace="num_hidden">42</span> comments hidden
+          </td>
+
+          <td class="bug-comment-index">
+            <a href="?comments=all"
+               class="sprite retry"
+               style="white-space: nowrap">
+               view all <span
+               tal:replace="view/visible_comments/count:len"
+               /> comments</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</tal:root>

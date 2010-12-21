@@ -1,0 +1,86 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<metal:branch_display define-macro="branch_display">
+  <tal:comment condition="nothing">
+    This macro expects two variables to be defined:
+      - 'series': The ProductSeries
+      - 'is_focus': A boolean saying whether this is the series in which
+                    development is focused.
+  </tal:comment>
+
+  <table>
+    <tbody>
+      <tal:edit-link define="series_link series/fmt:url;
+                             edit_link string:${series_link}/+linkbranchtoseries">
+      <tr>
+        <th>Series:</th>
+        <tal:comment condition="nothing">
+          In order to make the Series column as small as possible, tell the
+          right column to take up as much space as it can.  This keeps the
+          Series: in line for all series displayed.
+        </tal:comment>
+        <td style="width: 99%">
+          <strong>
+            <a tal:attributes="href series/fmt:url"
+               tal:content="series/name" >
+              1.0
+            </a>
+          </strong>
+          <em tal:condition="is_focus">Focus of Development</em>
+        </td>
+      </tr>
+
+      <tal:has_branch condition="series/branch">
+        <tr>
+          <th>Branch:</th>
+          <td>
+            <tal:branch replace="structure series/branch/fmt:project-link"/>
+            <tal:edit-link condition="series/required:launchpad.Edit">
+              (<a tal:attributes="href edit_link"
+              >change</a>)
+            </tal:edit-link>
+          </td>
+        </tr>
+
+        <tr class="lesser">
+          <td></td>
+          <td>
+            To get a copy of this branch, use the command:<br/>
+            <tt>
+              <strong>
+                bzr branch
+                <tal:dev-focus condition="is_focus">
+                  lp:<tal:product replace="context/name"/>
+                </tal:dev-focus>
+                <tal:not-dev-focus condition="not: is_focus">
+                  lp:<tal:product replace="context/name"/>/<tal:series replace="series/name"/>
+                </tal:not-dev-focus>
+              </strong>
+            </tt>
+          </td>
+        </tr>
+      </tal:has_branch>
+
+      <tal:no_branch condition="not: series/branch">
+        <tr>
+          <th>Branch:</th>
+          <td>
+            None specified
+            <tal:edit-link condition="series/required:launchpad.Edit">
+              (<a tal:attributes="href edit_link"
+              >set</a>)
+            </tal:edit-link>
+          </td>
+        </tr>
+      </tal:no_branch>
+      </tal:edit-link>
+    </tbody>
+  </table>
+
+</metal:branch_display>
+
+</tal:root>

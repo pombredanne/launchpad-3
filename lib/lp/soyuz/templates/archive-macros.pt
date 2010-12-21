@@ -1,0 +1,387 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<metal:expandable_table_js define-macro="expandable-table-js">
+  <tal:comment replace="nothing">
+    Javascript needed for expanding/collapsing archive package list
+    row containing extra publication information via XHR.
+  </tal:comment>
+
+<script type="text/javascript">
+LPS.use('node', 'io-base', 'lazr.anim', 'lp.soyuz.base', function(Y) {
+
+
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    function retry_handler(e) {
+        e.preventDefault();
+        startUpdate(args.container);
+    };
+
+    var failure_message = Y.lp.soyuz.base.makeFailureNode(
+        'Failed to fetch package details.', retry_handler);
+
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: args.container
+        });
+    anim.run();
+}
+
+
+/*
+ * Update the row with the XHR response.
+ */
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
+}
+
+
+/*
+ * Dispatch a XHR for updating the given container.
+ */
+function startUpdate(container) {
+    in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
+        'Fetching package details ...')
+
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
+    var config = {
+        on: {
+            'success': doUpdate,
+            'failure': informFailure
+        },
+        arguments: {
+            'container': container,
+        }
+    };
+
+    /*
+     * If a page wants to use this outside of an archive context then it
+     * can define LP.client.cache['archive_context'], which should be a
+     * full or relative URL to the context archive page required.
+     */
+    var base_url = (
+        typeof(LP.client.cache['archive_context_url']) != "undefined")
+            ? LP.client.cache['archive_context_url']
+            : '';
+    if (base_url !== '') {
+        base_url += '/'
+    }
+    var pub_id = container.get('id').replace(
+        '-container', '').replace('pub', '');
+    var uri = base_url + '+sourcepub/' + pub_id + '/+listing-archive-extra';
+    Y.io(uri, config);
+}
+
+
+/*
+ * Toggle the visibility of the expander targeted and the visual of
+ * the expander itself.
+ */
+function toggleExpandableRow(expander) {
+    var row = Y.one('#' + expander.get('id').replace('-expander', ''));
+    var icon = expander.one('img');
+
+    var row_display = row.getStyle('display');
+    if (row_display == 'none') {
+        row.setStyle('display', 'table-row');
+        icon.set('src', '/@@/treeExpanded');
+        var container = Y.one('#' + row.get('id') + '-container');
+        if (trim(container.get('innerHTML')) == ''){
+            startUpdate(container);
+        }
+    }
+    else {
+        row.setStyle('display', 'none');
+        icon.set('src', '/@@/treeCollapsed');
+    }
+}
+
+
+/*
+ * Setup expander handlers and pre-load 'treeExpanded', 'no' and
+ * 'spinner' images for better reponsiveness.
+ */
+function setupPackageListExpanders() {
+    var spinner = new Image();
+    spinner.src = '/@@/spinner';
+
+    var no = new Image();
+    no.src = '/@@/no';
+
+    var tree_expanded = new Image();
+    tree_expanded.src = '/@@/treeExpanded';
+
+    function expander_handler (e) {
+        e.preventDefault();
+        toggleExpandableRow(e.currentTarget);
+    };
+
+    // Note: there are situations, such as displaying empty result
+    // sets, when there will not be any links for expanders on the page.
+    var expanders = Y.all('#packages_list a.expander');
+    if (expanders !== null){
+        expanders.on("click", expander_handler);
+    }
+}
+
+Y.on('domready', setupPackageListExpanders);
+});
+</script>
+
+<style type="text/css" media="screen, print">
+div.package-details {
+    padding-left: 4em;
+    padding-bottom: 1em;
+}
+</style>
+
+
+</metal:expandable_table_js>
+
+<metal:source_package_list define-macro="source-package-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the published source packages for an
+    archive.
+  </tal:comment>
+
+  <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
+
+    <tal:navigation_top
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+
+    <table class="listing" id="packages_list"
+           tal:condition="batch">
+      <thead>
+        <tr class="archive_package_row">
+        <th colspan="2">Source</th>
+        <th tal:condition="context/owner/isTeam">Uploader</th>
+        <th>Published</th>
+        <th>Status</th>
+        <th>Series</th>
+        <th>Section</th>
+        <th>Build Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:non_selectable repeat="publishing batch"
+                   replace="structure publishing/@@+listing-archive-detailed"
+                   condition="not:view/selectable_sources">
+        </tal:non_selectable>
+        <tal:selectable condition="view/selectable_sources">
+          <tal:each_term define="widget nocall:view/widgets/selected_sources"
+                         repeat="term widget/vocabulary">
+            <tal:block
+              define="pub term/value"
+              replace="structure pub/@@+listing-archive-detailed-selectable" />
+          </tal:each_term>
+        </tal:selectable>
+      </tbody>
+    </table>
+
+    <tal:navigation_bottom
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+
+    <div id="empty-result"
+            tal:define="name_filter view/specified_name_filter|nothing"
+            tal:condition="not: batch">
+      No matching package for '<tal:name_filter replace="name_filter" />'.
+    </div>
+
+    <metal:js
+      use-macro="context/@@+macros/expandable-table-js" />
+
+  </div>
+
+</metal:source_package_list>
+
+<metal:package_copy_request_list define-macro="package-copy-request-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the package copy requests for a copy
+    archive.
+  </tal:comment>
+
+  <div id="package-copy-request-list" class="portlet"
+       tal:define="requests view/package_copy_requests">
+    <h2>Copy archive contents</h2>
+
+    <p tal:condition="not: requests">
+      There are currently no requests to copy packages into this archive.
+    </p>
+
+    <tal:request_list tal:condition="requests">
+      <table id="package-requests" class="wide listing"
+        tal:attributes="summary
+                        string:Package copy requests for ${context/name}">
+        <thead>
+          <tr>
+            <th>Copied from</th>
+            <th>Series</th>
+            <th>Requested by</th>
+            <th>When Requested</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="request requests">
+            <td tal:define="archive request/source_archive">
+              <a tal:attributes="href archive/fmt:url"
+                 tal:content="archive/displayname"
+                 tal:condition="archive/is_ppa" />
+              <tal:archive_displayname
+                 replace="archive/displayname"
+                 condition="not: archive/is_ppa" />
+            </td>
+            <td>
+              <tal:distroseries
+                  replace="request/source_distroseries/displayname"
+                />-<tal:src_pocket
+                  replace="request/source_pocket/name/fmt:lower" />
+              <tal:component condition="request/source_component">
+               (<tal:src_component_name
+                  replace="request/source_component/name" />)
+              </tal:component>
+            </td>
+            <td><a tal:replace="structure request/requester/fmt:link" /></td>
+            <td tal:content="request/date_created/fmt:approximatedate" />
+            <td tal:content="request/status/name/capitalize" />
+          </tr>
+        </tbody>
+      </table>
+    </tal:request_list>
+  </div> <!-- package-copy-request-list -->
+
+</metal:package_copy_request_list>
+
+<metal:package_counters define-macro="package-counters">
+
+  <tal:comment replace="nothing">
+    Presents package counters for a defined IArchive.
+    :archive: targeted IArchive.
+  </tal:comment>
+
+  <dl tal:define="usage_summary archive/@@+index/repository_usage">
+    <dt>Number of packages:</dt>
+    <dd><tal:source_label replace="usage_summary/source_label" />
+       (<tal:sources_size
+          replace="usage_summary/sources_size/fmt:bytes" />)</dd>
+    <dd>
+       <tal:binary_label replace="usage_summary/binary_label" />
+       (<tal:binaries_size
+          replace="usage_summary/binaries_size/fmt:bytes" />)</dd>
+    <dt>Repository size:</dt>
+    <dd><tal:used replace="usage_summary/used/fmt:bytes" />
+       (<span tal:attributes="class usage_summary/used_css_class"
+              tal:content="string:${usage_summary/used_percentage}%"/>)
+        of <tal:quota replace="usage_summary/quota/fmt:bytes" /></dd>
+  </dl>
+
+</metal:package_counters>
+
+<metal:build_status_summary define-macro="build-status-summary">
+
+  <tal:comment replace="nothing">
+    Present a summary of the packages with build statuses for the archive.
+    :archive: targetted IArchive.
+
+    XXX noodles 20090827 bug=419921
+    Currently we can only provide a direct link to successful builds
+    as there is no single filtering option for failed and pending
+    builds.
+  </tal:comment>
+
+  <div id="build-count-summary">
+
+    <p>A total of
+      <span class="build-count total"
+            tal:content="view/build_counters/total">100</span> builds have
+      been dispatched for this PPA.</p>
+
+    <dl>
+      <dt>Completed builds</dt>
+      <dd>
+        <a tal:attributes="href context/menu:overview/builds_successful/fmt:url">
+          <span class="build-count succeeded"
+                tal:content="view/build_counters/succeeded">100</span>
+          successful</a></dd>
+      <dd>
+        <span class="build-count failed"
+              tal:content="view/build_counters/failed">100</span>
+        failed</dd>
+    </dl>
+
+  <p tal:condition="view/build_counters/pending">
+    A recent upload has resulted in
+    <span class="build-count pending"
+          tal:content="view/build_counters/pending">100</span>
+    pending builds.
+  </p>
+  </div>
+</metal:build_status_summary>
+
+<metal:package_filter_form define-macro="package-filter-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+
+  <form class="package-search-filter" action="" method="GET">
+    <label for="name">Package name contains:</label>
+    <input id="field.name_filter" title="Package Name" size="20"
+            type="text" name="field.name_filter"
+            tal:attributes="value request/field.name_filter|nothing"/>
+    <tal:status_filter
+        replace="structure view/plain_status_filter_widget" /> in
+    <tal:series_filter
+        replace="structure view/plain_series_filter_widget" />
+    <input type="submit" value="Filter" />
+  </form>
+
+</metal:package_filter_form>
+
+<metal:latest_updates_portlet define-macro="latest-updates-portlet">
+  <tal:comment replace="nothing">
+    Present the latest updates for a PPA in a portlet.
+  </tal:comment>
+
+  <tal:latest_updates define="updates view/latest_updates">
+  <div id="portlet-latest-updates" class="portlet">
+    <h2>Latest updates</h2>
+
+    <p tal:condition="not: updates">
+      <tal:name replace="context/displayname" /> has no updates.
+    </p>
+    <tal:updates condition="updates">
+      <ul class="latest-ppa-updates">
+        <li tal:repeat="update updates"
+            tal:attributes="class update/status_class">
+          <strong tal:content="update/title">Firefox-3.5</strong>
+          <span class="duration">
+            <span tal:replace="update/duration/fmt:approximateduration">
+              3 minutes
+            </span>
+            ago
+          </span><br />
+          <span tal:replace="update/status">Successful</span>
+          <span tal:condition="update/builds"
+                class="build-details">
+            <a tal:repeat="build update/builds"
+               tal:attributes="href build/fmt:url"
+               tal:content="build/arch_tag">i386</a>
+          </span>
+        </li>
+      </ul>
+    </tal:updates>
+    </div>
+  </tal:latest_updates>
+</metal:latest_updates_portlet>
+
+</tal:root>

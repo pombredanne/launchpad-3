@@ -1,0 +1,26 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+<body>
+
+  <div metal:fill-slot="main">
+
+    <h1>Polls no longer supported</h1>
+
+    <p>
+      Launchpad no longer supports team polls.  We have archived the data from
+      all previously conducted polls, which can be found as a comma-separated
+      values file at
+      <a href="http://dev.launchpad.net/PollFeatureRemoved">
+        http://dev.launchpad.net/PollFeatureRemoved</a>.
+    </p>
+
+  </div>
+
+</body>
+</html>

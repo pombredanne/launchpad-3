@@ -1,0 +1,36 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <class class=".model.openididentifier.OpenIdIdentifier">
+        <require
+            permission="launchpad.View"
+            interface=".interfaces.openididentifier.IOpenIdIdentifier" />
+    </class>
+
+    <class
+        class=".model.openidrpsummary.OpenIDRPSummary">
+        <allow interface=".interfaces.openidrpsummary.IOpenIDRPSummary" />
+    </class>
+
+    <securedutility
+        class=".model.openidrpsummary.OpenIDRPSummarySet"
+        provides=".interfaces.openidrpsummary.IOpenIDRPSummarySet">
+        <allow
+            interface=".interfaces.openidrpsummary.IOpenIDRPSummarySet" />
+    </securedutility>
+
+    <class class=".adapters.openid.OpenIDPersistentIdentity">
+      <allow interface=".interfaces.openid.IOpenIDPersistentIdentity" />
+    </class>
+
+    <adapter factory=".adapters.openid.OpenIDPersistentIdentity" />
+    <adapter factory=".adapters.openid.person_to_openidpersistentidentity" />
+
+</configure>

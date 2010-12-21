@@ -1,0 +1,149 @@
+Each of the +bugs bug listings have a sort order widget. Let's
+demonstrate this functionality on each +bugs page.
+
+1. The upstream +bugs page.
+
+Default view:
+
+    >>> anon_browser.open("http://launchpad.dev/firefox/+bugs")
+
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+    Critical New
+    4 Reflow problems with complex page layouts
+    Medium New
+    1 Firefox does not support SVG
+    Low New
+
+Newest:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl('Search', index=0).click()
+
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+    Critical New
+    4 Reflow problems with complex page layouts
+    Medium New
+    1 Firefox does not support SVG
+    Low New
+
+2. The distro +bugs page.
+
+Default view:
+
+    >>> # Debian must enable the Launchpad bug tracker to access bugs.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
+
+    >>> anon_browser.open("http://launchpad.dev/debian/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Unknown New
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
+
+By most recently changed:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     'most recently changed']
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Unknown New
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
+
+By least recently changed:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "least recently changed"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
+    3 Bug Title Test
+    mozilla-firefox Unknown New
+
+By status:
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
+    >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    mozilla-firefox Medium New
+    10 another test bug
+    linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+    &mdash; Medium New
+    9 Thunderbird crashes
+    thunderbird Medium Confirmed
+
+3. The distroseries +bugs page.
+
+Default view:
+
+    >>> anon_browser.open("http://launchpad.dev/debian/woody/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Medium New
+    2 Blackhole Trash folder
+    mozilla-firefox Medium New
+
+Newest:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    2 Blackhole Trash folder
+    mozilla-firefox Medium New
+    3 Bug Title Test
+    mozilla-firefox Medium New
+
+4. The distro sourcepackage +bugs page.
+
+Default view:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    Unknown New
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
+
+Sort by importance:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "by importance"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    Unknown New
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
+
+Sort by the number of affected users:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "by number of users affected"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
+    3 Bug Title Test
+    Unknown New

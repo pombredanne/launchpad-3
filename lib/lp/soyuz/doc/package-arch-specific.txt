@@ -1,0 +1,285 @@
+= Package Architecture Specific =
+
+The Package-Architecture-Specific (PAS) module is a parser to a set
+of restrictions to build packages based on archive-admin experiences.
+
+Those restrictions overlap the metadata information from the source
+packages (architecturehintlist).
+
+For testing PAS we will create a set of publications using
+`SoyuzTestPublisher`.
+
+    >>> from lp.registry.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+Publication will be added as 'launchpad' DB user.
+
+    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> test_publisher.addFakeChroots()
+
+    >>> pub_three = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-3', version='669',
+    ...     architecturehintlist="i386 hppa amd64")
+
+Create a PPA source publication.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> pub_ppa = test_publisher.getPubSource(
+    ...     sourcename='test-ppa', version='675',
+    ...     architecturehintlist="i386 hppa",
+    ...     archive=cprov.archive)
+
+Good, all done, we can commit the publications and continue the tests
+with the buildmaster DB user.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+
+== Check the architectures to build ==
+
+Hoary has only 'hppa' and 'i386' architectures.
+
+    >>> legal_archs = set(hoary.architectures)
+
+    >>> def print_architectures(architectures):
+    ...     arch_tags = [arch.architecturetag for arch in architectures]
+    ...     for tag in sorted(arch_tags):
+    ...         print tag
+
+    >>> print_architectures(legal_archs)
+    hppa
+    i386
+
+See if the code which determines archs to build does the right thing for
+each of these options:
+
+    >>> from lp.soyuz.pas import (
+    ...     BuildDaemonPackagesArchSpecific, determineArchitecturesToBuild)
+
+    >>> def print_build_architectures(pub, pas_verify=None):
+    ...     allowed_architectures = determineArchitecturesToBuild(
+    ...         pub, legal_archs, hoary, pas_verify)
+    ...     print_architectures(allowed_architectures)
+
+=== Source PAS ===
+
+Source PAS lines are the ones starting with '%' followed by the source
+package name, colon and then a list of architecture tags separated by
+space.
+
+Create a harness that lets us easily test PAS statements:
+
+    >>> import os
+    >>> import tempfile
+    >>> import shutil
+
+    >>> def getPASVerifier(pas_string):
+    ...   """Build and return a PAS verifier based on the string provided."""
+    ...   temp_dir = tempfile.mkdtemp()
+    ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
+    ...   pas_file = open(pas_filename, "w")
+    ...   pas_file.write(pas_string)
+    ...   pas_file.close()
+    ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, hoary)
+    ...   shutil.rmtree(temp_dir)
+    ...   return pas_verify
+
+Normally, 'pub_three' would be built on all available architectures in
+hoary.
+
+    >>> print_build_architectures(pub_three)
+    hppa
+    i386
+
+But it it can be 'temporarily' restricted to build only on 'i386' via
+PAS.
+
+    >>> pas_verify = getPASVerifier("%test-buildd-3: i386")
+    >>> print_build_architectures(pub_three, pas_verify)
+    i386
+
+Or even restricted to not be built in any architecture.
+
+    >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
+    >>> print_build_architectures(pub_three, pas_verify)
+
+PAS can also be used for excluding specific architectures.
+
+    >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
+    >>> print_build_architectures(pub_three, pas_verify)
+    hppa
+
+PPA builds are not affected by PAS restrictions, i.e., they will
+build for all requested architectures currently supported in the PPA
+subsystem.
+
+    >>> pas_verify = getPASVerifier("%test-ppa: hppa")
+    >>> print_build_architectures(pub_ppa, pas_verify)
+    i386
+
+    >>> pas_verify = getPASVerifier("%test-ppa: !i386")
+    >>> print_build_architectures(pub_ppa, pas_verify)
+    i386
+
+
+== Binary PAS ==
+
+Binary PAS lines are the ones which does not start with '%'. They
+contain binary package name, colon and then a list of architecture
+tags separated by space.
+
+Binary PAS lines work as a shortcut to the source when they produce
+only a single binary. When the binary mentioned is part of a
+collection of binaries produced by the same source the architecture
+restriction does not make sense anymore. See more information about
+this aspect below.
+
+To check binary PAS listings we'll use a source publication for which
+produces a single binary.
+
+    >>> from lp.soyuz.enums import (
+    ...     PackagePublishingStatus)
+
+    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+    >>> pub_single = test_publisher.getPubSource(
+    ...     sourcename='single', version='1.0',
+    ...     architecturehintlist="any")
+
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     binaryname='single-bin', pub_source=pub_single,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> len(set(pub.binarypackagerelease.name
+    ...         for pub in pub_single.getPublishedBinaries()))
+    1
+
+Normally the source would be built in all the available architectures
+in hoary.
+
+    >>> print_build_architectures(pub_single)
+    hppa
+    i386
+
+The source building does not get affect by an unrelated binary PAS line.
+
+    >>> pas_verify = getPASVerifier("boing: i386")
+    >>> print_build_architectures(pub_single, pas_verify)
+    hppa
+    i386
+
+Using PAS, we can restrict the building architectures by tagging the
+produced binary with a specific list of allowed architectures.
+
+    >>> pas_verify = getPASVerifier("single-bin: i386 sparc")
+    >>> print_build_architectures(pub_single, pas_verify)
+    i386
+
+It's also possible to only block specific architectures.
+
+    >>> pas_verify = getPASVerifier("single-bin: !hppa")
+    >>> print_build_architectures(pub_single, pas_verify)
+    i386
+
+Although it's not possible to block the build on the
+'nominatedarchindep' architecture via a binary PAS line. The reason
+for that is the fact the architecture independent binaries are only
+built in i386, if it gets blacklisted those binaries won't be
+built. This would never be a legitimate use-case.
+
+    >>> pas_verify = getPASVerifier("single-bin: !i386 !hppa")
+    >>> print_build_architectures(pub_single, pas_verify)
+    i386
+
+Binary PAS lines are ignored for PPAs as well. We create a binary for
+the existing test PPA source publication.
+
+    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+    >>> pub_ppa.archive.require_virtualized = False
+
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     binaryname='ppa-bin', pub_source=pub_ppa,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+And it will build in the same architectures with or without a
+corresponding PAS binary line.
+
+    >>> print_build_architectures(pub_ppa)
+    hppa
+    i386
+
+    >>> pas_verify = getPASVerifier("ppa-bin: !hppa")
+    >>> print_build_architectures(pub_single, pas_verify)
+    hppa
+    i386
+
+As mentioned above, PAS binary lines referring to binary packages for
+which the source produce other binaries are completely ignored. Other
+tools use that information but we can't restrict builds in this
+circumstances.
+
+We will create a 'multiple' source publication build two binaries,
+'bin-one' and 'bin-two'.
+
+    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+    >>> pub_multiple = test_publisher.getPubSource(
+    ...     sourcename='multiple', version='1.1',
+    ...     architecturehintlist="any")
+
+    >>> for build in pub_multiple.createMissingBuilds():
+    ...     bin_one = test_publisher.uploadBinaryForBuild(
+    ...         build, 'bin-one')
+    ...     pub_bin_one = test_publisher.publishBinaryInArchive(
+    ...         bin_one, pub_multiple.archive,
+    ...         status=PackagePublishingStatus.PUBLISHED)
+    ...     bin_two = test_publisher.uploadBinaryForBuild(
+    ...         build, 'bin-two')
+    ...     pub_bin_two = test_publisher.publishBinaryInArchive(
+    ...         bin_two, pub_multiple.archive,
+    ...         status=PackagePublishingStatus.PUBLISHED)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> len(set(pub.binarypackagerelease.name
+    ...         for pub in pub_multiple.getPublishedBinaries()))
+    2
+
+Any attempt to restrict the building architectures on 'multiple'
+source via its binaries will be ignored and it will continue to be
+built for all available architectures.
+
+    >>> print_build_architectures(pub_multiple)
+    hppa
+    i386
+
+    >>> pas_verify = getPASVerifier("bin-one: i386 sparc")
+    >>> print_build_architectures(pub_multiple, pas_verify)
+    hppa
+    i386
+
+    >>> pas_verify = getPASVerifier("bin-two: !hppa")
+    >>> print_build_architectures(pub_multiple, pas_verify)
+    hppa
+    i386

@@ -1,53 +1,102 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213,W0611
+# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
+
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute, implements
-import zope.exceptions
-import zope.app.publication.interfaces
-import zope.publisher.interfaces.browser
-import zope.app.traversing.interfaces
-from zope.schema import Bool, Int, Choice
+from lazr.restful.interfaces import IServiceRootResource
 from persistent import IPersistent
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
+# XXX kiko 2007-02-08:
+# These import shims are actually necessary if we don't go over the
+# entire codebase and fix where the import should come from.
+from canonical.launchpad.webapp.interfaces import (
+    IBasicLaunchpadRequest,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
+
 
 __all__ = [
-    'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
-    'ILaunchpadRoot', 'ILaunchpadApplication',
-    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
-    'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
-    'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct',
-    'IHasProductAndAssignee', 'IOpenLaunchBag',
-    'IAging', 'IHasDateCreated', 'IHasBug',
-    'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-    'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
-    'IMenu', 'IMenuBase', 'IFacetMenu',
-    'IApplicationMenu', 'IContextMenu',
-    'ICanonicalUrlData', 'NoCanonicalUrl',
-    'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-    'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IAging',
+    'IAppFrontPageSearchForm',
+    'IAuthApplication',
+    'IAuthServerApplication',
+    'IBasicLaunchpadRequest',
+    'IBazaarApplication',
+    'IFeedsApplication',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasExternalBugTracker',
+    'IHasIcon',
+    'IHasLogo',
+    'IHasMugshot',
+    'IHasProduct',
+    'IHasProductAndAssignee',
+    'ILaunchBag',
+    'ILaunchpadCelebrities',
+    'ILaunchpadRoot',
+    'ILaunchpadSearch',
+    'INotificationRecipientSet',
+    'IOpenLaunchBag',
+    'IPasswordChangeApp',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IPersonRoles',
+    'IPrivateApplication',
+    'IPrivateMaloneApplication',
+    'IPrivacy',
+    'IReadZODBAnnotation',
+    'IRosettaApplication',
+    'IWebServiceApplication',
+    'IWriteZODBAnnotation',
+    'IZODBAnnotation',
+    'NameNotAvailable',
+    'UnknownRecipientError',
+    'UnsafeFormGetSubmissionError',
     ]
 
 
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
-
-
 class NameNotAvailable(KeyError):
-    """You're trying to set a name, but the name you chose is not available."""
+    """You're trying to set a name, but the name you chose isn't available."""
 
 
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
+class IHasExternalBugTracker(Interface):
+    """An object that can have an external bugtracker specified."""
+
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead. If the product doesn't belong to a
+        superproject, or if the superproject doesn't have a bug tracker,
+        return None.
+        """
 
 
 class ILaunchpadCelebrities(Interface):
@@ -56,80 +105,171 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The Ubuntu Distribution.")
-    debian = Attribute("The Debian Distribution.")
-    rosetta_expert = Attribute("The Rosetta Experts team.")
-    vcs_imports = Attribute("The 'vcs-imports' team.")
-    bazaar_expert = Attribute("The Bazaar Experts team.")
-    debbugs = Attribute("The Debian Bug Tracker")
-    shipit_admin = Attribute("The ShipIt Administrators.")
-    launchpad_developers = Attribute("The Launchpad development team.")
-    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
+    bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
-    landscape = Attribute("The Landscape project.")
+    buildd_admin = Attribute("The Build Daemon administrator.")
+    commercial_admin = Attribute("The Launchpad Commercial team.")
+    debbugs = Attribute("The Debian Bug Tracker")
+    debian = Attribute("The Debian Distribution.")
+    english = Attribute("The English language.")
+    gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
+    janitor = Attribute("The Launchpad Janitor.")
+    katie = Attribute("The Debian Auto-sync user.")
+    launchpad = Attribute("The Launchpad project.")
+    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
+    launchpad_developers = Attribute("The Launchpad development team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+    registry_experts = Attribute("The Registry Administrators team.")
+    rosetta_experts = Attribute("The Rosetta Experts team.")
+    savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
+    shipit_admin = Attribute("The ShipIt Administrators.")
+    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_branches = Attribute("The Ubuntu branches team")
+    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_security = Attribute("The 'ubuntu-security' team.")
+    ubuntu_techboard = Attribute("The Ubuntu technical board.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
 
-
-class ICrowd(Interface):
-
-    def __contains__(person_or_team_or_anything):
-        """Return True if the given person_or_team_or_anything is in the crowd.
-
-        Note that a particular crowd can choose to answer 'True' to this
-        question, if that is what it is supposed to do.  So, crowds that
-        contain other crowds will want to allow the other crowds the
-        opportunity to answer __contains__ before that crowd does.
+    def isCelebrityPerson(name):
+        """Return true if there is an IPerson celebrity with the given name.
         """
 
-    def __add__(crowd):
-        """Return a new ICrowd that is this crowd added to the given crowd.
 
-        The returned crowd contains the person or teams in
-        both this crowd and the given crowd.
-        """
+class IPersonRoles(Interface):
+    """What celebrity teams a person is member of and similar helpers.
 
+    Convenience methods that remove frequent calls to ILaunchpadCelebrities
+    and IPerson.inTeam from permission checkers. May also be used in model
+    or view code.
 
-class ILaunchpadApplication(Interface):
-    """Marker interface for a launchpad application.
-
-    Rosetta, Malone and Soyuz are launchpad applications.  Their root
-    application objects will provide an interface that extends this
-    interface.
+    All person celebrities in ILaunchpadCelbrities must have a matching
+    in_ attribute here and vice versa.
     """
-    name = Attribute('Name')
-    title = Attribute('Title')
+
+    person = Attribute("The IPerson object that these checks refer to.")
+
+    in_admin = Bool(
+        title=_("True if this person is a Launchpad admin."),
+        required=True, readonly=True)
+    in_bazaar_experts = Bool(
+        title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
+        required=True, readonly=True)
+    in_bug_importer = Bool(
+        title=_("True if this person is a bug importer."),
+        required=True, readonly=True)
+    in_bug_watch_updater = Bool(
+        title=_("True if this person is a bug watch updater."),
+        required=True, readonly=True)
+    in_buildd_admin = Bool(
+        title=_("True if this person is a buildd admin."),
+        required=True, readonly=True)
+    in_commercial_admin = Bool(
+        title=_("True if this person is a commercial admin."),
+        required=True, readonly=True)
+    in_hwdb_team = Bool(
+        title=_("True if this person is on the hwdb team."),
+        required=True, readonly=True)
+    in_janitor = Bool(
+        title=_("True if this person is the janitor."),
+        required=True, readonly=True)
+    in_katie = Bool(
+        title=_("True if this person is Katie."),
+        required=True, readonly=True)
+    in_launchpad_beta_testers = Bool(
+        title=_("True if this person is a Launchpad beta tester."),
+        required=True, readonly=True)
+    in_launchpad_developers = Bool(
+        title=_("True if this person is a Launchpad developer."),
+        required=True, readonly=True)
+    in_ppa_key_guard = Bool(
+        title=_("True if this person is the ppa key guard."),
+        required=True, readonly=True)
+    in_registry_experts = Bool(
+        title=_("True if this person is a registry expert."),
+        required=True, readonly=True)
+    in_rosetta_experts = Bool(
+        title=_("True if this person is a rosetta expert."),
+        required=True, readonly=True)
+    in_shipit_admin = Bool(
+        title=_("True if this person is a ShipIt admin."),
+        required=True, readonly=True)
+    in_ubuntu_branches = Bool(
+        title=_("True if this person is on the Ubuntu branches team."),
+        required=True, readonly=True)
+    in_ubuntu_security = Bool(
+        title=_("True if this person is on the Ubuntu security team."),
+        required=True, readonly=True)
+    in_ubuntu_techboard = Bool(
+        title=_("True if this person is on the Ubuntu tech board."),
+        required=True, readonly=True)
+    in_vcs_imports = Bool(
+        title=_("True if this person is on the vcs-imports team."),
+        required=True, readonly=True)
+
+    def inTeam(team):
+        """Is this person a member or the owner of `team`?
+
+        Passed through to the same method in 'IPersonPublic'.
+        """
+
+    def isOwner(obj):
+        """Is this person the owner of the object?"""
+
+    def isDriver(obj):
+        """Is this person the driver of the object?"""
+
+    def isOneOfDrivers(obj):
+        """Is this person on of the drivers of the object?
+
+        Works on objects that implement 'IHasDrivers' but will default to
+        isDriver if it doesn't, i.e. check the driver attribute.
+        """
+
+    def isOneOf(obj, attributes):
+        """Is this person one of the roles in relation to the object?
+
+        Check if the person is inTeam of one of the given IPerson attributes
+        of the object.
+
+        :param obj: The object to check the relation to.
+        :param attributes: A list of attribute names to check with inTeam.
+        """
 
 
-class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
-    """Marker interface for the root object of Launchpad."""
-
-
-class IMaloneApplication(ILaunchpadApplication):
-    """Application root for malone."""
-
-    bug_count = Attribute("The number of bugs recorded in Malone")
-    bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugextref_count = Attribute("The number of links to outside URL's")
-    bugtask_count = Attribute("The number of bug tasks in Malone")
-    bugtracker_count = Attribute("The number of bug trackers in Malone")
-    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""
 
 
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    statsdate = Attribute("""The date stats were last updated.""")
+    languages = Attribute(
+        'Languages Launchpad can translate into.')
+    language_count = Attribute(
+        'Number of languages Launchpad can translate into.')
+    statsdate = Attribute('The date stats were last updated.')
+    translation_groups = Attribute('ITranslationGroupSet object.')
 
     def translatable_products():
         """Return a list of the translatable products."""
 
-    def translatable_distroreleases():
-        """Return a list of the distroreleases in launchpad for which
+    def featured_products():
+        """Return a sample of all the translatable products."""
+
+    def translatable_distroseriess():
+        """Return a list of the distroseriess in launchpad for which
         translations can be done.
         """
-
-    def translation_groups():
-        """Return a list of the translation groups in the system."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""
@@ -143,25 +283,30 @@ class IRosettaApplication(ILaunchpadApplication):
     def translator_count():
         """Return the number of people who have given translations."""
 
-    def language_count():
-        """Return the number of languages Rosetta can translate into."""
-
-
-class IRegistryApplication(ILaunchpadApplication):
-    """Registry application root."""
-
-
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
-
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
-    all = Attribute("The full set of branches in The Bazaar")
 
-    def getMatchingBranches():
-        """Return the set of branches that match the given queries."""
+class IPrivateApplication(ILaunchpadApplication):
+    """Launchpad private XML-RPC application root."""
+
+    authserver = Attribute("""Old Authserver API end point.""")
+
+    codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    codehosting = Attribute("""Codehosting end point.""")
+
+    mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
+
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
+
+
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -184,6 +329,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""
@@ -236,34 +386,42 @@ class IReadZODBAnnotation(Interface):
     def __delitem__(namespace):
         """Removes annotation at the given namespace."""
 
+
+class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
+    """Launchpad web service application root."""
+
+
 class IWriteZODBAnnotation(Interface):
 
     def __setitem__(namespace, value):
         """Set a value as the annotation for the given namespace."""
 
+
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IAuthorization(Interface):
-    """Authorization policy for a particular object and permission."""
+class IHasDrivers(Interface):
+    """An object that has drivers.
 
-    def checkUnauthenticated():
-        """Returns True if an unauthenticated user has that permission
-        on the adapted object.  Otherwise returns False.
+    Drivers have permission to approve bugs and features for specific
+    series.
+    """
+    drivers = Attribute("A list of drivers")
+
+    def personHasDriverRights(person):
+        """Does the given person have launchpad.Driver rights on this object?
+
+        True if the person is one of this object's drivers, its owner or a
+        Launchpad admin.
         """
 
-    def checkAuthenticated(user):
-        """Returns True if the user has that permission on the adapted
-        object.  Otherwise returns False.
 
-        The argument `user` is the person who is authenticated.
-        """
+class IHasAppointedDriver(Interface):
+    """An object that has an appointed driver."""
 
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
+    driver = Choice(
+        title=_("Driver"), required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IHasAssignee(Interface):
@@ -289,14 +447,28 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     See IHasProduct and IHasAssignee."""
 
 
-class IHasSecurityContact(Interface):
-    """An object that has a security contact."""
+class IHasIcon(Interface):
+    """An object that can have a custom icon."""
 
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related bug reports"),
-        required=False, vocabulary='ValidPersonOrTeam')
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    icon = Attribute("The 14x14 icon.")
+
+
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    mugshot = Attribute("The 192x192 mugshot.")
 
 
 class IAging(Interface):
@@ -305,305 +477,133 @@ class IAging(Interface):
     def currentApproximateAge():
         """Return a human-readable string of how old this thing is.
 
-        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        Values returned are things like '2 minutes', '3 hours',
+        '1 month', etc.
         """
+
+
+class IPrivacy(Interface):
+    """Something that can be private."""
+
+    private = Bool(
+        title=_("This is private"),
+        required=False,
+        description=_(
+            "Private objects are visible to members or subscribers."))
+
 
 class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
 
-class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
-    person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
-    product = Attribute('IProduct, or None')
-    distribution = Attribute('IDistribution, or None')
-    distrorelease = Attribute('IDistroRelease, or None')
-    distroarchrelease = Attribute('IDistroArchRelease, or None')
-    sourcepackage = Attribute('ISourcepackage, or None')
-    sourcepackagereleasepublishing = Attribute(
-        'ISourcepackageReleasePublishing, or None')
-    bug = Attribute('IBug, or None')
-    bugtask = Attribute('IBugTask, or None')
 
-    user = Attribute('Currently authenticated IPerson, or None')
-    login = Attribute('The login used by the authenticated person, or None')
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
 
-    timezone = Attribute("The user's time zone")
+    search_text = TextLine(title=_('Search text'), required=False)
 
-    developer = Bool(
-        title=u'True if a member of the launchpad developers celebrity'
-        )
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
-class IOpenLaunchBag(ILaunchBag):
-    def add(ob):
-        '''Stick the object into the correct attribute of the ILaunchBag,
-        or ignored, or whatever'''
-    def clear():
-        '''Empty the bag'''
-    def setLogin(login):
-        '''Set the login to the given value.'''
-    def setDeveloper():
-        '''Set the developer flag.
-        
-        Because we use this during exception handling, we need this set
-        and cached at the start of the transaction in case our database
-        connection blows up.
-        '''
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
-class IStructuredString(Interface):
-    """An object that represents a string that is to retain its html structure
-    in a menu's link text.
+class UnknownRecipientError(KeyError):
+    """Error raised when an email or person isn't part of the recipient set.
     """
 
-    escapedtext = Attribute("The escaped text for display on a web page.")
 
+class INotificationRecipientSet(Interface):
+    """Represents a set of notification recipients and rationales.
 
-class ILinkData(Interface):
-    """An object with immutable attributes that represents the data a
-    programmer provides about a link in a menu.
+    All Launchpad emails should include a footer explaining why the user
+    is receiving the email. An INotificationRecipientSet encapsulates a
+    list of recipients along the rationale for being on the recipients list.
+
+    The pattern for using this are as follows: email addresses in an
+    INotificationRecipientSet are being notified because of a specific
+    event (for instance, because a bug changed). The rationales describe
+    why that email addresses is included in the recipient list,
+    detailing subscription types, membership in teams and/or other
+    possible reasons.
+
+    The set maintains the list of `IPerson` that will be contacted as well
+    as the email address to use to contact them.
     """
 
-    target = Attribute("The place this link should link to.  This may be "
-        "a path relative to the context of the menu this link appears in, "
-        "or an absolute path, or an absolute URL.")
+    def getEmails():
+        """Return all email addresses registered, sorted alphabetically."""
 
-    text = Attribute(
-        "The text of this link, as appears underlined on a page.")
+    def getRecipients():
+        """Return the set of person who will be notified.
 
-    summary = Attribute(
-        "The summary text of this link, as appears as a tooltip on the link.")
-
-    icon = Attribute("The name of the icon to use.")
-
-    enabled = Attribute("Boolean to say whether this link is enabled.")
-
-
-class ILink(ILinkData):
-    """An object that represents a link in a menu.
-
-    The attributes name, url and linked may be set by the menus infrastructure.
-    """
-
-    name = Attribute("The name of this link in Python data structures.")
-
-    url = Attribute(
-        "The full url this link points to.  Set by the menus infrastructure. "
-        "None before it is set.")
-
-    linked = Attribute(
-        "A boolean value saying whether this link should appear as a "
-        "clickable link in the UI.  The general rule is that a link to "
-        "the current page should not be shown linked.  Defaults to True.")
-
-    enabled = Attribute(
-        "Boolean to say whether this link is enabled.  Can be read and set.")
-
-    escapedtext = Attribute("Text string, escaped as necessary.")
-
-
-class IFacetLink(ILink):
-    """A link in a facet menu.
-
-    It has a 'selected' attribute that is set by the menus infrastructure,
-    and indicates whether the link is the selected facet.
-    """
-
-    selected = Attribute(
-        "A boolean value saying whether this link is the selected facet menu "
-        "item.  Defaults to False.")
-
-
-class IMenu(Interface):
-    """Public interface for facets, menus, extra facets and extra menus."""
-
-    def iterlinks(requesturl=None):
-        """Iterate over the links in this menu.
-
-        requesturl, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
+        :return: An iterator of `IPerson`, sorted by display name.
         """
 
+    def getRecipientPersons():
+        """Return the set of individual Persons who will be notified.
 
-class IMenuBase(IMenu):
-    """Common interface for facets, menus, extra facets and extra menus."""
-
-    context = Attribute('The object that has this menu.')
-
-    request = Attribute('The request the menus is used in.')
-
-
-class IFacetMenu(IMenuBase):
-    """Main facet menu for an object."""
-
-    def iterlinks(requesturl=None, selectedfacetname=None):
-        """Iterate over the links in this menu.
-
-        requesturl, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
-
-        If selectedfacetname is provided, the link with that name will be
-        marked as 'selected'.
+        :return: An iterator of (`email_address`, `IPerson`), unsorted.
         """
 
-    defaultlink = Attribute(
-        "The name of the default link in this menu.  That is, the one that "
-        "will be selected if no others are selected.  It is None if there "
-        "is no default link.")
+    def __iter__():
+        """Return an iterator of the recipients."""
 
+    def __contains__(person_or_email):
+        """Is person_or_email in the notification recipients list?
 
-class IApplicationMenu(IMenuBase):
-    """Application menu for an object."""
-
-
-class IContextMenu(IMenuBase):
-    """Context menu for an object."""
-
-
-class ICanonicalUrlData(Interface):
-    """Tells you how to work out a canonical url for an object."""
-
-    rootsite = Attribute(
-        'The root id to use.  None means to use the base of the current request.')
-
-    inside = Attribute('The object this path is relative to.  None for root.')
-
-    path = Attribute('The path relative to "inside", not starting with a /.')
-
-
-class NoCanonicalUrl(TypeError):
-    """There was no canonical URL registered for an object.
-
-    Arguments are:
-      - The object for which a URL was sought
-      - The object that did not have ICanonicalUrlData
-    """
-    def __init__(self, object_url_requested_for, broken_link_in_chain):
-        TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
-            (object_url_requested_for, broken_link_in_chain)
-            )
-
-
-class IDBSchema(Interface):
-    """A DBSchema enumeration."""
-
-    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
-
-    title = Attribute("Title of this schema.")
-
-    description = Attribute("Description of this schema.")
-
-    items = Attribute("A mapping of [name or value] -> dbschema item.")
-
-
-class IDBSchemaItem(Interface):
-    """An Item in a DBSchema enumeration."""
-
-    value = Attribute("Integer value of this enum item.")
-
-    name = Attribute("Symbolic name of this item.")
-
-    title = Attribute("Title text of this item.")
-
-    description = Attribute("Description text of this item.")
-
-    def __sqlrepr__(dbname):
-        """Return an SQL representation of this item.
-
-        The dbname attribute is required as part of the sqlobject
-        interface, but it not used in this case.
+        Return true if person or email is in the notification recipients list.
         """
 
-    def __eq__(other):
-        """An item is equal if it is from the same DBSchema and has the same
-        value.
+    def __nonzero__():
+        """Return False when the set is empty, True when it's not."""
+
+    def getReason(person_or_email):
+        """Return a reason tuple containing (text, header) for an address.
+
+        The text is meant to appear in the notification footer. The header
+        should be a short code that will appear in an
+        X-Launchpad-Message-Rationale header for automatic filtering.
+
+        :param person_or_email: An `IPerson` or email address that is in the
+            recipients list.
+
+        :raises UnknownRecipientError: if the person or email isn't in the
+            recipients list.
         """
 
-    def __ne__(other):
-        """not __eq__"""
+    def add(person, reason, header):
+        """Add a person or a sequence of persons to the recipients list.
 
-    def __hash__():
-        """Returns a hash value."""
+        When the added person is a team without an email address, all its
+        members emails will be added. If the person is already in the
+        recipients list, the reson for contacting him is not changed.
 
-
-class IAfterTraverseEvent(Interface):
-    """An event which gets sent after publication traverse."""
-
-
-class AfterTraverseEvent:
-    """An event which gets sent after publication traverse."""
-
-    implements(IAfterTraverseEvent)
-
-    def __init__(self, ob, request):
-        self.object = ob
-        self.request = request
-
-
-class IBeforeTraverseEvent(
-    zope.app.publication.interfaces.IBeforeTraverseEvent):
-    pass
-
-
-class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
-    pass
-
-
-# XXX: These need making into a launchpad version rather than the zope versions
-#      for the publisher simplification work.  SteveAlexander 2005-09-14
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-# 
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
-
-class IBasicLaunchpadRequest(Interface):
-    stepstogo = Attribute(
-        'The StepsToGo object for this request, allowing you to inspect and'
-        ' alter the remaining traversal steps.')
-
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
-
-    traversed_objects = Attribute(
-        'List of traversed objects.  This is appended to during traversal.')
-
-    def getNearest(*some_interfaces):
-        """Searches for the last traversed object to implement one of
-        the given interfaces.
-
-        Returns an (object, matching_interface) tuple.  If the object
-        implements more than one of the interfaces, the first one is
-        returned.
-
-        If no matching object is found, the tuple (None, None) is returned.
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will be notified.
+        :param reason: The rationale message that should appear in the
+            notification footer.
+        :param header: The code that will appear in the
+            X-Launchpad-Message-Rationale header.
         """
 
+    def remove(person):
+        """Remove a person or a list of persons from the recipients list.
 
-class ILaunchpadBrowserApplicationRequest(
-    IBasicLaunchpadRequest,
-    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
-    """The request interface to the application for launchpad browser requests.
-    """
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will removed from the recipients list.
+        """
 
+    def update(recipient_set):
+        """Updates this instance's reasons with reasons from another set.
 
-class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+        The rationale for recipient already in this set will not be updated.
 
-    url = Attribute('Absolute url of this breadcrumb.')
-
-    text = Attribute('Text of this breadcrumb.')
-
+        :param recipient_set: An `INotificationRecipientSet`.
+        """

@@ -1,5 +1,9 @@
-#!/usr/bin/env python
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 """Librarian garbage collector.
 
@@ -11,69 +15,81 @@ rows in the database.
 __metaclass__ = type
 
 import _pythonpath
+import logging
 
-import sys, logging
-from optparse import OptionParser
-
-from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
-_default_lock_file = '/var/lock/librarian-gc.lock'
 
-def main():
-    parser = OptionParser(description=__doc__)
-    logger_options(parser)
+class LibrarianGC(LaunchpadCronScript):
+    def add_my_options(self):
+        self.parser.add_option(
+                '', "--skip-duplicates", action="store_true", default=False,
+                dest="skip_duplicates",
+                help="Skip duplicate LibraryFileContent merging"
+                )
+        self.parser.add_option(
+                '', "--skip-aliases", action="store_true", default=False,
+                dest="skip_aliases",
+                help="Skip unreferenced LibraryFileAlias removal"
+                )
+        self.parser.add_option(
+                '', "--skip-content", action="store_true", default=False,
+                dest="skip_content",
+                help="Skip unreferenced LibraryFileContent removal"
+                )
+        self.parser.add_option(
+                '', "--skip-blobs", action="store_true", default=False,
+                dest="skip_blobs",
+                help="Skip removing expired TemporaryBlobStorage rows"
+                )
+        self.parser.add_option(
+                '', "--skip-files", action="store_true", default=False,
+                dest="skip_files",
+                help="Skip removing files on disk with no database references"
+                     " or flagged for deletion."
+                )
+        self.parser.add_option(
+                '', "--skip-expiry", action="store_true", default=False,
+                dest="skip_expiry",
+                help="Skip expiring aliases with an expiry date in the past."
+                )
 
-    parser.add_option(
-            '', "--skip-duplicates", action="store_true", default=False,
-            dest="skip_duplicates",
-            help="Skip duplicate LibraryFileContent merging"
-            )
-    parser.add_option(
-            '', "--skip-aliases", action="store_true", default=False,
-            dest="skip_aliases",
-            help="Skip unreferenced LibraryFileAlias removal"
-            )
-    parser.add_option(
-            '', "--skip-content", action="store_true", default=False,
-            dest="skip_content",
-            help="Skip unreferenced LibraryFileContent removal"
-            )
 
-    (options, args) = parser.parse_args()
+    def main(self):
+        librariangc.log = self.logger
 
-    log = logger(options)
-    librariangc.log = log
+        if self.options.loglevel <= logging.DEBUG:
+            librariangc.debug = True
 
-    lockfile = LockFile(_default_lock_file, logger=log)
-    try:
-        lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
-        sys.exit(1)
+        conn = self.txn.conn()
 
-    if options.loglevel <= logging.DEBUG:
-        librariangc.debug = True
+        # Refuse to run if we have significant clock skew between the
+        # librarian and the database.
+        librariangc.confirm_no_clock_skew(conn)
 
-    try:
-        con = connect(config.librarian.gc.dbuser)
-        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly
-        if not options.skip_content:
-            librariangc.delete_unreferenced_content(con) # first sweep
-        if not options.skip_duplicates:
-            librariangc.merge_duplicates(con)
-        if not options.skip_aliases:
-            librariangc.delete_unreferenced_aliases(con)
-        if not options.skip_content:
-            librariangc.delete_unreferenced_content(con) # second sweep
-    finally:
-        lockfile.release()
+        if not self.options.skip_expiry:
+            librariangc.expire_aliases(conn)
+        if not self.options.skip_content:
+            librariangc.delete_unreferenced_content(conn) # first sweep
+        if not self.options.skip_blobs:
+            librariangc.delete_expired_blobs(conn)
+        if not self.options.skip_duplicates:
+            librariangc.merge_duplicates(conn)
+        if not self.options.skip_aliases:
+            librariangc.delete_unreferenced_aliases(conn)
+        if not self.options.skip_content:
+            librariangc.delete_unreferenced_content(conn) # second sweep
+        if not self.options.skip_files:
+            librariangc.delete_unwanted_files(conn)
 
 
 if __name__ == '__main__':
-    main()
+    script = LibrarianGC('librarian-gc',
+                         dbuser=config.librarian_gc.dbuser)
+    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+

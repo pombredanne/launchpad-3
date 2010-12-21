@@ -1,0 +1,580 @@
+==================
+Team Mailing Lists
+==================
+
+Teams may have at most one team mailing list.  Creating a team mailing list
+requires several steps, starting with registration of the list by the owner of
+an existing team.  This is done through an IMailingListSet utility.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.mailinglist import (
+    ...     IMailingList,
+    ...     IMailingListSet,
+    ...     )
+    >>> list_set = getUtility(IMailingListSet)
+    >>> verifyObject(IMailingListSet, list_set)
+    True
+
+In the following description of how to use team mailing lists, we will need
+several some teams.
+
+    >>> from lp.registry.tests.mailinglists_helper import new_team
+    >>> team_one = new_team('team-one')
+    >>> team_two = new_team('team-two')
+
+    # Define a helper function that sorts mailing lists alphabetically based
+    # on their team's name.  We can't use operator.attrgetter() because until
+    # Python 2.6, that traverses only one level of attribute.
+    >>> def sorted_lists(lists):
+    ...     return sorted(lists, key=lambda L: L.team.name)
+
+None of these teams have mailing lists yet.
+
+    >>> sorted_lists(list_set.approved_lists)
+    []
+    >>> sorted_lists(list_set.active_lists)
+    []
+    >>> print list_set.get(team_one.name)
+    None
+    >>> print list_set.get(team_two.name)
+    None
+
+
+Creating a team mailing list
+============================
+
+When a mailing list is created, it is automatically set to the APPROVED state,
+meaning that list requests are automatically approved.  This doesn't actually
+create the list until Mailman acts on the mailing list creation request.
+
+    >>> list_one = list_set.new(team_one)
+    >>> verifyObject(IMailingList, list_one)
+    True
+    >>> list_one
+    <MailingList for team "team-one"; status=APPROVED;
+     address=team-one@lists.launchpad.dev at 0x...>
+
+You can always access the mailing list through its team, if the team has a
+mailing list.
+
+    >>> team_one.mailing_list
+    <MailingList for team "team-one"; status=APPROVED; ...>
+    >>> print team_two.mailing_list
+    None
+
+You may not register a mailing list for a person.
+
+    >>> login('foo.bar@canonical.com')
+    >>> anne = factory.makePersonByName('Anne')
+    >>> login(ANONYMOUS)
+    >>> list_set.new(anne, anne)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot register a list for a person who is not a team
+
+The mailing list registrant must be a team owner or administrator.  Anne is
+neither and thus may not create a list for team_two.
+
+    >>> list_set.new(team_two, anne)
+    Traceback (most recent call last):
+    ...
+    AssertionError: registrant is not a team owner or administrator
+
+However, if we make Anne a team owner, she can create the mailing list.
+
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
+    >>> login('foo.bar@canonical.com')
+    >>> bart = factory.makePersonByName('Bart')
+    >>> ignored = team_two.addMember(
+    ...     anne, bart, status=TeamMembershipStatus.ADMIN)
+    >>> login(ANONYMOUS)
+    >>> list_two = list_set.new(team_two, anne)
+    >>> list_two
+    <MailingList for team "team-two"; status=APPROVED; ...>
+    >>> print list_two.address
+    team-two@lists.launchpad.dev
+
+The newly registered mailing list is linked to its team, and the list's
+registrant is the team owner at the time the list was registered.  The list's
+status is set to APPROVED.
+
+    >>> print list_one.team.displayname
+    Team One
+    >>> print list_one.registrant.name
+    no-priv
+    >>> print list_one.status.name
+    APPROVED
+
+The mailing list has no activation date or welcome message text yet.
+
+    >>> print list_one.date_activated
+    None
+    >>> print list_one.welcome_message
+    None
+
+A mailing list cannot be registered more than once.
+
+    >>> list_set.new(team_one)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Mailing list for team "team-one" already exists
+
+
+Constructing mailing lists
+==========================
+
+Once a team mailing list has been approved, it can be constructed by Mailman.
+This happens by returning the set of approved mailing lists through the XMLRPC
+interface used by Mailman (not shown here).  When Mailman retrieves the set of
+mailing lists to construct, the list's statuses are set to the CONSTRUCTING
+state.
+
+    >>> sorted_lists(list_set.approved_lists)
+    [<MailingList for team "team-one"; status=APPROVED; ...>,
+     <MailingList for team "team-two"; status=APPROVED; ...>]
+
+    >>> list_one.startConstructing()
+    >>> print list_one.status.name
+    CONSTRUCTING
+
+Once in the construction phase, a list is no longer in the approval state.
+
+    >>> sorted_lists(list_set.approved_lists)
+    [<MailingList for team "team-two"; status=APPROVED; ...>]
+
+Lists should never be constructed more than once.
+
+    >>> list_one.startConstructing()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only approved mailing lists may be constructed
+
+Construct another list for later.
+
+    >>> list_two.startConstructing()
+
+
+Reporting the results of construction
+=====================================
+
+After Mailman has worked at constructing lists for a while, it reports (again
+through XMLRPC not shown here) on the status of each list construction.  Most,
+if not all will succeed, thus activating the team's mailing list. Also, once
+a mailing list is made active, its email address is registered in Launchpad
+and associated with the team's mailing list, so that it can be used as the
+team's contact address.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> print email_set.getByEmail(list_one.address)
+    None
+    >>> print list_one.date_activated
+    None
+
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> print list_one.status.name
+    ACTIVE
+    >>> print email_set.getByEmail(list_one.address).status.name
+    VALIDATED
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+    >>> list_one.date_activated == transaction_timestamp
+    True
+
+Some list constructions may fail.
+
+    >>> list_two.transitionToStatus(MailingListStatus.FAILED)
+    >>> print list_two.status.name
+    FAILED
+
+You can then get the mailing list for a team, given the team name.
+
+    >>> list_set.get(team_one.name)
+    <MailingList for team "team-one"; status=ACTIVE; ...>
+    >>> list_set.get(team_two.name)
+    <MailingList for team "team-two"; status=FAILED; ...>
+
+This method will return None for missing teams or non-team people.
+
+    >>> print list_set.get('not an existing team')
+    None
+    >>> print list_set.get('salgado')
+    None
+
+
+Deactivating lists
+==================
+
+A list which is active may be deactivated.
+
+    >>> team_three = new_team('team-three')
+    >>> list_three = list_set.new(team_three)
+    >>> list_three.startConstructing()
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> transaction.commit()
+
+    >>> login_person(team_three.teamowner)
+    >>> list_three.deactivate()
+    >>> print list_three.status.name
+    DEACTIVATING
+
+This doesn't immediately deactivate the mailing list though.  Mailman still
+needs to query for the requested deactivations, take the necessary actions,
+and report the deactivation results.
+
+    >>> sorted_lists(list_set.deactivated_lists)
+    [<MailingList for team "team-three"; status=DEACTIVATING; ...>]
+    >>> list_three.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> print list_three.status.name
+    INACTIVE
+
+Once a list's deactivation is complete, the status of its email address is set
+to NEW.
+
+    >>> print email_set.getByEmail(list_three.address).status.name
+    NEW
+
+But lists which are not active may not be deactivated.
+
+    >>> list_three.deactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be deactivated
+    >>> list_two.deactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be deactivated
+
+
+Reactivating lists
+==================
+
+A list which is inactive may be reactivated.
+
+    >>> print list_three.status.name
+    INACTIVE
+    >>> list_three.reactivate()
+
+This doesn't immediately reactivate the mailing list though.  Mailman still
+needs to query for the requested reactivations, take the necessary actions,
+and report the reactivation results.
+
+    >>> print list_three.status.name
+    APPROVED
+
+But lists which are not inactive may not be reactivated.
+
+    >>> list_three.reactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only inactive mailing lists may be reactivated
+
+
+Mailing list permissions
+========================
+
+Permissions on a team's mailing list are not tracked separately from
+permissions on the team.
+
+You cannot turn a team with a mailing list into a private team.
+
+    >>> from zope.component import queryAdapter
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> queryAdapter(team_one, IObjectPrivacy).is_private
+    False
+    >>> login('foo.bar@canonical.com')
+    >>> team_one.visibility = PersonVisibility.PRIVATE
+    Traceback (most recent call last):
+    ...
+    ImmutableVisibilityError: This team cannot be converted to
+    Private since it is referenced by a mailing list.
+
+However, you can give a private team a mailing list.
+
+    >>> thereminists = new_team('thereminists')
+    >>> queryAdapter(thereminists, IObjectPrivacy).is_private
+    False
+    >>> thereminists.visibility = PersonVisibility.PRIVATE
+
+    >>> queryAdapter(thereminists, IObjectPrivacy).is_private
+    True
+    >>> from lp.registry.tests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> thereminists_list = new_list_for_team(thereminists)
+    >>> thereminists_list
+    <MailingList for team "thereminists"; status=ACTIVE; ...>
+
+Welcome messages
+================
+
+Mailing lists have a welcome message text which is sent to new members when
+they subscribe to a list.  The welcome message can contain any text.
+
+    >>> print list_one.welcome_message
+    None
+    >>> list_one.welcome_message = """\
+    ... Welcome to the Team One mailing list."""
+    >>> login(ANONYMOUS)
+    >>> print list_one.welcome_message
+    Welcome to the Team One mailing list.
+
+After changing the welcome message, the list's status should be MODIFIED.
+
+    >>> print list_one.status.name
+    MODIFIED
+    >>> sorted_lists(list_set.modified_lists)
+    [<MailingList for team "team-one"; status=MODIFIED; ...>]
+
+Eventually, Mailman will get around to acting on this modification.  When it
+does so, the list's state transitions first to UPDATING so as to avoid
+multiple modifications.  Transitioning to the ACTIVE state while still
+MODIFIED is not allowed.
+
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Not a valid state transition: Modified -> Active
+
+What really happens is that the list's state is first transitioned to
+UPDATING, and then to ACTIVE or FAILED.
+
+    >>> list_one.startUpdating()
+    >>> print list_one.status.name
+    UPDATING
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> print list_one.status.name
+    ACTIVE
+
+You cannot change the welcome message text for a mailing list in anything but
+the ACTIVE status.
+
+    >>> login('foo.bar@canonical.com')
+    >>> list_two.welcome_message = """\
+    ... This list has been declined."""
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only usable mailing lists may be modified
+
+    >>> list_three.welcome_message = """\
+    ... This list has been deactivated."""
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only usable mailing lists may be modified
+
+
+Renaming teams with mailing lists
+=================================
+
+A team that has a mailing list may not be renamed.
+
+    >>> login('no-priv@canonical.com')
+    >>> team_one.name = 'team-canonical'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot rename teams with mailing lists
+
+But a team with no mailing list (yet) can still be renamed.
+
+    >>> team_six = new_team('team-six')
+    >>> team_six.name = 'team-canonical'
+    >>> print team_six.name
+    team-canonical
+
+
+Team archive links
+==================
+
+Mailing lists have archives, accessible through a list-specific url.  However,
+if a mailing list has never be activated, it won't have an archive url.
+
+    >>> print list_two.archive_url
+    None
+
+An active mailing list has an archive url.
+
+    >>> print list_one.status.name
+    ACTIVE
+    >>> print list_one.archive_url
+    http://lists.launchpad.dev/team-one
+
+Inactive mailing lists also have an archive url, because once activated, a
+mailing list could have an archive and archives are never deleted.
+
+    >>> list_one.deactivate()
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> print list_one.status.name
+    INACTIVE
+    >>> print list_one.archive_url
+    http://lists.launchpad.dev/team-one
+
+
+Events
+======
+
+Activating the mailing list (changing it's status to 'available for
+subscription') will fire an instance of the ObjectModifiedEvent.
+
+    # Register an event listener that will print event it receives.
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.registry.interfaces.mailinglist import IMailingList
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+    >>> mailinglist_event_listener = TestEventListener(
+    ...     IMailingList, IObjectModifiedEvent, print_event)
+
+
+    # We need to build a new mailing list to use in our tests
+    >>> list_six = list_set.new(team_six)
+    >>> list_six.startConstructing()
+    >>> print list_six.status.name
+    CONSTRUCTING
+
+    >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
+    Received ObjectModifiedEvent on MailingList
+    >>> print list_six.status.name
+    ACTIVE
+
+    # Cleanup
+    >>> mailinglist_event_listener.unregister()
+
+
+Purging
+=======
+
+There are times when we want to perform certain actions that normally are
+unsafe to do when a team has a mailing list.  For example, we might want to
+merge a team with a mailing list into another team, or we might want to allow
+a team owner to re-request a mailing list that was incorrectly declined.
+
+In order to support this, mailing lists have a PURGED state.  Purging a
+mailing list on the Launchpad side performs no communication with Mailman; the
+Launchpad administrator must ensure that all associated state is purged from
+Mailman (which is aided by the use of a script to be run on that server).  On
+Launchpad, only a Launchpad administrator or mailing list expert may purge a
+list, and then only if the list is already in one of the safe-to-purge states.
+
+A list in the active state is not safe to purge.
+
+    >>> print list_six.status.name
+    ACTIVE
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    UnsafeToPurge: Cannot purge mailing list in ACTIVE state: team-canonical
+
+By deactivating the mailing list, we make it safe to purge.
+
+    >>> # Need to commit, or security checks fail because team isn't yet
+    >>> # available via the auth Store yet.
+    >>> import transaction
+    >>> transaction.commit()
+    >>> list_six.deactivate()
+    >>> list_six.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> print list_six.status.name
+    INACTIVE
+    >>> list_six.purge()
+    >>> print list_six.status.name
+    PURGED
+
+It's as if the mailing list never existed, so we can re-request that the list
+be created.
+
+    >>> list_six = list_set.new(team_six)
+    >>> print list_six.team.name
+    team-canonical
+    >>> print list_six.date_activated
+    None
+    >>> print list_six.status.name
+    APPROVED
+    >>> print list_six.welcome_message
+    None
+
+A list that has been approved, or is being constructed cannot be purged.
+
+    >>> import transaction
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_list = removeSecurityProxy(list_six)
+    >>> naked_list.status = MailingListStatus.APPROVED
+    >>> transaction.commit()
+    >>> logout()
+    >>> print list_six.status.name
+    APPROVED
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in APPROVED state: team-canonical
+
+    >>> naked_list.status = MailingListStatus.CONSTRUCTING
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    CONSTRUCTING
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in CONSTRUCTING state: ...
+
+A list in the FAILED state can be purged, but a list in the MOD_FAILED state
+cannot.  This is because the latter still means that a mailing list is active
+for the team.
+
+    >>> naked_list.status = MailingListStatus.FAILED
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    FAILED
+    >>> list_six.purge()
+    >>> print list_six.status.name
+    PURGED
+
+    >>> naked_list.status = MailingListStatus.MOD_FAILED
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    MOD_FAILED
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in MOD_FAILED state: ...
+
+Modified, updating, and deactivating mailing lists are also unsafe to purge.
+
+    >>> naked_list.status = MailingListStatus.MODIFIED
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    MODIFIED
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in MODIFIED state: team-canonical
+
+    >>> naked_list.status = MailingListStatus.UPDATING
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    UPDATING
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in UPDATING state: team-canonical
+
+    >>> naked_list.status = MailingListStatus.DEACTIVATING
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    DEACTIVATING
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    UnsafeToPurge: Cannot purge mailing list in DEACTIVATING state: ...
+
+You should never be able to purge an already purged mailing list.
+
+    >>> naked_list.status = MailingListStatus.PURGED
+    >>> transaction.commit()
+    >>> print list_six.status.name
+    PURGED
+    >>> list_six.purge()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Already purged

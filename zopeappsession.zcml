@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:i18n="http://namespaces.zope.org/i18n"
@@ -10,72 +14,109 @@
     -->
 
   <adapter
-      for="zope.publisher.interfaces.IRequest"
-      provides=".interfaces.IClientId"
-      factory=".session.ClientId"
+      factory="zope.session.session.ClientId"
       permission="zope.Public" 
       />
 
   <adapter
-      for="zope.publisher.interfaces.IRequest"
-      provides=".interfaces.ISession"
-      factory=".session.Session"
+      factory="zope.session.session.Session"
+      provides="zope.session.interfaces.ISession"
       permission="zope.Public"
       />
 
   <adapter
-      for="zope.publisher.interfaces.IRequest"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory=".session.Session"
+      factory="zope.session.session.Session"
+      provides="zope.traversing.interfaces.IPathAdapter"
       name="session"
-      permission="zope.Public"
       />
 
-  <content class=".session.Session">
-    <allow interface=".interfaces.ISession" />
-    <implements interface="zope.app.traversing.interfaces.IPathAdapter" />
-  </content>
+  <class class="zope.session.session.Session">
+    <allow interface="zope.session.interfaces.ISession" />
+    <implements interface="zope.traversing.interfaces.IPathAdapter" />
+  </class>
 
-  <content class=".http.CookieClientIdManager">
+  <class class="zope.session.http.CookieClientIdManager">
     <require
-        interface=".http.ICookieClientIdManager"
+        interface="zope.session.http.ICookieClientIdManager"
         permission="zope.Public" />
     <require
-        set_schema=".http.ICookieClientIdManager"
+        set_schema="zope.session.http.ICookieClientIdManager"
         permission="zope.ManageServices" />
-  </content>
-
-  <content class=".session.PersistentSessionDataContainer">
     <require
-        interface=".interfaces.ISessionDataContainer"
+        interface="zope.location.ILocation"
         permission="zope.Public" />
     <require
-        set_schema=".interfaces.ISessionDataContainer"
+        set_schema="zope.location.ILocation"
         permission="zope.ManageServices" />
-  </content>
+  </class>
 
-  <content class=".session.RAMSessionDataContainer">
+  <class class="zope.session.session.PersistentSessionDataContainer">
     <require
-        interface=".interfaces.ISessionDataContainer"
+        interface="zope.session.interfaces.ISessionDataContainer"
         permission="zope.Public" />
     <require
-        set_schema=".interfaces.ISessionDataContainer"
+        set_schema="zope.session.interfaces.ISessionDataContainer"
         permission="zope.ManageServices" />
-  </content>
+    <require
+        interface="zope.location.ILocation"
+        permission="zope.Public" />
+    <require
+        set_schema="zope.location.ILocation"
+        permission="zope.ManageServices" />
+  </class>
 
-  <content class=".session.SessionData">
-    <allow interface=".interfaces.ISessionData" />
-  </content>
+  <class class="zope.session.session.RAMSessionDataContainer">
+    <require
+        interface="zope.session.interfaces.ISessionDataContainer"
+        permission="zope.Public" />
+    <require
+        set_schema="zope.session.interfaces.ISessionDataContainer"
+        permission="zope.ManageServices" />
+    <require
+        interface="zope.location.ILocation"
+        permission="zope.Public" />
+    <require
+        set_schema="zope.location.ILocation"
+        permission="zope.ManageServices" />
+  </class>
 
-  <content class=".session.SessionPkgData">
-    <allow interface=".interfaces.ISessionPkgData" />
-  </content>
+  <class class="zope.session.session.SessionData">
+    <allow interface="zope.session.interfaces.ISessionData" />
+  </class>
+
+  <class class="zope.session.session.SessionPkgData">
+    <allow interface="zope.session.interfaces.ISessionPkgData" />
+  </class>
+
   <!--  Don't want this.  Direct ZODB dependency.
   <subscriber
       for="zope.app.appsetup.IDatabaseOpenedEvent"
-      factory=".bootstrap.bootStrapSubscriber"
+      handler="zope.session.bootstrap.bootStrapSubscriber"
       />
-    -->
-  <include file="browser.zcml" />
+      
+  <subscriber
+      for="zope.publisher.interfaces.http.IHTTPVirtualHostChangedEvent"
+      handler="zope.session.http.notifyVirtualHostChanged"
+      />
+  -->
+  <!--
+  <configure
+      xmlns:apidoc="http://namespaces.zope.org/apidoc"
+      xmlns:zcml="http://namespaces.zope.org/zcml"
+      zcml:condition="have apidoc">
 
+    <apidoc:bookchapter
+        id="session"
+        title="Sessions"
+        doc_path="design.txt"
+        />
+    <apidoc:bookchapter
+        id="api"
+        title="API"
+        doc_path="api.txt"
+        parent="session"
+        />
+
+  </configure>
+  -->
 </configure>

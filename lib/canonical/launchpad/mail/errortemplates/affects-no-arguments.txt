@@ -2,4 +2,4 @@ The 'affects' command needs a path to the bug target.
 
 For example, to specify Malone as the bug target:
 
-    affects /products/malone
+    affects malone

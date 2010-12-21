@@ -1,8 +1,0 @@
-Hello,
-
-The status of %(member)s membership on team %(team)s
-was changed from %(old_status)s to %(new_status)s.
-
-%(reviewer_line)s
-
-    %(comment)s

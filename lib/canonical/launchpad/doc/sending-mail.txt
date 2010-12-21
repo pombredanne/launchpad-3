@@ -18,7 +18,7 @@ The mail get sent when the transaction gets commited:
 Now let's look at the sent email:
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
@@ -29,6 +29,9 @@ Now let's look at the sent email:
     'Subject'
     >>> msg.get_payload(decode=True)
     'Content'
+    >>> # Make sure bulk headers are set for vacation programs
+    >>> msg['Precedence']
+    'bulk'
 
 In cases where the sender is a Person with a preferred email address,
 it's better to use simple_sendmail_from_person. It works just like
@@ -37,7 +40,7 @@ simple_sendmail_from_person has the advantage that it makes sure that
 the person's name is encoded properly.
 
     >>> from canonical.launchpad.mail import simple_sendmail_from_person
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> msgid = simple_sendmail_from_person(
     ...     person=foo_bar,
@@ -56,11 +59,13 @@ the person's name is encoded properly.
     'Subject'
     >>> msg.get_payload(decode=True)
     'Content'
+    >>> msg['Precedence']
+    'bulk'
 
 simple_sendmail_from_person uses the Person's preferred email address:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> testing  = getUtility(IEmailAddressSet).getByEmail(
@@ -177,17 +182,15 @@ surrounded by quotes and quoted if necessary:
     "Foo \[Baz\] \" Bar" <foo.bar@canonical.com>
 
 
-If we pass a unicode object or a non-ASCII str object to
-simple_sendmail as the from_addr or to_addrs, an error will occur.
+If we pass a unicode object to send_mail, it will try and covert it.  If a
+non-ASCII str object is passed, it will throw a UnicodeDecodeError.
 
     >>> simple_sendmail(
     ...     from_addr=u'foo.bar@canonical.com',
     ...     to_addrs='test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    Traceback (most recent call last):
-    ...
-    AssertionError: Expected an ASCII str object, got: u'foo.bar@canonical.com'
+    '20...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='F\xf4\xf4 Bar <foo.bar@canonical.com>',
@@ -196,16 +199,15 @@ simple_sendmail as the from_addr or to_addrs, an error will occur.
     ...     body=u'Content')
     Traceback (most recent call last):
     ...
-    AssertionError: Expected an ASCII str object, got: 'F\xf4\xf4...'
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xf4 in position 1:
+    ordinal not in range(128)
 
     >>> simple_sendmail(
     ...     from_addr='foo.bar@canonical.com',
     ...     to_addrs=u'test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    Traceback (most recent call last):
-    ...
-    AssertionError: Expected an ASCII str object, got: u'test@canonical.com'
+    '20...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='Foo Bar <foo.bar@canonical.com>',
@@ -214,8 +216,41 @@ simple_sendmail as the from_addr or to_addrs, an error will occur.
     ...     body=u'Content')
     Traceback (most recent call last):
     ...
-    AssertionError: Expected an ASCII str object, got: 'S\xc4\x85mple...'
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc4 in position 1:
+    ordinal not in range(128)
 
+    >>> transaction.abort()
+
+Passing `bulk=False` to simple_sendmail disables the adding of the bulk
+precedence header to the email's headers.
+
+    >>> msgid = simple_sendmail(
+    ...     from_addr='feedback@launchpad.net',
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Forgot password',
+    ...     body=u'Content',
+    ...     bulk=False)
+    >>> transaction.commit()
+
+The message is the same as the one from the simple_sendmail test except
+that the precedence header was not added.
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'test@canonical.com'
+    >>> msg['From']
+    'feedback@launchpad.net'
+    >>> msg['Subject']
+    'Forgot password'
+    >>> msg.get_payload(decode=True)
+    'Content'
+    >>> print msg['Precedence']
+    None
+
+
+sendmail
+========
 
 simple_sendmail creates a Message instance, and sends it via another
 function, sendmail. sendmail() can also be used directly if you want to
@@ -239,10 +274,16 @@ provide better bounce handling.
     >>> from canonical.config import config
     >>> from_addr, to_add, raw_message = stub.test_emails.pop()
     >>> sent_msg = email.message_from_string(raw_message)
-    >>> sent_msg['Return-Path'] == config.bounce_address
+    >>> sent_msg['Return-Path'] == config.canonical.bounce_address
     True
-    >>> sent_msg['Errors-To'] == config.bounce_address
+    >>> sent_msg['Errors-To'] == config.canonical.bounce_address
     True
+
+It must also add a Precedence: bulk header so that automatic replies
+(e.g. vacation programs) don't try to respond to them.
+
+    >>> sent_msg['Precedence']
+    'bulk'
 
 It's possible to set Return-Path manually if needed.
 
@@ -276,3 +317,27 @@ are ignored.
     'test@canonical.com'
     >>> sent_msg['CC']
     'foo.bar@canonical.com'
+
+Since sendmail() gets the addresses to send to from the e-mail header,
+it needs to take care of unfolding the headers, so that they don't
+contain any line breaks.
+
+    >>> folded_message = email.message_from_string("""Subject: required
+    ... From: Not used
+    ...  <from.address@example.com>
+    ... To: To Address
+    ...  <to.address@example.com>
+    ... CC: CC Address
+    ...  <cc.address@example.com>
+    ...
+    ... Content
+    ... """)
+    >>> msgid = sendmail(folded_message)
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> from_addr
+    'bounces@canonical.com'
+    >>> sorted(to_addrs)
+    ['CC Address <cc.address@example.com>',
+     'To Address <to.address@example.com>']
+     

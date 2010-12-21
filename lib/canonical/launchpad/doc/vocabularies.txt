@@ -1,19 +1,29 @@
-Introduction
+Vocabularies
 ============
+
+Introduction
+------------
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture
 (CA), a vocabulary is a list of terms that a widget (normally a selection
 style widget) "speaks", i.e., its allowed values.
 
-    >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-    >>> from canonical.lp.dbschema import EmailAddressStatus
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
+    >>> launchbag = getUtility(IOpenLaunchBag)
+    >>> launchbag.clear()
 
 
 Values, Tokens, and Titles
-==========================
+..........................
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in
 a vocabulary has a value, token and title. A term is rendered in a
@@ -27,7 +37,7 @@ to the user.
 
 
 Launchpad Vocabularies
-======================
+----------------------
 
 There are two kinds of vocabularies in Launchpad: enumerable and
 non-enumerable. Enumerable vocabularies are short enough to render in a
@@ -38,79 +48,27 @@ several thousand, or more.
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
 
-    >>> from zope.component import getUtility
     >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> vocabulary_registry = getVocabularyRegistry()
+    >>> def get_naked_vocab(context, name):
+    ...     return removeSecurityProxy(
+    ...         vocabulary_registry.get(context, name))
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
     >>> product_vocabulary.displayname
-    'Select a Product'
+    'Select a project'
 
 
 Enumerable Vocabularies
-=======================
+-----------------------
 
-Creating a new Enumeratable Vocabulary based on an existent dbschema
-constant:
 
-    >>> from canonical.lp import dbschema
-    >>> from canonical.launchpad.vocabularies import vocab_factory
-    >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
+DistributionUsingMaloneVocabulary
+.................................
 
-The right place to do it is in the file vocabularies/dbschema.py.
-Note: don't forget to registry your brand new instance for zope lookup
-in configure.zcml.
+All the distributions that use Malone as their main bug tracker.
 
-o PackagingVocabulary - reflects the available constants for
-  Packaging.packaging field.
-
-In cases where we won't have many rows, some of the database
-vocabularies can be enumerated over.
-
-o DistroReleaseVocabulary - reflects the available distribution releases.
-  Results are ordered by `name`
-
-    >>> distrorelease_vocabulary = vocabulary_registry.get(
-    ...     None,"DistroRelease")
-    >>> for term in distrorelease_vocabulary:
-    ...     print "%30s %s" % (term.token, term.title)
-            ubuntu/breezy-autotest Breezy Badger Autotest
-                     ubuntu/grumpy The Grumpy Groundhog Release
-                      ubuntu/hoary The Hoary Hedgehog Release
-                      ubuntu/warty The Warty Warthog Release
-                      debian/sarge Sarge
-                        debian/sid Sid
-                      debian/woody WOODY
-                    guadalinex/2k5 Guada 2005
-                    kubuntu/krunch The Krunchy Kangaroo
-                        redhat/7.0 Seven
-                        redhat/six Six Six Six
-        ubuntutest/breezy-autotest Breezy Badger Autotest
-             ubuntutest/hoary-test Mock Hoary
-
-    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
-    u'The Hoary Hedgehog Release'
-
-    >>> def getTerms(vocab, search_text):
-    ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
-
-    >>> getTerms(distrorelease_vocabulary, 'woody')
-    >>> getTerms(distrorelease_vocabulary, 'debian')
-    >>> getTerms(distrorelease_vocabulary, 'invalid')
-    >>> getTerms(distrorelease_vocabulary, '')
-
-    >> [term.token for term in distrorelease_vocabulary.search('woody')]
-    ['debian/woody']
-    >> [term.token for term in distrorelease_vocabulary.search('debian')]
-    ['debian/sarge', 'debian/sid', 'debian/woody']
-    >> [term.token for term in distrorelease_vocabulary.search('invalid')]
-    []
-    >> [term.token for term in distrorelease_vocabulary.search('')]
-    []
-
-o DistributionUsingMaloneVocabulary - all the distributions that use
-  Malone as their main bug tracker.
-
-    >>> using_malone_vocabulary = vocabulary_registry.get(
+    >>> using_malone_vocabulary = get_naked_vocab(
     ...     None, 'DistributionUsingMalone')
     >>> len(using_malone_vocabulary)
     2
@@ -119,7 +77,7 @@ o DistributionUsingMaloneVocabulary - all the distributions that use
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
@@ -148,62 +106,184 @@ o DistributionUsingMaloneVocabulary - all the distributions that use
     ...
     LookupError:...
 
-o PersonActiveMembership - all the teams the person is an active member of.
 
-    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> person_active_membership = vocabulary_registry.get(
-    ...     foo_bar, 'PersonActiveMembership')
-    >>> len(person_active_membership)
-    7
-    >>> for term in person_active_membership:
-    ...     print term.token, term.value.displayname, term.title
-    admins Launchpad Administrators Launchpad Administrators
-    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
-    launchpad Launchpad Developers Launchpad Developers
-    name18 Ubuntu Gnome Team Ubuntu Gnome Team
-    ubuntu-team Ubuntu Team Ubuntu Team
-    vcs-imports VCS imports VCS imports
-    testing-spanish-team testing Spanish team testing Spanish team
+BugNominatableSeriesVocabulary
+..............................
 
-    >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
-    >>> launchpad_team in person_active_membership
+All the series that can be nominated for fixing.
+
+This vocabulary needs either a product or distribution in the launchbag
+to get the available series. It also needs a bug, since it list only
+series that haven't already been nominated.
+
+Let's start with putting a product in the launchbag.
+
+    >>> firefox = product_set.getByName('firefox')
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(firefox)
+
+Firefox has the following series:
+
+    >>> for series in firefox.series:
+    ...     print series.name
+    1.0
+    trunk
+
+Now, if we look at bug one, we can see that it hasn't been targeted
+for any Firefox series yet:
+
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Debian)
+
+It has however been nominated for 1.0:
+
+    >>> for nomination in bug_one.getNominations(firefox):
+    ...     print nomination.target.name
+    1.0
+
+This means that if we iterate through the vocabulary with bug one, only
+the trunk will be nominatable:
+
+    >>> firefox_bug_one = bug_one.bugtasks[0]
+    >>> firefox_bug_one.target.name
+    u'firefox'
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     firefox_bug_one, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    trunk: Trunk
+
+No series is targeted or nominated on bug 4:
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> for bugtask in bug_four.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+
+    >>> for nomination in bug_four.getNominations(firefox):
+    ...     print nomination.target.name
+
+So if we give bug four to the vocabulary, all series will be returned:
+
+    >>> firefox_bug_four = bug_four.bugtasks[0]
+    >>> firefox_bug_four.target.name
+    u'firefox'
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     firefox_bug_four, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    1.0: 1.0
+    trunk: Trunk
+
+The same works for distributions:
+
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(ubuntu)
+
+Bug one is nominated for Ubuntu Hoary:
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Debian)
+
+    >>> for nomination in bug_one.getNominations(ubuntu):
+    ...     print nomination.target.name
+    hoary
+
+So Hoary isn't included in the vocabulary:
+
+    >>> ubuntu_bug_one = bug_one.bugtasks[1]
+    >>> ubuntu_bug_one.distribution.name
+    u'ubuntu'
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     ubuntu_bug_one, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    breezy-autotest: Breezy-autotest
+    grumpy: Grumpy
+    warty: Warty
+
+The same is true for bug two, where the bug is targeted to Hoary.
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> for bugtask in bug_two.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Tomcat
+    Ubuntu
+    Ubuntu Hoary
+    mozilla-firefox (Debian)
+    mozilla-firefox (Debian Woody)
+
+    >>> for nomination in bug_two.getNominations(ubuntu):
+    ...     print nomination.target.name
+    hoary
+
+    >>> ubuntu_bug_two = bug_two.bugtasks[1]
+    >>> ubuntu_bug_two.distribution.name
+    u'ubuntu'
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     ubuntu_bug_two, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    breezy-autotest: Breezy-autotest
+    grumpy: Grumpy
+    warty: Warty
+
+We can get a specific term by using the release name:
+
+    >>> term = series_vocabulary.getTermByToken('warty')
+    >>> term.value == ubuntu.getSeries('warty')
     True
-    >>> mirrors_admins = getUtility(IPersonSet).getByName('mirrors-admins')
-    >>> mirrors_admins in person_active_membership
-    False
 
-    >>> person_active_membership.getQuery() is None
-    True
+Trying to get a non-existent release will result in a
+NoSuchDistroSeries error.
 
-    >>> term = person_active_membership.getTerm(launchpad_team)
-    >>> print term.token, term.value.displayname, term.title
-    launchpad Launchpad Developers Launchpad Developers
-
-    >>> term = person_active_membership.getTerm(mirrors_admins)
+    >>> series_vocabulary.getTermByToken('non-such-release')
     Traceback (most recent call last):
     ...
-    LookupError:...
+    NoSuchDistroSeries...
 
-    >>> term = person_active_membership.getTermByToken('launchpad')
-    >>> print term.token, term.value.displayname, term.title
-    launchpad Launchpad Developers Launchpad Developers
 
-    >>> term = person_active_membership.getTermByToken('mirrors-admins')
-    Traceback (most recent call last):
-    ...
-    LookupError:...
+ProjectProductsVocabularyUsingMalone
+....................................
 
+All the products in a project using Malone.
+
+
+    >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
+    >>> for product in mozilla_project.products:
+    ...     print "%s: %s" % (product.name, product.bug_tracking_usage.name)
+    firefox: LAUNCHPAD
+    thunderbird: UNKNOWN
+
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProductsUsingMalone')
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
 
 
 Non-Enumerable Vocabularies
-===========================
+---------------------------
 
 Iterating over non-enumerable vocabularies, while possible, will
 probably kill the database. Instead, these vocabularies are
 search-driven.
 
-o BinaryAndSourcePackageNameVocabulary - the list of binary and source
-  package names, ordered by name.
+
+BinaryAndSourcePackageNameVocabulary
+....................................
+
+The list of binary and source package names, ordered by name.
 
     >>> package_name_vocabulary = vocabulary_registry.get(
     ...     None, "BinaryAndSourcePackageName")
@@ -218,410 +298,92 @@ most specific information possible.
 Let's demonstrate by searching for "mozilla-firefox", for which there is
 both a source and binary package of that name.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName)
-
-    >>> package_name_terms = package_name_vocabulary.search("mozilla-firefox")
+    >>> package_name_terms = package_name_vocabulary.searchForTerms(
+    ...     "mozilla-firefox")
     >>> package_name_terms.count()
-    1
-    >>> package_name_terms[0].name
-    u'mozilla-firefox'
+    2
+    >>> [(term.token, term.title) for term in package_name_terms]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
 
-    >>> package_name_terms = package_name_vocabulary.search("mozilla")
+    >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla")
     >>> package_name_terms.count()
-    2
-    >>> [package_name_term.name for package_name_term in package_name_terms]
-    [u'mozilla', u'mozilla-firefox']
+    3
+    >>> [(term.token, term.title) for term in package_name_terms]
+    [('mozilla', 'Not uploaded'),
+     ('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 The search does a case-insensitive, substring match.
 
-    >>> package_name_terms = package_name_vocabulary.search("mOzIl")
+    >>> package_name_terms = package_name_vocabulary.searchForTerms("lInuX")
     >>> package_name_terms.count()
     2
-    >>> [package_name_term.name for package_name_term in package_name_terms]
-    [u'mozilla', u'mozilla-firefox']
+    >>> [(term.token, term.title) for term in package_name_terms]
+    [('linux-2.6.12', u'this kernel is like the crystal method: a temple...'),
+     ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
 
-o LanguageVocabulary - all the languages know by Launchpad
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> language_set = getUtility(ILanguageSet)
+BinaryPackageNameVocabulary
+...........................
 
-    >>> language_vocabulary = vocabulary_registry.get(
-    ...     None, 'Language')
-    >>> len(language_vocabulary)
-    559
+All the binary packages in Launchpad.
 
-    >>> es = language_set['es']
-    >>> term = language_vocabulary.getTerm(es)
-    >>> print term.token, term.value.displayname, term.title
-    es Spanish (es) Spanish (es)
+    >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
+    >>> len(bpn_vocabulary)
+    8
 
-    >>> pt_BR = language_set['pt_BR']
-    >>> term = language_vocabulary.getTerm(pt_BR)
-    >>> print term.token, term.value.displayname, term.title
-    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+    >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
+    >>> len(bpn_terms)
+    2
+    >>> [(term.token, term.title) for term in bpn_terms]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
-    >>> term = language_vocabulary.getTermByToken('es')
-    >>> print term.token, term.value.displayname, term.title
-    es Spanish (es) Spanish (es)
 
-    >>> term = language_vocabulary.getTermByToken('pt_BR')
-    >>> print term.token, term.value.displayname, term.title
-    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+SourcePackageNameVocabulary
+...........................
 
-    >>> language_vocabulary.getTermByToken('foo')
-    Traceback (most recent call last):
-    ...
-    LookupError:...
+All the source packages in Launchpad.
 
-o ProductBranchVocabulary - the list of bzr branches registered in
-  Launchpad. Searchable by branch name or URL, and searched within the
-  context of a product.
+    >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
+    >>> len(spn_vocabulary)
+    17
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
+    >>> len(spn_terms)
+    2
+    >>> [(term.token, term.title) for term in spn_terms]
+    [('mozilla', u'mozilla'), ('mozilla-firefox', u'mozilla-firefox')]
 
-    >>> firefox = getUtility(IProductSet)["firefox"]
-    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
+    >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
+    >>> len(spn_terms)
+    1
+    >>> [(term.token, term.title) for term in spn_terms]
+    [('pmount', u'pmount')]
 
-    >>> branch_vocabulary = vocabulary_registry.get(firefox, "ProductBranch")
 
-    >>> branches = branch_vocabulary.search(
-    ...     "http://bazaar.example.com/mozilla@arch.ubuntu.com/"
-    ...     "mozilla--release--0.9.2")
+Processor
+.........
 
-    >>> [branch.unique_name for branch in branches]
-    [u'~sabdfl/firefox/release-0.9.2']
-
-    >>> branches = branch_vocabulary.search(
-    ...     "release-0.9.2")
-
-    >>> [branch.unique_name for branch in branches]
-    [u'~sabdfl/firefox/release-0.9.2']
-
-The search will not match branches in another product:
-
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch for branch in branches]
-    []
-
-Now, when we search in gnome-terminal, we'll find the "slowness"
-branch:
-
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     gnome_terminal, "ProductBranch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
-
-We can also specify a context of None, meaning "search all product
-branches".
-
-    >>> branch_vocabulary = vocabulary_registry.get(None, "ProductBranch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
-
-When the context is anything other than an IProduct, the search behaves
-as though no product were passed. This happens, for example, when adding
-a branch off the bugtask page; in this case, the context is an IBugTask:
-
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> bugtask = getUtility(IBugTaskSet).get(2)
-    >>> branch_vocabulary = vocabulary_registry.get(bugtask, "ProductBranch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
-
-o ProjectVocabulary - the list of selectable projects. The results are
-  ordered by displayname.
-
-    >>> project_vocabulary = vocabulary_registry.get(None, "Project")
-    >>> project_vocabulary.displayname
-    'Select a Project'
-
-    >>> [p.title for p in project_vocabulary.search('mozilla')]
-    [u'The Mozilla Project']
-    >>> mozilla = project_vocabulary.getTermByToken('mozilla')
-    >>> mozilla.title
-    u'The Mozilla Project'
-
-  The ProjectVocabulary does not list inactive projects.
-
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> moz_project = getUtility(IProjectSet)['mozilla']
-    >>> moz_project in project_vocabulary
-    True
-
-    >>> [p.title for p in project_vocabulary.search('mozilla')]
-    [u'The Mozilla Project']
-    >>> moz_project.active = False
-    >>> flush_database_updates()
-    >>> moz_project in project_vocabulary
-    False
-
-    >>> [p.title for p in project_vocabulary.search('mozilla')]
-    []
-    >>> moz_project.active = True
-    >>> flush_database_updates()
-
-o ProductVocabulary - the list of selectable products. Results are
-  ordered by displayname.
-
-    >>> product_vocabulary = vocabulary_registry.get(None, "Product")
-    >>> product_vocabulary.displayname
-    'Select a Product'
-
-    >>> list(product_vocabulary.search(None))
-    []
-    >>> gnome_products = product_vocabulary.search("gnome")
-    >>> l = [product_term.title for product_term in gnome_products]
-    >>> l[:2]
-    [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator']
-    >>> l[2:]
-    [u'The Gnome Panel Applets', u'Ubuntu', u'Gnome Baker']
-    >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
-    >>> arch.title 
-    u'Arch archive mirrors'
-
-  The ProductVocabulary does not list inactive products.
-
-    >>> arch.value in product_vocabulary
-    True
-
-    >>> arch_product = getUtility(IProductSet)['arch-mirrors']
-    >>> arch_product in product_vocabulary
-    True
-
-    >>> [t.title for t in product_vocabulary.search('arch and archive')]
-    [u'Arch archive mirrors']
-    >>> arch_product.active = False
-    >>> flush_database_updates()
-    >>> arch_product in product_vocabulary
-    False
-    >>> [t.title for t in product_vocabulary.search('arch and archive')]
-    []
-    >>> arch_product.active = True
-    >>> flush_database_updates()
-
-o ProductReleaseVocabulary - the list of selectable products releases.
-
-    >>> productrelease_vocabulary = vocabulary_registry.get(None,
-    ...                                                     "ProductRelease")
-    >>> productrelease_vocabulary.displayname
-    'Select a Product Release'
-
-    >>> list(productrelease_vocabulary.search(None))
-    []
-    >>> evolution_releases = productrelease_vocabulary.search("evolution")
-    >>> l = [release_term.title for release_term in evolution_releases]
-    >>> release = productrelease_vocabulary.getTermByToken(
-    ...     "evolution/trunk/2.1.6")
-    >>> release.title
-    u'evolution trunk 2.1.6'
-
-o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
-  is meant to be used only in the people merge form.
-
-    >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
-    >>> vocab.displayname
-    'Select a Person to Merge'
-
-    Searching for None returns an empty list.
-    >>> list(vocab.search(None))
-    []
-
-    Searching for 'team' will return an empty list, because teams are not part
-    of this vocabulary.
-    >>> list(vocab.search('team'))
-    []
-
-    A search using part of the email address of a team will also return an 
-    empty list.
-    >>> list(vocab.search('support'))
-    []
-
-    Searching for a person without a preferred email will return that person's
-    name.
-    >>> [person.name for person in vocab.search('salgado')]
-    [u'salgado']
-
-    A search using the beginning of a person's preferred email will return 
-    that person that owns that email.
-    >>> [(person.name, person.preferredemail.email) 
-    ...  for person in vocab.search('foo.bar')]
-    [(u'name16', u'foo.bar@canonical.com')]
-
-    A search using part of the host of an email address will not return
-    anything, as we only match against the beginning of an email address.
-    >>> list(vocab.search('canonical'))
-    []
-
-    A person with a single and unvalidated email address can be merged.
-    >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
-    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
-    >>> fooperson in vocab
-    True
-
-    But any person without a single email address can't.
-    >>> email.destroySelf()
-    >>> fooperson in vocab
-    False
-
-    Any person that's already merged is not part of this vocabulary:
-    # XXX: Here we cheat because IPerson.merged is a readonly attribute.
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fooperson).merged = 1
-    >>> flush_database_updates()
-    >>> fooperson in vocab
-    False
-
-o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
-  as people with a password, a preferred email address and not merged
-  (Person.merged is None) or any team.
-
-    >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> list(vocab.search(None))
-    []
-
-    Almost all teams have the word 'team' as part of their names, so a search
-    for 'team' should give us some of them.
-    >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
-
-    A search for 'support' will give us only the persons which have support
-    as part of their name or displayname, or the beginning of
-    one of its email addresses.
-    >>> sorted(person.name for person in vocab.search('support'))
-    [u'ubuntu-team']
-
-    Dave hasn't validated his email address; he's not a valid Person.
-    >>> sorted(person.name for person in vocab.search('dave.miller'))
-    []
-
-    'foo.bar@canonical.com' is a valid Person.
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-o ValidOwner - all valid persons and teams are also valid owners.
-
-    >>> vocab = vocabulary_registry.get(None, "ValidOwner")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> list(vocab.search(None))
-    []
-
-    Almost all teams have the word 'team' as part of their names, so a search
-    for 'team' should give us some of them.
-    >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
-
-o ValidTeamMember - With the exception of all teams that have this team as a
-  member and the team itself, all valid persons and teams are valid
-  members.
-
-    >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> team2 = getUtility(IPersonSet).getByName('guadamen')
-    >>> person = getUtility(IPersonSet).getByName('name16')
-
-    ValidTeamMember needs a context.
-    >>> vocab = vocabulary_registry.get(None, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-    ValidTeamMember's context must implement ITeam.
-    >>> vocab = vocabulary_registry.get(person, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-    'name16' is a valid member for 'ubuntu-team'
-    >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-    'ubuntu-team' is not a valid member for itself
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18']
-
-    'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member of
-    'ubuntu-team'.
-    >>> team2 in vocab
-    False
-    >>> [person.name for person in vocab.search('guadamen')]
-    []
-
-o ValidTeamOwner - With the exception of the team itself and all teams owned
-  by that team, all valid persons and teams are valid owners for the team
-  in context.
-
-    ValidTeamOwner needs a context.
-    >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-    ValidTeamOwner's context must be a team.
-
-    >>> person = getUtility(IPersonSet).getByName('name16')
-    >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-    'ubuntu-team' is not a valid owner for itself.
-    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18']
-
-    'name16' is a valid owner for 'ubuntu-team'.
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-o Processor - all processors type available in Launchpad.
+All processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
     >>> vocab.displayname
-    'Select a Processor'
+    'Select a processor'
 
-    >>> [processor.name for processor in vocab.search('386')]
-    [u'386']
+    >>> [term.token for term in vocab.searchForTerms('386')]
+    ['386']
 
-o SchemaVocabulary - launchpad Schema Vocabulary..
 
-    >>> vocabulary = vocabulary_registry.get(None,"Schema")
-    >>> vocabulary.displayname
-    'Select a Schema'
+BugWatchVocabulary
+..................
 
-    >>> list(vocabulary.search(None))
-    []
-    >>> [schema.name for schema in vocabulary.search("m")]
-    [u'enema', u'mark', u'schema', u'trema']
+All bug watches associated with a bugtask's bug.
 
-o BugWatchVocabulary - all bug watches associated with a bugtask's bug
-
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask = bug_one.bugtasks[0]
     >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")
@@ -632,4 +394,171 @@ o BugWatchVocabulary - all bug watches associated with a bugtask's bug
     The Mozilla.org Bug Tracker <a...>#42</a>
     Debian Bug tracker <a...>#304014</a>
 
-XXX: document more vocabularies here, particularly when they break!
+Bug watches with an email address URL (i.e. starts with "mailto:") are
+treated differently.
+
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+
+    >>> bug_twelve = getUtility(IBugSet).get(12)
+    >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> email_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug_twelve, launchbag.user, email_bugtracker, '')
+    >>> email_bugwatch.url
+    u'mailto:bugs@example.com'
+
+The title is rendered differently compared to other bug watches.
+
+    >>> bugtask = bug_twelve.bugtasks[0]
+    >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")
+    >>> for term in vocab:
+    ...     print term.title
+    Email bugtracker &lt;<a...>bugs@example.com</a>&gt;
+
+Additionally, if the bug tracker's title contains the bug tracker's
+URL, then the title is linkified instead.
+
+    >>> email_bugtracker.title = (
+    ...     'Lionel Richtea (%s)' % (
+    ...         email_bugtracker.baseurl,))
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (<a...>mailto:bugs@example.com</a>)
+
+When there is no logged-in user, the title is much different. The
+email address is hidden, and there is no hyperlink.
+
+    >>> current_user = launchbag.user
+    >>> login(ANONYMOUS)
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (mailto:&lt;email address hidden&gt;)
+
+
+PPA
+...
+
+The PPA vocabulary contains all the PPAs available in a particular
+collection. It provides the IHugeVocabulary interface.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+    >>> vocabulary = get_naked_vocab(None, 'PPA')
+    >>> verifyObject(IHugeVocabulary, vocabulary)
+    True
+
+    >>> print vocabulary.displayname
+    Select a PPA
+
+Iterations over the PPA vocabulary will return on PPA archives.
+
+    >>> sorted([term.value.owner.name for term in vocabulary])
+    [u'cprov', u'mark', u'no-priv']
+
+PPA vocabulary terms contain:
+
+ * token: the PPA owner name combined with the archive name (using '/');
+ * value: the IArchive object;
+ * title: the first line of the PPA description text.
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+
+    >>> print cprov_term.token
+    cprov/ppa
+
+    >>> print cprov_term.value
+    <Archive ...>
+
+    >>> print cprov_term.title
+    packages to help my friends.
+
+Not found terms result in LookupError.
+
+    >>> vocabulary.getTermByToken('foobar')
+    Traceback (most recent call last):
+    ...
+    LookupError: foobar
+
+PPA vocabulary searches consider the owner FTI and the PPA FTI.
+
+    >>> def print_search_results(results):
+    ...     for archive in results:
+    ...         term = vocabulary.toTerm(archive)
+    ...         print '%s: %s' % (term.token, term.title)
+
+    >>> cprov_search = vocabulary.search('cprov')
+    >>> print_search_results(cprov_search)
+    cprov/ppa: packages to help my friends.
+
+    >>> celso_search = vocabulary.search('celso')
+    >>> print_search_results(celso_search)
+    cprov/ppa: packages to help my friends.
+
+    >>> friends_search = vocabulary.search('friends')
+    >>> print_search_results(friends_search)
+    cprov/ppa: packages to help my friends.
+
+We will create an additional PPA for Celso named 'testing'
+
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+
+    >>> login_person(current_user)
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_testing = getUtility(IArchiveSet).new(
+    ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA,
+    ...     description='testing packages.')
+
+Now, a search for 'cprov' will return 2 ppas and the result is ordered
+by PPA name.
+
+    >>> cprov_search = vocabulary.search('cprov')
+    >>> print_search_results(cprov_search)
+    cprov/ppa: packages to help my friends.
+    cprov/testing: testing packages.
+
+The vocabulary search also supports specific named PPA lookups
+follwing the same combined syntax used to build unique tokens.
+
+    >>> named_search = vocabulary.search('cprov/testing')
+    >>> print_search_results(named_search)
+    cprov/testing: testing packages.
+
+As mentioned the PPA vocabulary term title only contains the first
+line of the PPA description.
+
+    >>> cprov.archive.description = "Single line."
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> print cprov_term.title
+    Single line.
+
+    >>> cprov.archive.description = "First line\nSecond line."
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> print cprov_term.title
+    First line
+
+PPAs with empty description are identified and have a title saying so.
+
+    >>> cprov.archive.description = None
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> print cprov_term.title
+    No description available
+
+Queries on empty strings also results in a valid SelectResults.
+
+    >>> empty_search = vocabulary.search('')
+    >>> empty_search.count() == 0
+    True
+
+
+# XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
+# when they break!

@@ -1,52 +1,38 @@
-#!/usr/bin/env python2.4
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 """Fetches mail from the mail box and feeds them to the handlers."""
 
 import _pythonpath
 
-import logging, sys
-from optparse import OptionParser
+from zope.component.interfaces import ComponentLookupError
 
-from zope.component.exceptions import ComponentLookupError
+from canonical.config import config
+from lp.services.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.services.mail.incoming import handleMail
+from canonical.launchpad.interfaces.mailbox import IMailBox
 
-from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.mail.incoming import handleMail
-from canonical.launchpad.interfaces import IMailBox
 
-usage = """%prog [options]
+class ProcessMail(LaunchpadCronScript):
+    usage = """%prog [options]
 
-""" + __doc__
+    """ + __doc__
 
-def main(args):
-    options_parser = OptionParser(usage=usage)
-    logger_options(options_parser)
-    options, args = options_parser.parse_args(args)
-    
-    log = logger(options, 'process-mail')
-
-    lockfile = LockFile('/var/lock/launchpad-process-mail.lock', logger=log)
-    lockfile.acquire()
-
-    try:
-        trans = initZopeless()
-        execute_zcml_for_scripts(use_web_security=True)
-
+    def main(self):
         try:
-            handleMail(trans)
-            return 0
+            handleMail(self.txn)
         except ComponentLookupError, lookup_error:
-            if lookup_error.args[0] == IMailBox:
-                log.error(
-                    "No mail box is configured. "
-                    "Please see mailbox.txt for info on how to configure one.")
-                return 1
-            raise
-    finally:
-        lockfile.release()
+            if lookup_error.args[0] != IMailBox:
+                raise
+            raise LaunchpadScriptFailure(
+                "No mail box is configured. "
+                "Please see mailbox.txt for info on how to configure one.")
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    script = ProcessMail('process-mail', dbuser=config.processmail.dbuser)
+    script.lock_and_run(use_web_security=True)

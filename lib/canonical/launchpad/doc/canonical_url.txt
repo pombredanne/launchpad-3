@@ -11,7 +11,7 @@ In this test, we'll use a URL hierarchy /countries/England/+towns/London
 In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
 will put in canonical.launchpad.ftests.
 
-    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import Interface, Attribute, implements
 
     >>> class ICountrySet(Interface):
@@ -24,6 +24,40 @@ will put in canonical.launchpad.ftests.
     ...     """Dummy interface for use in browser:url tests."""
     ...     country = Attribute('the country the town is in')
     ...     name = Attribute('the name of this town')
+
+Add a view for Country/+map.
+
+    >>> from zope.component import provideAdapter
+    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+    >>> class CountryMapView(object):
+    ...     def __init__(self, country, request):
+    ...         pass
+    >>> provideAdapter(CountryMapView, (ICountry, IDefaultBrowserLayer),
+    ...                name='+map', provides=Interface)
+
+Define a navigation for the Country URL.
+
+    >>> from canonical.launchpad.webapp.publisher import (
+    ...     Navigation, redirection, stepto, stepthrough)
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> class CountryNavigation(Navigation):
+    ...     redirection('+capital', '+towns/London')
+    ...
+    ...     @stepthrough('+towns')
+    ...     def stepthrown_town(self, name):
+    ...         if name == 'London':
+    ...             return town_instance
+    ...         else:
+    ...             return None
+    ...
+    ...     @stepto('+greenwich')
+    ...     def stepto_greenwhich(self):
+    ...         town = Town()
+    ...         town.name = 'Greenwich'
+    ...         return town
+    >>> provideAdapter(
+    ...     CountryNavigation, [ICountry, IDefaultBrowserLayer], 
+    ...     IBrowserPublisher)
 
 Put the interfaces into canonical.launchpad.ftests, ensuring that there
 are not already objects with those names there.
@@ -91,7 +125,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
 Now, there is an ICanonicalUrlData registered for ITown.
 
     >>> town_urldata = ICanonicalUrlData(town_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, town_urldata)
     True
     >>> town_urldata.path
@@ -132,7 +166,7 @@ at it from zcml.  I'll put it in canonical.launchpad.ftests.
 Now, there is an ICanonicalUrlData registered for ICountry.
 
     >>> country_urldata = ICanonicalUrlData(country_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, country_urldata)
     True
     >>> country_urldata.path
@@ -150,7 +184,7 @@ normal way to do this.  Normally, we'd just say
 But, here, I want to test the variant of the zcml directive that specifes
 an adapter.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> class CountrySetUrl:
     ...
     ...     implements(ICanonicalUrlData)
@@ -184,7 +218,7 @@ in canonical.launchpad.ftests.
 Now, there is an ICanonicalUrlData registered for ICountrySet.
 
     >>> countryset_urldata = ICanonicalUrlData(countryset_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, countryset_urldata)
     True
     >>> countryset_urldata.path
@@ -222,11 +256,11 @@ and the objects it is inside of (or in other words, hierarchically below).
     >>> canonical_url(town_instance)
     u'http://launchpad.dev/countries/England/+towns/London'
 
-We can see that this is the root_url as configured in launchpad.conf.
+We can see that this is the mainsite rooturl as configured in launchpad.conf.
 
-    >>> from canonical.config import config
-    >>> config.launchpad.root_url
-    'http://launchpad.dev/'
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> print allvhosts.configs['mainsite'].rooturl
+    http://launchpad.dev/
 
 If anywhere in the chain we have an object that cannot be adapted to
 ICanonicalUrlData, a NoCanonicalUrl error is raised.
@@ -319,19 +353,26 @@ getApplicationURL() from
 zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class DummyRequest:
+    >>> class FakeRequest:
     ...
     ...     implements(IHTTPApplicationRequest)
     ...
     ...     def __init__(self, applicationurl):
     ...         self.applicationurl = applicationurl
+    ...         self.interaction = None
+    ...
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
     ...
     ...     def getApplicationURL(self, depth=0, path_only=False):
     ...         assert depth == 0, 'this is not a real IHTTPApplicationRequest'
     ...         assert not path_only, 'not a real IHTTPApplicationRequest'
     ...         return self.applicationurl
 
-    >>> mandrill_request = DummyRequest('https://mandrill.example.org:23')
+    >>> mandrill_request = FakeRequest('https://mandrill.example.org:23')
     >>> canonical_url(country_instance)
     u'http://launchpad.dev/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
@@ -340,15 +381,95 @@ zope.publisher.interfaces.http.IHTTPApplicationRequest.
 However, if we log in, then that request should be used when none is explicitly
 given otherwise.
 
-    >>> sesame_request = DummyRequest(
-    ...     'http://muppet.example.com')
-    >>> participation = sesame_request
-    >>> participation.interaction = None
-    >>> login(ANONYMOUS, participation)
+    >>> sesame_request = FakeRequest('http://muppet.example.com')
+    >>> login(ANONYMOUS, sesame_request)
     >>> canonical_url(country_instance)
     u'http://muppet.example.com/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
     u'https://mandrill.example.org:23/countries/England'
+
+
+== canonical_url and overriding rootsite ==
+
+The optional parameter rootsite on the canonical_url function can be
+used to 'force' the url to a different rootsite.  Providing a rootsite
+overrides the rootsite defined by either the object or the request.
+
+Here is the current country instance without the ICanonicalUrlData specifying
+a rootsite.
+
+Overriding the rootsite from the default request:
+
+    >>> canonical_url(country_instance)
+    u'http://muppet.example.com/countries/England'
+    >>> canonical_url(country_instance, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+
+Overriding the rootsite from the specified request:
+
+    >>> canonical_url(country_instance, mandrill_request)
+    u'https://mandrill.example.org:23/countries/England'
+    >>> canonical_url(country_instance, mandrill_request, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+
+And if the configuration does provide a rootsite:
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure
+    ...     xmlns="http://namespaces.zope.org/zope"
+    ...     xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <configure package="zope.app.component">
+    ...       <include file="meta.zcml" />
+    ...   </configure>
+    ...   <utility
+    ...       provides="canonical.launchpad.ftests.ICountrySet"
+    ...       component="canonical.launchpad.ftests.countryset_instance"
+    ...       />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ICountry"
+    ...       path_expression="name"
+    ...       parent_utility="canonical.launchpad.ftests.ICountrySet"
+    ...       rootsite="bugs"
+    ...       />
+    ... </configure>
+    ... """)
+
+    >>> canonical_url(country_instance)
+    u'http://bugs.launchpad.dev/countries/England'
+    >>> canonical_url(country_instance, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+    >>> canonical_url(country_instance, mandrill_request, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+
+
+== canonical_url and named views ==
+
+The url for a particular view of an object can be generated by specifying
+the view's name.
+
+    >>> canonical_url(country_instance, view_name="+map")
+    u'http://bugs.launchpad.dev/countries/England/+map'
+
+view_name also works when the view_name refers to a Navigation stepto,
+stepthrough, or redirection:
+
+    >>> canonical_url(country_instance, view_name="+greenwich")
+    u'http://bugs.launchpad.dev/countries/England/+greenwich'
+
+    >>> canonical_url(country_instance, view_name="+capital")
+    u'http://bugs.launchpad.dev/countries/England/+capital'
+
+    >>> canonical_url(country_instance, view_name="+towns")
+    u'http://bugs.launchpad.dev/countries/England/+towns'
+
+Giving an unregistered view name will trigger an assertion failure.
+
+    >>> canonical_url(country_instance, view_name="+does-not-exist")
+    Traceback (most recent call last):
+      ...
+    AssertionError: Name "+does-not-exist" is not registered as a view 
+    or navigation step for "Country" on "bugs".
 
 
 == The 'nearest' helper function ==
@@ -357,7 +478,7 @@ The `nearest(obj, *interfaces)` function returns the nearest object up the
 canonical url chain that provides at least one of the interfaces given.
 
     >>> from canonical.launchpad.webapp import nearest
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> nearest(town_instance, IPerson) is None
     True
     >>> nearest(town_instance, ITown) is town_instance
@@ -366,10 +487,48 @@ canonical url chain that provides at least one of the interfaces given.
     True
     >>> nearest(town_instance, ICountry) is country_instance
     True
-    >>> nearest(unrooted_object, ICountry)
-    Traceback (most recent call last):
-    ...
-    NoCanonicalUrl: No url for <...ObjectThatHasUrl...> because <...object...> broke the chain.
+    >>> print nearest(unrooted_object, ICountry)
+    None
+
+
+== canonical_url in the web service ==
+
+canonical_url() is sometimes used in code that doesn't have direct
+access to the current request, and always wants a URL that can be used
+in a browser (for example e-mail notifications or XHTML representations
+of objects). Therefore, if no request is explicitly given,
+canonical_url() returns the browser URL, even if the current request is
+a web service request
+
+    >>> from zope.app.security.principalregistry import (
+    ...     UnauthenticatedPrincipal)
+    >>> from canonical.launchpad.webapp.interaction import setupInteraction
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from lazr.restful.utils import get_current_browser_request
+    >>> anonymous = UnauthenticatedPrincipal(None, None, None)
+    >>> api_request = WebServiceTestRequest()
+    >>> setupInteraction(anonymous, participation=api_request)
+    >>> get_current_browser_request() is api_request
+    True
+
+    >>> canonical_url(countryset_instance)
+    u'http://launchpad.dev/countries'
+
+
+If an URL that can be used in the web service is required, a web service
+request has to be passed in explicitly.
+
+    >>> canonical_url(countryset_instance, request=api_request)
+    u'http://api.launchpad.dev/countries'
+
+It is often the case that the web application wants to provide URLs that will
+be written out onto the pages that the Javascript can process using the
+LP.client code to get access to the object entries using the API.  In these
+cases, the "force_local_path" parameter can be passed to canonical_url to have
+only the relative local path returned.
+
+    >>> canonical_url(countryset_instance, force_local_path=True)
+    u'/countries'
 
 
 == The end ==

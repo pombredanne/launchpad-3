@@ -2,13 +2,13 @@
 
 An object has a facetmenu if it can be adapted to IFacetMenu.
 
+
 === Construct an example url hierarchy ===
 
-    >>> from canonical.launchpad.webapp import nearest_menu, canonical_url
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
-    ...     ILink, ILinkData, IFacetLink
-    ...     )
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
@@ -20,9 +20,9 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     ...         self.inside = parent  # See ICanonicalUrlData.
     ...         self.rootsite = None  # See ICanonicalUrlData.
 
-Here's a useful class that we can use to effectively register adapters for
-an object, without actually using adapter registries.  This comes from
-PEP-246.
+Here's a useful class that we can use to effectively register adapters
+for an object, without actually using adapter registries.  This comes
+from PEP-246.
 
     >>> class Conformable:
     ...     adapt_to = None
@@ -47,40 +47,9 @@ Let's make three objects that together make a url hierarchy:
     >>> house = ExampleContentObject('number73', street)
     >>> canonical_url(house)
     u'http://launchpad.dev/sesamestreet/number73'
+
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
-
-
-=== Test nearest_menu ===
-
-Right now, none of our example objects have a facet menu.
-
-    >>> nearest_menu(root, IFacetMenu) is None
-    True
-    >>> nearest_menu(street, IFacetMenu) is None
-    True
-    >>> nearest_menu(house, IFacetMenu) is None
-    True
-
-We'll make the 'street' object be conformable to IFacetMenu.  Making an object
-be conformable to IFacetMenu is one way of making the object adaptable to
-IFacetMenu.  Another way would be to provide an adapter.
-
-    >>> class ExampleFacetMenu(list):
-    ...     implements(IFacetMenu)
-    ...     def __init__(self, context):
-    ...         list.__init__(self, ['foo', 'bar', 'baz'])
-    ...         self.context = context
-
-    >>> street.setAdapter(IFacetMenu, ExampleFacetMenu)
-    >>> IFacetMenu(street).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_menu(root, IFacetMenu) is None
-    True
-    >>> nearest_menu(street, IFacetMenu).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_menu(house, IFacetMenu).__class__ is ExampleFacetMenu
-    True
 
 
 == The Link class ==
@@ -89,8 +58,8 @@ When you define a menu using class based on FacetMenu, you return Link
 objects from its methods.  The Link class is very simple.  You provide
 it with a target and some text for the link.  Other optional arguments
 are some summary text, the name of an icon, and a boolean saying whether
-the link is enabled.  Defaults are to have no summary, no icon, and
-to be enabled.
+the link is enabled.  Defaults are to have no summary, no icon, and to
+be enabled.
 
 Exactly how a disabled link appears on a page is up to the page template
 code that renders links.  Typically, disabled links will be hidden, or
@@ -101,21 +70,26 @@ software developer who defines menus.  When you define a Link, you are
 defining an object that provides ILinkData.
 
 There are other attributes that are set by the menu infrastructure, and
-are used when a Link is rendered in a page.  These attributes are defined
-in ILink and IFacetLink.
+are used when a Link is rendered in a page.  These attributes are
+defined in ILink and IFacetLink.
 
     >>> from canonical.launchpad.webapp import Link
     >>> no_summary_link = Link('target', 'text -->')
     >>> ILinkData.providedBy(no_summary_link)
     True
+
     >>> no_summary_link.target
     'target'
+
     >>> no_summary_link.text
     'text -->'
+
     >>> print no_summary_link.summary
     None
+
     >>> print no_summary_link.icon
     None
+
     >>> no_summary_link.enabled
     True
 
@@ -128,35 +102,41 @@ mark is as being "structured".
     >>> full_link = Link('target', text, 'summary', icon='icon', enabled=False)
     >>> ILinkData.providedBy(full_link)
     True
+
     >>> full_link.target
     'target'
+
     >>> full_link.text
     <structured-string 'some <b>%s</b> text'>
+
     >>> full_link.summary
     'summary'
+
     >>> full_link.icon
     'icon'
+
     >>> full_link.enabled
     False
 
-
 The menu infrastructure adapts a Link instance to ILink (for context and
-application menus) and IFacetLink (for facet menus).  This (morally speaking)
-allows the menu infrastructure to set the 'name', 'url', 'linked' and
-(in the case of IFacetLink) 'selected' attributes of the link.
+application menus) and IFacetLink (for facet menus).  This (morally
+speaking) allows the menu infrastructure to set the 'name', 'url',
+'linked' and (in the case of IFacetLink) 'selected' attributes of the
+link.
 
 By using separate interfaces, and by adapting, we keep the different
 responsibilities of links clearly separated, and leave room for making
 clean changes and optimisations later.
 
-Let's make a couple of Link instances, adapt them to ILink and IFacetLink,
-and show that getting and setting the appropriate attributes works.
+Let's make a couple of Link instances, adapt them to ILink and
+IFacetLink, and show that getting and setting the appropriate attributes
+works.
 
 We use two separate links because setting attributes on the adapted link
-will change the data in the underlying link instance.  We may change this
-later, to allow some links to be precomputed or shared, but right now,
-link instances are meant to be created freshly on each request, and not
-shared or reused.
+will change the data in the underlying link instance.  We may change
+this later, to allow some links to be precomputed or shared, but right
+now, link instances are meant to be created freshly on each request, and
+not shared or reused.
 
     >>> link1 = Link('target', 'text', 'summary', icon='icon', enabled=False)
     >>> link2 = Link('target', 'text', 'summary', icon='icon', enabled=False)
@@ -175,6 +155,7 @@ shared or reused.
     >>> facet_menu_link = IFacetLink(link2)
     >>> facet_menu_link.selected
     False
+
     >>> facet_menu_link.selected = True
     >>> facet_menu_link.selected
     True
@@ -184,8 +165,8 @@ shared or reused.
 
     >>> from canonical.launchpad.webapp import FacetMenu
 
-FacetMenu is meant to be used as a base-class for writing your own IFacetMenu
-classes.  Here's what happens when you use it on its own.
+FacetMenu is meant to be used as a base-class for writing your own
+IFacetMenu classes.  Here's what happens when you use it on its own.
 
     >>> bad_idea_menu = FacetMenu(object())
     >>> for link in bad_idea_menu.iterlinks():
@@ -194,25 +175,24 @@ classes.  Here's what happens when you use it on its own.
     ...
     AssertionError: Subclasses of FacetMenu must provide self.links
 
-So, we must test FacetMenu by making our own menu subclass.  We'll just call
-our menu 'Facets'.  One thing missing from this class is the 'usedfor'
-declaration.  We need to use this in practice because we need to know how to
-register our menu as an adapter.  For this part of the test, we won't worry
-about that.
+So, we must test FacetMenu by making our own menu subclass.  We'll just
+call our menu 'Facets'.  One thing missing from this class is the
+'usedfor' declaration.  We need to use this in practice because we need
+to know how to register our menu as an adapter.  For this part of the
+test, we won't worry about that.
 
-The FacetMenu class also allows you to specify the 'defaultlink' attribute,
-which is None by default (for no default link), but can be the name of the
-default link for this menu.
+The FacetMenu class also allows you to specify the 'defaultlink'
+attribute, which is None by default (for no default link), but can be
+the name of the default link for this menu.
 
     >>> class Facets(FacetMenu):
-    ...
     ...     links = ['foo', 'bar']
     ...
     ...     def foo(self):
     ...         target = '+foo'
     ...         text = 'Foo'
     ...         return Link(target, text)
-    ...
+    ... 
     ...     def bar(self):
     ...         target = '+bar'
     ...         text = 'Bar'
@@ -220,13 +200,13 @@ default link for this menu.
     ...             'More explanation about Bar of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-Now, we can make an instance of this Facets class, with a contextobject to
-show that its methods can access `self.context`.
+Now, we can make an instance of this Facets class, with a contextobject
+to show that its methods can access `self.context`.
 
     >>> facetmenu = Facets(street)
 
-We can go through each attribute of each of the links, checking that they
-are as we expect.
+We can go through each attribute of each of the links, checking that
+they are as we expect.
 
     >>> for link in facetmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
@@ -236,9 +216,15 @@ are as we expect.
     enabled: True
     escapedtext: Foo
     icon: None
+    icon_url: None
     linked: True
+    menu: None
     name: foo
+    path: /sesamestreet/+foo
+    render: <bound method FacetLink.render ...>
     selected: False
+    site: None
+    sort_key: 0
     summary: None
     target: +foo
     text: Foo
@@ -247,101 +233,69 @@ are as we expect.
     enabled: True
     escapedtext: Bar
     icon: None
+    icon_url: None
     linked: True
+    menu: None
     name: bar
+    path: /sesamestreet/+bar
+    render: <bound method FacetLink.render ...>
     selected: False
+    site: None
+    sort_key: 1
     summary: More explanation about Bar of sesamestreet
     target: +bar
     text: Bar
     url: http://launchpad.dev/sesamestreet/+bar
 
 
-== Enabled links and disabled links ==
-
-Often, we want to make a facet menu that uses the standard facet menu links,
-but with only some of them enabled.
-
-To do this, we make a new menu class that extends an existing one.  We need
-to provide a set of link names that are to be enabled.  All other links will
-be disabled.
-
-    >>> class OnlySomeEnabledFacets(Facets):
-    ...
-    ...     enable_only = ['foo']
-
-Now, we can make an instance of this class.
-
-    >>> onlysomeenabledfacetmenu = OnlySomeEnabledFacets(street)
-
-We look at the links, to make sure they are as we expect.
-
-    >>> for link in onlysomeenabledfacetmenu.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    --- link foo ---
-    enabled: True
-    --- link bar ---
-    enabled: False
-
-If 'enable_only' contains a link name that does not appear in 'links', we
-should get a warning.
-
-    >>> class UnknownEnableOnlyFacets(Facets):
-    ...
-    ...     enable_only = ['bar', 'quux']
-
-Now, we can make an instance of this class.
-
-    >>> unknownenableonlyfacets = UnknownEnableOnlyFacets(street)
-
-    >>> for link in unknownenableonlyfacets.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    Traceback (most recent call last):
-    ...
-    AssertionError: Links in 'enable_only' not found in 'links': quux
-
-
 == The MenuLink and FacetLink adapter classes ==
 
 The menus system needs to be able to adapt ILinkData objects to objects
 that provide ILink or IFacetLink.  The menus system needs to be able to
-set the 'enabled', 'name', 'url', 'linked, and for IFacetLink, 'selected'
-attributes, but without altering the underlying ILinkData object.  Also,
-an ILink object provides an HTML escaped version of the text in the
-attribute 'escapedtext'.
+set the 'enabled', 'name', 'url', 'linked, and for IFacetLink,
+'selected' attributes, but without altering the underlying ILinkData
+object.  ILink objects also provide an HTML-escaped version of the link
+text, and a render() method for returning the link as HTML.
 
     >>> somelink = Link('target', 'text', 'summary', icon='icon')
     >>> ILinkData.providedBy(somelink)
     True
+
     >>> ILink.providedBy(somelink)
     False
+
     >>> adaptedtolink = ILink(somelink)
     >>> ILink.providedBy(adaptedtolink)
     True
 
-It is important we don't get a facetlink here, so that we can do views on links
-if we want to, and have distinct views on facet and other links.
+It is important we don't get a facetlink here, so that we can do views
+on links if we want to, and have distinct views on facet and other
+links.
 
     >>> IFacetLink.providedBy(adaptedtolink)
     False
 
     >>> adaptedtolink.target
     'target'
+
     >>> adaptedtolink.text
     'text'
+
     >>> adaptedtolink.summary
     'summary'
+
     >>> adaptedtolink.icon
     'icon'
+
     >>> adaptedtolink.enabled
     True
+
     >>> adaptedtolink.enabled = False
     >>> adaptedtolink.enabled
     False
+
     >>> somelink.enabled
     True
-
 
 Checking out the escapedtext attribute.
 
@@ -349,6 +303,7 @@ Checking out the escapedtext attribute.
 
     >>> ILink(link).escapedtext
     'text --&gt;'
+
     >>> IFacetLink(link).escapedtext
     'text --&gt;'
 
@@ -356,26 +311,51 @@ Checking out the escapedtext attribute.
     >>> link = Link('+target', text)
 
     >>> ILink(link).escapedtext
-    'some <b> --&gt; </b> text'
-    >>> IFacetLink(link).escapedtext
-    'some <b> --&gt; </b> text'
+    u'some <b> --&gt; </b> text'
 
+    >>> IFacetLink(link).escapedtext
+    u'some <b> --&gt; </b> text'
 
 We can test the 'structured' helper directly.
 
     >>> structured('foo').escapedtext
-    'foo'
+    u'foo'
+
     >>> structured('%s', 'a < b > c & d " e').escapedtext
-    'a &lt; b &gt; c &amp; d " e'
+    u'a &lt; b &gt; c &amp; d " e'
+
     >>> structured('a < b > c & d " e').escapedtext
-    'a < b > c & d " e'
+    u'a < b > c & d " e'
+
     >>> structured(
     ...     'replacement %(foo)s, %(bar)s', foo='<foo>', bar='bar').escapedtext
-    'replacement &lt;foo&gt;, bar'
+    u'replacement &lt;foo&gt;, bar'
+
     >>> structured('whatever', 'foo', 'bar', baz='baz')
     Traceback (most recent call last):
     ...
     TypeError:...
+
+Next, we return the link as HTML.
+
+    # We need to use a real launchpad test request so the view adapter
+    # lookups will work.  That request also needs to implement
+    # IParticipation so that the login machinery will work.
+    >>> from zope.security.interfaces import IParticipation
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class InteractiveTestRequest(LaunchpadTestRequest):
+    ...     implements(IParticipation)
+    ...     principal = None
+    ...     interaction = None
+    >>> request = InteractiveTestRequest()
+    >>> login(ANONYMOUS, request)
+
+    >>> link = Link('+target', 'text-->', 'summary', icon='icon')
+    >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
+    <a class="menu-link-None sprite icon" title="summary">text--&gt;</a>
+
+    # Clean up our special login.
+    >>> login(ANONYMOUS)
 
 
 == How do we tell which link from a facetmenu is the selected one? ==
@@ -391,8 +371,8 @@ iterlinks method, or otherwise, if its name is the defaultlink.
     --- link bar ---
     selected: True
 
-When a link name is passed in, but no link of that name is in the menu, it
-is not an error.  No link is selected.
+When a link name is passed in, but no link of that name is in the menu,
+it is not an error.  No link is selected.
 
     >>> for link in facetmenu.iterlinks(selectedfacetname='nosuchname'):
     ...     print '--- link %s ---' % link.name
@@ -402,7 +382,8 @@ is not an error.  No link is selected.
     --- link bar ---
     selected: False
 
-No selected link is given, but the default is 'foo', so 'foo' will be selected.
+No selected link is given, but the default is 'foo', so 'foo' will be
+selected.
 
     >>> facetmenu.defaultlink = 'foo'
     >>> for link in facetmenu.iterlinks():
@@ -413,8 +394,8 @@ No selected link is given, but the default is 'foo', so 'foo' will be selected.
     --- link bar ---
     selected: False
 
-Now, 'foo' is still the default, but 'bar' has been selected.  So only 'bar'
-will be selected.
+Now, 'foo' is still the default, but 'bar' has been selected.  So only
+'bar' will be selected.
 
     >>> for link in facetmenu.iterlinks(selectedfacetname='bar'):
     ...     print '--- link %s ---' % link.name
@@ -424,8 +405,8 @@ will be selected.
     --- link bar ---
     selected: True
 
-We still have 'foo' as the default.  This time, 'nosuchlink' has been selected.
-As there is no such link, nothing will be selected.
+We still have 'foo' as the default.  This time, 'nosuchlink' has been
+selected. As there is no such link, nothing will be selected.
 
     >>> for link in facetmenu.iterlinks(selectedfacetname='nosuchlink'):
     ...     print '--- link %s ---' % link.name
@@ -436,186 +417,12 @@ As there is no such link, nothing will be selected.
     selected: False
 
 
-== How do we tell whether a link from a facetmenu is linked? ==
-
-A link is linked if its link's target differs from the current URL.
-
-To test this, we need a dummy request object that provides `getURL()`.
-
-    >>> # Needed for getApplicationURL()
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> # Needed for registering a default view name.
-    >>> from zope.publisher.interfaces.browser import IBrowserRequest
-    >>> class DummyRequest:
-    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
-    ...
-    ...     def __init__(self, url, query=None, url1=None):
-    ...         self.url = url
-    ...         self.query = query
-    ...         self.url1 = url1  # returned from getURL(1)
-    ...         self.method = 'GET'
-    ...
-    ...     def getURL(self, level=0):
-    ...         assert 0 <= level <=1, 'level must be 0 or 1'
-    ...         if level == 0:
-    ...             return self.url
-    ...         else:
-    ...             assert self.url1 is not None, (
-    ...                 'Must set url1 in DummyRequest')
-    ...             return self.url1
-    ...
-    ...     def getApplicationURL(self):
-    ...         # Just the http://place:port part, so stop at the 3rd slash.
-    ...         return '/'.join(self.url.split('/', 3)[:3])
-    ...
-    ...     def get(self, key, default=None):
-    ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
-    ...         if self.query is None:
-    ...             return default
-    ...         else:
-    ...             return self.query
-
-    >>> from canonical.launchpad.webapp.url import Url
-
-The following request is for a url that is different from all of the facet
-menu links for 'sesamestreet'.  So, all links will be linked.
-
-    >>> request = Url('http://launchpad.dev/sesamestreet/+xxx')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar True
-
-This next request is for +foo, but with a query string.  So, both links will
-still be linked.
-
-    >>> request = DummyRequest(
-    ...     'http://launchpad.dev/sesamestreet/+foo', query="123")
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks():
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar True
-
-Next, we'll use the link +bar.  The +bar link will not be linked.
-
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar False
-
-Now, we use +bar with a trailing slash.  The +bar link will still be not
-linked.
-
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar/')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar False
-
-
-We need to test the case when we have a link with a blank target.
-This will be the common case for default links.
-
-    >>> class BlankTargetTestFacets(Facets):
-    ...
-    ...     links = Facets.links + ['baz']
-    ...     defaultlink = 'foo'
-    ...
-    ...     def foo(self):
-    ...         target = ''
-    ...         text = 'Foo'
-    ...         return Link(target, text)
-    ...
-    ...     def baz(self):
-    ...         target = '+baz'
-    ...         text = 'Baz'
-    ...         summary = (
-    ...             'More explanation about Baz of %s' % self.context.name)
-    ...         return Link(target, text, summary)
-
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
-    >>> facets = BlankTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ True
-    http://launchpad.dev/sesamestreet/+bar False
-    http://launchpad.dev/sesamestreet/+baz True
-
-
-
-=== Absolute url targets ===
-
-We will want to make links with absolute urls as targets.
-
-Absolute urls can be made with a full url, including the host part, or as
-a url path beginning with '/'.
-
-Sometimes the target will be within Launchpad.  Other times, the link will be
-to an external site.
-
-When the link is to an external site, we'll want to note that as an attribute
-of the Link.  That will come as a future enhancement.  External links will
-always be linked.
-
-When the link is to a page in Launchpad, we need to treat it the same as
-a normal relative link.  That is, we need to compute 'linked' and 'selected'
-as for relative links.  The usual use-case is computing an absolute link
-to a page inside launchpad using canonical_url.  In this case, the host and
-protocol part of the url will be the same for the canonical_url as for the
-current request.  This is what we will use to see if we have a link to a
-page within Launchpad.
-
-    >>> class AbsoluteUrlTargetTestFacets(FacetMenu):
-    ...
-    ...     links = ['foo', 'bar', 'baz', 'spoo']
-    ...
-    ...     def foo(self):
-    ...         target = ''
-    ...         text = 'Foo'
-    ...         return Link(target, text)
-    ...
-    ...     def bar(self):
-    ...         target = 'ftp://barlink.example.com/barbarbar'
-    ...         text = 'External bar'
-    ...         return Link(target, text)
-    ...
-    ...     def baz(self):
-    ...         target = 'http://launchpad.dev/sesamestreet/+baz'
-    ...         text = 'Baz'
-    ...         return Link(target, text)
-    ...
-    ...     def spoo(self):
-    ...         target = '/sesamestreet/+spoo'
-    ...         text = 'Spoo'
-    ...         return Link(target, text)
-
-The url1 is needed because we still have the defaultViewName registered from
-earlier in this doctest.
-
-    >>> canonical_url(street)
-    u'http://launchpad.dev/sesamestreet'
-
-    >>> request = Url('http://launchpad.dev/sesamestreet')
-
-    >>> facets = AbsoluteUrlTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ False
-    ftp://barlink.example.com/barbarbar True
-    http://launchpad.dev/sesamestreet/+baz True
-    http://launchpad.dev/sesamestreet/+spoo True
-
-
 == Application Menus ==
 
-Application menus are defined for a context object for a particular named
-Facet menu item.  The name of the facet menu item used is whichever facet
-is selected from the nearest context object that has an IFacetMenu adapter.
+Application menus are defined for a context object for a particular
+named Facet menu item.  The name of the facet menu item used is
+whichever facet is selected from the nearest context object that has an
+IFacetMenu adapter.
 
 Defining an ApplicationMenu works like defining a FacetMenu, except we
 also need to say what facet menu item it is for.
@@ -623,7 +430,8 @@ also need to say what facet menu item it is for.
     >>> from canonical.launchpad.webapp import ApplicationMenu
 
 ApplicationMenu is meant to be used as a base-class for writing your own
-IApplicationMenu classes.  Here's what happens when you use it on its own.
+IApplicationMenu classes.  Here's what happens when you use it on its
+own.
 
     >>> bad_idea_menu = ApplicationMenu(object())
     >>> for link in bad_idea_menu.iterlinks():
@@ -633,30 +441,30 @@ IApplicationMenu classes.  Here's what happens when you use it on its own.
     AssertionError: Subclasses of ApplicationMenu must provide self.links
 
 So, we must test ApplicationMenu by making our own menu subclass.  We'll
-just call our menu 'FooApplicationMenu' as we intend it to be used when the
-'foo' facet is selected.  Two things missing from this class are the 'usedfor'
-declaration and the 'facet' declaration.  We need to use these in practice
-because we need to know how to register our menu as an adapter.  For this
-part of the test, we won't worry about that.
+just call our menu 'FooApplicationMenu' as we intend it to be used when
+the 'foo' facet is selected.  Two things missing from this class are the
+'usedfor' declaration and the 'facet' declaration.  We need to use these
+in practice because we need to know how to register our menu as an
+adapter.  For this part of the test, we won't worry about that.
 
     >>> class FooApplicationMenu(ApplicationMenu):
-    ...
+    ... 
     ...     links = ['first']
     ...     facet = 'foo'
-    ...
+    ... 
     ...     def first(self):
     ...         target = '+first'
     ...         text = 'First menu'
     ...         return Link(target, text)
 
-Now, we can make an instance of this FooApplicationMenu class.  We should
-really be using some link text that shows that its methods can access
-`self.context`. That's a minor TODO item.
+Now, we can make an instance of this FooApplicationMenu class.  We
+should really be using some link text that shows that its methods can
+access `self.context`. That's a minor TODO item.
 
     >>> housefooappmenu = FooApplicationMenu(house)
 
-We can go through each attribute of each of the links, checking that they
-are as we expect.
+We can go through each attribute of each of the links, checking that
+they are as we expect.
 
     >>> for link in housefooappmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
@@ -666,8 +474,14 @@ are as we expect.
     enabled: True
     escapedtext: First menu
     icon: None
+    icon_url: None
     linked: True
+    menu: None
     name: first
+    path: /sesamestreet/number73/+first
+    render: <bound method MenuLink.render ...>
+    site: None
+    sort_key: 0
     summary: None
     target: +first
     text: First menu
@@ -696,14 +510,14 @@ IContextMenu classes.  Here's what happens when you use it on its own.
 So, we must test ContextMenu by making our own menu subclass.  We'll
 just call our menu 'MyContextMenu'.
 
-One thing missing from this class is the 'usedfor' declaration, which tells
-the registration machinery how to render this menu as an adapter.  For this
-part of the test, we won't worry about that.
+One thing missing from this class is the 'usedfor' declaration, which
+tells the registration machinery how to render this menu as an adapter.
+For this part of the test, we won't worry about that.
 
     >>> class MyContextMenu(ContextMenu):
-    ...
+    ... 
     ...     links = ['first']
-    ...
+    ... 
     ...     def first(self):
     ...         target = '+firstcontext'
     ...         text = 'First context menu item'
@@ -715,8 +529,8 @@ really be using some link text that shows that its methods can access
 
     >>> housefoocontextmenu = MyContextMenu(house)
 
-We can go through each attribute of each of the links, checking that they
-are as we expect.
+We can go through each attribute of each of the links, checking that
+they are as we expect.
 
     >>> for link in housefoocontextmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
@@ -726,8 +540,14 @@ are as we expect.
     enabled: True
     escapedtext: First context menu item
     icon: None
+    icon_url: None
     linked: True
+    menu: None
     name: first
+    path: /sesamestreet/number73/+firstcontext
+    render: <bound method MenuLink.render ...>
+    site: None
+    sort_key: 0
     summary: None
     target: +firstcontext
     text: First context menu item
@@ -744,6 +564,7 @@ canonical.launchpad.ftests module.
     >>> import canonical.launchpad.ftests
     >>> getattr(canonical.launchpad.ftests, 'IThingHavingFacets', None) is None
     True
+
     >>> canonical.launchpad.ftests.IThingHavingFacets = IThingHavingFacets
     >>> IThingHavingFacets.__module__ = 'canonical.launchpad.ftests'
 
@@ -752,18 +573,19 @@ canonical.launchpad.ftests module.
     >>> import canonical.launchpad.ftests
     >>> getattr(canonical.launchpad.ftests, 'IThingHavingMenus', None) is None
     True
+
     >>> canonical.launchpad.ftests.IThingHavingMenus = IThingHavingMenus
     >>> IThingHavingMenus.__module__ = 'canonical.launchpad.ftests'
 
-Next, we define a FacetMenu subclass to be used for IThingHavingFacets, using a
-usedfor class attribute to say what interface it is to be registered for, and
-put it too in the canonical.launchpad.ftests module.
+Next, we define a FacetMenu subclass to be used for IThingHavingFacets,
+using a usedfor class attribute to say what interface it is to be
+registered for, and put it too in the canonical.launchpad.ftests module.
 
     >>> class FacetsForThing(Facets):
     ...     usedfor = IThingHavingFacets
-    ...
+    ... 
     ...     links = ['foo', 'bar', 'baz']
-    ...
+    ... 
     ...     def baz(self):
     ...         target = ''
     ...         text = 'baz'
@@ -775,8 +597,8 @@ put it too in the canonical.launchpad.ftests module.
 
     >>> getattr(canonical.launchpad.ftests, 'FacetsForThing', None) is None
     True
-    >>> canonical.launchpad.ftests.FacetsForThing = FacetsForThing
 
+    >>> canonical.launchpad.ftests.FacetsForThing = FacetsForThing
 
 And likewise for an application menu registered for IThingHavingMenus.
 
@@ -786,6 +608,7 @@ And likewise for an application menu registered for IThingHavingMenus.
 
     >>> getattr(canonical.launchpad.ftests, 'FooMenuForThing', None) is None
     True
+
     >>> canonical.launchpad.ftests.FooMenuForThing = FooMenuForThing
 
 We do the same for a context menu.
@@ -795,10 +618,11 @@ We do the same for a context menu.
 
     >>> print getattr(canonical.launchpad.ftests, 'ContextMenuForThing', None)
     None
+
     >>> canonical.launchpad.ftests.ContextMenuForThing = ContextMenuForThing
 
-
-Now, check that we have no IFacetMenu adapter for an IThingHavingFacets object.
+Now, check that we have no IFacetMenu adapter for an IThingHavingFacets
+object.
 
     >>> class SomeThing:
     ...     implements(IThingHavingFacets)
@@ -806,8 +630,8 @@ Now, check that we have no IFacetMenu adapter for an IThingHavingFacets object.
     >>> IFacetMenu(something_with_facets, None) is None
     True
 
-We also need to check that we have no IApplicationMenu adapter named 'foo' for
-an IThingHavingMenus object.
+We also need to check that we have no IApplicationMenu adapter named
+'foo' for an IThingHavingMenus object.
 
     >>> class SomeOtherThing:
     ...     implements(IThingHavingMenus)
@@ -835,16 +659,19 @@ Same for an IContextMenu adapter.
     >>> menu1.context = something_with_facets
     >>> menu1.__class__ is FacetsForThing
     True
+
     >>> menu2 = queryAdapter(something_with_menus, IApplicationMenu, 'foo')
     >>> menu2.context = something_with_menus
     >>> menu2.__class__ is FooMenuForThing
     True
+
     >>> menu3 = IContextMenu(something_with_menus)
     >>> menu3.context = something_with_menus
     >>> menu3.__class__ is ContextMenuForThing
     True
 
-The browser:menus directive also makes security declarations for the adapters.
+The browser:menus directive also makes security declarations for the
+adapters.
 
 
 == Using menus in page templates ==
@@ -853,70 +680,108 @@ We use menus in page templates by using the `thing/menu:typeofmenu`
 TALES namespace.
 
 First, let's look at `thing/menu:facet`.  What this does is to look up
-nearest_menu(thing, IFacetMenu), getting an IFacetMenu adapter from it.
-Then, it gets the request from either the TALES CONTEXTS or the current
-interaction, and calculates a request Url object to pass into IMenu.iterlinks,
-so that it can properly decide whether a particular link should appear linked.
-The request is also set as the menu's 'request' attribute.
+nearest_adapter(thing, IFacetMenu), getting an IFacetMenu adapter from
+it. Then, it gets the request from either the view or the current
+interaction, and calculates a request Url object to pass into
+IMenu.iterlinks, so that it can properly decide whether a particular
+link should appear linked. The request is also set as the menu's
+'request' attribute.
 
-
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from canonical.launchpad.ftests import test_tales
-
-    >>> class View:
-    ...     __launchpad_facetname__ = 'bar'
+    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> class FakeRequest:
+    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
+    ... 
+    ...     interaction = None
+    ... 
+    ...     def __init__(self, url, query=None, url1=None):
+    ...         self.url = url
+    ...         self.query = query
+    ...         self.url1 = url1  # returned from getURL(1)
+    ...         self.method = 'GET'
+    ...         self.annotations = {}
+    ... 
+    ...     def getURL(self, level=0):
+    ...         assert 0 <= level <=1, 'level must be 0 or 1'
+    ...         if level == 0:
+    ...             return self.url
+    ...         else:
+    ...             assert self.url1 is not None, (
+    ...                 'Must set url1 in FakeRequest')
+    ...             return self.url1
+    ... 
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
     ...
-    >>> view = View()
+    ...     def getApplicationURL(self):
+    ...         # Just the http://place:port part, so stop at the 3rd slash.
+    ...         return '/'.join(self.url.split('/', 3)[:3])
+    ... 
+    ...     def get(self, key, default=None):
+    ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
+    ...         if self.query is None:
+    ...             return default
+    ...         else:
+    ...             return self.query
+    ... 
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
+    >>> request = FakeRequest('http://launchpad.dev/sesamestreet/+bar')
+    >>> view = LaunchpadView(house, request)
+    >>> view.__launchpad_facetname__ = 'bar'
 
     >>> street.adapt_to = None
     >>> directlyProvides(street, IThingHavingFacets)
     >>> house.adapt_to = None
     >>> directlyProvides(house, IThingHavingMenus)
 
-    >>> request = DummyRequest('http://launchpad.dev/sesamestreet/+bar')
-
-    >>> links = test_tales(
-    ...     'CONTEXTS/menu:facet', context=house, view=view, request=request, debug=True)
+    >>> links = test_tales('view/menu:facet', view=view)
 
     >>> for link in links:
     ...     print link.url, link.selected, link.linked, link.summary
     http://launchpad.dev/sesamestreet/+foo False True None
-    http://launchpad.dev/sesamestreet/+bar True False More explanation about Bar of sesamestreet
-    http://launchpad.dev/sesamestreet/ False True GET
+    http://launchpad.dev/sesamestreet/+bar True False More explanation about
+                                                      Bar of sesamestreet
+    http://launchpad.dev/sesamestreet False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
-is because the URL of '+bar' is the same as the request in the CONTEXTS.
+is because the URL of '+bar' is the same as the request in the view.
 
 Let's try again, this time with a request from the participation.
 
-    >>> participation = DummyRequest(
+    >>> participation = FakeRequest(
     ...     'http://launchpad.dev/sesamestreet/+bar')
-    >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
 
-    >>> links = test_tales(
-    ...     'context/menu:facet', context=house)
+    >>> links = test_tales('context/menu:facet', context=house)
     >>> for link in links:
     ...     print link.url, link.selected, link.linked
     http://launchpad.dev/sesamestreet/+foo False True
     http://launchpad.dev/sesamestreet/+bar False False
-    http://launchpad.dev/sesamestreet/ False True
+    http://launchpad.dev/sesamestreet False True
 
-Note that '+bar' is not selected.  This is because we're adapting 'context'
-and not 'CONTEXTS', so the menus system has no way of knowing what the
-selected facet is for the current page.
+Note that '+bar' is not selected.  This is because we're adapting
+'context' and not 'view', so the menus system has no way of knowing what
+the selected facet is for the current page.
 
-
-Sometimes, we need to take into account the default view name for an object.
-Let's say that the default view name for an IStreet is '+baz'.  This is
-the common case where the overview link is the default view name.
+Sometimes, we need to take into account the default view name for an
+object. Let's say that the default view name for an IStreet is '+baz'.
+This is the common case where the overview link is the default view
+name.
 
     >>> class IStreet(Interface):
     ...     """A street."""
     >>> directlyProvides(street, IStreet, IThingHavingFacets)
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> ztapi.setDefaultViewName(IStreet, '+baz', None)
 
-    >>> request = DummyRequest(
+    >>> request = FakeRequest(
     ...     'http://launchpad.dev/sesamestreet/+baz',
     ...     url1='http://launchpad.dev/sesamestreet/')
 
@@ -925,66 +790,103 @@ the common case where the overview link is the default view name.
     '+baz'
 
 So, in this example, the last link should not be 'linked' because it is
-equivalent to the default view name for a street.  The TALES infrastructure
-actually calculates a shortened URL for this case.
+equivalent to the default view name for a street.  The TALES
+infrastructure actually calculates a shortened URL for this case.
 
-    >>> links = test_tales(
-    ...     'CONTEXTS/menu:facet', context=street, view=view, request=request)
+    >>> view = LaunchpadView(street, request)
+    >>> view.__launchpad_facetname__ = 'bar'
+    >>> links = test_tales('view/menu:facet', view=view)
     >>> for link in links:
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
 
+You can traverse to an individual menu item from the facet menu:
 
-The result of `house/menu:application` will be empty at the moment, because
-we registered only one application menu for a house, against 'foo'.  The
-'bar' facet is the one selected, so we don't get any application menu.
-
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> list(menu)
-    []
-
-Now, if we change the view's __launchpad_facetname__ so that the 'foo' facet
-is selected, we get a couple of menus.
-
-    >>> view.__launchpad_facetname__ = 'foo'
-    >>> links = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> for link in links:
-    ...     print link.url
+    >>> view = LaunchpadView(house, request)
+    >>> view.__launchpad_facetname__ = 'bar'
+    >>> link = test_tales('view/menu:foo/first', view=view, request=request)
+    >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
-We can also get a context menu as menu:context.  It makes no difference
-whether the TALES code is CONTEXTS/menu:context or context/menu:context,
-because the menus system doesn't need to know anything about the view object.
+But if a non-existing entry is requested, a KeyError is raised:
 
-    >>> links = test_tales('context/menu:context', context=house)
-    >>> for link in links:
+    >>> test_tales('view/menu:foo/broken', view=view)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'broken'
+
+We also report when the selected facet does not exist with a
+LocationError exception:
+
+    >>> test_tales('view/menu:broken/bar', view=view)
+    Traceback (most recent call last):
+    ...
+    LocationError: ..., 'broken')
+
+We can also get a context menu as menu:context.  It makes no difference
+whether the TALES code is view/menu:context or context/menu:context,
+because the menus system doesn't need to know anything about the view
+object.
+
+    >>> links = test_tales('view/menu:context', view=view)
+    >>> for link in links.values():
     ...     print link.url
+    http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+The link is also reachable by name:
+
+    >>> link = test_tales('context/menu:context/first', context=house)
+    >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 When there is no menu for a thing, we get an empty iterator.
 
-    >>> menu = test_tales(
-    ...     'CONTEXTS/menu:facet', context=root, view=view, request=request)
+    >>> view = LaunchpadView(root, request)
+    >>> view.__launchpad_facetname__ = 'bar'
+    >>> menu = test_tales('view/menu:facet', view=view)
     >>> list(menu)
     []
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=root, view=view, request=request)
+
+    >>> menu = test_tales('view/menu:context', view=view)
     >>> list(menu)
     []
-    >>> menu = test_tales('CONTEXTS/menu:context',
-    ...     context=root, view=view, request=request)
-    >>> list(menu)
-    []
+
+And thus, we don't have a facet to navigate to:
+
+    >>> test_tales('view/menu:foo/+first', view=view)
+    Traceback (most recent call last):
+    ...
+    LocationError: ..., 'foo')
+
+    >>> view = LaunchpadView(house, request)
+    >>> view.__launchpad_facetname__ = 'bar'
+
+
+== Shortcuts for rendering menu items ==
+
+A thing's menu may be rendered directly as HTML using the menu link's
+render() method.
+
+    >>> request = InteractiveTestRequest()
+    >>> login(ANONYMOUS, request)
+
+    >>> html = test_tales('context/menu:foo/first/render',
+    ...                   context=house, view=view, request=request)
+    >>> print html #doctest: +NORMALIZE_WHITESPACE
+    <a...href="http://127.0.0.1/sesamestreet/number73/+first"
+    ...class="menu-link-first">First menu</a>
+
+    # Clean up our special login.
+
+    >>> login(ANONYMOUS)
 
 
 == Cleaning up ==
 
-We're done testing the zcml, so we can clean up the canonical.launchpad.ftests
-module.
+We're done testing the zcml, so we can clean up the
+canonical.launchpad.ftests module.
 
     >>> del canonical.launchpad.ftests.FacetsForThing
     >>> del canonical.launchpad.ftests.FooMenuForThing
@@ -995,16 +897,16 @@ module.
 
 == The enabled_with_permission function decorator ==
 
-If you have a menu item that should be enabled only when the current logged-in
-user has a particular permission, then you can write the link as usual, and use
-the enabled_with_permission function decorator.
+If you have a menu item that should be enabled only when the current
+logged-in user has a particular permission, then you can write the link
+as usual, and use the enabled_with_permission function decorator.
 
 It works like this:
 
     >>> from canonical.launchpad.webapp import enabled_with_permission
 
     >>> class SomeMenu(ContextMenu):
-    ...
+    ... 
     ...     @enabled_with_permission('launchpad.Admin')
     ...     def foo(self):
     ...         return Link('+admin', 'Admin the foo')
@@ -1018,6 +920,7 @@ If we're logged in as an anonymous user, then the link will be disabled.
     >>> foolink = somemenu.foo()
     >>> foolink.text
     'Admin the foo'
+
     >>> foolink.enabled
     False
 

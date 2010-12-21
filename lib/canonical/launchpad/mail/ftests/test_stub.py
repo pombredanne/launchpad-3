@@ -1,19 +1,25 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-import email
-from email.MIMEText import MIMEText
-import transaction
-from zope.testing.doctest import DocTestSuite
+from doctest import DocTestSuite
+import re
 
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.mail import stub, simple_sendmail
+from zope.testing.renormalizing import RENormalizing
+
+from canonical.testing.layers import LaunchpadFunctionalLayer
+
 
 def test_simple_sendmail():
     r"""
     Send an email (faked by TestMailer - no actual email is sent)
+
+    >>> import email
+    >>> from email.MIMEText import MIMEText
+    >>> import transaction
+    >>> from lp.services.mail import stub
+    >>> from lp.services.mail.sendmail import simple_sendmail
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'
@@ -39,7 +45,7 @@ def test_simple_sendmail():
     'myMessageId'
 
     The TestMailer stores sent emails in memory (which we cleared in the
-    setUp() method). But the actual email has yet to be sent, as that 
+    setUp() method). But the actual email has yet to be sent, as that
     happens when the transaction is committed.
 
     >>> len(stub.test_emails)
@@ -93,12 +99,17 @@ def test_simple_sendmail():
     >>> message['Content-Transfer-Encoding']
     'quoted-printable'
 
+    The message has a number of additional headers added by default.
+    'X-Generated-By' not only indicates that the source is Launchpad, but
+    shows the bzr revision and instance name.
+
+    >>> message['X-Generated-By']
+    'Launchpad (canonical.com); Revision="1999";\n\tInstance="launchpad-lazr.conf"'
+
     """
 
 def test_suite():
-    suite = DocTestSuite()
+    suite = DocTestSuite(checker=RENormalizing([
+        (re.compile(r'Revision="\d+"'), 'Revision="1999"')]))
     suite.layer = LaunchpadFunctionalLayer
     return suite
-
-if __name__ == '__main__':
-    unittest.main(test_suite())

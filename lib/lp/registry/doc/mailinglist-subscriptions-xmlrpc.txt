@@ -1,0 +1,371 @@
+XMLRPC access to mailing list memberships
+=========================================
+
+Just like the creation and deactivation of mailing lists, membership changes
+to mailing lists must be communicated to Mailman over XMLRPC.  Because the
+bandwidth involved is not expected to be overwhelming, a simplified interface
+was chosen.
+
+The communication pattern is initiated by Mailman in all cases; in other
+words, Mailman polls Launchpad to see if there is any work for Mailman to do.
+
+    >>> # Note that this test is run multiple times, with the harness
+    >>> # providing `mailinglist_api` and `commit` for impedance matching.
+
+
+Requesting membership information
+---------------------------------
+
+Mailman requests membership information for specific list of teams.  Let's
+create and populate some teams to demonstrate.
+
+    # login() as an admin so that we can call join() on anyone
+    # and change their mailing list auto-subscription settings.
+    >>> login('foo.bar@canonical.com')
+
+    >>> from lp.registry.tests.mailinglists_helper import new_team
+
+    >>> team_one, list_one = new_team('team-one', with_list=True)
+    >>> anne = factory.makePersonByName('Anne')
+    >>> bart = factory.makePersonByName('Bart')
+    >>> cris = factory.makePersonByName('Cris')
+    >>> dirk = factory.makePersonByName('Dirk')
+    >>> elle = factory.makePersonByName('Elle')
+    >>> fred = factory.makePersonByName('Fred')
+    >>> gwen = factory.makePersonByName('Gwen')
+    >>> hank = factory.makePersonByName('Hank')
+    >>> people = [anne, bart, cris, dirk, elle, fred, gwen, hank]
+
+    >>> for person in people:
+    ...     person.join(team_one)
+    ...     list_one.subscribe(person)
+
+    # The IMailingListSet APIs use the SLAVE_FLAVOR since they are read-only.
+    # Commit the transaction so that the changes are visible there.
+    >>> transaction.commit()
+
+Asking for the membership information for team-one's list returns all the
+above people.  We want to see all the email addresses for all the people
+subscribed to the mailing list, along with their full name. We'll also print
+the address's flags (which will currently always be zero), and the address's
+delivery status.  A status of RECIPIENT means the address will receive
+messages posted to the list.  A status of X means that delivery to this
+address is suppressed.  The important point is that all addresses regardless
+of status, will be able to post to the mailing list.
+
+    >>> info = mailinglist_api.getMembershipInformation(('team-one',))
+    >>> from lp.registry.tests.mailinglists_helper import print_info
+    >>> print_info(info)
+    team-one
+        anne.person@example.com Anne Person             0 RECIPIENT
+        aperson@example.org     Anne Person             0 X
+        bart.person@example.com Bart Person             0 RECIPIENT
+        bperson@example.org     Bart Person             0 X
+        cperson@example.org     Cris Person             0 X
+        cris.person@example.com Cris Person             0 RECIPIENT
+        dirk.person@example.com Dirk Person             0 RECIPIENT
+        dperson@example.org     Dirk Person             0 X
+        elle.person@example.com Elle Person             0 RECIPIENT
+        eperson@example.org     Elle Person             0 X
+        fperson@example.org     Fred Person             0 X
+        fred.person@example.com Fred Person             0 RECIPIENT
+        gperson@example.org     Gwen Person             0 X
+        gwen.person@example.com Gwen Person             0 RECIPIENT
+        hank.person@example.com Hank Person             0 RECIPIENT
+        hperson@example.org     Hank Person             0 X
+        no-priv@canonical.com   No Privileges Person    0 X
+
+We can also ask for the membership information for more than one mailing list
+at a time.  Mix things up for the fun of it.
+
+    >>> team_two, list_two = new_team('team-two', with_list=True)
+    >>> fred.leave(team_one)
+    >>> gwen.leave(team_one)
+    >>> for person in people:
+    ...     if person is bart:
+    ...         continue
+    ...     person.join(team_two)
+    ...     list_two.subscribe(person)
+    >>> transaction.commit()
+
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two'))
+    >>> print_info(info)
+    team-one
+        anne.person@example.com Anne Person             0 RECIPIENT
+        aperson@example.org     Anne Person             0 X
+        bart.person@example.com Bart Person             0 RECIPIENT
+        bperson@example.org     Bart Person             0 X
+        cperson@example.org     Cris Person             0 X
+        cris.person@example.com Cris Person             0 RECIPIENT
+        dirk.person@example.com Dirk Person             0 RECIPIENT
+        dperson@example.org     Dirk Person             0 X
+        elle.person@example.com Elle Person             0 RECIPIENT
+        eperson@example.org     Elle Person             0 X
+        hank.person@example.com Hank Person             0 RECIPIENT
+        hperson@example.org     Hank Person             0 X
+        no-priv@canonical.com   No Privileges Person    0 X
+    team-two
+        anne.person@example.com Anne Person             0 RECIPIENT
+        aperson@example.org     Anne Person             0 X
+        cperson@example.org     Cris Person             0 X
+        cris.person@example.com Cris Person             0 RECIPIENT
+        dirk.person@example.com Dirk Person             0 RECIPIENT
+        dperson@example.org     Dirk Person             0 X
+        elle.person@example.com Elle Person             0 RECIPIENT
+        eperson@example.org     Elle Person             0 X
+        fperson@example.org     Fred Person             0 X
+        fred.person@example.com Fred Person             0 RECIPIENT
+        gperson@example.org     Gwen Person             0 X
+        gwen.person@example.com Gwen Person             0 RECIPIENT
+        hank.person@example.com Hank Person             0 RECIPIENT
+        hperson@example.org     Hank Person             0 X
+        no-priv@canonical.com   No Privileges Person    0 X
+
+
+Membership tests
+----------------
+
+Mailman may also occasionally ask whether a specific email address is
+registered with Launchpad.  It does this as a simple line-of-defense against
+spam.  Email from addresses not registered with Launchpad are summarily
+discarded.
+
+    >>> mailinglist_api.isRegisteredInLaunchpad('dirk.person@example.com')
+    True
+    >>> mailinglist_api.isRegisteredInLaunchpad('dperson@example.org')
+    True
+    >>> mailinglist_api.isRegisteredInLaunchpad('geddy.lee@canonical.com')
+    False
+
+Similarly, email addresses with an unvalidated status are not considered
+registered either.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> new_address = emailset.new(
+    ...     'frederick@example.com', fred, account=fred.account)
+    >>> new_address.email, new_address.status.title
+    (u'frederick@example.com', 'New Email Address')
+    >>> sorted((email_address.email, email_address.status.title)
+    ...        for email_address in emailset.getByPerson(fred))
+    [(u'fperson@example.org', 'Validated Email Address'),
+     (u'fred.person@example.com', 'Preferred Email Address'),
+     (u'frederick@example.com', 'New Email Address')]
+    >>> mailinglist_api.isRegisteredInLaunchpad('frederick@example.com')
+    False
+
+
+Standing tests
+--------------
+
+Mailman may also occasionally ask whether a specific email address is a
+Launchpad member in good (or better) standing.  It does this when a non-member
+of a mailing list tries to post to the mailing list.  By default, an address
+not registered in Launchpad is not in good standing (even though the previous
+membership test should always take precedence).
+
+    >>> mailinglist_api.inGoodStanding('frederick@example.com')
+    False
+
+Since standing makes no sense for teams, an email address assigned to a team
+is also not in good standing.
+
+    >>> team_address = list(emailset.getByPerson(team_one))[0]
+    >>> mailinglist_api.inGoodStanding(team_address.email)
+    False
+
+By default, Launchpad members have an unknown, and thus not good, standing.
+
+    >>> anne.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    False
+
+Anne is a bad person and the Launchpad administrator assigns her a poor
+standing.
+
+    >>> from lp.registry.interfaces.person import PersonalStanding
+    >>> anne.personal_standing = PersonalStanding.POOR
+    >>> transaction.commit()
+
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    False
+
+Anne makes amends and the Launchpad administrator improves her standing.
+
+    >>> anne.personal_standing = PersonalStanding.GOOD
+    >>> transaction.commit()
+
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    True
+
+It turns out that Anne is a wonderful person!  Her standing is really
+excellent.
+
+    >>> anne.personal_standing = PersonalStanding.EXCELLENT
+    >>> transaction.commit()
+
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    True
+
+
+The archive address
+-------------------
+
+We archive messages by sending them to The Mail Archive
+<http://www.mail-archive.com>.  They automatically determine which list a
+message is posted to so all we need to do is include them in the recipients
+list and the rest is taken care of.
+
+    >>> from canonical.config import config
+    >>> config.mailman.archive_address
+    'archive@mail-archive.dev'
+
+Every public team should have this address as an enabled recipient.  There is
+no real name for this member.
+
+    >>> list_one.is_public
+    True
+    >>> list_two.is_public
+    True
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two'))
+    >>> print_info(info, full=True)
+    team-one
+        anne.person@example.com   Anne Person           0 RECIPIENT
+        aperson@example.org       Anne Person           0 X
+        archive@mail-archive.dev  (n/a)                 0 RECIPIENT
+        bart.person@example.com   Bart Person           0 RECIPIENT
+        bperson@example.org       Bart Person           0 X
+        cperson@example.org       Cris Person           0 X
+        cris.person@example.com   Cris Person           0 RECIPIENT
+        dirk.person@example.com   Dirk Person           0 RECIPIENT
+        dperson@example.org       Dirk Person           0 X
+        elle.person@example.com   Elle Person           0 RECIPIENT
+        eperson@example.org       Elle Person           0 X
+        hank.person@example.com   Hank Person           0 RECIPIENT
+        hperson@example.org       Hank Person           0 X
+        no-priv@canonical.com     No Privileges Person  0 X
+    team-two
+        anne.person@example.com   Anne Person           0 RECIPIENT
+        aperson@example.org       Anne Person           0 X
+        archive@mail-archive.dev  (n/a)                 0 RECIPIENT
+        cperson@example.org       Cris Person           0 X
+        cris.person@example.com   Cris Person           0 RECIPIENT
+        dirk.person@example.com   Dirk Person           0 RECIPIENT
+        dperson@example.org       Dirk Person           0 X
+        elle.person@example.com   Elle Person           0 RECIPIENT
+        eperson@example.org       Elle Person           0 X
+        fperson@example.org       Fred Person           0 X
+        fred.person@example.com   Fred Person           0 RECIPIENT
+        gperson@example.org       Gwen Person           0 X
+        gwen.person@example.com   Gwen Person           0 RECIPIENT
+        hank.person@example.com   Hank Person           0 RECIPIENT
+        hperson@example.org       Hank Person           0 X
+        no-priv@canonical.com     No Privileges Person  0 X
+
+However, in order to prevent this address from being used to forge spam onto
+the lists, the archive address is hard-coded to not be registered in
+Launchpad.
+
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
+    False
+
+This is true even if by dumb luck the address actually gets registered in
+Launchpad.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> new_address = emailset.new(
+    ...     config.mailman.archive_address, fred,
+    ...     EmailAddressStatus.VALIDATED, account=fred.account)
+    >>> transaction.commit()
+
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
+    False
+
+The Mail Archive is only used for public team mailing lists.  If the team
+itself is private, so is its archive, and then messages are not sent to the
+archiver email address.
+
+    >>> from zope.component import queryAdapter
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> team_three = new_team('team-three')
+    >>> queryAdapter(team_three, IObjectPrivacy).is_private
+    False
+
+Teams with mailing lists cannot change visibility, so the team must be made
+private before its mailing list is created.
+
+    >>> team_three.visibility = PersonVisibility.PRIVATE
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(team_three)
+    >>> queryAdapter(team_three, IObjectPrivacy).is_private
+    True
+
+When Anne subscribes to the team-three mailing list, her validated addresses
+are the only recipients in the list's membership information.  Because the
+team is private, the special archive@mail-archive.dev address is not
+included.
+
+    >>> from lp.registry.tests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> list_three = new_list_for_team(team_three)
+    >>> list_three.is_public
+    False
+    >>> anne.join(team_three)
+    >>> list_three.subscribe(anne)
+    >>> transaction.commit()
+
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two', 'team-three'))
+    >>> print_info(info, full=True)
+    team-one
+        anne.person@example.com   Anne Person           0 RECIPIENT
+        aperson@example.org       Anne Person           0 X
+        archive@mail-archive.dev  (n/a)                 0 RECIPIENT
+        bart.person@example.com   Bart Person           0 RECIPIENT
+        bperson@example.org       Bart Person           0 X
+        cperson@example.org       Cris Person           0 X
+        cris.person@example.com   Cris Person           0 RECIPIENT
+        dirk.person@example.com   Dirk Person           0 RECIPIENT
+        dperson@example.org       Dirk Person           0 X
+        elle.person@example.com   Elle Person           0 RECIPIENT
+        eperson@example.org       Elle Person           0 X
+        hank.person@example.com   Hank Person           0 RECIPIENT
+        hperson@example.org       Hank Person           0 X
+        no-priv@canonical.com     No Privileges Person  0 X
+    team-three
+        anne.person@example.com   Anne Person           0 RECIPIENT
+        aperson@example.org       Anne Person           0 X
+        no-priv@canonical.com     No Privileges Person  0 X
+    team-two
+        anne.person@example.com   Anne Person           0 RECIPIENT
+        aperson@example.org       Anne Person           0 X
+        archive@mail-archive.dev  (n/a)                 0 RECIPIENT
+        cperson@example.org       Cris Person           0 X
+        cris.person@example.com   Cris Person           0 RECIPIENT
+        dirk.person@example.com   Dirk Person           0 RECIPIENT
+        dperson@example.org       Dirk Person           0 X
+        elle.person@example.com   Elle Person           0 RECIPIENT
+        eperson@example.org       Elle Person           0 X
+        fperson@example.org       Fred Person           0 X
+        fred.person@example.com   Fred Person           0 RECIPIENT
+        gperson@example.org       Gwen Person           0 X
+        gwen.person@example.com   Gwen Person           0 RECIPIENT
+        hank.person@example.com   Hank Person           0 RECIPIENT
+        hperson@example.org       Hank Person           0 X
+        no-priv@canonical.com     No Privileges Person  0 X
+
+
+Error cases
+-----------
+
+If Mailman requests the membership information for a team that doesn't exist,
+the team name will have a value of None in the resulting dictionary.
+
+    >>> mailinglist_api.getMembershipInformation(('no-such-team',))
+    {'no-such-team': None}
