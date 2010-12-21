@@ -789,7 +789,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(bmp, '+index')
         self.assertFalse(view.pending_diff)
         with person_logged_in(bmp.source_branch.owner):
-            bmp.target_branch.branchChanged(None, 'rev-1', None, None, None)
+            bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
         self.assertTrue(view.pending_diff)
 
 
