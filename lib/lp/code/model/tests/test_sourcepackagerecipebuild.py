@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -240,6 +241,18 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_makeDailyBuilds_logs_builds(self):
+        # If a logger is passed into the makeDailyBuilds method, each recipe
+        # that a build is requested for gets logged.
+        owner = self.factory.makePerson(name='eric')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True)
+        logger = BufferLogger()
+        SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual(
+            ['DEBUG: Build for eric/funky-recipe requested\n'],
+            logger.getLogOutput())
 
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(

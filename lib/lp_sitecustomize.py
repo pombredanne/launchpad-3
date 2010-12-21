@@ -92,6 +92,17 @@ def silence_warnings():
         module="Crypto")
 
 
+def customize_logger():
+    """Customize the logging system.
+
+    This function is also invoked by the test infrastructure to reset
+    logging between tests.
+    """
+    silence_bzr_logger()
+    silence_zcml_logger()
+    silence_transaction_logger()
+
+
 def main(instance_name):
     # This is called by our custom buildout-generated sitecustomize.py
     # in parts/scripts/sitecustomize.py. The instance name is sent to
@@ -115,6 +126,4 @@ def main(instance_name):
     grouper = type(list(itertools.groupby([0]))[0][1])
     checker.BasicTypes[grouper] = checker._iteratorChecker
     silence_warnings()
-    silence_bzr_logger()
-    silence_zcml_logger()
-    silence_transaction_logger()
+    customize_logger()

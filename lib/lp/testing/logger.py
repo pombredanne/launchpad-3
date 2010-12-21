@@ -4,7 +4,9 @@
 """Frequently-used logging utilities for test suite."""
 
 __metaclass__ = type
-__all__ = ['MockLogger']
+__all__ = [
+    'MockLogger',
+    ]
 
 import logging
 import sys
