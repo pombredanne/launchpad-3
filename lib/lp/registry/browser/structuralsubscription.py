@@ -23,13 +23,14 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    stepthrough,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -44,14 +45,29 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
 from lp.services.propertycache import cachedproperty
 
 
+class StructuralSubscriptionNavigation(Navigation):
+
+    usedfor = IStructuralSubscription
+
+    @stepthrough("+filter")
+    def bug_filter(self, filter_id):
+        bug_filter_id = int(filter_id)
+        for bug_filter in self.context.bug_filters:
+            if bug_filter.id == bug_filter_id:
+                return bug_filter
+        return None
+
+
 class StructuralSubscriptionView(LaunchpadFormView,
                                  AdvancedSubscriptionMixin):
+
     """View class for structural subscriptions."""
 
     schema = IStructuralSubscriptionForm
