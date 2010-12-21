@@ -76,7 +76,7 @@ class TestGroupCommentsWithActivities(TestCase):
             [], self.group(comments=[], activities=[]))
 
     def test_activity_empty_no_common_actor(self):
-        # When no activities is passed in, and the comments passed in don't
+        # When no activities are passed in, and the comments passed in don't
         # have any common actors, no grouping is possible.
         comments = [
             BugCommentStub(next(self.timestamps))
