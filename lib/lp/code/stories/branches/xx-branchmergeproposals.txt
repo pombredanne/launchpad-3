@@ -47,16 +47,7 @@ is `Propose for merging`.
 Registering a merge proposal
 ----------------------------
 
-Users who are not logged on do not see the link to register.
-
-    >>> anon_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Propose for merging')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Logged in users can.
+Logged in users can register a merge proposal.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(

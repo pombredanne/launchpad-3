@@ -173,6 +173,7 @@ class TestLinkifyingProtocols(TestCase):
             'http://example.com/path_(with_parens)',
             '(http://example.com/path_(with_parens))',
             '(http://example.com/path_(with_parens)and_stuff)',
+            'http://example.com/path_(with_parens',
             ]
 
         expected_html = [
@@ -190,6 +191,10 @@ class TestLinkifyingProtocols(TestCase):
              'href="http://example.com/path_(with_parens)and_stuff">'
              'http://<wbr></wbr>example.<wbr></wbr>com'
              '/path_<wbr></wbr>(with_parens)<wbr></wbr>and_stuff</a>)</p>'),
+            ('<p><a rel="nofollow" '
+             'href="http://example.com/path_(with_parens">'
+             'http://<wbr></wbr>example.<wbr></wbr>com'
+             '/path_<wbr></wbr>(with_parens</a></p>'),           
             ]
 
         self.assertEqual(
