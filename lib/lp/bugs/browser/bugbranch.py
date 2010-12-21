@@ -115,8 +115,9 @@ class BugBranchView(LaunchpadView):
     @property
     def show_branch_status(self):
         """Show the branch status if merged and there are no proposals."""
+        lifecycle_status = self.context.branch.lifecycle_status
         return (len(self.merge_proposals) == 0 and
-                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
+                lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -163,4 +164,3 @@ class BugBranchXHTMLRepresentation:
         branch_view = getMultiAdapter(
             (self.branch, self.request), name="+bug-branch")
         return branch_view()
-
