@@ -699,8 +699,8 @@ First, we rebuild and examinate the caches for Celso's PPA.
 
     # Helper functions for completing rebuilding and dumping cache
     # contents for a given Archive.
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
+    >>> from lp.services.log.logger import BufferLogger
+    >>> logger = BufferLogger()
     >>> def rebuild_caches(archive):
     ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
     ...     ubuntu.updateCompleteSourcePackageCache(

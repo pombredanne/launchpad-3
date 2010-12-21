@@ -1367,7 +1367,7 @@ Set the entry to approved, which is only possible if we don't use setStatus.
     >>> removeSecurityProxy(entry).status = RosettaImportStatus.APPROVED
 
     >>> import logging
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.translations.scripts.po_import import TranslationsImport
 
     >>> script = TranslationsImport('poimport', test_args=[])

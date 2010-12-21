@@ -422,6 +422,8 @@ active members of the team so that we can perform the merge.
     >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
     >>> for team in test_team.super_teams:
     ...     test_team.retractTeamMembership(team, test_team.teamowner)
+
+
     >>> personset.merge(test_team, landscape)
 
     # The resulting Landscape-developers no new super teams and its
@@ -432,3 +434,17 @@ active members of the team so that we can perform the merge.
     [u'salgado', u'name12']
     >>> [team.name for team in landscape.super_teams]
     []
+
+A person with a PPA can't be merged.
+
+    >>> person_with_ppa = factory.makePerson()
+    >>> other_person = factory.makePerson()
+    >>> archive = person_with_ppa.createPPA()
+    >>> email = IMasterObject(person_with_ppa.preferredemail)
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> email.destroySelf()
+    >>> transaction.commit()
+    >>> personset.merge(person_with_ppa, other_person)
+    Traceback (most recent call last):
+    ...
+    AssertionError: from_person has a ppa in ACTIVE or DELETING status
