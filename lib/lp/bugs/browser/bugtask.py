@@ -818,15 +818,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def interesting_activity(self):
         """A sequence of interesting bug activity."""
+        bug_change_re = (
+            'affects|description|security vulnerability|'
+            'summary|tags|visibility')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
-        interesting_expressions = [
-             'affects', 'description', 'security vulnerability',
-             'summary', 'tags', 'visibility', bugtask_change_re]
-        interesting_expression = "|".join(interesting_expressions)
         interesting_match = re.compile(
-            "^(%s)$" % interesting_expression).match
+            "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
         return tuple(
             BugActivityItem(activity)
             for activity in self.context.bug.activity
