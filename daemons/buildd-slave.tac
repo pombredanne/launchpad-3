@@ -1,8 +1,6 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
-
 # Buildd Slave implementation
 # XXX: dsilvers: 2005/01/21: Currently everything logged in the slave gets
 # passed through to the twistd log too. this could get dangerous/big
