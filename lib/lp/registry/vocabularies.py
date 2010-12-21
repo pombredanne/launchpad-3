@@ -245,6 +245,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
+        # Product names are always lowercase.
+        token = token.lower()
         product = self._table.selectOneBy(name=token, active=True)
         if product is None:
             raise LookupError(token)
