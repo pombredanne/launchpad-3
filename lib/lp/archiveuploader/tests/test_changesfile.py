@@ -9,7 +9,6 @@ import os
 
 from debian.deb822 import Changes
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
@@ -25,6 +24,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadError,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 

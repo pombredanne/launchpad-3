@@ -17,6 +17,8 @@ from difflib import unified_diff
 import unittest
 
 import pytz
+from soupmatchers import HTMLContains, Tag
+from testtools.matchers import Not
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
@@ -349,10 +351,10 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+class TestRegisterBranchMergeProposalView(BrowserTestCase):
     """Test the merge proposal registration view."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -522,6 +524,15 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
+
+    def test_register_reviewer_not_hidden(self):
+        branch = self.factory.makeBranch()
+        browser = self.getViewBrowser(branch, '+register-merge')
+        extra = Tag(
+            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
+        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
+        matcher = Not(HTMLContains(reviewer.within(extra)))
+        self.assertThat(browser.contents, matcher)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):

@@ -208,10 +208,11 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
-    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+    links = [
+        'editdescription', 'markduplicate', 'visibility', 'addupstream',
+        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -504,9 +505,10 @@ class BugViewMixin:
         """Get a dict of attachment type -> attachments list."""
         # Note that this is duplicated with get_comments_for_bugtask
         # if you are looking to consolidate things.
-        result = {BugAttachmentType.PATCH: [],
-                  'other': []
-        }
+        result = {
+            BugAttachmentType.PATCH: [],
+            'other': [],
+            }
         for attachment in self.context.attachments_unpopulated:
             info = {
                 'attachment': attachment,
@@ -634,7 +636,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
-    field_names = ['title', 'description', 'tags', 'name']
+    field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
     next_url = None

@@ -8,7 +8,7 @@ the updateBugTrackers() method.
     >>> from canonical.database.sqlbase import (
     ...     cursor, sqlvalues, ZopelessTransactionManager)
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 We'll update all bugtrackers so that the test doesn't try to make any

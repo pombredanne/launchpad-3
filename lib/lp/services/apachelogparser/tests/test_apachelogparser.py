@@ -13,7 +13,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -33,6 +32,7 @@ from lp.services.apachelogparser.base import (
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 

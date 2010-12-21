@@ -297,7 +297,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                judgejudy.judgeAndDominate(distroseries, pocket, self._config)
+                judgejudy.judgeAndDominate(distroseries, pocket)
 
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""

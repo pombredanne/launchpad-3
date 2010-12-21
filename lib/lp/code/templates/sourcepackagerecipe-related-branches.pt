@@ -1,0 +1,66 @@
+<fieldset id="related-branches"
+              class="collapsible collapsed"
+              tal:define="seriesBranches view/related_series_branches;
+                          packageBranches view/related_package_branches"
+              tal:condition="python: seriesBranches or packageBranches">
+  <legend>Related Branches</legend>
+  <table class="extra-options">
+
+    <table class="listing" id="related-package-branches-listing"
+        tal:condition="packageBranches">
+      <thead>
+        <tr>
+          <th>Source Package Branches</th>
+          <th>Source Package</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="branch packageBranches">
+          <td width="60%">
+            <a href="#"
+               tal:content="branch/displayname"
+               tal:attributes="href branch/fmt:url">
+              source package branch
+            </a>
+          </td>
+          <td>
+            <a href="#"
+               tal:attributes="href branch/sourcepackage/fmt:url"
+               tal:content="branch/sourcepackagename/name">
+              source package
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="listing" id="related-series-branches-listing"
+        tal:condition="seriesBranches">
+      <thead>
+        <tr>
+          <th>Product Series Branches</th>
+          <th>Owner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="branch seriesBranches">
+          <td width="60%">
+            <a href="#"
+               tal:content="branch/displayname"
+               tal:attributes="href branch/fmt:url">
+              product series branch
+            </a>
+          </td>
+          <td>
+            <a href="#"
+               tal:content="branch/owner/displayname"
+               tal:attributes="href branch/owner/fmt:url">
+              owner
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </table>
+</fieldset>
