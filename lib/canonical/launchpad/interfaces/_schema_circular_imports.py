@@ -420,6 +420,8 @@ patch_reference_property(IPackageUpload, 'archive', IArchive)
 # IStructuralSubscription
 patch_collection_property(
     IStructuralSubscription, 'bug_filters', IBugSubscriptionFilter)
+patch_entry_return_type(
+    IStructuralSubscription, "newBugFilter", IBugSubscriptionFilter)
 patch_reference_property(
     IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
 
