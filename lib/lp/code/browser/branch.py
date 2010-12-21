@@ -331,7 +331,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging'
         enabled = (
