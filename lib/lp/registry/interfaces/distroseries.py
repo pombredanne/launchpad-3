@@ -259,7 +259,6 @@ class IDistroSeriesPublic(
             description=_("The mailing list or other e-mail address that "
                           "Launchpad should notify about new uploads."),
             constraint=email_validator))
-    lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
         title=_("Defer translation imports"),
