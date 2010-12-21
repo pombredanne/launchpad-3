@@ -134,6 +134,7 @@ class IStructuralSubscription(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
+    @export_factory_operation(Interface, [])
     def newBugFilter():
         """Returns a new `BugSubscriptionFilter` for this subscription."""
 

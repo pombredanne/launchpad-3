@@ -25,6 +25,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import patch_entry_return_type
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -95,3 +96,7 @@ class IBugSubscriptionFilter(
     IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
     """A bug subscription filter."""
     export_as_webservice_entry()
+
+
+patch_entry_return_type(
+    IStructuralSubscription, "newBugFilter", IBugSubscriptionFilter)
