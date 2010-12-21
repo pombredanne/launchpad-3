@@ -52,7 +52,7 @@ page.
     ...     """Print all the comments on the page."""
     ...     comment_divs = find_tags_by_class(page, 'boardComment')
     ...     for div_tag in comment_divs[subset]:
-    ...         print extract_text(div_tag).replace("&\x238594;", "=>")
+    ...         print extract_text(div_tag).replace("&#8594;", "=>")
     ...         print '-' * 8
 
     >>> user_browser.open(
