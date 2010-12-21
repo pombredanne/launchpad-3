@@ -457,7 +457,9 @@ class FormattersAPI:
          )
       ) |
       (?P<bug>
-        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)+
+        \bbug(?:[\s=-]|<br\s*/>)*
+            (?:(?:(?:\#|report|number|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)+)|
+            (?:(?:\s\#)?(?:[\s=-]|<br\s*/>)*))
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
