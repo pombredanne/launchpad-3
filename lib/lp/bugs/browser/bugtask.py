@@ -825,13 +825,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
              'affects', 'description', 'security vulnerability',
              'summary', 'tags', 'visibility', bugtask_change_re]
         interesting_expression = "|".join(interesting_expressions)
-        interesting_regex = re.compile("^(%s)$" % interesting_expression)
-        p_interesting = lambda activity: (
-            interesting_regex.match(activity.whatchanged) is not None)
+        interesting_match = re.compile(
+            "^(%s)$" % interesting_expression).match
         return tuple(
             BugActivityItem(activity)
             for activity in self.context.bug.activity
-            if p_interesting(activity))
+            if interesting_match(activity.whatchanged) is not None)
 
     @cachedproperty
     def activity_and_comments(self):
