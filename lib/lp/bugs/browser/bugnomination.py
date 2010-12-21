@@ -70,7 +70,7 @@ class BugNominationView(LaunchpadFormView):
             # been reported yet.
             raise NotFound(self.current_bugtask, '+nominate', self.request)
         LaunchpadFormView.initialize(self)
-        # Update the submit label to based on the user's permission.
+        # Update the submit label based on the user's permission.
         submit_action = self.__class__.actions.byname['actions.submit']
         if self.userIsReleaseManager():
             submit_action.label = _("Target")
