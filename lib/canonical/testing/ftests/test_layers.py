@@ -1,13 +1,17 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """ Test layers
 
 Note that many tests are performed at run time in the layers themselves
 to confirm that the environment hasn't been corrupted by tests
 """
+
 __metaclass__ = type
 
+from contextlib import nested
 from cStringIO import StringIO
 import os
 import signal
@@ -16,6 +20,7 @@ from cStringIO import StringIO
 from urllib import urlopen
 
 from fixtures import (
+    Fixture,
     EnvironmentVariableFixture,
     TestWithFixtures,
     )
@@ -48,30 +53,69 @@ from canonical.testing.layers import (
 from lp.services.memcache.client import memcache_client_factory
 
 
+class BaseLayerIsolator(Fixture):
+    """A fixture for isolating BaseLayer.
+    
+    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
+    which makes tests within layers unable to test that easily.
+    """
+
+    def __init__(self, with_persistent=False):
+        """Create a BaseLayerIsolator.
+
+        :param with_persistent: If True LP_PERSISTENT_TEST_SERVICES will
+            be enabled during setUp.
+        """
+        super(BaseLayerIsolator, self).__init__()
+        self.with_persistent = with_persistent
+
+    def setUp(self):
+        super(BaseLayerIsolator, self).setUp()
+        if self.with_persistent:
+            env_value = ''
+        else:
+            env_value = None
+        self.useFixture(EnvironmentVariableFixture(
+            'LP_PERSISTENT_TEST_SERVICES', env_value))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+
+
+class LayerFixture(Fixture):
+    """Adapt a layer to a fixture.
+
+    Note that the layer setup/teardown are called, not the base class ones.
+
+    :ivar layer: The adapted layer.
+    """
+
+    def __init__(self, layer):
+        """Create a LayerFixture.
+
+        :param layer: The layer to use.
+        """
+        super(LayerFixture, self).__init__()
+        self.layer = layer
+
+    def setUp(self):
+        super(LayerFixture, self).setUp()
+        self.layer.setUp()
+        self.addCleanup(self.layer.tearDown)
+
+
 class TestBaseLayer(testtools.TestCase, TestWithFixtures):
 
     def test_allocates_LP_TEST_INSTANCE(self):
-        self.useFixture(
-            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
-        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
-        layer = BaseLayer
-        layer.setUp()
-        try:
-            self.assertEqual(str(os.getpid()), os.environ.get('LP_TEST_INSTANCE'))
-        finally:
-            layer.tearDown()
+        self.useFixture(BaseLayerIsolator())
+        with LayerFixture(BaseLayer):
+            self.assertEqual(
+                str(os.getpid()),
+                os.environ.get('LP_TEST_INSTANCE'))
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
 
     def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
-        self.useFixture(
-            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES', ''))
-        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
-        layer = BaseLayer
-        layer.setUp()
-        try:
+        self.useFixture(BaseLayerIsolator())
+        with LayerFixture(BaseLayer):
             self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
-        finally:
-            layer.tearDown()
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
 
     def test_generates_unique_config(self):
@@ -81,14 +125,10 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
             EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
         self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
         self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
-        layer = BaseLayer
-        layer.setUp()
-        try:
+        with LayerFixture(BaseLayer):
             self.assertEqual(
                 'testrunner_%s' % os.environ['LP_TEST_INSTANCE'],
                 config.instance_name)
-        finally:
-            layer.tearDown()
         self.assertEqual(orig_instance, config.instance_name)
 
     def test_generates_unique_config_dirs(self):
@@ -96,9 +136,7 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
             EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
         self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
         self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
-        layer = BaseLayer
-        layer.setUp()
-        try:
+        with LayerFixture(BaseLayer):
             runner_root = 'configs/%s' % config.instance_name
             runner_appserver_root = 'configs/testrunner-appserver_%s' % \
                 os.environ['LP_TEST_INSTANCE']
@@ -106,8 +144,6 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
                 runner_root + '/launchpad-lazr.conf'))
             self.assertTrue(os.path.isfile(
                 runner_appserver_root + '/launchpad-lazr.conf'))
-        finally:
-            layer.tearDown()
         self.assertFalse(os.path.exists(runner_root))
         self.assertFalse(os.path.exists(runner_appserver_root))
 
@@ -244,6 +280,37 @@ class LibrarianTestCase(BaseTestCase):
         data = 'This is a test'
         client.remoteAddFile(
             'foo.txt', len(data), StringIO(data), 'text/plain')
+
+
+class LibrarianLayerTest(testtools.TestCase, TestWithFixtures):
+
+    def test_makes_unique_instance(self):
+        # Capture the original settings
+        default_root = config.librarian_server.root
+        download_port = config.librarian.download_port
+        restricted_download_port = config.librarian.restricted_download_port
+        self.useFixture(BaseLayerIsolator())
+        with nested(
+            LayerFixture(BaseLayer),
+            LayerFixture(DatabaseLayer),
+            ):
+            with LayerFixture(LibrarianLayer):
+                active_root = config.librarian_server.root
+                # The config settings have changed:
+                self.assertNotEqual(default_root, active_root)
+                self.assertNotEqual(
+                    download_port, config.librarian.download_port)
+                self.assertNotEqual(
+                    restricted_download_port,
+                    config.librarian.restricted_download_port)
+                self.assertTrue(os.path.exists(active_root))
+            # This needs more sophistication in the config system (tearDown on
+            # the layer needs to pop the config fragment off of disk - and
+            # perhaps notify other processes that its done this. So for now we
+            # leave the new config in place).
+            # self.assertEqual(default_root, config.librarian_server.root)
+            # The working dir has to have been deleted.
+            self.assertFalse(os.path.exists(active_root))
 
 
 class LibrarianNoResetTestCase(testtools.TestCase):

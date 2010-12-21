@@ -124,7 +124,7 @@ from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
-from canonical.librarian.testing.server import LibrarianTestSetup
+from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -820,13 +820,17 @@ class LibrarianLayer(DatabaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        cls.librarian_fixture = LibrarianTestSetup()
+        cls.librarian_fixture = LibrarianServerFixture()
         cls.librarian_fixture.setUp()
+        BaseLayer.config.add_section(cls.librarian_fixture.service_config)
+        config.reloadConfig()
         cls._check_and_reset()
 
     @classmethod
     @profiled
     def tearDown(cls):
+        # Permit multiple teardowns while we sort out the layering
+        # responsibilities : not desirable though.
         if cls.librarian_fixture is None:
             return
         try:

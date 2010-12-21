@@ -581,6 +581,6 @@ button will be disabled.
 
 == Clean up ==
 
-  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()
 

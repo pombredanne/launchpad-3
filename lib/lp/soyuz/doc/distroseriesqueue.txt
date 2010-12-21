@@ -1025,8 +1025,8 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-   >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()
 
 
 == Delayed copies ==
