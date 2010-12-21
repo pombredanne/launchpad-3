@@ -142,8 +142,8 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([activity1, activity2], comment.activity)
 
     def test_common_actor_over_a_prolonged_time(self):
-        # There is a timeframe for grouping events. Anything outside of that
-        # window is considered separate.
+        # There is a timeframe for grouping events, 5 minutes by default.
+        # Anything outside of that window is considered separate.
         actor = PersonStub()
         activities = [
             BugActivityStub(next(self.timestamps), actor)
