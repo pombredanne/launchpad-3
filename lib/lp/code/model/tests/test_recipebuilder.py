@@ -18,7 +18,6 @@ import transaction
 from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
@@ -35,6 +34,7 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )

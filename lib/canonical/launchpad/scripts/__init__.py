@@ -12,9 +12,6 @@ __all__ = [
     'log',
     'logger',
     'logger_options',
-    'BufferLogger',
-    'FakeLogger',
-    'QuietFakeLogger',
     'WatchedFileHandler',
     ]
 
@@ -34,12 +31,9 @@ from canonical import lp
 from canonical.config import config
 # these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
-    BufferLogger,
-    FakeLogger,
     log,
     logger,
     logger_options,
-    QuietFakeLogger,
     )
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler

@@ -13,16 +13,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import (
-    BufferLogger,
-    QuietFakeLogger,
-    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
@@ -83,7 +80,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         if test_args is None:
             test_args = []
         script = ArchivePopulator("test copy archives", test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = self.layer.txn
         return script
 
