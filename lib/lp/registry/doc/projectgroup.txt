@@ -23,7 +23,7 @@ common external bug tracker.
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> logout()
     >>> login('test@canonical.com')
-    >>> transaction.commit()    
+    >>> transaction.commit()
 
 Creating new projects
 ---------------------
@@ -121,8 +121,9 @@ The products which are part of a given project are given by a project's
 .products property. Note that only active products are included and they're
 ordered by their names.
 
-    >>> [product.name for product in gnome.products]
-    [u'evolution', u'gnome-terminal', u'applets', u'netapplet', u'gnomebaker']
+    >>> [product.displayname for product in gnome.products]
+    [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'NetApplet',
+     u'gnomebaker']
 
     >>> netapplet = gnome.getProduct('netapplet')
 
@@ -131,8 +132,8 @@ ordered by their names.
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> flush_database_updates()
-    >>> [product.name for product in gnome.products]
-    [u'evolution', u'gnome-terminal', u'applets', u'gnomebaker']
+    >>> [product.displayname for product in gnome.products]
+    [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'gnomebaker']
 
     # Re-activate netapplet so that we don't interfere in other tests below.
     >>> netapplet.active = True
