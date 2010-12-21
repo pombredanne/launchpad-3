@@ -137,11 +137,11 @@ neither any milestones.
     ...     print '%s %s' % (
     ...         product.name,
     ...         [milestone.title for milestone in product.all_milestones])
-    applets []
     evolution [u'Evolution 2.1.6']
     gnome-terminal []
-    gnomebaker []
+    applets []
     netapplet [u'NetApplet 1.0']
+    gnomebaker []
     >>> print [milestone.title for milestone in gnome.all_milestones]
     [u'GNOME 2.1.6', u'GNOME 1.0']
 
@@ -262,11 +262,11 @@ Gnome project has yet any specifications.
 
     >>> for product in gnome.products:
     ...     print product.name, list(product.all_specifications)
-    applets []
     evolution []
     gnome-terminal []
-    gnomebaker []
+    applets []
     netapplet []
+    gnomebaker []
     >>> print list(gnome.getMilestone('1.1').specifications)
     []
 

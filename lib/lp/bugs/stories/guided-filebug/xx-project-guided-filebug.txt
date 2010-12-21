@@ -267,38 +267,3 @@ to file a bug:
     >>> user_browser.getLink('File a bug here').click()
     >>> user_browser.url
     'http://launchpad.dev/ubuntu/+source/thunderbird/+filebug'
-
-If we add a second product to the project, this too will be shown on the
-filebug page:
-
-    >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl(name='field.name', index=0).value = 'second-test'
-    >>> admin_browser.getControl(name='field.displayname').value = 'Another product'
-    >>> admin_browser.getControl(name='field.title').value = 'For Testing'
-    >>> admin_browser.getControl(name='field.summary').value = 'Used for testing'
-    >>> admin_browser.getControl('Continue').click()
-    >>> print admin_browser.url
-    http://launchpad.dev/test-group/+newproduct
-
-    >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl('Complete Registration').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/second-test'
-
-    >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...     'product-list-summary'))
-    There are 2 projects registered as part of Test Group but none of them use
-    Launchpad as their bug tracker.
-
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'product-bug-options'):
-    ...     print extract_text(tag)
-    Another product
-    Another product does not use an external bug tracker or has not registered
-    it with launchpad.
-    Another product is not registered with any source packages. You can help
-    by linking them for us.
-    Testy Product
-    External bug tracker: Debian Bug tracker.
-    Source package: Ubuntu thunderbird (File a bug here)

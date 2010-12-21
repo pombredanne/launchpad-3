@@ -122,7 +122,7 @@ The products which are part of a given project are given by a project's
 ordered by their names.
 
     >>> [product.name for product in gnome.products]
-    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+    [u'evolution', u'gnome-terminal', u'applets', u'netapplet', u'gnomebaker']
 
     >>> netapplet = gnome.getProduct('netapplet')
 
@@ -132,7 +132,7 @@ ordered by their names.
     >>> netapplet.active = False
     >>> flush_database_updates()
     >>> [product.name for product in gnome.products]
-    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+    [u'evolution', u'gnome-terminal', u'applets', u'gnomebaker']
 
     # Re-activate netapplet so that we don't interfere in other tests below.
     >>> netapplet.active = True
