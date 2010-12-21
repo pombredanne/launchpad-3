@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
     cleanup_unpacked_dir,
@@ -24,6 +23,7 @@ from lp.archiveuploader.tests import (
     )
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import SourcePackageFormat
 from lp.testing import (
     TestCase,
@@ -124,7 +124,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
 
         class Changes:
             architectures = ['source']
-        logger = QuietFakeLogger()
+        logger = BufferLogger()
         policy = BuildDaemonUploadPolicy()
         policy.distroseries = self.factory.makeDistroSeries()
         policy.archive = self.factory.makeArchive()

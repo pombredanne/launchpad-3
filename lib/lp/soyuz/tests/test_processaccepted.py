@@ -8,10 +8,10 @@ from cStringIO import StringIO
 from debian.deb822 import Changes
 
 from canonical.config import config
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -43,7 +43,7 @@ class TestProcessAccepted(TestCaseWithFactory):
             test_args = []
         test_args.append(self.distro.name)
         script = ProcessAccepted("process accepted", test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = self.layer.txn
         return script
 
