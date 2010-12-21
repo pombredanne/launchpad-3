@@ -47,17 +47,6 @@
              Foo Bar
           </a>.
         </p>
-
-        <p tal:condition="not:view/getReleaseManager"
-           tal:define="release_context view/getReleaseContext">
-          There is no
-          <span tal:condition="not:view/userCanChangeDriver"
-                tal:content="string:release manager for ${release_context/displayname}"
-          /><a tal:condition="view/userCanChangeDriver"
-             tal:attributes="href string:${release_context/fmt:url}/+driver"
-             tal:content="string:release manager for ${release_context/displayname}"/>.
-        </p>
-
       </div>
 
     </div>

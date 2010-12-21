@@ -1,4 +1,5 @@
-= Nominating a bug for a product series =
+Nominating a bug for a product series
+=====================================
 
 A bug can be nominated for a product series.
 

@@ -90,7 +90,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
             self.bug_task, self.bug_task_before_modification,
             ['assignee'], user=self.user))
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications([latest_notification])
+        notifications, messages = construct_email_notifications(
+            [latest_notification])
         self.assertEqual(len(notifications), 1,
                          'email notication not created')
         receivers = [message['To'] for message in messages]
@@ -106,8 +107,9 @@ class TestAssignmentNotification(TestCaseWithFactory):
             self.bug_task, self.bug_task_before_modification,
             ['assignee'], user=self.user))
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications([latest_notification])
-        self.assertEqual(len(notifications), 1, 
+        notifications, messages = construct_email_notifications(
+            [latest_notification])
+        self.assertEqual(len(notifications), 1,
                          'email notification not created')
         receivers = [message['To'] for message in messages]
         self.assertFalse(self.team_member_email in receivers,

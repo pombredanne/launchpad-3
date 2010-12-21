@@ -1,4 +1,5 @@
-= Anonymous Nomination of Bugs for Release =
+Anonymous Nomination of Bugs for Release
+========================================
 
 Anonymous users should not be able to nominate bugs for release because
 launchpad.Edit permission is required to do so.:
