@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
@@ -28,6 +27,7 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.soyuz.enums import (
@@ -61,7 +61,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         if test_args is None:
             test_args = []
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = self.layer.txn
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)

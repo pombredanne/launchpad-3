@@ -22,7 +22,6 @@ import transaction
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.testing.layers import (
     AppServerLayer,
@@ -34,20 +33,11 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing.factory import LaunchpadObjectFactory
 
 
 factory = LaunchpadObjectFactory()
-
-
-class CapturingLogger(FakeLogger):
-    def __init__(self):
-        self.io = StringIO()
-
-    def message(self, prefix, *stuff, **kws):
-        # XXX BarryWarsaw 25-Nov-2008 (bug=302183). FakeLogger is broken.
-        fmt = stuff[0]
-        print >> self.io, prefix, fmt % stuff[1:]
 
 
 class BaseMailingListImportTest(unittest.TestCase):
@@ -67,7 +57,7 @@ class BaseMailingListImportTest(unittest.TestCase):
         fd, self.filename = tempfile.mkstemp()
         os.close(fd)
         # A capturing logger.
-        self.logger = CapturingLogger()
+        self.logger = BufferLogger()
 
     def tearDown(self):
         try:
@@ -294,7 +284,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(self.logger.io.getvalue(), '')
+        self.assertEqual(self.logger.getLogBuffer(), '')
 
     def test_logging_extended(self):
         # Test that nothing gets logged when all imports are fine.
@@ -307,12 +297,12 @@ class TestMailingListImports(BaseMailingListImportTest):
             'elly.person@example.com (Elly Q. Person)',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
-            'INFO anne.person@example.com (anne) joined and subscribed\n'
-            'INFO bperson@example.org (bart) joined and subscribed\n'
-            'INFO cris.person@example.com (cris) joined and subscribed\n'
-            'INFO dperson@example.org (dave) joined and subscribed\n'
-            'INFO elly.person@example.com (elly) joined and subscribed\n')
+            self.logger.getLogBuffer(),
+            'INFO: anne.person@example.com (anne) joined and subscribed\n'
+            'INFO: bperson@example.org (bart) joined and subscribed\n'
+            'INFO: cris.person@example.com (cris) joined and subscribed\n'
+            'INFO: dperson@example.org (dave) joined and subscribed\n'
+            'INFO: elly.person@example.com (elly) joined and subscribed\n')
 
     def test_logging_with_non_persons(self):
         # Test that non-persons that were not imported are logged.
@@ -329,15 +319,15 @@ class TestMailingListImports(BaseMailingListImportTest):
             'hperson@example.org',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
-            'INFO anne.person@example.com (anne) joined and subscribed\n'
-            'INFO bperson@example.org (bart) joined and subscribed\n'
-            'INFO cris.person@example.com (cris) joined and subscribed\n'
-            'INFO dperson@example.org (dave) joined and subscribed\n'
-            'INFO elly.person@example.com (elly) joined and subscribed\n'
-            'ERROR No person for address: fperson@example.org\n'
-            'ERROR No person for address: gwen.person@example.com\n'
-            'ERROR No person for address: hperson@example.org\n')
+            self.logger.getLogBuffer(),
+            'INFO: anne.person@example.com (anne) joined and subscribed\n'
+            'INFO: bperson@example.org (bart) joined and subscribed\n'
+            'INFO: cris.person@example.com (cris) joined and subscribed\n'
+            'INFO: dperson@example.org (dave) joined and subscribed\n'
+            'INFO: elly.person@example.com (elly) joined and subscribed\n'
+            'ERROR: No person for address: fperson@example.org\n'
+            'ERROR: No person for address: gwen.person@example.com\n'
+            'ERROR: No person for address: hperson@example.org\n')
 
     def test_logging_with_invalid_emails(self):
         # Test that invalid emails that were not imported are logged.
@@ -354,12 +344,12 @@ class TestMailingListImports(BaseMailingListImportTest):
             'elly.person@example.com',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
-            'ERROR No valid email for address: anne.x.person@example.net\n'
-            'INFO bperson@example.org (bart) joined and subscribed\n'
-            'INFO cris.person@example.com (cris) joined and subscribed\n'
-            'INFO dperson@example.org (dave) joined and subscribed\n'
-            'INFO elly.person@example.com (elly) joined and subscribed\n')
+            self.logger.getLogBuffer(),
+            'ERROR: No valid email for address: anne.x.person@example.net\n'
+            'INFO: bperson@example.org (bart) joined and subscribed\n'
+            'INFO: cris.person@example.com (cris) joined and subscribed\n'
+            'INFO: dperson@example.org (dave) joined and subscribed\n'
+            'INFO: elly.person@example.com (elly) joined and subscribed\n')
 
     def test_import_existing_with_nonascii_name(self):
         # Make sure that a person with a non-ascii name, who's already a
@@ -373,12 +363,12 @@ class TestMailingListImports(BaseMailingListImportTest):
             'bperson@example.org',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
-            'ERROR \xe1\xba\xa2nn\xe1\xba\xbf '
+            self.logger.getLogBuffer(),
+            'ERROR: \xe1\xba\xa2nn\xe1\xba\xbf '
             'P\xe1\xbb\x85rs\xe1\xbb\x91n is already subscribed '
             'to list Aardvarks\n'
-            'INFO anne.person@example.com (anne) joined and subscribed\n'
-            'INFO bperson@example.org (bart) joined and subscribed\n')
+            'INFO: anne.person@example.com (anne) joined and subscribed\n'
+            'INFO: bperson@example.org (bart) joined and subscribed\n')
 
 
 class TestMailingListImportScript(BaseMailingListImportTest):

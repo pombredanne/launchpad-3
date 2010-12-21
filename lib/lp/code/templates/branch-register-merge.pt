@@ -20,6 +20,14 @@
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 
+            <tal:widget define="widget nocall:view/widgets/reviewer">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+
+            <tal:widget define="widget nocall:view/widgets/review_type">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+
             <td colspan="2">
               <fieldset id="mergeproposal-extra-options"
                         class="collapsible collapsed">
@@ -27,14 +35,6 @@
                 <table class="extra-options">
 
                   <tal:widget define="widget nocall:view/widgets/commit_message">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
-
-                  <tal:widget define="widget nocall:view/widgets/reviewer">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
-
-                  <tal:widget define="widget nocall:view/widgets/review_type">
                     <metal:block use-macro="context/@@launchpad_form/widget_row" />
                   </tal:widget>
 
