@@ -841,21 +841,22 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         then as if owned by the person who posted the first action
         that day.
 
-        If the number of comments exceeds the configured maximum limit,
-        the list will be truncated to just the first and last sets of
-        comments.  The division between the newest and oldest is marked
-        by an entry in the list with the key 'num_hidden' defined.
+        If the number of comments exceeds the configured maximum limit, the
+        list will be truncated to just the first and last sets of comments.
+
+        The division between the most recent and oldest is marked by an entry
+        in the list with the key 'num_hidden' defined.
         """
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
                < config.malone.comments_list_max_length)
 
-        newest_comments = self.visible_newest_comments_for_display
+        recent_comments = self.visible_recent_comments_for_display
         oldest_comments = self.visible_oldest_comments_for_display
 
         event_groups = group_comments_with_activity(
-            comments=chain(oldest_comments, newest_comments),
+            comments=chain(oldest_comments, recent_comments),
             activities=self.interesting_activity)
 
         def group_activities_by_target(activities):
@@ -899,17 +900,17 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         events = map(event_dict, event_groups)
 
         # Insert blank if we're showing only a subset of the comment list.
-        if len(newest_comments) > 0:
-            # Find first newest comment in the event list.
-            first_newest_comment = newest_comments[0]
+        if len(recent_comments) > 0:
+            # Find the oldest recent comment in the event list.
+            oldest_recent_comment = recent_comments[0]
             for index, event in enumerate(events):
-                if event.get("comment") is first_newest_comment:
+                if event.get("comment") is oldest_recent_comment:
                     num_hidden = (
                         len(self.visible_comments)
                         - len(oldest_comments)
-                        - len(newest_comments))
+                        - len(recent_comments))
                     separator = {
-                        'date': first_newest_comment.datecreated,
+                        'date': oldest_recent_comment.datecreated,
                         'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
@@ -943,14 +944,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             return self.visible_comments[:oldest_count]
 
     @cachedproperty
-    def visible_newest_comments_for_display(self):
-        """The list of newest visible comments to be rendered.
+    def visible_recent_comments_for_display(self):
+        """The list of recent visible comments to be rendered.
 
         If the number of comments is beyond the maximum threshold, this
-        returns the newest few comments.  If we're under the threshold,
-        then visible_oldest_comments_for_display will be returning the
-        bugs, so this routine will return an empty set to avoid
-        duplication.
+        returns the most recent few comments. If we're under the threshold,
+        then visible_oldest_comments_for_display will be returning the bugs,
+        so this routine will return an empty set to avoid duplication.
         """
         show_all = (self.request.form_ng.getOne('comments') == 'all')
         max_comments = config.malone.comments_list_max_length
