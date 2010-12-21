@@ -55,7 +55,7 @@ from lp.services.memcache.client import memcache_client_factory
 
 class BaseLayerIsolator(Fixture):
     """A fixture for isolating BaseLayer.
-    
+
     This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
     which makes tests within layers unable to test that easily.
     """
@@ -113,7 +113,7 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
 
     def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
-        self.useFixture(BaseLayerIsolator())
+        self.useFixture(BaseLayerIsolator(with_persistent=True))
         with LayerFixture(BaseLayer):
             self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))

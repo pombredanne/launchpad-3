@@ -822,7 +822,8 @@ class LibrarianLayer(DatabaseLayer):
                     )
         cls.librarian_fixture = LibrarianServerFixture()
         cls.librarian_fixture.setUp()
-        BaseLayer.config.add_section(cls.librarian_fixture.service_config)
+        BaseLayer.config_fixture.add_section(
+            cls.librarian_fixture.service_config)
         config.reloadConfig()
         cls._check_and_reset()
 
@@ -841,9 +842,8 @@ class LibrarianLayer(DatabaseLayer):
             try:
                 if not cls._reset_between_tests:
                     raise LayerInvariantError(
-                            "_reset_between_tests not reset before LibrarianLayer "
-                            "shutdown"
-                            )
+                        "_reset_between_tests not reset before "
+                        "LibrarianLayer shutdown")
             finally:
                 librarian.cleanUp()
 
