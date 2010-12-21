@@ -130,11 +130,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.poll import (
-    IPoll,
-    IPollOption,
-    IPollSubset,
-    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -508,7 +503,7 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
     usedfor = ISpecificationPublic
 
 
-class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+class EditSpecificationByRelatedPeople(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
     the spec target (distro/product) or goal (distroseries/productseries).
@@ -525,6 +520,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
+                user.isOneOfDrivers(self.obj.target) or
                 user.isOneOf(
                     self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
@@ -856,26 +852,6 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
-
-
-class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPoll
-
-
-class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollSubset
-
-
-class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOption
-
-    def checkAuthenticated(self, user):
-        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):

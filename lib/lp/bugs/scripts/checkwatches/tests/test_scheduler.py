@@ -15,13 +15,13 @@ from pytz import utc
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus,
     IBugWatchSet,
     )
 from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
 
@@ -37,7 +37,7 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         for watch in getUtility(IBugWatchSet).search():
             watch.next_check = datetime.now(utc)
         self.bug_watch = self.factory.makeBugWatch()
-        self.scheduler = BugWatchScheduler(QuietFakeLogger())
+        self.scheduler = BugWatchScheduler(BufferLogger())
         transaction.commit()
 
     def test_scheduler_schedules_unchecked_watches(self):

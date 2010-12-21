@@ -15,10 +15,10 @@ import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
     TestCaseWithFactory,

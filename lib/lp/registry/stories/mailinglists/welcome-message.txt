@@ -1,4 +1,5 @@
-= Customizing the welcome message =
+Customizing the welcome message
+===============================
 
 A team mailing list can have a custom welcome message.  The welcome message is
 customizable whether or not the mailing list is currently the team's contact
@@ -49,11 +50,12 @@ What if Mailman failed to apply the change?
     ...     MailingListStatus)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_list = removeSecurityProxy(mailing_list)
-    >>> removeSecurityProxy(mailing_list).status = MailingListStatus.MOD_FAILED
+    >>> removeSecurityProxy(
+    ...     mailing_list).status = MailingListStatus.MOD_FAILED
     >>> transaction.commit()
     >>> logout()
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'mailing_list_status_message').b)
+    ...     user_browser.contents, 'mailing_list_status_message').strong)
     This team's mailing list is in an inconsistent state...

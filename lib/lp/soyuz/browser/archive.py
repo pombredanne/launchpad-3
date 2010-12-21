@@ -916,8 +916,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         else:
             description = ''
 
-        if not (self.context.owner.is_probationary and self.context.is_ppa):
-            description = formatter(description).text_to_html()
+        if self.context.is_ppa:
+            description = formatter(description).text_to_html(
+                linkify_text=(not self.context.owner.is_probationary))
 
         return TextAreaEditorWidget(
             self.context,

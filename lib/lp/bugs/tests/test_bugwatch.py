@@ -27,7 +27,6 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.scripts.garbo import BugWatchActivityPruner
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -54,6 +53,7 @@ from lp.bugs.model.bugwatch import (
     )
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -622,7 +622,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         for i in range(MAX_SAMPLE_SIZE + 1):
             self.bug_watch.addActivity()
 
-        self.pruner = BugWatchActivityPruner(QuietFakeLogger())
+        self.pruner = BugWatchActivityPruner(BufferLogger())
         transaction.commit()
 
     def test_getPrunableBugWatchIds(self):

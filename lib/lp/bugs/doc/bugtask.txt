@@ -1183,7 +1183,7 @@ it can also be invoked directly.
 
     >>> from lp.bugs.scripts.bugtasktargetnamecaches import (
     ...     BugTaskTargetNameCacheUpdater)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> logger = FakeLogger()
     >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
     >>> updater.run()

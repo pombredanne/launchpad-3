@@ -17,7 +17,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     get_library_file_id,
     )
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessLayer,
@@ -26,6 +25,7 @@ from lp.services.apachelogparser.base import (
     get_method_and_path,
     parse_file,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 

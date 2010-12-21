@@ -193,13 +193,13 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
 def LaunchpadDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    # We need to select a non-load balancing DB policy for +opstats so
+    # We need to select a non-load balancing DB policy for some status URLs so
     # it doesn't query the DB for lag information (this page should not
     # hit the database at all). We haven't traversed yet, so we have
     # to sniff the request this way.  Even though PATH_INFO is always
     # present in real requests, we need to tread carefully (``get``) because
     # of test requests in our automated tests.
-    if request.get('PATH_INFO') == u'/+opstats':
+    if request.get('PATH_INFO') in [u'/+opstats', u'/+haproxy']:
         return DatabaseBlockedPolicy(request)
     elif is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)

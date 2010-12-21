@@ -43,6 +43,7 @@ from lp.code.mail.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
@@ -134,6 +135,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # its series.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(spb.distroseries.distribution, spb.distribution)
+
+    def test_current_component(self):
+        # Since recipes build only into PPAs, they always build in main.
+        # PPAs lack indices for other components.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual('main', spb.current_component.name)
 
     def test_is_private(self):
         # A source package recipe build is currently always public.
@@ -234,6 +241,18 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_makeDailyBuilds_logs_builds(self):
+        # If a logger is passed into the makeDailyBuilds method, each recipe
+        # that a build is requested for gets logged.
+        owner = self.factory.makePerson(name='eric')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True)
+        logger = BufferLogger()
+        SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual(
+            'DEBUG: Build for eric/funky-recipe requested\n',
+            logger.getLogBuffer())
 
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(
