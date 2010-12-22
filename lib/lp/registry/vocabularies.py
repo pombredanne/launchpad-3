@@ -1576,3 +1576,9 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     _table = SourcePackageName
     _orderBy = 'name'
     iterator = SourcePackageNameIterator
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # package names are always lowercase.
+        return super(SourcePackageNameVocabulary, self).getTermByToken(
+            token.lower())
