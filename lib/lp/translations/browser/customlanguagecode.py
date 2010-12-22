@@ -129,10 +129,10 @@ class CustomLanguageCodeView(LaunchpadView):
 
     @property
     def label(self):
-        target_title = self.context.translation_target.displayname
+        target_displayname = self.context.translation_target.displayname
         return smartquote(
             'Custom language code "%s" for %s' % (
-                self.context.language_code, target_title))
+                self.context.language_code, target_displayname))
 
 
 class CustomLanguageCodeRemoveView(LaunchpadFormView):
