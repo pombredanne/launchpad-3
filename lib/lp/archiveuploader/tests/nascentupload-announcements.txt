@@ -656,7 +656,7 @@ However, UTF-8 in the mail content is preserved.
   >>> bar_upload = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...         'suite/bar_1.0-10_utf8_changesfile/bar_1.0-10_source.changes'),
-  ...     anything_policy, DevNullLogger()
+  ...     anything_policy, DevNullLogger())
   >>> bar_upload.process()
 
   >>> bar_upload.logger = FakeLogger()

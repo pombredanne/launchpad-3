@@ -1373,10 +1373,10 @@ Set the entry to approved, which is only possible if we don't use setStatus.
     >>> script = TranslationsImport('poimport', test_args=[])
     >>> script.logger = FakeLogger()
     >>> script.main()
-    DEBUG Starting...
-    ERROR Entry is approved but has no place to import to.
+    DEBUG: Starting...
+    ERROR: Entry is approved but has no place to import to.
     ...
-    DEBUG Finished the import process.
+    DEBUG: Finished the import process.
 
     >>> print_import_failures(script)
     Entry is approved but has no place to import to.

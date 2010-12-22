@@ -247,8 +247,8 @@ tracker don't break the run for all bug trackers.
     >>> updater.external_bugtracker_to_return = (
     ...     BrokenOnInitExternalBugTracker)
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
-    INFO  1 projects using RT needing updating.
-    DEBUG Trying to update fooix
+    INFO:  1 projects using RT needing updating.
+    DEBUG: Trying to update fooix
     ERROR Unable to set remote_product for 'fooix': This here is an error
 
     >>> class BrokenOnGetRemoteProductExternalBugTracker(
@@ -259,10 +259,10 @@ tracker don't break the run for all bug trackers.
     >>> updater.external_bugtracker_to_return = (
     ...     BrokenOnGetRemoteProductExternalBugTracker)
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
-    INFO  1 projects using RT needing updating.
-    DEBUG Trying to update fooix
+    INFO:  1 projects using RT needing updating.
+    DEBUG: Trying to update fooix
     Initializing DB for bugs: [u'42'].
-    ERROR Unable to set remote_product for 'fooix': Didn't find bug 42.
+    ERROR: Unable to set remote_product for 'fooix': Didn't find bug 42.
 
 AssertionErrors are also handled.
 
@@ -273,7 +273,7 @@ AssertionErrors are also handled.
     >>> updater.external_bugtracker_to_return = (
     ...     RaisesAssertionErrorExternalBugTracker)
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
-    INFO  1 projects using RT needing updating.
-    DEBUG Trying to update fooix
-    ERROR Unable to set remote_product for 'fooix': True isn't False!
+    INFO:  1 projects using RT needing updating.
+    DEBUG: Trying to update fooix
+    ERROR: Unable to set remote_product for 'fooix': True isn't False!
 

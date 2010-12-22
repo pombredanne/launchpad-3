@@ -22,11 +22,11 @@ The no-operation use case, reflects the sampledata status.
     >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
     >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
     >>> death_row.reap(dry_run=True)
-    DEBUG 0 Sources
-    DEBUG 0 Binaries
-    INFO Removing 0 files marked for reaping
-    INFO Total bytes freed: 0
-    DEBUG Marking 0 condemned packages as removed.
+    DEBUG: 0 Sources
+    DEBUG: 0 Binaries
+    INFO: Removing 0 files marked for reaping
+    INFO: Total bytes freed: 0
+    DEBUG: Marking 0 condemned packages as removed.
 
 
 == Removal unreferenced packages ==
@@ -240,23 +240,23 @@ Run DeathRow against the current 'removable' context.
     >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
     >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
     >>> death_row.reap()
-    DEBUG 4 Sources
-    DEBUG 3 Binaries
+    DEBUG: 4 Sources
+    DEBUG: 3 Binaries
     ...
-    DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
-    DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    DEBUG: Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    DEBUG: Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
     ...
-    DEBUG Batch ...
-    INFO Removing 7 files marked for reaping
-    DEBUG Removing superseded/superseded_666.dsc from main
-    DEBUG Removing superseded-ignored/superseded-bin_666_i386.deb from main
-    DEBUG Removing stuck/stuck_666.dsc from main
-    DEBUG Removing obsolete/obsolete_666.dsc from main
-    DEBUG Removing obsolete-ignored/obsolete-bin_666_i386.deb from main
-    DEBUG Removing deleted/deleted_666.dsc from main
-    DEBUG Removing deleted-ignored/deleted-bin_666_i386.deb from main
-    INFO Total bytes freed: 7
-    DEBUG Marking 7 condemned packages as removed.
+    DEBUG: Batch ...
+    INFO: Removing 7 files marked for reaping
+    DEBUG: Removing superseded/superseded_666.dsc from main
+    DEBUG: Removing superseded-ignored/superseded-bin_666_i386.deb from main
+    DEBUG: Removing stuck/stuck_666.dsc from main
+    DEBUG: Removing obsolete/obsolete_666.dsc from main
+    DEBUG: Removing obsolete-ignored/obsolete-bin_666_i386.deb from main
+    DEBUG: Removing deleted/deleted_666.dsc from main
+    DEBUG: Removing deleted-ignored/deleted-bin_666_i386.deb from main
+    INFO: Total bytes freed: 7
+    DEBUG: Marking 7 condemned packages as removed.
 
 A few details to pay attention to in the log output:
 
@@ -337,16 +337,16 @@ Now DeathRow considers 'stuck-bin' publications.
     >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
     >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
     >>> death_row.reap()
-    DEBUG 0 Sources
-    DEBUG 2 Binaries
-    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Cannot remove.
-    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Already verified.
-    DEBUG Batch ...
-    INFO Removing 0 files marked for reaping
-    INFO Total bytes freed: 0
-    DEBUG Marking 0 condemned packages as removed.
+    DEBUG: 0 Sources
+    DEBUG: 2 Binaries
+    DEBUG: Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG: Cannot remove.
+    DEBUG: Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG: Already verified.
+    DEBUG: Batch ...
+    INFO: Removing 0 files marked for reaping
+    INFO: Total bytes freed: 0
+    DEBUG: Marking 0 condemned packages as removed.
 
 After being considered for removal, DeathRow realized that this binary
 could not be removed because there is still a publishing record
@@ -362,18 +362,18 @@ single pass.
     >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
     >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
     >>> death_row.reap()
-    DEBUG 0 Sources
-    DEBUG 3 Binaries
-    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Already verified.
-    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Already verified.
-    DEBUG Batch ...
-    INFO Removing 1 files marked for reaping
-    DEBUG Removing removed-ignored/stuck-bin_666_i386.deb from main
-    INFO Total bytes freed: 1
-    DEBUG Marking 3 condemned packages as removed.
+    DEBUG: 0 Sources
+    DEBUG: 3 Binaries
+    DEBUG: Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG: Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG: Already verified.
+    DEBUG: Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG: Already verified.
+    DEBUG: Batch ...
+    INFO: Removing 1 files marked for reaping
+    DEBUG: Removing removed-ignored/stuck-bin_666_i386.deb from main
+    INFO: Total bytes freed: 1
+    DEBUG: Marking 3 condemned packages as removed.
 
 The file was removed from the repository.
 
