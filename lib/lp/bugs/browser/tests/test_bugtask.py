@@ -3,13 +3,14 @@
 
 __metaclass__ = type
 
-
+from datetime import datetime
 from doctest import DocTestSuite
 import unittest
 
+from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
-
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -31,7 +32,9 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
+from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.services.propertycache import get_property_cache
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -86,6 +89,32 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
+
+    def test_interesting_activity(self):
+        # The interesting_activity property returns a tuple of interesting
+        # `BugActivityItem`s.
+        bug = self.factory.makeBug()
+        view = create_initialized_view(
+            bug.default_bugtask, name=u'+index', rootsite='bugs')
+
+        def add_activity(what, old=None, new=None, message=None):
+            getUtility(IBugActivitySet).new(
+                bug, datetime.now(UTC), bug.owner, whatchanged=what,
+                oldvalue=old, newvalue=new, message=message)
+            del get_property_cache(view).interesting_activity
+
+        # A fresh bug has no interesting activity.
+        self.assertEqual((), view.interesting_activity)
+
+        # Some activity is not considered interesting.
+        add_activity("boring")
+        self.assertEqual((), view.interesting_activity)
+
+        # A description change is interesting.
+        add_activity("description")
+        self.assertEqual(1, len(view.interesting_activity))
+        [activity] = view.interesting_activity
+        self.assertEqual("description", activity.whatchanged)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):

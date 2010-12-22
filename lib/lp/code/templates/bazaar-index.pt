@@ -38,6 +38,10 @@
         <input id="text" type="text" name="text" size="50" />
         <input type="submit" value="Find a Project" />
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('text');
+       // --></script>
+
       <p id="application-summary">
         Launchpad can host your project&#8217;s source code
         using the <a href="http://bazaar.canonical.com/">Bazaar</a>
