@@ -10,7 +10,8 @@ from canonical.buildd import XMLRPCBuildDSlave
 from canonical.buildd.binarypackage import BinaryPackageBuildManager
 from canonical.buildd.sourcepackagerecipe import (
     SourcePackageRecipeBuildManager)
-from canonical.buildd.translationtemplates import TranslationTemplatesBuildManager
+from canonical.buildd.translationtemplates import (
+    TranslationTemplatesBuildManager)
 from canonical.launchpad.daemons import readyservice
 
 from twisted.web import server, resource, static
@@ -28,7 +29,8 @@ slave = XMLRPCBuildDSlave(conf)
 slave.registerBuilder(BinaryPackageBuildManager, "debian")
 slave.registerBuilder(BinaryPackageBuildManager, "binarypackage")
 slave.registerBuilder(SourcePackageRecipeBuildManager, "sourcepackagerecipe")
-slave.registerBuilder(TranslationTemplatesBuildManager, 'translation-templates')
+slave.registerBuilder(
+    TranslationTemplatesBuildManager, 'translation-templates')
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
@@ -41,7 +43,7 @@ root.putChild('rpc', slave)
 root.putChild('filecache', static.File(conf.get('slave', 'filecache')))
 slavesite = server.Site(root)
 
-strports.service(slave.slave._config.get("slave","bindport"), 
+strports.service(slave.slave._config.get("slave","bindport"),
                  slavesite).setServiceParent(builddslaveService)
 
 # You can interact with a running slave like this:

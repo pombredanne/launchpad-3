@@ -18,4 +18,3 @@ if __name__ == '__main__':
         script.run()
     finally:
         script.unlock()
-
