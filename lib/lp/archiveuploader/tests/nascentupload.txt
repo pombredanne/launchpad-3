@@ -458,7 +458,7 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
-  INFO: Exception while accepting:
+  INFO Exception while accepting:
   The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
   cannot upload the same version within the same distribution. You
   have to modify the source version and re-upload.

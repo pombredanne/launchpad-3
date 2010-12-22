@@ -98,8 +98,8 @@ conflict and the queue item will remain in ACCEPTED
 
   >>> from lp.services.log.logger import FakeLogger
   >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
-  DEBUG: Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
-  ERROR: Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
+  DEBUG Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
+  ERROR Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
   >>> upload.queue_root.status.name
   'ACCEPTED'
 
@@ -113,8 +113,8 @@ with the wrong permission.
 
   >>> old_mask = os.umask(002)
   >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
-  DEBUG: ...
-  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+  DEBUG ...
+  ERROR Queue item ignored: Bad umask; expected 022, got 002
 
 Reset the umask, remove any residual directories, and try again.
 

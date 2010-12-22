@@ -124,7 +124,7 @@ Let's use a fake logger object:
 
   >>> from lp.services.log.logger import FakeLogger
   >>> ubuntu.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
-  DEBUG: Removing source cache for 'foobar' (10)
+  DEBUG Removing source cache for 'foobar' (10)
 
   >>> import transaction
   >>> transaction.commit()
@@ -160,11 +160,11 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
-  DEBUG: ...
-  DEBUG: Considering source 'cdrkit'
-  DEBUG: Creating new source cache entry.
+  DEBUG ...
+  DEBUG Considering source 'cdrkit'
+  DEBUG Creating new source cache entry.
   ...
-  DEBUG: Considering source 'mozilla-firefox'
+  DEBUG Considering source 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -225,7 +225,7 @@ Binary cache updates are driven by distroseries, IDistroSeries
 instance offers a method for removing obsolete records in cache:
 
   >>> warty.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
-  DEBUG: Removing binary cache for 'foobar' (8)
+  DEBUG Removing binary cache for 'foobar' (8)
 
   >>> transaction.commit()
 
@@ -259,12 +259,12 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = warty.updateCompletePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
-  DEBUG: Considering binary 'at'
+  DEBUG Considering binary 'at'
   ...
-  DEBUG: Considering binary 'cdrkit'
-  DEBUG: Creating new binary cache entry.
+  DEBUG Considering binary 'cdrkit'
+  DEBUG Creating new binary cache entry.
   ...
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -355,13 +355,13 @@ same queries work, pointing to Celso's PPA.
 
   >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
-  DEBUG: ...
-  DEBUG: Considering source 'pmount'
+  DEBUG ...
+  DEBUG Considering source 'pmount'
   ...
 
   >>> binary_updates = warty.updateCompletePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> cprov.archive.updateArchiveCache()

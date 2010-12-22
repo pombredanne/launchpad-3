@@ -205,14 +205,14 @@ First, update the cache tables for Celso's PPA:
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
   ...    log=FakeLogger())
-  DEBUG: ...
-  DEBUG: Considering source 'pmount'
+  DEBUG ...
+  DEBUG Considering source 'pmount'
   ...
 
   >>> warty.updateCompletePackageCache(
   ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
   ...    log=FakeLogger())
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> cprov.archive.updateArchiveCache()

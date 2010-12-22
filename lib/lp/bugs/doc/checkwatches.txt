@@ -44,19 +44,19 @@ the watch.
     0
 
     >>> print err
-    DEBUG:   ...
-    DEBUG:   No global batch size specified.
-    DEBUG:   Skipping updating Ubuntu Bugzilla watches.
-    DEBUG:   No watches to update on http://bugs.debian.org
-    DEBUG:   No watches to update on mailto:bugs@example.com
-    DEBUG:   No watches to update on http://bugzilla.gnome.org/
-    DEBUG:   No watches to update on http://bugzilla.gnome.org/bugs
-    DEBUG:   No watches to update on https://bugzilla.mozilla.org/
-    WARNING: ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    DEBUG   ...
+    DEBUG   No global batch size specified.
+    DEBUG   Skipping updating Ubuntu Bugzilla watches.
+    DEBUG   No watches to update on http://bugs.debian.org
+    DEBUG   No watches to update on mailto:bugs@example.com
+    DEBUG   No watches to update on http://bugzilla.gnome.org/
+    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
-    DEBUG:   No watches to update on http://sourceforge.net/
-    INFO:    Time for this run: ... seconds.
-    DEBUG:   Removing lock file:...
+    DEBUG   No watches to update on http://sourceforge.net/
+    INFO    Time for this run: ... seconds.
+    DEBUG   Removing lock file:...
     <BLANKLINE>
 
 OOPSes reported by the checkwatches process are raised using the
@@ -215,7 +215,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
-    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    WARNING...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
     known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
@@ -271,9 +271,9 @@ requests are actually made.
     ...     updater.logger = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
-    DEBUG: No global batch size specified.
-    INFO: Updating 5 watches for 5 bugs on http://bugs.example.com
-    INFO: Connection timed out when updating ... (OOPS-...)
+    DEBUG No global batch size specified.
+    INFO Updating 5 watches for 5 bugs on http://bugs.example.com
+    INFO Connection timed out when updating ... (OOPS-...)
 
 
 Updating all the watches on a bug tracker
@@ -316,11 +316,11 @@ CheckwatchesMaster's logger.
     ...     updater.forceUpdateAll(bug_tracker_name, batch_size)
 
     >>> update_all('savannah', batch_size)
-    INFO: Resetting 1 bug watches for bug tracker 'savannah'
-    INFO: Updating 1 watches on bug tracker 'savannah'
-    WARNING: ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    INFO Resetting 1 bug watches for bug tracker 'savannah'
+    INFO Updating 1 watches on bug tracker 'savannah'
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
-    INFO: 0 watches left to check on bug tracker 'savannah'
+    INFO 0 watches left to check on bug tracker 'savannah'
 
 We can see that the Savannah bug watch has been updated recently. Also,
 its last_error_type field will be set to "Unsupported bug tracker"
@@ -343,12 +343,12 @@ will ignore it.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> empty_tracker_name = empty_tracker.name
     >>> update_all(empty_tracker_name)
-    INFO: Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
+    INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
 
 Similarly, forceUpdateAll() will ignore the bug tracker if it doesn't exist.
 
     >>> update_all('nah-this-wont-work')
-    INFO: Bug tracker 'nah-this-wont-work' doesn't exist. Ignoring.
+    INFO Bug tracker 'nah-this-wont-work' doesn't exist. Ignoring.
 
 The batch_size parameter is set, the watches will be updated in batches.
 We'll add some more watches in order to demonstrate this.
@@ -383,13 +383,13 @@ made.
     >>> non_connecting_updater = NonConnectingUpdater(transaction.manager)
     >>> non_connecting_updater.logger = FakeLogger()
     >>> non_connecting_updater.forceUpdateAll(empty_tracker_name, 1)
-    INFO: Resetting 5 bug watches for bug tracker 'auto-example.com'
-    INFO: Updating 5 watches on bug tracker 'auto-example.com'
-    INFO: 4 watches left to check on bug tracker 'auto-example.com'
-    INFO: 3 watches left to check on bug tracker 'auto-example.com'
-    INFO: 2 watches left to check on bug tracker 'auto-example.com'
-    INFO: 1 watches left to check on bug tracker 'auto-example.com'
-    INFO: 0 watches left to check on bug tracker 'auto-example.com'
+    INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
+    INFO Updating 5 watches on bug tracker 'auto-example.com'
+    INFO 4 watches left to check on bug tracker 'auto-example.com'
+    INFO 3 watches left to check on bug tracker 'auto-example.com'
+    INFO 2 watches left to check on bug tracker 'auto-example.com'
+    INFO 1 watches left to check on bug tracker 'auto-example.com'
+    INFO 0 watches left to check on bug tracker 'auto-example.com'
 
 
 Comment syncing for duplicate bugs

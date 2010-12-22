@@ -43,9 +43,9 @@ database).
     >>> transaction.commit()
     >>> from lp.services.log.logger import FakeLogger
     >>> process_queue(transaction, FakeLogger())
-    DEBUG: Exporting objects for Happy Downloader, related to template pmount
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    INFO: Stored file at http://.../launchpad-export.tar.gz
+    INFO Stored file at http://.../launchpad-export.tar.gz
 
 The user receives a confirmation email.
 
@@ -177,9 +177,9 @@ Let's try requesting an export in MO format:
     ...     person, None, [cs, cs.potemplate], TranslationFileFormat.MO)
     >>> transaction.commit()
     >>> process_queue(transaction, FakeLogger())
-    DEBUG: Exporting objects for Happy Downloader, related to template pmount
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    INFO: Stored file at http://.../cs_LC_MESSAGES_pmount.mo
+    INFO Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
     >>> emails = pop_notifications()
     >>> len(emails)
@@ -252,17 +252,17 @@ The script is run.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    DEBUG:   ...
-    INFO:    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
-    DEBUG:   Exporting objects for Happy Downloader, related to template
+    DEBUG   ...
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
+    DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk
-    DEBUG:   Exporting objects for Happy Downloader, related to template
+    DEBUG   Exporting objects for Happy Downloader, related to template
     pmount in Ubuntu Hoary package "pmount"
-    DEBUG:   Exporting objects for Happy Downloader, related to template
+    DEBUG   Exporting objects for Happy Downloader, related to template
     netapplet in NetApplet trunk
-    DEBUG:   Exporting objects for Happy Downloader, related to template
+    DEBUG   Exporting objects for Happy Downloader, related to template
     alsa-utils in alsa-utils trunk
-    INFO:    Stored file at http://.../launchpad-export.tar.gz
-    DEBUG:   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
+    INFO    Stored file at http://.../launchpad-export.tar.gz
+    DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
     <BLANKLINE>
 

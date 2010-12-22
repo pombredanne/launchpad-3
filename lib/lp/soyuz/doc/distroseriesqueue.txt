@@ -107,7 +107,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   ...         print source.sourcepackagerelease.name
   ...     pub_records = item.realiseUpload(FakeLogger())
   ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
+  DEBUG Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
 
 
 Confirm we can now find ed published in hoary.

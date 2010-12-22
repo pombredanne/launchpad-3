@@ -270,7 +270,7 @@ There are two bugs with heat more than a day old:
 Calling our BugHeatUpdater will update the heat of those bugs.
 
     >>> update_bug_heat(chunk_size=1)
-    DEBUG: Updating heat for 2 bugs
+    DEBUG Updating heat for 2 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.

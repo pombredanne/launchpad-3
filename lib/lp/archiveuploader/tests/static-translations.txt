@@ -46,6 +46,6 @@ publishing behaviour using a mock PackageUploadCustom object:
     >>> custom_upload.packageupload = package_upload
     >>> from lp.services.log.logger import FakeLogger
     >>> custom_upload.publish(logger=FakeLogger())
-    DEBUG: Publishing custom to ubuntu/breezy-autotest
-    DEBUG: Skipping publishing of static translations.
+    DEBUG Publishing custom to ubuntu/breezy-autotest
+    DEBUG Skipping publishing of static translations.
 

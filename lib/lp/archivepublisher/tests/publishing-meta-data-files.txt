@@ -39,7 +39,7 @@ PackageUploadCustom object for a meta-data upload:
 Now we can publish the custom upload:
 
     >>> custom_upload.publish(logger=FakeLogger())
-    DEBUG: Publishing custom testmeta to ubuntutest/breezy-autotest
+    DEBUG Publishing custom testmeta to ubuntutest/breezy-autotest
 
 The custom file is just called "testmeta" with the contents "test".  It will
 be published in a location of the scheme:

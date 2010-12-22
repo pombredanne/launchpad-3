@@ -92,15 +92,15 @@ and re-does the gettext check.  Which messages it checks is specified as
 a plain SQL WHERE clause.
 
     >>> run_checker(['-vv', "-w id=%s" % quote(current_message.id)])
-    DEBUG: Checking messages matching:  id=...
-    DEBUG: Checking message ...
-    DEBUG: Commit point.
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    DEBUG Commit point.
     COMMIT
-    INFO: Done.
-    INFO: Messages checked: 1
-    INFO: Validation errors: 0
-    INFO: Messages disabled: 0
-    INFO: Commit points: ...
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 0
+    INFO Messages disabled: 0
+    INFO Commit points: ...
 
 
 == Detecting errors ==
@@ -114,18 +114,18 @@ detects the problem when it checks that message.
     >>> current_message.translations = [u'%s c']
 
     >>> run_checker(["-w id=%s" % quote(current_message.id)])
-    DEBUG: Checking messages matching:  id=...
-    DEBUG: Checking message ...
-    INFO: ... (current): format specifications ... are not the same
-    DEBUG: Commit point.
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    INFO ... (current): format specifications ... are not the same
+    DEBUG Commit point.
     COMMIT
-    DEBUG: Commit point.
+    DEBUG Commit point.
     COMMIT
-    INFO: Done.
-    INFO: Messages checked: 1
-    INFO: Validation errors: 1
-    INFO: Messages disabled: 1
-    INFO: Commit points: ...
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 1
+    INFO Messages disabled: 1
+    INFO Commit points: ...
 
 The failed message is demoted to a mere suggestion.
 
@@ -145,20 +145,20 @@ In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
 
     >>> run_checker(['-w', 'potmsgset=%s' % quote(potmsgset), '-o',  'id'])
-    DEBUG: Checking messages matching:  potmsgset=...
-    DEBUG: Checking message ...
-    INFO: ... (unused): format specifications ... are not the same
-    DEBUG: Commit point.
+    DEBUG Checking messages matching:  potmsgset=...
+    DEBUG Checking message ...
+    INFO ... (unused): format specifications ... are not the same
+    DEBUG Commit point.
     COMMIT
-    DEBUG: Checking message ...
-    INFO: ... (imported): number of format specifications ... does not match...
-    DEBUG: Commit point.
+    DEBUG Checking message ...
+    INFO ... (imported): number of format specifications ... does not match...
+    DEBUG Commit point.
     COMMIT
-    INFO: Done.
-    INFO: Messages checked: 2
-    INFO: Validation errors: 2
-    INFO: Messages disabled: 0
-    INFO: Commit points: 2
+    INFO Done.
+    INFO Messages checked: 2
+    INFO Validation errors: 2
+    INFO Messages disabled: 0
+    INFO Commit points: 2
 
 In this case the imported message is checked twice: once all by itself
 and once as a potential alternative to the current message.  That's why
@@ -169,8 +169,8 @@ The script also notes when a message is both current and imported.
 
     >>> imported_message.is_current = True
     >>> run_checker(["-w id=%s" % quote(imported_message.id)])
-    DEBUG: ...
-    INFO: ... (current, imported): number of format specifications ...
+    DEBUG ...
+    INFO ... (current, imported): number of format specifications ...
 
 
 == Dry runs ==
@@ -180,19 +180,19 @@ The --dry-run option makes the script abort all its database changes.
     >>> current_message.is_current = True
 
     >>> run_checker(["-w id=%s" % quote(current_message.id), '--dry-run'])
-    INFO: Dry run.  Not making any changes.
-    DEBUG: Checking messages matching:  id=...
-    DEBUG: Checking message ...
-    INFO: ... (current): format specifications ... are not the same
-    DEBUG: Commit point.
+    INFO Dry run.  Not making any changes.
+    DEBUG Checking messages matching:  id=...
+    DEBUG Checking message ...
+    INFO ... (current): format specifications ... are not the same
+    DEBUG Commit point.
     ABORT
-    DEBUG: Commit point.
+    DEBUG Commit point.
     ABORT
-    INFO: Done.
-    INFO: Messages checked: 1
-    INFO: Validation errors: 1
-    INFO: Messages disabled: 1
-    INFO: Commit points: 2
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 1
+    INFO Messages disabled: 1
+    INFO Commit points: 2
 
 
 == Commit points ==
@@ -204,19 +204,19 @@ interval to 1, we get a commit after every message plus one at the end
 to close things off neatly.
 
     >>> run_checker(["-w potmsgset=%s" % quote(potmsgset)], commit_interval=1)
-    DEBUG: Checking messages matching:  potmsgset=...
-    DEBUG: Checking message ...
-    INFO: ... (...): number of format specifications ...
-    DEBUG: Commit point.
+    DEBUG Checking messages matching:  potmsgset=...
+    DEBUG Checking message ...
+    INFO ... (...): number of format specifications ...
+    DEBUG Commit point.
     COMMIT
-    DEBUG: Checking message ...
-    INFO: ... (...): format specifications ... are not the same
-    DEBUG: Commit point.
+    DEBUG Checking message ...
+    INFO ... (...): format specifications ... are not the same
+    DEBUG Commit point.
     COMMIT
-    DEBUG: Commit point.
+    DEBUG Commit point.
     COMMIT
-    INFO: Done.
-    INFO: Messages checked: 2
-    INFO: Validation errors: 2
-    INFO: Messages disabled: 0
-    INFO: Commit points: 3
+    INFO Done.
+    INFO Messages checked: 2
+    INFO Validation errors: 2
+    INFO Messages disabled: 0
+    INFO Commit points: 3

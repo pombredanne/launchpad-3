@@ -64,14 +64,14 @@ Now do a proper upload into the system.
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
   ...     insecure_policy, FakeLogger())
-  DEBUG: Verifying signature on translations-main_20060728_all.changes
+  DEBUG Verifying signature on translations-main_20060728_all.changes
 
   >>> upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Single Custom Upload detected.
-  DEBUG: Finished checking upload.
+  DEBUG Beginning processing.
+  DEBUG Verifying the changes file.
+  DEBUG Verifying files in upload.
+  DEBUG Single Custom Upload detected.
+  DEBUG Finished checking upload.
 
 It was not rejected.
 
@@ -79,38 +79,38 @@ It was not rejected.
   False
 
   >>> success = upload.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>
-  DEBUG:     Body:
-  DEBUG: * Duhh
-  DEBUG:
-  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG: Origin: Ubuntu/warty
-  DEBUG:
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to test@example.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Test.
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG:     Recipients: test@example.com
-  DEBUG:     Body:
-  DEBUG: * Duhh
-  DEBUG:
-  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG: Origin: Ubuntu/warty
-  DEBUG:
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG     Body:
+  DEBUG * Duhh
+  DEBUG
+  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG Origin: Ubuntu/warty
+  DEBUG
+  DEBUG
+  DEBUG ==
+  DEBUG
+  DEBUG Announcing to test@example.com
+  DEBUG
+  DEBUG Thank you for your contribution to Ubuntu Test.
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG     Recipients: test@example.com
+  DEBUG     Body:
+  DEBUG * Duhh
+  DEBUG
+  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG Origin: Ubuntu/warty
+  DEBUG
 
 And all things worked.
 
@@ -182,7 +182,7 @@ The umask must be 022 in order to perform the upload.
 
   >>> old_mask = os.umask(022)
   >>> pub_records = queue_item.realiseUpload(FakeLogger())
-  DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
+  DEBUG Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
   >>> print '%03o' % os.umask(old_mask)
   022
 

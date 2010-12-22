@@ -49,8 +49,7 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
-        full_msg = "%s: %s" % (prefix, self._format_message(msg, *stuff))
-        print >> output_file, full_msg
+        print >> output_file, prefix, self._format_message(msg, *stuff)
 
         if 'exc_info' in kw:
             traceback.print_exc(file=output_file)

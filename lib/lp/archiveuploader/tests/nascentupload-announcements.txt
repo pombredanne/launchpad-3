@@ -81,19 +81,19 @@ unsigned changes):
   >>> from lp.services.log.logger import FakeLogger
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG: NEW: bar_1.0.orig.tar.gz
-  DEBUG: NEW: bar_1.0-1.diff.gz
-  DEBUG: NEW: bar_1.0-1.dsc
+  DEBUG NEW: bar_1.0.orig.tar.gz
+  DEBUG NEW: bar_1.0-1.diff.gz
+  DEBUG NEW: bar_1.0-1.dsc
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG above if files already exist in other distroseries.
   ...
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
 
 There is only one email generated:
 
@@ -134,14 +134,14 @@ Uploading the same package again will result in a rejection email:
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: bar diff from 1.0-1 to 1.0-1 requested
-  DEBUG: Setting it to ACCEPTED
+  DEBUG Creating queue entry
+  DEBUG bar diff from 1.0-1 to 1.0-1 requested
+  DEBUG Setting it to ACCEPTED
   ...
-  DEBUG: Sending rejection email.
+  DEBUG Sending rejection email.
   ...
-  DEBUG: Rejected:
-  DEBUG: The source bar - 1.0-1 is already accepted in ubuntu/hoary
+  DEBUG Rejected:
+  DEBUG The source bar - 1.0-1 is already accepted in ubuntu/hoary
          and you cannot upload the same version within the same
          distribution. You have to modify the source version and
          re-upload.
@@ -312,8 +312,8 @@ override sync policy to allow binary uploads):
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: Not sending email, upload contains binaries.
+  DEBUG Creating queue entry
+  DEBUG Not sending email, upload contains binaries.
 
 We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
@@ -340,8 +340,8 @@ NEW source uploads for 'translations' section via sync policy:
 
   >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+  DEBUG Creating queue entry
+  DEBUG Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
   'NEW'
@@ -371,9 +371,9 @@ AUTO_APPROVED source uploads for 'translations' section:
 
   >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
-  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+  DEBUG Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
   'DONE'
@@ -401,10 +401,10 @@ UNAPPROVED source uploads for 'translations' section via insecure:
   >>> lang_pack.process()
   >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: language-pack-pt diff from 1.0-2 to 1.0-3 requested
-  DEBUG: Setting it to UNAPPROVED
-  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+  DEBUG Creating queue entry
+  DEBUG language-pack-pt diff from 1.0-2 to 1.0-3 requested
+  DEBUG Setting it to UNAPPROVED
+  DEBUG Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
   'UNAPPROVED'
@@ -427,7 +427,7 @@ the upload is waiting for approval:
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
 
   >>> [notification] = pop_notifications()
@@ -454,9 +454,9 @@ saying they are waiting for approval:
   >>> bar_src.process()
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: bar diff from 1.0-1 to 1.0-3 requested
-  DEBUG: Setting it to UNAPPROVED
+  DEBUG Creating queue entry
+  DEBUG bar diff from 1.0-1 to 1.0-3 requested
+  DEBUG Setting it to UNAPPROVED
   ...
 
   >>> [notification] = pop_notifications()
@@ -483,30 +483,30 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
-  DEBUG:     Recipients: Celso Providelo <celso.providelo@canonical.com>
-  DEBUG:     Body:
-  DEBUG: bar (1.0-4) breezy; urgency=low
-  DEBUG:
-  DEBUG:   * Changer using non-preferred email
-  DEBUG:
-  DEBUG: Date: Tue, 25 Apr 2006 10:36:14 -0300
-  DEBUG: Changed-By: Celso R. Providelo <cprov@ubuntu.com>
-  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Linux.
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
+  DEBUG     Recipients: Celso Providelo <celso.providelo@canonical.com>
+  DEBUG     Body:
+  DEBUG bar (1.0-4) breezy; urgency=low
+  DEBUG
+  DEBUG   * Changer using non-preferred email
+  DEBUG
+  DEBUG Date: Tue, 25 Apr 2006 10:36:14 -0300
+  DEBUG Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+  DEBUG Maintainer: Launchpad team <launchpad@lists.canonical.com>
+  DEBUG http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
+  DEBUG
+  DEBUG ==
+  DEBUG
+  DEBUG Announcing to hoary-announce@lists.ubuntu.com
+  DEBUG
+  DEBUG Thank you for your contribution to Ubuntu Linux.
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
 
 There is one email generated:
 
@@ -544,7 +544,7 @@ distroseries.
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
 
 One email generated:
@@ -564,7 +564,7 @@ In contrast, manual sync uploads do generate the announcement:
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
 
 Two emails generated:
@@ -626,19 +626,19 @@ the INFO level what it /would/ have sent.
 
   >>> random_package_upload = hoary.getQueueItems()[0]
   >>> random_package_upload.notify(dry_run=True, logger=FakeLogger())
-  DEBUG: Building recipients list.
+  DEBUG Building recipients list.
   ...
-  INFO: Would have sent a mail:
-  INFO:   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
+  INFO Would have sent a mail:
+  INFO   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
   ...
-  INFO:   Recipients: Celso Providelo <celso.providelo@canonical.com>
+  INFO   Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
-  INFO: bar (1.0-6) breezy; urgency=low
+  INFO bar (1.0-6) breezy; urgency=low
   ...
-  INFO: No announcement sent
+  INFO No announcement sent
   ...
-  INFO: You are receiving this email because you are the uploader, maintainer or
-  INFO: signer of the above package.
+  INFO You are receiving this email because you are the uploader, maintainer or
+  INFO signer of the above package.
 
 No emails generated:
 
@@ -661,7 +661,7 @@ However, UTF-8 in the mail content is preserved.
 
   >>> bar_upload.logger = FakeLogger()
   >>> result = bar_upload.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
 
   >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
@@ -793,21 +793,21 @@ And then try to upload using the changes file with the malformed name.
 
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
-  DEBUG: Building recipients list.
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sending rejection email.
-  DEBUG: Sent a mail:
+  DEBUG Sending rejection email.
+  DEBUG Sent a mail:
   ...
-  DEBUG: Rejected:
-  DEBUG: z-z_0.4.12-2~ppa2.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  DEBUG Rejected:
+  DEBUG z-z_0.4.12-2~ppa2.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
   ...
-  DEBUG: If you don't understand why your files were rejected, or if the
-  DEBUG: override file requires editing, please go to:
-  DEBUG: http://answers.launchpad.net/soyuz
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
+  DEBUG If you don't understand why your files were rejected, or if the
+  DEBUG override file requires editing, please go to:
+  DEBUG http://answers.launchpad.net/soyuz
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
 
   >>> [notification] = pop_notifications()
 
