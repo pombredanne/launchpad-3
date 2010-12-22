@@ -47,7 +47,7 @@ class TestProductVocabulary(TestCaseWithFactory):
         self.assertEqual([self.product], list(result))
 
     def test_order_by_displayname(self):
-        # Results are ordered by displaybame.
+        # Results are ordered by displayname.
         z_product = self.factory.makeProduct(
             name='mule', displayname='Bed zebra')
         a_product = self.factory.makeProduct(
