@@ -454,6 +454,5 @@ yui_deps = [
     './lib/canonical/launchpad/icing/yui/yui/yui-throttle-min.js',
 ]
 
-yui_deps.reverse()
-while yui_deps:
-    print yui_deps.pop()
+for line in yui_deps:
+    print line
