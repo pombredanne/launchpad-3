@@ -3545,6 +3545,20 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         """
         return self.context.userCanEditMilestone(self.user)
 
+    @property
+    def style_for_add_milestone(self):
+        if self.context.milestone is None:
+            return ''
+        else:
+            return 'display: none'
+
+    @property
+    def style_for_edit_milestone(self):
+        if self.context.milestone is None:
+            return 'display: none'
+        else:
+            return ''
+
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
         assignee_vocabulary = get_assignee_vocabulary(self.context)
