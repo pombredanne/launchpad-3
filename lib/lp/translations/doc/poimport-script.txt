@@ -103,7 +103,7 @@ we can't accept new translation imports just now.
     >>> distroseries.defer_translation_imports
     True
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.translations.scripts.po_import import TranslationsImport
     >>> import email
     >>> from lp.services.mail import stub
