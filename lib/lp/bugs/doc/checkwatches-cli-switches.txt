@@ -23,8 +23,8 @@ external connections.
     >>> updater = CheckwatchesMaster(transactionmgr, logger=FakeLogger())
 
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
-    DEBUG No watches to update on http://bugs.debian.org
-    DEBUG No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG...No watches to update on http://bugs.debian.org
+    DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
 
 If a bug tracker is disabled checkwatches won't try to update it.
 
@@ -40,7 +40,7 @@ If a bug tracker is disabled checkwatches won't try to update it.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
     >>> updater.updateBugTrackers([bug_tracker_name])
-    DEBUG Updates are disabled for bug tracker at http://example.com
+    DEBUG...Updates are disabled for bug tracker at http://example.com
 
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
