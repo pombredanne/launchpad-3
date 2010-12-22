@@ -17,15 +17,22 @@
     <tr id="summary-row-1-status">
       <th>Status:</th>
       <td id="branchmergeproposal-status-value">
-        <a tal:define="link context/menu:context/edit_status"
-           tal:condition="link/enabled"
-           tal:attributes="href link/url">
-        <span tal:attributes="class string:value mergestatus${context/queue_status/name}"
+        <tal:merge-status define="link context/menu:context/edit_status">
+        <a tal:condition="link/enabled"
+           tal:attributes="class string:value mergestatus${context/queue_status/name};
+                           href link/url">
+          Work in progress
+        </a>
+        <span tal:condition="not: link/enabled"
+              tal:attributes="class string:value mergestatus${context/queue_status/name}"
               tal:content="context/queue_status/title">
           Work in progress
         </span>
+        <a tal:define="link context/menu:context/edit_status"
+           tal:attributes="href link/url">
            <img class="editicon" src="/@@/edit" alt="Edit status" />
         </a>
+        </tal:merge-status>
       </td>
     </tr>
     <tal:comment condition="nothing">
