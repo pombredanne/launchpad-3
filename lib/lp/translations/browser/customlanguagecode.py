@@ -46,6 +46,7 @@ def check_code(custom_code):
 
 class CustomLanguageCodeBreadcrumb(Breadcrumb):
     """Breadcrumb for a `CustomLanguageCode`."""
+
     @property
     def text(self):
         return smartquote(
@@ -164,6 +165,7 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
 class HasCustomLanguageCodesTraversalMixin:
     """Navigate from an `IHasCustomLanguageCodes` to a `CustomLanguageCode`.
     """
+
     @stepthrough('+customcode')
     def traverseCustomCode(self, name):
         """Traverse +customcode URLs."""

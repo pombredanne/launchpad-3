@@ -185,7 +185,6 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode,
-    IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
@@ -744,6 +743,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 # with launchpad.View so that this adapter is used.  For now, though, it's
 # going to be used only on the webservice (which explicitly checks for
 # launchpad.View) so that we don't leak memberships of private teams.
+
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ITeamMembership

@@ -941,7 +941,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
         template="../templates/translations-portlet-not-using-launchpad-extra.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/> 
+        layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
         name="+portlet-configuration"
         for="lp.registry.interfaces.distribution.IDistribution"

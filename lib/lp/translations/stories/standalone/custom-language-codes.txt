@@ -139,7 +139,7 @@ This leads back to the overview page.
 Unprivileged access
 ===================
 
-A unprivileged user can see the page, actually, if they know the URL. 
+A unprivileged user can see the page, actually, if they know the URL.
 This can be convenient for debugging.
 
     >>> user_browser.open(custom_language_codes_page)
@@ -156,7 +156,7 @@ However all they get is a read-only version of the page.
     LinkNotFoundError
 
 The page for adding custom language codes is not accessible to them.
-    
+
     >>> user_browser.open(add_page)
     Traceback (most recent call last):
     ...
