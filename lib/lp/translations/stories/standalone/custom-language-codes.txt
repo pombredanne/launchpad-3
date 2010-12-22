@@ -70,7 +70,7 @@ Other users don't see this link.
 
 Initially the page shows no custom language codes for the project.
 
-    >>> tag = find_tag_by_id(owner.contents, 'empty')
+    >>> tag = find_tag_by_id(owner_browser.contents, 'empty')
     >>> print extract_text(tag.renderContents())
     No custom language codes have been defined.
 

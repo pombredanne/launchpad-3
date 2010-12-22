@@ -1728,26 +1728,22 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     usedfor = ILanguage
 
 
-class AdminCustomLanguageCodes(OnlyRosettaExpertsAndAdmins):
-    """Controls administration of custom language codes.
-
-    Rosetta experts and Launchpad administrators can administer custom
-    language codes.
-    """
-
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IHasCustomLanguageCodes
-
-
-class AdminCustomLanguageCode(OnlyRosettaExpertsAndAdmins):
+class AdminCustomLanguageCode(AuthorizationBase):
     """Controls administration for a custom language code.
 
-    Rosetta experts and Launchpad administrators can administer a custom
-    language code.
+    Whoever can admin a product's or distribution's translations can also
+    admin the custom language codes for it.
     """
-
     permission = 'launchpad.TranslationsAdmin'
     usedfor = ICustomLanguageCode
+
+    def checkAuthenticated(self, user):
+        if self.obj.product is not None:
+            return AdminProductTranslations(
+                self.obj.product).checkAuthenticated(user)
+        else:
+            return AdminDistributionTranslations(
+                self.obj.distribution).checkAuthenticated(user)
 
 
 class AccessBranch(AuthorizationBase):
@@ -1837,6 +1833,12 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistributionSourcePackageTranslations(
+    AdminDistroSeriesTranslations):
+    """DistributionSourcePackage objects link to a distribution, too."""
+    usedfor = IDistributionSourcePackage
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
