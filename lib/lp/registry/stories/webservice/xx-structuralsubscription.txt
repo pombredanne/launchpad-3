@@ -46,6 +46,7 @@ Now Eric subscribes to Fooix's bug notifications.
     start: 0
     total_size: 1
     ---
+    bug_filters_collection_link: u'.../fooix/+subscription/eric/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'
@@ -60,6 +61,7 @@ He can examine his subscription directly.
     >>> pprint_entry(eric_webservice.named_get(
     ...     '/fooix', 'getSubscription',
     ...     person=webservice.getAbsoluteUrl('/~eric')).jsonBody())
+    bug_filters_collection_link: u'.../fooix/+subscription/eric/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'
@@ -117,6 +119,7 @@ admin by virtue of his ownership.
     start: 0
     total_size: 1
     ---
+    bug_filters_collection_link: u'.../fooix/+subscription/pythons/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'

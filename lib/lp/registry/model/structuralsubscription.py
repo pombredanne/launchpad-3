@@ -160,6 +160,8 @@ class StructuralSubscription(SQLBase):
         """See `IStructuralSubscription`."""
         bug_filter = BugSubscriptionFilter()
         bug_filter.structural_subscription = self
+        # This flush is needed for the web service API.
+        IStore(StructuralSubscription).flush()
         return bug_filter
 
 
