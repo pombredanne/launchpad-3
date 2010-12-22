@@ -65,7 +65,7 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.product = self.factory.makeProduct(name='orchid-snark')
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
 
-    def test_inactive_products_are_discluded(self):
+    def test_inactive_products_are_excluded(self):
         # Inactive product are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
             self.product.active = False
@@ -74,7 +74,7 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.assertEqual([self.distribution], result)
         self.assertFalse(self.product in self.vocabulary)
 
-    def test_project_groups_are_discluded(self):
+    def test_project_groups_are_excluded(self):
         # Project groups are not in the vocabulary.
         project_group = self.factory.makeProject(name='apple-snark')
         terms = self.vocabulary.searchForTerms('snark')
@@ -100,8 +100,8 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
         self.assertTrue(self.distribution in self.vocabulary)
         self.assertTrue(self.project_group in self.vocabulary)
 
-    def test_inactive_products_are_discluded(self):
-        # Inactive porduct are not in the vocabulary.
+    def test_inactive_products_are_excluded(self):
+        # Inactive product are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
             self.product.active = False
         terms = self.vocabulary.searchForTerms('snark')
@@ -109,8 +109,8 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
         self.assertEqual([self.project_group, self.distribution], result)
         self.assertFalse(self.product in self.vocabulary)
 
-    def test_inactive_product_groups_are_discluded(self):
-        # Inactive porject groups are not in the vocabulary.
+    def test_inactive_product_groups_are_excluded(self):
+        # Inactive project groups are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
             self.project_group.active = False
         terms = self.vocabulary.searchForTerms('snark')

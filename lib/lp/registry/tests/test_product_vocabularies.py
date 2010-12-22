@@ -56,7 +56,7 @@ class TestProductVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [a_product, z_product, self.product], list(result))
 
-    def test_inactive_products_are_discluded(self):
+    def test_inactive_products_are_excluded(self):
         # Inactive products are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
             self.product.active = False
