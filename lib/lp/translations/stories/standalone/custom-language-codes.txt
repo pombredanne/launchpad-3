@@ -197,7 +197,8 @@ this case, the custom language code is tied to the distribution source
 package--i.e. the combination of a distribution and a source package
 name.  However, since there is no Translations page for that type of
 object (and we'd probably never go there if there were), the link is
-shown on the source package page.
+shown on the source package page. For distributions, the owner of the
+distribution's translation group is a translations administrator.
 
     >>> login(ANONYMOUS)
     >>> from lp.registry.model.sourcepackage import SourcePackage
@@ -219,38 +220,43 @@ shown on the source package page.
     ...     distroseries=other_series,
     ...     sourcepackagename=package.sourcepackagename),
     ...     rootsite="translations")
+    >>> translations_admin = factory.makePerson(
+    ...     email='ta@example.com', password='test')
+    >>> distro.translationgroup = factory.makeTranslationGroup(
+    ...     owner=translations_admin)
     >>> logout()
 
-    >>> rosetta_admin_browser.open(package_page)
+    >>> translations_browser = setupBrowser("Basic ta@example.com:test")
+    >>> translations_browser.open(package_page)
 
 Of course in this case, the notice about there being no custom language
 codes talks about a package, not a project.
 
-    >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
+    >>> tag = find_custom_language_codes_link(translations_browser)
     >>> print extract_text(tag.renderContents())
     If necessary, you may
     define custom language codes
     for this package.
 
-    >>> rosetta_admin_browser.getLink("define custom language codes").click()
-    >>> custom_language_codes_page = rosetta_admin_browser.url
+    >>> translations_browser.getLink("define custom language codes").click()
+    >>> custom_language_codes_page = translations_browser.url
 
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'empty')
+    >>> tag = find_tag_by_id(translations_browser.contents, 'empty')
     >>> print extract_text(tag.renderContents())
     No custom language codes have been defined.
 
-Again, an admin can add a language code.
+A translations admin can add a language code.
 
-    >>> rosetta_admin_browser.getLink("Add a custom language code").click()
-    >>> add_page = rosetta_admin_browser.url
+    >>> translations_browser.getLink("Add a custom language code").click()
+    >>> add_page = translations_browser.url
 
-    >>> rosetta_admin_browser.getControl("Language code:").value = 'pt-br'
-    >>> rosetta_admin_browser.getControl("Language:").value = ['pt_BR']
-    >>> rosetta_admin_browser.getControl("Add").click()
+    >>> translations_browser.getControl("Language code:").value = 'pt-br'
+    >>> translations_browser.getControl("Language:").value = ['pt_BR']
+    >>> translations_browser.getControl("Add").click()
 
 The language code is displayed.
 
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'nonempty')
+    >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
     bar in distro uses the following custom language codes:
     Code...     ...maps to language
@@ -259,15 +265,15 @@ The language code is displayed.
 It's also displayed identically on the same package but in another
 release series of the same distribution.
 
-    >>> rosetta_admin_browser.open(page_in_other_series)
-    >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
+    >>> translations_browser.open(page_in_other_series)
+    >>> tag = find_custom_language_codes_link(translations_browser)
     >>> print extract_text(tag.renderContents())
     If necessary, you may
     define custom language codes
     for this package.
 
-    >>> rosetta_admin_browser.getLink("define custom language codes").click()
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'nonempty')
+    >>> translations_browser.getLink("define custom language codes").click()
+    >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
     bar in distro uses the following custom language codes:
     Code...     ...maps to language
@@ -276,13 +282,13 @@ release series of the same distribution.
 
 The new code has a link there...
 
-    >>> rosetta_admin_browser.getLink("pt-br").click()
+    >>> translations_browser.getLink("pt-br").click()
 
 ...and can be deleted.
 
-    >>> rosetta_admin_browser.getLink("remove custom language code").click()
-    >>> rosetta_admin_browser.getControl("Remove").click()
+    >>> translations_browser.getLink("remove custom language code").click()
+    >>> translations_browser.getControl("Remove").click()
 
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'empty')
+    >>> tag = find_tag_by_id(translations_browser.contents, 'empty')
     >>> print extract_text(tag.renderContents())
     No custom language codes have been defined.
