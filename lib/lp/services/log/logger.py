@@ -49,7 +49,8 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
-        print >> output_file, prefix, self._format_message(msg, *stuff)
+        full_msg = "%s: %s" % (prefix, self._format_message(msg, *stuff))
+        print >> output_file, full_msg
 
         if 'exc_info' in kw:
             traceback.print_exc(file=output_file)
@@ -94,25 +95,16 @@ class BufferLogger(FakeLogger):
     """A logger that logs to a StringIO object."""
 
     def __init__(self):
-        self.buffer = StringIO()
-
-    def message(self, prefix, msg, *stuff, **kw):
-        self.buffer.write(
-            '%s: %s\n' % (prefix, self._format_message(msg, *stuff)))
-
-        if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
+        super(BufferLogger, self).__init__(StringIO())
+        # self.buffer = StringIO()
 
     def getLogBuffer(self):
         """Return the existing log messages."""
-        return self.buffer.getvalue()
+        return self.output_file.getvalue()
 
     def clearLogBuffer(self):
         """Clear out the existing log messages."""
-        self.buffer = StringIO()
+        self.output_file = StringIO()
 
     def getLogBufferAndClear(self):
         """Return the existing log messages and clear the buffer."""
