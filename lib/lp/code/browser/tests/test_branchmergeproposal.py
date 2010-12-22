@@ -791,6 +791,16 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertTrue(view.conversation.comments[1].from_superseded)
         self.assertTrue(view.conversation.comments[0].from_superseded)
 
+    def test_pending_diff_with_pending_branch(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.fail()
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.pending_diff)
+        with person_logged_in(bmp.source_branch.owner):
+            bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
+        self.assertTrue(view.pending_diff)
+
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""
