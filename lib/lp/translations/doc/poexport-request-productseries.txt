@@ -40,11 +40,11 @@ Now we request that the queue be processed.
     >>> logger = FakeLogger()
     >>> transaction.commit()
     >>> process_queue(transaction, logger)
-    DEBUG Exporting objects for ..., related to template evolution-2.2 in
+    DEBUG: Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
-    DEBUG Exporting objects for ..., related to template evolution-2.2-test in
+    DEBUG: Exporting objects for ..., related to template evolution-2.2-test in
     Evolution trunk
-    INFO Stored file at http://.../launchpad-export.tar.gz
+    INFO: Stored file at http://.../launchpad-export.tar.gz
 
 The user receives a confirmation email.
 

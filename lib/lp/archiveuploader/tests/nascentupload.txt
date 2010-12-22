@@ -435,9 +435,12 @@ However there is another candidate, submitted before and not yet
 published in the archive, which provides the same source package name
 and source package version for the distroseries in question.
 
+  >>> import logging
+  >>> logger = FakeLogger()
+  >>> logger.setLevel(logging.INFO)
   >>> ed_src_dup = NascentUpload.from_changesfile_path(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     sync_policy, DevNullLogger())
+  ...     sync_policy, logger)
   >>> ed_src_dup.process()
   >>> ed_src_dup.is_rejected
   False

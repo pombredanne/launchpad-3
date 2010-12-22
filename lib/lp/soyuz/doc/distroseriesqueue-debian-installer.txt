@@ -112,7 +112,8 @@ The upload task requires that the umask be 022, otherwise things will end up
 with the wrong permission.
 
   >>> old_mask = os.umask(002)
-  >>> pub_records = upload.queue_root.realiseUpload(DevNullLogger())
+  >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
+  DEBUG: ...
   ERROR: Queue item ignored: Bad umask; expected 022, got 002
 
 Reset the umask, remove any residual directories, and try again.
