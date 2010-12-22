@@ -50,7 +50,6 @@ from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatusError,
     IBugNomination,
@@ -58,6 +57,7 @@ from lp.bugs.interfaces.bugnomination import (
     NominationSeriesObsoleteError,
     )
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
@@ -82,6 +82,11 @@ from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
     )
+from lp.bugs.interfaces.malone import IMaloneApplication
+
+
+
+
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
