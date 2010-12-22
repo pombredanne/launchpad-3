@@ -127,6 +127,11 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
 class CustomLanguageCodeView(LaunchpadView):
     schema = ICustomLanguageCode
 
+    @property
+    def label(self):
+        return smartquote(
+            'Custom language code "%s"' % self.context.language_code)
+
 
 class CustomLanguageCodeRemoveView(LaunchpadFormView):
     """View for removing a `CustomLanguageCode`."""
