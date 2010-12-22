@@ -38,15 +38,17 @@ package.
     >>> owner_browser = setupBrowser("Basic o@example.com:test")
     >>> rosetta_admin_browser = setupRosettaExpertBrowser()
 
-A Launchpad administrator or Rosetta expert sees the link to the custom
-language codes on a project's main translations page.
+The project's owner sees the link to the custom language codes on a project's
+main translations page.
 
-    >>> admin_browser.open(product_page)
-    >>> tag = find_custom_language_codes_link(admin_browser)
+    >>> owner_browser.open(product_page)
+    >>> tag = find_custom_language_codes_link(owner_browser)
     >>> print extract_text(tag.renderContents())
     If necessary, you may
     define custom language codes
     for this project.
+
+Translation admins also have access to this link.
 
     >>> rosetta_admin_browser.open(product_page)
     >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
@@ -57,39 +59,37 @@ language codes on a project's main translations page.
 
 The link goes to the custom language codes management page.
 
-    >>> rosetta_admin_browser.getLink("define custom language codes").click()
-    >>> custom_language_codes_page = rosetta_admin_browser.url
+    >>> owner_browser.getLink("define custom language codes").click()
+    >>> custom_language_codes_page = owner_browser.url
 
-Non-admins, even the project's owner, don't see this link.  We do not
-advertise this feature, since the proper solution is generally to use
-the right language codes.
+Other users don't see this link.
 
-    >>> owner_browser.open(product_page)
-    >>> print find_custom_language_codes_link(owner_browser)
+    >>> user_browser.open(product_page)
+    >>> print find_custom_language_codes_link(user_browser)
     None
 
 Initially the page shows no custom language codes for the project.
 
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'empty')
+    >>> tag = find_tag_by_id(owner.contents, 'empty')
     >>> print extract_text(tag.renderContents())
     No custom language codes have been defined.
 
-The admin can add a custom language code.
+There is a link to add a custom language code.
 
-    >>> rosetta_admin_browser.getLink("Add a custom language code").click()
+    >>> owner_browser.getLink("Add a custom language code").click()
     >>> add_page = rosetta_admin_browser.url
 
-    >>> rosetta_admin_browser.getControl("Language code:").value = 'no'
-    >>> rosetta_admin_browser.getControl("Language:").value = ['nn']
-    >>> rosetta_admin_browser.getControl("Add").click()
+    >>> owner_browser.getControl("Language code:").value = 'no'
+    >>> owner_browser.getControl("Language:").value = ['nn']
+    >>> owner_browser.getControl("Add").click()
 
 This leads back to the custom language codes overview, where the new
 code is now shown.
 
-    >>> rosetta_admin_browser.url == custom_language_codes_page
+    >>> owner_browser.url == custom_language_codes_page
     True
 
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'nonempty')
+    >>> tag = find_tag_by_id(owner_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
     Foo uses the following custom language codes:
     Code...     ...maps to language
@@ -98,8 +98,8 @@ code is now shown.
 There is an overview page for the custom code, though there's not much
 to see there.
 
-    >>> rosetta_admin_browser.getLink("no").click()
-    >>> main = find_main_content(rosetta_admin_browser.contents)
+    >>> owner_browser.getLink("no").click()
+    >>> main = find_main_content(owner_browser.contents)
     >>> print extract_text(main.renderContents())
     Foo Translations Custom language code ...no...
     For Foo, uploads with the language code
@@ -111,79 +111,79 @@ to see there.
 
 The overview page leads back to the custom language codes overview.
 
-    >>> code_page = rosetta_admin_browser.url
-    >>> rosetta_admin_browser.getLink(
+    >>> code_page = owner_browser.url
+    >>> owner_browser.getLink(
     ...     "custom language codes overview").click()
-    >>> rosetta_admin_browser.url == custom_language_codes_page
+    >>> owner_browser.url == custom_language_codes_page
     True
 
-    >>> rosetta_admin_browser.open(code_page)
+    >>> owner_browser.open(code_page)
 
-There is also a link for removing codes.  The admin follows the link and
+There is also a link for removing codes.  The owner follows the link and
 removes the "no" custom language code.
 
-    >>> rosetta_admin_browser.getLink("remove custom language code").click()
-    >>> remove_page = rosetta_admin_browser.url
-    >>> rosetta_admin_browser.getControl("Remove").click()
+    >>> owner_browser.getLink("remove custom language code").click()
+    >>> remove_page = owner_browser.url
+    >>> owner_browser.getControl("Remove").click()
 
 This leads back to the overview page.
 
-    >>> rosetta_admin_browser.url == custom_language_codes_page
+    >>> owner_browser.url == custom_language_codes_page
     True
-
-    >>> tag = find_tag_by_id(rosetta_admin_browser.contents, 'empty')
-    >>> print extract_text(tag.renderContents())
-    No custom language codes have been defined.
-
-
-Non-admin access
-================
-
-A non-admin can see the page, actually, if they know the URL.  This can
-be convenient for debugging.
-
-    >>> owner_browser.open(custom_language_codes_page)
 
     >>> tag = find_tag_by_id(owner_browser.contents, 'empty')
     >>> print extract_text(tag.renderContents())
     No custom language codes have been defined.
 
+
+Unprivileged access
+===================
+
+A unprivileged user can see the page, actually, if they know the URL. 
+This can be convenient for debugging.
+
+    >>> user_browser.open(custom_language_codes_page)
+
+    >>> tag = find_tag_by_id(user_browser.contents, 'empty')
+    >>> print extract_text(tag.renderContents())
+    No custom language codes have been defined.
+
 However all they get is a read-only version of the page.
 
-    >>> owner_browser.getLink("Add a custom language code").click()
+    >>> user_browser.getLink("Add a custom language code").click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
 The page for adding custom language codes is not accessible to them.
 
-    >>> owner_browser.open(add_page)
+    >>> user_browser.open(add_page)
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-And naturally, if an admin creates a custom language code again, a
-non-admin can't remove it.
+And naturally, if the owner creates a custom language code again, an
+unprivileged user can't remove it.
 
-    >>> rosetta_admin_browser.open(add_page)
-    >>> rosetta_admin_browser.getControl("Language code:").value = 'no'
-    >>> rosetta_admin_browser.getControl("Language:").value = ['nn']
-    >>> rosetta_admin_browser.getControl("Add").click()
+    >>> owner_browser.open(add_page)
+    >>> owner_browser.getControl("Language code:").value = 'no'
+    >>> owner_browser.getControl("Language:").value = ['nn']
+    >>> owner_browser.getControl("Add").click()
 
-    >>> owner_browser.open(custom_language_codes_page)
-    >>> tag = find_tag_by_id(owner_browser.contents, 'nonempty')
+    >>> user_browser.open(custom_language_codes_page)
+    >>> tag = find_tag_by_id(user_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
     Foo uses the following custom language codes:
     Code...     ...maps to language
     no          Norwegian Nynorsk
 
-    >>> owner_browser.getLink("no").click()
-    >>> owner_browser.getLink("remove custom language code")
+    >>> user_browser.getLink("no").click()
+    >>> user_browser.getLink("remove custom language code")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> owner_browser.open(remove_page)
+    >>> user_browser.open(remove_page)
     Traceback (most recent call last):
     ...
     Unauthorized: ...
