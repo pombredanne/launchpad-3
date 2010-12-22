@@ -5,8 +5,7 @@ This test will check the upload of dist-upgrade tarballs
   >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
@@ -23,9 +22,10 @@ First, test the rejection of a missapplied changesfile name:
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntutest', distroseries=None)
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
-  ...     sync_policy, mock_logger)
+  ...     sync_policy, FakeLogger())
   DEBUG: Changes file can be unsigned.
   >>> upload.process()
   Traceback (most recent call last):
@@ -39,7 +39,7 @@ Now do a proper upload into the system.
 
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
-  ...     insecure_policy, mock_logger)
+  ...     insecure_policy, FakeLogger())
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
 
   >>> upload.process()
@@ -216,7 +216,7 @@ manual intervention.
 
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),
-  ...     insecure_policy, mock_logger)
+  ...     insecure_policy, FakeLogger())
   DEBUG: Verifying signature on dist-upgrader_20070219.1234_all.changes
 
   >>> upload.process()
@@ -247,7 +247,7 @@ Check current archive status:
 
 Publish the custom upload:
 
-  >>> pub_records = upload.queue_root.realiseUpload(mock_logger)
+  >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
   DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
   ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': Could not parse version: Bad upstream version format foobar
 
@@ -290,7 +290,7 @@ files in the respective PPA location.
 
   >>> ppa_upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
-  ...     insecure_policy, mock_logger)
+  ...     insecure_policy, FakeLogger())
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
 
   >>> ppa_upload.process()
@@ -315,7 +315,7 @@ The upload task requires that the umask be 022, otherwise things will end up
 with the wrong permission.
 
   >>> old_mask = os.umask(022)
-  >>> pub_records = ppa_upload.queue_root.realiseUpload(mock_logger)
+  >>> pub_records = ppa_upload.queue_root.realiseUpload(FakeLogger())
   DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
   >>> ignore = os.umask(old_mask)
 

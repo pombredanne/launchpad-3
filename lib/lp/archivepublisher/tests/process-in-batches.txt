@@ -15,10 +15,8 @@ records by 'task' will be ignored.
 
     >>> from lp.archivepublisher.utils import process_in_batches
 
-    >>> class DebugStdOutLogger:
-    ...     def debug(self, text):
-    ...         print 'DEBUG:', text
-    >>> logger = DebugStdOutLogger()
+    >>> from lp.services.log.logger import FakeLogger
+    >>> logger = FakeLogger()
 
 The expected 'input' argument is a `SelectResult`. We will use a
 result set containing all PUBLISHED `BinaryPackagePublishingHistory`

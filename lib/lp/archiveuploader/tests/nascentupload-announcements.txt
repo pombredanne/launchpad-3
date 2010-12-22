@@ -67,18 +67,19 @@ the same behaviour than using insecure policy, apart from allowing
 unsigned changes):
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
 
+  >>> from lp.services.log.logger import DevNullLogger
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> from lp.services.log.logger import FakeLogger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -128,10 +129,10 @@ Uploading the same package again will result in a rejection email:
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: bar diff from 1.0-1 to 1.0-1 requested
@@ -267,7 +268,7 @@ A PPA upload will contain the X-Launchpad-PPA header.
 
   >>> ppa_bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     ppa_policy, mock_logger_quiet)
+  ...     ppa_policy, DevNullLogger())
   >>> ppa_bar_src.process()
   >>> result = ppa_bar_src.do_accept()
 
@@ -306,10 +307,10 @@ override sync policy to allow binary uploads):
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),
-  ...     modified_sync_policy, mock_logger_quiet)
+  ...     modified_sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Not sending email, upload contains binaries.
@@ -334,10 +335,10 @@ NEW source uploads for 'translations' section via sync policy:
 
   >>> lang_pack = NascentUpload.from_changesfile_path(
   ...     datadir('language-packs/language-pack-pt_1.0-1_source.changes'),
-  ...     modified_sync_policy, mock_logger_quiet)
+  ...     modified_sync_policy, DevNullLogger())
   >>> lang_pack.process()
 
-  >>> lang_pack.logger = mock_logger
+  >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
@@ -365,10 +366,10 @@ AUTO_APPROVED source uploads for 'translations' section:
 
   >>> lang_pack = NascentUpload.from_changesfile_path(
   ...     datadir('language-packs/language-pack-pt_1.0-2_source.changes'),
-  ...     modified_sync_policy, mock_logger_quiet)
+  ...     modified_sync_policy, DevNullLogger())
   >>> lang_pack.process()
 
-  >>> lang_pack.logger = mock_logger
+  >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -396,9 +397,9 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 
   >>> lang_pack = NascentUpload.from_changesfile_path(
   ...     datadir('language-packs/language-pack-pt_1.0-3_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> lang_pack.process()
-  >>> lang_pack.logger = mock_logger
+  >>> lang_pack.logger = FakeLogger()
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: language-pack-pt diff from 1.0-2 to 1.0-3 requested
@@ -421,10 +422,10 @@ the upload is waiting for approval:
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -449,9 +450,9 @@ saying they are waiting for approval:
   >>> unapproved_backports_policy.setDistroSeriesAndPocket('hoary-backports')
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-3_valid/bar_1.0-3_source.changes'),
-  ...     unapproved_backports_policy, mock_logger_quiet)
+  ...     unapproved_backports_policy, DevNullLogger())
   >>> bar_src.process()
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: bar diff from 1.0-1 to 1.0-3 requested
@@ -477,10 +478,10 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-4/bar_1.0-4_source.changes'),
-  ...     modified_sync_policy, mock_logger_quiet)
+  ...     modified_sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -538,10 +539,10 @@ distroseries.
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...          'suite/bar_1.0-5_debian_auto_sync/bar_1.0-5_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -558,10 +559,10 @@ In contrast, manual sync uploads do generate the announcement:
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...          'suite/bar_1.0-6/bar_1.0-6_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -597,10 +598,10 @@ notify=False:
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> bar_src.process()
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept(notify=False)
 
 No emails generated:
@@ -624,7 +625,7 @@ dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
   >>> random_package_upload = hoary.getQueueItems()[0]
-  >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
+  >>> random_package_upload.notify(dry_run=True, logger=FakeLogger())
   DEBUG: Building recipients list.
   ...
   INFO: Would have sent a mail:
@@ -655,10 +656,10 @@ However, UTF-8 in the mail content is preserved.
   >>> bar_upload = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...         'suite/bar_1.0-10_utf8_changesfile/bar_1.0-10_source.changes'),
-  ...     anything_policy, mock_logger_quiet)
+  ...     anything_policy, DevNullLogger()
   >>> bar_upload.process()
 
-  >>> bar_upload.logger = mock_logger
+  >>> bar_upload.logger = FakeLogger()
   >>> result = bar_upload.do_accept()
   DEBUG: Creating queue entry
   ...
@@ -784,13 +785,13 @@ We first create a misnamed copy of the changes file.
 And then try to upload using the changes file with the malformed name.
 
   >>> bar_src = NascentUpload.from_changesfile_path(
-  ...     copyp, sync_policy, mock_logger_quiet)
+  ...     copyp, sync_policy, DevNullLogger())
   >>> bar_src.process()
   Traceback (most recent call last):
   ...
   EarlyReturnUploadError: An error occurred that prevented further processing.
 
-  >>> bar_src.logger = mock_logger
+  >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG: Building recipients list.
   ...

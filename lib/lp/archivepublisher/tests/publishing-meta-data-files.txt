@@ -12,7 +12,7 @@ PackageUploadCustom object for a meta-data upload:
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
     >>> from cStringIO import StringIO
-    >>> from lp.archiveuploader.tests import mock_logger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -38,7 +38,7 @@ PackageUploadCustom object for a meta-data upload:
 
 Now we can publish the custom upload:
 
-    >>> custom_upload.publish(logger=mock_logger)
+    >>> custom_upload.publish(logger=FakeLogger())
     DEBUG: Publishing custom testmeta to ubuntutest/breezy-autotest
 
 The custom file is just called "testmeta" with the contents "test".  It will

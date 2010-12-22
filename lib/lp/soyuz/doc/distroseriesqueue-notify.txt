@@ -19,7 +19,7 @@ Set up some library files for the netapplet source package.  These are not
 already present in the sample data.
 
   >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-  >>> from lp.archiveuploader.tests import datadir, mock_logger
+  >>> from lp.archiveuploader.tests import datadir
   >>> import os
   >>> netapplet_spr = netapplet_upload.sources[0].sourcepackagerelease
   >>> librarian = getUtility(ILibraryFileAliasSet)
@@ -41,9 +41,10 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
   >>> changes_file = open(changes_file_path,'r')
+  >>> from lp.services.log.logger import FakeLogger
   >>> netapplet_upload.notify(
   ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
+  ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
   ...
@@ -115,8 +116,8 @@ Now request the email:
   >>> changes_file = open(changes_file_path,'r')
   >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
+  ...     announce_list="announcelist@canonical.com",
+  ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -184,8 +185,8 @@ the case when nascent upload runs).  This example demonstrates this usage:
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
   >>> netapplet_upload.setNew()
-  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com", 
-  ...     logger=mock_logger)
+  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com",
+  ...     logger=FakeLogger())
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -235,8 +236,8 @@ summary_text argument is text that is appended to any auto-generated text for
 the summary.  Rejections don't currently auto-generate anything.
 
   >>> netapplet_upload.setRejected()
-  >>> netapplet_upload.notify(summary_text="Testing rejection message", 
-  ...     logger=mock_logger)
+  >>> netapplet_upload.notify(summary_text="Testing rejection message",
+  ...     logger=FakeLogger())
   DEBUG: Building recipients list.
   ...
   DEBUG: Sending rejection email.

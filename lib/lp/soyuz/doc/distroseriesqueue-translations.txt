@@ -19,8 +19,7 @@ uploaded into the system.
   ...     ISourcePackageNameSet)
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -76,9 +75,10 @@ queue:
   >>> buildd_policy = getPolicy(
   ...     name='buildd', distro='ubuntu', distroseries='dapper')
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> pmount_upload = NascentUpload.from_changesfile_path(
   ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
-  ...     buildd_policy, mock_logger)
+  ...     buildd_policy, FakeLogger())
   DEBUG: Changes file can be unsigned.
 
   >>> pmount_upload.process(build=build)
@@ -294,7 +294,7 @@ Distribution archives (i.e. PPAs).
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.archive = foobar_archive
 
-  >>> queue_item.customfiles[0].publish(mock_logger)
+  >>> queue_item.customfiles[0].publish(FakeLogger())
   DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
   DEBUG: Skipping translations since its purpose is not in
   MAIN_ARCHIVE_PURPOSES.
@@ -321,7 +321,7 @@ Translations coming from rebuilt packages are also ignored.
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.archive = foobar_archive
 
-  >>> queue_item.customfiles[0].publish(mock_logger)
+  >>> queue_item.customfiles[0].publish(FakeLogger())
   DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
   DEBUG: Skipping translations since its purpose is not in
   MAIN_ARCHIVE_PURPOSES.
