@@ -76,7 +76,7 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(next_view, RedirectionView)
         mo = re.match(
-            '^http://localhost:58000/\d+/foo.txt$', next_view.target)
+            '^http://.*/\d+/foo.txt$', next_view.target)
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):

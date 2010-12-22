@@ -162,11 +162,6 @@ class LibrarianWebTestCase(unittest.TestCase):
                 aid, filename)
         self.require404(self._makeURL(aid, 'different.txt'))
 
-    def _makeURL(self, aliasID, filename):
-        host = config.librarian.download_host
-        port = config.librarian.download_port
-        return 'http://%s:%d/%d/%s' % (host, port, aliasID, filename)
-
     def test_404(self):
         client = LibrarianClient()
         filename = 'sample.txt'
@@ -175,13 +170,13 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(aid)
         self.assertEqual(urlopen(url).read(), 'sample')
 
-        # Ensure our helper is working
-        self.failUnlessEqual(url, self._makeURL(aid, filename))
-
         # Change the aliasid and assert we get a 404
-        self.require404(self._makeURL(aid+1, filename))
+        self.failUnless(str(aid) in url)
+        self.require404(url.replace(str(aid), str(aid+1)))
+
         # Change the filename and assert we get a 404
-        self.require404(self._makeURL(aid, 'different.txt'))
+        self.failUnless(str(filename) in url)
+        self.require404(url.replace(filename, 'different.txt'))
 
     def test_duplicateuploads(self):
         client = LibrarianClient()

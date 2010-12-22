@@ -79,7 +79,7 @@ The user receives a confirmation email.
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../launchpad-export.tar.gz
+      http://.../launchpad-export.tar.gz
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
@@ -211,7 +211,7 @@ Let's try requesting an export in MO format:
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
+      http://.../cs_LC_MESSAGES_pmount.mo
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
