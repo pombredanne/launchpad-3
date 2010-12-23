@@ -44,7 +44,7 @@ class DistributionTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
+        text = 'Configure translations'
         return Link('+settings', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')

@@ -318,7 +318,7 @@ and "Change details" should be also accessible.
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
-    >>> admin_browser.getLink('Change permissions').click()
+    >>> admin_browser.getLink('Configure translations').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/+settings
 

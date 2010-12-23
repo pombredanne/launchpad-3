@@ -12,12 +12,12 @@ When not set, launchpad recommends the development focus to translate.
 
 Only admin users are able to change the translation focus of a product.
 Unprivileged users can see the recommended series for translation,
-but have no access to the 'Change permissions' menu.
+but have no access to the 'Configure translations' menu.
 
     >>> admin_browser.open(fooproject_url)
     >>> print extract_text(
     ...     find_tags_by_class(admin_browser.contents, 'edit sprite')[1])
-    Change permissions
+    Configure translations
 
     >>> browser.open(fooproject_url)
     >>> print extract_text(
