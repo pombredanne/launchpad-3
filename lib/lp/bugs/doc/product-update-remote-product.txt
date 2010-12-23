@@ -13,12 +13,11 @@ automatically.
     <storm...>
 
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
-    >>> from canonical.launchpad.scripts.logger import (
-    ...     FakeLogger, QuietFakeLogger)
+    >>> from lp.services.log.logger import FakeLogger, BufferLogger
     >>> from canonical.launchpad.scripts.updateremoteproduct import (
     ...     RemoteProductUpdater)
     >>> from lp.testing.faketransaction import FakeTransaction
-    >>> updater = RemoteProductUpdater(FakeTransaction(), QuietFakeLogger())
+    >>> updater = RemoteProductUpdater(FakeTransaction(), BufferLogger())
 
 
 == Testing ==
@@ -66,7 +65,7 @@ it's skipped as well.
 
     >>> class TrackerTypeCollectingUpdater(RemoteProductUpdater):
     ...     def __init__(self):
-    ...         self.logger = QuietFakeLogger()
+    ...         self.logger = BufferLogger()
     ...         self.looped_over_bug_tracker_types = set()
     ...     def updateByBugTrackerType(self, bugtracker_type):
     ...         self.looped_over_bug_tracker_types.add(bugtracker_type)
@@ -138,7 +137,7 @@ given one are ignored.
     ...         config.updateremoteproduct.dbuser)
 
     >>> updater = NoNetworkRemoteProductUpdater(
-    ...     FakeTransaction(), QuietFakeLogger())
+    ...     FakeTransaction(), BufferLogger())
 
     >>> switch_db_to_launchpad()
 
@@ -182,7 +181,7 @@ If a product already has remote_product set, it will not be updated.
 
     >>> rt_product.remote_product = u'already-set'
     >>> updater = NoNetworkRemoteProductUpdater(
-    ...     FakeTransaction(), QuietFakeLogger())
+    ...     FakeTransaction(), BufferLogger())
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     >>> print rt_product.remote_product
     already-set
@@ -208,7 +207,7 @@ after each product's remote_product has been updated.
     >>> switch_db_to_updateremoteproduct()
 
     >>> updater = NoNetworkRemoteProductUpdater(
-    ...     FakeTransaction(log_calls=True), QuietFakeLogger())
+    ...     FakeTransaction(log_calls=True), BufferLogger())
     >>> updater.print_method_calls = False
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].

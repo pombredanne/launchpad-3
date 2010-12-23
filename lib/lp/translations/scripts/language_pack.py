@@ -39,7 +39,7 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.vpoexport import IVPOExportSet
-from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 
 def iter_sourcepackage_translationdomain_mapping(series):

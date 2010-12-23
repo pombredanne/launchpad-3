@@ -1142,7 +1142,7 @@ class TestArchiveIndices(TestPublisherBase):
         self.ubuntutest.getSeries('breezy-autotest').status = (
             SeriesStatus.FROZEN)
 
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -1163,7 +1163,7 @@ class TestArchiveIndices(TestPublisherBase):
 
         ds = self.ubuntutest.getSeries('breezy-autotest')
         ds.getDistroArchSeries('i386').enabled = False
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
 
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,

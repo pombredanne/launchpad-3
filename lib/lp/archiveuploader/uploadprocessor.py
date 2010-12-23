@@ -58,7 +58,6 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -79,6 +78,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
@@ -255,7 +255,7 @@ class UploadProcessor:
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.notify(extra_info="Uploading build %s failed." % upload)
-            build.storeUploadLog(logger.buffer.getvalue())
+            build.storeUploadLog(logger.getLogBuffer())
         self.ztm.commit()
         self.moveProcessedUpload(upload_path, destination, logger)
 

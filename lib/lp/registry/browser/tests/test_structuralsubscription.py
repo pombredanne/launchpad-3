@@ -3,7 +3,10 @@
 
 """Tests for structural subscription traversal."""
 
+from urlparse import urlparse
+
 from lazr.restful.testing.webservice import FakeRequest
+import transaction
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.ftests import (
@@ -14,6 +17,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
@@ -27,13 +31,15 @@ from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
 from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionView)
+    StructuralSubscriptionView,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
+    ws_object,
     )
 from lp.testing.views import create_initialized_view
 
@@ -356,3 +362,49 @@ class TestSourcePackageStructuralSubscribersPortletView(
         self.assertEqual(
             "To all bugs in %s" % self.target.displayname,
             self.view.target_label)
+
+
+class TestStructuralSubscriptionAPI(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionAPI, self).setUp()
+        self.owner = self.factory.makePerson(name=u"foo")
+        self.structure = self.factory.makeProduct(
+            owner=self.owner, name=u"bar")
+        with person_logged_in(self.owner):
+            self.subscription = self.structure.addBugSubscription(
+                self.owner, self.owner)
+        transaction.commit()
+        self.service = self.factory.makeLaunchpadService(self.owner)
+        self.ws_subscription = ws_object(self.service, self.subscription)
+
+    def test_newBugFilter(self):
+        # New bug subscription filters can be created with newBugFilter().
+        ws_subscription_filter = self.ws_subscription.newBugFilter()
+        self.assertEqual(
+            "bug_subscription_filter",
+            urlparse(ws_subscription_filter.resource_type_link).fragment)
+        self.assertEqual(
+            ws_subscription_filter.structural_subscription.self_link,
+            self.ws_subscription.self_link)
+
+    def test_bug_filters(self):
+        # The bug_filters property is a collection of IBugSubscriptionFilter
+        # instances previously created by newBugFilter().
+        bug_filter_links = lambda: set(
+            bug_filter.self_link for bug_filter in (
+                self.ws_subscription.bug_filters))
+        self.assertEqual(set(), bug_filter_links())
+        # A new filter appears in the bug_filters collection.
+        ws_subscription_filter1 = self.ws_subscription.newBugFilter()
+        self.assertEqual(
+            set([ws_subscription_filter1.self_link]),
+            bug_filter_links())
+        # A second new filter also appears in the bug_filters collection.
+        ws_subscription_filter2 = self.ws_subscription.newBugFilter()
+        self.assertEqual(
+            set([ws_subscription_filter1.self_link,
+                 ws_subscription_filter2.self_link]),
+            bug_filter_links())

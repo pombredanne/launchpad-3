@@ -94,7 +94,6 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -207,11 +206,6 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.poll import (
-    IPollSet,
-    PollAlgorithm,
-    PollSecrecy,
-    )
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -228,6 +222,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
@@ -728,16 +723,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             for member in members:
                 naked_team.addMember(member, owner)
         return team
-
-    def makePoll(self, team, name, title, proposition,
-                 poll_type=PollAlgorithm.SIMPLE):
-        """Create a new poll which starts tomorrow and lasts for a week."""
-        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
-        datecloses = dateopens + timedelta(days=7)
-        return getUtility(IPollSet).new(
-            team, name, title, proposition, dateopens, datecloses,
-            PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=poll_type)
 
     def makeTranslationGroup(self, owner=None, name=None, title=None,
                              summary=None, url=None):
@@ -2411,7 +2396,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             class Changes:
                 architectures = ['source']
-            logger = QuietFakeLogger()
+            logger = BufferLogger()
             policy = BuildDaemonUploadPolicy()
             policy.distroseries = self.makeDistroSeries()
             policy.archive = self.makeArchive()

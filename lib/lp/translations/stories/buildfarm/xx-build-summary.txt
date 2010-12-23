@@ -14,7 +14,6 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> from lp.testing.factory import (

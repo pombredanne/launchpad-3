@@ -13,7 +13,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -33,6 +32,7 @@ from lp.services.apachelogparser.base import (
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 
@@ -169,8 +169,8 @@ class TestLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 5 lines resulting in 3 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 5 lines resulting in 3 download stats.')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
@@ -193,8 +193,8 @@ class TestLogFileParsing(TestCase):
             fd, start_position=self._getLastLineStart(fd), logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 1 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 1 download stats.')
         self.assertEqual(parsed_bytes, fd.tell())
 
         self.assertContentEqual(
@@ -210,7 +210,7 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertIn('Error', self.logger.buffer.getvalue())
+        self.assertIn('Error', self.logger.getLogBuffer())
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, 0)
 
@@ -222,8 +222,8 @@ class TestLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 0 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -247,8 +247,8 @@ class TestLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 0 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -265,8 +265,8 @@ class TestLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 1 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 1 download stats.')
 
         self.assertEqual(downloads,
             {'/15018215/ul_logo_64x64.png':
