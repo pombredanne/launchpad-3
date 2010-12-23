@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from debian.deb822 import (
     Changes,
     Deb822Dict,
@@ -493,6 +492,14 @@ class TestGenerateChanges(TestCase):
         changes = self.generateChanges(closes=["1232", "4323"])
         self.assertEquals("1232 4323", changes["Closes"])
         self.assertNotIn("Launchpad-bugs-fixed", changes)
+
+    def test_binary_newline(self):
+        # If the Dsc Binary: line contains newlines those are properly
+        # formatted in the new changes file.
+        dsc = self.getBaseDsc()
+        dsc["Binary"] = "binary1\n binary2 \n binary3"
+        changes = self.generateChanges(dsc=dsc)
+        self.assertEquals("binary1\n binary2 \n binary3", changes["Binary"])
 
     def test_lp_closes(self):
         # Launchpad-Bugs-Fixed gets set if any Launchpad bugs to close were
