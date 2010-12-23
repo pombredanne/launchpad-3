@@ -239,7 +239,7 @@ page and discard the changes.
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Discarded ...')
-    >>> sample_browser.getControl("Cancel").click()
+    >>> sample_browser.getLink("Cancel").click()
 
     >>> print sample_browser.title
     Devel PPA : “Landscape Developers” team
@@ -452,13 +452,13 @@ will result in an error:
 Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
-    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.getLink("Cancel").click()
 
     >>> print admin_browser.title
     Hack PPA : James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.getLink("Cancel").click()
 
     >>> print admin_browser.title
     Hack PPA : James Blackwell
@@ -553,15 +553,14 @@ all his PPAs.
 
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
-    PPA name:
-      A unique name used to identify this PPA. It will form part of the URL
+    Name:
+      A unique name to identify the archive. It will form part of the URL
       to the archive repository.
-    Displayname:
-      Displayname for this PPA. It will be used in the signing key's
-      description if this is the first PPA for a person.
-    PPA contents description: (Optional)
-      A short description of this PPA. URLs are allowed and will be rendered
-      as links.
+    Display name:
+      A short title for the archive.
+    Description: (Optional)
+      A short description of the archive. URLs are allowed and will be
+      rendered as links.
 
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
