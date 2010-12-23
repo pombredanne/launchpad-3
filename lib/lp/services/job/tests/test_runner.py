@@ -380,8 +380,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(1, len(runner.incomplete_jobs))
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(dedent("""\
-             INFO: Running through Twisted.
-             INFO: Job resulted in OOPS: %s
+             INFO Running through Twisted.
+             INFO Job resulted in OOPS: %s
              """) % oops.id, logger.getLogBuffer())
         self.assertEqual('TimeoutError', oops.type)
         self.assertIn('Job ran too long.', oops.value)

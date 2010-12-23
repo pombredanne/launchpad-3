@@ -533,7 +533,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Can't check the ordering, so we'll just check that one of the
         # warnings are there.
         self.assertIn(
-            "WARNING: Ignoring invalid directory zz",
+            "WARNING Ignoring invalid directory zz",
             librariangc.log.getLogBuffer())
 
     def test_delete_unwanted_files_bug437084(self):

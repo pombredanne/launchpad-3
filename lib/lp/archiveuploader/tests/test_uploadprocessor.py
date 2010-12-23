@@ -1901,9 +1901,9 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
-        self.assertTrue('ERROR: Exception while processing upload '
+        self.assertTrue('ERROR Exception while processing upload '
             in log_contents)
-        self.assertFalse('DEBUG: Moving upload directory '
+        self.assertFalse('DEBUG Moving upload directory '
             in log_contents)
 
     def testBinaryPackageBuilds(self):
