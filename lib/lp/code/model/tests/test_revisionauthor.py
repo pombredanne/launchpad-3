@@ -19,9 +19,9 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.logger import MockLogger
 
 
 class TestRevisionEmailExtraction(TestCase):
@@ -165,7 +165,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
         # After the garbo RevisionAuthorEmailLinker job runs, the link
         # is made.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         self.assertEqual(harry, self.author.person,
                          'Harry should now be the author.')
 

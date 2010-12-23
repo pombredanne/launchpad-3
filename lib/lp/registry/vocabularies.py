@@ -245,6 +245,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
+        # Product names are always lowercase.
+        token = token.lower()
         product = self._table.selectOneBy(name=token, active=True)
         if product is None:
             raise LookupError(token)
@@ -1488,6 +1490,12 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
         return SimpleTerm(obj, obj.name, title)
 
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # Pillar names are always lowercase.
+        return super(PillarVocabularyBase, self).getTermByToken(
+            token.lower())
+
     def __contains__(self, obj):
         raise NotImplementedError
 
@@ -1568,3 +1576,9 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     _table = SourcePackageName
     _orderBy = 'name'
     iterator = SourcePackageNameIterator
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # package names are always lowercase.
+        return super(SourcePackageNameVocabulary, self).getTermByToken(
+            token.lower())

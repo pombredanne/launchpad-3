@@ -255,7 +255,7 @@ class UploadProcessor:
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.notify(extra_info="Uploading build %s failed." % upload)
-            build.storeUploadLog(logger.buffer.getvalue())
+            build.storeUploadLog(logger.getLogBuffer())
         self.ztm.commit()
         self.moveProcessedUpload(upload_path, destination, logger)
 

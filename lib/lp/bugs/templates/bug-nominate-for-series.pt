@@ -16,15 +16,15 @@
       <div metal:fill-slot="extra_info">
         <tal:targeting-mode condition="view/userIsReleaseManager">
           <p>
-          Release targeting allows you to track the status, assignee, and
-          importance of a bug in one or more official releases.
+          Series targeting allows you to track the status, assignee, and
+          importance of a bug in one or more official series.
           </p>
         </tal:targeting-mode>
 
         <tal:nomination-mode condition="not:view/userIsReleaseManager">
           <p>
           Bug nominations are evaluated by release managers and accepted
-          or declined for fixing in a release.
+          or declined for fixing in a series.
           </p>
         </tal:nomination-mode>
 
@@ -47,17 +47,6 @@
              Foo Bar
           </a>.
         </p>
-
-        <p tal:condition="not:view/getReleaseManager"
-           tal:define="release_context view/getReleaseContext">
-          There is no
-          <span tal:condition="not:view/userCanChangeDriver"
-                tal:content="string:release manager for ${release_context/displayname}"
-          /><a tal:condition="view/userCanChangeDriver"
-             tal:attributes="href string:${release_context/fmt:url}/+driver"
-             tal:content="string:release manager for ${release_context/displayname}"/>.
-        </p>
-
       </div>
 
     </div>

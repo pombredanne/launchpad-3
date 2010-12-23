@@ -37,7 +37,6 @@ from lp.archiveuploader.tests import (
     datadir,
     getPolicy,
     insertFakeChangesFileForAllPackageUploads,
-    mock_logger_quiet,
     )
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
@@ -48,6 +47,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -154,7 +154,7 @@ class TestQueueTool(TestQueueBase):
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
         bar_src = NascentUpload.from_changesfile_path(
             datadir(changesfile),
-            sync_policy, mock_logger_quiet)
+            sync_policy, DevNullLogger())
         bar_src.process()
         bar_src.do_accept()
         LaunchpadZopelessLayer.txn.commit()
