@@ -34,7 +34,6 @@ from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
@@ -69,6 +68,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
@@ -226,12 +226,12 @@ class TestWorkerMonitorUnit(TestCase):
 
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
-            job_id, QuietFakeLogger(),
+            job_id, BufferLogger(),
             FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
 
     def makeWorkerMonitorWithoutJob(self, exception=None):
         return self.WorkerMonitor(
-            1, QuietFakeLogger(),
+            1, BufferLogger(),
             FakeCodeImportScheduleEndpointProxy({}, exception))
 
     def test_getWorkerArguments(self):
@@ -480,7 +480,7 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
             else:
                 job_data = {}
             CodeImportWorkerMonitor.__init__(
-                self, 1, QuietFakeLogger(),
+                self, 1, BufferLogger(),
                 FakeCodeImportScheduleEndpointProxy(job_data))
             self.result_status = None
             self.process_deferred = process_deferred
@@ -704,7 +704,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         This implementation does it in-process.
         """
         monitor = CIWorkerMonitorForTesting(
-            job_id, QuietFakeLogger(),
+            job_id, BufferLogger(),
             xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
         deferred = monitor.run()
         def save_protocol_object(result):

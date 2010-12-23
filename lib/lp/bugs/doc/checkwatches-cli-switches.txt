@@ -8,7 +8,7 @@ the updateBugTrackers() method.
     >>> from canonical.database.sqlbase import (
     ...     cursor, sqlvalues, ZopelessTransactionManager)
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 We'll update all bugtrackers so that the test doesn't try to make any
@@ -70,10 +70,10 @@ line.
     >>> run_cronscript_with_args([
     ...     '--bug-tracker=mozilla.org', '--bug-tracker=debbugs', '-v',
     ...     '--batch-size=10'])
-    DEBUG   Using a global batch size of 10
-    DEBUG   No watches to update on https://bugzilla.mozilla.org/
-    DEBUG   No watches to update on http://bugs.debian.org
-    INFO    Time for this run: ... seconds.
+    DEBUG Using a global batch size of 10
+    DEBUG No watches to update on https://bugzilla.mozilla.org/
+    DEBUG No watches to update on http://bugs.debian.org
+    INFO  Time for this run: ... seconds.
 
 
 Updating all watches from the command line
@@ -106,7 +106,7 @@ demonstrate this.
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
-    INFO    Time for this run...
+    INFO Time for this run...
 
 
 Getting help

@@ -15,7 +15,7 @@ from lp.archivepublisher.diskpool import (
     DiskPool,
     poolify,
     )
-from lp.archivepublisher.tests.util import FakeLogger
+from lp.services.log.logger import BufferLogger
 
 
 class MockFile:
@@ -82,7 +82,7 @@ class TestPool(unittest.TestCase):
     def setUp(self):
         self.pool_path = mkdtemp()
         self.temp_path = mkdtemp()
-        self.pool = DiskPool(self.pool_path, self.temp_path, FakeLogger())
+        self.pool = DiskPool(self.pool_path, self.temp_path, BufferLogger())
 
     def tearDown(self):
         shutil.rmtree(self.pool_path)

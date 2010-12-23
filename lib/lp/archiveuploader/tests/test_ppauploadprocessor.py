@@ -44,7 +44,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -1079,7 +1078,6 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             'specified in DSC are broken or missing, skipping package '
             'unpack verification.')
 
-        self.log.lines = []
         # The same happens with higher versions of 'bar' depending on the
         # unofficial 'orig.tar.gz'.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
