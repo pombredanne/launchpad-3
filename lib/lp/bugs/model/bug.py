@@ -1790,7 +1790,7 @@ BugMessage""" % sqlvalues(self.id))
 
     @cachedproperty
     def _known_viewers(self):
-        """A dict of of known persons able to view this bug.
+        """A set of known persons able to view this bug.
 
         Seed it by including the list of all owners of bugtasks for the bug.
         """
