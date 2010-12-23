@@ -44,7 +44,7 @@ class DistributionTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Change permissions'
+        text = 'Configure translations'
         return Link('+settings', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
@@ -129,13 +129,14 @@ class DistributionView(LaunchpadView):
 
 
 class DistributionSettingsView(TranslationsMixin, DistributionEditView):
-    label = "Set permissions and policies"
-    field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def page_title(self):
-        return "Set translation permissions for %s" % (
-            self.context.displayname)
+    label = "Translations settings"
+    page_title = "Settings"
+    field_names = [
+        "official_rosetta",
+        "translation_focus",
+        "translationgroup",
+        "translationpermission",
+        ]
 
     @property
     def cancel_url(self):

@@ -809,12 +809,12 @@
         template="../templates/hastranslationimports-index.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
-        name="+settings"
+        name="+configure-translations"
         for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
         class="lp.translations.browser.product.ProductSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/>
+        template="../templates/set-translators.pt"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

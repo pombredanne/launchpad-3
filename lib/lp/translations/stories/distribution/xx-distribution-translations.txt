@@ -134,11 +134,11 @@ Administrator can change the translation focus for a distribution.
     ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> editor_browser.open('http://launchpad.dev/ubuntu')
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu hoary']
-    >>> editor_browser.getControl('Translation Focus').displayValue = [
+    >>> editor_browser.getControl('Translation focus').displayValue = [
     ...     'ubuntu grumpy']
     >>> editor_browser.getControl('Change', index=3).click()
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu grumpy']

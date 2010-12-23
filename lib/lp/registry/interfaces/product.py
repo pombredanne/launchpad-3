@@ -679,11 +679,11 @@ class IProductPublic(
 
     translation_focus = exported(
         ReferenceChoice(
-            title=_("Translation Focus"), required=False,
+            title=_("Translation focus"), required=False,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_(
-                'The ProductSeries where translations are focused.')))
+                'Project series translators should focus on.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "

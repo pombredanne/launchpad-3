@@ -20,7 +20,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.enums import service_uses_launchpad
-from lp.registry.browser.product import ProductEditView
+from lp.registry.browser.product import (
+    ProductConfigureBase,
+    ProductEditView,
+)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -45,8 +48,9 @@ class ProductTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Change permissions'
-        return Link('+settings', text, icon='edit', site='translations')
+        text = 'Configure translations'
+        return Link(
+            '+configure-translations', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
@@ -70,20 +74,16 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductSettingsView(TranslationsMixin, ProductEditView):
-    label = "Set permissions and policies"
-    page_title = "Permissions and policies"
+class ProductSettingsView(TranslationsMixin, ProductConfigureBase):
+    label = "Configure translations"
+    page_title = "Configure translations"
+    usage_fieldname = "translations_usage"
     field_names = [
+            usage_fieldname,
+            "translation_focus",
             "translationgroup",
             "translationpermission",
-            "translation_focus",
             ]
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context, rootsite="translations")
-
-    next_url = cancel_url
 
 
 class ProductView(LaunchpadView):
