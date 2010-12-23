@@ -45,7 +45,7 @@ class ProductTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Change permissions'
+        text = 'Settings'
         return Link('+settings', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -71,12 +71,13 @@ class ProductTranslationsMenu(NavigationMenu):
 
 
 class ProductSettingsView(TranslationsMixin, ProductEditView):
-    label = "Set permissions and policies"
-    page_title = "Permissions and policies"
+    label = "Translations settings"
+    page_title = "Settings"
     field_names = [
+            "official_rosetta",
+            "translation_focus",
             "translationgroup",
             "translationpermission",
-            "translation_focus",
             ]
 
     @property

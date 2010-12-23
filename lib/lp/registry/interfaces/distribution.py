@@ -284,9 +284,9 @@ class IDistributionPublic(
         "get the full functionality of LP")
 
     translation_focus = Choice(
-        title=_("Translation Focus"),
+        title=_("Translation focus"),
         description=_(
-            "The DistroSeries that should get the translation effort focus."),
+            "The release series translators should focus on."),
         required=False,
         vocabulary='FilteredDistroSeries')
 
