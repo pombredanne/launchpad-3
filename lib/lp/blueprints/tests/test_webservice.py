@@ -14,7 +14,6 @@ from lp.blueprints.interfaces.specification import (
     )
 from lp.testing import (
     launchpadlib_for,
-    launchpadlib_for_anonymous,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
@@ -237,7 +236,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # Need to endInteraction() because launchpadlib_for_anonymous() will
         # setup a new one.
         endInteraction()
-        lplib = launchpadlib_for_anonymous('lplib-test', version='devel')
+        lplib = launchpadlib_for('lplib-test', person=None, version='devel')
         ws_product = ws_object(lplib, product)
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"], ws_product.all_specifications)

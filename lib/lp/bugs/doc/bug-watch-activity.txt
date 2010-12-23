@@ -73,10 +73,10 @@ BugWatchActivity entry.
 We can demonstrate this by passing our bug watch to
 CheckwatchesMaster.updateBugWatches().
 
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from lp.services.log.logger import BufferLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
-    >>> updater = CheckwatchesMaster(transaction, QuietFakeLogger())
+    >>> updater = CheckwatchesMaster(transaction, BufferLogger())
     >>> updater.updateBugWatches(
     ...     TestExternalBugTracker('http://example.com'), [bug_watch])
 

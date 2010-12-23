@@ -59,7 +59,10 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         store = IStore(BranchJob)
 
         # Pass public HTTP URL for the branch.
-        metadata = {'branch_url': self.branch.composePublicURL()}
+        metadata = {
+            'branch_url': self.branch.composePublicURL(),
+            'build_id': self.id,
+            }
         branch_job = BranchJob(
             self.branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
         store.add(branch_job)

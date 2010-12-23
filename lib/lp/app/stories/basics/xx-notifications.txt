@@ -15,8 +15,8 @@ Content-Type: text/html;charset=utf-8
 ...<div class="error message">Error notification <b>2</b></div>
 ...<div class="warning message">Warning notification <b>1</b></div>
 ...<div class="warning message">Warning notification <b>2</b></div>
-...<div class="informational message">Notice notification <b>1</b></div>
-...<div class="informational message">Notice notification <b>2</b></div>
+...<div class="informational message">Info notification <b>1</b></div>
+...<div class="informational message">Info notification <b>2</b></div>
 ...<div class="debug message">Debug notification <b>1</b></div>
 ...<div class="debug message">Debug notification <b>2</b></div>
 ...
@@ -49,8 +49,6 @@ HTTP/1.1 200 Ok
 ...<div class="error message">Error notification <b>2</b></div>
 ...<div class="warning message">Warning notification <b>1</b></div>
 ...<div class="warning message">Warning notification <b>2</b></div>
-...<div class="informational message">Notice notification <b>1</b></div>
-...<div class="informational message">Notice notification <b>2</b></div>
 ...<div class="informational message">Info notification <b>1</b></div>
 ...<div class="informational message">Info notification <b>2</b></div>
 ...<div class="debug message">Debug notification <b>1</b></div>
@@ -90,8 +88,6 @@ HTTP/1.1 200 Ok
 ...<div class="error message">Error notification <b>2</b></div>
 ...<div class="warning message">Warning notification <b>1</b></div>
 ...<div class="warning message">Warning notification <b>2</b></div>
-...<div class="informational message">Notice notification <b>1</b></div>
-...<div class="informational message">Notice notification <b>2</b></div>
 ...<div class="informational message">Info notification <b>1</b></div>
 ...<div class="informational message">Info notification <b>2</b></div>
 ...<div class="debug message">Debug notification <b>1</b></div>
@@ -151,8 +147,6 @@ HTTP/1.1 200 Ok
 ...<div class="error message">Error notification <b>2</b></div>
 ...<div class="warning message">Warning notification <b>1</b></div>
 ...<div class="warning message">Warning notification <b>2</b></div>
-...<div class="informational message">Notice notification <b>1</b></div>
-...<div class="informational message">Notice notification <b>2</b></div>
 ...<div class="informational message">Info notification <b>1</b></div>
 ...<div class="informational message">Info notification <b>2</b></div>
 ...<div class="debug message">Debug notification <b>1</b></div>

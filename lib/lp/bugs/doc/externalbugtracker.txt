@@ -714,8 +714,8 @@ ExternalBugTracker.
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
     ...     'http://example.com')
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> bug_watch_updater = CheckwatchesMaster(transaction, QuietFakeLogger())
+    >>> from lp.services.log.logger import BufferLogger
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, BufferLogger())
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
@@ -1081,7 +1081,7 @@ external_bugtracker.
     ...         return [(external_bugtracker, bug_watches)]
 
     >>> bug_watch_updater = NonConnectingCheckwatchesMaster(
-    ...     transaction, QuietFakeLogger())
+    ...     transaction, BufferLogger())
     >>> transaction.commit()
     >>> bug_watch_updater._updateBugTracker(
     ...     standard_bugzilla, batch_size=2)
