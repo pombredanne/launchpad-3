@@ -249,6 +249,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # Translations in different languages are aggregated to one target
         # but the language names are listed.
         other_language = self.factory.makeLanguage()
+        self.view.context.addLanguage(other_language)
         pofiles = self._makePOFiles(
             2, previously_worked_on=True,
             languages=[self.language, other_language])
