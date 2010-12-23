@@ -10,7 +10,8 @@ __all__ = [
     'FakeLogger',
     ]
 
-from cStringIO import StringIO
+from StringIO import StringIO
+import logging
 import sys
 import traceback
 
@@ -19,9 +20,26 @@ class FakeLogger:
     """Emulates a proper logger, just printing everything out the given file.
     """
 
+    loglevel = logging.DEBUG
+
     def __init__(self, output_file=None):
         """The default output_file is sys.stdout."""
         self.output_file = output_file
+
+    def setLevel(self, loglevel):
+        self.loglevel = loglevel
+
+    def getEffectiveLevel(self):
+        return self.loglevel
+
+    def _format_message(self, msg, *args):
+        if not isinstance(msg, basestring):
+            msg = str(msg)
+        # To avoid type errors when the msg has % values and args is empty,
+        # don't expand the string with empty args.
+        if len(args) > 0:
+            msg %= args
+        return msg
 
     def message(self, prefix, msg, *stuff, **kw):
         # We handle the default output file here because sys.stdout
@@ -31,7 +49,7 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
-        print >> output_file, prefix, str(msg) % stuff
+        print >> output_file, prefix, self._format_message(msg, *stuff)
 
         if 'exc_info' in kw:
             traceback.print_exc(file=output_file)
@@ -40,12 +58,14 @@ class FakeLogger:
         self.message('log>', *stuff, **kw)
 
     def warning(self, *stuff, **kw):
-        self.message('WARNING', *stuff, **kw)
+        if self.loglevel <= logging.WARN:
+            self.message('WARNING', *stuff, **kw)
 
     warn = warning
 
     def error(self, *stuff, **kw):
-        self.message('ERROR', *stuff, **kw)
+        if self.loglevel <= logging.ERROR:
+            self.message('ERROR', *stuff, **kw)
 
     exception = error
 
@@ -55,10 +75,12 @@ class FakeLogger:
     fatal = critical
 
     def info(self, *stuff, **kw):
-        self.message('INFO', *stuff, **kw)
+        if self.loglevel <= logging.INFO:
+            self.message('INFO', *stuff, **kw)
 
     def debug(self, *stuff, **kw):
-        self.message('DEBUG', *stuff, **kw)
+        if self.loglevel <= logging.DEBUG:
+            self.message('DEBUG', *stuff, **kw)
 
 
 class DevNullLogger(FakeLogger):
@@ -72,24 +94,16 @@ class BufferLogger(FakeLogger):
     """A logger that logs to a StringIO object."""
 
     def __init__(self):
-        self.buffer = StringIO()
-
-    def message(self, prefix, msg, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, str(msg) % stuff))
-
-        if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
+        super(BufferLogger, self).__init__(StringIO())
+        # self.buffer = StringIO()
 
     def getLogBuffer(self):
         """Return the existing log messages."""
-        return self.buffer.getvalue()
+        return self.output_file.getvalue()
 
     def clearLogBuffer(self):
         """Clear out the existing log messages."""
-        self.buffer = StringIO()
+        self.output_file = StringIO()
 
     def getLogBufferAndClear(self):
         """Return the existing log messages and clear the buffer."""

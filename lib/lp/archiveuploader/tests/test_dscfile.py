@@ -17,13 +17,10 @@ from lp.archiveuploader.dscfile import (
     unpack_source,
     )
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import (
-    datadir,
-    mock_logger_quiet,
-    )
+from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import BufferLogger, DevNullLogger
 from lp.soyuz.enums import SourcePackageFormat
 from lp.testing import (
     TestCase,
@@ -55,7 +52,7 @@ class TestDscFile(TestCase):
         processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
         error = self.assertRaises(
-            UploadError, find_copyright, self.tmpdir, mock_logger_quiet)
+            UploadError, find_copyright, self.tmpdir, DevNullLogger())
         self.assertEqual(
             error.args[0], "Symbolic link for debian/copyright not allowed")
 
@@ -67,7 +64,7 @@ class TestDscFile(TestCase):
         file.close()
 
         self.assertEquals(
-            copyright, find_copyright(self.tmpdir, mock_logger_quiet))
+            copyright, find_copyright(self.tmpdir, DevNullLogger()))
 
     def testBadDebianChangelog(self):
         """Test that a symlink as debian/changelog will fail.
@@ -77,7 +74,7 @@ class TestDscFile(TestCase):
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
         error = self.assertRaises(
-            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+            UploadError, find_changelog, self.tmpdir, DevNullLogger())
         self.assertEqual(
             error.args[0], "Symbolic link for debian/changelog not allowed")
 
@@ -89,7 +86,7 @@ class TestDscFile(TestCase):
         file.close()
 
         self.assertEquals(
-            changelog, find_changelog(self.tmpdir, mock_logger_quiet))
+            changelog, find_changelog(self.tmpdir, DevNullLogger()))
 
     def testOversizedFile(self):
         """Test that a file larger than 10MiB will fail.
@@ -109,7 +106,7 @@ class TestDscFile(TestCase):
         file.close()
 
         error = self.assertRaises(
-            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+            UploadError, find_changelog, self.tmpdir, DevNullLogger())
         self.assertEqual(
             error.args[0], "debian/changelog file too large, 10MiB max")
 

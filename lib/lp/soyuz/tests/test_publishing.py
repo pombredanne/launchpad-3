@@ -548,14 +548,10 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        class TestLogger:
-            # Silent logger.
-            def debug(self, msg):
-                pass
         distroseries.updateCompletePackageCache(
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
-            log=TestLogger())
+            log=DevNullLogger())
         transaction.commit()
         reconnect_stores(restore_db_connection)
 

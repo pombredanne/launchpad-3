@@ -19,7 +19,7 @@ Set up some library files for the netapplet source package.  These are not
 already present in the sample data.
 
   >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-  >>> from lp.archiveuploader.tests import datadir, mock_logger
+  >>> from lp.archiveuploader.tests import datadir
   >>> import os
   >>> netapplet_spr = netapplet_upload.sources[0].sourcepackagerelease
   >>> librarian = getUtility(ILibraryFileAliasSet)
@@ -41,19 +41,20 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
   >>> changes_file = open(changes_file_path,'r')
+  >>> from lp.services.log.logger import FakeLogger
   >>> netapplet_upload.notify(
   ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
+  ...     changes_file_object=changes_file, logger=FakeLogger())
+  DEBUG Building recipients list.
+  DEBUG Changes file is unsigned, adding changer as recipient
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG above if files already exist in other distroseries.
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Helper functions to examine emails that were sent:
 
@@ -115,17 +116,17 @@ Now request the email:
   >>> changes_file = open(changes_file_path,'r')
   >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
-  DEBUG: Building recipients list.
+  ...     announce_list="announcelist@canonical.com",
+  ...     changes_file_object=changes_file, logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: Announcing to announcelist@canonical.com
+  DEBUG Announcing to announcelist@canonical.com
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
 
 There are two emails, the upload acknowledgement and the announcement, because
@@ -184,17 +185,17 @@ the case when nascent upload runs).  This example demonstrates this usage:
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
   >>> netapplet_upload.setNew()
-  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com", 
-  ...     logger=mock_logger)
-  DEBUG: Building recipients list.
+  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com",
+  ...     logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG above if files already exist in other distroseries.
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Only one email is generated:
 
@@ -235,21 +236,21 @@ summary_text argument is text that is appended to any auto-generated text for
 the summary.  Rejections don't currently auto-generate anything.
 
   >>> netapplet_upload.setRejected()
-  >>> netapplet_upload.notify(summary_text="Testing rejection message", 
-  ...     logger=mock_logger)
-  DEBUG: Building recipients list.
+  >>> netapplet_upload.notify(summary_text="Testing rejection message",
+  ...     logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sending rejection email.
+  DEBUG Sending rejection email.
   ...
-  DEBUG:     Subject: netapplet-1.0.0.tar.gz rejected
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG:     Body:
-  DEBUG: Rejected:
-  DEBUG: Testing rejection message
+  DEBUG     Subject: netapplet-1.0.0.tar.gz rejected
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Body:
+  DEBUG Rejected:
+  DEBUG Testing rejection message
   ...
-  DEBUG: If you don't understand why your files were rejected, or if the
+  DEBUG If you don't understand why your files were rejected, or if the
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Only one email is generated:
 
