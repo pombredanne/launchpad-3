@@ -18,7 +18,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -26,7 +25,7 @@ from canonical.testing.layers import (
     )
 from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
-from lp.archivepublisher.config import Config
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -35,6 +34,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
@@ -59,7 +59,6 @@ from lp.soyuz.model.publishing import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.fakemethod import FakeMethod
 
 
 class SoyuzTestPublisher:
@@ -546,14 +545,10 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        class TestLogger:
-            # Silent logger.
-            def debug(self, msg):
-                pass
         distroseries.updateCompletePackageCache(
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
-            log=TestLogger())
+            log=DevNullLogger())
         transaction.commit()
         reconnect_stores(restore_db_connection)
 
@@ -571,13 +566,11 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         super(TestNativePublishingBase, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
-        self.logger = FakeLogger()
-
-        self.logger.message = FakeMethod()
+        self.logger = DevNullLogger()
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
@@ -956,6 +949,25 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
 
+    def test_ppa_override_no_ancestry(self):
+        # Test a PPA publication with no ancestry is 'main'
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph.overrideFromAncestry()
+        self.assertEquals(spph.component.name, 'main')
+
+    def test_ppa_override_with_ancestry(self):
+        # Test a PPA publication with ancestry
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2.overrideFromAncestry()
+        self.assertEquals(spph2.component.name, 'main')
 
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""

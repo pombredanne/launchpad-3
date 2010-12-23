@@ -129,7 +129,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             SpecificationImplementationStatus.STARTED, spec.implementation_status)
         self.assertEqual(spec.owner, spec.starter)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Started".', notification.message)
 
@@ -162,7 +162,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             spec.implementation_status)
         self.assertIs(None, spec.starter)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Not started".', notification.message)
 
@@ -182,7 +182,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             spec.implementation_status)
         self.assertEqual(spec.owner, spec.completer)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Complete".', notification.message)
 

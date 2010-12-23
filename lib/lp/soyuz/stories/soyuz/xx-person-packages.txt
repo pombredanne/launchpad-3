@@ -50,9 +50,8 @@ data.  The page lists columns of data, "Name", "Uploaded To" and "Version"
 that link to a distributionsourcepackage, distroseriessourcepackage and
 distrosourcepackagerelease respectively.
 
-Following a link on any item in the name column will take us to a
-distribution source package page.  We'll use "cnews" on the third
-line here as it has working links in the sample data:
+The package name column links to the distribution source package page.
+The user chooses to see the distribution information for cnews:
 
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink("cnews")
@@ -62,8 +61,8 @@ line here as it has working links in the sample data:
     >>> browser.title
     '...cnews... package : Ubuntu'
 
-Same process for the second column should take us to a distribution series
-source package page:
+The second column links to the distribution series source package page. The
+user follows the "Ubuntu Hoary" link next to cnews:
 
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/hoary/+source/cnews")
@@ -73,8 +72,8 @@ source package page:
     >>> browser.title
     '...cnews... package : Hoary (5.04) : Ubuntu'
 
-Same again for the third column should take us to a distribution source
-package release page:
+The third column links to the distribution source package release page. The
+user follows the cnews version link to see the page.
 
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/+source/cnews/cr.g7-37")

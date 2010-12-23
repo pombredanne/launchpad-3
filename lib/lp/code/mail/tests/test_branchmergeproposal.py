@@ -109,17 +109,24 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.root_message_id = None
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         reviewer = bmp.target_branch.owner
-        self.assertEqual("""\
-Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
+        expected = dedent("""\
+        Baz Qux has proposed merging %(source)s into %(target)s.
 
-Requested reviews:
-  %s
+        Requested reviews:
+          %(reviewer)s
 
---\x20
-%s
-%s
-""" % (reviewer.unique_displayname, canonical_url(bmp),reason.getReason()),
-       ctrl.body)
+        For more details, see:
+        %(bmp)s
+        --\x20
+        %(bmp)s
+        %(reason)s
+        """) % {
+            'source': bmp.source_branch.bzr_identity,
+            'target': bmp.target_branch.bzr_identity,
+            'reviewer': reviewer.unique_displayname,
+            'bmp': canonical_url(bmp),
+            'reason': reason.getReason()}
+        self.assertEqual(expected, ctrl.body)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar', ctrl.subject)
@@ -131,7 +138,7 @@ Requested reviews:
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
-        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)        
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
@@ -146,8 +153,7 @@ Requested reviews:
         expected = (
             'Related bugs:\n'
             '  #%d I am a bug\n'
-            '  %s\n' % (bug.id, canonical_url(bug))
-            )
+            '  %s\n' % (bug.id, canonical_url(bug)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_without_bugs(self):
@@ -160,14 +166,16 @@ Requested reviews:
     def test_forCreation_with_review_request(self):
         """Correctly format list of reviewers."""
         reviewer = self.factory.makePerson(name='review-person')
-        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)        
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
             '\nRequested reviews:'
-            '\n  Review-person (review-person)'
-            '\n\n-- \n',
+            '\n  Review-person (review-person)\n'
+            '\n'
+            'For more details, see:\n'
+            '%s\n-- \n' % canonical_url(bmp),
             ctrl.body)
 
     def test_forCreation_with_review_request_and_bug(self):
@@ -175,7 +183,7 @@ Requested reviews:
         reviewer = self.factory.makePerson(name='review-person')
         bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bug = self.factory.makeBug(title='I am a bug')
-        bmp.source_branch.linkBug(bug, bmp.registrant)        
+        bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
@@ -184,7 +192,10 @@ Requested reviews:
             '\n  Review-person (review-person)'
             '\nRelated bugs:'
             '\n  #%d I am a bug'
-            '\n  %s\n\n--' % (bug.id, canonical_url(bug)))
+            '\n  %s\n'
+            '\nFor more details, see:\n'
+            '%s'
+            '\n--' % (bug.id, canonical_url(bug), canonical_url(bmp)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
@@ -303,7 +314,8 @@ Requested reviews:
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))
-        warning_text = "The attached diff has been truncated due to its size.\n"
+        warning_text = (
+            "The attached diff has been truncated due to its size.\n")
         self.assertTrue(warning_text in ctrl.body)
 
     def getProposalUpdatedEmailJob(self, merge_proposal):
@@ -378,7 +390,7 @@ Requested reviews:
         merge_proposal = self.factory.makeBranchMergeProposal()
         mailer = BMPMailer.forModification(
             merge_proposal, 'the diff', merge_proposal.registrant)
-        self.assertIsNot(None,  mailer.message_id, 'message_id not set')
+        self.assertIsNot(None, mailer.message_id, 'message_id not set')
 
     def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
@@ -404,8 +416,9 @@ Requested reviews:
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
             'lp://dev/~mary/super-product/bar', email['subject'])
+        bmp = job.branch_merge_proposal
         expected = dedent("""\
-            The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
+            The proposal to merge %(source)s into %(target)s has been updated.
 
             Commit Message changed to:
 
@@ -414,10 +427,16 @@ Requested reviews:
             Description changed to:
 
             change description
+
+            For more details, see:
+            %(bmp)s
             --\x20
-            %s
+            %(bmp)s
             You are the owner of lp://dev/~bob/super-product/fix-foo-for-bar.
-            """) % canonical_url(job.branch_merge_proposal)
+            """) % {
+                'source': bmp.source_branch.bzr_identity,
+                'target': bmp.target_branch.bzr_identity,
+                'bmp': canonical_url(bmp)}
         self.assertEqual(expected, email.get_payload(decode=True))
 
     def assertRecipientsMatches(self, recipients, mailer):
@@ -531,17 +550,22 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         review_request_job.run()
         [sent_mail] = pop_notifications()
         expected = dedent("""\
-                You have been requested to review the proposed merge of %(source)s into %(target)s.
+            You have been requested to review the proposed merge of"""
+            """ %(source)s into %(target)s.
 
-                This branch is awesome.
+            For more details, see:
+            %(bmp)s
 
-                -- 
-                %(bmp)s
-                You are requested to review the proposed merge of %(source)s into %(target)s.
-                """ % {
-                    'source': bmp.source_branch.bzr_identity,
-                    'target': bmp.target_branch.bzr_identity,
-                    'bmp': canonical_url(bmp)})
+            This branch is awesome.
+
+            --\x20
+            %(bmp)s
+            You are requested to review the proposed merge of %(source)s"""
+            """ into %(target)s.
+            """ % {
+                'source': bmp.source_branch.bzr_identity,
+                'target': bmp.target_branch.bzr_identity,
+                'bmp': canonical_url(bmp)})
         self.assertEqual(expected, sent_mail.get_payload(decode=True))
 
     def test_nominateReview_emails_team_address(self):
