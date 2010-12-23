@@ -553,9 +553,10 @@ all his PPAs.
 
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
-    Name:
-      A unique name to identify the archive. It will form part of the URL
-      to the archive repository.
+    URL:
+      http://ppa.launchpad.dev/cprov/
+      At least one lowercase letter or number, followed by letters, numbers,
+      dots, hyphens or pluses. Keep this name short; it is used in URLs.
     Display name:
       A short title for the archive.
     Description: (Optional)
@@ -577,15 +578,17 @@ an error is raised.
     There is 1 error.
     Required input is missing.
 
-An error is raised if Celso sets an invalid PPA name.
+An error is raised if Celso sets an invalid PPA name. Notice that the widget
+automatically lowercases its input, as valid names must be lowercase. This is
+also enforced by the widget in the browser.
 
-    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl'
+    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl!'
     >>> cprov_browser.getControl("Activate").click()
 
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    Invalid name 'ExPeRiMeNtAl'. Names must be at least two characters ...
+    Invalid name 'experimental!'. Names must be at least two characters ...
 
 If Celso, by mistake, uses the same name of one of his existing PPAs
 (the default one is named 'ppa') an error is raised.

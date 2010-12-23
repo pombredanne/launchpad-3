@@ -83,6 +83,7 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget,
     PlainMultiCheckBoxWidget,
     )
+from canonical.widgets.archive import PPANameWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -1780,6 +1781,7 @@ class ArchiveActivateView(LaunchpadFormView):
     schema = IArchive
     field_names = ('name', 'displayname', 'description')
     custom_widget('description', TextAreaWidget, height=3)
+    custom_widget('name', PPANameWidget, label="URL")
     label = "Personal Package Archive Activation"
 
     @property

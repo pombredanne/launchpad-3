@@ -1,0 +1,13 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <tal:base_url replace="view/base_url" />/
+  <input size="30" type="text"
+         tal:attributes="id view/name;
+                         name view/name;
+                         value view/archive_name;
+                         class view/cssClass"
+         />
+</tal:root>

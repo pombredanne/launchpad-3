@@ -262,8 +262,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_(
-                "A unique name to identify the archive. It will form part of "
-                "the URL to the archive repository.")))
+                "At least one lowercase letter or number, followed by "
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs.")))
 
     displayname = exported(
         StrippedTextLine(
