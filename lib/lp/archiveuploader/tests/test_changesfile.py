@@ -107,6 +107,13 @@ class ChangesFileTests(TestCase):
             "name": "dulwich_0.4.1-1.dsc"}]
         return contents
 
+    def test_newline_in_Binary_field(self):
+        # Test that newlines in Binary: fields are accepted
+        contents = self.getBaseChanges()
+        contents["Binary"] = "binary1\n binary2 \n binary3"
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEquals(set(["binary1", "binary2", "binary3"]), changes.binaries)
+
     def test_checkFileName(self):
         # checkFileName() yields an UploadError if the filename is invalid.
         contents = self.getBaseChanges()
