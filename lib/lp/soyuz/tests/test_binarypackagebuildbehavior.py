@@ -24,7 +24,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 from lp.buildmaster.enums import (
@@ -43,6 +42,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -136,7 +136,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         builder = removeSecurityProxy(builder)
         candidate = removeSecurityProxy(candidate)
         return defer.maybeDeferred(
-            builder.startBuild, candidate, QuietFakeLogger())
+            builder.startBuild, candidate, BufferLogger())
 
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
@@ -221,7 +221,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         expected_message = (
             "%s (%s) can not be built for pocket %s: invalid pocket due "
             "to the series status of %s." % (
@@ -242,7 +242,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
             'Soyuz is not yet capable of building SECURITY uploads.',
             str(e))
@@ -261,7 +261,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))

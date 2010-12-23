@@ -115,7 +115,7 @@ class SystemErrorView(LaunchpadView):
     def inside_div(self, html):
         """Returns the given HTML inside a div of an appropriate class."""
 
-        return ('<div class="highlighted" style="'
+        return ('<div class="highlight" style="'
                 "font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;"
                 ' font-size: smaller;">'
                 '%s'

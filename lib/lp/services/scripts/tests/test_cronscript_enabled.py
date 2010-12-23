@@ -14,18 +14,16 @@ from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import unittest
 
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import cronscript_enabled
 from lp.testing import TestCase
-from lp.testing.logger import MockLogger
 
 
 class TestCronscriptEnabled(TestCase):
 
     def setUp(self):
         super(TestCronscriptEnabled, self).setUp()
-        self.log_output = StringIO()
-        self.log = MockLogger(self.log_output)
-        self.log.setLevel(DEBUG)
+        self.log = BufferLogger()
 
     def makeConfig(self, body):
         tempfile = NamedTemporaryFile(suffix='.ini')
