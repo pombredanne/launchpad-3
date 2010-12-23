@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadLayer
+from canonical.testing.layers import DatabaseLayer
 from lp.registry.model.person import person_sort_key
 from lp.testing import TestCase
 
@@ -63,7 +63,7 @@ class TestPersonSortKeyBase:
 
 class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
 
-    layer = LaunchpadLayer
+    layer = DatabaseLayer
 
     def setUp(self):
         super(TestPersonSortKeyInDatabase, self).setUp()
