@@ -10,7 +10,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.services.worlddata.model.language import LanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet
@@ -262,7 +261,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         expected_languages = ', '.join(sorted([
             self.language.englishname, other_language.englishname]))
         self.assertContentEqual(expected_languages, description['languages'])
-    
+
     def test_getTargetsForTranslation_max_fetch(self):
         # The max_fetch parameter limits how many POFiles are considered
         # by _getTargetsForTranslation.  This lets you get the target(s)
