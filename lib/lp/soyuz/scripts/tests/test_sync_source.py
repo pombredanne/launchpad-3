@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from debian.deb822 import (
     Changes,
     Deb822Dict,
@@ -78,7 +77,7 @@ class TestSyncSource(TestCase):
 
     def get_messages(self):
         """Retrieve the messages sent using the logger."""
-        return self.logger.buffer.getvalue().splitlines()
+        return self.logger.getLogBuffer().splitlines()
 
     def local_downloader(self, url, filename):
         """Store download requests for future inspections."""
@@ -110,7 +109,7 @@ class TestSyncSource(TestCase):
         self.assertEqual(sync_source.origin, origin)
 
         sync_source.logger.debug('opa')
-        self.assertEqual(self.get_messages(), ['DEBUG: opa'])
+        self.assertEqual(self.get_messages(), ['DEBUG opa'])
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
@@ -226,7 +225,7 @@ class TestSyncSource(TestCase):
         self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
             self.get_messages(),
-            ['INFO: netapplet_1.0.0.orig.tar.gz: already in distro '
+            ['INFO netapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
@@ -249,7 +248,7 @@ class TestSyncSource(TestCase):
 
         self.assertEqual(
             self.get_messages(),
-            ['INFO: foobar-1.0.dsc: already in distro '
+            ['INFO foobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
         self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
 

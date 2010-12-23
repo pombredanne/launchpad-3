@@ -7,14 +7,16 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+import transaction
+import unittest
+
 from testtools import run_test_with
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-import unittest
-
-import transaction
+from testtools.matchers import StartsWith
 from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
@@ -103,8 +105,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         logger = BufferLogger()
         job.logStartBuild(logger)
-        self.assertEquals(logger.buffer.getvalue(),
-            "INFO: startBuild(Mydistro, recept, joe)\n")
+        self.assertEquals(logger.getLogBuffer(),
+            "INFO startBuild(Mydistro, recept, joe)\n")
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -114,7 +116,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.setBuilder(builder)
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
-        self.assertEquals("", logger.buffer.getvalue())
+        self.assertEquals("", logger.getLogBuffer())
 
     def test_verifyBuildRequest_non_virtual(self):
         # verifyBuildRequest will raise if a non-virtual builder is proposed.
@@ -239,7 +241,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             }, job._extraBuildArgs(distroarchseries, logger))
         self.assertIn(
             "Exception processing bzr_builder_sources_list:",
-            logger.buffer.getvalue())
+            logger.getLogBuffer())
 
     def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
         # Ensure _extraBuildArgs doesn't blow up when
@@ -272,15 +274,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
         def check_dispatch(ignored):
-            logger.buffer.seek(0)
-
-            self.assertEquals(
-                "INFO: Sending chroot file for recipe build to "
-                "bob-de-bouwer\n",
-                logger.buffer.readline())
-            self.assertEquals(
-                "INFO: Initiating build 1-someid on http://fake:0000\n",
-                logger.buffer.readline())
+            self.assertThat(
+                logger.getLogBuffer(),
+                StartsWith(dedent("""\
+                  INFO Sending chroot file for recipe build to bob-de-bouwer
+                  INFO Initiating build 1-someid on http://fake:0000
+                  """)))
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]

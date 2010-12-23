@@ -215,7 +215,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
-    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    WARNING...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
     known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect

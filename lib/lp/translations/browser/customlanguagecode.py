@@ -11,7 +11,7 @@ __all__ = [
     'CustomLanguageCodeView',
     'HasCustomLanguageCodesNavigation',
     'HasCustomLanguageCodesTraversalMixin',
-	]
+    ]
 
 
 import re
@@ -46,6 +46,7 @@ def check_code(custom_code):
 
 class CustomLanguageCodeBreadcrumb(Breadcrumb):
     """Breadcrumb for a `CustomLanguageCode`."""
+
     @property
     def text(self):
         return smartquote(
@@ -126,6 +127,13 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
 class CustomLanguageCodeView(LaunchpadView):
     schema = ICustomLanguageCode
 
+    @property
+    def label(self):
+        target_displayname = self.context.translation_target.displayname
+        return smartquote(
+            'Custom language code "%s" for %s' % (
+                self.context.language_code, target_displayname))
+
 
 class CustomLanguageCodeRemoveView(LaunchpadFormView):
     """View for removing a `CustomLanguageCode`."""
@@ -164,6 +172,7 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
 class HasCustomLanguageCodesTraversalMixin:
     """Navigate from an `IHasCustomLanguageCodes` to a `CustomLanguageCode`.
     """
+
     @stepthrough('+customcode')
     def traverseCustomCode(self, name):
         """Traverse +customcode URLs."""
