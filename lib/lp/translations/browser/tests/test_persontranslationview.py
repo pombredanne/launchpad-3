@@ -247,7 +247,21 @@ class TestPersonTranslationView(TestCaseWithFactory):
             pofile.language.englishname, description['languages'])
 
     def test_getTargetsForTranslation_multiple_languages(self):
-        pass 
+        # Translations in different languages are aggregated to one target
+        # but the language names are listed.
+        other_language = self.factory.makeLanguage()
+        pofiles = self._makePOFiles(
+            2, previously_worked_on=True,
+            languages=[self.language, other_language])
+        for pofile in pofiles:
+            self._addUntranslatedMessages(pofile, 1)
+
+        descriptions = self.view._getTargetsForTranslation()
+        self.assertEqual(1, len(descriptions))
+        description = descriptions[0]
+        expected_languages = ', '.join(sorted([
+            self.language.englishname, other_language.englishname]))
+        self.assertContentEqual(expected_languages, description['languages'])
     
     def test_getTargetsForTranslation_max_fetch(self):
         # The max_fetch parameter limits how many POFiles are considered
