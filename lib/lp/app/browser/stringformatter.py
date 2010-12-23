@@ -544,7 +544,9 @@ class FormattersAPI:
 
         URLs will be linkified with a target="_new" attribute.
         """
-        return self.text_to_html(self._linkify_substitution_with_target)
+        return self.text_to_html(
+            linkify_text=True,
+            linkify_substitution=self._linkify_substitution_with_target)
 
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
