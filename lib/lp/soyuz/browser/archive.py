@@ -2029,7 +2029,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
                  description=_('Select the restricted architecture families '
-                               'on which this archive is allowed to build.')),
+                               'on which the archive is allowed to build.')),
                  render_context=self.render_context)
 
 
