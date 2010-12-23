@@ -45,15 +45,18 @@ class TestPersonTranslationView(TestCaseWithFactory):
             that the person has already worked on.
         :param languages: List of languages for each pofile. The length of
             the list must be the same as count. If None, all files will be
-            created with self.language. 
+            created with self.language. Also, if languages is not None,
+            all files will be created for the same productseries.
         """
         pofiles = []
+        if languages is not None:
+            productseries = self.factory.makeProductSeries()
         for counter in xrange(count):
             if languages is None:
-                language = self.language
+                pofile = self.factory.makePOFile(language=self.language)
             else:
-                language = languages[counter]
-            pofile = self.factory.makePOFile(language=language)
+                pofile = self.factory.makePOFile(
+                    productseries=productseries, language=languages[counter])
 
             if self.translationgroup:
                 product = pofile.potemplate.productseries.product
@@ -217,11 +220,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         self.assertTrue(self.view.person_is_translator)
 
-    def test_getTargetsForTranslation(self):
+    def test_getTargetsForTranslation_nothing(self):
         # If there's nothing to translate, _getTargetsForTranslation
         # returns nothing.
         self.assertEqual([], self.view._getTargetsForTranslation())
 
+    def test_getTargetsForTranslation(self):
         # If there's a translation that this person has worked on and
         # is not a reviewer for, and it has untranslated strings, it
         # shows up in _getTargetsForTranslation.
@@ -238,6 +242,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(
             pofile.language.englishname, description['languages'])
 
+    def test_getTargetsForTranslation_multiple_languages(self):
+        pass 
+    
     def test_getTargetsForTranslation_max_fetch(self):
         # The max_fetch parameter limits how many POFiles are considered
         # by _getTargetsForTranslation.  This lets you get the target(s)
