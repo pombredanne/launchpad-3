@@ -26,7 +26,6 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
-from itertools import imap
 import operator
 import re
 
@@ -182,7 +181,7 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.registry.model.person import (
     Person,
     person_sort_key,
-    ValidPersonCache,
+    PersonSet,
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
@@ -1945,12 +1944,8 @@ def load_people(*where):
     :return: A `DecoratedResultSet` of `Person` objects. The corresponding
         `ValidPersonCache` records are loaded simultaneously.
     """
-    # Don't order the results; they will be used in set operations.
-    join = LeftJoin(
-        Person, ValidPersonCache, Person.id == ValidPersonCache.id)
-    return imap(
-        operator.itemgetter(0), IStore(Person).using(join).find(
-            (Person, ValidPersonCache), *where).order_by())
+    return PersonSet()._getPrecachedPersons(
+        origin=[Person], conditions=where, need_validity=True)
 
 
 class BugSubscriberSet(frozenset):
