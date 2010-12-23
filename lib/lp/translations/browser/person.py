@@ -69,7 +69,7 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
             [self.countStrings(pofile) for pofile in covered_files])
         languages = set(
             [pofile.language.englishname for pofile in covered_files])
-        languages_list = ", ".join(sorted(list(languages)))
+        languages_list = ", ".join(sorted(languages))
 
         if strings_count == 1:
             strings_wording = "%d string"
