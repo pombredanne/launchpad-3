@@ -34,7 +34,6 @@ __all__ = [
     'InvalidPocketForPartnerArchive',
     'InvalidPocketForPPA',
     'IPPA',
-    'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoRightsForArchive',
     'NoRightsForComponent',
@@ -262,7 +261,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
-            description=_("A unique name to identify the archive.")))
+            description=_(
+                "A unique name to identify the archive. It will form part of "
+                "the URL to the archive repository.")))
 
     displayname = exported(
         StrippedTextLine(
@@ -932,7 +933,9 @@ class IArchiveView(IHasBuildRecords):
     description = exported(
         Text(
             title=_("Description"), required=False,
-            description=_("A short description of the archive's contents.")))
+            description=_(
+                "A short description of the archive. URLs are allowed and "
+                "will be rendered as links.")))
 
     signing_key_fingerprint = exported(
         Text(
@@ -1434,29 +1437,6 @@ class IPPA(IArchive):
 
 class IDistributionArchive(IArchive):
     """Marker interface so traversal works differently for distro archives."""
-
-
-class IPPAActivateForm(Interface):
-    """Schema used to activate PPAs."""
-
-    name = TextLine(
-        title=_("PPA name"), required=True, constraint=name_validator,
-        description=_("A unique name used to identify this PPA. It will "
-                      "form part of the URL to the archive repository."))
-
-    displayname = StrippedTextLine(
-        title=_("Display name"), required=True,
-        description=_("A short title for the PPA."))
-
-    description = Text(
-        title=_("PPA contents description"), required=False,
-        description=_(
-        "A short description of this PPA. URLs are allowed and will "
-        "be rendered as links."))
-
-    accepted = Bool(
-        title=_("I have read and accepted the PPA Terms of Service."),
-        required=True, default=False)
 
 
 class IArchiveEditDependenciesForm(Interface):
