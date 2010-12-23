@@ -228,6 +228,8 @@ class TestPersonTranslationView(TestCaseWithFactory):
         description = descriptions[0]
         self.assertEqual(product, description['target'])
         self.assertTrue(description['link'].startswith(canonical_url(pofile)))
+        self.assertEqual(
+            pofile.language.englishname, description['languages'])
 
     def test_getTargetsForTranslation_max_fetch(self):
         # The max_fetch parameter limits how many POFiles are considered
