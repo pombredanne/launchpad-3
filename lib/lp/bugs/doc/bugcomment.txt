@@ -285,9 +285,9 @@ visible, and we can see that the list has not been truncated.
     False
 
 When comments aren't being truncated and empty set will be returned by
-visible_newest_comments_for_display.
+visible_recent_comments_for_display.
 
-    >>> len(bug_view.visible_newest_comments_for_display)
+    >>> len(bug_view.visible_recent_comments_for_display)
     0
 
 Add two more comments, and the list will be truncated to only 8 total.
@@ -302,7 +302,7 @@ Add two more comments, and the list will be truncated to only 8 total.
     True
     >>> len(bug_view.visible_oldest_comments_for_display)
     3
-    >>> len(bug_view.visible_newest_comments_for_display)
+    >>> len(bug_view.visible_recent_comments_for_display)
     5
 
 The display of all comments can be requested with a form parameter.

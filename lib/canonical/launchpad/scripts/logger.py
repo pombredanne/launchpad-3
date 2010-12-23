@@ -18,9 +18,6 @@ __all__ = [
     'log',
     'logger',
     'logger_options',
-    'BufferLogger',
-    'FakeLogger',
-    'QuietFakeLogger',
     'OopsHandler',
     'LaunchpadFormatter',
     'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
@@ -71,79 +68,6 @@ DEBUG8 = loglevels.DEBUG8
 DEBUG9 = loglevels.DEBUG9
 
 
-class FakeLogger:
-    """Emulates a proper logger, just printing everything out the given file.
-    """
-
-    def __init__(self, output_file=None):
-        """The default output_file is sys.stdout."""
-        self.output_file = output_file
-
-    def message(self, prefix, msg, *stuff, **kw):
-        # We handle the default output file here because sys.stdout
-        # might have been reassigned. Between now and when this object
-        # was instantiated.
-        if self.output_file is None:
-            output_file = sys.stdout
-        else:
-            output_file = self.output_file
-        print >> output_file, prefix, msg % stuff
-
-        if 'exc_info' in kw:
-            traceback.print_exc(file=output_file)
-
-    def log(self, *stuff, **kw):
-        self.message('log>', *stuff, **kw)
-
-    def warning(self, *stuff, **kw):
-        self.message('WARNING', *stuff, **kw)
-
-    warn = warning
-
-    def error(self, *stuff, **kw):
-        self.message('ERROR', *stuff, **kw)
-
-    exception = error
-
-    def critical(self, *stuff, **kw):
-        self.message('CRITICAL', *stuff, **kw)
-
-    fatal = critical
-
-    def info(self, *stuff, **kw):
-        self.message('INFO', *stuff, **kw)
-
-    def debug(self, *stuff, **kw):
-        self.message('DEBUG', *stuff, **kw)
-
-
-class QuietFakeLogger(FakeLogger):
-    """Extra quiet FakeLogger.
-
-    Does not print any message. Messages can be retrieved from
-    logger.output_file, which is a StringIO instance.
-    """
-
-    def __init__(self):
-        self.output_file = StringIO()
-
-
-class BufferLogger(FakeLogger):
-    """A logger that logs to a StringIO object."""
-
-    def __init__(self):
-        self.buffer = StringIO()
-
-    def message(self, prefix, msg, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
-
-        if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
-
-
 class OopsHandler(logging.Handler):
     """Handler to log to the OOPS system."""
 
@@ -163,7 +87,7 @@ class OopsHandler(logging.Handler):
             with globalErrorUtility.oopsMessage(msg):
                 globalErrorUtility._raising(
                     sys.exc_info(), self.request, informational=informational)
-        except Exception, error:
+        except Exception:
             self.handleError(record)
 
 
@@ -428,7 +352,7 @@ def _logger(
     # Make it print output in a standard format, suitable for
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=out_stream)
+    hdlr = logging.StreamHandler(out_stream)
     # We set the level on the handler rather than the logger, so other
     # handlers with different levels can be added for things like debug
     # logs.

@@ -19,8 +19,8 @@ does not happen automatically.
     ...     ISourcePackageNameSet)
 
     >>> import transaction
-    >>> from canonical.launchpad.scripts import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
+    >>> from lp.services.log.logger import BufferLogger
+    >>> logger = BufferLogger()
     >>> from canonical.config import config
     >>> from canonical.testing.layers import reconnect_stores
     >>> def updateCache():

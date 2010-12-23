@@ -14,7 +14,6 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -29,6 +28,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -101,7 +101,7 @@ class TestQueueBuilder(TestCronscriptBase):
 
         queue_builder = QueueBuilder(
             name='queue-builder', test_args=test_args)
-        queue_builder.logger = QuietFakeLogger()
+        queue_builder.logger = BufferLogger()
 
         return queue_builder
 
@@ -241,7 +241,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
         retry_depwait = RetryDepwait(
             name='retry-depwait', test_args=test_args)
-        retry_depwait.logger = QuietFakeLogger()
+        retry_depwait.logger = BufferLogger()
 
         # `IBuildSet.retryDepwait` retrieve a specific logger instance
         # from the global registry, we have to silence that too.

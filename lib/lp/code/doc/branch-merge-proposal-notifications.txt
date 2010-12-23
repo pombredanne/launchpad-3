@@ -1,10 +1,12 @@
-= Email Notifications for Branch Merge Proposals =
+Email Notifications for Branch Merge Proposals
+==============================================
 
 Subscribers to any of the branches involved in the merge proposal get
 notifications.
 
 
-== Subscription ==
+Subscription
+------------
 
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
@@ -48,7 +50,8 @@ We know the target_owner from when the target branch was created above.
     >>> source_owner = bmp.source_branch.owner
 
 
-== Notification Recipients ==
+Notification Recipients
+-----------------------
 
 Recipients are determined using getNotificationRecipients.
 
@@ -88,7 +91,8 @@ values for the email headers and footers.
     You are subscribed to branch ...
 
 
-== E-mail ==
+E-mail
+------
 
 Jobs for notifications are automagically generated when the merge proposal
 is created.  When those jobs are run, the email is sent from the registrant.
@@ -187,6 +191,9 @@ in the email.
     Requested reviews:
         Bob the Builder (bob)
         Mary Jones (mary): ui
+    <BLANKLINE>
+    For more details, see:
+    http://code.launchpad.dev/~person-name...
     <BLANKLINE>
     This is the initial commit message.
     <BLANKLINE>
