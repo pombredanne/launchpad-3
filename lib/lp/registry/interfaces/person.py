@@ -862,6 +862,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
 
+    has_existing_ppa = Bool(
+        title=_("Does this person have a ppa that is active or not fully "
+                "deleted?"),
+        readonly=True, required=False)
+
+    has_ppa_with_published_packages = Bool(
+        title=_("Does this person have a ppa with published packages?"),
+        readonly=True, required=False)
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
@@ -2150,6 +2159,24 @@ class IPersonSet(Interface):
 
     def cacheBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
+
+    def getPrecachedPersonsFromIDs(
+        person_ids, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
+        """Lookup person objects from ids with optional precaching.
+
+        :param person_ids: List of person ids.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
+
 
 
 class IRequestPeopleMerge(Interface):

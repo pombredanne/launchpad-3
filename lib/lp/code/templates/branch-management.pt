@@ -39,7 +39,11 @@
         <tal:can-upload tal:condition="view/user_can_upload">
           <dl id="upload-url">
             <dt>Update this branch:</dt>
-            <dd>bzr push <span class="branch-url" tal:content="context/bzr_identity" /></dd>
+            <dd>bzr push
+              <tal:use-existing condition="view/is_empty_directory">
+              --use-existing
+              </tal:use-existing>
+            <span class="branch-url" tal:content="context/bzr_identity" /></dd>
           </dl>
           <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
             To authenticate with the Launchpad branch upload service, you need

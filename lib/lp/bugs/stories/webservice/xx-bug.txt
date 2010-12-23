@@ -1360,6 +1360,46 @@ But we can remove the attachment altogether.
   ---
 
 
+Attachments of private bugs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Attachments of private bugs are served by the app server itself.
+
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 209 Content Returned...
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addAttachment',
+  ...     data="67890", filename="more-numbers.txt", content_type='foo/bar',
+  ...     comment="The numbers you asked for.")
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> attachment = attachments['entries'][0]
+  >>> pprint_entry(attachment)
+  bug_link:...
+  data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
+  ...
+
+XXX Abel Deuring 2010-09-03, bug=629804: Please note that the http URLs in this
+example are part of a temporary hack.  Please see the comment in
+canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage.
+alias_url for details.
+
+  >>> response = webservice.get(attachment['data_link'])
+  >>> print response
+  HTTP/1.1 303 See Other
+  Status: 303 See Other
+  ...
+  Location: http://localhost:58005/94/more-numbers.txt
+  ...
+
+  >>> # Let's make the bug public again for later tests.
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
+
+
 Searching for bugs
 ------------------
 
@@ -2093,7 +2133,7 @@ Each bug has a collection of activities that have taken place with it.
   next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
   resource_type_link: u'http://.../#bug_activity-page-resource'
   start: 0
-  total_size: 23
+  total_size: 26
   ...
 
   >>> bug_nine_activity = webservice.get(

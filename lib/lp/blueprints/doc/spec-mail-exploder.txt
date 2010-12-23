@@ -200,7 +200,7 @@ simply emit a warning and drop the email.
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:Got back a notification we sent: http://librarian/foo.txt
+    WARNING...:Got back a notification we sent: http://librarian/foo.txt
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
@@ -222,7 +222,7 @@ Launchpad:
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:We received an email from Launchpad: http://librarian/foo.txt
+    WARNING...:We received an email from Launchpad: http://librarian/foo.txt
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
