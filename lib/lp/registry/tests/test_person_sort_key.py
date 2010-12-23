@@ -10,14 +10,6 @@ from lp.registry.model.person import person_sort_key
 from lp.testing import TestCase
 
 
-class PersonNames:
-    """A fake with enough information for `person_sort_key`."""
-
-    def __init__(self, displayname, name):
-        self.displayname = displayname
-        self.name = name
-
-
 class TestPersonSortKeyBase:
 
     def test_composition(self):
@@ -92,6 +84,14 @@ class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
         self.assertEqual(
             expected, self.get_person_sort_key(
                 displayname, name))
+
+
+class PersonNames:
+    """A fake with enough information for `person_sort_key`."""
+
+    def __init__(self, displayname, name):
+        self.displayname = displayname
+        self.name = name
 
 
 class TestPersonSortKeyInProcess(TestPersonSortKeyBase, TestCase):
