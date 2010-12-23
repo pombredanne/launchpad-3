@@ -214,39 +214,38 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
         self.assertEqual(self.dupe_subscribers, recipients)
 
 
-class TestNotificationsForRegistrants(TestCaseWithFactory):
-    """Test when registrants get notified."""
+class NotificationForRegistrantsMixin:
+    """Mixin for testing when registrants get notified."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestNotificationsForRegistrants, self).setUp(
+        super(NotificationForRegistrantsMixin, self).setUp(
             user='foo.bar@canonical.com')
-        self.distro_owner = self.factory.makePerson(name="distro-owner")
+        self.pillar_owner = self.factory.makePerson(name="distro-owner")
         self.bug_owner = self.factory.makePerson(name="bug-owner")
-        self.distribution = self.factory.makeDistribution(
-            owner=self.distro_owner)
+        self.pillar = self.makePillar()
         self.bug = self.factory.makeBug(
-            distribution=self.distribution,
+            distribution=self.pillar,
             owner=self.bug_owner)
 
     def test_notification_uses_malone(self):
-        self.distribution.official_malone = True
+        self.pillar.official_malone = True
         direct = self.bug.getDirectSubscribers()
         indirect = self.bug.getIndirectSubscribers()
-        self.assertThat(direct, Not(Contains(self.distro_owner)))
-        self.assertThat(indirect, Contains(self.distro_owner))
+        self.assertThat(direct, Not(Contains(self.pillar_owner)))
+        self.assertThat(indirect, Contains(self.pillar_owner))
 
     def test_notification_does_not_use_malone(self):
-        self.distribution.official_malone = False
+        self.pillar.official_malone = False
         direct = self.bug.getDirectSubscribers()
         indirect = self.bug.getIndirectSubscribers()
-        self.assertThat(direct, Not(Contains(self.distro_owner)))
-        self.assertThat(indirect, Not(Contains(self.distro_owner)))
+        self.assertThat(direct, Not(Contains(self.pillar_owner)))
+        self.assertThat(indirect, Not(Contains(self.pillar_owner)))
 
     def test_status_change_uses_malone(self):
         # Status changes are sent to the direct and indirect subscribers.
-        self.distribution.official_malone = True
+        self.pillar.official_malone = True
         [bugtask] = self.bug.bugtasks
         all_subscribers = set(
             [person.name for person in
@@ -264,11 +263,11 @@ class TestNotificationsForRegistrants(TestCaseWithFactory):
             recipient.person.name
             for recipient in latest_notification.recipients)
         self.assertEqual(all_subscribers, notified_people)
-        self.assertThat(all_subscribers, Contains(self.distro_owner.name))
+        self.assertThat(all_subscribers, Contains(self.pillar_owner.name))
 
     def test_status_change_does_not_use_malone(self):
         # Status changes are sent to the direct and indirect subscribers.
-        self.distribution.official_malone = False
+        self.pillar.official_malone = False
         [bugtask] = self.bug.bugtasks
         all_subscribers = set(
             [person.name for person in
@@ -287,4 +286,22 @@ class TestNotificationsForRegistrants(TestCaseWithFactory):
             for recipient in latest_notification.recipients)
         self.assertEqual(all_subscribers, notified_people)
         self.assertThat(
-            all_subscribers, Not(Contains(self.distro_owner.name)))
+            all_subscribers, Not(Contains(self.pillar_owner.name)))
+
+
+class TestNotificationsForRegistrantsForDistros(
+    NotificationForRegistrantsMixin, TestCaseWithFactory):
+    """Test when distribution registrants get notified."""
+
+    def makePillar(self):
+        return self.factory.makeDistribution(
+            owner=self.pillar_owner)
+
+
+class TestNotificationsForRegistrantsForProducts(
+    NotificationForRegistrantsMixin, TestCaseWithFactory):
+    """Test when product registrants get notified."""
+
+    def makePillar(self):
+        return self.factory.makeProduct(
+            owner=self.pillar_owner)
