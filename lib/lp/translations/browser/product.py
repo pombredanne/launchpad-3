@@ -20,7 +20,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.enums import service_uses_launchpad
-from lp.registry.browser.product import ProductEditView
+from lp.registry.browser.product import (
+    ProductConfigureBase,
+    ProductEditView,
+)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -69,22 +72,16 @@ class ProductTranslationsMenu(NavigationMenu):
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
-
-class ProductSettingsView(TranslationsMixin, ProductEditView):
+class ProductSettingsView(TranslationsMixin, ProductConfigureBase):
     label = "Translations settings"
     page_title = "Settings"
+    usage_fieldname = "translations_usage"
     field_names = [
-            "official_rosetta",
+            usage_fieldname,
             "translation_focus",
             "translationgroup",
             "translationpermission",
             ]
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context, rootsite="translations")
-
-    next_url = cancel_url
 
 
 class ProductView(LaunchpadView):
