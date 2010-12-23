@@ -168,14 +168,14 @@ entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
     >>> import logging
-    >>> from lp.testing.logger import MockLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.translations.scripts.import_queue_gardener import (
     ...     ImportQueueGardener)
     >>> process = ImportQueueGardener('approver', test_args=[])
-    >>> process.logger = MockLogger()
+    >>> process.logger = FakeLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    log>    Removed 3 entries from the queue.
+    INFO Removed 3 entries from the queue.
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
@@ -248,10 +248,10 @@ translations and approves them for import based on some heuristic
 intelligence.
 
     >>> process = ImportQueueGardener('approver', test_args=[])
-    >>> process.logger = MockLogger()
+    >>> process.logger = FakeLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    log>    The automatic approval system approved some entries.
+    INFO The automatic approval system approved some entries.
     >>> print entry.status.name
     APPROVED
     >>> from canonical.launchpad.ftests import syncUpdate
