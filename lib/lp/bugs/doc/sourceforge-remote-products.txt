@@ -121,4 +121,3 @@ remote_product fields.
     INFO    No Products to update.
     INFO    Time for this run: ... seconds.
     DEBUG   Removing lock file:...
-    <BLANKLINE>
