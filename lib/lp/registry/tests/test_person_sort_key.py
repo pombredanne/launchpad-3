@@ -5,10 +5,9 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import LaunchpadLayer
 from lp.registry.model.person import person_sort_key
+from lp.testing import TestCase
 
 
 class PersonNames:
@@ -19,40 +18,9 @@ class PersonNames:
         self.name = name
 
 
-class TestPersonSortKey(unittest.TestCase):
-    layer = LaunchpadLayer
+class TestPersonSortKeyBase:
 
-    def setUp(self):
-        self.con = self.layer.connect()
-        self.cur = self.con.cursor()
-
-    def tearDown(self):
-        self.con.close()
-
-    def db_person_sort_key(self, displayname, name):
-        '''Calls the `person_sort_key` stored procedure.
-
-        Note that although the stored procedure returns a UTF-8 encoded
-        string, our database driver converts that to Unicode for us.
-        '''
-        # Note that as we are testing a PostgreSQL stored procedure, we should
-        # pass it UTF-8 encoded strings to match our database encoding.
-        self.cur.execute(
-            "SELECT person_sort_key(%s, %s)", (
-                displayname.encode("UTF-8"), name.encode("UTF-8")))
-        return self.cur.fetchone()[0]
-
-    def assertSortKeysEqual(self, displayname, name, expected):
-        # The sort key from the database matches the expected sort key.
-        self.assertEqual(
-            expected, self.db_person_sort_key(
-                displayname, name))
-        # The sort key calculated in-process matches the expected sort key.
-        self.assertEqual(
-            expected, person_sort_key(
-                PersonNames(displayname, name)))
-
-    def test_person_sort_key(self):
+    def test(self):
 
         # person_sort_key returns the concatenation of the display name
         # and the name for use in sorting.
@@ -89,5 +57,43 @@ class TestPersonSortKey(unittest.TestCase):
             u"bj\xf6rn, bjorn") # Lower case o with diaeresis
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
+
+    layer = LaunchpadLayer
+
+    def setUp(self):
+        super(TestPersonSortKeyInDatabase, self).setUp()
+        self.con = self.layer.connect()
+        self.cur = self.con.cursor()
+
+    def tearDown(self):
+        super(TestPersonSortKeyInDatabase, self).tearDown()
+        self.con.close()
+
+    def get_person_sort_key(self, displayname, name):
+        '''Calls the `person_sort_key` stored procedure.
+
+        Note that although the stored procedure returns a UTF-8 encoded
+        string, our database driver converts that to Unicode for us.
+        '''
+        # Note that as we are testing a PostgreSQL stored procedure, we should
+        # pass it UTF-8 encoded strings to match our database encoding.
+        self.cur.execute(
+            "SELECT person_sort_key(%s, %s)", (
+                displayname.encode("UTF-8"), name.encode("UTF-8")))
+        return self.cur.fetchone()[0]
+
+    def assertSortKeysEqual(self, displayname, name, expected):
+        # The sort key from the database matches the expected sort key.
+        self.assertEqual(
+            expected, self.get_person_sort_key(
+                displayname, name))
+
+
+class TestPersonSortKeyInProcess(TestPersonSortKeyBase, TestCase):
+
+    def assertSortKeysEqual(self, displayname, name, expected):
+        # The sort key calculated in-process matches the expected sort key.
+        self.assertEqual(
+            expected, person_sort_key(
+                PersonNames(displayname, name)))
