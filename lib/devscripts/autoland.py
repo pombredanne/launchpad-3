@@ -32,7 +32,7 @@ class LaunchpadBranchLander:
         # XXX: JonathanLange 2009-09-24: No unit tests.
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
         # there's no easy way to delete it and try again.
-        launchpad = Launchpad.login_with(cls.name, service_root)
+        launchpad = Launchpad.login_securely(cls.name, service_root)
         return cls(launchpad)
 
     def load_merge_proposal(self, mp_url):
