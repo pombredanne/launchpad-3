@@ -113,10 +113,15 @@ suggestions will be shown only if he adds Japanese to his preferred languages
 first.
 
     >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    ...     print extract_text(message)
     Not showing suggestions from selected alternative language Japanese (ja).
     If you wish to see suggestions from this language, add it to your
     preferred languages first.
+
+It even presents a link to where the user can set the preferred languages.
+
+    >>> print browser.getLink("add it to your preferred languages").url
+    http.../+editlanguages
 
 This distinction between alternative languages from the user's preferred set
 and other alternative languages does not exist, of course, if no preferred
