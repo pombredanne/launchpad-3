@@ -121,7 +121,7 @@ first.
 It even presents a link to where the user can set the preferred languages.
 
     >>> print browser.getLink("add it to your preferred languages").url
-    http.../+editlanguages
+    http...~carlos/+editlanguages
 
 This distinction between alternative languages from the user's preferred set
 and other alternative languages does not exist, of course, if no preferred
