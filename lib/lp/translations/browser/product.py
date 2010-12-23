@@ -48,8 +48,9 @@ class ProductTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+settings', text, icon='edit', site='translations')
+        text = 'Configure translations'
+        return Link(
+            '+configure-translations', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
@@ -72,9 +73,10 @@ class ProductTranslationsMenu(NavigationMenu):
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
+
 class ProductSettingsView(TranslationsMixin, ProductConfigureBase):
-    label = "Translations settings"
-    page_title = "Settings"
+    label = "Configure translations"
+    page_title = "Configure translations"
     usage_fieldname = "translations_usage"
     field_names = [
             usage_fieldname,

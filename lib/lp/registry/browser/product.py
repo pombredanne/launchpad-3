@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -1438,13 +1437,6 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 
     label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
