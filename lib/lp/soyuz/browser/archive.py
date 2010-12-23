@@ -1897,9 +1897,9 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def validate_save(self, action, data):
         """Default save validation does nothing."""
