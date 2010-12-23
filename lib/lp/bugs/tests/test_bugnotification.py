@@ -225,9 +225,7 @@ class NotificationForRegistrantsMixin:
         self.pillar_owner = self.factory.makePerson(name="distro-owner")
         self.bug_owner = self.factory.makePerson(name="bug-owner")
         self.pillar = self.makePillar()
-        self.bug = self.factory.makeBug(
-            distribution=self.pillar,
-            owner=self.bug_owner)
+        self.bug = self.makeBug()
 
     def test_notification_uses_malone(self):
         self.pillar.official_malone = True
@@ -297,6 +295,11 @@ class TestNotificationsForRegistrantsForDistros(
         return self.factory.makeDistribution(
             owner=self.pillar_owner)
 
+    def makeBug(self):
+        return self.factory.makeBug(
+            distribution=self.pillar,
+            owner=self.bug_owner)
+
 
 class TestNotificationsForRegistrantsForProducts(
     NotificationForRegistrantsMixin, TestCaseWithFactory):
@@ -305,3 +308,8 @@ class TestNotificationsForRegistrantsForProducts(
     def makePillar(self):
         return self.factory.makeProduct(
             owner=self.pillar_owner)
+
+    def makeBug(self):
+        return self.factory.makeBug(
+            product=self.pillar,
+            owner=self.bug_owner)
