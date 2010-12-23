@@ -46,28 +46,32 @@ class TestPersonTranslationView(TestCaseWithFactory):
         :param languages: List of languages for each pofile. The length of
             the list must be the same as count. If None, all files will be
             created with self.language. Also, if languages is not None,
-            all files will be created for the same productseries.
+            all files will be created for the same template.
         """
         pofiles = []
         if languages is not None:
-            productseries = self.factory.makeProductSeries()
+            potemplate = self.factory.makePOTemplate()
         for counter in xrange(count):
             if languages is None:
                 pofile = self.factory.makePOFile(language=self.language)
             else:
                 pofile = self.factory.makePOFile(
-                    productseries=productseries, language=languages[counter])
+                    potemplate=potemplate, language=languages[counter])
 
             if self.translationgroup:
                 product = pofile.potemplate.productseries.product
                 product.translationgroup = self.translationgroup
 
             if previously_worked_on:
+                if languages is not None:
+                    sequence = counter+1
+                else:
+                    sequence = 1
                 potmsgset = self.factory.makePOTMsgSet(
-                    potemplate=pofile.potemplate, singular='x', sequence=1)
+                    potemplate=pofile.potemplate, sequence=sequence)
                 self.factory.makeTranslationMessage(
                     potmsgset=potmsgset, pofile=pofile,
-                    translator=self.view.context, translations=['y'])
+                    translator=self.view.context)
 
             removeSecurityProxy(pofile).unreviewed_count = 1
             pofiles.append(pofile)
