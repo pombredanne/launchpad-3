@@ -26,27 +26,34 @@ class TestPersonTranslationView(TestCaseWithFactory):
         person = removeSecurityProxy(self.factory.makePerson())
         self.view = PersonTranslationView(person, LaunchpadTestRequest())
         self.translationgroup = None
-        self.dutch = LanguageSet().getLanguageByCode('nl')
-        self.view.context.addLanguage(self.dutch)
+        self.language = self.factory.makeLanguage()
+        self.view.context.addLanguage(self.language)
 
     def _makeReviewer(self):
-        """Set up the person we're looking at as a Dutch reviewer."""
+        """Set up the person we're looking at as a reviewer."""
         owner = self.factory.makePerson()
         self.translationgroup = self.factory.makeTranslationGroup(owner=owner)
         TranslatorSet().new(
-            translationgroup=self.translationgroup, language=self.dutch,
+            translationgroup=self.translationgroup, language=self.language,
             translator=self.view.context)
 
-    def _makePOFiles(self, count, previously_worked_on):
+    def _makePOFiles(self, count, previously_worked_on, languages=None):
         """Create `count` `POFile`s that the view's person can review.
 
         :param count: Number of POFiles to create.
         :param previously_worked_on: Whether these should be POFiles
             that the person has already worked on.
+        :param languages: List of languages for each pofile. The length of
+            the list must be the same as count. If None, all files will be
+            created with self.language. 
         """
         pofiles = []
         for counter in xrange(count):
-            pofile = self.factory.makePOFile(language_code='nl')
+            if languages is None:
+                language = self.language
+            else:
+                language = languages[counter]
+            pofile = self.factory.makePOFile(language=language)
 
             if self.translationgroup:
                 product = pofile.potemplate.productseries.product
@@ -362,7 +369,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         # But the answer is True if the person has no preferred
         # languages.
-        self.view.context.removeLanguage(self.dutch)
+        self.view.context.removeLanguage(self.language)
         self.assertTrue(self.view.requires_preferred_languages)
 
 
