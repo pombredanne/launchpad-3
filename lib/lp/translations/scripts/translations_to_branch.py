@@ -307,10 +307,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
+        from canonical.launchpad.webapp import errorlog
+        errorlog.globalErrorUtility.configure(self.config_name)
         if self.options.no_fudge:
             self.fudge_factor = timedelta(0)
 
-        self.logger.info("Exporting to translations branches.")
+        self.logger.error("Exporting to translations branches.")
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
