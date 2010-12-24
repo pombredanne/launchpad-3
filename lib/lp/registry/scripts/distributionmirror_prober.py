@@ -767,6 +767,10 @@ def _parse(url, defaultPort=80):
 class DistroMirrorProber:
     """Main entry point for the distribution mirror prober."""
 
+    def __init__(self, txn, logger):
+        self.txn = txn
+        self.logger = logger
+
     def _sanity_check_mirror(self, mirror):
         """Check that the given mirror is official and has an http_base_url.
         """
@@ -790,8 +794,8 @@ class DistroMirrorProber:
             file=logfile, contentType='text/plain')
         mirror.newProbeRecord(log_file)
 
-    def mirror(self, txn, logger, content_type, no_remote_hosts,
-               ignore_last_probe, max_mirrors, notify_owner):
+    def mirror(self, content_type, no_remote_hosts, ignore_last_probe,
+               max_mirrors, notify_owner):
         if content_type == MirrorContent.ARCHIVE:
             probe_function = probe_archive_mirror
         elif content_type == MirrorContent.RELEASE:
@@ -800,8 +804,8 @@ class DistroMirrorProber:
             raise ValueError(
                 "Unrecognized content_type: %s" % (content_type,))
 
-        txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        txn.begin()
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.txn.begin()
 
         # To me this seems better than passing the no_remote_hosts value
         # through a lot of method/function calls, until it reaches the probe()
@@ -813,7 +817,7 @@ class DistroMirrorProber:
                 """
             config.push('localhost_only_conf', localhost_only_conf)
 
-        logger.info('Probing %s Mirrors' % content_type.title)
+        self.logger.info('Probing %s Mirrors' % content_type.title)
 
         mirror_set = getUtility(IDistributionMirrorSet)
         results = mirror_set.getMirrorsToProbe(
@@ -833,7 +837,7 @@ class DistroMirrorProber:
             # Some people registered mirrors on distros other than Ubuntu back
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
-                logger.info(
+                self.logger.info(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
                     "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))
@@ -846,9 +850,9 @@ class DistroMirrorProber:
 
         if probed_mirrors:
             reactor.run()
-            logger.info('Probed %d mirrors.' % len(probed_mirrors))
+            self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
-            logger.info('No mirrors to probe.')
+            self.logger.info('No mirrors to probe.')
 
         disabled_mirrors = []
         reenabled_mirrors = []
@@ -872,11 +876,11 @@ class DistroMirrorProber:
                     reenabled_mirrors.append(canonical_url(mirror))
 
         if disabled_mirrors:
-            logger.info(
+            self.logger.info(
                 'Disabling %s mirror(s): %s'
                 % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
         if reenabled_mirrors:
-            logger.info(
+            self.logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
         # XXX: salgado 2007-04-03:
@@ -884,6 +888,6 @@ class DistroMirrorProber:
         # the isolation used is ISOLATION_LEVEL_AUTOCOMMIT. Also note
         # that replacing this with a flush_database_updates() doesn't
         # have the same effect, it seems.
-        txn.commit()
+        self.txn.commit()
 
-        logger.info('Done.')
+        self.logger.info('Done.')
