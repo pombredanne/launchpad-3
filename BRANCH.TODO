@@ -2,12 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-lib/lp/bugs/model/bug.py
-
-  Subclasses of frozenset don't appear to be granted those permissions
-  given to frozenset. This would make writing ZCML tedious, so I've
-  opted for registering custom checkers (see lp_sitecustomize for some
-  other jiggery pokery in the same vein) while I seek a better
-  solution.
-
