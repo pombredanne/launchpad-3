@@ -57,6 +57,7 @@ from inspect import (
     isclass,
     ismethod,
     )
+import logging
 import os
 from pprint import pformat
 import re
@@ -71,6 +72,7 @@ from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
+from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -669,12 +671,20 @@ class TestCaseWithFactory(TestCase):
         This sets up support for lp-internal URLs, changes to a temp
         directory, and overrides the bzr home directory.
 
+        It also initializes bzr's logging.
+
         :param direct_database: If true, translate branch locations by
             directly querying the database, not the internal XML-RPC server.
             If the test is in an AppServerLayer, you probably want to pass
             direct_database=False and if not you probably want to pass
             direct_database=True.
         """
+        # Because of Launchpad's messing with global log state (see
+        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # necessarily equal logging.getLogger('bzr'), so we have to explicitly
+        # make it so in order to avoid "No handlers for "bzr" logger'
+        # messages.
+        trace._bzr_logger = logging.getLogger('bzr')
         if self._use_bzr_branch_called:
             if direct_database != self.direct_database_server:
                 raise AssertionError(
