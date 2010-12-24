@@ -825,6 +825,11 @@ class LibrarianLayer(DatabaseLayer):
         cls.librarian_fixture.setUp()
         cls._check_and_reset()
 
+        # Make sure things using the appserver config know the
+        # correct Librarian port numbers.
+        cls.appserver_config_fixture.add_section(
+            cls.librarian_fixture.service_config)
+
     @classmethod
     @profiled
     def tearDown(cls):
