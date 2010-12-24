@@ -284,10 +284,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.poll import (
-    IPollSet,
-    IPollSubset,
-    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -331,7 +327,6 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -561,10 +556,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
-
-    @stepthrough('+poll')
-    def traverse_poll(self, name):
-        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
@@ -1334,17 +1325,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show member photos'
         return Link(target, text, icon='team')
 
-    def polls(self):
-        target = '+polls'
-        text = 'Show polls'
-        return Link(target, text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def add_poll(self):
-        target = '+newpoll'
-        text = 'Create a poll'
-        return Link(target, text, icon='add')
-
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
@@ -1354,7 +1334,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
             self.person.displayname)
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.MailingListManager')
+    @enabled_with_permission('launchpad.Moderate')
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list
@@ -1429,8 +1409,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'moderate_mailing_list',
         'editlanguages',
         'map',
-        'polls',
-        'add_poll',
         'join',
         'leave',
         'add_my_teams',
@@ -1451,7 +1429,7 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members', 'ppas']
+    links = ['profile', 'members', 'ppas']
 
 
 class TeamMembershipView(LaunchpadView):
@@ -1559,7 +1537,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
+        self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()
 
@@ -1831,12 +1809,12 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
             # email is sent to the user.
             data['password'] = 'invalid'
             self.person.setPreferredEmail(None)
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
                     self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)
@@ -2705,7 +2683,7 @@ class PersonLanguagesView(LaunchpadFormView):
     @property
     def answers_url(self):
         return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
+            getUtility(ILaunchpadCelebrities).launchpad,
             rootsite='answers')
 
 
@@ -2941,21 +2919,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ''
 
     @cachedproperty
-    def openpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getOpenPolls()
-
-    @cachedproperty
-    def closedpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getClosedPolls()
-
-    @cachedproperty
-    def notyetopenedpolls(self):
-        assert self.context.isTeam()
-        return IPollSubset(self.context).getNotYetOpenedPolls()
-
-    @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
@@ -3123,19 +3086,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
-
-    @property
-    def should_show_polls_portlet(self):
-        menu = TeamOverviewMenu(self.context)
-        return (
-            self.has_current_polls or self.closedpolls
-            or menu.add_poll().enabled)
-
-    @property
-    def has_current_polls(self):
-        """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
-        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -3499,7 +3449,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3566,6 +3516,13 @@ class TeamIndexView(PersonIndexView):
         if self.context.visibility == PersonVisibility.PUBLIC:
             return 'portlet'
         return 'portlet private'
+
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -4180,16 +4137,13 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        active_ppas = [
-            ppa for ppa in self.context.ppas
-            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
-        num_packages = sum(
-            ppa.getPublishedSources().count() for ppa in active_ppas)
-        if num_packages > 0:
+        has_ppa_with_published_packages = (
+            self.context.has_ppa_with_published_packages)
+        if has_ppa_with_published_packages:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if num_packages > 0:
+        if has_ppa_with_published_packages:
             self.widgets['name'].hint = _(
                 'This user has an active PPA with packages published and '
                 'may not be renamed.')

@@ -5,6 +5,7 @@
 
 import os
 import signal
+import tempfile
 import xmlrpclib
 
 from testtools.deferredruntest import (
@@ -14,7 +15,10 @@ from testtools.deferredruntest import (
     SynchronousDeferredRunTest,
     )
 
-from twisted.internet.defer import CancelledError
+from twisted.internet.defer import (
+    CancelledError,
+    DeferredList,
+    )
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
@@ -28,7 +32,6 @@ from zope.security.proxy import (
 from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -71,6 +74,7 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -147,7 +151,7 @@ class TestBuilder(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
-        d = lostbuilding_builder.updateStatus(QuietFakeLogger())
+        d = lostbuilding_builder.updateStatus(BufferLogger())
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
             # 'Fault' comes from the LostBuildingBrokenSlave, this is
@@ -196,7 +200,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = builder.handleTimeout(QuietFakeLogger(), 'blah')
+        d = builder.handleTimeout(BufferLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
@@ -1150,3 +1154,43 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             d = getPage(expected_url.encode('utf8'))
             return d.addCallback(self.assertEqual, content)
         return d.addCallback(check_file)
+
+    def test_getFiles(self):
+        # Test BuilderSlave.getFiles().
+        # It also implicitly tests getFile() - I don't want to test that
+        # separately because it increases test run time and it's going
+        # away at some point anyway, in favour of getFiles().
+        contents = ["content1", "content2", "content3"]
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        filemap = {}
+        content_map = {}
+
+        def got_files(ignored):
+            # Called back when getFiles finishes.  Make sure all the
+            # content is as expected.
+            got_contents = []
+            for sha1 in filemap:
+                local_file = filemap[sha1]
+                file = open(local_file)
+                self.assertEqual(content_map[sha1], file.read())
+                file.close()
+
+        def finished_uploading(ignored):
+            d = slave.getFiles(filemap)
+            return d.addCallback(got_files)
+
+        # Set up some files on the builder and store details in
+        # content_map so we can compare downloads later.
+        dl = []
+        for content in contents:
+            filename = content + '.txt'
+            lf = self.factory.makeLibraryFileAlias(filename, content=content)
+            content_map[lf.content.sha1] = content
+            fd, filemap[lf.content.sha1] = tempfile.mkstemp()
+            self.addCleanup(os.remove, filemap[lf.content.sha1])
+            self.layer.txn.commit()
+            d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+            dl.append(d)
+
+        return DeferredList(dl).addCallback(finished_uploading)

@@ -843,6 +843,8 @@ class Archive(SQLBase):
     def getComponentsForSeries(self, distroseries):
         if self.is_partner:
             return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
         else:
             return distroseries.components
 
@@ -1309,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
@@ -1713,7 +1716,7 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
-    
+
     @classmethod
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1730,7 +1733,20 @@ class Archive(SQLBase):
         except NoSuchPPA:
             return None
         else:
-            return "You already have a PPA named '%s'." % proposed_name
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
+
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
 
 
 class ArchiveSet:

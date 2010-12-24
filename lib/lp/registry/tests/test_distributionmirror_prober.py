@@ -59,7 +59,7 @@ from lp.registry.scripts.distributionmirror_prober import (
     RequestManager,
     restore_http_proxy,
     should_skip_host,
-    UnknownURLScheme,
+    UnknownURLSchemeAfterRedirect,
     )
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
@@ -83,8 +83,7 @@ class HTTPServerTestSetup(TacTestSetup):
     def tacfile(self):
         return os.path.abspath(os.path.join(
             os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/distributionmirror_http_server.tac'
-            ))
+            'daemons/distributionmirror_http_server.tac'))
 
     @property
     def pidfile(self):
@@ -199,7 +198,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, UnknownURLScheme)
+        return self.assertFailure(deferred, UnknownURLSchemeAfterRedirect)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -663,10 +662,16 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
         callbacks = self.makeMirrorProberCallbacks()
         self.assertEqual(
             set(callbacks.expected_failures),
-            set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
+            set([
+                BadResponseCode,
+                ProberTimeout,
+                ConnectionSkipped,
+                UnknownURLSchemeAfterRedirect,
+                ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
-                      ConnectionSkipped()]
+                      ConnectionSkipped(),
+                      UnknownURLSchemeAfterRedirect('https://localhost')]
         for exception in exceptions:
             failure = callbacks.ensureOrDeleteMirrorCDImageSeries(
                 [(defer.FAILURE, Failure(exception))])

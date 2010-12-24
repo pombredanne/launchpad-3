@@ -270,6 +270,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return self.product.bug_reported_acknowledgement
 
     @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return self.product.enable_bugfiling_duplicate_search
+
+    @property
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage

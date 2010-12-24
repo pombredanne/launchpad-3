@@ -43,7 +43,8 @@ class TestOfficialBugTags(WindmillTestCase):
 
         client.asserts.assertElemJS(
             id=u'official-tags-list',
-            js=u'element.childNodes.length == 0')
+            js=u'element.childNodes.length == 0',
+            timeout=constants.FOR_ELEMENT)
 
     # The save button is disabled initially, since there's nothing to change.
 
@@ -80,7 +81,7 @@ class TestOfficialBugTags(WindmillTestCase):
 
     # The tag is invalid, so we get an error message in an overlay.
 
-        client.asserts.assertNode(id=u'yui-pretty-overlay-modal')
+        client.asserts.assertNode(id=u'yui3-pretty-overlay-modal')
 
     # We click the close button to dismiss the error message, type a correct
     # tag and try again.
@@ -194,13 +195,16 @@ class TestOfficialBugTags(WindmillTestCase):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-            a_new_tag)
+            a_new_tag,
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-                  another_new_tag)
+                  another_new_tag,
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-                  doc_tag)
+                  doc_tag,
+            timeout=constants.FOR_ELEMENT)
 
     # We finish by cleaning after ourselves, to make sure that we leave the
     # database at the same state we found it.

@@ -71,8 +71,8 @@ class TranslationMessageImportedFlagUpdater:
                 PreviousImported.is_imported == True,
                 (PreviousImported.potmsgsetID ==
                  CurrentTranslation.potmsgsetID),
-                Or(And(PreviousImported.potemplate == None,
-                       CurrentTranslation.potemplate == None),
+                Or(And(PreviousImported.potemplateID == None,
+                       CurrentTranslation.potemplateID == None),
                    (PreviousImported.potemplateID ==
                     CurrentTranslation.potemplateID)),
                 PreviousImported.languageID == CurrentTranslation.languageID,

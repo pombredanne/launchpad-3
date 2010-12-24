@@ -16,6 +16,7 @@ __all__ = [
 
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
@@ -89,7 +90,6 @@ class RequestPeopleMergeView(LaunchpadFormView):
         logintokenset = getUtility(ILoginTokenSet)
         # Need to remove the security proxy because the dupe account may have
         # hidden email addresses.
-        from zope.security.proxy import removeSecurityProxy
         token = logintokenset.new(
             self.user, login, removeSecurityProxy(email).email,
             LoginTokenType.ACCOUNTMERGE)
@@ -132,6 +132,14 @@ class AdminMergeBaseView(LaunchpadFormView):
         if dupe_person == target_person and dupe_person is not None:
             self.addError(_("You can't merge ${name} into itself.",
                   mapping=dict(name=dupe_person.name)))
+        # We cannot merge the teams if there is a PPA with published
+        # packages on the duplicate person, unless that PPA is removed.
+        if dupe_person.has_existing_ppa:
+            self.addError(_(
+                "${name} has a PPA that must be deleted before it "
+                "can be merged. It may take ten minutes to remove the "
+                "deleted PPA's files.",
+                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
@@ -153,7 +161,6 @@ class AdminMergeBaseView(LaunchpadFormView):
 
     def doMerge(self, data):
         """Merge the two person/team entries specified in the form."""
-        from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
             email = IMasterObject(email)
             # EmailAddress.person and EmailAddress.account are readonly
@@ -241,10 +248,22 @@ class AdminTeamMergeView(AdminMergeBaseView):
         # Team email addresses are not transferable.
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
-        # merge.
-        if self.target_person is self.registry_experts:
-            for team in self.dupe_person.teams_participated_in:
-                self.dupe_person.retractTeamMembership(team, self.user)
+        # merge. This operation requires unrestricted access to ensure
+        # the user who has permission to delete a team can remove the
+        # team from other teams.
+        if self.target_person == self.registry_experts:
+            all_super_teams = set(self.dupe_person.teams_participated_in)
+            indirect_super_teams = set(
+                self.dupe_person.teams_indirectly_participated_in)
+            super_teams = all_super_teams - indirect_super_teams
+            naked_dupe_person = removeSecurityProxy(self.dupe_person)
+            for team in super_teams:
+                naked_dupe_person.retractTeamMembership(team, self.user)
+            del naked_dupe_person
+        # We have sent another series of calls to the db, potentially a long
+        # sequence depending on the merge. We want everything synced up
+        # before proceeding.
+        flush_database_updates()
         super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):
@@ -394,7 +413,6 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
         assert result_count == 1
         # Need to remove the security proxy because the dupe account may have
         # hidden email addresses.
-        from zope.security.proxy import removeSecurityProxy
         self.dupe_email = removeSecurityProxy(results[0]).email
 
     def render(self):
@@ -442,7 +460,6 @@ class RequestPeopleMergeMultipleEmailsView:
             # If the email addresses are hidden we must send a merge request
             # to each of them.  But first we've got to remove the security
             # proxy so we can get to them.
-            from zope.security.proxy import removeSecurityProxy
             email_addresses = [removeSecurityProxy(email).email
                                for email in self.dupeemails]
         else:

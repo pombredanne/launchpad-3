@@ -17,6 +17,7 @@ import tempfile
 
 from launchpadlib.credentials import (
     AccessToken,
+    AnonymousAccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
@@ -119,7 +120,7 @@ def _clean_up_cache(cache):
 
 
 def launchpadlib_for(
-    consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
+    consumer_name, person=None, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
 
@@ -134,8 +135,12 @@ def launchpadlib_for(
 
     :return: A launchpadlib Launchpad object.
     """
-    credentials = launchpadlib_credentials_for(
-        consumer_name, person, permission, context)
+    if person is None:
+        token = AnonymousAccessToken()
+        credentials = Credentials(consumer_name, access_token=token)
+    else:
+        credentials = launchpadlib_credentials_for(
+            consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')

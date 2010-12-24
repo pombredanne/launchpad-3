@@ -19,7 +19,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
 
     def assertNamesOfSpecificationsAre(self, expected_names, specifications):
         names = [s.name for s in specifications]
-        self.assertEqual(sorted(expected_names), sorted(names))
+        self.assertContentEqual(expected_names, names)
 
     def test_product_all_specifications(self):
         product = self.factory.makeProduct()

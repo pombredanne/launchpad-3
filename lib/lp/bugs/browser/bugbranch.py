@@ -96,7 +96,7 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    @action('Delete', name='delete')
+    @action('Remove link', name='delete')
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
@@ -115,8 +115,9 @@ class BugBranchView(LaunchpadView):
     @property
     def show_branch_status(self):
         """Show the branch status if merged and there are no proposals."""
+        lifecycle_status = self.context.branch.lifecycle_status
         return (len(self.merge_proposals) == 0 and
-                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
+                lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -163,4 +164,3 @@ class BugBranchXHTMLRepresentation:
         branch_view = getMultiAdapter(
             (self.branch, self.request), name="+bug-branch")
         return branch_view()
-

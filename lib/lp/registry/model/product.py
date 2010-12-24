@@ -452,6 +452,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
+    enable_bugfiling_duplicate_search = BoolCol(notNull=True, default=True)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):
@@ -1569,14 +1570,19 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product.official_rosetta == True,
-            Person.id == Product._ownerID,
-            ).config(distinct=True).order_by(Product.title)
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Person.id == Product._ownerID).config(
+                distinct=True).order_by(Product.title)
+
 
         # We only want Product - the other tables are just to populate
         # the cache.
@@ -1594,12 +1600,12 @@ class ProductSet:
                         ProductSeries.Product = Product.id
                     JOIN POTemplate ON
                         POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.official_rosetta
+                    WHERE Product.active AND Product.translations_usage = %s
                     ORDER BY place
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(maximumproducts),
+            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

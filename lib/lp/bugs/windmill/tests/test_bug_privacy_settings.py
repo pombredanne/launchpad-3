@@ -13,9 +13,9 @@ from lp.testing import WindmillTestCase
 
 MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/div'
 FORM_NOT_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") == -1')
 FIELD_PRIVATE = u'field.private'
 FIELD_SECURITY_RELATED = u'field.security_related'
 CHANGE_BUTTON = (

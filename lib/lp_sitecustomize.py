@@ -9,7 +9,10 @@ import os
 import warnings
 import logging
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    )
 
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
@@ -89,6 +92,17 @@ def silence_warnings():
         module="Crypto")
 
 
+def customize_logger():
+    """Customize the logging system.
+
+    This function is also invoked by the test infrastructure to reset
+    logging between tests.
+    """
+    silence_bzr_logger()
+    silence_zcml_logger()
+    silence_transaction_logger()
+
+
 def main(instance_name):
     # This is called by our custom buildout-generated sitecustomize.py
     # in parts/scripts/sitecustomize.py. The instance name is sent to
@@ -105,12 +119,11 @@ def main(instance_name):
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
     checker.BasicTypes.update({Deferred: checker.NoProxy})
+    checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
     # The itertools._grouper type is not exposed by name, so we must get it
     # through actually using itertools.groupby.
     grouper = type(list(itertools.groupby([0]))[0][1])
     checker.BasicTypes[grouper] = checker._iteratorChecker
     silence_warnings()
-    silence_bzr_logger()
-    silence_zcml_logger()
-    silence_transaction_logger()
+    customize_logger()

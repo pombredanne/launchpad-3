@@ -5,13 +5,19 @@
 
 __metaclass__ = type
 
+from zope.security.management import endInteraction
+
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import webservice_for_person
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
 from lp.testing import (
-    launchpadlib_for, TestCaseWithFactory)
+    launchpadlib_for,
+    person_logged_in,
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
 class SpecificationWebserviceTestCase(TestCaseWithFactory):
@@ -46,10 +52,9 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = sorted(
-            [u'self_link', u'http_etag', u'resource_type_link'])
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
         self.assertEqual(response.status, 200)
-        self.assertEqual(sorted(response.jsonBody().keys()), expected_keys)
+        self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
     def test_representation_contains_name(self):
         spec = self.factory.makeSpecification()
@@ -141,6 +146,24 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual("1.0", spec.milestone.name)
 
+    def test_representation_contains_dependencies(self):
+        spec = self.factory.makeSpecification()
+        spec2 = self.factory.makeSpecification()
+        spec.createDependency(spec2)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.dependencies.total_size)
+        self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+
+    def test_representation_contains_bug_links(self):
+        spec = self.factory.makeSpecification()
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            spec.linkBug(bug)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.bugs.total_size)
+        self.assertEqual(bug.id, spec_webservice.bugs[0].id)
+
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
@@ -204,7 +227,19 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
 
     def assertNamesOfSpecificationsAre(self, expected_names, specifications):
         names = [s.name for s in specifications]
-        self.assertEqual(sorted(expected_names), sorted(names))
+        self.assertContentEqual(expected_names, names)
+
+    def test_anonymous_access_to_collection(self):
+        product = self.factory.makeProduct()
+        self.factory.makeSpecification(product=product, name="spec1")
+        self.factory.makeSpecification(product=product, name="spec2")
+        # Need to endInteraction() because launchpadlib_for_anonymous() will
+        # setup a new one.
+        endInteraction()
+        lplib = launchpadlib_for('lplib-test', person=None, version='devel')
+        ws_product = ws_object(lplib, product)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], ws_product.all_specifications)
 
     def test_product_all_specifications(self):
         product = self.factory.makeProduct()

@@ -79,7 +79,6 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
-        self.log.lines = []
         self.layer.txn.commit()
 
     def assertBuildsCreated(self, amount):
@@ -103,7 +102,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
-            "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+            "Source Upload Failed\nGot: %s" % self.log.getLogBuffer())
         acceptable_statuses = [
             PackageUploadStatus.NEW,
             PackageUploadStatus.UNAPPROVED,
@@ -126,7 +125,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
-            "Binary Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+            "Binary Upload Failed\nGot: %s" % self.log.getLogBuffer())
         self.assertEqual(queue_item.builds.count(), 1)
         return queue_item.builds[0].build
 

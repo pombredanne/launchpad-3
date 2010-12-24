@@ -43,12 +43,12 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
+from lp.services.log.logger import DevNullLogger
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.logger import MockLogger
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -195,9 +195,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
         # The person registers with Launchpad.
-        author = self.factory.makePerson(email=email)
+        self.factory.makePerson(email=email)
         # Garbo runs the RevisionAuthorEmailLinker job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))

@@ -39,7 +39,7 @@ class TestBranchSubscriptions(WindmillTestCase):
 
         client.click(
             xpath=u'//a[@class="sprite add subscribe-self js-action"]')
-        client.waits.forElement(id=u'yui-pretty-overlay-modal')
+        client.waits.forElement(id=u'yui3-pretty-overlay-modal')
         client.click(xpath=u'//button[@name="field.actions.subscribe"]')
 
         client.waits.forElement(id=u'editsubscription-icon-name16',

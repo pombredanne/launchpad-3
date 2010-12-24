@@ -13,6 +13,8 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -466,5 +468,5 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 
 
 class TestHandleStatusForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""

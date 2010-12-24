@@ -810,13 +810,14 @@ class DecoratedSeries:
 
     @property
     def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if self.is_development_focus:
-            return 'highlighted'
+            return 'highlight'
         elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class SeriesWithReleases(DecoratedSeries):

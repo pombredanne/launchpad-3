@@ -92,18 +92,18 @@ class TestInlineSubscribing(WindmillTestCase):
             name=u'search', timeout=FOR_ELEMENT)
         client.type(
             text=u'ubuntu-team',
-            xpath=u'//div[contains(@class, "yui-picker ") '
-                   'and not(contains(@class, "yui-picker-hidden"))]'
-                   '//div[@class="yui-picker-search-box"]'
+            xpath=u'//div[contains(@class, "yui3-picker ") '
+                   'and not(contains(@class, "yui3-picker-hidden"))]'
+                   '//div[@class="yui3-picker-search-box"]'
                    '/input[@name="search"]')
         client.click(
-            xpath=u'//div[contains(@class, "yui-picker ") '
-                   'and not(contains(@class, "yui-picker-hidden"))]'
-                   '//div[@class="yui-picker-search-box"]/button')
+            xpath=u'//div[contains(@class, "yui3-picker ") '
+                   'and not(contains(@class, "yui3-picker-hidden"))]'
+                   '//div[@class="yui3-picker-search-box"]/button')
         search_result_xpath = (
-            u'//div[contains(@class, "yui-picker ") '
-            'and not(contains(@class, "yui-picker-hidden"))]'
-            '//ul[@class="yui-picker-results"]/li[1]/span')
+            u'//div[contains(@class, "yui3-picker ") '
+            'and not(contains(@class, "yui3-picker-hidden"))]'
+            '//ul[@class="yui3-picker-results"]/li[1]/span')
         client.waits.forElement(
             xpath=search_result_xpath, timeout=FOR_ELEMENT)
         client.click(xpath=search_result_xpath)
@@ -193,6 +193,7 @@ class TestInlineSubscribing(WindmillTestCase):
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         # Confirm there are 2 subscriber links: one in duplicate subscribers,
         # and one in indirect subscribers.
+        client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertNode(
             xpath=(u'//div[@id="subscribers-from-duplicates"]'
                    '/div/a[@name="Sample Person"]'))
@@ -228,7 +229,7 @@ class TestInlineSubscribing(WindmillTestCase):
         # Now back to bug 5. Confirm there are 2 subscriptions.
         client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        client.asserts.assertNode(
+        client.waits.forElement(
             id='direct-subscriber-12', timeout=FOR_ELEMENT)
         # The first click unsubscribes the direct subscription, leaving
         # the duplicate subscription.

@@ -13,10 +13,7 @@ __all__ = [
     'PageMatches',
     ]
 
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+import xml.etree.cElementTree as ET
 import urllib
 from urlparse import urlunparse
 
@@ -69,7 +66,6 @@ class PageMatch:
         Configured in config.vhost.mainsite.hostname.
         """
         return config.vhost.mainsite.hostname
-
 
     def __init__(self, title, url, summary):
         """initialize a PageMatch.
@@ -155,14 +151,14 @@ class GoogleSearchService:
     implements(ISearchService)
 
     _default_values = {
-        'client' : 'google-csbe',
-        'cx' : None,
-        'ie' : 'utf8',
-        'num' : 20,
-        'oe' : 'utf8',
-        'output' : 'xml_no_dtd',
+        'client': 'google-csbe',
+        'cx': None,
+        'ie': 'utf8',
+        'num': 20,
+        'oe': 'utf8',
+        'output': 'xml_no_dtd',
         'start': 0,
-        'q' : None,
+        'q': None,
         }
 
     @property
@@ -293,6 +289,9 @@ class GoogleSearchService:
             # The datatype is not what PageMatches requires.
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
+        if total < 0:
+            # See bug 683115.
+            total = 0
         for result in results.findall('R'):
             url_tag = result.find('U')
             title_tag = result.find('T')

@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
     )
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.model.question import Question
+from lp.app.enums import ServiceUsage
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import IPersonSet
@@ -104,8 +105,7 @@ class LaunchpadStatisticSet:
 
         self.update(
                 'products_using_malone',
-                Product.selectBy(official_malone=True).count()
-                )
+                Product.selectBy(official_malone=True).count())
         ztm.commit()
 
         cur = cursor()
@@ -163,10 +163,14 @@ class LaunchpadStatisticSet:
             Product.selectBy(license_reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         self.update(
                 'products_using_rosetta',
-                Product.selectBy(official_rosetta=True).count()
-                )
+                Product.selectBy(
+                    _translations_usage=ServiceUsage.LAUNCHPAD).count())
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
@@ -224,4 +228,3 @@ class LaunchpadStatisticSet:
             "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
-

@@ -58,6 +58,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     _table = Specification
     _orderBy = 'name'
     displayname = 'Select a blueprint'
+    step_title = 'Search'
 
     def _is_valid_candidate(self, spec, check_target=False):
         """Is `spec` a valid candidate spec for self.context?

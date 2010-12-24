@@ -20,6 +20,14 @@
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 
+            <tal:widget define="widget nocall:view/widgets/reviewer">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+
+            <tal:widget define="widget nocall:view/widgets/review_type">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+
             <td colspan="2">
               <fieldset id="mergeproposal-extra-options"
                         class="collapsible collapsed">
@@ -27,14 +35,6 @@
                 <table class="extra-options">
 
                   <tal:widget define="widget nocall:view/widgets/commit_message">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
-
-                  <tal:widget define="widget nocall:view/widgets/reviewer">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
-
-                  <tal:widget define="widget nocall:view/widgets/review_type">
                     <metal:block use-macro="context/@@launchpad_form/widget_row" />
                   </tal:widget>
 
@@ -69,7 +69,7 @@
                 review_type = document.getElementById('field.review_type');
                 review_type.disabled = (reviewer == '');
               };
-              Y.on('change',
+              Y.on('blur',
                   function(e) {
                     reviewer_changed(e.target.get('value'))
                   },
