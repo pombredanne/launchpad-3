@@ -348,7 +348,6 @@ With the product changed, we can see that Foo Bar is now subscribed:
 
     >>> print '\n'.join(subscriber_names(bug_two_in_ubuntu.bug))
     Foo Bar
-    Mark Shuttleworth
     Sample Person
     Steve Alexander
     Ubuntu Team
