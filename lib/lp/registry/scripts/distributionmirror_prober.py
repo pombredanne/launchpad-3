@@ -793,8 +793,20 @@ class DistroMirrorProber:
             file=logfile, contentType='text/plain')
         mirror.newProbeRecord(log_file)
 
-    def mirror(self, content_type, no_remote_hosts, ignore_last_probe,
-               max_mirrors, notify_owner):
+    def probe(self, content_type, no_remote_hosts, ignore_last_probe,
+              max_mirrors, notify_owner):
+        """Probe distribution mirrors.
+
+        :param content_type: The type of mirrored content, as a
+            `MirrorContent`.
+        :param no_remote_hosts: If True, restrict access to localhost.
+        :param ignore_last_probe: If True, ignore the results of the last
+            probe and probe again anyway.
+        :param max_mirrors: The maximum number of mirrors to probe. If None,
+            no maximum.
+        :param notify_owner: Send failure notification to the owners of the
+            mirrors.
+        """
         if content_type == MirrorContent.ARCHIVE:
             probe_function = probe_archive_mirror
         elif content_type == MirrorContent.RELEASE:

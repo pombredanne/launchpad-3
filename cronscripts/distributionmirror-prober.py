@@ -57,7 +57,7 @@ class DistroMirrorProberScript(LaunchpadCronScript):
         else:
             self.logger.debug("Not using any proxy.")
 
-        DistroMirrorProber(self.txn, self.logger).mirror(
+        DistroMirrorProber(self.txn, self.logger).probe(
             content_type, self.options.no_remote_hosts, self.options.force,
             self.options.max_mirrors, not self.options.no_owner_notification)
 
