@@ -26,10 +26,7 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
-from itertools import (
-    chain,
-    imap,
-    )
+from itertools import chain
 import operator
 import re
 
@@ -186,7 +183,7 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.registry.model.person import (
     Person,
     person_sort_key,
-    ValidPersonCache,
+    PersonSet,
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
@@ -1931,31 +1928,41 @@ def load_people(*where):
     :return: A `DecoratedResultSet` of `Person` objects. The corresponding
         `ValidPersonCache` records are loaded simultaneously.
     """
-    # Don't order the results; they will be used in set operations.
-    join = LeftJoin(
-        Person, ValidPersonCache, Person.id == ValidPersonCache.id)
-    return imap(
-        operator.itemgetter(0), IStore(Person).using(join).find(
-            (Person, ValidPersonCache), *where).order_by())
+    return PersonSet()._getPrecachedPersons(
+        origin=[Person], conditions=where, need_validity=True)
 
 
 class BugSubscriberSet(frozenset):
+    """A set of bug subscribers
+
+    Every member should provide `IPerson`.
+    """
 
     @cachedproperty
     def sorted(self):
+        """A sorted tuple of this set's members.
+
+        Sorted with `person_sort_key`, the default sort key for `Person`.
+        """
         return tuple(sorted(self, key=person_sort_key))
 
 
 class BugSubscriptionSet(frozenset):
+    """A set of bug subscriptions."""
 
     @cachedproperty
     def sorted(self):
+        """A sorted tuple of this set's members.
+
+        Sorted with `person_sort_key` of the subscription owner.
+        """
         self.subscribers  # Pre-load subscribers.
         sort_key = lambda sub: person_sort_key(sub.person)
         return tuple(sorted(self, key=sort_key))
 
     @cachedproperty
     def subscribers(self):
+        """A `BugSubscriberSet` of the owners of this set's members."""
         if len(self) == 0:
             return BugSubscriberSet()
         else:
@@ -1966,15 +1973,21 @@ class BugSubscriptionSet(frozenset):
 
 
 class StructuralSubscriptionSet(frozenset):
+    """A set of structural subscriptions."""
 
     @cachedproperty
     def sorted(self):
+        """A sorted tuple of this set's members.
+
+        Sorted with `person_sort_key` of the subscription owner.
+        """
         self.subscribers  # Pre-load subscribers.
         sort_key = lambda sub: person_sort_key(sub.subscriber)
         return tuple(sorted(self, key=sort_key))
 
     @cachedproperty
     def subscribers(self):
+        """A `BugSubscriberSet` of the owners of this set's members."""
         if len(self) == 0:
             return BugSubscriberSet()
         else:
@@ -1984,11 +1997,11 @@ class StructuralSubscriptionSet(frozenset):
             return BugSubscriberSet(load_people(condition))
 
 
-# XXX; GavinPanella 2010-12-08: Subclasses of frozenset don't appear to be
-# granted those permissions given to frozenset. This would make writing ZCML
-# tedious, so I've opted for registering custom checkers (see lp_sitecustomize
-# for some other jiggery pokery in the same vein) while I seek a better
-# solution.
+# XXX: GavinPanella 2010-12-08 bug=694057: Subclasses of frozenset don't
+# appear to be granted those permissions given to frozenset. This would make
+# writing ZCML tedious, so I've opted for registering custom checkers (see
+# lp_sitecustomize for some other jiggery pokery in the same vein) while I
+# seek a better solution.
 from zope.security import checker
 checker_for_frozen_set = checker.getCheckerForInstancesOf(frozenset)
 checker_for_subscriber_set = checker.NamesChecker(["sorted"])

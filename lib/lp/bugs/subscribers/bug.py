@@ -192,9 +192,6 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)
 
-    # XXX: GavinPanella 2010-11-30: What about if the bug supervisor *is* set?
-    # Don't we want to send mail to him/her?
-
     return sorted(
         also_notified_subscribers,
         key=attrgetter('displayname'))

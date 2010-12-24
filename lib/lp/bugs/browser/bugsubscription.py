@@ -15,7 +15,6 @@ import cgi
 
 from lazr.delegates import delegates
 from simplejson import dumps
-
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
