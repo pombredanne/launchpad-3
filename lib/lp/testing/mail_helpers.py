@@ -17,7 +17,7 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
-from lp.testing.logger import MockLogger
+from lp.services.log.logger import DevNullLogger
 
 
 def pop_notifications(sort_key=None, commit=True):
@@ -117,6 +117,6 @@ def run_mail_jobs():
     # the queued jobs.
     transaction.commit()
     job_source = getUtility(IMembershipNotificationJobSource)
-    logger = MockLogger()
+    logger = DevNullLogger()
     runner = JobRunner.fromReady(job_source, logger)
     runner.runAll()

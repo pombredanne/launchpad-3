@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     "MockOptions",
-    "MockLogger",
     "TestUploadProcessorBase",
     ]
 
@@ -14,9 +13,7 @@ from email import message_from_string
 import os
 import shutil
 from StringIO import StringIO
-import sys
 import tempfile
-import traceback
 
 from storm.locals import Store
 from zope.component import (
@@ -53,6 +50,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -93,26 +91,6 @@ class MockOptions:
     """Use in place of an options object, adding more attributes if needed."""
     keep = False
     dryrun = False
-
-
-class MockLogger:
-    """Pass as a log object. Record debug calls for later checking."""
-
-    def __init__(self):
-        self.lines = []
-
-    def debug(self, s, exc_info=False):
-        self.lines.append(s)
-        if exc_info:
-            for err_msg in traceback.format_exception(*sys.exc_info()):
-                self.lines.append(err_msg)
-
-    info = debug
-    warn = debug
-    error = debug
-
-    def exception(self, s):
-        self.debug(s, exc_info=True)
 
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
@@ -159,7 +137,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             "Daniel Silverstone <daniel.silverstone@canonical.com>")
         self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
 
-        self.log = MockLogger()
+        self.log = BufferLogger()
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
@@ -199,9 +177,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
-        self.assertTrue(line in self.log.lines,
+        log_lines = self.log.getLogBuffer()
+        self.assertTrue(line in log_lines,
                         "'%s' is not in logged output\n\n%s"
-                        % (line, '\n'.join(self.log.lines)))
+                        % (line, log_lines))
 
     def assertRaisesAndReturnError(self, excClass, callableObj, *args,
                                    **kwargs):
@@ -1922,9 +1901,9 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
-        self.assertTrue('ERROR: Exception while processing upload '
+        self.assertTrue('ERROR Exception while processing upload '
             in log_contents)
-        self.assertFalse('DEBUG: Moving upload directory '
+        self.assertFalse('DEBUG Moving upload directory '
             in log_contents)
 
     def testBinaryPackageBuilds(self):

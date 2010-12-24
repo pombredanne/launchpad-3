@@ -195,7 +195,7 @@ class TestSoyuzScript(unittest.TestCase):
             ['pmount 2:1.9-1 in hoary hppa'])
         self.assertEqual(
             soyuz.logger.getLogBuffer(),
-            'WARNING: pmount 0.1-1 in hoary i386 was skipped '
+            'WARNING pmount 0.1-1 in hoary i386 was skipped '
             'because it is not in MAIN component\n')
 
         soyuz = self.getSoyuz(component='multiverse')
