@@ -786,8 +786,8 @@ class DistroMirrorProber:
             file=logfile, contentType='text/plain')
         mirror.newProbeRecord(log_file)
 
-    def mirror(self, logger, content_type, no_remote_hosts, ignore_last_probe,
-               max_mirrors, notify_owner):
+    def mirror(self, txn, logger, content_type, no_remote_hosts,
+               ignore_last_probe, max_mirrors, notify_owner):
         if content_type == MirrorContent.ARCHIVE:
             probe_function = probe_archive_mirror
         elif content_type == MirrorContent.RELEASE:
@@ -796,8 +796,8 @@ class DistroMirrorProber:
             raise ValueError(
                 "Unrecognized content_type: %s" % (content_type,))
 
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        self.txn.begin()
+        txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        txn.begin()
 
         # To me this seems better than passing the no_remote_hosts value
         # through a lot of method/function calls, until it reaches the probe()
@@ -880,6 +880,6 @@ class DistroMirrorProber:
         # the isolation used is ISOLATION_LEVEL_AUTOCOMMIT. Also note
         # that replacing this with a flush_database_updates() doesn't
         # have the same effect, it seems.
-        self.txn.commit()
+        txn.commit()
 
         logger.info('Done.')
