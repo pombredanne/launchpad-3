@@ -1,6 +1,7 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
 __all__ = [
     'DistroMirrorProber',
     ]
@@ -64,8 +65,6 @@ PER_HOST_REQUESTS = 2
 # them from stalling and timing out before they even get a chance to
 # start connecting.
 OVERALL_REQUESTS = 100
-
-__metaclass__ = type
 
 
 class LoggingMixin:
