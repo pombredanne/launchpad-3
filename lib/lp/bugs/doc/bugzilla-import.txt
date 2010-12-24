@@ -365,7 +365,6 @@ and attach a watch to the upstream bug tracker:
   Reporter: Sample Person
   Created: 2005-04-04 00:00:00+00:00
   Subscribers:
-      Mark Shuttleworth
       Sample Person
       Ubuntu Team
   Task: Evolution
@@ -542,5 +541,3 @@ Now check that the bugs have been marked duplicate:
   True
   >>> bug4.duplicateof == bug3
   True
-
-

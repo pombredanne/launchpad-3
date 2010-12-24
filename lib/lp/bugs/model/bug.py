@@ -969,10 +969,10 @@ BugMessage""" % sqlvalues(self.id))
             # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None:
-                also_notified_subscribers.add(pillar.owner)
-                if recipients is not None:
-                    recipients.addRegistrant(pillar.owner, pillar)
+            if pillar.bug_supervisor is None and pillar.official_malone:
+                    also_notified_subscribers.add(pillar.owner)
+                    if recipients is not None:
+                        recipients.addRegistrant(pillar.owner, pillar)
 
         # Structural subscribers.
         also_notified_subscribers.update(
@@ -1771,8 +1771,12 @@ BugMessage""" % sqlvalues(self.id))
 
     @cachedproperty
     def _known_viewers(self):
-        """A dict of of known persons able to view this bug."""
-        return set()
+        """A set of known persons able to view this bug.
+
+        Seed it by including the list of all owners of bugtasks for the bug.
+        """
+        bugtask_owners = [bt.pillar.owner.id for bt in self.bugtasks]
+        return set(bugtask_owners)
 
     def userCanView(self, user):
         """See `IBug`.
