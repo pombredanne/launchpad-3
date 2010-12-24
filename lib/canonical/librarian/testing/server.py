@@ -44,11 +44,18 @@ class LibrarianServerFixture(TacTestSetup):
     :ivar pid: pid of the external process.
     """
 
-    def __init__(self):
+    def __init__(self, config_fixture):
+        """Initialize the LibrarianServerFixture.
+
+        :param config_fixture: The ConfigFixture in use by our tests.
+                               In the layered environment, this is
+                               BaseLayer.config_fixture.
+        """
         Fixture.__init__(self)
         self._pid = None
         # Track whether the fixture has been setup or not.
         self._setup = False
+        self.config_fixture = config_fixture
 
     def setUp(self):
         """Start both librarian instances."""
@@ -68,6 +75,11 @@ class LibrarianServerFixture(TacTestSetup):
             self._pid = self._read_pid()
         self._setup = True
         self.addCleanup(setattr, self, '_setup', False)
+
+        # Update the config our tests are using to know about the
+        # correct ports.
+        self.config_fixture.add_section(self.service_config)
+        config.reloadConfig()
 
     def cleanUp(self):
         """Shut downs both librarian instances."""

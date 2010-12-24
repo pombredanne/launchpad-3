@@ -153,7 +153,8 @@ the Librarian as a Utility.
 >>> from canonical.librarian.interfaces import ILibrarianClient
 >>> from StringIO import StringIO
 
->>> librarian = LibrarianServerFixture()
+>>> from canonical.testing.layers import BaseLayer
+>>> librarian = LibrarianServerFixture(BaseLayer.config_fixture)
 >>> librarian.setUp()
 >>> login(ANONYMOUS)
 

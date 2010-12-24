@@ -820,11 +820,9 @@ class LibrarianLayer(DatabaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        cls.librarian_fixture = LibrarianServerFixture()
+        cls.librarian_fixture = LibrarianServerFixture(
+            BaseLayer.config_fixture)
         cls.librarian_fixture.setUp()
-        BaseLayer.config_fixture.add_section(
-            cls.librarian_fixture.service_config)
-        config.reloadConfig()
         cls._check_and_reset()
 
     @classmethod
@@ -947,7 +945,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
-    
+
     @classmethod
     @profiled
     def testSetUp(cls):
