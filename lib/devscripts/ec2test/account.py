@@ -31,6 +31,7 @@ VALID_AMI_OWNERS = {
     '036590675370': 'jml',
     '038531743404': 'jelmer',
     '444667466231': 'allenap',
+    '441991801793': 'gmb',
     # ...anyone else want in on the fun?
     }
 

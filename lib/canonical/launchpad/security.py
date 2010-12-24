@@ -183,6 +183,9 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -740,6 +743,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 # with launchpad.View so that this adapter is used.  For now, though, it's
 # going to be used only on the webservice (which explicitly checks for
 # launchpad.View) so that we don't leak memberships of private teams.
+
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ITeamMembership
@@ -1724,6 +1728,24 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     usedfor = ILanguage
 
 
+class AdminCustomLanguageCode(AuthorizationBase):
+    """Controls administration for a custom language code.
+
+    Whoever can admin a product's or distribution's translations can also
+    admin the custom language codes for it.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = ICustomLanguageCode
+
+    def checkAuthenticated(self, user):
+        if self.obj.product is not None:
+            return AdminProductTranslations(
+                self.obj.product).checkAuthenticated(user)
+        else:
+            return AdminDistributionTranslations(
+                self.obj.distribution).checkAuthenticated(user)
+
+
 class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
@@ -1811,6 +1833,12 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistributionSourcePackageTranslations(
+    AdminDistroSeriesTranslations):
+    """DistributionSourcePackage objects link to a distribution, too."""
+    usedfor = IDistributionSourcePackage
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
