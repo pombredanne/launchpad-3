@@ -2013,11 +2013,11 @@ class StructuralSubscriptionSet(frozenset):
             return BugSubscriberSet(load_people(condition))
 
 
-# XXX; GavinPanella 2010-12-08: Subclasses of frozenset don't appear to be
-# granted those permissions given to frozenset. This would make writing ZCML
-# tedious, so I've opted for registering custom checkers (see lp_sitecustomize
-# for some other jiggery pokery in the same vein) while I seek a better
-# solution.
+# XXX: GavinPanella 2010-12-08 bug=694057: Subclasses of frozenset don't
+# appear to be granted those permissions given to frozenset. This would make
+# writing ZCML tedious, so I've opted for registering custom checkers (see
+# lp_sitecustomize for some other jiggery pokery in the same vein) while I
+# seek a better solution.
 from zope.security import checker
 checker_for_frozen_set = checker.getCheckerForInstancesOf(frozenset)
 checker_for_subscriber_set = checker.NamesChecker(["sorted"])
