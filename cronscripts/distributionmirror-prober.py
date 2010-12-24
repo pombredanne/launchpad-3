@@ -74,45 +74,35 @@ class DistroMirrorProber(LaunchpadCronScript):
             dest='max_mirrors', default=None, action='store', type="int",
             help='Only probe N mirrors.')
 
-    def main(self):
-        if self.options.content_type == 'archive':
+    def mirror(self, logger, content_type, no_remote_hosts, ignore_last_probe,
+               max_mirrors, notify_owner):
+        if content_type == MirrorContent.ARCHIVE:
             probe_function = probe_archive_mirror
-            content_type = MirrorContent.ARCHIVE
-        elif self.options.content_type == 'cdimage':
+        elif content_type == MirrorContent.RELEASE:
             probe_function = probe_cdimage_mirror
-            content_type = MirrorContent.RELEASE
         else:
-            raise LaunchpadScriptFailure(
-                'Wrong value for argument --content-type: %s'
-                % self.options.content_type)
-
-        if config.distributionmirrorprober.use_proxy:
-            os.environ['http_proxy'] = config.launchpad.http_proxy
-            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
-        else:
-            self.logger.debug("Not using any proxy.")
+            raise ValueError(
+                "Unrecognized content_type: %s" % (content_type,))
 
         self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.txn.begin()
 
-        # Using a script argument to control a config variable is not a great
-        # idea, but to me this seems better than passing the no_remote_hosts
-        # value through a lot of method/function calls, until it reaches the
-        # probe() method.
-        if self.options.no_remote_hosts:
+        # To me this seems better than passing the no_remote_hosts value
+        # through a lot of method/function calls, until it reaches the probe()
+        # method. (salgado)
+        if no_remote_hosts:
             localhost_only_conf = """
                 [distributionmirrorprober]
                 localhost_only: True
                 """
             config.push('localhost_only_conf', localhost_only_conf)
 
-        self.logger.info('Probing %s Mirrors' % content_type.title)
+        logger.info('Probing %s Mirrors' % content_type.title)
 
         mirror_set = getUtility(IDistributionMirrorSet)
-
         results = mirror_set.getMirrorsToProbe(
-            content_type, ignore_last_probe=self.options.force,
-            limit=self.options.max_mirrors)
+            content_type, ignore_last_probe=ignore_last_probe,
+            limit=max_mirrors)
         mirror_ids = [mirror.id for mirror in results]
         unchecked_keys = []
         logfiles = {}
@@ -127,7 +117,7 @@ class DistroMirrorProber(LaunchpadCronScript):
             # Some people registered mirrors on distros other than Ubuntu back
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
-                self.logger.info(
+                logger.info(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
                     "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))
@@ -140,9 +130,9 @@ class DistroMirrorProber(LaunchpadCronScript):
 
         if probed_mirrors:
             reactor.run()
-            self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
+            logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
-            self.logger.info('No mirrors to probe.')
+            logger.info('No mirrors to probe.')
 
         disabled_mirrors = []
         reenabled_mirrors = []
@@ -150,7 +140,6 @@ class DistroMirrorProber(LaunchpadCronScript):
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
         expected_iso_images_count = len(get_expected_cdimage_paths())
-        notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
             log = logfiles[mirror.id]
             self._create_probe_record(mirror, log)
@@ -167,11 +156,11 @@ class DistroMirrorProber(LaunchpadCronScript):
                     reenabled_mirrors.append(canonical_url(mirror))
 
         if disabled_mirrors:
-            self.logger.info(
+            logger.info(
                 'Disabling %s mirror(s): %s'
                 % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
         if reenabled_mirrors:
-            self.logger.info(
+            logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
         # XXX: salgado 2007-04-03:
@@ -181,7 +170,30 @@ class DistroMirrorProber(LaunchpadCronScript):
         # have the same effect, it seems.
         self.txn.commit()
 
-        self.logger.info('Done.')
+        logger.info('Done.')
+
+
+    def main(self):
+        if self.options.content_type == 'archive':
+            content_type = MirrorContent.ARCHIVE
+        elif self.options.content_type == 'cdimage':
+            content_type = MirrorContent.RELEASE
+        else:
+            raise LaunchpadScriptFailure(
+                'Wrong value for argument --content-type: %s'
+                % self.options.content_type)
+
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
+
+        self.mirror(
+            self.logger, content_type, self.options.no_remote_hosts,
+            self.options.force, self.options.max_mirrors,
+            not self.options.no_owner_notification)
+
 
 
 if __name__ == '__main__':
