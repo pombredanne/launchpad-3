@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 import os
+from StringIO import StringIO
+import sys
 
 from unittest import TestLoader
 
@@ -74,6 +76,10 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         self.buildmanager.home = home_dir
         self.chrootdir = os.path.join(
             home_dir, 'build-%s' % self.buildid, 'chroot-autobuild')
+        # Some of the code prints stuff to stdout.  We don't want to print
+        # during tests, so instead of changing the code, let's just trap
+        # stdout.
+        self.patch(sys, 'stdout', StringIO())
 
     def getState(self):
         """Retrieve build manager's state."""
