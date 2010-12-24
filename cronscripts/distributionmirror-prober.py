@@ -86,7 +86,6 @@ class DistroMirrorProber(LaunchpadCronScript):
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
 
-        orig_proxy = os.environ.get('http_proxy')
         if config.distributionmirrorprober.use_proxy:
             os.environ['http_proxy'] = config.launchpad.http_proxy
             self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
