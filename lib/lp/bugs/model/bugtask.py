@@ -22,6 +22,7 @@ __all__ = [
 
 
 import datetime
+from itertools import chain
 from operator import attrgetter
 
 from lazr.enum import DBItem
@@ -290,8 +291,9 @@ class BugTaskMixin:
     @property
     def bug_subscribers(self):
         """See `IBugTask`."""
-        indirect_subscribers = self.bug.getIndirectSubscribers()
-        return self.bug.getDirectSubscribers() + indirect_subscribers
+        return tuple(
+            chain(self.bug.getDirectSubscribers(),
+                  self.bug.getIndirectSubscribers()))
 
     @property
     def bugtargetdisplayname(self):

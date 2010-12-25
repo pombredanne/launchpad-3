@@ -2814,10 +2814,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proberecord = mirror.newProbeRecord(library_alias)
         return proberecord
 
-    def makeMirror(self, distribution, displayname, country=None,
+    def makeMirror(self, distribution, displayname=None, country=None,
                    http_url=None, ftp_url=None, rsync_url=None,
                    official_candidate=False):
         """Create a mirror for the distribution."""
+        if displayname is None:
+            displayname = self.getUniqueString("mirror")
         # If no URL is specified create an HTTP URL.
         if http_url is None and ftp_url is None and rsync_url is None:
             http_url = self.getUniqueURL()

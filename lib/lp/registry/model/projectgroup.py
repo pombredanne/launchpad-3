@@ -171,7 +171,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def products(self):
-        return Product.selectBy(project=self, active=True, orderBy='name')
+        return Product.selectBy(
+            project=self, active=True, orderBy='displayname')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)

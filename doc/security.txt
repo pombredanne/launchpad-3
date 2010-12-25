@@ -1,9 +1,6 @@
 Security Policy in Launchpad
 ============================
 
-Author: Brad Bollenbach
-Date: 2005-01-26
-
 Zope 3 is a security-aware framework that makes it possible to develop complex
 applications with security policies that closely resemble the reality that the
 system is trying to model.

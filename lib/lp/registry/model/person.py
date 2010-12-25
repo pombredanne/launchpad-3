@@ -15,6 +15,7 @@ __all__ = [
     'JoinTeamEvent',
     'Owner',
     'Person',
+    'person_sort_key',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
@@ -22,7 +23,8 @@ __all__ = [
     'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
-    'WikiNameSet']
+    'WikiNameSet',
+    ]
 
 from datetime import (
     datetime,
@@ -337,6 +339,16 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+_person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
+def person_sort_key(person):
+    """Identical to `person_sort_key` in the database."""
+    # Strip noise out of displayname. We do not have to bother with
+    # name, as we know it is just plain ascii.
+    displayname = _person_sort_re.sub(u'', person.displayname.lower())
+    return "%s, %s" % (displayname.strip(), person.name)
 
 
 class Person(
