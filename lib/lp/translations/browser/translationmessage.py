@@ -658,12 +658,18 @@ class BaseTranslationView(LaunchpadView):
                 translations_person = ITranslationsPerson(user)
                 choices = set(translations_person.translatable_languages)
                 if choices and alternative_language not in choices:
-                    self.request.response.addInfoNotification(
+                    editlanguages_url = canonical_url(
+                        self.user, view_name="+editlanguages")
+                    self.request.response.addInfoNotification(structured(
                         u"Not showing suggestions from selected alternative "
-                        "language %s.  If you wish to see suggestions from "
-                        "this language, add it to your preferred languages "
-                        "first."
-                        % alternative_language.displayname)
+                        "language %(alternative)s.  If you wish to see "
+                        "suggestions from this language, "
+                        '<a href="%(editlanguages_url)s">'
+                        "add it to your preferred languages</a> first."
+                        % dict(
+                            alternative=alternative_language.displayname,
+                            editlanguages_url=editlanguages_url,
+                            )))
                     alternative_language = None
                     second_lang_code = None
 

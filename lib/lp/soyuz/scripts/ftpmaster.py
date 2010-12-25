@@ -1440,8 +1440,6 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     # XXX cprov 2007-07-03:
     # Changed-By can be extracted from most-recent changelog footer,
     # but do we care?
-    # XXX James Troup 2006-01-30:
-    # 'Closes' but could be gotten from changelog, but we don't use them?
 
     changes = Changes()
     changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
