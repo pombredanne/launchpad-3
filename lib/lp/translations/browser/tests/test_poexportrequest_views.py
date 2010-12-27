@@ -151,17 +151,8 @@ class TestPOExportView(TestCaseWithFactory):
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
 
-    def test_request_partial_po_upstream(self):
-        # Partial po exports are requested by an extra check box.
-        self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
-
-        self.assertContentEqual(
-            [(self.potemplate, self.pofile, TranslationFileFormat.POCHANGED)],
-            get_poexportrequests(include_format=True))
-
-    def test_request_partial_po_ubuntu(self):
-        # Partial po exports are requested by an extra check box.
-        # For an Ubuntu package, the export is requested on the file itself.
+    def _makeUbuntuTemplateAndPOFile(self):
+        """Create a sharing template in Ubuntu with a POFile to go with it."""
         upstream_series = self.potemplate.productseries
         template_name = self.potemplate.name
         language = self.pofile.language
@@ -171,12 +162,37 @@ class TestPOExportView(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename, distroseries)
         sourcepackage.setPackaging(upstream_series, self.factory.makePerson())
-        
-        self.potemplate = self.factory.makePOTemplate(
+
+        potemplate = self.factory.makePOTemplate(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             name=template_name)
-        self.pofile = self.factory.makePOFile(
-            language=language, potemplate=self.potemplate)
+        pofile = self.factory.makePOFile(
+            language=language, potemplate=potemplate)
+
+        return (potemplate, pofile)
+
+    def test_request_partial_po_upstream(self):
+        # Partial po exports are requested by an extra check box.
+        # For an upstream project, the export is requested on the
+        # corresponding (same language, sharing template) on the Ubuntu side.
+        ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
+        
+        self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
+
+        expected = (
+            ubuntu_potemplate,
+            ubuntu_pofile,
+            TranslationFileFormat.POCHANGED,
+            )
+        self.assertContentEqual(
+            [expected], get_poexportrequests(include_format=True))
+
+    def test_request_partial_po_ubuntu(self):
+        # Partial po exports are requested by an extra check box.
+        # For an Ubuntu package, the export is requested on the file itself.
+        ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
+        self.potemplate = ubuntu_potemplate
+        self.pofile = ubuntu_pofile
 
         self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
 
