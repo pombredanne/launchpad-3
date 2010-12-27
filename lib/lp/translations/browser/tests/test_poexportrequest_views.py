@@ -139,7 +139,7 @@ class TestPOExportView(TestCaseWithFactory):
         # It is possible to request an export in the PO format.
         self._createView({'format': 'PO'})
 
-        self.assertContentEqual(
+        self.assertEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.PO)],
             get_poexportrequests(include_format=True))
 
@@ -147,7 +147,7 @@ class TestPOExportView(TestCaseWithFactory):
         # It is possible to request an export in the MO format.
         self._createView({'format': 'MO'})
 
-        self.assertContentEqual(
+        self.assertEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
 
@@ -184,7 +184,7 @@ class TestPOExportView(TestCaseWithFactory):
             ubuntu_pofile,
             TranslationFileFormat.POCHANGED,
             )
-        self.assertContentEqual(
+        self.assertEqual(
             [expected], get_poexportrequests(include_format=True))
 
     def test_request_partial_po_ubuntu(self):
@@ -196,14 +196,21 @@ class TestPOExportView(TestCaseWithFactory):
 
         self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
 
-        self.assertContentEqual(
+        self.assertEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.POCHANGED)],
             get_poexportrequests(include_format=True))
+
+    def test_request_partial_po_no_link(self):
+        # Partial po exports are requested by an extra check box.
+        # Without a packaging link, no request is created.
+        self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
+
+        self.assertEqual([], get_poexportrequests())
 
     def test_request_partial_mo(self):
         # With the MO format, the partial export check box is ignored.
         self._createView({'format': 'MO', 'pochanged': 'POCHANGED'})
 
-        self.assertContentEqual(
+        self.assertEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
