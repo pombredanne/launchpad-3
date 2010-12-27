@@ -123,9 +123,26 @@ class TestPOExportView(TestCaseWithFactory):
             get_poexportrequests(include_format=True))
 
     def test_request_format_mo(self):
-        # It is possible to request an export in the PO format.
+        # It is possible to request an export in the MO format.
         self._createView({'format': 'MO'}) 
 
         self.assertContentEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
+
+    def test_request_partial_po(self):
+        # Partial po exports are requested by an extra check box.
+        self._createView({'format': 'PO',  'pochanged': 'POCHANGED'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, self.pofile, TranslationFileFormat.POCHANGED)],
+            get_poexportrequests(include_format=True))
+
+    def test_request_partial_mo(self):
+        # With the MO format, the partial export check box is ignored.
+        self._createView({'format': 'MO',  'pochanged': 'POCHANGED'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
+            get_poexportrequests(include_format=True))
+
