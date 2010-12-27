@@ -1,51 +1,55 @@
 PO Export Request Browser Views
 -------------------------------
 
-    >>> from lp.translations.publisher import TranslationsLayer
-
-Check there are no requests in the database to start with.
+There are no requests in the database.
 
     >>> from lp.translations.model.poexportrequest import POExportRequest
-    >>> POExportRequest.select().count()
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> store =  IStore(POExportRequest)
+    >>> print store.find(POExportRequest).count()
     0
 
-Here's our user who's going to request some PO files.
+A translator is going to request some translation exports for a PO template
+with a PO file.
 
-    >>> login('carlos@canonical.com')
+    >>> potemplate = factory.makePOTemplate(name="foo-template")
+    >>> language = factory.makeLanguage('demo')
+    >>> pofile = factory.makePOFile(language=language, potemplate=potemplate)
 
-Here's the PO template they're going to request some files from.
+    >>> translator = factory.makePerson()
+    >>> login_person(translator)
 
-    >>> from lp.translations.model.potemplate import POTemplate
-    >>> potemplate = POTemplate.get(1)
-
-Here's the for variables from the user.
+The translator fills out the request form and submits it.
 
     >>> form = {
-    ...     'what': 'some',
-    ...     'potemplate': True,
-    ...     'es': True,
+    ...     'what': 'all',
     ...     'format': 'PO'}
 
-And here's the view processing that request.
-
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> potemplate_view = create_view(
     ...     potemplate, '+export', form=form, layer=TranslationsLayer)
     >>> potemplate_view.request.method = 'POST'
     >>> potemplate_view.initialize()
 
-Check that the request has been added to the DB.
+The request has been added to the database.
 
-    >>> requests = POExportRequest.select(
-    ...         orderBy=['person', 'potemplate', 'pofile'])
-    >>> for request in requests:
-    ...     things = [
-    ...         request.person.displayname,
-    ...         request.potemplate.name]
-    ...     if request.pofile:
-    ...         things.append(request.pofile.language.englishname)
-    ...     print things
-    [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2', u'Spanish']
-    [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
+    >>> max_request_id = 0
+    >>> def print_requests():
+    ...     global max_request_id, store
+    ...     requests = store.find(
+    ...         POExportRequest,
+    ...         POExportRequest.id > max_request_id).order_by(
+    ...             'potemplate', 'pofile')
+    ...     max_request_id = requests.max(POExportRequest.id)
+    ...     for num, request in enumerate(requests):
+    ...         if request.pofile:
+    ...             language = request.pofile.language.englishname
+    ...         else:
+    ...             language = 'template'
+    ...         print u"%s (%s)" % (request.potemplate.name, language)
+    >>> print_requests()
+    foo-template (Language demo)
+    foo-template (template)
 
 Clear the queue.
 
