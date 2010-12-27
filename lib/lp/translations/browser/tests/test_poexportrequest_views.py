@@ -12,13 +12,26 @@ from lp.testing import (
     )
 from lp.translations.browser.pofile import POExportView
 from lp.translations.browser.potemplate import POTemplateExportView
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.model.poexportrequest import POExportRequest
 
 
-def get_poexportrequests():
-    """Get (template, pofile) tuples of  all pending export requests."""
+def get_poexportrequests(include_format=False):
+    """Get (template, pofile, [format]) tuples of all pending export requests.
+
+    :param include_format: Include the content of the format column in the
+        tuple.
+    """
     requests = IStore(POExportRequest).find(POExportRequest)
-    return [(request.potemplate, request.pofile) for request in requests]
+    if include_format:
+        return [
+            (request.potemplate, request.pofile, request.format)
+            for request in requests]
+    else:
+        return [
+            (request.potemplate, request.pofile)
+            for request in requests]
 
 
 class TestPOTEmplateExportView(TestCaseWithFactory):
@@ -64,3 +77,19 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
 
         self.assertContentEqual(
             [(self.potemplate, pofile)], get_poexportrequests())
+
+    def test_request_format_po(self):
+        # It is possible to request the PO format.
+        self._createView({'what': 'all', 'format': 'PO'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, None, TranslationFileFormat.PO)],
+            get_poexportrequests(include_format=True))
+
+    def test_request_format_mo(self):
+        # It is possible to request the MO format.
+        self._createView({'what': 'all', 'format': 'MO'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, None, TranslationFileFormat.MO)],
+            get_poexportrequests(include_format=True))
