@@ -59,6 +59,16 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
         self.assertContentEqual(
             [(self.potemplate, None)], get_poexportrequests())
 
+    def test_request_all_add_pofile(self):
+        # Selecting 'all' will also place any pofiles for the template into
+        # the request queue.
+        pofile = self.factory.makePOFile(potemplate=self.potemplate)
+        self._createView({'what': 'all', 'format': 'PO'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, None), (self.potemplate, pofile)],
+            get_poexportrequests())
+
     def test_request_some_potemplate(self):
         # Using 'some' allows to select only the template.
         pofile = self.factory.makePOFile(potemplate=self.potemplate)
@@ -75,8 +85,19 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
             pofile.language.code: True,
             'format': 'PO'}) 
 
+    def test_request_some_various(self):
+        # Using 'some' allows to select various files.
+        pofile1 = self.factory.makePOFile(potemplate=self.potemplate)
+        pofile2 = self.factory.makePOFile(potemplate=self.potemplate)
+        self._createView({
+            'what': 'some',
+            'potemplate': True,
+            pofile2.language.code: True,
+            'format': 'PO'}) 
+
         self.assertContentEqual(
-            [(self.potemplate, pofile)], get_poexportrequests())
+            [(self.potemplate, None), (self.potemplate, pofile2)],
+            get_poexportrequests())
 
     def test_request_format_po(self):
         # It is possible to request the PO format.
