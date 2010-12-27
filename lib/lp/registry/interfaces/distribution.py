@@ -636,7 +636,8 @@ class IDistribution(
         archive = ubuntu.main_archive
         series = ubuntu.current_series
         print archive.getPublishedSources(exact_match=True,
-            source_name="apport", distro_series=series)[0].source_package_version
+            source_name="apport",
+            distro_series=series)[0].source_package_version
     """
     export_as_webservice_entry()
 

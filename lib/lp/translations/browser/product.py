@@ -20,10 +20,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.enums import service_uses_launchpad
-from lp.registry.browser.product import (
-    ProductConfigureBase,
-    ProductEditView,
-)
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
