@@ -93,3 +93,39 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
         self.assertContentEqual(
             [(self.potemplate, None, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
+
+
+class TestPOExportView(TestCaseWithFactory):
+    """Test POExportView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPOExportView, self).setUp()
+        self.pofile = self.factory.makePOFile()
+        self.potemplate = self.pofile.potemplate
+        # All exports can be requested by an unprivileged user.
+        self.translator = self.factory.makePerson()
+
+    def _createView(self, form):
+        login_person(self.translator)
+        request = LaunchpadTestRequest(method='POST', form=form)
+        view = POExportView(self.pofile, request)
+        view.initialize()
+        return view
+
+    def test_request_format_po(self):
+        # It is possible to request an export in the PO format.
+        self._createView({'format': 'PO'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, self.pofile, TranslationFileFormat.PO)],
+            get_poexportrequests(include_format=True))
+
+    def test_request_format_mo(self):
+        # It is possible to request an export in the PO format.
+        self._createView({'format': 'MO'}) 
+
+        self.assertContentEqual(
+            [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
+            get_poexportrequests(include_format=True))
