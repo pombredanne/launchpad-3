@@ -1951,13 +1951,12 @@ class TestPOFile(TestCaseWithFactory):
         self.assertTrue(pofile.hasPluralFormInformation())
 
 
-class TestPOFileUbuntuUpstreamSharing(TestCaseWithFactory):
+class TestPOFileUbuntuUpstreamSharingMixin:
     """Test sharing between Ubuntu und upstream POFiles."""
 
     layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        super(TestPOFileUbuntuUpstreamSharing, self).setUp()
+    def createData(self):
         self.shared_template_name = self.factory.getUniqueString()
         self.shared_language = self.factory.makeLanguage()
         
@@ -1968,22 +1967,42 @@ class TestPOFileUbuntuUpstreamSharing(TestCaseWithFactory):
             sourcepackagename=self.sourcepackagename)
         self.productseries = self.factory.makeProductSeries()
 
-    def _makeSharedUbuntuPOFile(self):
-        """Create template and POFile ready for sharing on the Ubuntu side.
-        """
-        potemplate = self.factory.makePOTemplate(
+    def makeThisSidePOFile(self):
+        """Create POFile on this side. Override in subclass."""
+        raise NotImplementedError
+
+    def makeOtherSidePOFile(self):
+        """Create POFile on the other side. Override in subclass."""
+        raise NotImplementedError
+
+    def makeOtherSidePOTemplate(self):
+        """Create POTemplate on the other side. Override in subclass."""
+        raise NotImplementedError
+
+    def makeSharedUbuntuPOTemplate(self):
+        """Create template ready for sharing on the Ubuntu side."""
+        return self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             name=self.shared_template_name)
+    
+    def makeSharedUbuntuPOFile(self):
+        """Create template and POFile ready for sharing on the Ubuntu side.
+        """
+        potemplate = self.makeSharedUbuntuPOTemplate()
         return self.factory.makePOFile(
             language=self.shared_language, potemplate=potemplate)
 
-    def _makeSharedUpstreamPOFile(self):
-        """Create template and POFile ready for sharing on the upstream side.
-        """
-        potemplate = self.factory.makePOTemplate(
+    def makeSharedUpstreamPOTemplate(self):
+        """Create template ready for sharing on the upstream side."""
+        return self.factory.makePOTemplate(
             productseries=self.productseries,
             name=self.shared_template_name)
+
+    def makeSharedUpstreamPOFile(self):
+        """Create template and POFile ready for sharing on the upstream side.
+        """
+        potemplate = self.makeSharedUpstreamPOTemplate()
         return self.factory.makePOFile(
             language=self.shared_language, potemplate=potemplate)
 
@@ -1993,29 +2012,68 @@ class TestPOFileUbuntuUpstreamSharing(TestCaseWithFactory):
         self.sourcepackage.setPackaging(
             self.productseries, self.factory.makePerson())
 
-    def test_other_side_pofile_none_ubuntu(self):
+    def test_other_side_pofile_none(self):
         # Without a packaging link, None is returned.
-        pofile = self._makeSharedUbuntuPOFile()
+        pofile = self.makeThisSidePOFile()
         self.assertIs(None, pofile.other_side_pofile)
 
-    def test_other_side_pofile_none_upstream(self):
-        # Without a packaging link, None is returned.
-        pofile = self._makeSharedUpstreamPOFile()
-        self.assertIs(None, pofile.other_side_pofile)
-
-    def test_other_side_pofile_linked_no_template_ubuntu(self):
+    def test_other_side_pofile_linked_no_template(self):
         # If no sharing template exists on the other side, no POFile can be
         # found, even with a packaging link.
         self._setPackagingLink()
-        pofile = self._makeSharedUbuntuPOFile()
+        pofile = self.self.makeThisSidePOFile()
         self.assertIs(None, pofile.other_side_pofile)
 
-    def test_other_side_pofile_linked_no_template_upstream(self):
-        # If no sharing template exists on the other side, no POFile can be
-        # found, even with a packaging link.
+    def test_other_side_pofile_shared(self):
+        # This is how sharing should look like.
+        this_pofile = self.makeThisSidePOFile()
+        other_pofile = self.makeOtherSidePOFile()
         self._setPackagingLink()
-        pofile = self._makeSharedUpstreamPOFile()
-        self.assertIs(None, pofile.other_side_pofile)
+        self.assertEquals(other_pofile, this_pofile.other_side_pofile)
+
+    def test_other_side_pofile_missing(self):
+        # If the other side pofile is missing, it is created automatically.
+        this_pofile = self.makeThisSidePOFile()
+        other_potemplate = self.makeOtherSidePOTemplate()
+        self._setPackagingLink()
+        self.assertEquals(
+            other_potemplate, this_pofile.other_side_pofile.potemplate)
+
+
+class TestPOFileUbuntuSharing(TestCaseWithFactory,
+                              TestPOFileUbuntuUpstreamSharingMixin):
+    """Test sharing on Ubuntu side."""
+
+    def setUp(self):
+        super(TestPOFileUbuntuSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOFile(self):
+        return self.makeSharedUbuntuPOFile()
+
+    def makeOtherSidePOFile(self):
+        return self.makeSharedUpstreamPOFile()
+
+    def makeOtherSidePOTemplate(self):
+        return self.makeSharedUpstreamPOTemplate()
+
+
+class TestPOFileUpstreamSharing(TestCaseWithFactory,
+                                TestPOFileUbuntuUpstreamSharingMixin):
+    """Test sharing on upstream side."""
+
+    def setUp(self):
+        super(TestPOFileUpstreamSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOFile(self):
+        return self.makeSharedUpstreamPOFile()
+
+    def makeOtherSidePOFile(self):
+        return self.makeSharedUbuntuPOFile()
+
+    def makeOtherSidePOTemplate(self):
+        return self.makeSharedUbuntuPOTemplate()
 
 
 class TestPOFileTranslationMessages(TestCaseWithFactory):
