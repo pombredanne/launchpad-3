@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
@@ -409,14 +410,25 @@ class POFile(SQLBase, POFileMixIn):
                 self.potemplate.distroseries).productseries
             if productseries is None:
                 return None
-            upstream_potemplate = potemplateset.getSubset(
-                productseries=productseries).getPOTemplateByName(
-                    self.potemplate.name)
-            if upstream_potemplate is None:
-                return None
-            return self._getOrCreateMatchingPOFile(upstream_potemplate)
+            subset = potemplateset.getSubset(productseries=productseries)
         else:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = ubuntu.translation_focus
+            if distroseries is None:
+                distroseries = ubuntu.currentseries
+            try:
+                sourcepackage = self.potemplate.productseries.getPackage(
+                    distroseries)
+            except NotFoundError:
+                return None
+            subset = potemplateset.getSubset(
+                distroseries=distroseries,
+                sourcepackagename=sourcepackage.sourcepackagename)
+
+        other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
+        if other_potemplate is None:
             return None
+        return self._getOrCreateMatchingPOFile(other_potemplate)
 
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""
