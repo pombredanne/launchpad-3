@@ -174,7 +174,7 @@ class TestPOExportView(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             name=template_name)
 
-        # The sharing POFile is created automatically when the template is 
+        # The sharing POFile is created automatically when the template is
         # created because self.pofile already exists.
         return (potemplate, potemplate.getPOFileByLang(language.code))
 
@@ -183,7 +183,7 @@ class TestPOExportView(TestCaseWithFactory):
         # For an upstream project, the export is requested on the
         # corresponding (same language, sharing template) on the Ubuntu side.
         ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
-        
+
         self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
 
         expected = (

@@ -1959,7 +1959,7 @@ class TestPOFileUbuntuUpstreamSharingMixin:
     def createData(self):
         self.shared_template_name = self.factory.getUniqueString()
         self.shared_language = self.factory.makeLanguage()
-        
+
         self.distroseries = self.factory.makeUbuntuDistroSeries()
         self.distroseries.distribution.translation_focus = (
             self.distroseries)
@@ -1987,7 +1987,7 @@ class TestPOFileUbuntuUpstreamSharingMixin:
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             name=self.shared_template_name)
-    
+
     def makeSharedUbuntuPOFile(self):
         """Create template and POFile ready for sharing on the Ubuntu side.
         """
@@ -2969,4 +2969,3 @@ class TestUbuntuFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
             potemplate=self.factory.makePOTemplate(
                 distroseries=package.distroseries,
                 sourcepackagename=package.sourcepackagename))
-

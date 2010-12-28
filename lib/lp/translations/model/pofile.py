@@ -691,7 +691,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.%s IS NOT TRUE' % flag_name,
-            "(%s)" % msgstr_clause
+            "(%s)" % msgstr_clause,
             ])
 
         diverged_translation_query = (
@@ -741,7 +741,7 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         # A `POTMsgSet` has different translations if both sides have a
         # translation. If one of them is empty, the POTMsgSet is not included
-        # in this list. 
+        # in this list.
 
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         other_side_flag_name = getUtility(
@@ -764,7 +764,7 @@ class POFile(SQLBase, POFileMixIn):
                 dict(
                     flag_name=other_side_flag_name,
                     potemplate=quote(self.potemplate),
-                    language=quote(self.language))
+                    language=quote(self.language)),
                     ))
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
