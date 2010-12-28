@@ -1961,6 +1961,8 @@ class TestPOFileUbuntuUpstreamSharingMixin:
         self.shared_language = self.factory.makeLanguage()
         
         self.distroseries = self.factory.makeUbuntuDistroSeries()
+        self.distroseries.distribution.translation_focus = (
+            self.distroseries)
         self.sourcepackagename = self.factory.makeSourcePackageName()
         self.sourcepackage = self.factory.makeSourcePackage(
             distroseries=self.distroseries,
