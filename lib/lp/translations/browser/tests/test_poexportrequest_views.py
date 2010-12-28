@@ -222,17 +222,17 @@ class TestPOExportView(TestCaseWithFactory):
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
 
-    def test_partial_option_available(self):
+    def test_pochanged_option_available(self):
         # The option for partial exports is only available if a POFile can
         # be found on the other side.
         self._makeUbuntuTemplateAndPOFile()
         view = self._createView()
 
-        self.assertTrue(view.show_partial_option)
+        self.assertTrue(view.show_pochanged_option)
 
-    def test_partial_option_not_available(self):
+    def test_pochanged_option_not_available(self):
         # The option for partial exports is not available if no POFile can
         # be found on the other side.
         view = self._createView()
 
-        self.assertFalse(view.show_partial_option)
+        self.assertFalse(view.show_pochanged_option)

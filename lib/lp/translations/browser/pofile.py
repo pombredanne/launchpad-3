@@ -1011,6 +1011,10 @@ class POExportView(BaseExportView):
         return self.context.potemplate.source_file_format
 
     @property
+    def show_pochanged_option(self):
+        return self.context.other_side_pofile is not None
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
