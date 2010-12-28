@@ -51,6 +51,7 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
     )
 from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
@@ -989,13 +990,21 @@ class POExportView(BaseExportView):
 
     page_title = "Download translation"
 
-    def modifyFormat(self, format):
+    def getExportFormat(self):
+        format = self.request.form.get("format")
         pochanged = self.request.form.get("pochanged")
         if format == 'PO' and pochanged == 'POCHANGED':
             return 'POCHANGED'
         return format
 
     def processForm(self):
+        is_upstream = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UPSTREAM)
+        if is_upstream and self.getExportFormat() == 'POCHANGED':
+            if self.context.other_side_pofile is None:
+                return None
+            return (None, [self.context.other_side_pofile])
         return (None, [self.context])
 
     def getDefaultFormat(self):

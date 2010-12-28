@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -158,6 +160,8 @@ class TestPOExportView(TestCaseWithFactory):
         language = self.pofile.language
 
         distroseries = self.factory.makeUbuntuDistroSeries()
+        naked_distribution = removeSecurityProxy(distroseries.distribution)
+        naked_distribution.translation_focus = distroseries
         sourcepackagename = self.factory.makeSourcePackageName()
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename, distroseries)
@@ -166,10 +170,10 @@ class TestPOExportView(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             name=template_name)
-        pofile = self.factory.makePOFile(
-            language=language, potemplate=potemplate)
 
-        return (potemplate, pofile)
+        # The sharing POFile is created automatically when the template is 
+        # created because self.pofile already exists.
+        return (potemplate, potemplate.getPOFileByLang(language.code))
 
     def test_request_partial_po_upstream(self):
         # Partial po exports are requested by an extra check box.
