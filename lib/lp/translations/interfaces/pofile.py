@@ -153,6 +153,10 @@ class IPOFile(IRosettaStats):
             '''),
         required=True, readonly=True)
 
+    other_side_pofile = Attribute(_(
+        "The POFile for the same language in the sharing template on the "
+        "other side of a packaging link. None if no link exists."))
+
     def translatedCount():
         """
         Returns the number of message sets which this PO file has current

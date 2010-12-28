@@ -388,6 +388,10 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return self.getTranslationMessages()
 
+    @cachedproperty
+    def other_side_pofile(self):
+        return None
+
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""
         applicable_template = Coalesce(
@@ -1274,6 +1278,7 @@ class DummyPOFile(POFileMixIn):
         self.contributors = []
         self.from_sourcepackagename = None
         self.translation_messages = None
+        self.other_side_pofile = None
 
     def messageCount(self):
         return self.potemplate.messageCount()
