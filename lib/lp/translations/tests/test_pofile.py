@@ -1951,6 +1951,73 @@ class TestPOFile(TestCaseWithFactory):
         self.assertTrue(pofile.hasPluralFormInformation())
 
 
+class TestPOFileUbuntuUpstreamSharing(TestCaseWithFactory):
+    """Test sharing between Ubuntu und upstream POFiles."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOFileUbuntuUpstreamSharing, self).setUp()
+        self.shared_template_name = self.factory.getUniqueString()
+        self.shared_language = self.factory.makeLanguage()
+        
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        self.sourcepackagename = self.factory.makeSourcePackageName()
+        self.sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename)
+        self.productseries = self.factory.makeProductSeries()
+
+    def _makeSharedUbuntuPOFile(self):
+        """Create template and POFile ready for sharing on the Ubuntu side.
+        """
+        potemplate = self.factory.makePOTemplate(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename,
+            name=self.shared_template_name)
+        return self.factory.makePOFile(
+            language=self.shared_language, potemplate=potemplate)
+
+    def _makeSharedUpstreamPOFile(self):
+        """Create template and POFile ready for sharing on the upstream side.
+        """
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries,
+            name=self.shared_template_name)
+        return self.factory.makePOFile(
+            language=self.shared_language, potemplate=potemplate)
+
+    def _setPackagingLink(self):
+        """Create the packaging link from source package to product series."""
+        # Packaging links want an owner.
+        self.sourcepackage.setPackaging(
+            self.productseries, self.factory.makePerson())
+
+    def test_other_side_pofile_none_ubuntu(self):
+        # Without a packaging link, None is returned.
+        pofile = self._makeSharedUbuntuPOFile()
+        self.assertIs(None, pofile.other_side_pofile)
+
+    def test_other_side_pofile_none_upstream(self):
+        # Without a packaging link, None is returned.
+        pofile = self._makeSharedUpstreamPOFile()
+        self.assertIs(None, pofile.other_side_pofile)
+
+    def test_other_side_pofile_linked_no_template_ubuntu(self):
+        # If no sharing template exists on the other side, no POFile can be
+        # found, even with a packaging link.
+        self._setPackagingLink()
+        pofile = self._makeSharedUbuntuPOFile()
+        self.assertIs(None, pofile.other_side_pofile)
+
+    def test_other_side_pofile_linked_no_template_upstream(self):
+        # If no sharing template exists on the other side, no POFile can be
+        # found, even with a packaging link.
+        self._setPackagingLink()
+        pofile = self._makeSharedUpstreamPOFile()
+        self.assertIs(None, pofile.other_side_pofile)
+
+
 class TestPOFileTranslationMessages(TestCaseWithFactory):
     """Test PO file getTranslationMessages method."""
 
