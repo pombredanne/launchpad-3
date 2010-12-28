@@ -73,6 +73,9 @@ from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
     )
+from lp.translations.interfaces.potemplate import (
+    IPOTemplateSet,
+    )
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
@@ -388,9 +391,32 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return self.getTranslationMessages()
 
+    def _getOrCreateMatchingPOFile(self, other_potemplate):
+        other_pofile = other_potemplate.getPOFileByLang(
+            self.language.code)
+        if other_pofile is None:
+            other_pofile = other_potemplate.newPOFile(self.language.code)
+        return other_pofile
+
     @cachedproperty
     def other_side_pofile(self):
-        return None
+        """See `IPOFile`."""
+        potemplateset = getUtility(IPOTemplateSet)
+        if self.potemplate.translation_side == TranslationSide.UBUNTU:
+            from lp.registry.model.sourcepackage import SourcePackage
+            productseries = SourcePackage(
+                self.potemplate.sourcepackagename,
+                self.potemplate.distroseries).productseries
+            if productseries is None:
+                return None
+            upstream_potemplate = potemplateset.getSubset(
+                productseries=productseries).getPOTemplateByName(
+                    self.potemplate.name)
+            if upstream_potemplate is None:
+                return None
+            return self._getOrCreateMatchingPOFile(upstream_potemplate)
+        else:
+            return None
 
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""

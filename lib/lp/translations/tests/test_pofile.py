@@ -2021,7 +2021,7 @@ class TestPOFileUbuntuUpstreamSharingMixin:
         # If no sharing template exists on the other side, no POFile can be
         # found, even with a packaging link.
         self._setPackagingLink()
-        pofile = self.self.makeThisSidePOFile()
+        pofile = self.makeThisSidePOFile()
         self.assertIs(None, pofile.other_side_pofile)
 
     def test_other_side_pofile_shared(self):
