@@ -130,9 +130,12 @@ class TestPOExportView(TestCaseWithFactory):
         # All exports can be requested by an unprivileged user.
         self.translator = self.factory.makePerson()
 
-    def _createView(self, form):
+    def _createView(self, form=None):
         login_person(self.translator)
-        request = LaunchpadTestRequest(method='POST', form=form)
+        if form is None:
+            request = LaunchpadTestRequest()
+        else:
+            request = LaunchpadTestRequest(method='POST', form=form)
         view = POExportView(self.pofile, request)
         view.initialize()
         return view
@@ -218,3 +221,18 @@ class TestPOExportView(TestCaseWithFactory):
         self.assertEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
+
+    def test_partial_option_available(self):
+        # The option for partial exports is only available if a POFile can
+        # be found on the other side.
+        self._makeUbuntuTemplateAndPOFile()
+        view = self._createView()
+
+        self.assertTrue(view.show_partial_option)
+
+    def test_partial_option_not_available(self):
+        # The option for partial exports is not available if no POFile can
+        # be found on the other side.
+        view = self._createView()
+
+        self.assertFalse(view.show_partial_option)
