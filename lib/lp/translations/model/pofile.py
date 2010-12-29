@@ -764,8 +764,8 @@ class POFile(SQLBase, POFileMixIn):
                 dict(
                     flag_name=other_side_flag_name,
                     potemplate=quote(self.potemplate),
-                    language=quote(self.language)),
-                    ))
+                    language=quote(self.language),
+                    )))
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
