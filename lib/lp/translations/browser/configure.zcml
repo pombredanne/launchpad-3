@@ -903,7 +903,7 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+settings"
+        name="+configure-translations"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.distribution.DistributionSettingsView"
         permission="launchpad.TranslationsAdmin"

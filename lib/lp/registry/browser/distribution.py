@@ -430,7 +430,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
-        return Link('+edit', text, summary, icon='edit')
+        return Link('+configure-translations', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
