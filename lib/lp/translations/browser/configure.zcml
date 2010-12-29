@@ -814,7 +814,7 @@
         facet="overview"
         class="lp.translations.browser.product.ProductSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"/>
+        template="../templates/configure-translations.pt"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -872,7 +872,7 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.translations.browser.project.ProjectSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
+        template="../templates/configure-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
 
 <!-- Distribution -->
@@ -907,7 +907,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.distribution.DistributionSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
+        template="../templates/configure-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
