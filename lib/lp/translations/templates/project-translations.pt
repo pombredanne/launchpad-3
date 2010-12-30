@@ -38,9 +38,10 @@
                     context/@@+portlet-translation-groups-and-permission"
            />
       </p>
-        <p tal:condition="view/required:launchpad.TranslationsAdmin">
-          <a tal:replace="structure context/menu:translations/settings/fmt:link"/>
-        </p>
+      <p tal:condition="view/required:launchpad.TranslationsAdmin">
+        <a tal:replace="
+           structure context/menu:translations/settings/fmt:link"/>
+      </p>
     </div>
 
     <div class="yui-g">
