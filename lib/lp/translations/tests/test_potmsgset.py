@@ -1107,23 +1107,25 @@ class TestPOTMsgSetText(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def _makePOTMsgSetAndTemplate(self, msgid_text, format):
+    def _makePOTMsgSetAndTemplate(self, msgid_text, format,
+                                  productseries=None):
         """Create a POTMsgSet in a template of the given format.
 
         :returns: A tuple (POTMsgSet, POTemplate).
         """
-        potemplate = self.factory.makePOTemplate()
+        potemplate = self.factory.makePOTemplate(productseries=productseries)
         potemplate.source_file_format = format
         potmsgset = self.factory.makePOTMsgSet(
             potemplate, msgid_text, sequence=1)
         return (potmsgset, potemplate)
 
-    def _makePOTMsgSet(self, msgid_text, format):
+    def _makePOTMsgSet(self, msgid_text, format, productseries=None):
         """Create a POTMsgSet in a template of the given format.
 
         :returns: A POTMsgSet.
         """
-        return self._makePOTMsgSetAndTemplate(msgid_text, format)[0]
+        return self._makePOTMsgSetAndTemplate(
+            msgid_text, format, productseries)[0]
 
     def test_singular_text_po(self):
         # Gettext PO format uses English strings as msgids.
@@ -1172,6 +1174,50 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             translations=[diverged_msgid], diverged=True)
 
         self.assertEquals(english_msgid, potmsgset.singular_text)
+
+    def test_singular_text_xpi_english_uses_upstream(self):
+        # POTMsgSet singular_text is read from the upstream English
+        # translation.
+        symbolic_msgid = self.factory.getUniqueString()
+        ubuntu_msgid = self.factory.getUniqueString()
+        upstream_msgid = self.factory.getUniqueString()
+        
+        productseries = self.factory.makeProductSeries()
+
+        # Create the source package that this product is linked to.
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        distroseries.distribution.translation_focus = distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        sourcepackage.setPackaging(productseries, self.factory.makePerson())
+
+        # Create two sharing templates. 
+        potmsgset, upstream_potemplate = self._makePOTMsgSetAndTemplate(
+            symbolic_msgid, TranslationFileFormat.XPI, productseries)
+        ubuntu_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            name=upstream_potemplate.name)
+        ubuntu_potemplate.source_file_format = TranslationFileFormat.XPI
+        potmsgset.setSequence(ubuntu_potemplate, 1)
+
+        # The pofile is automatically created for all sharing templates.
+        upstream_pofile = self.factory.makePOFile(
+            'en', upstream_potemplate, create_sharing=True)
+        ubuntu_pofile = ubuntu_potemplate.getPOFileByLang('en')
+        self.assertIsNot(None, ubuntu_pofile)
+
+        # Create different "English translations" for this potmsgset.
+        self.factory.makeCurrentTranslationMessage(
+            pofile=upstream_pofile, potmsgset=potmsgset,
+            translations=[upstream_msgid])
+        self.factory.makeCurrentTranslationMessage(
+            pofile=ubuntu_pofile, potmsgset=potmsgset,
+            translations=[ubuntu_msgid])
+
+        removeSecurityProxy(potmsgset)._cached_singular_text = None
+        self.assertEquals(upstream_msgid, potmsgset.singular_text)
+
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
