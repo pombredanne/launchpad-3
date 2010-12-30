@@ -83,7 +83,7 @@ for Ubuntu and will be able to change it.
     ...     'http://translations.launchpad.dev/ubuntu')
     >>> dtc_browser.getLink('Configure translations').click()
     >>> print dtc_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://translations.launchpad.dev/ubuntu/+configure-translations
 
     >>> dtc_browser.getControl('Translation group').value = [
     ...     'ubuntu-translators']

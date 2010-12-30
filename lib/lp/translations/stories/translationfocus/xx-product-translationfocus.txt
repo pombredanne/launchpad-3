@@ -16,7 +16,8 @@ but have no access to the 'Configure translations' menu.
 
     >>> admin_browser.open(fooproject_url)
     >>> print extract_text(
-    ...     find_tags_by_class(admin_browser.contents, 'edit sprite')[1])
+    ...     find_tags_by_class(admin_browser.contents,
+    ...                        'menu-link-configure_translations')[0])
     Configure translations
 
     >>> browser.open(fooproject_url)
