@@ -133,43 +133,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         transaction.commit()
         self.assertFalse(self.potmsgset.uses_english_msgids)
 
-    def test_POTMsgSet_singular_text(self):
-        """Test that `singular_text` property works correctly."""
-
-        BASE_STRING = u"Base string"
-        ENGLISH_STRING = u"English string"
-        DIVERGED_ENGLISH_STRING = u"Diverged English string"
-
-        # We create a POTMsgSet with a base English string.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               BASE_STRING)
-        potmsgset.setSequence(self.devel_potemplate, 2)
-
-        # Gettext PO format uses English strings as msgids.
-        self.devel_potemplate.source_file_format = TranslationFileFormat.PO
-        transaction.commit()
-        self.assertEquals(potmsgset.singular_text, BASE_STRING)
-
-        # Mozilla XPI format doesn't use English strings as msgids,
-        # unless there is no English POFile object.
-        self.devel_potemplate.source_file_format = TranslationFileFormat.XPI
-        transaction.commit()
-        self.assertEquals(potmsgset.singular_text, BASE_STRING)
-
-        # POTMsgSet singular_text is read from a shared English translation.
-        en_pofile = self.factory.makePOFile('en', self.devel_potemplate)
-        translation = self.factory.makeSharedTranslationMessage(
-            pofile=en_pofile, potmsgset=potmsgset,
-            translations=[ENGLISH_STRING])
-        self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
-
-        # A diverged (translation.potemplate != None) English translation
-        # is not used as a singular_text.
-        translation = self.factory.makeCurrentTranslationMessage(
-            pofile=en_pofile, potmsgset=potmsgset,
-            translations=[DIVERGED_ENGLISH_STRING], diverged=True)
-        self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
-
     def test_getCurrentTranslationMessageOrDummy_returns_upstream_tm(self):
         pofile = self.factory.makePOFile('nl')
         message = self.factory.makeCurrentTranslationMessage(pofile=pofile)
@@ -1137,6 +1100,78 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
             TranslationConflict,
             self.potmsgset.resetCurrentTranslation,
             self.pofile, now - timedelta(1))
+
+
+class TestPOTMsgSetText(TestCaseWithFactory):
+    """Tests for singular_text."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makePOTMsgSetAndTemplate(self, msgid_text, format):
+        """Create a POTMsgSet in a template of the given format.
+
+        :returns: A tuple (POTMsgSet, POTemplate).
+        """
+        potemplate = self.factory.makePOTemplate()
+        potemplate.source_file_format = format
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate, msgid_text, sequence=1)
+        return (potmsgset, potemplate)
+
+    def _makePOTMsgSet(self, msgid_text, format):
+        """Create a POTMsgSet in a template of the given format.
+
+        :returns: A POTMsgSet.
+        """
+        return self._makePOTMsgSetAndTemplate(msgid_text, format)[0]
+
+    def test_singular_text_po(self):
+        # Gettext PO format uses English strings as msgids.
+        english_msgid = self.factory.getUniqueString()
+        potmsgset = self._makePOTMsgSet(
+            english_msgid, TranslationFileFormat.PO)
+        self.assertEquals(english_msgid, potmsgset.singular_text)
+
+    def test_singular_text_xpi(self):
+        # Mozilla XPI format uses English strings as msgids if no English
+        # pofile exists.
+        symbolic_msgid = self.factory.getUniqueString()
+        potmsgset = self._makePOTMsgSet(
+            symbolic_msgid, TranslationFileFormat.XPI)
+        self.assertEquals(symbolic_msgid, potmsgset.singular_text)
+
+    def test_singular_text_xpi_english(self):
+        # Mozilla XPI format uses English strings as msgids if no English
+        # pofile exists.
+        # POTMsgSet singular_text is read from a shared English translation.
+        symbolic_msgid = self.factory.getUniqueString()
+        english_msgid = self.factory.getUniqueString()
+        potmsgset, potemplate = self._makePOTMsgSetAndTemplate(
+            symbolic_msgid, TranslationFileFormat.XPI)
+        en_pofile = self.factory.makePOFile('en', potemplate)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=en_pofile, potmsgset=potmsgset,
+            translations=[english_msgid])
+
+        self.assertEquals(english_msgid, potmsgset.singular_text)
+
+    def test_singular_text_xpi_english_diverged(self):
+        # A diverged (translation.potemplate != None) English translation
+        # is not used as a singular_text.
+        symbolic_msgid = self.factory.getUniqueString()
+        english_msgid = self.factory.getUniqueString()
+        diverged_msgid = self.factory.getUniqueString()
+        potmsgset, potemplate = self._makePOTMsgSetAndTemplate(
+            symbolic_msgid, TranslationFileFormat.XPI)
+        en_pofile = self.factory.makePOFile('en', potemplate)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=en_pofile, potmsgset=potmsgset,
+            translations=[english_msgid])
+        self.factory.makeCurrentTranslationMessage(
+            pofile=en_pofile, potmsgset=potmsgset,
+            translations=[diverged_msgid], diverged=True)
+
+        self.assertEquals(english_msgid, potmsgset.singular_text)
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
