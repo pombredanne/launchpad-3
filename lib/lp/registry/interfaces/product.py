@@ -683,7 +683,7 @@ class IProductPublic(
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_(
-                'Project series translators should focus on.')))
+                'Project series that translators should focus on.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "

@@ -286,7 +286,7 @@ class IDistributionPublic(
     translation_focus = Choice(
         title=_("Translation focus"),
         description=_(
-            "The release series translators should focus on."),
+            "The release series that translators should focus on."),
         required=False,
         vocabulary='FilteredDistroSeries')
 

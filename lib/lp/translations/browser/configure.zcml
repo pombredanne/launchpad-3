@@ -811,7 +811,6 @@
     <browser:page
         name="+configure-translations"
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         class="lp.translations.browser.product.ProductSettingsView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/configure-translations.pt"/>
