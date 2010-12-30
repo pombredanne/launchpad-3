@@ -1187,7 +1187,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename=sourcepackagename)
         sourcepackage.setPackaging(productseries, self.factory.makePerson())
 
-        # Create two sharing templates. 
+        # Create two sharing templates.
         self.potmsgset, upstream_potemplate = self._makePOTMsgSetAndTemplate(
             None, TranslationFileFormat.XPI, productseries)
         ubuntu_potemplate = self.factory.makePOTemplate(
@@ -1235,7 +1235,6 @@ class TestPOTMsgSetText(TestCaseWithFactory):
 
         removeSecurityProxy(self.potmsgset)._cached_singular_text = None
         self.assertEquals(ubuntu_msgid, self.potmsgset.singular_text)
-
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
