@@ -61,7 +61,7 @@
               </select>
             </div>
             <div id="div_pochanged" style="margin-top: 10px"
-              tal:condition="view/show_pochanged_option">
+                 tal:condition="view/show_pochanged_option">
               <input type="checkbox" name="pochanged" id="cb_pochanged"
                      value="POCHANGED" />
               <label for="cb_pochanged">
