@@ -27,6 +27,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -307,6 +308,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
+        errorlog.globalErrorUtility.configure(self.config_name)
         if self.options.no_fudge:
             self.fudge_factor = timedelta(0)
 
