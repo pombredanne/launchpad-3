@@ -547,7 +547,6 @@ class TestProjectGroupBugs(TestCaseWithFactory):
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
-        print help_link
         self.assertIs(None, help_link)
 
 
