@@ -1175,13 +1175,8 @@ class TestPOTMsgSetText(TestCaseWithFactory):
 
         self.assertEquals(english_msgid, potmsgset.singular_text)
 
-    def test_singular_text_xpi_english_uses_upstream(self):
-        # POTMsgSet singular_text is read from the upstream English
-        # translation.
-        symbolic_msgid = self.factory.getUniqueString()
-        ubuntu_msgid = self.factory.getUniqueString()
-        upstream_msgid = self.factory.getUniqueString()
-        
+    def _setUpSharingWithUbuntu(self):
+        """Create a potmsgset shared in upstream and Ubuntu."""
         productseries = self.factory.makeProductSeries()
 
         # Create the source package that this product is linked to.
@@ -1193,30 +1188,53 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         sourcepackage.setPackaging(productseries, self.factory.makePerson())
 
         # Create two sharing templates. 
-        potmsgset, upstream_potemplate = self._makePOTMsgSetAndTemplate(
-            symbolic_msgid, TranslationFileFormat.XPI, productseries)
+        self.potmsgset, upstream_potemplate = self._makePOTMsgSetAndTemplate(
+            None, TranslationFileFormat.XPI, productseries)
         ubuntu_potemplate = self.factory.makePOTemplate(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             name=upstream_potemplate.name)
         ubuntu_potemplate.source_file_format = TranslationFileFormat.XPI
-        potmsgset.setSequence(ubuntu_potemplate, 1)
+        self.potmsgset.setSequence(ubuntu_potemplate, 1)
 
         # The pofile is automatically created for all sharing templates.
-        upstream_pofile = self.factory.makePOFile(
+        self.upstream_pofile = self.factory.makePOFile(
             'en', upstream_potemplate, create_sharing=True)
-        ubuntu_pofile = ubuntu_potemplate.getPOFileByLang('en')
-        self.assertIsNot(None, ubuntu_pofile)
+        self.ubuntu_pofile = ubuntu_potemplate.getPOFileByLang('en')
+        self.assertIsNot(None, self.ubuntu_pofile)
 
+    def test_singular_text_xpi_english_uses_upstream(self):
+        # POTMsgSet singular_text is read from the upstream English
+        # translation.
+        self._setUpSharingWithUbuntu()
         # Create different "English translations" for this potmsgset.
+        ubuntu_msgid = self.factory.getUniqueString()
+        upstream_msgid = self.factory.getUniqueString()
+
         self.factory.makeCurrentTranslationMessage(
-            pofile=upstream_pofile, potmsgset=potmsgset,
+            pofile=self.upstream_pofile, potmsgset=self.potmsgset,
             translations=[upstream_msgid])
         self.factory.makeCurrentTranslationMessage(
-            pofile=ubuntu_pofile, potmsgset=potmsgset,
+            pofile=self.ubuntu_pofile, potmsgset=self.potmsgset,
             translations=[ubuntu_msgid])
 
-        removeSecurityProxy(potmsgset)._cached_singular_text = None
-        self.assertEquals(upstream_msgid, potmsgset.singular_text)
+        removeSecurityProxy(self.potmsgset)._cached_singular_text = None
+        self.assertEquals(upstream_msgid, self.potmsgset.singular_text)
+
+    def test_singular_text_xpi_english_falls_back_to_ubuntu(self):
+        # POTMsgSet singular_text is read from the Ubuntu English
+        # translation if no upstream one exists. This is a safeguard against
+        # old or broken data.
+        self._setUpSharingWithUbuntu()
+
+        # Create different "English translations" for this potmsgset.
+        ubuntu_msgid = self.factory.getUniqueString()
+
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.ubuntu_pofile, potmsgset=self.potmsgset,
+            translations=[ubuntu_msgid])
+
+        removeSecurityProxy(self.potmsgset)._cached_singular_text = None
+        self.assertEquals(ubuntu_msgid, self.potmsgset.singular_text)
 
 
 
