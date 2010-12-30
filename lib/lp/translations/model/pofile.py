@@ -74,9 +74,7 @@ from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
     )
-from lp.translations.interfaces.potemplate import (
-    IPOTemplateSet,
-    )
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
@@ -392,15 +390,7 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return self.getTranslationMessages()
 
-    def _getOrCreateMatchingPOFile(self, other_potemplate):
-        other_pofile = other_potemplate.getPOFileByLang(
-            self.language.code)
-        if other_pofile is None:
-            other_pofile = other_potemplate.newPOFile(self.language.code)
-        return other_pofile
-
-    @cachedproperty
-    def other_side_pofile(self):
+    def getOtherSidePOFile(self):
         """See `IPOFile`."""
         potemplateset = getUtility(IPOTemplateSet)
         if self.potemplate.translation_side == TranslationSide.UBUNTU:
@@ -428,7 +418,7 @@ class POFile(SQLBase, POFileMixIn):
         other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
         if other_potemplate is None:
             return None
-        return self._getOrCreateMatchingPOFile(other_potemplate)
+        return other_potemplate.getPOFileByLang(self.language.code)
 
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""
@@ -1316,7 +1306,6 @@ class DummyPOFile(POFileMixIn):
         self.contributors = []
         self.from_sourcepackagename = None
         self.translation_messages = None
-        self.other_side_pofile = None
 
     def messageCount(self):
         return self.potemplate.messageCount()
@@ -1342,6 +1331,10 @@ class DummyPOFile(POFileMixIn):
     def translationpermission(self):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
+
+    def getOtherSidePOFile(self):
+        """See `IPOFile`."""
+        return None
 
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""

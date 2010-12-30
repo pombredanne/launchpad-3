@@ -2014,32 +2014,32 @@ class TestPOFileUbuntuUpstreamSharingMixin:
         self.sourcepackage.setPackaging(
             self.productseries, self.factory.makePerson())
 
-    def test_other_side_pofile_none(self):
+    def test_getOtherSidePOFile_none(self):
         # Without a packaging link, None is returned.
         pofile = self.makeThisSidePOFile()
-        self.assertIs(None, pofile.other_side_pofile)
+        self.assertIs(None, pofile.getOtherSidePOFile())
 
-    def test_other_side_pofile_linked_no_template(self):
+    def test_getOtherSidePOFile_linked_no_template(self):
         # If no sharing template exists on the other side, no POFile can be
         # found, even with a packaging link.
         self._setPackagingLink()
         pofile = self.makeThisSidePOFile()
-        self.assertIs(None, pofile.other_side_pofile)
+        self.assertIs(None, pofile.getOtherSidePOFile())
 
-    def test_other_side_pofile_shared(self):
+    def test_getOtherSidePOFile_shared(self):
         # This is how sharing should look like.
         this_pofile = self.makeThisSidePOFile()
         other_pofile = self.makeOtherSidePOFile()
         self._setPackagingLink()
-        self.assertEquals(other_pofile, this_pofile.other_side_pofile)
+        self.assertEquals(other_pofile, this_pofile.getOtherSidePOFile())
 
-    def test_other_side_pofile_missing(self):
+    def test_getOtherSidePOFile_missing(self):
         # If the other side pofile is missing, it is created automatically.
         this_pofile = self.makeThisSidePOFile()
         other_potemplate = self.makeOtherSidePOTemplate()
         self._setPackagingLink()
         self.assertEquals(
-            other_potemplate, this_pofile.other_side_pofile.potemplate)
+            other_potemplate, this_pofile.getOtherSidePOFile().potemplate)
 
 
 class TestPOFileUbuntuSharing(TestCaseWithFactory,

@@ -1002,9 +1002,10 @@ class POExportView(BaseExportView):
             self.context.potemplate.translation_side ==
                 TranslationSide.UPSTREAM)
         if is_upstream and self.getExportFormat() == 'POCHANGED':
-            if self.context.other_side_pofile is None:
+            other_side_pofile = self.context.getOtherSidePOFile()
+            if other_side_pofile is None:
                 return None
-            return (None, [self.context.other_side_pofile])
+            return (None, [other_side_pofile])
         return (None, [self.context])
 
     def getDefaultFormat(self):
@@ -1012,7 +1013,8 @@ class POExportView(BaseExportView):
 
     @property
     def show_pochanged_option(self):
-        return self.context.other_side_pofile is not None
+        other_side_pofile = self.context.getOtherSidePOFile()
+        return other_side_pofile is not None
 
     @property
     def cancel_url(self):
