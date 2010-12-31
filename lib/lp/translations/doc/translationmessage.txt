@@ -134,9 +134,8 @@ hidden.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> login('no-priv@canonical.com')
 
-    >>> new_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'suggestion'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
+    >>> new_suggestion = potmsgset.submitSuggestion(
+    ...     pofile_sr, nopriv, {0: u'suggestion'})
     >>> transaction.commit()
     >>> new_suggestion.isHidden(pofile_sr)
     False
@@ -147,9 +146,9 @@ hidden.
 
 An imported translation is not hidden when submitted.
 
-    >>> imported_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'foo'},
-    ...     is_current_upstream=True, lock_timestamp=datetime.now(UTC))
+    >>> imported_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=True,
+    ...     translations={ 0: 'imported' })
     >>> transaction.commit()
     >>> imported_translation.isHidden(pofile_sr)
     False
@@ -161,9 +160,9 @@ A previous suggestion is now hidden.
 
 A newly submitted non-imported translation is not hidden either.
 
-    >>> current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'bar'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
+    >>> current_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=False,
+    ...     translations={ 0: 'current' })
     >>> transaction.commit()
     >>> current_translation.isHidden(pofile_sr)
     False
@@ -175,9 +174,9 @@ However, previous imported translation is not hidden yet.
 
 If a new current translation is submitted, the old one is hidden.
 
-    >>> new_current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'new'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
+    >>> new_current_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=False,
+    ...     translations={ 0 : 'new' })
     >>> transaction.commit()
     >>> new_current_translation.isHidden(pofile_sr)
     False
@@ -195,9 +194,8 @@ and last current translation is not hidden either.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> login('no-priv@canonical.com')
 
-    >>> another_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'another suggestion'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
+    >>> another_suggestion = potmsgset.submitSuggestion(
+    ...     pofile_sr, nopriv, {0: u'another suggestion'})
     >>> transaction.commit()
     >>> another_suggestion.isHidden(pofile_sr)
     False
@@ -214,16 +212,16 @@ for the message, up to and including the last plural form it can have.
 For a regular single-form message, that's always one.
 
     >>> login('foo.bar@canonical.com')
-    >>> message = potmsgset.getCurrentTranslationMessage(potemplate, serbian)
+    >>> message = potmsgset.getCurrentTranslation(
+    ...     potemplate, serbian, potemplate.translation_side)
     >>> message.translations
     [u'new']
 
 If the message has no actual translation, the translations attribute
 contains just a None.
 
-    >>> empty_message = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message = potmsgset.submitSuggestion(
+    ...     pofile_sr, foobar, {})
     >>> empty_message.translations
     [None]
 
@@ -242,9 +240,8 @@ For a message with plurals, it's the POFile's number of plural forms.
 If the message does not translate all those forms, we get None entries
 in the list.
 
-    >>> empty_message = plural_potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message = plural_potmsgset.submitSuggestion(
+    ...     pofile_sr, foobar, {})
     >>> empty_message.translations
     [None, None, None]
 
