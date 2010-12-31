@@ -990,7 +990,6 @@ class POTMsgSet(SQLBase):
         if self.is_translation_credit:
             # We don't support suggestions on credits messages.
             return None
-
         potranslations = self._findPOTranslations(new_translations)
 
         existing_message = self._findMatchingTranslationMessage(

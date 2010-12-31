@@ -297,11 +297,11 @@ that should not add any kind of karma to this user.
     >>> by_maintainer = False
 
 And we can see as he won't get any karma activity from that, otherwise it'd be
-printed after the call to updateTranslationSet().
+printed after the call to set current translation.
 
-    >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, by_maintainer,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
+    ...     pofile, potmsgset, no_priv, translations=new_translations,
+    ...     current_other=by_maintainer)
     >>> flush_database_caches()
 
 But now, he will provide a new suggestion.
@@ -314,9 +314,8 @@ At this moment, karma is assigned and thus is printed here.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
-    >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, by_maintainer,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> translationmessage = potmsgset.submitSuggestion(
+    ...     pofile, no_priv, new_translations)
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
 
@@ -333,25 +332,27 @@ being approved.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
-    >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, by_maintainer,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> translationmessage = potmsgset.findTranslationMessage(
+    ...     pofile, new_translations)
+    >>> translationmessage.approve(pofile, kurem)
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
     >>> transaction.commit()
 
 Finally, this reviewer, is going to add a new translation directly. He should
-get karma for his autoapproved translation.
+get karma for his translation, but not for a review.
 
+    >>> from lp.translations.interfaces.translationmessage import (
+    ...     RosettaTranslationOrigin)
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
-    >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, by_maintainer,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
-    Karma added: action=translationsuggestionapproved, product=evolution
+    >>> translationmessage = potmsgset.submitSuggestion(
+    ...     pofile, kurem, new_translations)
+    Karma added: action=translationsuggestionadded, product=evolution
+    >>> translationmessage.approve(pofile, kurem)
     >>> transaction.commit()
 
 
