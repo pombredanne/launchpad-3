@@ -342,8 +342,6 @@ being approved.
 Finally, this reviewer, is going to add a new translation directly. He should
 get karma for his translation, but not for a review.
 
-    >>> from lp.translations.interfaces.translationmessage import (
-    ...     RosettaTranslationOrigin)
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')

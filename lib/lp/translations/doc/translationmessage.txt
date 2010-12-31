@@ -101,10 +101,6 @@ with different timestamps on messages.
 
     >>> import transaction
 
-    >>> from datetime import datetime
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
-
 We are working with a product with translations being restricted to
 a single translation group.
 
