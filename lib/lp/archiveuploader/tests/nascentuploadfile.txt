@@ -19,8 +19,7 @@ Import the test keys so we have them ready for verification
 We need to be logged into the security model in order to get any further
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.archiveuploader.tests import (
-    ...    datadir, getPolicy, mock_logger_quiet)
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
 
 
 == NascentUploadFile base class ==
@@ -65,14 +64,14 @@ considered) for the upload in question.
     ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
     >>> from lp.archiveuploader.changesfile import ChangesFile
-
+    >>> from lp.services.log.logger import DevNullLogger
     >>> ed_binary_changes = ChangesFile(
     ...     datadir('ed_0.2-20_i386.changes.binary-only'),
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
 
     >>> ed_source_changes = ChangesFile(
     ...     datadir('ed_0.2-20_source.changes'),
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
 
 Make sure we are not getting any exceptions due to a malformed changes
 file name.
@@ -150,7 +149,7 @@ And then invoke the name check on the changes file with the malformed name.
 
     >>> wrong_file_name = ChangesFile(
     ...     datadir('p-m_0.4.12-2~ppa2.changes'),
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
     >>> [err] = list(wrong_file_name.checkFileName())
     >>> str(err)
     'p-m_0.4.12-2~ppa2.changes -> inappropriate changesfile name, ...'
@@ -233,8 +232,8 @@ Some fields extracted from the tag_file are required, they are always
 present in ChangesFile and DSCFile:
 
     >>> sig_file._dict = {}
-    >>> sig_file._dict['source'] = 'some-source'
-    >>> sig_file._dict['version'] = '6.6.6'
+    >>> sig_file._dict['Source'] = 'some-source'
+    >>> sig_file._dict['Version'] = '6.6.6'
 
 After initiliasing sig_file we can parse addresses and look them up in
 Launchpad:
@@ -374,7 +373,7 @@ the given version of source.
     ...     datadir('ed_0.2-20.dsc'),
     ...     'de8b206f8fc57bd931f6226feac6644a', 578, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
 
     >>> ed_source_dsc
     <lp.archiveuploader.dscfile.DSCFile ...>
@@ -437,7 +436,7 @@ disk:
     ...     datadir('ed_0.2-20.dsc'),
     ...     'e31eeb0b6b3b87e1ea79378df864ffff', 500, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
 
     >>> errors = ed_broken_dsc.verify()
     >>> [str(err) for err in errors]
@@ -449,7 +448,7 @@ It also verifies the file size when the checksum matches.
     ...     datadir('ed_0.2-20.dsc'),
     ...     'de8b206f8fc57bd931f6226feac6644a', 500, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
 
     >>> errors = ed_broken_dsc.verify()
     >>> [str(err) for err in errors]
@@ -475,7 +474,7 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
     >>> ed_broken_dsc_file = DSCUploadedFile(
     ...     datadir('ed_0.2-20.diff.gz'),
     ...     'f9e1e5f13725f581919e9bfd6227ffff', 500,
-    ...     modified_insecure_policy, mock_logger_quiet)
+    ...     modified_insecure_policy, DevNullLogger())
     >>> errors = ed_broken_dsc_file.verify()
     >>> [str(err) for err in errors]
     ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. 8343836094fb01ee9b9a1067b23365f1 != f9e1e5f13725f581919e9bfd6227ffff']
@@ -498,7 +497,7 @@ DebBinaryUploadFile models a binary .deb file.
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
    ...                     15, 'main/editors', 'important', 'foo', '1.2',
    ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     mock_logger_quiet)
+   ...                     DevNullLogger())
 
 Like the other files it can be verified:
 
@@ -512,7 +511,7 @@ changes file:
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
    ...                     15, 'main/net', 'important', 'foo', '1.2',
    ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     mock_logger_quiet)
+   ...                     DevNullLogger())
    >>> list(ed_binary_deb.verify())
    [UploadError('ed_0.2-20_i386.deb control file lists section as 
                 main/editors but changes file has main/net.',)]
@@ -523,7 +522,7 @@ It also checks the priority against the changes file:
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
    ...                     15, 'main/editors', 'extra', 'foo', '1.2',
    ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     mock_logger_quiet)
+   ...                     DevNullLogger())
    >>> list(ed_binary_deb.verify())
    [UploadError('ed_0.2-20_i386.deb control file lists priority as important 
                  but changes file has extra.',)]
@@ -541,7 +540,7 @@ too new:
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
    ...                     15, 'main/editors', 'important', 'foo', '1.2',
    ...                     ed_binary_changes, old_only_policy,
-   ...                     mock_logger_quiet)
+   ...                     DevNullLogger())
    >>> list(ed_binary_deb.verifyDebTimestamp())
    [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too 
         far into the future (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
@@ -556,7 +555,7 @@ too new:
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
    ...                     15, 'main/editors', 'important', 'foo', '1.2',
    ...                     ed_binary_changes, new_only_policy,
-   ...                     mock_logger_quiet)
+   ...                     DevNullLogger())
    >>> list(ed_binary_deb.verify())
    [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too
                  far in the past (e.g. control [Thu Jan  3 19:29:01 2008]).',)]

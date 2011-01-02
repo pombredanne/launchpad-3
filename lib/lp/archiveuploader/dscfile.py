@@ -22,18 +22,16 @@ import errno
 import glob
 import os
 import shutil
-import subprocess
 import tempfile
 
 import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    IGPGKeySet,
-    ISourcePackageNameSet,
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -49,42 +47,28 @@ from lp.archiveuploader.tagfiles import (
     )
 from lp.archiveuploader.utils import (
     determine_source_file_type,
+    DpkgSourceError,
+    extract_dpkg_source,
     get_source_file_extension,
     ParseMaintError,
-    prefix_multi_line_string,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-
-
-class DpkgSourceError(Exception):
-
-    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
-
-    def __init__(self, output, result):
-        Exception.__init__(
-            self, self._fmt % {"output": output, "result": result})
-        self.output = output
-        self.result = result
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 def unpack_source(dsc_filepath):
@@ -96,24 +80,7 @@ def unpack_source(dsc_filepath):
     # Get a temporary dir together.
     unpacked_dir = tempfile.mkdtemp()
     try:
-        # chdir into it
-        cwd = os.getcwd()
-        os.chdir(unpacked_dir)
-        try:
-            args = ["dpkg-source", "-sn", "-x", dsc_filepath]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-            output, unused = dpkg_source.communicate()
-            result = dpkg_source.wait()
-        finally:
-            # When all is said and done, chdir out again so that we can
-            # clean up the tree with shutil.rmtree without leaving the
-            # process in a directory we're trying to remove.
-            os.chdir(cwd)
-
-        if result != 0:
-            dpkg_output = prefix_multi_line_string(output, "  ")
-            raise DpkgSourceError(result=result, output=dpkg_output)
+        extract_dpkg_source(dsc_filepath, unpacked_dir)
     except:
         shutil.rmtree(unpacked_dir)
         raise
@@ -206,8 +173,8 @@ class SignableTagFile:
 
         person = getUtility(IPersonSet).getByEmail(email)
         if person is None and self.policy.create_people:
-            package = self._dict['source']
-            version = self._dict['version']
+            package = self._dict['Source']
+            version = self._dict['Version']
             if self.policy.distroseries and self.policy.pocket:
                 policy_suite = ('%s/%s' % (self.policy.distroseries.name,
                                            self.policy.pocket.name))
@@ -235,12 +202,23 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     """Models a given DSC file and its content."""
 
     mandatory_fields = set([
-        "source",
-        "version",
-        "binary",
-        "maintainer",
-        "architecture",
-        "files"])
+        "Source",
+        "Version",
+        "Binary",
+        "Maintainer",
+        "Architecture",
+        "Files"])
+
+    known_fields = mandatory_fields.union(set([
+        "Build-Depends",
+        "Build-Depends-Indep",
+        "Build-Conflicts",
+        "Build-Conflicts-Indep",
+        "Format",
+        "Standards-Version",
+        "filecontents",
+        "homepage",
+        ]))
 
     # Note that files is actually only set inside verify().
     files = None
@@ -278,17 +256,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
 
-        self.maintainer = self.parseAddress(self._dict['maintainer'])
+        self.maintainer = self.parseAddress(self._dict['Maintainer'])
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
         # to accept them.
-        if 'format' not in self._dict:
-            self._dict['format'] = "1.0"
+        if 'Format' not in self._dict:
+            self._dict['Format'] = "1.0"
 
         if self.format is None:
             raise EarlyReturnUploadError(
-                "Unsupported source format: %s" % self._dict['format'])
+                "Unsupported source format: %s" % self._dict['Format'])
 
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
@@ -301,31 +279,31 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     @property
     def source(self):
         """Return the DSC source name."""
-        return self._dict['source']
+        return self._dict['Source']
 
     @property
     def dsc_version(self):
         """Return the DSC source version."""
-        return self._dict['version']
+        return self._dict['Version']
 
     @property
     def format(self):
         """Return the DSC format."""
         try:
             return SourcePackageFormat.getTermByToken(
-                self._dict['format']).value
+                self._dict['Format']).value
         except LookupError:
             return None
 
     @property
     def architecture(self):
         """Return the DSC source architecture."""
-        return self._dict['architecture']
+        return self._dict['Architecture']
 
     @property
     def binary(self):
         """Return the DSC claimed binary line."""
-        return self._dict['binary']
+        return self._dict['Binary']
 
 
     #
@@ -348,7 +326,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
         files = []
-        for fileline in self._dict['files'].strip().split("\n"):
+        for fileline in self._dict['Files'].strip().split("\n"):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME
             digest, size, filename = fileline.strip().split()
             if not re_issource.match(filename):
@@ -382,7 +360,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
-        for field_name in ['build-depends', 'build-depends-indep']:
+        for field_name in ['Build-Depends', 'Build-Depends-Indep']:
             field = self._dict.get(field_name, None)
             if field is not None:
                 if field.startswith("ARRAY"):
@@ -452,11 +430,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             archives = [self.policy.archive]
 
+        archives = [archive for archive in archives if archive is not None]
+
         library_file = None
         for archive in archives:
             try:
-                library_file = self.policy.distro.getFileByName(
-                    filename, source=True, binary=False, archive=archive)
+                library_file = archive.getFileByName(filename)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive
@@ -618,35 +597,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             cleanup_unpacked_dir(unpacked_dir)
         self.logger.debug("Done")
 
-    def findBuild(self):
-        """Find and return the SourcePackageRecipeBuild, if one is specified.
-
-        If by any chance an inconsistent build was found this method will
-        raise UploadError resulting in a upload rejection.
-        """
-        build_id = getattr(self.policy.options, 'buildid', None)
-        if build_id is None:
-            return None
-
-        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-
-        # The master verifies the status to confirm successful upload.
-        build.status = BuildStatus.FULLYBUILT
-        # If this upload is successful, any existing log is wrong and
-        # unuseful.
-        build.upload_log = None
-
-        # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense.
-        if (build.pocket != self.policy.pocket or
-            build.distroseries != self.policy.distroseries or
-            build.archive != self.policy.archive):
-            raise UploadError(
-                "Attempt to upload source specifying "
-                "recipe build %s, where it doesn't fit." % build.id)
-
-        return build
-
     def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
 
@@ -661,7 +611,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
                 encoded[key] = guess_encoding(value)
@@ -683,23 +633,27 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
+        user_defined_fields = self.extractUserDefinedFields([
+            (field, encoded[field]) for field in self._dict.iterkeys()])
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
             maintainer=self.maintainer['person'],
-            builddepends=encoded.get('build-depends', ''),
-            builddependsindep=encoded.get('build-depends-indep', ''),
-            build_conflicts=encoded.get('build-conflicts', ''),
-            build_conflicts_indep=encoded.get('build-conflicts-indep', ''),
-            architecturehintlist=encoded.get('architecture', ''),
+            builddepends=encoded.get('Build-Depends', ''),
+            builddependsindep=encoded.get('Build-Depends-Indep', ''),
+            build_conflicts=encoded.get('Build-Conflicts', ''),
+            build_conflicts_indep=encoded.get('Build-Conflicts-Indep', ''),
+            architecturehintlist=encoded.get('Architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
+            homepage=encoded.get('homepage'),
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
-            dsc_maintainer_rfc822=encoded['maintainer'],
-            dsc_format=encoded['format'],
-            dsc_binaries=encoded['binary'],
-            dsc_standards_version=encoded.get('standards-version'),
+            dsc_maintainer_rfc822=encoded['Maintainer'],
+            dsc_format=encoded['Format'],
+            dsc_binaries=encoded['Binary'],
+            dsc_standards_version=encoded.get('Standards-Version'),
             component=self.component,
             changelog=changelog_lfa,
             changelog_entry=encoded.get('simulated_changelog'),
@@ -708,6 +662,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
+            user_defined_fields=user_defined_fields,
             )
 
         # SourcePackageFiles should contain also the DSC

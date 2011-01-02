@@ -5,12 +5,10 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from canonical.launchpad.ftests import login
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class TestOmitTargetedParameter(TestCaseWithFactory):
@@ -37,7 +35,3 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
         response = self.webservice.named_get('/mebuntu/inkanyamba',
             'searchTasks', api_version='devel').jsonBody()
         self.assertEqual(response['total_size'], 1)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

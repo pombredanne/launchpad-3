@@ -11,7 +11,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.publisher import BugsLayer
 from lp.registry.browser.distribution import DistributionBugsMenu
 from lp.registry.browser.distributionsourcepackage import (

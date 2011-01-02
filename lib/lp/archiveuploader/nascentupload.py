@@ -23,13 +23,7 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet,
-    IDistributionSet,
-    ILibraryFileAliasSet,
-    ISourcePackageNameSet,
-    QueueInconsistentStateError,
-    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -43,11 +37,12 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.utils import determine_source_file_type
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import (
-    MAIN_ARCHIVE_PURPOSES,
-    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -137,7 +132,7 @@ class NascentUpload:
             raise FatalUploadError(str(e))
         return cls(changesfile, policy, logger)
 
-    def process(self):
+    def process(self, build=None):
         """Process this upload, checking it against policy, loading it into
         the database if it seems okay.
 
@@ -200,7 +195,7 @@ class NascentUpload:
         self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
-        self.verify_acl()
+        self.verify_acl(build)
 
         # Perform policy checks.
         policy.checkUpload(self)
@@ -483,7 +478,7 @@ class NascentUpload:
     #
     # Signature and ACL stuff
     #
-    def verify_acl(self):
+    def verify_acl(self, build=None):
         """Check the signer's upload rights.
 
         The signer must have permission to upload to either the component
@@ -498,10 +493,13 @@ class NascentUpload:
         if self.binaryful:
             return
 
-        # Set up some convenient shortcut variables.
-
-        uploader = self.policy.getUploader(self.changes)
-        archive = self.policy.archive
+        # The build can have an explicit uploader, which may be different
+        # from the changes file signer. (i.e in case of daily source package
+        # builds)
+        if build is not None:
+            uploader = build.getUploader(self.changes)
+        else:
+            uploader = self.changes.signer
 
         # If we have no signer, there's no ACL we can apply.
         if uploader is None:
@@ -511,7 +509,7 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = archive.checkUpload(
+        rejection_reason = self.policy.archive.checkUpload(
             uploader, self.policy.distroseries, source_name,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
@@ -592,6 +590,9 @@ class NascentUpload:
         else:
             ancestry_name = uploaded_file.package
 
+        # Avoid cyclic import.
+        from lp.soyuz.interfaces.binarypackagename import (
+            IBinaryPackageNameSet)
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(ancestry_name)
 
@@ -824,7 +825,7 @@ class NascentUpload:
     #
     # Actually processing accepted or rejected uploads -- and mailing people
     #
-    def do_accept(self, notify=True):
+    def do_accept(self, notify=True, build=None):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -834,13 +835,14 @@ class NascentUpload:
         constraint.
 
         :param notify: True to send an email, False to not send one.
+        :param build: The build associated with this upload.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
             self.do_reject(notify)
             return False
         try:
-            self.storeObjectsInDatabase()
+            self.storeObjectsInDatabase(build=build)
 
             # Send the email.
             # There is also a small corner case here where the DB transaction
@@ -859,16 +861,26 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
+        except QueueInconsistentStateError, e:
+            # A QueueInconsistentStateError is expected if the rejection
+            # is a routine rejection due to a bad package upload.
+            # Log at info level so LaunchpadCronScript doesn't generate an
+            # OOPS.
+            func = self.logger.info
+            return self._reject_with_logging(e, notify, func)
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
-            self.reject("%s" % e)
-            # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error(
-                'Exception while accepting:\n %s' % e, exc_info=True)
-            self.do_reject(notify)
-            return False
+            func = self.logger.error
+            return self._reject_with_logging(e, notify, func)
+
+    def _reject_with_logging(self, error, notify, log_func):
+        """Helper to reject an upload and log it using the logger function."""
+        self.reject("%s" % error)
+        log_func('Exception while accepting:\n %s' % error, exc_info=True)
+        self.do_reject(notify)
+        return False
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -888,6 +900,8 @@ class NascentUpload:
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
 
+        # Avoid cyclic imports.
+        from lp.soyuz.interfaces.queue import QueueInconsistentStateError
         try:
             self.queue_root.setRejected()
         except QueueInconsistentStateError:
@@ -923,7 +937,7 @@ class NascentUpload:
     #
     # Inserting stuff in the database
     #
-    def storeObjectsInDatabase(self):
+    def storeObjectsInDatabase(self, build=None):
         """Insert this nascent upload into the database."""
 
         # Queue entries are created in the NEW state by default; at the
@@ -939,7 +953,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            build = self.changes.dsc.findBuild()
+            if build is not None:
+                self.changes.dsc.checkBuild(build)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
@@ -980,11 +995,21 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(sourcepackagerelease)
-                assert self.queue_root.pocket == build.pocket, (
+                # Find the build for this particular binary package file.
+                if build is None:
+                    bpf_build = binary_package_file.findBuild(
+                        sourcepackagerelease)
+                else:
+                    bpf_build = build
+                if bpf_build.source_package_release != sourcepackagerelease:
+                    raise AssertionError(
+                        "Attempt to upload binaries specifying build %s, "
+                        "where they don't fit." % bpf_build.id)
+                binary_package_file.checkBuild(bpf_build)
+                assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.storeInDatabase(build)
-                processed_builds.append(build)
+                binary_package_file.storeInDatabase(bpf_build)
+                processed_builds.append(bpf_build)
 
             # Store the related builds after verifying they were built
             # from the same source.

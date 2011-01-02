@@ -1,14 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import re
-
-import apt_pkg
-
+"""Utility classes for parsing Debian tag files."""
 
 __all__ = [
-    'TagFile', 'TagStanza', 'TagFileParseError',
-    'parse_tagfile', 'parse_tagfile_lines']
+    'TagFile',
+    'TagStanza',
+    'TagFileParseError',
+    'parse_tagfile',
+    'parse_tagfile_lines'
+    ]
+
+
+import apt_pkg
+import re
+
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""
@@ -92,6 +98,7 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
       '-----BEGIN PGP SIGNATURE-----'.
     """
     error = ""
+
     changes = {}
 
     # Reindex by line number so we can easily verify the format of
@@ -152,7 +159,7 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
             continue
         slf = re_single_line_field.match(line)
         if slf:
-            field = slf.groups()[0].lower()
+            field = slf.groups()[0]
             changes[field] = slf.groups()[1]
 
             # If there is no value on this line, we assume this is

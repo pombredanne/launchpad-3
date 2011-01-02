@@ -12,11 +12,9 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.database import BugNotification
-from canonical.launchpad.interfaces import BugTaskStatus
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import DatabaseFunctionalLayer
-from lp.bugs.scripts.bugnotification import construct_email_notifications
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 
@@ -43,14 +41,16 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.person_subscribed = self.factory.makePerson(
             name='subscribed', displayname='Person',
             email=self.person_subscribed_email)
-        self.dup_bug.subscribe(self.person_subscribed, subscribed_by=self.user)
+        self.dup_bug.subscribe(
+            self.person_subscribed, subscribed_by=self.user)
         self.dup_bug.markAsDuplicate(self.master_bug)
 
     def test_dup_subscriber_change_notification_message(self):
         """Duplicate bug number in the reason (email footer) for
            duplicate subscribers when a master bug is modified."""
         self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
-        self.master_bug_task.transitionToStatus(BugTaskStatus.CONFIRMED, self.user)
+        self.master_bug_task.transitionToStatus(
+            BugTaskStatus.CONFIRMED, self.user)
         notify(ObjectModifiedEvent(
             self.master_bug_task, self.master_bug_task_before_modification,
             ['status'], user=self.user))

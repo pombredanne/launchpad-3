@@ -13,13 +13,11 @@ __all__ = [
     'PageMatches',
     ]
 
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+import xml.etree.cElementTree as ET
 import urllib
 from urlparse import urlunparse
 
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 from zope.interface import implements
 
@@ -32,6 +30,7 @@ from canonical.launchpad.interfaces.searchservice import (
     ISearchService,
     )
 from canonical.launchpad.webapp import urlparse
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class PageMatch:
@@ -67,7 +66,6 @@ class PageMatch:
         Configured in config.vhost.mainsite.hostname.
         """
         return config.vhost.mainsite.hostname
-
 
     def __init__(self, title, url, summary):
         """initialize a PageMatch.
@@ -153,14 +151,14 @@ class GoogleSearchService:
     implements(ISearchService)
 
     _default_values = {
-        'client' : 'google-csbe',
-        'cx' : None,
-        'ie' : 'utf8',
-        'num' : 20,
-        'oe' : 'utf8',
-        'output' : 'xml_no_dtd',
+        'client': 'google-csbe',
+        'cx': None,
+        'ie': 'utf8',
+        'num': 20,
+        'oe': 'utf8',
+        'output': 'xml_no_dtd',
         'start': 0,
-        'q' : None,
+        'q': None,
         }
 
     @property
@@ -193,8 +191,13 @@ class GoogleSearchService:
         """
         search_url = self.create_search_url(terms, start=start)
         from canonical.lazr.timeout import urlfetch
-        gsp_xml = urlfetch(search_url)
-
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("google-search-api", search_url)
+        try:
+            gsp_xml = urlfetch(search_url)
+        finally:
+            action.finish()
         page_matches = self._parse_google_search_protocol(gsp_xml)
         return page_matches
 
@@ -251,7 +254,6 @@ class GoogleSearchService:
         """
         return self._getElementsByAttributeValue(doc, path, name, value)[0]
 
-
     def _parse_google_search_protocol(self, gsp_xml):
         """Return a `PageMatches` object.
 
@@ -287,6 +289,9 @@ class GoogleSearchService:
             # The datatype is not what PageMatches requires.
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
+        if total < 0:
+            # See bug 683115.
+            total = 0
         for result in results.findall('R'):
             url_tag = result.find('U')
             title_tag = result.find('T')

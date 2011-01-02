@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -14,7 +14,6 @@ import apt_pkg
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
-    In,
     Join,
     LeftJoin,
     )
@@ -66,7 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
@@ -193,6 +192,14 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return package_upload.changesfile
 
     @property
+    def changesfile_url(self):
+        """See `IBinaryPackageBuild`."""
+        changesfile = self.upload_changesfile
+        if changesfile is None:
+            return None
+        return ProxiedLibraryFileAlias(changesfile, self).http_url
+
+    @property
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
@@ -251,6 +258,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     @property
@@ -306,7 +314,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def distroarchseriesbinarypackages(self):
         """See `IBuild`."""
         # Avoid circular import by importing locally.
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
             self.distro_arch_series, bp)
@@ -408,7 +416,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             # earlier or equal
             '<=': lambda x: x <= 0,
             # strictly earlier
-            '<<': lambda x: x == -1
+            '<<': lambda x: x == -1,
             }
 
         # Use apt_pkg function to compare versions
@@ -479,14 +487,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         for binpkg in self.binarypackages:
             if binpkg.name == name:
                 return binpkg
-        raise NotFoundError, 'No binary package "%s" in build' % name
+        raise NotFoundError('No binary package "%s" in build' % name)
 
     def createBinaryPackageRelease(
         self, binarypackagename, version, summary, description,
-        binpackageformat, component,section, priority, shlibdeps,
-        depends, recommends, suggests, conflicts, replaces, provides,
-        pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific, debug_package):
+        binpackageformat, component, section, priority, installedsize,
+        architecturespecific, shlibdeps=None, depends=None, recommends=None,
+        suggests=None, conflicts=None, replaces=None, provides=None,
+        pre_depends=None, enhances=None, breaks=None, essential=False,
+        debug_package=None, user_defined_fields=None, homepage=None):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -498,7 +507,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -513,7 +523,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            BinaryPackageBuild.source_package_release = SourcePackageRelease.id AND
+            BinaryPackageBuild.source_package_release =
+                SourcePackageRelease.id AND
             BinaryPackageBuild.id != %s AND
             BinaryPackageBuild.distro_arch_series = %s AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
@@ -589,8 +600,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         extra_headers = {
             'X-Launchpad-Build-State': self.status.name,
-            'X-Launchpad-Build-Component' : self.current_component.name,
-            'X-Launchpad-Build-Arch' :
+            'X-Launchpad-Build-Component': self.current_component.name,
+            'X-Launchpad-Build-Arch':
                 self.distro_arch_series.architecturetag,
             }
 
@@ -669,6 +680,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
+        elif self.status == BuildStatus.UPLOADING:
+            buildduration = 'uploading'
+            buildlog_url = 'see builder page'
+            builder_url = 'not available'
         elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'
@@ -703,7 +718,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             'source_url': source_url,
             'extra_info': extra_info,
             'archive_tag': archive_tag,
-            'component_tag' : self.current_component.name,
+            'component_tag': self.current_component.name,
             }
         message = template % replacements
 
@@ -753,6 +768,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # package build, then don't hit the db.
         return self
 
+    def getUploader(self, changes):
+        """See `IBinaryPackageBuild`."""
+        return changes.signer
+
 
 class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
@@ -781,8 +800,7 @@ class BinaryPackageBuildSet:
                  'AND BinaryPackageBuild.distro_arch_series = '
                      'DistroArchSeries.id '
                  'AND DistroArchSeries.architecturetag = %s'
-                 % sqlvalues(sourcepackagereleaseID, archtag)
-                 )
+                 % sqlvalues(sourcepackagereleaseID, archtag))
 
         return BinaryPackageBuild.select(query, clauseTables=clauseTables)
 
@@ -802,7 +820,7 @@ class BinaryPackageBuildSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             BinaryPackageBuild,
-            In(BinaryPackageBuild.distro_arch_series_id, archseries_ids),
+            BinaryPackageBuild.distro_arch_series_id.is_in(archseries_ids),
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.status == BuildStatus.NEEDSBUILD)
@@ -845,8 +863,8 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
             queries.append('''
-                BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND
-                DistroArchSeries.architecturetag = %s
+                BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
+                AND DistroArchSeries.architecturetag = %s
             ''' % sqlvalues(arch_tag))
             tables.extend(['DistroArchSeries'])
 
@@ -939,8 +957,7 @@ class BinaryPackageBuildSet:
 
         condition_clauses.extend([
             "BinaryPackageBuild.package_build = PackageBuild.id",
-            "PackageBuild.build_farm_job = BuildFarmJob.id"
-            ])
+            "PackageBuild.build_farm_job = BuildFarmJob.id"])
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -957,11 +974,14 @@ class BinaryPackageBuildSet:
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if status in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING]:
             orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
@@ -1077,7 +1097,8 @@ class BinaryPackageBuildSet:
                                 BuildStatus.CHROOTWAIT,
                                 BuildStatus.FAILEDTOUPLOAD)
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
-        building = collect_builds(BuildStatus.BUILDING)
+        building = collect_builds(BuildStatus.BUILDING,
+                                  BuildStatus.UPLOADING)
         successful = collect_builds(BuildStatus.FULLYBUILT)
 
         # Note: the BuildStatus DBItems are used here to summarize the
@@ -1155,7 +1176,7 @@ class BinaryPackageBuildSet:
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
              LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
-            In(BinaryPackageBuild.id, build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         # Force query execution so that the ancillary data gets fetched
         # and added to StupidCache.

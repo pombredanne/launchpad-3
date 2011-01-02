@@ -335,6 +335,10 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
+
     def getRootURL(rootsite):
         """Return this request's root URL.
 
@@ -527,14 +531,13 @@ class OAuthPermission(DBEnumeratedType):
         for reading and changing anything, including private data.
         """)
 
-    GRANT_PERMISSIONS = DBItem(60, """
-        Grant Permissions
+    DESKTOP_INTEGRATION = DBItem(60, """
+        Integrate an entire system
 
-        The application will be able to grant access to your Launchpad
-        account to any other application. This is a very powerful
-        level of access. You should not grant this level of access to
-        any application except the official Launchpad credential
-        manager.
+        Every application running on your desktop will have read-write
+        access to your Launchpad account, including to your private
+        data. You should not allow this unless you trust the computer
+        you're using right now.
         """)
 
 class AccessLevel(DBEnumeratedType):
@@ -562,18 +565,13 @@ class ILaunchpadPrincipal(IPrincipal):
 #
 
 class BrowserNotificationLevel:
-    """Matches the standard logging levels, with the addition of notice
-    (which we should probably add to our log levels as well)
-    """
-    # XXX mpt 2006-03-22 bugs=36287:
-    # NOTICE and INFO should be merged.
+    """Matches the standard logging levels."""
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
-    NOTICE = logging.INFO + 5 # action had effects you might not have intended
     WARNING = logging.WARNING # action will not be successful unless you ...
     ERROR = logging.ERROR     # the previous action did not succeed, and why
 
-    ALL_LEVELS = (DEBUG, INFO, NOTICE, WARNING, ERROR)
+    ALL_LEVELS = (DEBUG, INFO, WARNING, ERROR)
 
 
 class INotification(Interface):
@@ -590,7 +588,7 @@ class INotificationList(Interface):
 
     def __getitem__(index_or_levelname):
         """Retrieve an INotification by index, or a list of INotification
-        instances by level name (DEBUG, NOTICE, INFO, WARNING, ERROR).
+        instances by level name (DEBUG, INFO, WARNING, ERROR).
         """
 
     def __iter__():
@@ -613,7 +611,7 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+    def addNotification(msg, level=BrowserNotificationLevel.INFO):
         """Append the given message to the list of notifications.
 
         A plain string message will be CGI escaped.  Passing a message
@@ -626,7 +624,7 @@ class INotificationResponse(Interface):
             or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-            INFO, NOTICE, WARNING, ERROR.
+            INFO, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -645,9 +643,6 @@ class INotificationResponse(Interface):
 
     def addInfoNotification(msg):
         """Shortcut to addNotification(msg, INFO)."""
-
-    def addNoticeNotification(msg):
-        """Shortcut to addNotification(msg, NOTICE)."""
 
     def addWarningNotification(msg):
         """Shortcut to addNotification(msg, WARNING)."""
@@ -876,7 +871,7 @@ class IWebBrowserOriginatingRequest(Interface):
 
 try:
     from zope.publisher.interfaces import StartRequestEvent
-except:
+except ImportError:
     class IStartRequestEvent(Interface):
         """An event that gets sent before the start of a request."""
 

@@ -30,14 +30,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces import (
-    IHeldMessageDetails,
-    IPerson,
-    IPersonSet,
-    ISpecification,
-    ITeamMembershipSet,
-    TeamMembershipStatus,
-    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization,
@@ -51,7 +43,17 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.registry.interfaces.mailinglist import IHeldMessageDetails
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.services.mail.mailwrapper import MailWrapper
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
@@ -536,6 +538,12 @@ def notify_new_ppa_subscription(subscription, event):
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
     archive = subscription.archive
+
+    # We don't send notification emails for commercial PPAs as these
+    # are purchased via software center (and do not mention Launchpad).
+    if archive.commercial:
+        return
+
     registrant_name = subscription.registrant.displayname
     ppa_displayname = archive.displayname
     ppa_reference = "ppa:%s/%s" % (
@@ -554,13 +562,17 @@ def notify_new_ppa_subscription(subscription, event):
         to_address = [person.preferredemail.email]
         recipient_subscriptions_url = "%s/+archivesubscriptions" % (
             canonical_url(person))
+        description_blurb = '.'
+        if ppa_description is not None and ppa_description != '':
+            description_blurb = (
+                ' and has the following description:\n\n%s' % ppa_description)
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_displayname': ppa_displayname,
             'ppa_reference': ppa_reference,
-            'ppa_description': ppa_description,
+            'ppa_description_blurb': description_blurb,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,

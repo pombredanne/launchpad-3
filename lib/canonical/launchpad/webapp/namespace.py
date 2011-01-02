@@ -7,7 +7,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
 
-from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from lp.app.browser.launchpadform import LaunchpadFormView
 
 
 class FormNamespaceView(view):

@@ -12,7 +12,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.testing import build_test_suite
 
 

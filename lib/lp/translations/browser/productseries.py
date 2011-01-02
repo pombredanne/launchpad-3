@@ -24,24 +24,28 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.enums import service_uses_launchpad
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
@@ -138,8 +142,12 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
 
     @property
     def has_imports_enabled(self):
-        """Is imports enabled for the series?"""
+        """Should information about automatic imports be displayed?
+
+        Will be True if imports are enabled for the series and if the user
+        is allowed to view to the import branch."""
         return (self.context.branch is not None and
+                check_permission("launchpad.View", self.context.branch) and
                 self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
@@ -250,7 +258,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -277,7 +286,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -325,6 +335,10 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                 "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
 
 class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""
@@ -337,12 +351,23 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         self.has_multiple_templates = (
             self.context.getCurrentTranslationTemplates().count() > 1)
 
-        self.has_exports_enabled = (
-            self.context.translations_branch is not None)
+    @property
+    def has_exports_enabled(self):
+        """Should information about automatic exports be displayed?
 
-        self.uses_bzr_sync = (
-            (self.context.branch is not None and self.has_imports_enabled) or
-            self.has_exports_enabled)
+        Will be True if an export branch exists for the series and if the
+        user is allowed to view that branch branch."""
+        return self.context.translations_branch is not None and (
+            check_permission(
+                "launchpad.View", self.context.translations_branch))
+
+    @property
+    def uses_bzr_sync(self):
+        """Should information about automatic imports/exports be displayed?
+
+        Will be True if either imports or exports are enabled and if the user
+        is allowed to view the import or the export branch (or both)."""
+        return self.has_imports_enabled or self.has_exports_enabled
 
     @property
     def productserieslanguages(self):
@@ -407,6 +432,20 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
@@ -491,6 +530,10 @@ class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     def initialize(self):
         super(ProductSeriesTemplatesView, self).initialize(
             series=self.context, is_distroseries=False)
+
+    def constructTemplateURL(self, template):
+        """See `BaseSeriesTemplatesView`."""
+        return '+pots/%s' % template.name
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

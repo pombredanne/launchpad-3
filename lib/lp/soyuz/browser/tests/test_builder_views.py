@@ -7,7 +7,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -34,7 +34,7 @@ class TestBuilderEditView(TestCaseWithFactory):
         return view
 
     def test_posting_form_doesnt_call_slave_xmlrpc(self):
-        # Posting the +edit for should not call is_available, which
+        # Posting the +edit for should not call isAvailable, which
         # would do xmlrpc to a slave builder and is explicitly forbidden
         # in a webapp process.
         view = self.initialize_view()

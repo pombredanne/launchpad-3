@@ -3,16 +3,14 @@
 
 """Tests for job-running facilities."""
 
-
-from __future__ import with_statement
-
+import logging
 import sys
+from textwrap import dedent
 from time import sleep
 from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import errorlog
@@ -21,7 +19,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -33,6 +31,10 @@ from lp.services.job.runner import (
     JobCronScript,
     JobRunner,
     TwistedJobRunner,
+    )
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
     )
 from lp.testing import (
     TestCaseWithFactory,
@@ -149,7 +151,6 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runAll_skips_lease_failures(self):
         """Ensure runAll skips jobs whose leases can't be acquired."""
-        last_oops = errorlog.globalErrorUtility.getLastOopsReport()
         job_1, job_2 = self.makeTwoJobs()
         job_2.job.acquireLease()
         runner = JobRunner([job_1, job_2])
@@ -158,8 +159,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
         self.assertEqual([job_2], runner.incomplete_jobs)
-        new_last_oops = errorlog.globalErrorUtility.getLastOopsReport()
-        self.assertEqual(last_oops.id, new_last_oops.id)
+        self.assertEqual([], self.oopses)
 
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
@@ -176,8 +176,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual([job_1], runner.incomplete_jobs)
         self.assertEqual(JobStatus.FAILED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
-        reporter = errorlog.globalErrorUtility
-        oops = reporter.getLastOopsReport()
+        oops = self.oopses[-1]
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
         self.assertEqual(1, len(oops.req_vars))
         self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
@@ -194,8 +193,7 @@ class TestJobRunner(TestCaseWithFactory):
         job_1.run = handleError
         runner = JobRunner([job_1, job_2])
         runner.runAll()
-        reporter = getUtility(IErrorReportingUtility)
-        oops = reporter.getLastOopsReport()
+        oops = self.oopses[-1]
         self.assertEqual(1, len(oops.req_vars))
         self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
 
@@ -230,8 +228,7 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job_1, job_2])
         runner.runAll()
         (notification,) = pop_notifications()
-        reporter = errorlog.globalErrorUtility
-        oops = reporter.getLastOopsReport()
+        oops = self.oopses[-1]
         self.assertIn(
             'Launchpad encountered an internal error during the following'
             ' operation: appending a string to a list.  It was logged with id'
@@ -257,10 +254,8 @@ class TestJobRunner(TestCaseWithFactory):
         job_1.user_error_types = (ExampleError,)
         job_1.error_recipients = ['jrandom@example.org']
         runner = JobRunner([job_1, job_2])
-        reporter = errorlog.globalErrorUtility
-        old_oops = reporter.getLastOopsReport()
         runner.runAll()
-        self.assertNoNewOops(old_oops)
+        self.assertEqual([], self.oopses)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         body = notifications[0].get_payload(decode=True)
@@ -365,19 +360,6 @@ class StuckJob(BaseRunnableJob):
                 'user=branchscanner' in store._connection._raw_connection.dsn)
 
 
-class ListLogger:
-
-    def __init__(self):
-        self.entries = []
-
-    def debug(self, input, *args):
-        # We don't care about debug messages.
-        pass
-
-    def info(self, input, *args):
-        self.entries.append(input)
-
-
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -389,16 +371,18 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         machinery to start up, so we run a job that will not time out first,
         followed by a job that is sure to time out.
         """
-        logger = ListLogger()
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
         self.assertEqual(1, len(runner.completed_jobs))
         self.assertEqual(1, len(runner.incomplete_jobs))
         oops = errorlog.globalErrorUtility.getLastOopsReport()
-        expected = [
-            'Running through Twisted.', 'Job resulted in OOPS: %s' % oops.id]
-        self.assertEqual(expected, logger.entries)
+        self.assertEqual(dedent("""\
+             INFO Running through Twisted.
+             INFO Job resulted in OOPS: %s
+             """) % oops.id, logger.getLogBuffer())
         self.assertEqual('TimeoutError', oops.type)
         self.assertIn('Job ran too long.', oops.value)
 
@@ -432,7 +416,7 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             def __init__(self):
                 super(JobCronScriptSubclass, self).__init__(
                     DummyRunner, test_args=[])
-                self.logger = ListLogger()
+                self.logger = DevNullLogger()
 
         old_errorlog = errorlog.globalErrorUtility
         try:

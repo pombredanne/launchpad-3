@@ -8,7 +8,7 @@ import unittest
 from launchpadlib.testing.helpers import salgado_with_full_permissions
 import transaction
 
-from canonical.testing import AppServerLayer
+from canonical.testing.layers import AppServerLayer
 from lp.testing import TestCaseWithFactory
 
 

@@ -9,6 +9,7 @@ __all__ = []
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import lpuser
+from lp.app.enums import ServiceUsage
 from lp.testing import WindmillTestCase
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
@@ -52,7 +53,7 @@ class DocumentationLinksTest(WindmillTestCase):
         project = self.factory.makeProduct(
             name='test-product',
             displayname='Test Product',
-            official_rosetta=True)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         removeSecurityProxy(project).translationgroup = group
 
         potemplate = self.createPOTemplateWithPOTMsgSets(
@@ -65,8 +66,8 @@ class DocumentationLinksTest(WindmillTestCase):
         user.ensure_login(client)
 
         client.open(
-            url=(u'http://translations.launchpad.dev:8085/test-product/trunk'
-                 u'/+pots/template/es/'))
+            url=(u'%s/test-product/trunk/+pots/template/es/'
+                 % TranslationsWindmillLayer.base_url))
         client.waits.forPageLoad(timeout=u'20000')
 
         # Make sure notification box is shown.
@@ -93,8 +94,8 @@ class DocumentationLinksTest(WindmillTestCase):
         # notification box is visible even though user dismissed Spanish
         # translation notification.
         client.open(
-            url=(u'http://translations.launchpad.dev:8085/test-product/trunk'
-                 u'/+pots/template/ca/'))
+            url=(u'%s/test-product/trunk/+pots/template/ca/'
+                 % TranslationsWindmillLayer.base_url))
         client.waits.forPageLoad(timeout=u'20000')
         client.asserts.assertNotProperty(
             classname=u'important-notice-container',

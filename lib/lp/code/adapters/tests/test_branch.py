@@ -9,7 +9,7 @@ from unittest import (
     )
 
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.testing.factory import LaunchpadObjectFactory

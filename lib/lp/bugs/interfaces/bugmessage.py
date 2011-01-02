@@ -115,9 +115,6 @@ class IBugComment(IMessage):
         to construct the correct URL.
         """)
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
-    can_be_shown = Bool(
-        title=u'Whether or not the comment can be displayed',
-        readonly=True)
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)

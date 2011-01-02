@@ -20,6 +20,10 @@ from bzrlib.tests import (
     multiply_tests,
     )
 from bzrlib.transport import get_transport
+from fixtures import (
+    EnvironmentVariableFixture,
+    Fixture,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -32,12 +36,11 @@ from canonical.testing.layers import (
 from lp.poppy.tests.helpers import PoppyTestSetup
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
-    SSHKeyType,
     )
 from lp.testing import TestCaseWithFactory
 
 
-class FTPServer:
+class FTPServer(Fixture):
     """This is an abstraction of connecting to an FTP server."""
 
     def __init__(self, root_dir, factory):
@@ -45,12 +48,11 @@ class FTPServer:
         self.port = 3421
 
     def setUp(self):
+        super(FTPServer, self).setUp()
         self.poppy = PoppyTestSetup(
             self.root_dir, port=self.port, cmd='echo CLOSED')
         self.poppy.startPoppy()
-
-    def tearDown(self):
-        self.poppy.killPoppy()
+        self.addCleanup(self.poppy.killPoppy)
 
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
@@ -87,7 +89,7 @@ class FTPServer:
         self.poppy.verify_output(['CLOSED'])
 
 
-class SFTPServer:
+class SFTPServer(Fixture):
     """This is an abstraction of connecting to an SFTP server."""
 
     def __init__(self, root_dir, factory):
@@ -112,27 +114,19 @@ class SFTPServer:
             user, os.path.join(os.path.dirname(__file__), 'poppy-sftp.pub'))
         # Set up a temporary home directory for Paramiko's sake
         self._home_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self._home_dir)
         os.mkdir(os.path.join(self._home_dir, '.ssh'))
         os.symlink(
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
-        self._current_home = os.environ['HOME']
-        # We'd rather not have an agent interfere
-        os.environ.pop('SSH_AUTH_SOCK', None)
-        os.environ['HOME'] = self._home_dir
-        # XXX: Just blat over the BZR_SSH env var. Restoring env vars is a
-        # little tricky, see lp.testing.TestCaseWithFactory.useTempBzrHome.
-        os.environ['BZR_SSH'] = 'paramiko'
+        self.useFixture(EnvironmentVariableFixture('HOME', self._home_dir))
+        self.useFixture(EnvironmentVariableFixture('SSH_AUTH_SOCK', None))
+        self.useFixture(EnvironmentVariableFixture('BZR_SSH', 'paramiko'))
 
     def setUp(self):
+        super(SFTPServer, self).setUp()
         self.setUpUser('joe')
-        self._tac = PoppyTac(self.root_dir)
-        self._tac.setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self._home_dir)
-        os.environ['HOME'] = self._current_home
-        self._tac.tearDown()
+        self.useFixture(PoppyTac(self.root_dir))
 
     def disconnect(self, transport):
         transport._get_connection().close()
@@ -151,17 +145,27 @@ class SFTPServer:
 
 
 class PoppyTac(TacTestSetup):
+    """A SFTP Poppy server fixture.
+
+    This class has two distinct roots:
+     - the POPPY_ROOT where the test looks for uploaded output.
+     - the server root where ssh keys etc go.
+    """
 
     def __init__(self, fs_root):
-        os.environ['POPPY_ROOT'] = fs_root
-        self.setUpRoot()
+        self.fs_root = fs_root
+        # The setUp check for stale pids races with self._root being assigned,
+        # so store a plausible path temporarily. Once all fixtures use unique
+        # environments this can go.
+        self._root = '/var/does/not/exist'
+
+    def setUp(self):
+        os.environ['POPPY_ROOT'] = self.fs_root
         super(PoppyTac, self).setUp(umask='0')
 
     def setUpRoot(self):
         self._root = tempfile.mkdtemp()
-
-    def tearDownRoot(self):
-        shutil.rmtree(self._root)
+        self.addCleanup(shutil.rmtree, self.root)
 
     @property
     def root(self):
@@ -174,7 +178,7 @@ class PoppyTac(TacTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join('/tmp', 'poppy-sftp.log')
+        return os.path.join(self.root, 'poppy-sftp.log')
 
     @property
     def pidfile(self):
@@ -189,7 +193,7 @@ class TestPoppy(TestCaseWithFactory):
         super(TestPoppy, self).setUp()
         self.root_dir = self.makeTemporaryDirectory()
         self.server = self.server_factory(self.root_dir, self.factory)
-        self.installFixture(self.server)
+        self.useFixture(self.server)
 
     def _uploadPath(self, path):
         """Return system path of specified path inside an upload.
@@ -209,7 +213,7 @@ class TestPoppy(TestCaseWithFactory):
 
         transport = self.server.getTransport()
         transport.stat('foo/bar') # .stat will implicity chdir for us
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
@@ -240,7 +244,7 @@ class TestPoppy(TestCaseWithFactory):
         transport.mkdir('foo/bar')
         transport.rmdir('foo/bar')
         transport.rmdir('foo')
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
@@ -351,6 +355,7 @@ class TestPoppy(TestCaseWithFactory):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
 
 def test_suite():
     tests = unittest.TestLoader().loadTestsFromName(__name__)

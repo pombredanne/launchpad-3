@@ -67,13 +67,13 @@
     access_level="write" />
 
   <permission
-    id="launchpad.Owner"
-    title="The role of someone who created or otherwise owns an object."
+    id="launchpad.BugSupervisor"
+    title="The role of managing bugs and bug rules for a product."
     access_level="write" />
 
   <permission
-    id="launchpad.MailingListManager"
-    title="The role of someone who can manage and configure a mailing list."
+    id="launchpad.Owner"
+    title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
   <!-- This permission only exists to please apidoc.launchpad.dev and

@@ -17,7 +17,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
-    In,
     Select,
     SQL,
     Store,
@@ -91,13 +90,13 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
+from lp.translations.model.potemplate import TranslationTemplatesCollection
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -380,12 +379,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename ==
                     self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
+                SourcePackagePublishingHistory.archiveID.is_in(
                     self.distribution.all_distro_archive_ids)))
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)).order_by(Desc(
+            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
                 SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
@@ -477,9 +476,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reported_acknowledgement
 
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return (
+            self.distribution_sourcepackage.enable_bugfiling_duplicate_search)
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
+
+    def _getOfficialTagClause(self):
+        return self.distroseries._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):
@@ -597,11 +605,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            ]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(

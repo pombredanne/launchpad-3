@@ -15,8 +15,11 @@ __metaclass__ = type
 __all__ = []
 
 import random
+from testtools.matchers import Equals
 import unittest
 
+from storm.expr import LeftJoin
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.testing.systemdocs import (
@@ -25,18 +28,27 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.model.milestone import Milestone
+from lp.testing import (
+    person_logged_in,
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 def bugtarget_filebug(bugtarget, summary, status=None):
@@ -176,6 +188,101 @@ def sourcePackageForQuestionSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
+class TestBugTargetSearchTasks(TestCaseWithFactory):
+    """Tests of IHasBugs.searchTasks()."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTargetSearchTasks, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.target = self.bug.default_bugtask.target
+        self.milestone = self.factory.makeMilestone(product=self.target)
+        with person_logged_in(self.target.owner):
+            self.bug.default_bugtask.transitionToMilestone(
+                self.milestone, self.target.owner)
+        self.store = Store.of(self.bug)
+        self.store.flush()
+        self.store.invalidate()
+
+    def test_preload_other_objects(self):
+        # We can prejoin objects in calls of searchTasks().
+
+        # Without prejoining the table Milestone, accessing the
+        # BugTask property milestone requires an extra query.
+        with StormStatementRecorder() as recorder:
+            params = BugTaskSearchParams(user=None)
+            found_tasks = self.target.searchTasks(params)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        # When we prejoin Milestone, the milestone of our bugtask is
+        # already loaded during the main search query.
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            params = BugTaskSearchParams(user=None)
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = self.target.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_no_params_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(None, user=None)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(
+                None, user=None, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_no_keywords_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        params = BugTaskSearchParams(user=None, owner=owner)
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(params)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_keywords_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        params = BugTaskSearchParams(user=None, owner=owner)
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(params, order_by=BugTask.id)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+
 def test_suite():
     """Return the `IBugTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -195,7 +302,6 @@ def test_suite():
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
-
     setUpMethods.remove(sourcePackageForQuestionSetUp)
     setUpMethods.append(sourcePackageSetUp)
     setUpMethods.append(projectSetUp)
@@ -206,4 +312,5 @@ def test_suite():
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite

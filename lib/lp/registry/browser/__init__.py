@@ -6,9 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseRdfView',
     'get_status_counts',
-    'MapMixin',
     'MilestoneOverlayMixin',
+    'RDFIndexView',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
@@ -16,17 +17,21 @@ __all__ = [
 
 
 from operator import attrgetter
+import os
 
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.lazr import ExportedFolder
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -82,7 +87,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table
@@ -107,7 +112,7 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            YUI().use(
+            LPS.use(
                 'node', 'lp.registry.milestoneoverlay',
                 'lp.registry.milestonetable',
                 function (Y) {
@@ -260,17 +265,39 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class MapMixin:
+class BaseRdfView:
+    """A view that sets its mime-type to application/rdf+xml."""
 
-    @cachedproperty
-    def gmap2_enabled(self):
-        # XXX sinzui 2010-08-27 bug=625556: This is a hack to use
-        # feature flags, which are not ready for general use in the production
-        # code, but has just enough to support this use case:
-        # Do not enable gmap2 if Google's service is not operational.
-        from lp.services.features.flags import FeatureController
+    template = None
+    filename = None
 
-        def in_scope(value):
-            return True
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
-        return FeatureController(in_scope).getFlag('gmap2') == 'on'
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"
+
+
+class RDFFolder(ExportedFolder):
+    """Export the Launchpad RDF schemas."""
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../rdfspec/')

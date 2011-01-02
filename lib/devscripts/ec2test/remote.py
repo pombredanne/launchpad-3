@@ -16,8 +16,6 @@
    the responsibility of handling the results that `LaunchpadTester` gathers.
 """
 
-from __future__ import with_statement
-
 __metatype__ = type
 
 import datetime
@@ -28,6 +26,7 @@ import gzip
 import optparse
 import os
 import pickle
+from StringIO import StringIO
 import subprocess
 import sys
 import tempfile
@@ -47,6 +46,15 @@ from bzrlib.email_message import EmailMessage
 from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
+
+
+class NonZeroExitCode(Exception):
+    """Raised when the child process exits with a non-zero exit code."""
+
+    def __init__(self, retcode):
+        super(NonZeroExitCode, self).__init__(
+            'Test process died with exit code %r, but no tests failed.'
+            % (retcode,))
 
 
 class SummaryResult(unittest.TestResult):
@@ -271,12 +279,16 @@ class LaunchpadTester:
         self._logger.prepare()
         try:
             popen = self._spawn_test_process()
-            self._gather_test_output(popen.stdout, self._logger)
-            exit_status = popen.wait()
+            result = self._gather_test_output(popen.stdout, self._logger)
+            retcode = popen.wait()
+            # The process could have an error not indicated by an actual test
+            # result nor by a raised exception
+            if result.wasSuccessful() and retcode:
+                raise NonZeroExitCode(retcode)
         except:
             self._logger.error_in_testrunner(sys.exc_info())
         else:
-            self._logger.got_result(not exit_status)
+            self._logger.got_result(result)
 
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
@@ -287,6 +299,7 @@ class LaunchpadTester:
             subunit_server.lineReceived(line)
             logger.got_line(line)
             summary_stream.flush()
+        return result
 
 
 class Request:
@@ -326,6 +339,57 @@ class Request:
     def _send_email(self, message):
         """Actually send 'message'."""
         self._smtp_connection.send_email(message)
+
+    def _format_test_list(self, header, tests):
+        if not tests:
+            return []
+        tests = ['  ' + test.id() for test, error in tests]
+        return [header, '-' * len(header)] + tests + ['']
+
+    def format_result(self, result, start_time, end_time):
+        duration = end_time - start_time
+        output = [
+            'Tests started at approximately %s' % start_time,
+            ]
+        source = self.get_source_details()
+        if source:
+            output.append('Source: %s r%s' % source)
+        target = self.get_target_details()
+        if target:
+            output.append('Target: %s r%s' % target)
+        output.extend([
+            '',
+            '%s tests run in %s, %s failures, %s errors' % (
+                result.testsRun, duration, len(result.failures),
+                len(result.errors)),
+            '',
+            ])
+
+        bad_tests = (
+            self._format_test_list('Failing tests', result.failures) +
+            self._format_test_list('Tests with errors', result.errors))
+        output.extend(bad_tests)
+
+        if bad_tests:
+            full_error_stream = StringIO()
+            copy_result = SummaryResult(full_error_stream)
+            for test, error in result.failures:
+                full_error_stream.write(
+                    copy_result._formatError('FAILURE', test, error))
+            for test, error in result.errors:
+                full_error_stream.write(
+                    copy_result._formatError('ERROR', test, error))
+            output.append(full_error_stream.getvalue())
+
+        subject = self._get_pqm_subject()
+        if subject:
+            if result.wasSuccessful():
+                output.append('SUBMITTED TO PQM:')
+            else:
+                output.append('**NOT** submitted to PQM:')
+            output.extend([subject, ''])
+        output.extend(['(See the attached file for the complete log)', ''])
+        return '\n'.join(output)
 
     def get_target_details(self):
         """Return (branch_url, revno) for trunk."""
@@ -449,12 +513,15 @@ class Request:
                     continue
                 yield name, branch.get_parent(), branch.revno()
 
-    def submit_to_pqm(self, successful):
-        """Submit this request to PQM, if successful & configured to do so."""
+    def _get_pqm_subject(self):
         if not self._pqm_message:
             return
-        subject = self._pqm_message.get('Subject')
-        if successful:
+        return self._pqm_message.get('Subject')
+
+    def submit_to_pqm(self, successful):
+        """Submit this request to PQM, if successful & configured to do so."""
+        subject = self._get_pqm_subject()
+        if subject and successful:
             self._send_email(self._pqm_message)
         return subject
 
@@ -491,6 +558,9 @@ class WebTestLogger:
         self._index_filename = index_filename
         self._request = request
         self._echo_to_stdout = echo_to_stdout
+        # Actually set by prepare(), but setting to a dummy value to make
+        # testing easier.
+        self._start_time = datetime.datetime.utcnow()
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
@@ -558,16 +628,16 @@ class WebTestLogger:
             if e.errno == errno.ENOENT:
                 return ''
 
-    def got_result(self, successful):
+    def got_result(self, result):
         """The tests are done and the results are known."""
+        self._end_time = datetime.datetime.utcnow()
+        successful = result.wasSuccessful()
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
-            self._write_to_filename(
-                self._summary_filename,
-                '\n(See the attached file for the complete log)\n')
-            summary = self.get_summary_contents()
+            email_text = self._request.format_result(
+                result, self._start_time, self._end_time)
             full_log_gz = gzip_data(self.get_full_log_contents())
-            self._request.send_report_email(successful, summary, full_log_gz)
+            self._request.send_report_email(successful, email_text, full_log_gz)
 
     def _handle_pqm_submission(self, successful):
         subject = self._request.submit_to_pqm(successful)
@@ -614,9 +684,9 @@ class WebTestLogger:
             return self._write_to_filename(
                 self._index_filename, textwrap.dedent(html))
 
+        self._start_time = datetime.datetime.utcnow()
         msg = 'Tests started at approximately %(now)s UTC' % {
-            'now': datetime.datetime.utcnow().strftime(
-                '%a, %d %b %Y %H:%M:%S')}
+            'now': self._start_time.strftime('%a, %d %b %Y %H:%M:%S')}
         add_to_html('''\
             <html>
               <head>

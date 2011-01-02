@@ -14,10 +14,7 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     )
-from storm.expr import (
-    In,
-    SQL,
-    )
+from storm.expr import SQL
 from storm.locals import (
     Int,
     Reference,
@@ -116,7 +113,7 @@ class ArchivePermission(SQLBase):
         elif self.permission == ArchivePermissionType.QUEUE_ADMIN:
             alsoProvides(self, IArchiveQueueAdmin)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "Unknown permission type %s" % self.permission)
 
     @property
@@ -163,8 +160,7 @@ class ArchivePermissionSet:
             ArchivePermission.permission = %s AND
             ArchivePermission.person = TeamParticipation.team AND
             TeamParticipation.person = %s
-            """ % sqlvalues(archive, permission, person)
-            ]
+            """ % sqlvalues(archive, permission, person)]
 
         prejoins = []
 
@@ -248,8 +244,7 @@ class ArchivePermissionSet:
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s
-            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)
-            ]
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)]
 
         if component is not None:
             component = self._nameToComponent(component)
@@ -386,7 +381,8 @@ class ArchivePermissionSet:
                 AND ap.packageset IS NOT NULL
         '''
         query = SQL(query, (person.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def uploadersForPackageset(
         self, archive, packageset, direct_permissions=True):
@@ -405,7 +401,8 @@ class ArchivePermissionSet:
             '''
         query += " AND ap.archive = ?"
         query = SQL(query, (packageset.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def newPackagesetUploader(
         self, archive, person, packageset, explicit=False):
@@ -424,7 +421,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(query, (person.id, packageset.id, archive.id))
         permissions = list(
-            store.find(ArchivePermission, In(ArchivePermission.id, query)))
+            store.find(
+                ArchivePermission, ArchivePermission.id.is_in(query)))
         if len(permissions) > 0:
             # Found permissions in the database, does the 'explicit' flag
             # have the requested value?
@@ -496,7 +494,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(
             query, (person.id, sourcepackagename.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def packagesetsForSource(
         self, archive, sourcepackagename, direct_permissions=True):

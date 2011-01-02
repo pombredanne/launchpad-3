@@ -10,13 +10,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.tests.helpers import (
     import_pofile_or_potemplate,

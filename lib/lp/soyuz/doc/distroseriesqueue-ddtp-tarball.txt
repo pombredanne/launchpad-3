@@ -20,14 +20,13 @@ in ubuntu.
 For further info about DDTP see:
   https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -47,9 +46,10 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntutest', distroseries=None)
 
+  >>> from lp.services.log.logger import DevNullLogger
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> upload.process()
   Traceback (most recent call last):
   ...
@@ -60,17 +60,18 @@ Now do a proper upload into the system.
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntutest', distroseries=None)
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
-  ...     insecure_policy, mock_logger)
-  DEBUG: Verifying signature on translations-main_20060728_all.changes
+  ...     insecure_policy, FakeLogger())
+  DEBUG Verifying signature on translations-main_20060728_all.changes
 
   >>> upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Single Custom Upload detected.
-  DEBUG: Finished checking upload.
+  DEBUG Beginning processing.
+  DEBUG Verifying the changes file.
+  DEBUG Verifying files in upload.
+  DEBUG Single Custom Upload detected.
+  DEBUG Finished checking upload.
 
 It was not rejected.
 
@@ -78,38 +79,38 @@ It was not rejected.
   False
 
   >>> success = upload.do_accept()
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>
-  DEBUG:     Body:
-  DEBUG: * Duhh
-  DEBUG:
-  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG: Origin: Ubuntu/warty
-  DEBUG:
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to test@example.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Test.
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG:     Recipients: test@example.com
-  DEBUG:     Body:
-  DEBUG: * Duhh
-  DEBUG:
-  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG: Origin: Ubuntu/warty
-  DEBUG:
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG     Body:
+  DEBUG * Duhh
+  DEBUG
+  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG Origin: Ubuntu/warty
+  DEBUG
+  DEBUG
+  DEBUG ==
+  DEBUG
+  DEBUG Announcing to test@example.com
+  DEBUG
+  DEBUG Thank you for your contribution to Ubuntu Test.
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG     Recipients: test@example.com
+  DEBUG     Body:
+  DEBUG * Duhh
+  DEBUG
+  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG Origin: Ubuntu/warty
+  DEBUG
 
 And all things worked.
 
@@ -177,17 +178,11 @@ previous upload:
 Do the publish, i.e process the CustomUpload decompressing and writing
 the tarball contents in the archive, collect and check debug message:
 
-  >>> class MockLogger:
-  ...    def debug(self, message):
-  ...        print 'DEBUG: %s' % message
-  ...    def error(self, message):
-  ...        print 'ERROR: %s' % message
-
 The umask must be 022 in order to perform the upload.
 
   >>> old_mask = os.umask(022)
-  >>> pub_records = queue_item.realiseUpload(MockLogger())
-  DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
+  >>> pub_records = queue_item.realiseUpload(FakeLogger())
+  DEBUG Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
   >>> print '%03o' % os.umask(old_mask)
   022
 
@@ -230,7 +225,7 @@ language indexes or adding new ones:
 
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> upload.process()
   >>> upload.is_rejected
   False

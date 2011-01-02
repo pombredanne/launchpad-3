@@ -10,11 +10,10 @@ __metaclass__ = type
 __all__ = [
     'BlueprintNotificationLevel',
     'BugNotificationLevel',
-    'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget',
-    'UserCannotSubscribePerson',
+    'IStructuralSubscriptionTargetHelper',
     ]
 
 from lazr.enum import (
@@ -32,9 +31,11 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -128,10 +129,21 @@ class IStructuralSubscription(Interface):
         required=True, readonly=True,
         title=_("The structure to which this subscription belongs.")))
 
+    bug_filters = exported(CollectionField(
+        title=_('List of bug filters that narrow this subscription.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface)))
 
-class IStructuralSubscriptionTarget(Interface):
-    """A Launchpad Structure allowing users to subscribe to it."""
-    export_as_webservice_entry()
+    @export_factory_operation(Interface, [])
+    def newBugFilter():
+        """Returns a new `BugSubscriptionFilter` for this subscription."""
+
+
+class IStructuralSubscriptionTargetRead(Interface):
+    """A Launchpad Structure allowing users to subscribe to it.
+
+    Read-only parts.
+    """
 
     # We don't really want to expose the level details yet. Only
     # BugNotificationLevel.COMMENTS is used at this time.
@@ -155,8 +167,35 @@ class IStructuralSubscriptionTarget(Interface):
     parent_subscription_target = Attribute(
         "The target's parent, or None if one doesn't exist.")
 
+    bug_subscriptions = Attribute(
+        "All subscriptions to bugs at the METADATA level or higher.")
+
     def userCanAlterSubscription(subscriber, subscribed_by):
         """Check if a user can change a subscription for a person."""
+
+    def userCanAlterBugSubscription(subscriber, subscribed_by):
+        """Check if a user can change a bug subscription for a person."""
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    @operation_returns_entry(IStructuralSubscription)
+    @export_read_operation()
+    def getSubscription(person):
+        """Return the subscription for `person`, if it exists."""
+
+    target_type_display = Attribute("The type of the target, for display.")
+
+    def userHasBugSubscriptions(user):
+        """Is `user` subscribed, directly or via a team, to bug mail?"""
+
+    def getSubscriptionsForBugTask(bug, level):
+        """Return subscriptions for a given `IBugTask` at `level`."""
+
+
+class IStructuralSubscriptionTargetWrite(Interface):
+    """A Launchpad Structure allowing users to subscribe to it.
+
+    Modify-only parts.
+    """
 
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
@@ -170,9 +209,6 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new subscription.
         """
 
-    def userCanAlterBugSubscription(subscriber, subscribed_by):
-        """Check if a user can change a bug subscription for a person."""
-
     @operation_parameters(
         subscriber=Reference(
             schema=IPerson,
@@ -182,7 +218,8 @@ class IStructuralSubscriptionTarget(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
-    def addBugSubscription(subscriber, subscribed_by):
+    def addBugSubscription(subscriber, subscribed_by,
+                           bug_notification_level=None):
         """Add a bug subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
@@ -192,6 +229,9 @@ class IStructuralSubscriptionTarget(Interface):
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
+        :bug_notification_level: The BugNotificationLevel for the
+            subscription. If omitted, BugNotificationLevel.COMMENTS will be
+            used.
         :return: The new bug subscription.
         """
 
@@ -216,30 +256,34 @@ class IStructuralSubscriptionTarget(Interface):
         :unsubscribed_by: The IPerson removing the subscription.
         """
 
-    @operation_parameters(person=Reference(schema=IPerson))
-    @operation_returns_entry(IStructuralSubscription)
-    @export_read_operation()
-    def getSubscription(person):
-        """Return the subscription for `person`, if it exists."""
 
-    def getBugNotificationsRecipients(recipients=None, level=None):
-        """Return the set of bug subscribers to this target.
+class IStructuralSubscriptionTarget(IStructuralSubscriptionTargetRead,
+                                    IStructuralSubscriptionTargetWrite):
+    """A Launchpad Structure allowing users to subscribe to it."""
+    export_as_webservice_entry()
 
-        :param recipients: If recipients is not None, a rationale
-            is added for each subscriber.
-        :type recipients: `INotificationRecipientSet`
-        'param level: If level is not None, only strucutral
-            subscribers with a subscrition level greater or equal
-            to the given value are returned.
-        :type level: `BugNotificationLevel`
-        :return: An `INotificationRecipientSet` instance containing
-            the bug subscribers.
-        """
 
-    target_type_display = Attribute("The type of the target, for display.")
+class IStructuralSubscriptionTargetHelper(Interface):
+    """Provides information on subscribable objects."""
 
-    def userHasBugSubscriptions(user):
-        """Is `user` subscribed, directly or via a team, to bug mail?"""
+    target = Attribute("The target.")
+
+    target_parent = Attribute(
+        "The target's parent, or None if one doesn't exist.")
+
+    target_type_display = Attribute(
+        "The type of the target, for display.")
+
+    target_arguments = Attribute(
+        "A dict of arguments that can be used as arguments to the "
+        "structural subscription constructor.")
+
+    pillar = Attribute(
+        "The pillar most closely corresponding to the context.")
+
+    join = Attribute(
+        "A Storm join to get the `IStructuralSubscription`s relating "
+        "to the context.")
 
 
 class IStructuralSubscriptionForm(Interface):
@@ -247,16 +291,3 @@ class IStructuralSubscriptionForm(Interface):
     subscribe_me = Bool(
         title=u"I want to receive these notifications by e-mail.",
         required=False)
-
-
-class DeleteSubscriptionError(Exception):
-    """Delete Subscription Error.
-
-    Raised when an error occurred trying to delete a
-    structural subscription."""
-    webservice_error(400)
-
-
-class UserCannotSubscribePerson(Exception):
-    """User does not have permission to subscribe the person or team."""
-    webservice_error(401)

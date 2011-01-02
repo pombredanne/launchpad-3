@@ -90,6 +90,9 @@ about its process such as the time it was started and finished and its
     >>> print firefox_build.upload_changesfile.filename
     firefox_0.9_i386.changes
 
+    >>> print firefox_build.changesfile_url
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/firefox_0.9_i386.changes
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
@@ -221,8 +224,8 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
@@ -299,7 +302,7 @@ it won't interfere in the next tests.
 Initialize all the required arguments to create a binary package for a
 given build record entry.
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
     >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
@@ -310,20 +313,8 @@ given build record entry.
     >>> section = firefox_build.source_package_release.section.id
     >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
-    >>> shlibdeps = None
-    >>> depends = None
-    >>> recommends = None
-    >>> suggests = None
-    >>> conflicts = None
-    >>> replaces = None
-    >>> provides = None
-    >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
-    >>> pre_depends = None
-    >>> enhances = None
-    >>> breaks = None
-    >>> debug_package = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -331,14 +322,14 @@ Invoke createBinaryPackageRelease with all required arguments.
     >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...     binarypackagename, version, summary, description,
-    ...     binpackageformat, component, section, priority, shlibdeps,
-    ...     depends, recommends, suggests, conflicts, replaces, provides,
-    ...     pre_depends, enhances, breaks, essential, installedsize,
-    ...     architecturespecific, debug_package)
+    ...     binarypackagename=binarypackagename, version=version,
+    ...     summary=summary, description=description,
+    ...     binpackageformat=binpackageformat, component=component,
+    ...     section=section, priority=priority, installedsize=installedsize,
+    ...     architecturespecific=architecturespecific)
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
@@ -364,11 +355,12 @@ Emulate a huge list of binaries for 'pmount':
     ...     version = "%d" % i
     ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...         binarypackagename, version, summary, description,
-    ...         binpackageformat, component, section, priority, shlibdeps,
-    ...         depends, recommends, suggests, conflicts, replaces, provides,
-    ...         pre_depends, enhances, breaks, essential, installedsize,
-    ...         architecturespecific, debug_package)
+    ...         binarypackagename=binarypackagename, version=version,
+    ...         summary=summary, description=description,
+    ...         binpackageformat=binpackageformat, component=component,
+    ...         section=section, priority=priority,
+    ...         installedsize=installedsize,
+    ...         architecturespecific=architecturespecific)
 
 
 Check if the property is still working:
@@ -497,8 +489,8 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> from storm.expr import In
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from storm.expr import In
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -731,12 +723,12 @@ Log in as admin to avoid security on IBinaryPackageBuild for the moment.
 
 Let's create a private PPA for cprov (and hence its builds become private):
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, private=True, name='p3a',
     ...     distribution=cprov.archive.distribution)
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> binaries = test_publisher.getPubBinaries(
     ...     archive=cprov_private_ppa, builder=bob,
@@ -764,7 +756,7 @@ The default set of builds with no user specified excludes private builds:
 If we include an admin user, we can see all the builds.  Here, we get
 an additional private build for cprov:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)

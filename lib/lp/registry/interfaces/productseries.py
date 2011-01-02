@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,6 +13,7 @@ __all__ = [
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'NoSuchProductSeries',
+    'ITimelineProductSeries',
     ]
 
 from lazr.restful.declarations import (
@@ -37,6 +38,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Field,
     Int,
     TextLine,
     )
@@ -48,6 +50,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -72,7 +75,12 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -120,7 +128,7 @@ class IProductSeriesEditRestricted(Interface):
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationTemplates):
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -248,17 +256,13 @@ class IProductSeriesPublic(
         schema=IBranch,
         required=False,
         description=_(
-            "A Bazaar branch to commit translation snapshots to. "
-            "Leave blank to disable."))
-
-    translations_branch = ReferenceChoice(
-        title=_("Translations export branch"),
-        vocabulary='HostedBranchRestrictedOnOwner',
-        schema=IBranch,
-        required=False,
-        description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -308,13 +312,42 @@ class IProductSeriesPublic(
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned is limited.
+        """
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
+
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=677671
+    # lazr.restful can't batch a DecoratedResultSet returning basic
+    # python types such as dicts, so this interface is necessary.
+    export_as_webservice_entry('timeline_project_series')
+
+    name = IProductSeries['name']
+
+    status = IProductSeries['status']
+
+    product = IProductSeries['product']
+
+    is_development_focus = exported(
+        Bool(title=_("Is series the development focus of the project"),
+             required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+    landmarks = exported(
+        Field(title=_("List of milestones and releases")))
 
 
 class IProductSeriesSet(Interface):

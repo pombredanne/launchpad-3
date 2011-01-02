@@ -19,9 +19,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    In,
     Join,
-    Lower,
     Max,
     Sum,
     )
@@ -34,8 +32,6 @@ from storm.locals import (
     Unicode,
     )
 from storm.store import EmptyResultSet
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
@@ -105,21 +101,15 @@ def is_upstream_link_allowed(spph):
 
 class DistributionSourcePackageProperty:
 
-    def __init__(self, attrname):
+    def __init__(self, attrname, default=None):
         self.attrname = attrname
+        self.default = default
 
     def __get__(self, obj, class_):
-        return getattr(obj._self_in_database, self.attrname, None)
+        return getattr(obj._self_in_database, self.attrname, self.default)
 
     def __set__(self, obj, value):
         if obj._self_in_database is None:
-            # Log an oops without raising an error.
-            exception = AssertionError(
-                "DistributionSourcePackage record should have been created "
-                "earlier in the database for distro=%s, sourcepackagename=%s"
-                % (obj.distribution.name, obj.sourcepackagename.name))
-            getUtility(IErrorReportingUtility).raising(
-                (exception.__class__, exception, None))
             spph = Store.of(obj.distribution).find(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.distroseriesID ==
@@ -163,6 +153,8 @@ class DistributionSourcePackage(BugTargetBase,
     po_message_count = DistributionSourcePackageProperty('po_message_count')
     is_upstream_link_allowed = DistributionSourcePackageProperty(
         'is_upstream_link_allowed')
+    enable_bugfiling_duplicate_search = DistributionSourcePackageProperty(
+        'enable_bugfiling_duplicate_search', default=True)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -244,7 +236,7 @@ class DistributionSourcePackage(BugTargetBase,
         # latest relevant publication. It relies on ordering of status
         # and pocket enum values, which is arguably evil but much faster
         # than CASE sorting; at any rate this can be fixed when
-        # https://bugs.edge.launchpad.net/soyuz/+bug/236922 is.
+        # https://bugs.launchpad.net/soyuz/+bug/236922 is.
         spph = SourcePackagePublishingHistory.selectFirst("""
             SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND
@@ -437,7 +429,7 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackageRelease, SourcePackagePublishingHistory),
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
-            In(SourcePackagePublishingHistory.archiveID,
+            SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
             SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id,
@@ -503,6 +495,9 @@ class DistributionSourcePackage(BugTargetBase,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -548,7 +543,7 @@ class DistributionSourcePackage(BugTargetBase,
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
             (EmailAddress, Person),
-            In(Lower(EmailAddress.email), email_addresses))
+            EmailAddress.email.lower().is_in(email_addresses))
         return result_set
 
     @classmethod
@@ -615,3 +610,4 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_count = Int()
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
+    enable_bugfiling_duplicate_search = Bool()

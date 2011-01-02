@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerAddView',
     'BugTrackerBreadcrumb',
+    'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -27,9 +28,7 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
@@ -41,21 +40,22 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
     redirection,
+    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
@@ -63,12 +63,20 @@ from canonical.widgets import (
     DelimitedListWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
     IBugTrackerSet,
     IRemoteBug,
+    IBugTrackerComponentGroup,
     )
+from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.
@@ -154,21 +162,30 @@ class BugTrackerSetView(LaunchpadView):
     pillar_limit = 3
 
     def initialize(self):
-        # Sort the bug trackers into active and inactive lists so that
-        # we can display them separately.
-        all_bug_trackers = list(self.context)
-        self.active_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if bug_tracker.active]
-        self.inactive_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if not bug_tracker.active]
+        # eager load related pillars. In future we should do this for
+        # just the rendered trackers, and also use group by to get
+        # bug watch counts per tracker. However the batching makes
+        # the inefficiency tolerable for now. Robert Collins 20100919.
+        self._pillar_cache = self.context.getPillarsForBugtrackers(
+            list(self.context.trackers()))
 
-        bugtrackerset = getUtility(IBugTrackerSet)
-        # The caching of bugtracker pillars here avoids us hitting the
-        # database multiple times for each bugtracker.
-        self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            all_bug_trackers)
+    @property
+    def inactive_tracker_count(self):
+        return self.inactive_trackers.currentBatch().listlength
+
+    @cachedproperty
+    def active_trackers(self):
+        results = self.context.trackers(active=True)
+        navigator = ActiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
+
+    @cachedproperty
+    def inactive_trackers(self):
+        results = self.context.trackers(active=False)
+        navigator = InactiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
@@ -430,6 +447,18 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
+
+    @stepthrough("+components")
+    def component_groups(self, name):
+        return self.context.getRemoteComponentGroup(name)
+
+
+class BugTrackerComponentGroupNavigation(Navigation):
+
+    usedfor = IBugTrackerComponentGroup
+
+    def traverse(self, name):
+        return self.context.getComponent(name)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):

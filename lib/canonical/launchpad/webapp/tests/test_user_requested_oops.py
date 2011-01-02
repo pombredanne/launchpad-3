@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import unittest
 
 from lazr.restful.utils import get_current_browser_request
 from zope.component import getUtility
@@ -83,8 +82,4 @@ class TestUserRequestedOops(TestCase):
         last_oops = error_reporting_utility.getLastOopsReport()
         self.assertEqual(last_oops.type, 'UserRequestOops')
         self.assertEqual(last_oops.informational, 'True')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
 

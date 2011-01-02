@@ -10,7 +10,7 @@ import transaction
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView,
@@ -134,6 +134,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
         self.assertContentEqual(
             [pofile_sr.id, pofile_es.id, pofile_sr2.id],
             translations)
+
 
 class TestProductSeries(BaseExportViewMixin):
     """Test implementation of BaseExportView on ProductSeries."""

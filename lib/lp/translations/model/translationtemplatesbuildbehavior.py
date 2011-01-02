@@ -11,11 +11,16 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import os
+import tempfile
+
+from twisted.internet import defer
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -41,16 +46,20 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
-        self._builder.slave.cacheFile(logger, chroot)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        d = self._builder.slave.cacheFile(logger, chroot)
+        def got_cache_file(ignored):
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = {'arch_tag': self._getDistroArchSeries().architecturetag}
-        args.update(self.buildfarmjob.metadata)
+            args = {
+                'arch_tag': self._getDistroArchSeries().architecturetag,
+                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                }
 
-        filemap = {}
+            filemap = {}
 
-        self._builder.slave.build(
-            cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._builder.slave.build(
+                cookie, self.build_type, chroot_sha1, filemap, args)
+        return d.addCallback(got_cache_file)
 
     def _getChroot(self):
         return self._getDistroArchSeries().getChroot()
@@ -70,15 +79,20 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """Read tarball with generated translation templates from slave."""
         if filemap is None:
             logger.error("Slave returned no filemap.")
-            return None
+            return defer.succeed(None)
 
         slave_filename = filemap.get(self.templates_tarball_path)
         if slave_filename is None:
             logger.error("Did not find templates tarball in slave output.")
-            return None
+            return defer.succeed(None)
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
-        return slave.getFile(slave_filename).read()
+
+        fd, fname = tempfile.mkstemp()
+        tarball_file = os.fdopen(fd, 'wb')
+        d = slave.getFile(slave_filename, tarball_file)
+        # getFile will close the file object.
+        return d.addCallback(lambda ignored: fname)
 
     def _uploadTarball(self, branch, tarball, logger):
         """Upload tarball to productseries that want it."""
@@ -114,18 +128,40 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             queue_item.specific_job.branch.bzr_identity,
             build_status))
 
+        def clean_slave(ignored):
+            d = queue_item.builder.cleanSlave()
+            return d.addCallback(lambda ignored: queue_item.destroySelf())
+
+        def got_tarball(filename):
+            # XXX 2010-11-12 bug=674575
+            # Please make addOrUpdateEntriesFromTarball() take files on
+            # disk; reading arbitrarily sized files into memory is
+            # dangerous.
+            if filename is None:
+                logger.error("Build produced no tarball.")
+                return
+
+            tarball_file = open(filename)
+            try:
+                tarball = tarball_file.read()
+                if tarball is None:
+                    logger.error("Build produced empty tarball.")
+                else:
+                    logger.debug("Uploading translation templates tarball.")
+                    self._uploadTarball(
+                        queue_item.specific_job.branch, tarball, logger)
+                    logger.debug("Upload complete.")
+            finally:
+                tarball_file.close()
+                os.remove(filename)
+
         if build_status == 'OK':
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
-            tarball = self._readTarball(queue_item, filemap, logger)
+            d = self._readTarball(queue_item, filemap, logger)
+            d.addCallback(got_tarball)
+            d.addCallback(clean_slave)
+            return d
 
-            if tarball is None:
-                logger.error("Build produced no tarball.")
-            else:
-                logger.debug("Uploading translation templates tarball.")
-                self._uploadTarball(
-                    queue_item.specific_job.branch, tarball, logger)
-                logger.debug("Upload complete.")
+        return clean_slave(None)
 
-        queue_item.builder.cleanSlave()
-        queue_item.destroySelf()

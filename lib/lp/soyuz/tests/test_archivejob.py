@@ -3,7 +3,7 @@
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.model.archivejob import (
     ArchiveJob,

@@ -31,10 +31,11 @@ permitted_database_imports = text_lines_to_set("""
     lp.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
+    canonical.launchpad.browser.librarian
     canonical.launchpad.feed.branch
     lp.code.feed.branch
     canonical.launchpad.interfaces.person
-    canonical.launchpad.scripts.garbo
+    lp.scripts.garbo
     canonical.launchpad.vocabularies.dbobjects
     lp.registry.vocabularies
     canonical.librarian.client

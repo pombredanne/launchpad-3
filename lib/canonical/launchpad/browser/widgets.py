@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Customized widgets used in Launchpad."""
 
 # XXX sinzui 2009-05-15 bug=377095: This module should be broken up and
 # moved into canonical.widgets.
-
 
 __metaclass__ = type
 
@@ -33,7 +32,7 @@ from zope.component import getUtility
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import BranchFormatterAPI
+from lp.app.browser.tales import BranchFormatterAPI
 from canonical.widgets import StrippedTextWidget
 from canonical.widgets.popup import VocabularyPickerWidget
 from lp.code.enums import BranchType
@@ -122,7 +121,7 @@ class BranchPopupWidget(VocabularyPickerWidget):
         # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
         if getUtility(IBranchLookup).getByUrl(url) is not None:
-            raise AlreadyRegisteredError('Already a branch for %r' % (url,))
+            raise AlreadyRegisteredError('Already a branch for %r' % url)
         # Make sure the URL is valid.
         IBranch['url'].validate(url)
         product = self.getProduct()
@@ -154,4 +153,3 @@ class BranchPopupWidget(VocabularyPickerWidget):
                 # If it's not a URL or we can't figure out a product, then we
                 # re-raise the initial error.
                 raise exc_class, exc_obj, exc_tb
-

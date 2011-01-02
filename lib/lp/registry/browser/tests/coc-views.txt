@@ -28,8 +28,8 @@ key registered, directions are shown.
     ...             print '%s. %s' % ((index+1), extract_text(li))
     >>> user = factory.makePerson()
     >>> login_person(user)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> coc_set = getUtility(ICodeOfConductSet)

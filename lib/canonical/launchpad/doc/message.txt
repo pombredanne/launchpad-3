@@ -4,8 +4,9 @@ The Message table is a central message spool that can be used by
 various parts of launchpad. Currently, it is used by Malone for comments
 on bugs. Bugs are linked to Messages via the BugMessage table.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugMessageSet, IBugSet, IOpenLaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> login('foo.bar@canonical.com')
     >>> bugmessageset = getUtility(IBugMessageSet)
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -57,7 +58,7 @@ the Message.
 You can build a Message from an email easily. This stuffs the original,
 unadulterated, email into the Librarian and builds all the MessageChunks.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> msgset = getUtility(IMessageSet)
     >>> raw_msg = u"""\
     ... Content-Type: multipart/mixed; charset="latin-1";

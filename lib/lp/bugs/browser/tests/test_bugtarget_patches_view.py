@@ -8,7 +8,7 @@ import unittest
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import BugsPatchesView
 from lp.bugs.browser.bugtask import BugListingPortletStatsView
 from lp.bugs.interfaces.bugtask import BugTaskStatus

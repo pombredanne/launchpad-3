@@ -11,6 +11,8 @@ import contextlib
 import datetime
 from itertools import repeat
 import logging
+import os
+import stat
 import re
 import rfc822
 import types
@@ -27,11 +29,10 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
-    get_request_statements,
     soft_timeout_expired,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -42,7 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
-
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 UTC = pytz.utc
 
@@ -85,6 +86,9 @@ def _safestr(obj):
             'representation of an object')
         value = '<unprintable %s object>' % (
             str(type(obj).__name__))
+    # Some str() calls return unicode objects.
+    if isinstance(value, unicode):
+        return _safestr(value)
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
@@ -163,6 +167,7 @@ class ErrorReport:
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def get_chunks(self):
+        """Returns a list of bytestrings making up the oops disk content."""
         chunks = []
         chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
         chunks.append(
@@ -171,7 +176,7 @@ class ErrorReport:
             'Exception-Value: %s\n' % _normalise_whitespace(self.value))
         chunks.append('Date: %s\n' % self.time.isoformat())
         chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
         chunks.append('Revision: %s\n' % self.revno)
         chunks.append('User: %s\n' % _normalise_whitespace(self.username))
         chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
@@ -320,7 +325,7 @@ class ErrorReportingUtility:
         # Check today
         oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            # Check yesterday
+            # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
             oopsid, filename = self.log_namer._findHighestSerialFilename(
                 time=yesterday)
@@ -349,6 +354,10 @@ class ErrorReportingUtility:
             return
         filename = entry._filename
         entry.write(open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id
             request.oops = entry
@@ -451,11 +460,17 @@ class ErrorReportingUtility:
         strurl = _safestr(url)
 
         duration = get_request_duration()
-
-        statements = sorted(
-            (start, end, _safestr(database_id), _safestr(statement))
-            for (start, end, database_id, statement)
-                in get_request_statements())
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        statements = []
+        for action in timeline.actions:
+            start, end, category, detail = action.logTuple()
+            statements.append(
+                (start, end, _safestr(category), _safestr(detail)))
 
         oopsid, filename = self.log_namer.newId(now)
 
@@ -474,6 +489,7 @@ class ErrorReportingUtility:
             info.
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
+        :return: The ErrorReport created.
         """
         return self._raising(
             info, request=request, now=now, informational=True)
@@ -497,7 +513,7 @@ class ErrorReportingUtility:
             # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
-            except:
+            except info[0]:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
@@ -506,8 +522,10 @@ class ErrorReportingUtility:
         """Add an oops message to be included in oopses from this context."""
         key = self._oops_message_key_iter.next()
         self._oops_messages[key] = message
-        yield
-        del self._oops_messages[key]
+        try:
+            yield
+        finally:
+            del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

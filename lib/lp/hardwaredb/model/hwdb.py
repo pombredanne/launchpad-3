@@ -45,7 +45,6 @@ from storm.expr import (
     Alias,
     And,
     Count,
-    In,
     Not,
     Or,
     Select,
@@ -386,7 +385,7 @@ class HWSubmissionSet:
             columns=[HWSubmissionDevice.submissionID],
             tables=device_tables, where=And(*device_clauses))
 
-        clauses.append(In(HWSubmission.id, submission_ids))
+        clauses.append(HWSubmission.id.is_in(submission_ids))
         submissions_with_device = Select(
             columns=[target_column], tables=tables, where=And(*clauses),
             distinct=True)
@@ -448,17 +447,20 @@ class HWSubmissionSet:
 
         tables.append(Bug)
         if bug_ids is not None and bug_ids is not []:
-            clauses.append(In(Bug.id, bug_ids))
+            clauses.append(Bug.id.is_in(bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
             clauses.extend([
-                Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+                Bug.id == BugTag.bugID, BugTag.tag.is_in(bug_tags)])
             tables.append(BugTag)
 
         # If we OR-combine the search for bug owners, subscribers
         # and affected people on SQL level, the query runs very slow.
         # So let's run the queries separately and join the results
         # on Python level.
+
+        # This would be quicker still if we did it as a single query
+        # using UNION.
 
         owner_query = Select(
             columns=[HWSubmission.ownerID], tables=tables,
@@ -467,7 +469,7 @@ class HWSubmissionSet:
 
         if subscribed_to_bug:
             subscriber_clauses = [
-                BugSubscription.personID == HWSubmission.ownerID,
+                BugSubscription.person_id == HWSubmission.ownerID,
                 BugSubscription.bug == Bug.id,
                 ]
             subscriber_query = Select(
@@ -493,7 +495,8 @@ class HWSubmissionSet:
         if len(user_ids) == 0:
             result = store.find(Person, False)
         else:
-            result = store.find(Person, In(Person.id, list(user_ids)))
+            user_ids = [row[0] for row in user_ids]
+            result = store.find(Person, Person.id.is_in(user_ids))
         result.order_by(Person.displayname)
         return result
 
@@ -517,21 +520,21 @@ class HWSubmissionSet:
             HWSubmissionDevice.submission == HWSubmission.id,
             HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
             HWDeviceDriverLink.device == HWDevice.id,
-            HWDevice.bus_vendor == HWVendorID.id
-            ]
+            HWDevice.bus_vendor == HWVendorID.id]
 
         if bug_ids is not None and bug_ids is not []:
-            clauses.append(In(Bug.id, bug_ids))
+            clauses.append(Bug.id.is_in(bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
-            clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+            clauses.extend(
+                [Bug.id == BugTag.bugID, BugTag.tag.is_in(bug_tags)])
 
         clauses.append(_userCanAccessSubmissionStormClause(user))
 
         person_clauses = [Bug.ownerID == HWSubmission.ownerID]
         if subscribed_to_bug:
             person_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
+                And(BugSubscription.person_id == HWSubmission.ownerID,
                     BugSubscription.bug == Bug.id))
             tables.append(BugSubscription)
         if affected_by_bug:
@@ -545,8 +548,7 @@ class HWSubmissionSet:
         query = Select(
             columns=[
                 Person.name, HWVendorID.bus,
-                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id
-                ],
+                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id],
             tables=tables, where=And(*clauses), distinct=True,
             order_by=[HWVendorID.bus, HWVendorID.vendor_id_for_bus,
                       HWDevice.bus_product_id, Person.name])
@@ -630,6 +632,7 @@ validProductID = {
     HWBus.USB: four_hex_digits,
     HWBus.SCSI: scsi_product,
     }
+
 
 def isValidVendorID(bus, id):
     """Check that the string id is a valid vendor ID for this bus.
@@ -1271,8 +1274,7 @@ def make_submission_device_statistics_clause(
             HWVendorID.vendor_id_for_bus == vendor_id,
             HWDevice.bus_vendor == HWVendorID.id,
             HWDeviceDriverLink.device == HWDevice.id,
-            HWDevice.bus_product_id == product_id
-            ])
+            HWDevice.bus_product_id == product_id])
 
     if driver_name is None and package_name is None:
         where_clauses.append(HWDeviceDriverLink.driver == None)
@@ -1293,6 +1295,7 @@ def make_submission_device_statistics_clause(
                 where_clauses.append(HWDriver.package_name == package_name)
 
     return tables, where_clauses
+
 
 def make_distro_target_clause(distro_target):
     """Create a where expression and a table list to limit results to a
@@ -1323,6 +1326,7 @@ def make_distro_target_clause(distro_target):
                 'Parameter distro_target must be an IDistribution, '
                 'IDistroSeries or IDistroArchSeries')
     return ([], [])
+
 
 def _userCanAccessSubmissionStormClause(user):
     """Limit results of HWSubmission queries to rows the user can access.

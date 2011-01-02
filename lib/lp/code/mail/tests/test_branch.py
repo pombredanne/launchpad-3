@@ -5,7 +5,9 @@
 
 from unittest import TestLoader
 
-from canonical.testing import DatabaseFunctionalLayer
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -259,8 +261,9 @@ class TestBranchMailerSubject(TestCaseWithFactory):
         mailer = BranchMailer.forRevision(
             branch, 1, 'test@example.com', 'content', 'diff',
             'Testing %j foo')
+        branch_owner_email = removeSecurityProxy(branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
-                branch.owner.preferredemail.email))
+                branch_owner_email))
 
 
 def test_suite():

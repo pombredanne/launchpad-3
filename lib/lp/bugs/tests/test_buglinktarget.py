@@ -20,7 +20,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.cve import ICveSet

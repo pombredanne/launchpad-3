@@ -14,13 +14,12 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
     LaunchpadZopelessLayer,
@@ -29,6 +28,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -60,11 +60,6 @@ class TestCronscriptBase(unittest.TestCase):
             extra_args = []
         return self.runCronscript("buildd-queue-builder.py", extra_args)
 
-    def runBuilddSlaveScanner(self, extra_args=None):
-        if extra_args is None:
-            extra_args = []
-        return self.runCronscript("buildd-slave-scanner.py", extra_args)
-
     def runBuilddRetryDepwait(self, extra_args=None):
         if extra_args is None:
             extra_args = []
@@ -79,21 +74,11 @@ class TestCronscriptBase(unittest.TestCase):
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
 
-        # 'runners' commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully
-        # tear down and restore the database.
+        # 'runners' commit to the test database in subprocesses, so we need to
+        # tell the layer to fully tear down and restore the database.
         DatabaseLayer.force_dirty_database()
 
         return rc, out, err
-
-
-class TestSlaveScanner(TestCronscriptBase):
-    """Test SlaveScanner buildd script class."""
-    layer = LaunchpadLayer
-
-    def testRunSlaveScanner(self):
-        """Check if buildd-slave-scanner runs without errors."""
-        self.assertRuns(runner=self.runBuilddSlaveScanner)
 
 
 class TestQueueBuilder(TestCronscriptBase):
@@ -116,7 +101,7 @@ class TestQueueBuilder(TestCronscriptBase):
 
         queue_builder = QueueBuilder(
             name='queue-builder', test_args=test_args)
-        queue_builder.logger = QuietFakeLogger()
+        queue_builder.logger = BufferLogger()
 
         return queue_builder
 
@@ -256,7 +241,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
         retry_depwait = RetryDepwait(
             name='retry-depwait', test_args=test_args)
-        retry_depwait.logger = QuietFakeLogger()
+        retry_depwait.logger = BufferLogger()
 
         # `IBuildSet.retryDepwait` retrieve a specific logger instance
         # from the global registry, we have to silence that too.

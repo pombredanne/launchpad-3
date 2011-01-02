@@ -18,7 +18,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
     logout,

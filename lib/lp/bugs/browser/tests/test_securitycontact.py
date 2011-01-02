@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.app.form.interfaces import ConversionError
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
     login_person,

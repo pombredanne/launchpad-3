@@ -83,6 +83,8 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
+from lp.services import features
+from lp.services.features.flags import NullFeatureController
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -243,10 +245,10 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('thread-%s.request' % threadid, 'w')
+        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
-        except:
+        except Exception:
             request_txt = 'Exception converting request to string\n\n'
             try:
                 request_txt += traceback.format_exc()
@@ -446,13 +448,31 @@ class LaunchpadBrowserPublication(
 
         # The view may be security proxied
         view = removeSecurityProxy(ob)
-        # It's possible that the view is a bounded method.
+        # It's possible that the view is a bound method.
         view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(getattr(view, 'context', None))
         pageid = self.constructPageID(view, context)
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
+
+        # For status URLs, where we really don't want to have any DB access
+        # at all, ensure that all flag lookups will stop early.
+        if pageid in (
+            'RootObject:OpStats', 'RootObject:+opstats',
+            'RootObject:+haproxy'):
+            request.features = NullFeatureController()
+            features.per_thread.features = request.features
+
+        # Calculate the hard timeout: needed because featureflags can be used
+        # to control the hard timeout, and they trigger DB access, but our
+        # DB tracers are not safe for reentrant use, so we must do this
+        # outside of the SQL stack. We must also do it after traversal so that
+        # the view is known and can be used in scope resolution. As we
+        # actually stash the pageid after afterTraversal, we need to do this
+        # even later.
+        da.set_permit_timeout_from_features(True)
+        da._get_request_timeout()
 
         if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
             # this is a direct call on a C-defined method such as __repr__ or

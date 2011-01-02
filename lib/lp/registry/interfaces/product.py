@@ -108,7 +108,6 @@ from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -133,6 +132,9 @@ from lp.services.fields import (
     Summary,
     Title,
     URIField,
+    )
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
     )
 from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
@@ -236,9 +238,10 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2', 'GNU_GPL_V3',
-        'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
-        'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GFDL_NO_OPTIONS',
+        'GNU_GPL_V2', 'GNU_GPL_V3', 'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT',
+        'MPL', 'OFL', 'OPEN_SOFTWARE', 'PERL', 'PHP', 'PUBLIC_DOMAIN',
+        'PYTHON', 'ZPL',
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(
@@ -316,6 +319,12 @@ class License(DBEnumeratedType):
     CC_0 = DBItem(
         320, 'Creative Commons - No Rights Reserved',
         url='http://creativecommons.org/about/cc0')
+    GNU_GFDL_NO_OPTIONS = DBItem(
+        330, "GNU GFDL no options",
+        url='http://www.gnu.org/copyleft/fdl.html')
+    OFL = DBItem(
+        340, "Open Font License v1.1",
+        url='http://scripts.sil.org/OFL')
     # This is a placeholder "license" for users who know they want something
     # open source but haven't yet chosen a license for their project.  We do
     # not want to block them from registering their project, but this choice
@@ -398,11 +407,12 @@ class IProductModerateRestricted(Interface):
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasLogo, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports, IServiceUsage):
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
+    IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
@@ -637,6 +647,9 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
+    ubuntu_packages = Attribute(
+        _("List of distribution packages for this product in Ubuntu"))
+
     series = exported(
         doNotSnapshot(
             CollectionField(value_type=Object(schema=IProductSeries))))
@@ -650,6 +663,7 @@ class IProductPublic(
                 'The series that represents the master or trunk branch. '
                 'The Bazaar URL lp:<project> points to the development focus '
                 'series branch.')))
+    development_focusID = Attribute("The development focus ID.")
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -665,11 +679,11 @@ class IProductPublic(
 
     translation_focus = exported(
         ReferenceChoice(
-            title=_("Translation Focus"), required=False,
+            title=_("Translation focus"), required=False,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_(
-                'The ProductSeries where translations are focused.')))
+                'Project series that translators should focus on.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -721,6 +735,18 @@ class IProductPublic(
             description=_(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
+
+    def getVersionSortedSeries(statuses=None, filter_statuses=None):
+        """Return all the series sorted by the name field as a version.
+
+        The development focus field is an exception. It will always
+        be sorted first.
+
+        :param statuses: If statuses is not None, only include series
+                         which are in the given statuses.
+        :param filter_statuses: Filter out any series with statuses listed in
+                                filter_statuses.
+        """
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -779,7 +805,10 @@ class IProductPublic(
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned per series is limited.
+        """
 
 
 class IProduct(
@@ -1067,3 +1096,5 @@ class InvalidProductName(LaunchpadValidationError):
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
+
+ICommercialSubscription['product'].schema = IProduct

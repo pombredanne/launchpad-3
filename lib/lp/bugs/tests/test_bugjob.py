@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugjob import BugJobType
 from lp.bugs.model.bugjob import (
     BugJob,

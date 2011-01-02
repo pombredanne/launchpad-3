@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -29,7 +28,7 @@ __all__ = [
     'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSeriesView',
+    'ProductSeriesSetView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -50,6 +49,8 @@ from datetime import (
     )
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
@@ -76,10 +77,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
 from canonical.launchpad import (
     _,
     helpers,
@@ -88,6 +86,9 @@ from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -115,16 +116,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    ReturnToReferrerMixin,
-    safe_action,
-    )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -143,6 +135,15 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    safe_action,
+    )
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -156,9 +157,9 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
-from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
@@ -191,6 +192,7 @@ from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
@@ -296,14 +298,13 @@ class ProductLicenseMixin:
             pass
 
     def notifyCommercialMailingList(self):
-        """Email feedback@canonical.com to review product license."""
-        if (License.OTHER_PROPRIETARY in self.product.licenses
-            or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            review_needed = True
-        elif (len(self.product.licenses) == 1
-            and License.DONT_KNOW in self.product.licenses):
-            review_needed = False
-        else:
+        """Notify user about Launchpad license rules."""
+        licenses = list(self.product.licenses)
+        needs_email = (
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
+        if not needs_email:
             # The project has a recognized license.
             return
 
@@ -331,16 +332,6 @@ class ProductLicenseMixin:
             product_summary=indent(self.product.summary),
             license_titles=indent(license_titles),
             license_info=indent(self.product.license_info))
-        if review_needed:
-            # Email the Commercial team that a project needs review.
-            subject = (
-                "Project License Submitted for %(product_name)s "
-                "by %(user_name)s" % substitutions)
-            template = helpers.get_email_template('product-license.txt')
-            message = template % substitutions
-            simple_sendmail(
-                from_address, commercial_address,
-                subject, message, headers={'Reply-To': user_address})
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "
@@ -468,8 +459,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
-        set_branch.configured = (
-            )
+        set_branch.summary = "Specify the location of this project's code."
         config_list.append(
             dict(link=set_branch,
                  configured=config_statuses['configure_codehosting']))
@@ -478,15 +468,17 @@ class ProductInvolvementView(PillarView):
     @property
     def registration_completeness(self):
         """The percent complete for registration."""
-        configured = 0
         config_statuses = self.configuration_states
-        for key, value in config_statuses.items():
-            if value:
-                configured += 1
+        configured = sum(1 for val in config_statuses.values() if val)
         scale = 100
         done = int(float(configured) / len(config_statuses) * scale)
         undone = scale - done
         return dict(done=done, undone=undone)
+
+    @property
+    def registration_done(self):
+        """A boolean indicating that the services are fully configured."""
+        return (self.registration_completeness['done'] == 100)
 
 
 class ProductNavigationMenu(NavigationMenu):
@@ -526,13 +518,13 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def configure_bugtracker(self):
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
@@ -547,7 +539,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
         text = 'Configure blueprints'
-        summary = 'Enable tracking of specifications and meetings'
+        summary = 'Enable tracking of feature planning.'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -808,7 +800,26 @@ class ProductWithSeries:
             self.release_by_id[release.id] = release_delegate
 
 
-class SeriesWithReleases:
+class DecoratedSeries:
+    """A decorated series that includes helper attributes for templates."""
+    delegates(IProductSeries, 'series')
+
+    def __init__(self, series):
+        self.series = series
+
+    @property
+    def css_class(self):
+        """The highlight, lowlight, or normal CSS class."""
+        if self.is_development_focus:
+            return 'highlight'
+        elif self.status == SeriesStatus.OBSOLETE:
+            return 'lowlight'
+        else:
+            # This is normal presentation.
+            return ''
+
+
+class SeriesWithReleases(DecoratedSeries):
     """A decorated series that includes releases.
 
     The extra data is included in this class to avoid repeated
@@ -822,10 +833,9 @@ class SeriesWithReleases:
     # raise an AttributeError for self.parent.
     parent = None
     releases = None
-    delegates(IProductSeries, 'series')
 
     def __init__(self, series, parent):
-        self.series = series
+        super(SeriesWithReleases, self).__init__(series)
         self.parent = parent
         self.releases = []
 
@@ -838,16 +848,6 @@ class SeriesWithReleases:
             if len(release.files) > 0:
                 return True
         return False
-
-    @property
-    def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
-        if self.is_development_focus:
-            return 'highlighted'
-        elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
-        else:
-            return 'unhighlighted'
 
 
 class ReleaseWithFiles:
@@ -973,7 +973,7 @@ class ProductDownloadFileMixin:
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin, UsesLaunchpadMixin):
+                  ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -1068,14 +1068,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [product for product in self.context.project.products
-                        if product.id != self.context.id]
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
@@ -1405,9 +1397,9 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars.  But when referring to
-            # an individual object in Launchpad it is better to call it by its
-            # real name, i.e. 'project' instead of 'pillar'.
+            # The usage fields are shared among pillars.  But when referring
+            # to an individual object in Launchpad it is better to call it by
+            # its real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
             if usage_field:
                 usage_field.custom_widget = CustomWidgetFactory(
@@ -1435,21 +1427,14 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
-    label = "Configure Blueprints"
+    label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure Translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
-    label = "Configure Answers"
+    label = "Configure answers"
     usage_fieldname = 'answers_usage'
 
 
@@ -1722,38 +1707,28 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class ProductSeriesView(ProductView):
+class ProductSeriesSetView(ProductView):
     """A view for showing a product's series."""
 
     label = 'timeline'
     page_title = label
 
+    @cachedproperty
+    def batched_series(self):
+        decorated_result = DecoratedResultSet(
+            self.context.getVersionSortedSeries(), DecoratedSeries)
+        return BatchNavigator(decorated_result, self.request)
 
-class ProductRdfView:
+
+class ProductRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/product-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                        self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return self.context.name
 
 
 class Icon:
@@ -2001,7 +1976,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info',
+                    'description', 'homepageurl', 'licenses', 'license_info',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2012,6 +1987,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
@@ -2169,6 +2145,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             title=data['title'],
             summary=data['summary'],
             description=description,
+            homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project)

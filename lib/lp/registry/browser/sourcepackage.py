@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUpstreamTracking',
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
@@ -21,17 +22,30 @@ from cgi import escape
 import string
 import urllib
 
-from apt_pkg import ParseSrcDepends
+from apt_pkg import (
+    ParseSrcDepends,
+    upstream_version,
+    VersionCompare,
+    )
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import (
+    adapter,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib.form import Fields
-from zope.interface import Interface
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     TextLine,
@@ -42,10 +56,13 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad import (
     _,
     helpers,
     )
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
@@ -63,16 +80,17 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.utils import smartquote
+from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
-from canonical.widgets import LaunchpadRadioWidget
+from lp.app.enums import ServiceUsage
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
@@ -97,6 +115,11 @@ def get_register_upstream_url(source_package):
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
+    current_release = source_package.currentrelease
+    if current_release is not None and current_release.homepage is not None:
+        homepage = current_release.homepage
+    else:
+        homepage = ''
     params = {
         '_return_url': canonical_url(source_package),
         'field.source_package_name': source_package.sourcepackagename.name,
@@ -104,6 +127,7 @@ def get_register_upstream_url(source_package):
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
+        'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
         }
@@ -119,6 +143,18 @@ def get_register_upstream_url(source_package):
     query_string = urllib.urlencode(
         sorted(params.items()), doseq=True)
     return '/projects/+new?%s' % query_string
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -156,8 +192,16 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(redirection_url)
 
 
+@adapter(ISourcePackage)
+@implementer(IServiceUsage)
+def distribution_from_sourcepackage(package):
+    return package.distribution
+
+
+@adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+    implements(IBreadcrumb)
 
     @property
     def text(self):
@@ -283,8 +327,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
         self.product = getUtility(IProductSet)[product_name]
         series_list = [
             series for series in self.product.series
-            if series.status != SeriesStatus.OBSOLETE
-            ]
+            if series.status != SeriesStatus.OBSOLETE]
 
         # If the product is not being changed, then the current
         # productseries can be the default choice. Otherwise,
@@ -306,8 +349,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
             series_list.remove(dev_focus)
         vocab_terms = [
             SimpleTerm(series, series.name, series.name)
-            for series in series_list
-            ]
+            for series in series_list]
         dev_focus_term = SimpleTerm(
             dev_focus, dev_focus.name, "%s (Recommended)" % dev_focus.name)
         vocab_terms.insert(0, dev_focus_term)
@@ -339,6 +381,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     next_url = None
 
     main_action_label = u'Change'
+
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't
@@ -566,6 +609,37 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         self.next_url = self.request.getURL()
 
 
+class PackageUpstreamTracking(EnumeratedType):
+    """The state of the package's tracking of the upstream version."""
+
+    NONE = Item("""
+        None
+
+        There is not enough information to compare the current package version
+        to the upstream version.
+        """)
+
+    CURRENT = Item("""
+        Current version
+
+        The package version is the current upstream version.
+        """)
+
+    OLDER = Item("""
+        Older upstream version
+
+        The upstream version is older than the package version. Launchpad
+        Launchpad is missing upstream data.
+        """)
+
+    NEWER = Item("""
+        Newer upstream version
+
+        The upstream version is newer than the package version. The package
+        can be updated to the upstream version.
+        """)
+
+
 class SourcePackageUpstreamConnectionsView(LaunchpadView):
     """A shared view with upstream connection info."""
 
@@ -575,7 +649,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if self.context.productseries is None:
             return False
         product = self.context.productseries.product
-        if product.official_malone:
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:
@@ -584,3 +658,24 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if bugtracker is None:
             return False
         return True
+
+    @property
+    def current_release_tracking(self):
+        """The PackageUpstreamTracking state for the current release."""
+        upstream_release = self.context.productseries.getLatestRelease()
+        current_release = self.context.currentrelease
+        if upstream_release is None or current_release is None:
+            # Launchpad is missing data. There is not enough information to
+            # track releases.
+            return PackageUpstreamTracking.NONE
+        # Compare the base version contained in the full debian version
+        # to upstream release's version.
+        base_version = upstream_version(current_release.version)
+        age = VersionCompare(upstream_release.version, base_version)
+        if age > 0:
+            return PackageUpstreamTracking.NEWER
+        elif age < 0:
+            return PackageUpstreamTracking.OLDER
+        else:
+            # age == 0:
+            return PackageUpstreamTracking.CURRENT

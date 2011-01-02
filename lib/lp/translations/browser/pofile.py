@@ -24,10 +24,8 @@ import urllib
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -37,6 +35,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from lp.app.errors import (
@@ -44,6 +43,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (
@@ -87,20 +87,7 @@ class POFileNavigation(Navigation):
             raise NotFoundError(
                 "%r is not a valid sequence number." % name)
 
-        # Need to check in our database whether we have already the requested
-        # TranslationMessage.
-        translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.potemplate, self.context.language)
-
-        if translationmessage is not None:
-            # Already have a valid POMsgSet entry, just return it.
-            translationmessage.setPOFile(self.context)
-            return translationmessage
-        else:
-            # Get a fake one so we don't create new TranslationMessage just
-            # because someone is browsing the web.
-            return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.potemplate, self.context.language)
+        return potmsgset.getCurrentTranslationMessageOrDummy(self.context)
 
 
 class POFileFacets(POTemplateFacets):
@@ -302,12 +289,12 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
     def contributors(self):
         return tuple(self.context.contributors)
 
-    @property
+    @cachedproperty
     def user_can_edit(self):
         """Does the user have full edit rights for this translation?"""
         return self.context.canEditTranslations(self.user)
 
-    @property
+    @cachedproperty
     def user_can_suggest(self):
         """Is the user allowed to make suggestions here?"""
         return self.context.canAddSuggestions(self.user)
@@ -837,26 +824,15 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _buildTranslationMessageViews(self, for_potmsgsets):
         """Build translation message views for all potmsgsets given."""
-        last = None
+        can_edit = self.context.canEditTranslations(self.user)
         for potmsgset in for_potmsgsets:
-            assert (last is None or
-                    potmsgset.getSequence(
-                        self.context.potemplate) >= last.getSequence(
-                            self.context.potemplate)), (
-                "POTMsgSets on page not in ascending sequence order")
-            last = potmsgset
+            translationmessage = (
+                potmsgset.getCurrentTranslationMessageOrDummy(self.context))
+            error = self.errors.get(potmsgset)
 
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.potemplate, self.context.language)
-            if translationmessage is None:
-                translationmessage = (
-                    potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.potemplate, self.context.language))
-            else:
-                translationmessage.setPOFile(self.context)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
-                self.errors.get(potmsgset))
+                pofile=self.context, can_edit=can_edit, error=error)
             view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 
@@ -878,7 +854,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                     "template." % id)
 
             error = self._storeTranslations(potmsgset)
-            if error and potmsgset.getSequence(potmsgset.potemplate) != 0:
+            if error and potmsgset.getSequence(self.context.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
@@ -1008,11 +984,11 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _messages_html_id(self):
         order = []
-        for message in self.translationmessage_views:
-            if (message.form_is_writeable):
-                for dictionary in message.translation_dictionaries:
-                    order.append(
-                        dictionary['html_id_translation'] + '_new')
+        if self.form_is_writeable:
+            for message in self.translationmessage_views:
+                order += [
+                    dictionary['html_id_translation'] + '_new'
+                    for dictionary in message.translation_dictionaries]
         return order
 
     @property

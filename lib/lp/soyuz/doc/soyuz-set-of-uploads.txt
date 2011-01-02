@@ -59,7 +59,8 @@ librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> ZecaTestSetup().setUp()
+  >>> zeca = ZecaTestSetup()
+  >>> zeca.setUp()
 
 Import public keyring into current LPDB.
 
@@ -69,12 +70,12 @@ Import public keyring into current LPDB.
 Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
-  >>> from lp.registry.model.distribution import Distribution
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.registry.model.distribution import Distribution
   >>> from lp.soyuz.enums import PackageUploadStatus
   >>> from lp.soyuz.scripts.initialise_distroseries import (
   ...     InitialiseDistroSeries)
-  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> from canonical.launchpad.database.librarian import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
@@ -90,7 +91,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> from canonical.librarian.testing.server import fillLibrarianFile
   >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -115,25 +116,21 @@ And then we need a way to process the uploads from the queue
 
   >>> import logging
   >>> from canonical.config import config
-  >>> from lp.testing.logger import MockLogger
+  >>> from lp.services.log.logger import FakeLogger
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
-  >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> def process_uploads(upload_policy, build_id, series, loglevel):
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+  >>> def process_uploads(upload_policy, series, loglevel):
   ...     """Simulate process-upload.py script run.
   ...
   ...     :param upload_policy: context in which to consider the upload
   ...         (equivalent to script's --context option).
-  ...     :param build_id: build to which to attach this upload.
-  ...         (equivalent to script's --buildid option).
   ...     :param series: distro series to give back from.
   ...         (equivalent to script's --series option).
   ...     :param loglevel: logging level (as defined in logging module).  Any
   ...         log messages below this level will be suppressed.
   ...     """
   ...     args = [temp_dir, "-C", upload_policy]
-  ...     if build_id is not None:
-  ...         args.extend(["-b", build_id])
   ...     if series is not None:
   ...         args.extend(["-s", series])
   ...     # Run script under 'uploader' DB user.  The dbuser argument to the
@@ -142,7 +139,7 @@ And then we need a way to process the uploads from the queue
   ...     LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
   ...     process = ProcessUpload(
   ...         'process-upload', dbuser='ignored', test_args=args)
-  ...     process.logger = MockLogger()
+  ...     process.logger = FakeLogger()
   ...     if loglevel is not None:
   ...         process.logger.setLevel(loglevel)
   ...     process.txn = LaunchpadZopelessLayer.txn
@@ -152,9 +149,11 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.ftests import syncUpdate
+  >>> from canonical.launchpad.ftests import (
+  ...     login,
+  ...     syncUpdate,
+  ...     )
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> login("foo.bar@canonical.com")
 
@@ -188,7 +187,7 @@ it into the accepted queue
 Finally, as a very simplistic publishing process, we may need to punt any
 given upload into the published state, so here's a very simplistic publisher
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.publishing import (
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
   >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
@@ -230,11 +229,11 @@ A helper function, simulate_upload does that with all the checking.
   >>> from lp.services.mail import stub
 
   >>> def simulate_upload(
-  ...     leafname, is_new=False, upload_policy='anything', build_id=None,
+  ...     leafname, is_new=False, upload_policy='anything',
   ...     series=None, distro="ubuntutest", loglevel=logging.WARN):
   ...     """Process upload(s).  Options are as for process_uploads()."""
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     process_uploads(upload_policy, build_id, series, loglevel)
+  ...     process_uploads(upload_policy, series, loglevel)
   ...     # We seem to be leaving a lock file behind here for some reason.
   ...     # Naturally it doesn't count as an unprocessed incoming file, which
   ...     # is what we're really looking for.
@@ -281,26 +280,13 @@ overridable binary. This tests the simple overriding of both sources
 and arch-independent binaries.
 
   >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
-  log> Processing upload
+  INFO Processing upload
   ...
   Upload complete.
 
   >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
   >>> simulate_upload('bar_1.0-2')
-
-Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
-
-  >>> simulate_upload(
-  ...     'bar_1.0-2_binary', upload_policy="buildd", build_id="2",
-  ...     loglevel=logging.ERROR)
-  log> Exception while accepting:
-  Attempt to upload binaries specifying build 2, where they don't fit.
-  ...
-  Rejected uploads: ['bar_1.0-2_binary']
-
-Try it again without the bogus build id.  This succeeds without
-complaints.
 
   >>> simulate_upload('bar_1.0-2_binary')
 
@@ -321,7 +307,7 @@ to a different 'bar_1.0.orig.tar.gz'.
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> name16.displayname = "Foo B. Bar"
   >>> syncUpdate(name16)
@@ -387,7 +373,7 @@ created with the binary package name.
   >>> simulate_upload('bar_1.0-6', upload_policy='sync')
   >>> simulate_upload('bar_1.0-6_binary', is_new=True)
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
   >>> spn_set = getUtility(ISourcePackageNameSet)
   >>> assert spn_set.queryByName('bar-bin') is None
 
@@ -443,32 +429,32 @@ ubututest/breezy-RELEASE:
   >>> simulate_upload(
   ...     'foo_1.0-1', upload_policy='sync', is_new=True,
   ...     loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
-  log>     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  log>     Body:
-  log> NEW: foo_1.0.orig.tar.gz
-  log> NEW: foo_1.0-1.diff.gz
-  log> NEW: foo_1.0-1.dsc
-  log>
-  log> foo (1.0-1) breezy; urgency=low
-  log>
-  log>   * Initial version
-  log>
-  log>
-  log> Your package contains new components which requires manual editing of
-  log> the override file.  It is ok otherwise, so please be patient.  New
-  log> packages are usually added to the overrides about once a week.
-  log>
-  log> You may have gotten the distroseries wrong.  If so, you may get warnings
-  log> above if files already exist in other distroseries.
-  log>
-  log> --
-  log> You are receiving this email because you are the uploader, maintainer or
-  log> signer of the above package.
-  log> Committing the transaction and any mails associated with this upload.
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
+  DEBUG     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Body:
+  DEBUG NEW: foo_1.0.orig.tar.gz
+  DEBUG NEW: foo_1.0-1.diff.gz
+  DEBUG NEW: foo_1.0-1.dsc
+  DEBUG
+  DEBUG foo (1.0-1) breezy; urgency=low
+  DEBUG
+  DEBUG   * Initial version
+  DEBUG
+  DEBUG
+  DEBUG Your package contains new components which requires manual editing of
+  DEBUG the override file.  It is ok otherwise, so please be patient.  New
+  DEBUG packages are usually added to the overrides about once a week.
+  DEBUG
+  DEBUG You may have gotten the distroseries wrong.  If so, you may get warnings
+  DEBUG above if files already exist in other distroseries.
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
+  INFO  Committing the transaction and any mails associated with this upload.
   ...
   Upload complete.
 
@@ -477,15 +463,15 @@ And its binary:
   >>> simulate_upload(
   ...     'foo_1.0-1_i386_binary', upload_policy='anything', is_new=True,
   ...     loglevel=logging.DEBUG)
-  log> ...
-  log> foo: (binary) NEW
+  DEBUG ...
+  DEBUG foo: (binary) NEW
   ...
   Upload complete.
 
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import SeriesStatus
+  >>> from lp.registry.interfaces.series import SeriesStatus
   >>> breezy.status = SeriesStatus.CURRENT
   >>> LaunchpadZopelessLayer.txn.commit()
 
@@ -498,9 +484,9 @@ Upload a newer version of source package "foo" to breezy-backports:
 
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -509,7 +495,7 @@ In order to verify if the binary ancestry lookup algorithm works we
 will need to build a new DistroArchSeries for powerpc in
 ubuntutest/breezy.
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.processor import (
   ...     ProcessorFamily, Processor)
   >>> powerpc_pf = ProcessorFamily.selectOneBy(name='powerpc')
   >>> powerpc_proc = Processor(family=powerpc_pf, name='powerpc',
@@ -523,9 +509,9 @@ found in i386/RELEASE, because it's the only one available.
   >>> simulate_upload(
   ...     'foo_2.9-1_binary', upload_policy='anything',
   ...     loglevel=logging.DEBUG)
-  log> ...
-  log> Checking for foo/2.9-1/powerpc binary ancestry
-  log> foo-1.0-1 (binary) exists in i386/RELEASE
+  DEBUG ...
+  DEBUG Checking for foo/2.9-1/powerpc binary ancestry
+  DEBUG foo-1.0-1 (binary) exists in i386/RELEASE
   ...
   Upload complete.
 
@@ -538,9 +524,9 @@ live with this inconsistency.
 
   >>> simulate_upload(
   ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -550,17 +536,17 @@ in PROPOSED:
 
   >>> simulate_upload(
   ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -570,9 +556,9 @@ published inside the target pocket should be rejected:
 
   >>> simulate_upload(
   ...     'foo_1.0-3', upload_policy='sync', loglevel=logging.INFO)
-  log> ...
-  log> Upload was rejected:
-  log> foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
+  INFO ...
+  INFO Upload was rejected:
+  INFO foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
   ...
   Rejected uploads: ['foo_1.0-3']
 
@@ -609,8 +595,8 @@ eg ubuntu/warty.
 Check there's a SourcePackageRelease with no build.
 
   >>> from lp.buildmaster.enums import BuildStatus
-  >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
   >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
   >>> spn = SourcePackageName.selectOneBy(name="baz")
@@ -771,5 +757,5 @@ everything up.
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
 
-  >>> ZecaTestSetup().tearDown()
+  >>> zeca.tearDown()
 

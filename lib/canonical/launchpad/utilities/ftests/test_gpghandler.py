@@ -13,7 +13,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestImportKeyRing(unittest.TestCase):

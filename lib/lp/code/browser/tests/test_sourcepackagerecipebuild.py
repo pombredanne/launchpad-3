@@ -20,7 +20,7 @@ from canonical.launchpad.testing.pages import (
     find_tags_by_class,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (

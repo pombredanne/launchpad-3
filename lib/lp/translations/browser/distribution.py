@@ -13,7 +13,6 @@ __all__ = [
 
 import operator
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -22,10 +21,13 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.enums import service_uses_launchpad
 from lp.registry.browser.distribution import DistributionEditView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -42,7 +44,7 @@ class DistributionTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Change permissions'
+        text = 'Configure translations'
         return Link('+settings', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
@@ -96,6 +98,20 @@ class DistributionView(LaunchpadView):
         else:
             return self.context.translation_focus
 
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
     def secondary_translatable_series(self):
         """Return a list of IDistroSeries that aren't the translation_focus.
 
@@ -106,21 +122,21 @@ class DistributionView(LaunchpadView):
             for series in self.context.series
             if (series.status != SeriesStatus.OBSOLETE
                 and (self.translation_focus is None or
-                     self.translation_focus.id != series.id))
-            ]
+                     self.translation_focus.id != series.id))]
 
         return sorted(series, key=operator.attrgetter('version'),
                       reverse=True)
 
 
 class DistributionSettingsView(TranslationsMixin, DistributionEditView):
-    label = "Set permissions and policies"
-    field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def page_title(self):
-        return "Set translation permissions for %s" % (
-            self.context.displayname)
+    label = "Translations settings"
+    page_title = "Settings"
+    field_names = [
+        "official_rosetta",
+        "translation_focus",
+        "translationgroup",
+        "translationpermission",
+        ]
 
     @property
     def cancel_url(self):

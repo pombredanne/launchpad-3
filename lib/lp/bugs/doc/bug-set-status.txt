@@ -4,15 +4,15 @@ If you have a bug and a target, there's method which makes it easier to
 change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IProductSet)
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> bug_params = CreateBugParams(
     ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -28,7 +28,7 @@ changing the status, the target, and the new status.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -45,7 +45,7 @@ It returns the edited bugtask.
 It also emits an ObjectModifiedEvent so that BugNotification and
 BugActivity records are created.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     No Privileges Person
@@ -53,7 +53,7 @@ BugActivity records are created.
     ** Changed in: firefox
            Status: New => Confirmed
 
-    >>> from canonical.launchpad.database import BugActivity
+    >>> from lp.bugs.model.bugactivity import BugActivity
     >>> latest_activity = BugActivity.selectFirst(orderBy='-id')
     >>> latest_activity.whatchanged
     u'firefox: status'
@@ -88,7 +88,7 @@ product, not the product series, the product bugtask is edited.
 If the bug is targeted to the product series, the product series bugtask
 is edited.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug = getUtility(IBugSet).get(bug_id)
@@ -140,7 +140,7 @@ for product tasks.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     # Set a milestone to ensure that the current db user has enough

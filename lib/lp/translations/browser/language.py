@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Language table."""
@@ -21,24 +21,26 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     NavigationMenu,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.tales import LanguageFormatterAPI
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import LanguageFormatterAPI
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
@@ -152,9 +154,6 @@ class LanguageSetView(LaunchpadFormView):
         return ", ".join(map(_format_language, languages))
 
 
-# There is no easy way to remove an ILanguage from the database due all the
-# dependencies that ILanguage would have. That's the reason why we don't have
-# such functionality here.
 class LanguageAddView(LaunchpadFormView):
     """View to handle ILanguage creation form."""
 
@@ -277,9 +276,9 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     @property
     def add_question_url(self):
-        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
+        launchpad = getUtility(ILaunchpadCelebrities).launchpad
         return canonical_url(
-            rosetta,
+            launchpad,
             view_name='+addquestion',
             rootsite='answers')
 

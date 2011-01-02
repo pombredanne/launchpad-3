@@ -13,7 +13,7 @@
         <a tal:content="context/owner/fmt:displayname"
            tal:attributes="href context/owner/fmt:url"
            class="link" />
-        <a tal:condition="context/required:launchpad.Edit"
+        <a tal:condition="view/user_can_edit"
            href="+reassign" title="Change administrator"
            class="edit sprite" id="link-reassign"></a>
       </p>
@@ -32,7 +32,7 @@
           translations in this translation group.</em>
       </p>
 
-      <div tal:condition="context/required:launchpad.Edit">
+      <div tal:condition="view/user_can_edit">
         <a href="+edit" class="edit sprite">Change details</a>
       </div>
 
@@ -40,7 +40,8 @@
 
       <div id="translation-teams-listing">
       <h2><a name="teams"></a>Translation teams</h2>
-        <tal:translators condition="context/translators">
+      <tal:translator-list define="translator_list view/translator_list">
+        <tal:translators condition="translator_list">
           <table class="sortable listing" id="group-members">
             <thead>
               <tr>
@@ -48,11 +49,11 @@
                 <th>Team/Supervisor</th>
                 <th>Guidelines</th>
                 <th>Appointed</th>
-                <th tal:condition="context/required:launchpad.Edit"></th>
+                <th tal:condition="view/user_can_edit"></th>
               </tr>
             </thead>
             <tbody>
-              <tr tal:repeat="translator view/translator_list">
+              <tr tal:repeat="translator translator_list">
                 <td class="translator-language">
                   <a tal:attributes="href translator/language/fmt:url"
                      tal:content="translator/language/displayname">
@@ -82,7 +83,7 @@
                     none
                   </span>
                   <tal:notadmin
-                     condition="not:context/required:launchpad.Edit">
+                     condition="not:view/user_can_edit">
                     &nbsp;<a tal:condition="
                          translator/context/required:launchpad.Edit"
                          tal:attributes="href string:${translator/code}/+edit"
@@ -96,7 +97,7 @@
                     2007-09-17
                   </span>
                 </td>
-                <td tal:condition="context/required:launchpad.Edit">
+                <td tal:condition="view/user_can_edit">
                   <a tal:attributes="
                       href translator/code;
                       id string:edit-${translator/code}-translator"
@@ -110,22 +111,22 @@
             </tbody>
           </table>
         </tal:translators>
-        <tal:no-translators condition="not: context/translators">
+        <tal:no-translators condition="not: translator_list">
           No translation teams or supervisors have been appointed in
           this group yet.
         </tal:no-translators>
         <div style="margin-top:1em; margin-bottom: 2em;">
-          <a tal:condition="context/required:launchpad.Edit"
+          <a tal:condition="view/user_can_edit"
              href="+appoint" class="add sprite">Appoint a new translation
             team</a>
         </div>
-        </div><!-- id="translations-team-listing" -->
+      </tal:translator-list>
+      </div><!-- id="translations-team-listing" -->
 
-        <div class="section">
-          <a name="projects"></a>
-          <div tal:replace="structure context/@@+portlet-projects" />
-        </div>
-
+      <div class="section">
+        <a name="projects"></a>
+        <div tal:replace="structure context/@@+portlet-projects" />
+      </div>
     </div><!-- main -->
 
   </body>

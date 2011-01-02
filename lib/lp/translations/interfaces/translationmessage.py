@@ -103,10 +103,6 @@ class ITranslationMessage(Interface):
         title=_("The ID for this translation message"),
         readonly=True, required=True)
 
-    pofile = Object(
-        title=_("The translation file from where this translation comes"),
-        readonly=False, required=False, schema=IPOFile)
-
     browser_pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
@@ -118,9 +114,6 @@ class ITranslationMessage(Interface):
     language = Choice(
         title=_('Language of this translation message.'),
         vocabulary='Language', required=False)
-
-    variant = TextLine(
-        title=_('The language variant for this translation file.'))
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
@@ -228,6 +221,12 @@ class ITranslationMessage(Interface):
 
     def getOnePOFile():
         """Get any POFile containing this translation."""
+
+    def ensureBrowserPOFile():
+        """Assign the result of getOnePOFile to browser_pofile.
+
+        If browser_pofile is already set, it is left unchanged.
+        """
 
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.

@@ -14,10 +14,7 @@ import subprocess
 import tempfile
 
 from sqlobject import ForeignKey
-from storm.expr import (
-    Desc,
-    In,
-    )
+from storm.expr import Desc
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
@@ -135,7 +132,8 @@ class PackageDiff(SQLBase):
             ancestry_identifier = "%s (in %s)" % (
                 self.from_source.version,
                 ancestry_archive.distribution.name.capitalize())
-        return 'diff from %s to %s' % (ancestry_identifier, self.to_source.version)
+        return 'diff from %s to %s' % (
+            ancestry_identifier, self.to_source.version)
 
     @property
     def private(self):
@@ -280,7 +278,8 @@ class PackageDiffSet:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
-        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result = store.find(
+            PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
         return result

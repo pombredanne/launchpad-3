@@ -150,10 +150,7 @@
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-YUI({
-        base: '../../lib/yui/current/build/',
-        filter: 'raw'
-    }).use('node', 'event', 'lazr.effects', function(Y) {
+    LPS.use('node', 'event', 'lazr.effects', function(Y) {
 
     // Hide the widget body contents.
     Y.one('#ppa-install .widget-body').addClass('lazr-closed');

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'collect_import_info',
-    'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
     'TranslationImportQueue',
     ]
@@ -29,7 +28,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Like,
     Or,
     )
 from storm.locals import (
@@ -74,6 +72,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -86,10 +85,8 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     translation_import_queue_entry_age,
     TranslationImportQueueConflictError,
@@ -655,6 +652,17 @@ class TranslationImportQueueEntry(SQLBase):
 
             lang_code = re.sub(
                 kde_prefix_pattern, '', self.sourcepackagename.name)
+
+            path_components = os.path.normpath(self.path).split(os.path.sep)
+            # Top-level directory (path_components[0]) is something like
+            # "source" or "messages", and only then comes the
+            # language code: we generalize it so it supports language code
+            # in any part of the path.
+            for path_component in path_components:
+                if path_component.startswith(lang_code + '@'):
+                    # There are language variants inside a language pack.
+                    lang_code = path_component
+                    break
             lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
@@ -995,7 +1003,7 @@ class TranslationImportQueue:
 
     def _makePath(self, name, path_filter):
         """Make the file path from the name stored in the tarball."""
-        path = posixpath.normpath(name)
+        path = posixpath.normpath(name).lstrip('/')
         if path_filter:
             path = path_filter(path)
         return path
@@ -1284,8 +1292,7 @@ class TranslationImportQueue:
         importer = getUtility(ITranslationImporter)
         template_patterns = "(%s)" % ' OR '.join([
             "path LIKE ('%%' || %s)" % quote_like(suffix)
-            for suffix in importer.template_suffixes
-            ])
+            for suffix in importer.template_suffixes])
 
         store = self._getSlaveStore()
         result = store.execute("""
@@ -1366,7 +1373,7 @@ class TranslationImportQueue:
         deletion_clauses.append(And(
             TranslationImportQueueEntry.distroseries_id != None,
             TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
-            Like(TranslationImportQueueEntry.path, '%.po')))
+            TranslationImportQueueEntry.path.like(u'%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))
@@ -1427,24 +1434,3 @@ class TranslationImportQueue:
     def remove(self, entry):
         """See ITranslationImportQueue."""
         TranslationImportQueueEntry.delete(entry.id)
-
-
-class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
-
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(target=self)
-
-    def getTranslationImportQueueEntries(self, import_status=None,
-                                         file_extension=None):
-        """See `IHasTranslationImports`."""
-        if file_extension is None:
-            extensions = None
-        else:
-            extensions = [file_extension]
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getAllEntries(
-            self, import_status=import_status, file_extensions=extensions)

@@ -5,9 +5,7 @@
 Run the doctests and pagetests.
 """
 
-import logging
 import os
-import unittest
 
 from zope.component import getUtility
 
@@ -19,24 +17,21 @@ from canonical.launchpad.ftests.test_system_documentation import (
     uploaderSetUp,
     uploadQueueSetUp,
     )
-from canonical.launchpad.interfaces import (
-    CreateBugParams,
-    IBugTaskSet,
-    IDistributionSet,
-    ILanguageSet,
-    IPersonSet,
-    )
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.testing import build_test_suite
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -70,10 +65,13 @@ def _createUbuntuBugTaskLinkedToQuestion():
     notifications = pop_notifications()
     return ubuntu_bugtask.id
 
+
 def bugLinkedToQuestionSetUp(test):
     """Setup the question and linked bug for testing."""
+
     def get_bugtask_linked_to_question():
         return getUtility(IBugTaskSet).get(bugtask_id)
+
     setUp(test)
     bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
     test.globs['get_bugtask_linked_to_question'] = (
@@ -90,6 +88,7 @@ def uploaderBugLinkedToQuestionSetUp(test):
     uploaderSetUp(test)
     login(ANONYMOUS)
 
+
 def uploadQueueBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     bugLinkedToQuestionSetUp(test)
@@ -104,26 +103,22 @@ special = {
             LayeredDocFileSuite(
             'notifications-linked-private-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer
-            ),
+            layer=DatabaseFunctionalLayer),
     'notifications-linked-bug.txt': LayeredDocFileSuite(
             'notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer
-            ),
+            layer=DatabaseFunctionalLayer),
     'notifications-linked-bug.txt-uploader':
             LayeredDocFileSuite(
                 'notifications-linked-bug.txt',
                 setUp=uploaderBugLinkedToQuestionSetUp,
                 tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
+                layer=LaunchpadZopelessLayer),
     'notifications-linked-bug.txt-queued': LayeredDocFileSuite(
             'notifications-linked-bug.txt',
             setUp=uploadQueueBugLinkedToQuestionSetUp,
             tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
+            layer=LaunchpadZopelessLayer),
     }
 
 

@@ -14,12 +14,13 @@ clearing the cache.
 
 If WADL is present in a certain file on disk--the filename depends on
 the Launchpad configuration and the web service version--it will be
-loaded from disk and not generated from scratch. But the testrunner
+loaded from disk and not generated from scratch. But the test config
 does not have any WADL files written to disk.
 
     >>> import os
+    >>> from canonical.config import config
     >>> wadl_filename = WebServiceApplication.cachedWADLPath(
-    ...     'testrunner', 'devel')
+    ...     config.instance_name, 'devel')
     >>> os.path.exists(wadl_filename)
     False
 
@@ -61,8 +62,8 @@ is generated from scratch.
 
 Unlike the test strings we used earlier, this is a valid WADL file.
 
-    >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> from canonical.lazr.xml import XMLValidator
+    >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
 
     # We need to replace the nbsp entity, because the validator

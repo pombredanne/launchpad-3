@@ -12,7 +12,7 @@ from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
@@ -27,6 +27,7 @@ expected_body = u"""\
  * Distroseries: distroseries
  * Duration: five minutes
  * Build Log: %s
+ * Upload Log: 
  * Builder: http://launchpad.dev/builders/bob
 """
 
@@ -37,12 +38,18 @@ superseded_body = u"""\
  * Distroseries: distroseries
  * Duration: 
  * Build Log: 
+ * Upload Log: 
  * Builder: 
 """
 
 class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+
+    def makeStatusEmail(self, build):
+        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
+        email = removeSecurityProxy(build.requester).preferredemail.email
+        return mailer.generateEmail(email, build.requester)
 
     def test_generateEmail(self):
         """GenerateEmail produces the right headers and body."""
@@ -59,9 +66,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         naked_build.builder = self.factory.makeBuilder(name='bob')
         naked_build.log = self.factory.makeLibraryFileAlias()
         Store.of(build).flush()
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        email = build.requester.preferredemail.email
-        ctrl = mailer.generateEmail(email, build.requester)
+        ctrl = self.makeStatusEmail(build)
         self.assertEqual(
             u'[recipe build #%d] of ~person recipe in distroseries: '
             'Successfully built' % (build.id), ctrl.subject)
@@ -93,9 +98,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.SUPERSEDED)
         Store.of(build).flush()
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        email = build.requester.preferredemail.email
-        ctrl = mailer.generateEmail(email, build.requester)
+        ctrl = self.makeStatusEmail(build)
         self.assertEqual(
             u'[recipe build #%d] of ~person recipe in distroseries: '
             'Build for superseded Source' % (build.id), ctrl.subject)
@@ -113,6 +116,15 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             ctrl.headers['X-Launchpad-Notification-Type'])
         self.assertEqual(
             'SUPERSEDED', ctrl.headers['X-Launchpad-Build-State'])
+
+    def test_generateEmail_upload_failure(self):
+        """GenerateEmail works when many fields are NULL."""
+        build = self.factory.makeSourcePackageRecipeBuild()
+        removeSecurityProxy(build).upload_log = (
+            self.factory.makeLibraryFileAlias())
+        upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
+        ctrl = self.makeStatusEmail(build)
+        self.assertTrue(upload_log_fragment in ctrl.body)
 
 
 def test_suite():

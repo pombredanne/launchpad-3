@@ -11,7 +11,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.testing import TestCaseWithFactory
 

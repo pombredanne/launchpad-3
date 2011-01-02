@@ -28,7 +28,7 @@
   <tal:milestones define="milestones context/all_milestones">
     <table id="milestones" class="listing"
       tal:define="has_series context/series|nothing"
-      tal:condition="milestones">
+      tal:condition="context/has_milestones">
       <thead>
         <tr>
           <th>Version</th>
@@ -45,7 +45,7 @@
       </tbody>
     </table>
 
-    <tal:no-milestones condition="not: milestones">
+    <tal:no-milestones condition="not: context/has_milestones">
       <p>There are no milestones associated with
         <span tal:replace="context/title" />
       </p>

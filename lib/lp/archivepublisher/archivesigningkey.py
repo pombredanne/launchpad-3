@@ -74,7 +74,8 @@ class ArchiveSigningKey:
             self.archive.signing_key = default_ppa.signing_key
             return
 
-        key_displayname = "Launchpad %s" % self.archive.displayname
+        key_displayname = (
+            "Launchpad PPA for %s" % self.archive.owner.displayname)
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)
 

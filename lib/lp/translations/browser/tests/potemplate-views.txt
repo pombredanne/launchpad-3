@@ -5,12 +5,12 @@ On this section, we are going to test the view class for an IPOTemplate.
 
 First, we need some imports.
 
-    >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
+    >>> from StringIO import StringIO
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.publisher import TranslationsLayer

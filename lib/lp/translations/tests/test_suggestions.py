@@ -16,9 +16,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
@@ -36,15 +38,24 @@ class TestTranslationSuggestions(unittest.TestCase):
         # suggestions for the other.
         factory = LaunchpadObjectFactory()
         self.factory = factory
-        self.foo_trunk = factory.makeProductSeries()
-        self.bar_trunk = factory.makeProductSeries()
-        self.foo_trunk.product.official_rosetta = True
-        self.bar_trunk.product.official_rosetta = True
+        foo_product = factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        bar_product = factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.foo_trunk = factory.makeProductSeries(
+            product=foo_product)
+        self.bar_trunk = factory.makeProductSeries(
+            product=bar_product)
         self.foo_template = factory.makePOTemplate(self.foo_trunk)
         self.bar_template = factory.makePOTemplate(self.bar_trunk)
         self.nl = getUtility(ILanguageSet).getLanguageByCode('nl')
         self.foo_nl = factory.makePOFile('nl', potemplate=self.foo_template)
         self.bar_nl = factory.makePOFile('nl', potemplate=self.bar_template)
+        self._refreshSuggestiveTemplatesCache()
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Update the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_NoSuggestions(self):
         # When a msgid string is unique and nobody has submitted any
@@ -221,6 +232,7 @@ class TestTranslationSuggestions(unittest.TestCase):
                           TranslationValidationStatus.UNKNOWNERROR,
                           "TranslationMessage with errors is not correctly"
                           "marked as such in the database.")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -2,6 +2,18 @@
 Targeting to ProductSeries
 ==========================
 
+A number of tests in this need a product with blueprints enabled, so we'll
+enable them on firefox.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
 In terms of feature management for release series and for distroseriess, we
 want to target one of these specs to the 1.0 series. We will use the "e4x"
 specification.

@@ -10,7 +10,7 @@ import threading
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.mailbox import (
     IMailBox,
     MailBoxError,
     )

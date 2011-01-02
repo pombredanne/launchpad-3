@@ -3,23 +3,25 @@
 
 __metaclass__ = type
 __all__ = [
+    'Contains',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
-    'DoesNotStartWith',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
     'ProvidesAndIsProxied',
-    'StartsWith',
     ]
 
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
+    Equals,
     Matcher,
     Mismatch,
+    MismatchesAll,
     )
+from testtools import matchers
 from zope.interface.exceptions import (
     BrokenImplementation,
     BrokenMethodImplementation,
@@ -30,6 +32,8 @@ from zope.security.proxy import (
     builtin_isinstance,
     Proxy,
     )
+
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DoesNotProvide(Mismatch):
@@ -138,7 +142,7 @@ class _MismatchedQueryCount(Mismatch):
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
         return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
- 
+
 
 class IsNotProxied(Mismatch):
     """An object is not proxied."""
@@ -186,37 +190,78 @@ class ProvidesAndIsProxied(Matcher):
         return IsProxied().match(matchee)
 
 
-class DoesNotStartWith(Mismatch):
+class DoesNotContain(Mismatch):
 
     def __init__(self, matchee, expected):
-        """Create a DoesNotStartWith Mismatch.
+        """Create a DoesNotContain Mismatch.
 
         :param matchee: the string that did not match.
-        :param expected: the string that `matchee` was expected to start
-            with.
+        :param expected: the string that `matchee` was expected to contain.
         """
         self.matchee = matchee
         self.expected = expected
 
     def describe(self):
-        return "'%s' does not start with '%s'." % (
+        return "'%s' does not contain '%s'." % (
             self.matchee, self.expected)
 
 
-class StartsWith(Matcher):
-    """Checks whether one string starts with another."""
+class Contains(Matcher):
+    """Checks whether one string contains another."""
 
     def __init__(self, expected):
-        """Create a StartsWith Matcher.
+        """Create a Contains Matcher.
 
-        :param expected: the string that matchees should start with.
+        :param expected: the string that matchees should contain.
         """
         self.expected = expected
 
     def __str__(self):
-        return "Starts with '%s'." % self.expected
+        return "Contains '%s'." % self.expected
 
     def match(self, matchee):
-        if not matchee.startswith(self.expected):
-            return DoesNotStartWith(matchee, self.expected)
+        if self.expected not in matchee:
+            return DoesNotContain(matchee, self.expected)
         return None
+
+
+class IsConfiguredBatchNavigator(Matcher):
+    """Check that an object is a batch navigator."""
+
+    def __init__(self, singular, plural, batch_size=None):
+        """Create a ConfiguredBatchNavigator.
+
+        :param singular: The singular header the batch should be using.
+        :param plural: The plural header the batch should be using.
+        :param batch_size: The batch size that should be configured by default.
+        """
+        self._single = Equals(singular)
+        self._plural = Equals(plural)
+        self._batch = None
+        if batch_size:
+            self._batch = Equals(batch_size)
+        self.matchers = dict(
+            _singular_heading=self._single, _plural_heading=self._plural)
+        if self._batch:
+            self.matchers['default_size'] = self._batch
+
+    def __str__(self):
+        if self._batch:
+            batch = ", %r" % self._batch.expected
+        else:
+            batch = ''
+        return "ConfiguredBatchNavigator(%r, %r%s)" % (
+            self._single.expected, self._plural.expected, batch)
+
+    def match(self, matchee):
+        if not isinstance(matchee, BatchNavigator):
+            # Testtools doesn't have an IsInstanceMismatch yet.
+            return matchers._BinaryMismatch(
+                BatchNavigator, 'isinstance', matchee)
+        mismatches = []
+        for attrname, matcher in self.matchers.items():
+            mismatch = matcher.match(getattr(matchee, attrname))
+            if mismatch is not None:
+                mismatches.append(mismatch)
+        if mismatches:
+            return MismatchesAll(mismatches)

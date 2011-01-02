@@ -30,6 +30,7 @@ from zope.schema import (
     Date,
     Datetime,
     Int,
+    List,
     Object,
     Text,
     TextLine,
@@ -70,6 +71,15 @@ class IBinaryPackageRelease(Interface):
         title=_("Debug package"), schema=Interface, required=False,
         description=_("The corresponding package containing debug symbols "
                       "for this binary."))
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
+
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 

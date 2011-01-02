@@ -11,6 +11,7 @@ __all__ = [
     'BinaryPackageBuildBehavior',
     ]
 
+from twisted.internet import defer
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
@@ -38,56 +39,68 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
 
+    def _buildFilemapStructure(self, ignored, logger):
+        # Build filemap structure with the files required in this build
+        # and send them to the slave.
+        # If the build is private we tell the slave to get the files from the
+        # archive instead of the librarian because the slaves cannot
+        # access the restricted librarian.
+        dl = []
+        private = self.build.archive.private
+        if private:
+            dl.extend(self._cachePrivateSourceOnSlave(logger))
+        filemap = {}
+        for source_file in self.build.source_package_release.files:
+            lfa = source_file.libraryfile
+            filemap[lfa.filename] = lfa.content.sha1
+            if not private:
+                dl.append(
+                    self._builder.slave.cacheFile(
+                        logger, source_file.libraryfile))
+        d = defer.gatherResults(dl)
+        return d.addCallback(lambda ignored: filemap)
+
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distro_arch_series.getChroot()
-        self._builder.slave.cacheFile(logger, chroot)
+        d = self._builder.slave.cacheFile(logger, chroot)
+        d.addCallback(self._buildFilemapStructure, logger)
 
-        # Build filemap structure with the files required in this build
-        # and send them to the slave.
-        # If the build is private we tell the slave to get the files from the
-        # archive instead of the librarian because the slaves cannot
-        # access the restricted librarian.
-        private = self.build.archive.private
-        if private:
-            self._cachePrivateSourceOnSlave(logger)
-        filemap = {}
-        for source_file in self.build.source_package_release.files:
-            lfa = source_file.libraryfile
-            filemap[lfa.filename] = lfa.content.sha1
-            if not private:
-                self._builder.slave.cacheFile(logger, source_file.libraryfile)
+        def got_filemap(filemap):
+            # Generate a string which can be used to cross-check when obtaining
+            # results so we know we are referring to the right database object in
+            # subsequent runs.
+            buildid = "%s-%s" % (self.build.id, build_queue_id)
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            chroot_sha1 = chroot.content.sha1
+            logger.debug(
+                "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
-        chroot_sha1 = chroot.content.sha1
-        logger.debug(
-            "Initiating build %s on %s" % (buildid, self._builder.url))
+            args = self._extraBuildArgs(self.build)
+            d = self._builder.slave.build(
+                cookie, "binarypackage", chroot_sha1, filemap, args)
+            def got_build((status, info)):
+                message = """%s (%s):
+                ***** RESULT *****
+                %s
+                %s
+                %s: %s
+                ******************
+                """ % (
+                    self._builder.name,
+                    self._builder.url,
+                    filemap,
+                    args,
+                    status,
+                    info,
+                    )
+                logger.info(message)
+            return d.addCallback(got_build)
 
-        args = self._extraBuildArgs(self.build)
-        status, info = self._builder.slave.build(
-            cookie, "binarypackage", chroot_sha1, filemap, args)
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            filemap,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
+        return d.addCallback(got_filemap)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
@@ -99,8 +112,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
            distroseries state.
         """
         build = self.build
-        assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+        if build.is_virtualized and not self._builder.virtualized:
+            raise AssertionError(
+                "Attempt to build virtual item on a non-virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
@@ -153,6 +167,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         """Ask the slave to download source files for a private build.
 
         :param logger: A logger used for providing debug information.
+        :return: A list of Deferreds, each of which represents a request
+            to cache a file.
         """
         # The URL to the file in the archive consists of these parts:
         # archive_url / makePoolPath() / filename
@@ -164,6 +180,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         archive = self.build.archive
         archive_url = archive.archive_url
         component_name = self.build.current_component.name
+        dl = []
         for source_file in self.build.source_package_release.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
@@ -174,8 +191,10 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            self._builder.slave.sendFileToSlave(
-                sha1, url, "buildd", archive.buildd_secret)
+            dl.append(
+                self._builder.slave.sendFileToSlave(
+                    sha1, url, "buildd", archive.buildd_secret))
+        return dl
 
     def _extraBuildArgs(self, build):
         """

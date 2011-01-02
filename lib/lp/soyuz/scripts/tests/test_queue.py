@@ -4,14 +4,11 @@
 """queue tool base class tests."""
 
 __metaclass__ = type
-__all__ = [
-    'upload_bar_source',
-    ]
-
 
 import hashlib
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 from unittest import (
     TestCase,
@@ -19,34 +16,38 @@ from unittest import (
     )
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.database import (
-    LibraryFileAlias,
-    PackageUploadBuild,
-    )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.ftests.harness import (
+from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
     getPolicy,
     insertFakeChangesFileForAllPackageUploads,
-    mock_logger_quiet,
     )
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -56,6 +57,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
+from lp.soyuz.model.queue import PackageUploadBuild
+from lp.soyuz.scripts.processaccepted import (
+    close_bugs_for_sourcepackagerelease,
+    )
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
@@ -63,6 +68,11 @@ from lp.soyuz.scripts.queue import (
     CommandRunner,
     CommandRunnerError,
     name_queue_map,
+    )
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    TestCaseWithFactory,
     )
 
 
@@ -144,7 +154,7 @@ class TestQueueTool(TestQueueBase):
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
         bar_src = NascentUpload.from_changesfile_path(
             datadir(changesfile),
-            sync_policy, mock_logger_quiet)
+            sync_policy, DevNullLogger())
         bar_src.process()
         bar_src.do_accept()
         LaunchpadZopelessLayer.txn.commit()
@@ -166,7 +176,7 @@ class TestQueueTool(TestQueueBase):
         actions we want to see the help, not available actions will be
         reported.
         """
-        queue_action = self.execute_command('help')
+        self.execute_command('help')
         self.assertEqual(
             ['Running: "help"',
              '\tinfo : Present the Queue item including its contents. ',
@@ -178,13 +188,13 @@ class TestQueueTool(TestQueueBase):
              '\tfetch : Fetch the contents of a queue item. '],
             self.test_output)
 
-        queue_action = self.execute_command('help fetch')
+        self.execute_command('help fetch')
         self.assertEqual(
             ['Running: "help fetch"',
              '\tfetch : Fetch the contents of a queue item. '],
             self.test_output)
 
-        queue_action = self.execute_command('help foo')
+        self.execute_command('help foo')
         self.assertEqual(
             ['Running: "help foo"',
              'Not available action(s): foo'],
@@ -270,7 +280,7 @@ class TestQueueTool(TestQueueBase):
         # We need to upload a new source package to do this because the
         # sample data is horribly broken with published sources also in
         # the NEW queue.  Doing it this way guarantees a nice set of data.
-        bar_src = self.uploadPackage()
+        self.uploadPackage()
 
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
@@ -299,7 +309,7 @@ class TestQueueTool(TestQueueBase):
 
     def testAcceptingSourceCreateBuilds(self):
         """Check if accepting a source package creates build records."""
-        bar_src = self.uploadPackage()
+        self.uploadPackage()
 
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
@@ -379,13 +389,13 @@ class TestQueueTool(TestQueueBase):
             changesfile="suite/bar_1.0-2/bar_1.0-2_source.changes")
 
         # Now accept the new bar upload with the queue tool.
-        queue_action = self.execute_command('accept bar', no_mail=False)
+        self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
-        bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
+        bugs_fixed_header = bar2_src.changes._dict['Launchpad-bugs-fixed']
         self.assertEqual(
             bugs_fixed_header, str(the_bug_id),
-            'Expected bug %s in launchpad-bugs-fixed, got %s'
+            'Expected bug %s in Launchpad-bugs-fixed, got %s'
                 % (the_bug_id, bugs_fixed_header))
 
         # The upload should be in the DONE state:
@@ -622,7 +632,7 @@ class TestQueueTool(TestQueueBase):
             2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 1: try to accept both.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
@@ -637,7 +647,7 @@ class TestQueueTool(TestQueueBase):
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 2: try to accept the remaining item in UNAPPROVED.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertErrorAcceptingDuplicate()
@@ -646,7 +656,7 @@ class TestQueueTool(TestQueueBase):
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE.
-        queue_action = self.execute_command(
+        self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         # It failed and te item remains in UNAPPROVED.
@@ -655,7 +665,7 @@ class TestQueueTool(TestQueueBase):
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 4: The only possible destiny for the remaining item it REJECT.
-        queue_action = self.execute_command(
+        self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertQueueLength(
@@ -918,12 +928,40 @@ class TestQueueTool(TestQueueBase):
         When overriding the component, the archive may change, so we check
         that here and make sure it's disallowed.
         """
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to partner when required.
         self.assertRaises(
             CommandRunnerError, self.execute_command,
             'override binary pmount', component_name='partner')
+
+
+class TestQueuePageClosingBugs(TestCaseWithFactory):
+    # The distroseries +queue page can close bug when accepting
+    # packages.  Unit tests for that belong here.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it.
+        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
+        # changelog_entry is required for an assertion inside the function
+        # we're testing.
+        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
+        archive_admin = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True)
+        bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        changes = StringIO(changes_file_template % bug.id)
+
+        with person_logged_in(archive_admin):
+            # The archive admin user can't normally see this bug.
+            self.assertRaises(ForbiddenAttribute, bug, 'status')
+            # But the bug closure should work.
+            close_bugs_for_sourcepackagerelease(spr, changes)
+
+        # Verify it was closed.
+        with celebrity_logged_in("admin"):
+            self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase):
@@ -978,7 +1016,7 @@ class TestQueueToolInJail(TestQueueBase):
 
         bug 67014: Don't complain if files are the same
         """
-        queue_action = self.execute_command('fetch 1')
+        self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
@@ -1001,7 +1039,7 @@ class TestQueueToolInJail(TestQueueBase):
         """
         CLOBBERED = "you're clobbered"
 
-        queue_action = self.execute_command('fetch 1')
+        self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
@@ -1040,7 +1078,7 @@ class TestQueueToolInJail(TestQueueBase):
         FAKE_DEB_CONTENT = "Fake DEB"
         fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
         fillLibrarianFile(90, FAKE_DEB_CONTENT)
-        queue_action = self.execute_command('fetch pmount')
+        self.execute_command('fetch pmount')
 
         # Check the files' names.
         files = sorted(self._listfiles())
@@ -1062,7 +1100,7 @@ class TestQueueToolInJail(TestQueueBase):
         We can specify multiple items to fetch, even mixing IDs and names.
         e.g. queue fetch alsa-utils 1 3
         """
-        queue_action = self.execute_command('fetch 3 mozilla-firefox')
+        self.execute_command('fetch 3 mozilla-firefox')
         files = self._listfiles()
         files.sort()
         self.assertEqual(

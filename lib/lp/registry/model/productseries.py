@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
+    'TimelineProductSeries',
     ]
 
 import datetime
@@ -43,7 +44,11 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
-from lp.blueprints.interfaces.specification import (
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad)
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -69,6 +74,7 @@ from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
+    ITimelineProductSeries,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.milestone import (
@@ -85,16 +91,21 @@ from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
-    )
+
+
+MAX_TIMELINE_MILESTONES = 20
 
 
 def landmark_key(landmark):
@@ -112,7 +123,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries)
+    implements(IHasBugHeat, IProductSeries, IServiceUsage)
 
     _table = 'ProductSeries'
 
@@ -147,6 +158,51 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        # If translations_usage is set for the Product, respect it.
+        usage = self.product.translations_usage
+        if usage != ServiceUsage.UNKNOWN:
+            return usage
+
+        # If not, usage is based on the presence of current translation
+        # templates for the series.
+        if self.potemplate_count > 0:
+            return ServiceUsage.LAUNCHPAD
+        else:
+            return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -212,6 +268,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bug_reported_acknowledgement(self):
         """See `IBugTarget`."""
         return self.product.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return self.product.enable_bugfiling_duplicate_search
 
     @property
     def sourcepackages(self):
@@ -370,6 +431,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.product._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -394,6 +458,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
+
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
 
     def getRelease(self, version):
         for release in self.releases:
@@ -543,7 +614,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for milestone in self.all_milestones:
+        for milestone in self.all_milestones[:MAX_TIMELINE_MILESTONES]:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.
@@ -573,12 +644,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
         landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
         landmarks.reverse()
-        return dict(
+        return TimelineProductSeries(
             name=self.name,
             is_development_focus=self.is_development_focus,
-            status=self.status.title,
+            status=self.status,
             uri=canonical_url(self, path_only_if_possible=True),
-            landmarks=landmarks)
+            landmarks=landmarks,
+            product=self.product)
+
+
+class TimelineProductSeries:
+    """See `ITimelineProductSeries`."""
+    implements(ITimelineProductSeries)
+
+    def __init__(self, name, status, is_development_focus, uri, landmarks,
+                 product):
+        self.name = name
+        self.status = status
+        self.is_development_focus = is_development_focus
+        self.uri = uri
+        self.landmarks = landmarks
+        self.product = product
 
 
 class ProductSeriesSet:

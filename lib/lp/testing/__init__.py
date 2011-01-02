@@ -3,9 +3,6 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -56,11 +53,11 @@ from datetime import (
     )
 from inspect import (
     getargspec,
-    getmembers,
     getmro,
     isclass,
     ismethod,
     )
+import logging
 import os
 from pprint import pformat
 import re
@@ -75,7 +72,9 @@ from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
+from bzrlib import trace
 from bzrlib.transport import get_transport
+import fixtures
 import pytz
 from storm.expr import Variable
 from storm.store import Store
@@ -90,7 +89,7 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+# as of 2009-09-16.  See https://bugs.launchpad.net/bugs/425113.
 from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -110,15 +109,28 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
+from canonical.launchpad.webapp.servers import (
+    LaunchpadTestRequest,
+    WebServiceTestRequest,
+    )
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services import features
+from lp.services.features.flags import FeatureController
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
+from lp.services.features.webapp import ScopesFromRequest
 from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
@@ -222,9 +234,10 @@ class FakeTime:
 
 class StormStatementRecorder:
     """A storm tracer to count queries.
-    
-    This exposes the count and queries as lp.testing._webservice.QueryCollector
-    does permitting its use with the HasQueryCount matcher.
+
+    This exposes the count and queries as
+    lp.testing._webservice.QueryCollector does permitting its use with the
+    HasQueryCount matcher.
 
     It also meets the context manager protocol, so you can gather queries
     easily:
@@ -302,7 +315,7 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(testtools.TestCase):
+class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     """Provide Launchpad-specific test facilities."""
 
     def becomeDbUser(self, dbuser):
@@ -316,20 +329,6 @@ class TestCase(testtools.TestCase):
         assert self.layer, "becomeDbUser requires a layer."
         transaction.commit()
         self.layer.switchDbUser(dbuser)
-
-    def installFixture(self, fixture):
-        """Install 'fixture', an object that has a `setUp` and `tearDown`.
-
-        `installFixture` will run 'fixture.setUp' and schedule
-        'fixture.tearDown' to be run during the test's tear down (using
-        `addCleanup`).
-
-        :param fixture: Any object that has a `setUp` and `tearDown` method.
-        :return: `fixture`.
-        """
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
-        return fixture
 
     def __str__(self):
         """The string representation of a test is its id.
@@ -363,27 +362,26 @@ class TestCase(testtools.TestCase):
             verifyClass(interface, cls),
             "%r does not correctly implement %r." % (cls, interface))
 
-    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+    def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
 
-        :param event_type: The type of event that notification is expected
-            for.
+        :param event_type: One or more event types that notification is
+            expected for.
         :param callable_obj: The callable to call.
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
         :return: (result, event), where result was the return value of the
             callable, and event is the event emitted by the callable.
         """
+        if not isinstance(event_types, (list, tuple)):
+            event_types = [event_types]
         result, events = capture_events(callable_obj, *args, **kwargs)
         if len(events) == 0:
             raise AssertionError('No notification was performed.')
-        elif len(events) > 1:
-            raise AssertionError('Too many (%d) notifications performed.'
-                % len(events))
-        elif not isinstance(events[0], event_type):
-            raise AssertionError('Wrong event type: %r (expected %r).' %
-                (events[0], event_type))
-        return result, events[0]
+        self.assertEqual(len(event_types), len(events))
+        for index, expected in enumerate(event_types):
+            self.assertIsInstance(events[index], expected)
+        return result, events
 
     def assertNoNotification(self, callable_obj, *args, **kwargs):
         """Assert that no notifications are generated by the callable.
@@ -432,6 +430,17 @@ class TestCase(testtools.TestCase):
             self.fail(
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
 
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
@@ -487,14 +496,28 @@ class TestCase(testtools.TestCase):
                 content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
+    def attachLibrarianLog(self, fixture):
+        """Include the logChunks from fixture in the test details."""
+        # Evaluate the log when called, not later, to permit the librarian to
+        # be shutdown before the detail is rendered.
+        chunks = fixture.logChunks()
+        content = Content(UTF8_TEXT, lambda:chunks)
+        self.addDetail('librarian-log', content)
+
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         from lp.testing.factory import ObjectFactory
+        from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
-        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        if LibrarianLayer.librarian_fixture is not None:
+            self.addCleanup(
+                self.attachLibrarianLog,
+                LibrarianLayer.librarian_fixture)
+        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -539,13 +562,20 @@ class TestCase(testtools.TestCase):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.direct_database_server = False
         self._use_bzr_branch_called = False
+        # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
+        # messing with global log state (see
+        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # necessarily equal logging.getLogger('bzr'), so we have to explicitly
+        # make it so in order to avoid "No handlers for "bzr" logger'
+        # messages.
+        trace._bzr_logger = logging.getLogger('bzr')
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -561,6 +591,8 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        if hasattr(naked_user, '_password_cleartext_cached'):
+            password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
@@ -678,27 +710,33 @@ class BrowserTestCase(TestCaseWithFactory):
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
 
-    def assertTextMatchesExpressionIgnoreWhitespace(self,
-                                                    regular_expression_txt,
-                                                    text):
-        def normalise_whitespace(text):
-            return ' '.join(text.split())
-        pattern = re.compile(
-            normalise_whitespace(regular_expression_txt), re.S)
-        self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)), text)
-
-    def getViewBrowser(self, context, view_name=None):
+    def getViewBrowser(self, context, view_name=None, no_login=False,
+                       rootsite=None):
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name)
-        return self.getUserBrowser(url, self.user)
+        url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
+        logout()
+        if no_login:
+            from canonical.launchpad.testing.pages import setupBrowser
+            browser = setupBrowser()
+            browser.open(url)
+            return browser
+        else:
+            return self.getUserBrowser(url, self.user)
 
-    def getMainText(self, context, view_name=None):
+    def getMainContent(self, context, view_name=None, rootsite=None,
+                       no_login=False):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
+        browser = self.getViewBrowser(
+            context, view_name, rootsite=rootsite, no_login=no_login)
+        return find_main_content(browser.contents)
+
+    def getMainText(self, context, view_name=None, rootsite=None,
+                    no_login=False):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
-        return extract_text(find_main_content(browser.contents))
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(
+            self.getMainContent(context, view_name, rootsite, no_login))
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -711,7 +749,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
@@ -719,7 +757,7 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        self.client.open(url=self.layer.appserver_root_url())
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -728,27 +766,31 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = ''
 
     _yui_results = None
-    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
         self.test_path = test_path
-        self.yui_runner_url = self._view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string
@@ -812,7 +854,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -830,7 +872,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -857,6 +899,7 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
+
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
@@ -866,6 +909,19 @@ def capture_events(callable_obj, *args, **kwargs):
         return result, events
     finally:
         zope.event.subscribers[:] = old_subscribers
+
+
+@contextmanager
+def feature_flags():
+    """Provide a context in which feature flags work."""
+    empty_request = LaunchpadTestRequest()
+    old_features = getattr(features.per_thread, 'features', None)
+    features.per_thread.features = FeatureController(
+        ScopesFromRequest(empty_request).lookup)
+    try:
+        yield
+    finally:
+        features.per_thread.features = old_features
 
 
 # XXX: This doesn't seem like a generically-useful testing function. Perhaps
@@ -970,6 +1026,24 @@ def map_branch_contents(branch):
     return contents
 
 
+def set_feature_flag(name, value, scope=u'default', priority=1):
+    """Set a feature flag to the specified value.
+
+    In order to access the flag, use the feature_flags context manager or
+    populate features.per_thread.features some other way.
+    :param name: The name of the flag.
+    :param value: The value of the flag.
+    :param scope: The scope in which the specified value applies.
+    """
+    assert getattr(features.per_thread, 'features', None) is not None
+    flag = FeatureFlag(
+        scope=scope, flag=name, value=value, priority=priority)
+    store = getFeatureStore()
+    store.add(flag)
+    # Make sure that the feature is saved into the db right now.
+    store.flush()
+
+
 def validate_mock_class(mock_class):
     """Validate method signatures in mock classes derived from real classes.
 
@@ -1023,7 +1097,13 @@ def validate_mock_class(mock_class):
     assert isclass(mock_class), (
         "validate_mock_class() must be called for a class")
     base_classes = getmro(mock_class)
-    for name, obj in getmembers(mock_class):
+    # Don't use inspect.getmembers() here because it fails on __provides__, a
+    # descriptor added by zope.interface as part of its caching strategy. See
+    # http://comments.gmane.org/gmane.comp.python.zope.interface/241.
+    for name in dir(mock_class):
+        if name == '__provides__':
+            continue
+        obj = getattr(mock_class, name)
         if ismethod(obj):
             for base_class in base_classes[1:]:
                 if name in base_class.__dict__:
@@ -1057,6 +1137,29 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def monkey_patch(context, **kwargs):
+    """In the ContextManager scope, monkey-patch values.
+
+    The context may be anything that supports setattr.  Packages,
+    modules, objects, etc.  The kwargs are the name/value pairs for the
+    values to set.
+    """
+    old_values = {}
+    not_set = object()
+    for name, value in kwargs.iteritems():
+        old_values[name] = getattr(context, name, not_set)
+        setattr(context, name, value)
+    try:
+        yield
+    finally:
+        for name, value in old_values.iteritems():
+            if value is not_set:
+                delattr(context, name)
+            else:
+                setattr(context, name, value)
 
 
 def unlink_source_packages(product):

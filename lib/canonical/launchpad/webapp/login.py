@@ -2,11 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -42,7 +39,6 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountSuspendedError
@@ -65,6 +61,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class UnauthorizedView(SystemErrorView):
@@ -122,7 +119,7 @@ class UnauthorizedView(SystemErrorView):
             target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
-            # to use the ``addNoticeNotification`` method.
+            # to use the ``addInfoNotification`` method.
             allowUnauthenticatedSession(self.request)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
@@ -330,6 +327,7 @@ class OpenIDCallbackView(OpenIDLogin):
         the changes we just did.
         """
         identifier = self.openid_response.identity_url.split('/')[-1]
+        identifier = identifier.decode('ascii')
         should_update_last_write = False
         # Force the use of the master database to make sure a lagged slave
         # doesn't fool us into creating a Person/Account when one already
@@ -367,7 +365,7 @@ class OpenIDCallbackView(OpenIDLogin):
             # The authentication failed (or was canceled), but the user is
             # already logged in, so we just add a notification message and
             # redirect.
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 _(u'Your authentication failed but you were already '
                    'logged into Launchpad.'))
             self._redirect()
@@ -508,7 +506,7 @@ class CookieLogoutPage:
         openid_root = allvhosts.configs[openid_vhost].rooturl
         target = '%s+logout?%s' % (
             config.codehosting.secure_codebrowse_root,
-            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root, ))))
         self.request.response.redirect(target)
         return ''
 

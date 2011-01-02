@@ -10,9 +10,11 @@ style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
@@ -75,7 +77,7 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
@@ -130,7 +132,7 @@ Firefox has the following series:
 Now, if we look at bug one, we can see that it hasn't been targeted
 for any Firefox series yet:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
@@ -259,9 +261,9 @@ All the products in a project using Malone.
 
     >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> for product in mozilla_project.products:
-    ...     print "%s: %s" % (product.name, product.official_malone)
-    firefox: True
-    thunderbird: False
+    ...     print "%s: %s" % (product.name, product.bug_tracking_usage.name)
+    firefox: LAUNCHPAD
+    thunderbird: UNKNOWN
 
     >>> mozilla_products_vocabulary = vocabulary_registry.get(
     ...     mozilla_project,'ProjectProductsUsingMalone')
@@ -364,143 +366,6 @@ All the source packages in Launchpad.
     [('pmount', u'pmount')]
 
 
-BranchVocabulary
-................
-
-The list of bzr branches registered in Launchpad.
-
-Searchable by branch name or URL, registrant name, and project name.
-Results are not restricted in any way by the context, but the results
-are restricted based on who is asking (as far as private branches is
-concerned).
-
-    # Just use None as the context.
-    >>> branch_vocabulary = get_naked_vocab(None, "Branch")
-    >>> def print_vocab_branches(vocab, search):
-    ...     for term in vocab.searchForTerms(search):
-    ...         print term.value.unique_name
-
-    >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/firefox/main
-    ~stevea/thunderbird/main
-    ~justdave/+junk/main
-    ~kiko/+junk/main
-    ~vcs-imports/evolution/main
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'evolution')
-    ~carlos/evolution/2.0
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
-A search with the full branch unique name should also find the branch.
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
-    ~name12/firefox/main
-
-The tokens used by terms retrieved from BranchVocabulary use the
-branch unique name as an ID:
-
-    >>> from lp.code.interfaces.branchlookup import IBranchLookup
-    >>> branch = getUtility(IBranchLookup).get(15)
-    >>> print branch.unique_name
-    ~name12/gnome-terminal/main
-    >>> term = branch_vocabulary.toTerm(branch)
-    >>> print term.token
-    ~name12/gnome-terminal/main
-
-The BranchVocabulary recognises both unique names and URLs as tokens:
-
-    >>> term = branch_vocabulary.getTermByToken('~name12/gnome-terminal/main')
-    >>> term.value == branch
-    True
-    >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://bazaar.launchpad.dev/~name12/gnome-terminal/main/')
-    >>> term.value == branch
-    True
-    >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://example.com/gnome-terminal/main')
-    >>> term.value == branch
-    True
-
-The searches that the BranchVocabulary does are private branch aware.
-The results are effectively filtered on what the logged in user is
-able to see.
-
-    >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
-    ~landscape-developers/landscape/trunk
-
-    >>> login('no-priv@canonical.com')
-    >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
-
-    >>> login('foo.bar@canonical.com')
-
-
-BranchRestrictedOnProduct
-.........................
-
-The BranchRestrictedOnProduct vocabulary restricts the result set to
-those of the product of the context.  Currently only two types of
-context are supported: Product; and Branch.  If a branch is the context,
-then the product of the branch is used to restrict the query.
-
-    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     gnome_terminal, "BranchRestrictedOnProduct")
-    >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
-
-If a full unique name is entered that has a different product, the
-branch is not part of the vocabulary.
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/gnome-terminal/main')
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
-
-
-The BranchRestrictedOnProduct behaves the same way as the more generic
-BranchVocabulary with respect to the tokens and privacy awareness.
-
-
-HostedBranchRestrictedOnOwner
-.............................
-
-Here's a vocabulary for all hosted branches owned by the current user.
-
-    >>> from lp.code.enums import BranchType
-
-    >>> a_user = factory.makePerson(name='a-branching-user')
-    >>> product1 = factory.makeProduct(name='product-one')
-    >>> mirrored_branch = factory.makeBranch(
-    ...     owner=a_user, product=product1, name='mirrored',
-    ...     branch_type=BranchType.MIRRORED)
-    >>> product2 = factory.makeProduct(name='product-two')
-    >>> hosted_branch = factory.makeBranch(
-    ...     owner=a_user, product=product2, name='hosted')
-    >>> foreign_branch = factory.makeBranch()
-
-It returns branches owned by the user, but not ones owned by others, nor
-ones that aren't hosted on Launchpad.
-
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     a_user, "HostedBranchRestrictedOnOwner")
-    >>> print_vocab_branches(branch_vocabulary, None)
-    ~a-branching-user/product-two/hosted
-
-
 Processor
 .........
 
@@ -532,8 +397,8 @@ All bug watches associated with a bugtask's bug.
 Bug watches with an email address URL (i.e. starts with "mailto:") are
 treated differently.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_twelve = getUtility(IBugSet).get(12)
     >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')

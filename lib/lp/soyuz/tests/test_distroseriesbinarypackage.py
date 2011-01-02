@@ -12,8 +12,8 @@ __all__ = [
 import transaction
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -50,7 +50,7 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
             binaryname='foo-bin', summary='Foo is the best',
             archive=distro_archive_2)
 
-        logger = QuietFakeLogger()
+        logger = BufferLogger()
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
         self.distroseries.updatePackageCache(

@@ -45,7 +45,7 @@ install:
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
 	touch $(pytarget)/../launchpad/daemons/__init__.py
-	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
+	cp launchpad-files/readyservice.py $(pytarget)/../launchpad/daemons/
 	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
 	cp -r pottery $(pytarget)
 	for pyfile in $(pyfiles); do \
@@ -91,7 +91,7 @@ clean:
 
 prepare:
 	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
-	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+	cp ../launchpad/daemons/readyservice.py launchpad-files/readyservice.py
 
 package: prepare
 	debuild -uc -us -S

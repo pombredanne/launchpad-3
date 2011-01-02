@@ -23,7 +23,11 @@ import urllib2
 
 from select import select
 from socket import SOCK_STREAM, AF_INET
-from urlparse import urljoin
+from urlparse import (
+    urlparse,
+    urljoin,
+    urlunparse,
+    )
 
 from storm.store import Store
 from zope.interface import implements
@@ -33,6 +37,8 @@ from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
+from canonical.lazr.utils import get_current_browser_request
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 def url_path_quote(filename):
@@ -45,6 +51,14 @@ def url_path_quote(filename):
 def get_libraryfilealias_download_path(aliasID, filename):
     """Download path for a given `LibraryFileAlias` id and filename."""
     return '/%d/%s' % (int(aliasID), url_path_quote(filename))
+
+
+def compose_url(base_url, alias_path):
+    """Compose a URL for a library file alias."""
+    if alias_path is None:
+        return None
+    else:
+        return urljoin(base_url, alias_path)
 
 
 class FileUploadClient:
@@ -77,7 +91,7 @@ class FileUploadClient:
     def _checkError(self):
         if select([self.state.s], [], [], 0)[0]:
             response = self.state.f.readline().strip()
-            raise UploadFailed, 'Server said: ' + response
+            raise UploadFailed('Server said: ' + response)
 
     def _sendLine(self, line):
         self.state.f.write(line + '\r\n')
@@ -112,8 +126,8 @@ class FileUploadClient:
             name = name.encode('utf-8')
 
         # Import in this method to avoid a circular import
-        from canonical.launchpad.database import LibraryFileContent
-        from canonical.launchpad.database import LibraryFileAlias
+        from canonical.launchpad.database.librarian import LibraryFileContent
+        from canonical.launchpad.database.librarian import LibraryFileAlias
 
         self._connect()
         try:
@@ -166,7 +180,7 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if response != '200':
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed('Server said: ' + response)
 
             # Add rows to DB
             content = LibraryFileContent(
@@ -181,7 +195,7 @@ class FileUploadClient:
             Store.of(content).flush()
 
             assert isinstance(aliasID, (int, long)), \
-                    "aliasID %r not an integer" % (aliasID,)
+                    "aliasID %r not an integer" % (aliasID, )
             return aliasID
         finally:
             self._close()
@@ -234,7 +248,8 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if not response.startswith('200'):
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed(
+                    'Could not upload %s. Server said: %s' % (name, response))
 
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
@@ -246,16 +261,23 @@ class FileUploadClient:
 
 
 class _File:
-    """A wrapper around a file like object that has security assertions"""
+    """A File wrapper which uses the timeline and has security assertions."""
 
-    def __init__(self, file):
+    def __init__(self, file, url):
         self.file = file
+        self.url = url
 
     def read(self, chunksize=None):
-        if chunksize is None:
-            return self.file.read()
-        else:
-            return self.file.read(chunksize)
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("librarian-read", self.url)
+        try:
+            if chunksize is None:
+                return self.file.read()
+            else:
+                return self.file.read(chunksize)
+        finally:
+            action.finish()
 
     def close(self):
         return self.file.close()
@@ -282,60 +304,139 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
-    def _getPathForAlias(self, aliasID):
+    def _getAlias(self, aliasID, secure=False):
+        """Retrieve the `LibraryFileAlias` with the given id.
+
+        :param aliasID: A unique ID for the alias.
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
+        :returns: A `LibraryFileAlias`.
+        :raises: `DownloadFailed` if the alias is invalid or
+            inaccessible.
+        """
+        from canonical.launchpad.database.librarian import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
+        try:
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
+            lfa = None
+
+        if lfa is None:
+            raise DownloadFailed('Alias %d not found' % aliasID)
+        self._checkAliasAccess(lfa, secure=secure)
+
+        return lfa
+
+    def _checkAliasAccess(self, alias, secure=False):
+        """Verify that `alias` can be accessed.
+
+        :param alias: A `LibraryFileAlias`.
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
+        :raises: `DownloadFailed` if access is not allowed.
+        """
+        if not secure and alias.restricted != self.restricted:
+            raise DownloadFailed(
+                'Alias %d cannot be downloaded from this client.' % alias.id)
+
+    def _getPathForAlias(self, aliasID, secure=False):
         """Returns the path inside the librarian to talk about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
 
         :raises: DownloadFailed if the alias is invalid
         """
-        from canonical.launchpad.database import LibraryFileAlias
-        from sqlobject import SQLObjectNotFound
-        aliasID = int(aliasID)
-        try:
-            # Use SQLObjects to maximize caching benefits
-            lfa = LibraryFileAlias.get(aliasID)
-        except SQLObjectNotFound:
-            raise DownloadFailed('Alias %d not found' % aliasID)
-        if self.restricted != lfa.restricted:
-            raise DownloadFailed(
-                'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.deleted:
+        return self._getPathForAliasObject(
+            self._getAlias(int(aliasID), secure=secure))
+
+    def _getPathForAliasObject(self, alias):
+        """Returns the Librarian path for a `LibraryFileAlias`."""
+        if alias.deleted:
             return None
         return get_libraryfilealias_download_path(
-            aliasID, lfa.filename.encode('utf-8'))
+            alias.id, alias.filename.encode('utf-8'))
 
-    def getURLForAlias(self, aliasID):
+    def _getBaseURL(self, alias, secure=False):
+        """Get the base URL to use for `alias`.
+
+        :param secure: If true generate https urls on unique domains for
+            security.
+        """
+        if not secure:
+            return self.download_url
+
+        # Secure url generation is the same for both restricted and
+        # unrestricted files aliases : it is used to give web clients (not
+        # appservers) a url to use to access a file which is either
+        # restricted (and so they will also need a TimeLimitedToken) or
+        # is suspected hostile (and so it should be isolated on its own
+        # domain). Note that only the former is currently used in LP.
+        # The algorithm is:
+        # parse the url
+        download_url = config.librarian.download_url
+        parsed = list(urlparse(download_url))
+        # Force the scheme to https
+        parsed[0] = 'https'
+        # Insert the alias id (which is a unique key, thus unique) in the
+        # netloc
+        parsed[1] = ('i%d.restricted.' % alias.id) + parsed[1]
+        return urlunparse(parsed)
+
+    def getURLForAlias(self, aliasID, secure=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
-        :returns: String URL, or None if the file has expired and been deleted.
+        :param secure: If true generate https urls on unique domains for
+            security.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
-        path = self._getPathForAlias(aliasID)
-        if path is None:
-            return None
-        base = self.download_url
-        return urljoin(base, path)
+        alias = self._getAlias(aliasID, secure=secure)
+        return self.getURLForAliasObject(alias, secure=secure)
+
+    def getURLForAliasObject(self, alias, secure=False):
+        """Return the download URL for a `LibraryFileAlias`.
+
+        There is a separate `getURLForAlias` that takes an alias ID.  If
+        you're not sure whether it's safe for the client to access your
+        `alias`, use `getURLForAlias` which will retrieve its own copy.
+
+        :param alias: A `LibraryFileAlias` whose URL you want.
+        :param secure: If true generate https urls on unique domains for
+            security.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
+        """
+        # Note that the path is the same for both secure and insecure
+        # URLs.  This is deliberate: the server doesn't need to know
+        # about the original Host the client provides, and testing is
+        # easier as we don't need wildcard https environments on dev
+        # machines.
+        self._checkAliasAccess(alias, secure=secure)
+        base = self._getBaseURL(alias, secure=secure)
+        path = self._getPathForAliasObject(alias)
+        return compose_url(base, path)
 
     def _getURLForDownload(self, aliasID):
         """Returns the internal librarian URL for the alias.
 
         :param aliasID: A unique ID for the alias
 
-        :returns: String URL, or None if the file has expired and been deleted.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
-        path = self._getPathForAlias(aliasID)
-        if path is None:
-            return None
-        base = self._internal_download_url
-        return urljoin(base, path)
+        return compose_url(
+            self._internal_download_url, self._getPathForAlias(aliasID))
 
     def getFileByAlias(
         self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
@@ -345,16 +446,26 @@ class FileDownloadClient:
             # File has been deleted
             return None
         try_until = time.time() + timeout
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("librarian-connection", url)
+        try:
+            return self._connect_read(url, try_until, aliasID)
+        finally:
+            action.finish()
+
+    def _connect_read(self, url, try_until, aliasID):
+        """Helper for getFileByAlias."""
         while 1:
             try:
-                return _File(urllib2.urlopen(url))
+                return _File(urllib2.urlopen(url), url)
             except urllib2.URLError, error:
                 # 404 errors indicate a data inconsistency: more than one
                 # attempt to open the file is pointless.
                 #
                 # Note that URLError is a base class of HTTPError.
                 if isinstance(error, urllib2.HTTPError) and error.code == 404:
-                    raise LookupError, aliasID
+                    raise LookupError(aliasID)
                 # HTTPErrors with a 5xx error code ("server problem")
                 # are a reason to retry the access again, as well as
                 # generic, non-HTTP, URLErrors like "connection refused".
@@ -366,7 +477,7 @@ class FileDownloadClient:
                         time.sleep(1)
                     else:
                         # There's a test (in
-                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # lib/c/l/browser/tests/test_librarian.py) which
                         # simulates a librarian server error by raising this
                         # exception, so if you change the exception raised
                         # here, make sure you update the test.
@@ -397,7 +508,6 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def _internal_download_url(self): # used by _getURLForDownload
         return 'http://%s:%s/' % (config.librarian.download_host,
                                   config.librarian.download_port)
-
 
 
 class RestrictedLibrarianClient(LibrarianClient):

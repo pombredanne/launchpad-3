@@ -9,7 +9,7 @@ import unittest
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
 

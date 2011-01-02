@@ -12,8 +12,11 @@ from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
@@ -40,7 +43,7 @@ class DistroSeriesBinaryPackage:
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
         if cache is not None:
-            self._cache = cache
+            get_property_cache(self).cache = cache
 
     @property
     def name(self):
@@ -58,7 +61,7 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return self.distroseries.distribution
 
-    @cachedproperty('_cache')
+    @cachedproperty
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         store = Store.of(self.distroseries)

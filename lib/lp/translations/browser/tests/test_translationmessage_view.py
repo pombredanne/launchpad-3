@@ -12,7 +12,7 @@ from unittest import TestLoader
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
@@ -44,8 +44,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self.view = CurrentTranslationMessageView(
             message, LaunchpadTestRequest(),
             {}, dict(enumerate(message.translations)),
-            False, False, None, None, True)
-        self.view.user_is_official_translator = True
+            False, False, None, None, True, pofile=self.pofile, can_edit=True)
         self.view.initialize()
 
     def _makeTranslation(self, translation=None,

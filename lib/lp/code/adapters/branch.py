@@ -20,7 +20,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 # well as landing target when it is added to the UI
 
 class BranchDelta:
-    """See canonical.launchpad.interfaces.IBranchDelta."""
+    """See IBranchDelta."""
 
     implements(IBranchDelta)
 
@@ -70,8 +70,13 @@ class BranchMergeProposalDelta:
     """Represent changes made to a BranchMergeProposal."""
 
     delta_values = (
-        'registrant', 'source_branch', 'target_branch', 'prerequisite_branch',
-        'queue_status', 'queue_position',)
+        'registrant',
+        'source_branch',
+        'target_branch',
+        'prerequisite_branch',
+        'queue_status',
+        'queue_position',
+        )
     new_values = ('commit_message', 'whiteboard', 'description')
     interface = IBranchMergeProposal
 

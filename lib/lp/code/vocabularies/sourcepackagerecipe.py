@@ -14,8 +14,8 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.soyuz.browser.archive import make_archive_vocabulary

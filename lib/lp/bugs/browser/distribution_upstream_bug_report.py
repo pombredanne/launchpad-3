@@ -6,18 +6,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionUpstreamBugReport'
-]
+    'DistributionUpstreamBugReport',
+    ]
 
 from operator import attrgetter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.url import urlappend
+from lp.app.enums import ServiceUsage
 from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
+from lp.services.propertycache import cachedproperty
 
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.
@@ -145,9 +146,11 @@ class PackageBugReportData(BugReportData):
         - dssp: an IDistributionSeriesSourcepackage
         - product: an IProduct
         - bugtracker: convenience holder for the product's bugtracker
-        - official_malone: convenience boolean for IProduct.official_malone
+        - bug_tracking_usage: convenience enum for
+            IProduct.bug_tracking_usage
         - *_url: convenience URLs
     """
+
     def __init__(self, dsp, dssp, product, open_bugs, triaged_bugs,
                  upstream_bugs, watched_bugs, bugs_with_upstream_patches):
         BugReportData.__init__(self, open_bugs, triaged_bugs, upstream_bugs,
@@ -162,9 +165,12 @@ class PackageBugReportData(BugReportData):
         self.open_bugs_url = urlappend(
             dsp_bugs_url, get_buglisting_search_filter_url())
 
-        self.official_malone = bool(product and product.official_malone)
-        self.branch = (
-            product and product.development_focus.branch)
+        if product is not None:
+            self.bug_tracking_usage = product.bug_tracking_usage
+            self.branch = product.development_focus.branch
+        else:
+            self.bug_tracking_usage = ServiceUsage.UNKNOWN
+            self.branch = None
 
         # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The
@@ -180,7 +186,7 @@ class PackageBugReportData(BugReportData):
             # Create a 'bugtracker_name' attribute for searching.
             if self.bugtracker is not None:
                 self.bugtracker_name = self.bugtracker.title
-            elif self.product.official_malone:
+            elif self.product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
                 self.bugtracker_name = 'Launchpad'
             else:
                 self.bugtracker_name = None
@@ -374,4 +380,3 @@ class DistributionUpstreamBugReport(LaunchpadView):
                 dsp, dssp, product, open, triaged, upstream, watched,
                 bugs_with_upstream_patches)
             self._data.append(item)
-

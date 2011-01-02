@@ -21,7 +21,7 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
-YUI().use('node', 'lazr.effects', function(Y) {
+LPS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
@@ -101,8 +101,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.get(Y.DOM.byId('field.licenses.25'));
-        var other_os = Y.get(Y.DOM.byId('field.licenses.26'));
+        var other_com = Y.get('input[value=OTHER_PROPRIETARY]');
+        var other_os = Y.get('input[value=OTHER_OPEN_SOURCE]');
         var details = Y.get('#license-details');
         var proprietary = Y.get('#proprietary');
 
@@ -245,7 +245,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             voucher management page</a>.
         </li>
       </ol>
-      <a href="mailto:feedback@launchpad.net">Contact us</a>
+      <a href="mailto:commercial@launchpad.net">Contact us</a>
       for more information regarding commercial subscriptions.
     </div>
 </div>

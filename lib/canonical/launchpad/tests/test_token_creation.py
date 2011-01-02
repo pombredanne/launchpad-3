@@ -13,7 +13,7 @@ from canonical.launchpad.components.tokens import (
     )
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class Test_create_token(unittest.TestCase):

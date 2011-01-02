@@ -2,7 +2,7 @@
 
 Let's use Celso's PPA for the tests.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
@@ -449,7 +449,17 @@ from using PPAs.
     True
 
     >>> print view.archive_description_html.value
-    http://example.dom/
+    <p>http://example.dom/</p>
+
+The description is HTML escaped, and not linkified even when it contains HTML
+tags.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = (
+    ...     '<a href="http://example.com/">http://example.com/</a>')
+    >>> login(ANONYMOUS)
+    >>> print view.archive_description_html.value
+    <p>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;</p>
 
 The PPA description is linked when the user has made a contribution.
 

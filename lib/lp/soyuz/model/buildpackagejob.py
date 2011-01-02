@@ -23,6 +23,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -229,8 +230,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # The extra clause is only used if the number of available
         # builders is greater than one, or nothing would get dispatched
         # at all.
-        num_arch_builders = Builder.selectBy(
-            processor=processor, manual=False, builderok=True).count()
+        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
+            processor, virtualized).count()
         if num_arch_builders > 1:
             sub_query += """
             AND Archive.id NOT IN (

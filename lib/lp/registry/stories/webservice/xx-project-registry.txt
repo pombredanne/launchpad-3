@@ -428,16 +428,6 @@ changed as well.
     >>> test_project['owner_link']
     u'http://.../~mark'
 
-    >>> test_series = webservice.get('/test-project/test-series').jsonBody()
-    >>> test_series['owner_link']
-    u'http://.../~mark'
-
-    >>> release_path = '/test-project/test-series/test-milestone'
-    >>> test_project_release = webservice.get(release_path).jsonBody()
-    >>> test_project_release['owner_link']
-    u'http://.../~mark'
-
-
 Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
@@ -482,44 +472,58 @@ hierarchy of series, milestones, and releases.
     ...     "get_timeline",
     ...     include_inactive=True).jsonBody()
     >>> print pretty(timeline)
-    [{u'is_development_focus': False,
-     u'landmarks': [],
-     u'name': u'experimental',
-     u'status': u'Active Development',
-     u'uri': u'/firefox/experimental'},
-    {u'is_development_focus': False,
-     u'landmarks': [{u'code_name': u'First Stable Release',
-                      u'date': u'2004-06-28',
-                      u'name': u'1.0.0',
-                      u'type': u'release',
-                      u'uri': u'/firefox/1.0/1.0.0'}],
-      u'name': u'1.0',
-      u'status': u'Active Development',
-      u'uri': u'/firefox/1.0'},
-     {u'is_development_focus': True,
-      u'landmarks': [{u'code_name': None,
-                      u'date': u'2056-10-16',
-                      u'name': u'1.0',
-                      u'type': u'milestone',
-                      u'uri': u'/firefox/+milestone/1.0'},
-                     {u'code_name': u'One (secure) Tree Hill',
-                      u'date': u'2004-10-15',
-                      u'name': u'0.9.2',
-                      u'type': u'release',
-                      u'uri': u'/firefox/trunk/0.9.2'},
-                     {u'code_name': u'One Tree Hill (v2)',
-                      u'date': u'2004-10-15',
-                      u'name': u'0.9.1',
-                      u'type': u'release',
-                      u'uri': u'/firefox/trunk/0.9.1'},
-                     {u'code_name': u'One Tree Hill',
-                      u'date': u'2004-10-15',
-                      u'name': u'0.9',
-                      u'type': u'release',
-                      u'uri': u'/firefox/trunk/0.9'}],
-      u'name': u'trunk',
-      u'status': u'Obsolete',
-      u'uri': u'/firefox/trunk'}]
+    {u'entries': [{u'http_etag': ...
+                   u'is_development_focus': True,
+                   u'landmarks': [{u'code_name': None,
+                                   u'date': u'2056-10-16',
+                                   u'name': u'1.0',
+                                   u'type': u'milestone',
+                                   u'uri': u'/firefox/+milestone/1.0'},
+                                  {u'code_name': u'One (secure) Tree Hill',
+                                   u'date': u'2004-10-15',
+                                   u'name': u'0.9.2',
+                                   u'type': u'release',
+                                   u'uri': u'/firefox/trunk/0.9.2'},
+                                  {u'code_name': u'One Tree Hill (v2)',
+                                   u'date': u'2004-10-15',
+                                   u'name': u'0.9.1',
+                                   u'type': u'release',
+                                   u'uri': u'/firefox/trunk/0.9.1'},
+                                  {u'code_name': u'One Tree Hill',
+                                   u'date': u'2004-10-15',
+                                   u'name': u'0.9',
+                                   u'type': u'release',
+                                   u'uri': u'/firefox/trunk/0.9'}],
+                   u'name': u'trunk',
+                   u'project_link': u'http://.../firefox',
+                   u'resource_type_link': u'.../#timeline_project_series',
+                   u'self_link': u'http://.../firefox/trunk',
+                   u'status': u'Obsolete',
+                   u'uri': u'/firefox/trunk'},
+                  {u'http_etag': ...
+                   u'is_development_focus': False,
+                   u'landmarks': [{u'code_name': u'First Stable Release',
+                                   u'date': u'2004-06-28',
+                                   u'name': u'1.0.0',
+                                   u'type': u'release',
+                                   u'uri': u'/firefox/1.0/1.0.0'}],
+                   u'name': u'1.0',
+                   u'project_link': u'http://.../firefox',
+                   u'resource_type_link': u'.../#timeline_project_series',
+                   u'self_link': u'http://.../firefox/1.0',
+                   u'status': u'Active Development',
+                   u'uri': u'/firefox/1.0'},
+                  {u'http_etag': ...
+                   u'is_development_focus': False,
+                   u'landmarks': [],
+                   u'name': u'experimental',
+                   u'project_link': u'http://.../firefox',
+                   u'resource_type_link': u'.../#timeline_project_series',
+                   u'self_link': u'http://.../firefox/experimental',
+                   u'status': u'Active Development',
+                   u'uri': u'/firefox/experimental'}],
+     u'start': 0,
+     u'total_size': 3}
 
 
 Project collection
@@ -568,7 +572,9 @@ It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
     ...     "/projects", "search", text="Apache").jsonBody()
-    >>> projects = [project['display_name'] for project in project_collection['entries']]
+    >>> projects = [
+    ...     project['display_name']
+    ...     for project in project_collection['entries']]
     >>> for project_name in sorted(projects):
     ...     print project_name
     Derby
@@ -615,11 +621,8 @@ licensing.  We can find all projects with unreviewed licenses.
     ...    unreviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 Or those that are reviewed.
 
@@ -647,11 +650,8 @@ We can also find all projects with no licensing information.
     ...    no_licenses['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 We can find projects based on creation date.
 
@@ -664,10 +664,7 @@ We can find projects based on creation date.
     >>> for project in entries:
     ...     print project['display_name']
     Arch mirrors
-    Bazaar
-    Evolution
-    GNOME Terminal
-    Gnome Applets
+    ...
 
 Similarly we can find new projects.
 
@@ -680,10 +677,7 @@ Similarly we can find new projects.
     >>> for project in entries:
     ...     print project['display_name']
     APTonCD
-    Bazaar
-    Derby
-    Jokosher
-    Launchpad
+    ...
 
 All of the projects of a given license can be found.
 
@@ -892,9 +886,13 @@ milestones and releases.
     >>> timeline = webservice.named_get(
     ...     babadoo_foobadoo['self_link'], "get_timeline").jsonBody()
     >>> print pretty(timeline)
-    {u'is_development_focus': False,
+    {u'http_etag': ...
+     u'is_development_focus': False,
      u'landmarks': [],
      u'name': u'foobadoo',
+     u'project_link': u'http://.../babadoo',
+     u'resource_type_link': u'http://.../#timeline_project_series',
+     u'self_link': u'http://.../babadoo/foobadoo',
      u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
@@ -1016,9 +1014,9 @@ Only one product release can be created per milestone.
     ...     date_released='2000-01-01T01:01:01+00:00Z',
     ...     changelog='Added 5,000 features.')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 400 Bad Request
     ...
-    AssertionError: A milestone can only have one ProductRelease.
+    MultipleProductReleases: A milestone can only have one ProductRelease.
 
 
 Project release entries
@@ -1228,6 +1226,13 @@ can delete files.
     >>> print_self_link_of_entries(ff_100_files)
     http://.../firefox/1.0/1.0.0/+file/filename2.txt
 
+Anonymous users can access project release files.
+
+    >>> release_files = anon_webservice.get(
+    ...     '/firefox/1.0/1.0.0/files').jsonBody()
+    >>> print_self_link_of_entries(release_files)
+    http://.../firefox/1.0/1.0.0/+file/filename2.txt
+
 
 Commercial subscriptions
 ------------------------
@@ -1236,7 +1241,7 @@ If a project has a commercial-use subscription then it can be retrieved
 through the API.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('bac@canonical.com')
     >>> product_set = getUtility(IProductSet)
@@ -1252,7 +1257,6 @@ through the API.
 
     >>> logout()
 
-    >>> from lazr.restful.interfaces import IRepresentationCache
     >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']

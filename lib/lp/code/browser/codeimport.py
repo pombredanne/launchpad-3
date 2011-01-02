@@ -29,14 +29,10 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
     stepto,
@@ -49,6 +45,11 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
@@ -75,6 +76,7 @@ from lp.code.interfaces.codeimport import (
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
 
 
 class CodeImportSetNavigation(Navigation):

@@ -9,7 +9,7 @@ from cStringIO import StringIO
 from tarfile import TarFile
 import unittest
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.utilities.translation_export import ExportFileStorage
 
 

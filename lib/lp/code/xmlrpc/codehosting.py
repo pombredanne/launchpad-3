@@ -42,6 +42,7 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationException,
+    CannotHaveLinkedBranch,
     InvalidNamespace,
     NoLinkedBranch,
     UnknownBranchTypeError,
@@ -69,7 +70,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
     )
-from lp.registry.interfaces.product import NoSuchProduct
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    NoSuchProduct,
+    )
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split
 
@@ -339,7 +343,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                             raise faults.PathTranslationError(path)
                         branch, trailing = getUtility(
                             IBranchLookup).getByLPPath(lp_path)
-                    except (NameLookupFailed, InvalidNamespace, NoLinkedBranch):
+                    except (InvalidProductName, NoLinkedBranch,
+                            CannotHaveLinkedBranch):
+                        # If we get one of these errors, then there is no
+                        # point walking back through the path parts.
+                        break
+                    except (NameLookupFailed, InvalidNamespace):
                         # The reason we're doing it is that getByLPPath thinks
                         # that 'foo/.bzr' is a request for the '.bzr' series
                         # of a product.

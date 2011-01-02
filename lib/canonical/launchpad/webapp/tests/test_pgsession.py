@@ -22,7 +22,7 @@ from canonical.launchpad.webapp.pgsession import (
     PGSessionData,
     PGSessionDataContainer,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadLayer,
     )

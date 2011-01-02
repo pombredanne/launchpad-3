@@ -106,7 +106,7 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
-        classes = 'tab-overview main_side public yui-skin-sam'.split()
+        classes = 'tab-overview main_side public yui3-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.verify_watermark(document)
         self.assertEqual(
@@ -121,7 +121,7 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
-        classes = 'tab-overview main_only public yui-skin-sam'.split()
+        classes = 'tab-overview main_only public yui3-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.verify_watermark(document)
         self.assertEqual(
@@ -138,7 +138,7 @@ class TestBaseLayout(TestCaseWithFactory):
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
         self.verify_watermark(document)
-        classes = 'tab-overview searchless public yui-skin-sam'.split()
+        classes = 'tab-overview searchless public yui3-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.assertEqual(
             'registering', document.find(True, id='registration')['class'])
@@ -153,9 +153,27 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
-        classes = 'tab-overview locationless public yui-skin-sam'.split()
+        classes = 'tab-overview locationless public yui3-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.assertEqual(None, document.find(True, id='registration'))
         self.assertEqual(None, document.find(True, id='watermark'))
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
+
+    def test_contact_support_logged_in(self):
+        # The support link points to /support when the user is logged in.
+        view = self.makeTemplateView('main_only')
+        view._user = self.user
+        content = BeautifulSoup(view())
+        footer = find_tag_by_id(content, 'footer')
+        link = footer.find('a', text='Contact Launchpad Support').parent
+        self.assertEqual('/support', link['href'])
+
+    def test_contact_support_anonymous(self):
+        # The support link points to /feedback when the user is anonymous.
+        view = self.makeTemplateView('main_only')
+        view._user = None
+        content = BeautifulSoup(view())
+        footer = find_tag_by_id(content, 'footer')
+        link = footer.find('a', text='Contact Launchpad Support').parent
+        self.assertEqual('/feedback', link['href'])

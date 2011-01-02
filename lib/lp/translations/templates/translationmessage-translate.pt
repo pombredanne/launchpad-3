@@ -84,7 +84,7 @@
         <!-- Paging doodads. -->
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
-      <tal:status replace="structure context/pofile/@@+access" />
+      <tal:status replace="structure context/browser_pofile/@@+access" />
       </tal:havepluralforms>
       <metal:pofile-js-footer
         use-macro="context/@@+translations-macros/pofile-js-footer" />

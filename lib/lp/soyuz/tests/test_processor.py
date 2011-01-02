@@ -5,7 +5,7 @@
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,

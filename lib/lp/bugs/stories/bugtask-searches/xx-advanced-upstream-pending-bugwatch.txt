@@ -37,6 +37,11 @@ Sample Person visits the advanced search page for alsa-utils, and
 chooses to search for all bugs that need to be forwarded upstream.
 He sees one match.
 
+    >>> # alsa-utils must use an external bugtracker to view bugs
+    >>> # forwarded to an upstream.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('alsa-utils', bug_tracking_usage='EXTERNAL')
+
     >>> browser.open('http://bugs.launchpad.dev/alsa-utils/+bugs?advanced=1')
     >>> pending_bugwatch_label = (
     ...     'Show bugs that need to be forwarded to an upstream '

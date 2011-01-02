@@ -243,15 +243,20 @@ class OAuthRequest(object):
     @staticmethod
     def _split_header(header):
         params = {}
+        header = header.lstrip()
+        if not header.startswith('OAuth '):
+            raise ValueError("not an OAuth header: %r" % header)
+        header = header[6:]
         parts = header.split(',')
         for param in parts:
-            # ignore realm parameter
-            if param.find('OAuth realm') > -1:
-                continue
             # remove whitespace
             param = param.strip()
             # split key-value
             param_parts = param.split('=', 1)
+            if param_parts[0] == 'realm':
+                # Realm header is not an OAuth parameter according to rfc5849
+                # section 3.4.1.3.1.
+                continue
             # remove quotes and unescape the value
             params[param_parts[0]] = urllib.unquote(param_parts[1].strip('\"'))
         return params

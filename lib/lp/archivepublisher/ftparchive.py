@@ -8,7 +8,6 @@ import subprocess
 
 from storm.expr import (
     Desc,
-    In,
     Join,
     )
 from storm.store import EmptyResultSet
@@ -23,10 +22,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.archivepublisher.utils import process_in_batches
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
@@ -53,6 +49,7 @@ def safe_mkdir(path):
 # XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
 # timeout handling and stderr passthrough, could be a single method used for
 # this and the similar requirement in test_on_merge.py.
+
 def run_subprocess_with_logging(process_and_args, log, prefix):
     """Run a subprocess, gathering the output as it runs and logging it.
 
@@ -143,21 +140,13 @@ class FTPArchiveHandler:
     Generates file lists and configuration for apt-ftparchive, and kicks
     off generation of the Sources and Releases files.
     """
+
     def __init__(self, log, config, diskpool, distro, publisher):
         self.log = log
         self._config = config
         self._diskpool = diskpool
         self.distro = distro
-        self.distroseries = []
-        for distroseries in self.distro.series:
-            if not distroseries.name in self._config.distroSeriesNames():
-                self.log.warning("Distroseries %s in %s doesn't have "
-                    "a lucille configuration.", distroseries.name,
-                    self.distro.name)
-            else:
-                self.distroseries.append(distroseries)
         self.publisher = publisher
-        self.release_files_needed = {}
 
         # We need somewhere to note down where the debian-installer
         # components came from. in _di_release_components we store
@@ -192,20 +181,17 @@ class FTPArchiveHandler:
     #
     # Empty Pocket Requests
     #
-
     def createEmptyPocketRequests(self, fullpublish=False):
         """Write out empty file lists etc for pockets.
 
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        # XXX: kiko 2006-08-24: suffix is completely unnecessary here. Just
-        # iterate over the pockets, and do the suffix check inside
-        # createEmptyPocketRequest; that would also allow us to replace
-        # the == "" check we do there by a RELEASE match
-        for distroseries in self.distroseries:
-            components = self._config.componentsForSeries(distroseries.name)
-            for pocket, suffix in pocketsuffix.items():
+        for distroseries in self.distro.series:
+            components = [
+                comp.name for comp in
+                self.publisher.archive.getComponentsForSeries(distroseries)]
+            for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -213,29 +199,15 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
+                self.publisher.release_files_needed.add(
+                    (distroseries.name, pocket))
+
                 for comp in components:
-                    self.createEmptyPocketRequest(distroseries, suffix, comp)
+                    self.createEmptyPocketRequest(distroseries, pocket, comp)
 
-    def requestReleaseFile(self, suite_name, component_name, arch_name):
-        """Request Release file generation for given context.
-
-        'suite_name', 'component_name' and 'arch_name' will be organised as
-        a dictionary (self.release_files_needed) keyed by 'suite_name' which
-        value will be another dictionary keyed by 'component_name' and
-        containing a set of 'arch_name's as value.
-        """
-        suite_special = self.release_files_needed.setdefault(
-            suite_name, {})
-        suite_component_special = suite_special.setdefault(
-            component_name, set())
-        suite_component_special.add(arch_name)
-
-    def createEmptyPocketRequest(self, distroseries, suffix, comp):
+    def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
-        full_distroseries_name = distroseries.name + suffix
-        arch_tags = self._config.archTagsForSeries(distroseries.name)
-
-        if suffix == "":
+        if pocket == PackagePublishingPocket.RELEASE:
             # organize distroseries and component pair as
             # debian-installer -> distroseries_component
             # internal map. Only the main pocket actually
@@ -246,39 +218,31 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
-        # Touch the source file lists and override files
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, "extra", comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, comp, "src"]))
+        suite = distroseries.getSuite(pocket)
 
-        dr_comps = self.release_files_needed.setdefault(
-            full_distroseries_name, {})
+        # Create empty override lists.
+        for path in ((comp, ), ("extra", comp), (comp, "src")):
+            f_touch(os.path.join(
+                self._config.overrideroot,
+                ".".join(("override", suite) + path)))
 
-        f_touch(self._config.overrideroot,
-                "_".join([full_distroseries_name, comp, "source"]))
-        dr_comps.setdefault(comp, set()).add("source")
+        # Create empty file lists.
+        def touch_list(*parts):
+            f_touch(os.path.join(
+                self._config.overrideroot,
+                "_".join((suite, ) + parts)))
+        touch_list(comp, "source")
 
+        arch_tags = [
+            a.architecturetag for a in distroseries.enabled_architectures]
         for arch in arch_tags:
-            # organize dr/comp/arch into temporary binary
-            # archive map for the architecture in question.
-            dr_special = self.release_files_needed.setdefault(
-                full_distroseries_name, {})
-            dr_special.setdefault(comp, set()).add("binary-"+arch)
-
             # Touch more file lists for the archs.
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distroseries_name, comp, "binary-"+arch]))
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distroseries_name, comp,
-                              "debian-installer", "binary-"+arch]))
+            touch_list(comp, "binary-" + arch)
+            touch_list(comp, "debian-installer", "binary-" + arch)
 
     #
     # Override Generation
     #
-
     def getSourcesForOverrides(self, distroseries, pocket):
         """Fetch override information about all published sources.
 
@@ -318,7 +282,8 @@ class FTPArchiveHandler:
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section = result
             return (name, suite, component, section)
@@ -367,13 +332,14 @@ class FTPArchiveHandler:
             (BinaryPackageName.name, Component.name, Section.name,
              BinaryPackagePublishingHistory.priority),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
-            In(BinaryPackagePublishingHistory.distroarchseriesID,
-               architectures_ids),
+            BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                architectures_ids),
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section, priority = result
             return (name, suite, component, section, priority.title.lower())
@@ -384,7 +350,7 @@ class FTPArchiveHandler:
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -464,12 +430,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source overrides")
+
         def update_source_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
             source_publications, update_source_override, self.log)
 
         self.log.debug("Calculating binary overrides")
+
         def update_binary_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
@@ -516,7 +484,7 @@ class FTPArchiveHandler:
 
         # Start to write the files out
         ef = open(ef_override, "w")
-        f = open(main_override , "w")
+        f = open(main_override, "w")
         for package, priority, section in bin_overrides:
             origin = "\t".join([package, "Origin", "Ubuntu"])
             bugs = "\t".join([package, "Bugs",
@@ -569,7 +537,6 @@ class FTPArchiveHandler:
     #
     # File List Generation
     #
-
     def getSourceFiles(self, distroseries, pocket):
         """Fetch publishing information about all published source files.
 
@@ -598,7 +565,8 @@ class FTPArchiveHandler:
             SourcePackageFilePublishing.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component = result
             return (name, suite, filename, component)
@@ -635,7 +603,8 @@ class FTPArchiveHandler:
             BinaryPackageFilePublishing.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component, architecturetag = result
             architecture = 'binary-' + architecturetag
@@ -647,8 +616,8 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        for distroseries in self.distroseries:
-            for pocket in pocketsuffix:
+        for distroseries in self.distro.series:
+            for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -684,12 +653,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source filelist.")
+
         def update_source_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
             sourcefiles, update_source_filelist, self.log)
 
         self.log.debug("Calculating binary filelist.")
+
         def update_binary_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
@@ -699,6 +670,14 @@ class FTPArchiveHandler:
             self.log.debug("Writing file lists for %s" % suite)
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
+                    # XXX wgrant 2010-10-06: There must be a better place to
+                    # do this.
+                    series, pocket = (
+                        self.distro.getDistroSeriesAndPocket(suite))
+                    if (architecture != 'source' and
+                        not series.getDistroArchSeries(
+                            architecture[7:]).enabled):
+                        continue
                     self.writeFileList(architecture, file_names,
                                        suite, component)
 
@@ -707,9 +686,6 @@ class FTPArchiveHandler:
 
         Also outputs a debian-installer file list if necessary.
         """
-        self.release_files_needed.setdefault(
-            dr_pocketed, {}).setdefault(component, set()).add(arch)
-
         files = []
         di_files = []
         f_path = os.path.join(self._config.overrideroot,
@@ -746,7 +722,6 @@ class FTPArchiveHandler:
     #
     # Config Generation
     #
-
     def generateConfig(self, fullpublish=False):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
@@ -767,14 +742,13 @@ class FTPArchiveHandler:
 
         # confixtext now contains a basic header. Add a dists entry for
         # each of the distroseries we've touched
-        for distroseries_name in self._config.distroSeriesNames():
-            distroseries = self.distro[distroseries_name]
-            for pocket in pocketsuffix:
+        for distroseries in self.distro.series:
+            for pocket in PackagePublishingPocket.items:
 
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         self.log.debug("Skipping a-f stanza for %s/%s" %
-                                           (distroseries_name, pocket.name))
+                                           (distroseries.name, pocket.name))
                         continue
                     self.publisher.checkDirtySuiteBeforePublishing(
                         distroseries, pocket)
@@ -782,8 +756,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                self.generateConfigForPocket(
-                    apt_config, distroseries, distroseries_name, pocket)
+                self.generateConfigForPocket(apt_config, distroseries, pocket)
 
         # And now return that string.
         s = apt_config.getvalue()
@@ -795,49 +768,22 @@ class FTPArchiveHandler:
         fp.close()
         return apt_config_filename
 
-    def generateConfigForPocket(self, apt_config, distroseries,
-                                distroseries_name, pocket):
+    def generateConfigForPocket(self, apt_config, distroseries, pocket):
         """Generates the config stanza for an individual pocket."""
-        dr_pocketed = distroseries_name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
 
-        # XXX kiko 2006-08-24: I have no idea what the code below is meant
-        # to do -- it appears to be a rehash of createEmptyPocketRequests.
-        archs = self._config.archTagsForSeries(distroseries_name)
-        comps = self._config.componentsForSeries(distroseries_name)
-        for comp in comps:
-            comp_path = os.path.join(self._config.overrideroot,
-                                     "_".join([dr_pocketed, comp, "source"]))
-            if not os.path.exists(comp_path):
-                # Create empty files so that even if we don't output
-                # anything here apt-ftparchive will DTRT
-                f_touch(comp_path)
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp]))
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp, "src"]))
+        archs = [
+            a.architecturetag for a in distroseries.enabled_architectures]
+        comps = [
+            comp.name for comp in
+            self.publisher.archive.getComponentsForSeries(distroseries)]
 
-        if len(comps) == 0:
-            self.log.debug("Did not find any components to create config "
-                           "for %s" % dr_pocketed)
-            return
-
-        # Second up, pare archs down as appropriate
-        for arch in archs:
-            # XXX: kiko 2006-08-24: why is it comps[0] here?
-            arch_path = os.path.join(self._config.overrideroot,
-                "_".join([dr_pocketed, comps[0], "binary-"+arch]))
-            if not os.path.exists(arch_path):
-                # Create an empty file if we don't have one so that
-                # apt-ftparchive will dtrt.
-                f_touch(arch_path)
-        # XXX kiko 2006-08-24: End uncomprehensible code.
-
-        self.log.debug("Generating apt config for %s" % dr_pocketed)
+        self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {
                          "LISTPATH": self._config.overrideroot,
-                         "DISTRORELEASE": dr_pocketed,
-                         "DISTRORELEASEBYFILE": dr_pocketed,
-                         "DISTRORELEASEONDISK": dr_pocketed,
+                         "DISTRORELEASE": suite,
+                         "DISTRORELEASEBYFILE": suite,
+                         "DISTRORELEASEONDISK": suite,
                          "ARCHITECTURES": " ".join(archs + ["source"]),
                          "SECTIONS": " ".join(comps),
                          "EXTENSIONS": ".deb",
@@ -845,28 +791,28 @@ class FTPArchiveHandler:
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": ""})
 
-        if archs and dr_pocketed in self._di_release_components:
-            for component in self._di_release_components[dr_pocketed]:
+        if archs and suite in self._di_release_components:
+            for component in self._di_release_components[suite]:
                 apt_config.write(STANZA_TEMPLATE % {
                     "LISTPATH": self._config.overrideroot,
-                    "DISTRORELEASEONDISK": "%s/%s" % (dr_pocketed, component),
-                    "DISTRORELEASEBYFILE": "%s_%s" % (dr_pocketed, component),
-                    "DISTRORELEASE": "%s.%s" % (dr_pocketed, component),
+                    "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
+                    "DISTRORELEASEBYFILE": "%s_%s" % (suite, component),
+                    "DISTRORELEASE": "%s.%s" % (suite, component),
                     "ARCHITECTURES": " ".join(archs),
                     "SECTIONS": "debian-installer",
                     "EXTENSIONS": ".udeb",
                     "CACHEINSERT": "debian-installer-",
                     "DISTS": os.path.basename(self._config.distsroot),
-                    "HIDEEXTRA": "// "
+                    "HIDEEXTRA": "// ",
                     })
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
         for comp in comps:
-            component_path = os.path.join(self._config.distsroot,
-                                          dr_pocketed, comp)
+            component_path = os.path.join(
+                self._config.distsroot, suite, comp)
             base_paths = [component_path]
-            if dr_pocketed in self._di_release_components:
-                if comp in self._di_release_components[dr_pocketed]:
+            if suite in self._di_release_components:
+                if comp in self._di_release_components[suite]:
                     base_paths.append(os.path.join(component_path,
                                                    "debian-installer"))
             for base_path in base_paths:
@@ -874,4 +820,3 @@ class FTPArchiveHandler:
                     safe_mkdir(os.path.join(base_path, "source"))
                 for arch in archs:
                     safe_mkdir(os.path.join(base_path, "binary-"+arch))
-

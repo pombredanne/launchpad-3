@@ -11,12 +11,15 @@ __all__ = [
     "BuildDaemonUploadPolicy",
     "findPolicyByName",
     "IArchiveUploadPolicy",
-    "SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME",
     "UploadPolicyError",
     ]
 
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -26,16 +29,11 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 
-from lazr.enum import EnumeratedType, Item
-
-
-# Defined here so that uploadpolicy.py doesn't depend on lp.code.
-SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
 # Number of seconds in an hour (used later)
 HOURS = 3600
 
@@ -128,13 +126,8 @@ class AbstractUploadPolicy:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
 
-    def getUploader(self, changes):
-        """Get the person who is doing the uploading."""
-        return changes.signer
-
     def setOptions(self, options):
         """Store the options for later."""
-        self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
         if options.distroseries is not None:
@@ -222,26 +215,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
-        """Reject the upload if not signed by an Ubuntu CoC signer."""
-        if not upload.changes.signer.is_ubuntu_coc_signer:
-            upload.reject(
-                'PPA uploads must be signed by an Ubuntu '
-                'Code of Conduct signer.')
-
-    def checkSignerIsBetaTester(self, upload):
-        """Reject the upload if the upload signer is not a 'beta-tester'.
-
-        For being a 'beta-tester' a person must be a valid member of
-        launchpad-beta-tester team/celebrity.
-        """
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        if not upload.changes.signer.inTeam(beta_testers):
-            upload.reject(
-                "PPA is only allowed for members of "
-                "launchpad-beta-testers team.")
-
     def checkArchiveSizeQuota(self, upload):
         """Reject the upload if target archive size quota will be exceeded.
 
@@ -284,18 +257,10 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is targeted to any PPA, checks if the signer is an
-        Ubuntu Code of Conduct signer, and if so is a member of
-        'launchpad-beta-tests'.
+        If the upload is targeted to any PPA, checks if the upload is within
+        the allowed quota.
         """
         if upload.is_ppa:
-            # XXX cprov 2007-06-13: checks for PPA uploads are not yet
-            # established. We may decide for only one of the checks.  Either
-            # in a specific team or having an Ubuntu CoC signer (or similar
-            # flag). This code will be revisited before releasing PPA
-            # publicly.
-            self.checkSignerIsUbuntuCodeOfConductSignee(upload)
-            #self.checkSignerIsBetaTester(upload)
             self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
@@ -324,7 +289,6 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     name = 'buildd'
-    accepted_type = ArchiveUploadType.BINARY_ONLY
 
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
@@ -333,11 +297,9 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         self.unsigned_dsc_ok = True
 
     def setOptions(self, options):
-        AbstractUploadPolicy.setOptions(self, options)
-        # We require a buildid to be provided
-        if (getattr(options, 'buildid', None) is None and
-            not getattr(options, 'builds', False)):
-            raise UploadPolicyError("BuildID required for buildd context")
+        """Store the options for later."""
+        super(BuildDaemonUploadPolicy, self).setOptions(options)
+        options.builds = True
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""
@@ -348,6 +310,15 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""
         return False
+
+    def validateUploadType(self, upload):
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+        elif not upload.sourceful and not upload.binaryful:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

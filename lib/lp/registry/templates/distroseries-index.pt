@@ -83,7 +83,8 @@
 
           <div
             tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/@@+get-involved/official_blueprints" />
+            tal:define="blueprints_usage context/@@+get-involved/blueprints_usage"
+            condition="blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div
            tal:replace="structure context/distribution/@@+portlet-coming-sprints" />

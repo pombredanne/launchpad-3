@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

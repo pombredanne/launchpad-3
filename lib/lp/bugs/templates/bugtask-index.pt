@@ -20,8 +20,6 @@
         });
       </script>
       <style type="text/css">
-        /* A page-specific fix for inline text are editing to line up box. */
-        #edit-description .yui-ieditor-input { top: 0; }
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
@@ -197,7 +195,7 @@
           </tal:branches>
         </div><!-- bug-branch-container -->
 
-        <div tal:condition="context/bug/cves" class="cves">
+        <div tal:condition="context/bug/has_cves" class="cves">
           <h2>CVE References</h2>
           <ul>
             <li class="sprite cve" tal:repeat="cve context/bug/cves">
@@ -217,8 +215,8 @@
           <tal:is-comment
               define="comment comment_or_activity/comment|nothing"
               condition="comment">
-            <tal:comment-box condition="python: comment.can_be_shown and
-                                       (view.user_is_admin or
+            <tal:comment-box condition="python: (
+                                       view.user_is_admin or
                                        comment.visible)"
                              replace="structure comment/@@+box">
             </tal:comment-box>
@@ -314,7 +312,7 @@
             Displaying first <span
             tal:replace="view/visible_oldest_comments_for_display/count:len">23</span>
             and last <span
-            tal:replace="view/visible_newest_comments_for_display/count:len">32</span>
+            tal:replace="view/visible_recent_comments_for_display/count:len">32</span>
             comments.
             <tal:what-next
                 define="view_all_href

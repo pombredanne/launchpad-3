@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views which export vocabularies as JSON for widgets."""
@@ -34,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.app.browser.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
@@ -81,6 +81,7 @@ def default_pickerentry_adapter(obj):
         extra.css = 'sprite bullet'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IPerson)
 def person_to_pickerentry(person):
@@ -93,6 +94,7 @@ def person_to_pickerentry(person):
             extra.description = '<email address hidden>'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IBranch)
 def branch_to_pickerentry(branch):
@@ -100,6 +102,7 @@ def branch_to_pickerentry(branch):
     extra = default_pickerentry_adapter(branch)
     extra.description = branch.bzr_identity
     return extra
+
 
 @implementer(IPickerEntry)
 @adapter(ISourcePackageName)

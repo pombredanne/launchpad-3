@@ -39,9 +39,9 @@ translation group of its own, that too is shown here.
     >>> import re
 
     >>> from canonical.database.constants import UTC_NOW
-    >>> from lp.services.worlddata.model.language import Language
     >>> from lp.registry.model.person import Person
     >>> from lp.registry.model.product import Product
+    >>> from lp.services.worlddata.model.language import Language
     >>> from lp.translations.model.translationgroup import (
     ...     TranslationGroup)
 
@@ -126,8 +126,7 @@ and reviewer working mode.
 If Evolution's translation is set to Closed mode, Joe will not be able
 to submit suggestions.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'

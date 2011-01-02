@@ -325,8 +325,9 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, ILibraryFileAliasSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

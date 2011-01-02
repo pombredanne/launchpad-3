@@ -10,6 +10,9 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
+from lp.archiveuploader.uploadprocessor import (
+    UploadStatusEnum,
+    )
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
@@ -17,7 +20,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.soyuz.enums import PackageUploadStatus
 
 
 class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
@@ -40,8 +42,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
             requester=self.recipe.owner)
 
         Store.of(self.build).flush()
-        self.options.context = 'recipe'
-        self.options.buildid = self.build.id
+        self.options.context = 'buildd'
 
         self.uploadprocessor = self.getUploadProcessor(
             self.layer.txn)
@@ -54,19 +55,14 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.assertIs(None, self.build.source_package_release)
         self.assertEqual(False, self.build.verifySuccessfulUpload())
         self.queueUpload('bar_1.0-1', '%d/ubuntu' % self.build.archive.id)
-        self.uploadprocessor.processChangesFile(
+        result = self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", 'bar_1.0-1'),
-            '%d/ubuntu/bar_1.0-1_source.changes' % self.build.archive.id)
+            '%d/ubuntu/bar_1.0-1_source.changes' % self.build.archive.id,
+            build=self.build)
         self.layer.txn.commit()
 
-        queue_item = self.uploadprocessor.last_processed_upload.queue_root
-        self.assertTrue(
-            queue_item is not None,
-            "Source upload failed\nGot: %s" % "\n".join(self.log.lines))
+        self.assertEquals(UploadStatusEnum.ACCEPTED, result,
+            "Source upload failed\nGot: %s" % self.log.getLogBuffer())
 
-        self.assertEqual(PackageUploadStatus.DONE, queue_item.status)
-        spr = queue_item.sources[0].sourcepackagerelease
-        self.assertEqual(self.build, spr.source_package_recipe_build)
-        self.assertEqual(spr, self.build.source_package_release)
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertEqual(True, self.build.verifySuccessfulUpload())

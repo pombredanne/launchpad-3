@@ -22,6 +22,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -81,3 +82,29 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.failUnless(
             content.find('a', href='+featuredprojects'),
             "Cannot find the +featuredprojects link on the first page")
+
+
+class TestLaunchpadRootNavigation(TestCaseWithFactory):
+    """Test for the LaunchpadRootNavigation."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_support(self):
+        # The /support link redirects to answers.
+        context, view, request = test_traverse(
+            'http://launchpad.dev/support')
+        view()
+        self.assertEqual(301, request.response.getStatus())
+        self.assertEqual(
+            'http://answers.launchpad.dev/launchpad',
+            request.response.getHeader('location'))
+
+    def test_feedback(self):
+        # The /feedback link redirects to the help site.
+        context, view, request = test_traverse(
+            'http://launchpad.dev/feedback')
+        view()
+        self.assertEqual(301, request.response.getStatus())
+        self.assertEqual(
+            'https://help.launchpad.net/Feedback',
+            request.response.getHeader('location'))

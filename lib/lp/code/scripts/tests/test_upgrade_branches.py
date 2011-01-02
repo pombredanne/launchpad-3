@@ -10,7 +10,7 @@ from bzrlib.branch import Branch as BzrBranch
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branch import (
     BranchFormat,
     RepositoryFormat,

@@ -58,7 +58,6 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -71,17 +70,19 @@ from lp.archiveuploader.nascentupload import (
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     UploadPolicyError,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
 
 __all__ = [
@@ -104,11 +105,11 @@ def parse_build_upload_leaf_name(name):
     """Parse the leaf directory name of a build upload.
 
     :param name: Directory name.
-    :return: Tuple with build id and build queue record id.
+    :return: Tuple with build farm job id.
     """
-    (build_id_str, queue_record_str) = name.split("-", 1)
+    (job_id_str,) = name.split("-")[-1:]
     try:
-        return int(build_id_str), int(queue_record_str)
+        return int(job_id_str)
     except TypeError:
         raise ValueError
 
@@ -191,7 +192,7 @@ class UploadProcessor:
                     continue
                 if self.builds:
                     # Upload directories contain build results,
-                    # directories are named after build ids.
+                    # directories are named after job ids.
                     self.processBuildUpload(fsroot, upload)
                 else:
                     self.processUpload(fsroot, upload)
@@ -205,22 +206,33 @@ class UploadProcessor:
         The name of the leaf is the build id of the build.
         Build uploads always contain a single package per leaf.
         """
+        upload_path = os.path.join(fsroot, upload)
         try:
-            (build_id, build_queue_record_id) = parse_build_upload_leaf_name(
-                upload)
+            job_id = parse_build_upload_leaf_name(upload)
         except ValueError:
             self.log.warn("Unable to extract build id from leaf name %s,"
                 " skipping." % upload)
             return
-        build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
-        self.log.debug("Build %s found" % build.id)
+        try:
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+        except NotFoundError:
+            self.log.warn(
+                "Unable to find package build job with id %d. Skipping." %
+                job_id)
+            return
         logger = BufferLogger()
-        upload_path = os.path.join(fsroot, upload)
+        build = buildfarm_job.getSpecificJob()
+        if build.status != BuildStatus.UPLOADING:
+            self.log.warn(
+                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                build.status.name)
+            return
+        self.log.debug("Build %s found" % build.id)
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(
-                upload_path, changes_file, logger)
+                upload_path, changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -237,14 +249,15 @@ class UploadProcessor:
             UploadStatusEnum.FAILED: "failed",
             UploadStatusEnum.REJECTED: "rejected",
             UploadStatusEnum.ACCEPTED: "accepted"}[result]
-        self.moveProcessedUpload(upload_path, destination, logger)
+        build.date_finished = datetime.datetime.now(pytz.UTC)
         if not (result == UploadStatusEnum.ACCEPTED and
                 build.verifySuccessfulUpload() and
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
-            build.date_finished = datetime.datetime.now(pytz.UTC)
             build.notify(extra_info="Uploading build %s failed." % upload)
-        build.storeUploadLog(logger.buffer.getvalue())
+            build.storeUploadLog(logger.getLogBuffer())
+        self.ztm.commit()
+        self.moveProcessedUpload(upload_path, destination, logger)
 
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
@@ -360,7 +373,8 @@ class UploadProcessor:
                         os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
-    def processChangesFile(self, upload_path, changes_file, logger=None):
+    def processChangesFile(self, upload_path, changes_file, logger=None,
+                           build=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -416,7 +430,7 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution)
+        policy = self._getPolicyForDistro(distribution, build)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -434,10 +448,8 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        is_not_buildd_nor_recipe_policy = policy.name not in [
-            SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-            BuildDaemonUploadPolicy.name]
-        if first_path.isdigit() and is_not_buildd_nor_recipe_policy:
+        if (first_path.isdigit() and
+            policy.name != BuildDaemonUploadPolicy.name):
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))
@@ -456,7 +468,7 @@ class UploadProcessor:
             result = UploadStatusEnum.ACCEPTED
 
             try:
-                upload.process()
+                upload.process(build)
             except UploadPolicyError, e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
@@ -497,7 +509,8 @@ class UploadProcessor:
                 upload.do_reject(notify)
                 self.ztm.abort()
             else:
-                successful = upload.do_accept(notify=notify)
+                successful = upload.do_accept(
+                    notify=notify, build=build)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     logger.info(
@@ -505,9 +518,9 @@ class UploadProcessor:
                     self.ztm.abort()
 
             if upload.is_rejected:
-                logger.warn("Upload was rejected:")
+                logger.info("Upload was rejected:")
                 for msg in upload.rejections:
-                    logger.warn("\t%s" % msg)
+                    logger.info("\t%s" % msg)
 
             if self.dry_run:
                 logger.info("Dry run, aborting transaction.")

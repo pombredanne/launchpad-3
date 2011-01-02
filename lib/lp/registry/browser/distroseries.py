@@ -11,6 +11,7 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesLocalDifferences',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
@@ -20,14 +21,17 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.schema import Choice
+from zope.schema import (
+    Choice,
+    List,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import (
     _,
@@ -43,10 +47,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -59,7 +59,12 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
+from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -71,7 +76,12 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
@@ -142,6 +152,11 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
     @stepthrough('+upload')
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
+
+    @stepthrough('+difference')
+    def traverse_difference(self, name):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        return dsd_source.getByDistroSeriesAndName(self.context, name)
 
 
 class DistroSeriesBreadcrumb(Breadcrumb):
@@ -360,6 +375,10 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     milestone_can_release = False
 
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
@@ -521,3 +540,101 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator
+
+
+class IDifferencesFormSchema(Interface):
+    selected_differences = List(
+        title=_('Selected differences'),
+        value_type=Choice(vocabulary=SimpleVocabulary([])),
+        description=_("Select the differences for syncing."),
+        required=True)
+
+
+class DistroSeriesLocalDifferences(LaunchpadFormView):
+    """Present differences between a derived series and its parent."""
+    schema = IDifferencesFormSchema
+    custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
+
+    page_title = 'Local package differences'
+
+    def initialize(self):
+        """Redirect to the derived series if the feature is not enabled."""
+        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        # Update the label for sync action.
+        self.__class__.actions.byname['actions.sync'].label = (
+            "Sync Selected %s Versions into %s" % (
+                self.context.parent_series.displayname,
+                self.context.displayname,
+                ))
+        super(DistroSeriesLocalDifferences, self).initialize()
+
+    @property
+    def label(self):
+        return (
+            "Source package differences between '%s' and "
+            "parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of potentially filtered results."""
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        differences = utility.getForDistroSeries(self.context)
+        return BatchNavigator(differences, self.request)
+
+    def setUpFields(self):
+        """Add the selected differences field.
+
+        As this field depends on other search/filtering field values
+        for its own vocabulary, we set it up after all the others.
+        """
+        super(DistroSeriesLocalDifferences, self).setUpFields()
+        has_edit = check_permission('launchpad.Edit', self.context)
+
+        terms = [
+            SimpleTerm(diff, diff.source_package_name.name,
+                diff.source_package_name.name)
+                for diff in self.cached_differences.batch]
+        diffs_vocabulary = SimpleVocabulary(terms)
+        choice = self.form_fields['selected_differences'].field.value_type
+        choice.vocabulary = diffs_vocabulary
+
+    @action(_("Sync Sources"), name="sync", validator='validate_sync',
+            condition='canPerformSync')
+    def sync_sources(self, action, data):
+        """Mark the diffs as syncing and request the sync.
+
+        Currently this is a stub operation, the details of which will
+        be implemented later.
+        """
+        selected_differences = data['selected_differences']
+        diffs = [
+            diff.source_package_name.name
+                for diff in selected_differences]
+
+        self.request.response.addNotification(
+            "The following sources would have been synced if this "
+            "wasn't just a stub operation: " + ", ".join(diffs))
+
+        self.next_url = self.request.URL
+
+    def validate_sync(self, action, data):
+        """Validate selected differences."""
+        form.getWidgetsData(self.widgets, self.prefix, data)
+
+        if len(data.get('selected_differences', [])) == 0:
+            self.setFieldError(
+                'selected_differences', 'No differences selected.')
+
+    def canPerformSync(self, *args):
+        """Return whether a sync can be performed.
+
+        This method is used as a condition for the above sync action, as
+        well as directly in the template.
+        """
+        return check_permission('launchpad.Edit', self.context)

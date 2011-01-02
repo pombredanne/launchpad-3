@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
+    'sendStatusChangeNotification',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -45,24 +46,28 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.registry.errors import (
+    TeamMembershipTransitionError,
+    UserCannotChangeMembershipSilently,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
     validate_public_person,
     )
+from lp.registry.interfaces.persontransferjob import (
+    IMembershipNotificationJobSource,
+    )
 from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
     CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ITeamMembership,
     ITeamMembershipSet,
     ITeamParticipation,
     TeamMembershipStatus,
-    UserCannotChangeMembershipSilently,
     )
-
-
-ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class TeamMembership(SQLBase):
@@ -331,11 +336,14 @@ class TeamMembership(SQLBase):
             declined: [proposed, approved, admin],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
-        assert self.status in state_transition, (
-            "Unknown status: %s" % self.status.name)
-        assert status in state_transition[self.status], (
-            "Bad state transition from %s to %s"
-            % (self.status.name, status.name))
+
+        if self.status not in state_transition:
+            raise TeamMembershipTransitionError(
+                "Unknown status: %s" % self.status.name)
+        if status not in state_transition[self.status]:
+            raise TeamMembershipTransitionError(
+                "Bad state transition from %s to %s"
+                % (self.status.name, status.name))
 
         if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
@@ -400,96 +408,11 @@ class TeamMembership(SQLBase):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
         """
-        team = self.team
-        member = self.person
         reviewer = self.last_changed_by
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
         new_status = self.status
-        admins_emails = team.getTeamAdminsEmailAddresses()
-        # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = get_contact_email_addresses(member)
-        # Make sure we don't send the same notification twice to anybody.
-        for email in member_email:
-            if email in admins_emails:
-                admins_emails.remove(email)
-
-        if reviewer != member:
-            reviewer_name = reviewer.unique_displayname
-        else:
-            # The user himself changed his membership.
-            reviewer_name = 'the user himself'
-
-        if self.last_change_comment:
-            comment = ("\n%s said:\n %s\n" % (
-                reviewer.displayname, self.last_change_comment.strip()))
-        else:
-            comment = ""
-
-        replacements = {
-            'member_name': member.unique_displayname,
-            'recipient_name': member.displayname,
-            'team_name': team.unique_displayname,
-            'team_url': canonical_url(team),
-            'old_status': old_status.title,
-            'new_status': new_status.title,
-            'reviewer_name': reviewer_name,
-            'comment': comment}
-
-        template_name = 'membership-statuschange'
-        subject = ('Membership change: %(member)s in %(team)s'
-                   % {'member': member.name, 'team': team.name})
-        if new_status == TeamMembershipStatus.EXPIRED:
-            template_name = 'membership-expired'
-            subject = '%s expired from team' % member.name
-        elif (new_status == TeamMembershipStatus.APPROVED and
-              old_status != TeamMembershipStatus.ADMIN):
-            if old_status == TeamMembershipStatus.INVITED:
-                subject = ('Invitation to %s accepted by %s'
-                           % (member.name, reviewer.name))
-                template_name = 'membership-invitation-accepted'
-            elif old_status == TeamMembershipStatus.PROPOSED:
-                subject = '%s approved by %s' % (member.name, reviewer.name)
-            else:
-                subject = '%s added by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            subject = ('Invitation to %s declined by %s'
-                       % (member.name, reviewer.name))
-            template_name = 'membership-invitation-declined'
-        elif new_status == TeamMembershipStatus.DEACTIVATED:
-            subject = '%s deactivated by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.ADMIN:
-            subject = '%s made admin by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.DECLINED:
-            subject = '%s declined by %s' % (member.name, reviewer.name)
-        else:
-            # Use the default template and subject.
-            pass
-
-        if admins_emails:
-            admins_template = get_email_template(
-                "%s-bulk.txt" % template_name)
-            for address in admins_emails:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    admins_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
-
-        # The member can be a team without any members, and in this case we
-        # won't have a single email address to send this notification to.
-        if member_email and reviewer != member:
-            if member.isTeam():
-                template = '%s-bulk.txt' % template_name
-            else:
-                template = '%s-personal.txt' % template_name
-            member_template = get_email_template(template)
-            for address in member_email:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    member_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
+        getUtility(IMembershipNotificationJobSource).create(
+            self.person, self.team, reviewer, old_status, new_status,
+            self.last_change_comment)
 
 
 class TeamMembershipSet:
@@ -561,7 +484,8 @@ class TeamMembershipSet:
             from lp.registry.model.person import Person
             conditions.append(TeamMembership.team == Person.id)
             conditions.append(
-                Person.renewal_policy != TeamMembershipRenewalPolicy.AUTOMATIC)
+                Person.renewal_policy !=
+                    TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
 
 
@@ -588,7 +512,8 @@ def _cleanTeamParticipation(person, team):
             SELECT 1 FROM TeamParticipation
             WHERE person = %(person_id)s AND team IN (
                     SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    FROM TeamParticipation JOIN Person ON
+                        (person = Person.id)
                     WHERE team = %(team_id)s
                         AND person NOT IN (%(team_id)s, %(person_id)s)
                         AND teamowner IS NOT NULL

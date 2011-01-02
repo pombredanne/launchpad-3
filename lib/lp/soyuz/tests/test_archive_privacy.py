@@ -6,7 +6,7 @@
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

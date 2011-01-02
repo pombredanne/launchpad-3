@@ -11,7 +11,6 @@ __all__ = [
 
 import datetime
 from operator import attrgetter
-import os
 
 import gettextpo
 import posixpath
@@ -21,7 +20,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
@@ -33,6 +31,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -44,9 +43,7 @@ from lp.translations.interfaces.translationimporter import (
     NotExportedFromLaunchpad,
     OutdatedTranslationError,
     )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationmessage import TranslationConflict
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
@@ -282,6 +279,7 @@ class ExistingPOFileInDatabase:
         else:
             return False
 
+
 class TranslationImporter:
     """Handle translation resources imports."""
 
@@ -345,13 +343,13 @@ class TranslationImporter:
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
-            "The translation import queue entry cannot be None.")
+            "Import queue entry cannot be None.")
         assert (translation_import_queue_entry.status ==
                 RosettaImportStatus.APPROVED), (
-                "The entry is not approved!.")
+            "Import queue entry is not approved.")
         assert (translation_import_queue_entry.potemplate is not None or
                 translation_import_queue_entry.pofile is not None), (
-                "The entry has not any import target.")
+            "Import queue entry has no import target.")
 
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
@@ -438,7 +436,7 @@ class FileImporter(object):
         is added to the list in self.errors but the translations are stored
         anyway, marked as having an error.
 
-        :param message: The message who's translations will be stored.
+        :param message: The message for which translations will be stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
 
         :return: The updated translation_message entry or None, if no storing
@@ -449,7 +447,9 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        if not message.translations:
+        if (not message.translations or
+            set(message.translations) == set([u'']) or
+            set(message.translations) == set([None])):
             # We don't have anything to import.
             return None
 
@@ -487,7 +487,6 @@ class FileImporter(object):
                         "Conflicting updates; ignoring invalid message %d." %
                             potmsgset.id)
                 return None
-
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
@@ -548,7 +547,6 @@ class FileImporter(object):
                         self.translation_import_queue_entry.format)
         return self._cached_format_exporter
 
-
     def _addUpdateError(self, message, potmsgset, errormsg):
         """Add an error returned by updateTranslation.
 
@@ -567,7 +565,7 @@ class FileImporter(object):
             'pofile': self.pofile,
             'pomessage': self.format_exporter.exportTranslationMessageData(
                 message),
-            'error-message': unicode(errormsg)
+            'error-message': unicode(errormsg),
         })
 
     def _addConflictError(self, message, potmsgset):

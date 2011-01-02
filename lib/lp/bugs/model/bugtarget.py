@@ -72,6 +72,7 @@ class HasBugsBase:
     All `IHasBugs` implementations should inherit from this class
     or from `BugTargetBase`.
     """
+
     def searchTasks(self, search_params, user=None,
                     order_by=None, search_text=None,
                     status=None,
@@ -93,7 +94,7 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None):
+                    modified_since=None, created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -109,9 +110,10 @@ class HasBugsBase:
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']
+            del kwargs['prejoins']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params)
+        return BugTaskSet().search(search_params, prejoins=prejoins)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -242,6 +244,10 @@ class BugTargetBase(HasBugsBase):
     All IBugTargets should inherit from this class.
     """
 
+    # The default implementation of the property, used for
+    # IDistribution, IDistroSeries, IProjectGroup.
+    enable_bugfiling_duplicate_search = True
+
 
 class HasBugHeatMixin:
     """Standard functionality for objects implementing IHasBugHeat."""
@@ -271,32 +277,44 @@ class HasBugHeatMixin:
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distribution = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
-                      AND DistroSeries.distribution = %s""" % sqlvalues(self)]
+                      AND Bugtask.distroseries IS NOT NULL
+                      AND DistroSeries.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
-                      AND ProductSeries.product = %s""" % sqlvalues(self)]
+                      AND ProductSeries.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 
@@ -316,32 +334,35 @@ class HasBugHeatMixin:
             self.project.recalculateBugHeatCache()
 
 
-
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
+    This class is intended to be used as a mixin for the classes
     Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
     Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
+
+    See also `Bug.official_bug_tags` which calculates this efficiently for
+    a single bug.
     """
+
+    def _getOfficialTagClause(self):
+        if IDistribution.providedBy(self):
+            return (OfficialBugTag.distribution == self)
+        elif IProduct.providedBy(self):
+            return (OfficialBugTag.product == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        elif IProduct.providedBy(self):
-            target_clause = (OfficialBugTag.product == self)
-        else:
-            raise AssertionError(
-                '%s is not a valid official bug target' % self)
-        tags = [
-            obt.tag for obt
-            in store.find(OfficialBugTag, target_clause).order_by('tag')]
-        return tags
+        target_clause = self._getOfficialTagClause()
+        return list(store.find(
+            OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
         """Set the official bug tags from a list of strings."""
@@ -362,10 +383,7 @@ class OfficialBugTagTargetMixin:
         If the tag is not defined for this target, None is returned.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        else:
-            target_clause = (OfficialBugTag.product == self)
+        target_clause = self._getOfficialTagClause()
         return store.find(
             OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
 
@@ -428,4 +446,3 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
-

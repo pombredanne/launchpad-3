@@ -74,16 +74,16 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tal:ignore>
       <tr tal:condition="product/required:launchpad.Edit"
           tal:define="edit_link product/development_focus/fmt:url/+linkbranchtoseries">
-        <td colspan="5" class="branch-no-dev-focus">A development focus branch hasn't 
+        <td colspan="5" class="branch-no-dev-focus">A development focus branch hasn't
             been specified, <a tal:attributes="href edit_link">set it now</a>.</td>
       </tr>
       </tal:missing-dev-focus>
       </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url"
-             tal:content="branch/bzr_identity">
-               Name
+          <a tal:attributes="href branch/fmt:url"
+             tal:content="structure branch/bzr_identity/fmt:break-long-words"
+             class="sprite branch">Name
           </a>
           <tal:associated-series repeat="series branch/active_series"
                                  condition="context/view/show_series_links">

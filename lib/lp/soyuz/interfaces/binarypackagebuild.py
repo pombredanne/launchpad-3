@@ -35,6 +35,7 @@ from zope.schema import (
     Bool,
     Int,
     Text,
+    TextLine,
     )
 
 from canonical.launchpad import _
@@ -118,6 +119,12 @@ class IBinaryPackageBuildView(IPackageBuild):
         "was originally uploaded with the results of this build. It's "
         "'None' if it is build imported by Gina.")
 
+    changesfile_url = exported(
+        TextLine(
+            title=_("Changes File URL"), required=False,
+            description=_("The URL for the changes file for this build. "
+                          "Will be None if the build was imported by Gina.")))
+
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to the original upload "
         "of the binaries resulted from this build. It's 'None' if it is "
@@ -136,10 +143,11 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     def createBinaryPackageRelease(
         binarypackagename, version, summary, description, binpackageformat,
-        component, section, priority, shlibdeps, depends, recommends,
-        suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific,
-        debug_package):
+        component, section, priority, installedsize, architecturespecific,
+        shlibdeps=None, depends=None, recommends=None, suggests=None,
+        conflicts=None, replaces=None, provides=None, pre_depends=None,
+        enhances=None, breaks=None, essential=False, debug_package=None,
+        user_defined_fields=None, homepage=None):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.

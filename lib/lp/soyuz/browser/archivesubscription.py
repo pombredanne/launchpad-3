@@ -30,21 +30,21 @@ from zope.schema import (
     Text,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,

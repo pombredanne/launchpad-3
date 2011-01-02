@@ -60,7 +60,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.lazr.utils import smartquote
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
@@ -170,11 +172,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link = self.target_facets.specifications()
         specifications_link.target = self.target
         return specifications_link
-
-    def calendar(self):
-        calendar_link = self.target_facets.calendar()
-        calendar_link.target = self.target
-        return calendar_link
 
     def branches(self):
         branches_link = self.target_facets.branches()
@@ -794,9 +791,10 @@ class POTemplateSubsetNavigation(Navigation):
             product_or_distro = potemplate.productseries.product
         else:
             product_or_distro = potemplate.distroseries.distribution
-        official_rosetta = product_or_distro.official_rosetta
+        translations_usage = product_or_distro.translations_usage
 
-        if official_rosetta and potemplate.iscurrent:
+        if (service_uses_launchpad(translations_usage) and
+           potemplate.iscurrent):
             # This template is available for translation.
             return potemplate
         elif check_permission('launchpad.Edit', potemplate):
@@ -836,6 +834,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
         self.can_edit = (
             self.can_admin or check_permission('launchpad.Edit', series))
 
+        self.user_is_logged_in = (self.user is not None)
+
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(
@@ -848,3 +848,143 @@ class BaseSeriesTemplatesView(LaunchpadView):
             return "active-template"
         else:
             return "inactive-template"
+
+    def _renderSourcePackage(self, template):
+        """Render the `SourcePackageName` for `template`."""
+        if self.is_distroseries:
+            return cgi.escape(template.sourcepackagename.name)
+        else:
+            return None
+
+    def _renderTemplateLink(self, template, url):
+        """Render a link to `template`.
+
+        :param template: The target `POTemplate`.
+        :param url: The cached URL for `template`.
+        :return: HTML for a link to `template`.
+        """
+        text = '<a href="%s">%s</a>' % (url, cgi.escape(template.name))
+        if not template.iscurrent:
+            text += ' (inactive)'
+        return text
+
+    def _renderLastUpdateDate(self, template):
+        """Render a template's "last updated" column."""
+        formatter = DateTimeFormatterAPI(template.date_last_updated)
+        full_time = formatter.datetime()
+        date = formatter.approximatedate()
+        return ''.join([
+            '<span class="sortkey">%s</span>' % full_time,
+            '<span class="lastupdate_column" title="%s">%s</span>' % (
+                full_time, date),
+            ])
+
+    def _renderAction(self, base_url, name, path, sprite, enabled):
+        """Render an action for the "actions" column.
+
+        :param base_url: The cached URL for `template`.
+        :param name: Action name for display in the UI.
+        :param path: Path suffix for the action (relative to `base_url`).
+        :param sprite: Sprite class for the action.
+        :param enabled: Show this action?  If not, return empty string.
+        :return: HTML for the contents of the "actions" column.
+        """
+        if not enabled:
+            return ''
+
+        parameters = {
+            'base_url': base_url,
+            'name': name,
+            'path': path,
+            'sprite': sprite,
+        }
+        return (
+            '<a class="sprite %(sprite)s" href="%(base_url)s/%(path)s">'
+            '%(name)s'
+            '</a>') % parameters
+
+    def _renderActionsColumn(self, template, base_url):
+        """Render a template's "actions" column."""
+        if not self.user_is_logged_in:
+            return None
+
+        actions = [
+            ('Edit', '+edit', 'edit', self.can_edit),
+            ('Upload', '+upload', 'add', self.can_edit),
+            ('Download', '+export', 'download', self.user_is_logged_in),
+            ('Administer', '+admin', 'edit', self.can_admin),
+        ]
+        links = [
+            self._renderAction(base_url, *action) for action in actions]
+        html = '<div class="template_links">\n%s</div>'
+        return html % '\n'.join(links)
+
+    def _renderField(self, column_class, content, tag='td'):
+        """Create a table field of the given class and contents.
+
+        :param column_class: CSS class for this column.
+        :param content: HTML to go into the column.  If None, the field
+            will be omitted entirely.  (To produce an empty column, pass
+            the empty string instead.)
+        :param tag: The HTML tag to surround the field in.
+        :return: HTML for the entire table field, or the empty string if
+            `content` was None.
+        """
+        if content is None:
+            return ''
+        else:
+            return '<%s class="%s">%s</%s>' % (
+                tag, column_class, content, tag)
+
+    def constructTemplateURL(self, template):
+        """Build the URL for `template`.
+
+        Since this is performance-critical, views are allowed to
+        override it with optimized implementations.
+        """
+        return canonical_url(template)
+
+    def renderTemplatesHeader(self):
+        """Render HTML for the templates table header."""
+        if self.is_distroseries:
+            sourcepackage_header = "Source package"
+        else:
+            sourcepackage_header = None
+        if self.user_is_logged_in:
+            actions_header = "Actions"
+        else:
+            actions_header = None
+        columns = [
+            ('priority_column', "Priority"),
+            ('sourcepackage_column', sourcepackage_header),
+            ('template_column', "Template name"),
+            ('length_column', "Length"),
+            ('lastupdate_column', "Updated"),
+            ('actions_column', actions_header),
+            ]
+        return '\n'.join([
+            self._renderField(css, text, tag='th')
+            for (css, text) in columns])
+
+    def renderTemplateRow(self, template):
+        """Render HTML for an entire template row."""
+        if not self.can_edit and not template.iscurrent:
+            return ""
+
+        # Cached URL for template.
+        base_url = self.constructTemplateURL(template)
+
+        fields = [
+            ('priority_column', template.priority),
+            ('sourcepackage_column', self._renderSourcePackage(template)),
+            ('template_column', self._renderTemplateLink(template, base_url)),
+            ('length_column', template.messagecount),
+            ('lastupdate_column', self._renderLastUpdateDate(template)),
+            ('actions_column', self._renderActionsColumn(template, base_url)),
+        ]
+
+        tds = [self._renderField(*field) for field in fields]
+
+        css = self.rowCSSClass(template)
+        return '<tr class="template_row %s">\n%s</tr>\n' % (
+            css, '\n'.join(tds))

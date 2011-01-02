@@ -11,10 +11,12 @@ nl_phrase_search in order to construct a suitable search string.
 It doesn't make much sense to find bugs similar to an empty string, so
 no results will be returned.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IPersonSet, IProductSet)
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, '', product=firefox)
     >>> similar_bugs.count()
@@ -52,7 +54,7 @@ are found there.
 We can also search for distribution bugs:
 
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Thunderbird SVG",
@@ -80,8 +82,8 @@ Only bugs that the user has access to view will be searched. If we set
 the Firefox bug to private, and repeat the search as a user who isn't
 allowed to view it, only the Thunderbird bug will be returned this time.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
     >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
@@ -136,3 +138,21 @@ has been narrowed - see bug 612384.
     ...     print bugtask.bug.title
     Thunderbird crashes
     >>> #another test bug
+
+== Not returning the same bug ==
+
+findSimilarBugs() does not include the bug of the bugtask upon which
+it is invoked.
+
+    >>> orig_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+
+    >>> dupe_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+    >>> dupe_bug.markAsDuplicate(orig_bug)
+
+    >>> similar_bugs = orig_bug.default_bugtask.findSimilarBugs(firefox.owner)
+    >>> orig_bug in similar_bugs
+    False

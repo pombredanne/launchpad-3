@@ -7,7 +7,7 @@ from unittest import TestLoader
 
 import transaction
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 

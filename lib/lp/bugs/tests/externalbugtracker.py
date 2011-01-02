@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231,E0702,W0108
@@ -31,14 +31,14 @@ from canonical.database.sqlbase import (
     commit,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.database import BugTracker
+from lp.bugs.model.bugtracker import BugTracker
 from canonical.launchpad.ftests import (
     login,
     logout,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -1077,6 +1077,28 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         return [{'changes': changes}]
 
 
+class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
+    """A TestBugzillaAPIXMLRPCTransport that has no bug aliases."""
+
+    bugs = {
+        1: {'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'Marvin',
+            'resolution': 'FIXED',
+            'see_also': [],
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        }
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 
@@ -1101,14 +1123,6 @@ class TestMantis(Mantis):
         if self.trace_calls:
             print "CALLED _postPage(%r, ...)" % (page)
         return ''
-
-    def cleanCache(self):
-        """Clean the csv_data cache."""
-        # Remove the self._csv_data_cached_value if it exists.
-        try:
-            del self._csv_data_cached_value
-        except AttributeError:
-            pass
 
 
 class TestTrac(Trac):

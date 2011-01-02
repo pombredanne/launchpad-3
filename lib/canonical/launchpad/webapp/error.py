@@ -22,7 +22,6 @@ from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.adapter import (
@@ -31,6 +30,7 @@ from canonical.launchpad.webapp.adapter import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class SystemErrorView(LaunchpadView):
@@ -115,7 +115,7 @@ class SystemErrorView(LaunchpadView):
     def inside_div(self, html):
         """Returns the given HTML inside a div of an appropriate class."""
 
-        return ('<div class="highlighted" style="'
+        return ('<div class="highlight" style="'
                 "font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;"
                 ' font-size: smaller;">'
                 '%s'

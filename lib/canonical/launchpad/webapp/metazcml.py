@@ -15,7 +15,7 @@ from zope.app.file.image import Image
 import zope.app.form.browser.metadirectives
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publication.metaconfigure import publisher
-import zope.app.publisher.browser.metadirectives
+import zope.browserpage.metadirectives
 from zope.component import getUtility
 from zope.component.security import PublicPermission
 from zope.component.zcml import (
@@ -439,7 +439,7 @@ class IAssociatedWithAFacet(Interface):
 
 
 class IPageDirective(
-    zope.app.publisher.browser.metadirectives.IPageDirective,
+    zope.browserpage.metadirectives.IPageDirective,
     IAssociatedWithAFacet):
     """Extended browser:page directive to have an extra 'facet' attribute."""
 
@@ -473,14 +473,14 @@ def page(_context, name, permission, for_,
 
 
 class IPagesPageSubdirective(
-    zope.app.publisher.browser.metadirectives.IPagesPageSubdirective,
+    zope.browserpage.metadirectives.IPagesPageSubdirective,
     IAssociatedWithAFacet):
     """Extended complex browser:pages directive to have an extra 'facet'
     attribute on the inner <browser:page> element."""
 
 
 class IPagesDirective(
-    zope.app.publisher.browser.metadirectives.IPagesDirective,
+    zope.browserpage.metadirectives.IPagesDirective,
     IAssociatedWithAFacet):
     """Extend the complex browser:pages directive to have an extra 'facet'
     attribute on the outer <browser:pages> element."""

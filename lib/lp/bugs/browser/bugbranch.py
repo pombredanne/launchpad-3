@@ -22,22 +22,24 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
 from lp.code.enums import BranchLifecycleStatus
+from lp.services.propertycache import cachedproperty
 
 
 class BugBranchPrimaryContext:
@@ -94,7 +96,7 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    @action('Delete', name='delete')
+    @action('Remove link', name='delete')
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
@@ -113,8 +115,9 @@ class BugBranchView(LaunchpadView):
     @property
     def show_branch_status(self):
         """Show the branch status if merged and there are no proposals."""
+        lifecycle_status = self.context.branch.lifecycle_status
         return (len(self.merge_proposals) == 0 and
-                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
+                lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -145,8 +148,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
-        bug_branch = bug.linkBranch(
-            branch=self.context, registrant=self.user)
+        bug.linkBranch(branch=self.context, registrant=self.user)
 
 
 class BugBranchXHTMLRepresentation:
@@ -162,4 +164,3 @@ class BugBranchXHTMLRepresentation:
         branch_view = getMultiAdapter(
             (self.branch, self.request), name="+bug-branch")
         return branch_view()
-

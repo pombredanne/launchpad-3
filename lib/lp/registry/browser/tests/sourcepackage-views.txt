@@ -184,6 +184,7 @@ bonkers project, the portlet will display that information.
     Bug supervisor: no
     Bug tracker: no
     Branch: no
+    There are no registered releases for the Bonkers &rArr; crazy.
 
 A new source project that is not linked to an upstream will result in
 the portlet showing the suggested project.
@@ -293,8 +294,8 @@ set then the view property is false.
     >>> view = create_initialized_view(
     ...     package, name='+upstream-connections')
 
-    >>> print product.official_malone
-    False
+    >>> print product.bug_tracking_usage.name
+    UNKNOWN
     >>> print product.bugtracker
     None
     >>> print view.has_bugtracker

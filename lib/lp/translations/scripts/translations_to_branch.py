@@ -16,8 +16,8 @@ import os.path
 from bzrlib.errors import NotBranchError
 import pytz
 from storm.expr import (
+    And,
     Join,
-    SQL,
     )
 from zope.component import getUtility
 
@@ -27,11 +27,13 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
+from lp.app.enums import ServiceUsage
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
@@ -95,12 +97,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     def _makeDirectBranchCommit(self, db_branch):
         """Create a `DirectBranchCommit`.
 
-        This factory is a mock-injection point for tests.
-
         :param db_branch: A `Branch` object as defined in Launchpad.
         :return: A `DirectBranchCommit` for `db_branch`.
         """
-        return DirectBranchCommit(db_branch)
+        committer_id = 'Launchpad Translations on behalf of %s' % (
+            db_branch.owner.name)
+        return DirectBranchCommit(db_branch, committer_id=committer_id)
 
     def _prepareBranchCommit(self, db_branch):
         """Prepare branch for use with `DirectBranchCommit`.
@@ -163,6 +165,22 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         return None
 
+    def _findChangedPOFiles(self, source, changed_since):
+        """Return an iterator of POFiles changed since `changed_since`.
+
+        :param source: a `ProductSeries`.
+        :param changed_since: a datetime object.
+        """
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=source, iscurrent=True)
+        for template in subset:
+            for pofile in template.pofiles:
+                if (changed_since is None or
+                    pofile.date_changed > changed_since or
+                    template.date_last_updated > changed_since):
+                    yield pofile
+
+
     def _exportToBranch(self, source):
         """Export translations for source into source.translations_branch.
 
@@ -195,37 +213,28 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         change_count = 0
 
         try:
-            subset = getUtility(IPOTemplateSet).getSubset(
-                productseries=source, iscurrent=True)
-            for template in subset:
-                base_path = os.path.dirname(template.path)
+            for pofile in self._findChangedPOFiles(source, changed_since):
+                base_path = os.path.dirname(pofile.potemplate.path)
 
-                for pofile in template.pofiles:
-                    has_changed = (
-                        changed_since is None or
-                        pofile.date_changed > changed_since)
-                    if not has_changed:
-                        continue
+                language_code = pofile.getFullLanguageCode()
+                self.logger.debug("Exporting %s." % language_code)
 
-                    language_code = pofile.getFullLanguageCode()
-                    self.logger.debug("Exporting %s." % language_code)
+                pofile_path = os.path.join(
+                    base_path, language_code + '.po')
+                pofile_contents = pofile.export()
 
-                    pofile_path = os.path.join(
-                        base_path, language_code + '.po')
-                    pofile_contents = pofile.export()
+                committer.writeFile(pofile_path, pofile_contents)
+                change_count += 1
 
-                    committer.writeFile(pofile_path, pofile_contents)
-                    change_count += 1
+                # We're not actually writing any changes to the
+                # database, but it's not polite to stay in one
+                # transaction for too long.
+                if self.txn:
+                    self.txn.commit()
 
-                    # We're not actually writing any changes to the
-                    # database, but it's not polite to stay in one
-                    # transaction for too long.
-                    if self.txn:
-                        self.txn.commit()
-
-                    # We're done with this POFile.  Don't bother caching
-                    # anything about it any longer.
-                    template.clearPOFileCache()
+                # We're done with this POFile.  Don't bother caching
+                # anything about it any longer.
+                pofile.potemplate.clearPOFileCache()
 
             if change_count > 0:
                 self.logger.debug("Writing to branch.")
@@ -299,6 +308,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
+        errorlog.globalErrorUtility.configure(self.config_name)
         if self.options.no_fudge:
             self.fudge_factor = timedelta(0)
 
@@ -309,8 +319,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
+            ProductSeries,
+            And(
+                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
         # testing.

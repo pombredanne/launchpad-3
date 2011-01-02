@@ -8,30 +8,34 @@
 __metaclass__ = type
 
 __all__ = [
+    'DerivationError',
     'IDistroSeries',
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'NoSuchDistroSeries',
     ]
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
+    REQUEST_USER,
     webservice_error,
     )
 from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -41,6 +45,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    List,
     Object,
     TextLine,
     )
@@ -51,13 +56,14 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
     IHasOfficialBugTags,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -80,8 +86,13 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -173,7 +184,8 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords, IHasTranslationTemplates):
+    IHasBuildRecords, IHasTranslationImports, IHasTranslationTemplates,
+    IServiceUsage):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -380,10 +392,13 @@ class IDistroSeriesPublic(
     # DistroArchSeries lookup properties/methods.
     architectures = Attribute("All architectures in this series.")
 
+    enabled_architectures = Attribute(
+        "All architectures in this series with the 'enabled' flag set.")
+
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
 
-    enabled_architectures = Attribute(
+    buildable_architectures = Attribute(
         "All architectures in this series with available chroot tarball.")
 
     def __getitem__(archtag):
@@ -602,7 +617,8 @@ class IDistroSeriesPublic(
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
-        source_package_recipe_build=None):
+        source_package_recipe_build=None, user_defined_fields=None,
+        homepage=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -638,6 +654,10 @@ class IDistroSeriesPublic(
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
          :param source_package_recipe_build: optional SourcePackageRecipeBuild
+         :param user_defined_fields: optional sequence of key-value pairs with
+                                     user defined fields.
+         :param homepage: optional string with (unchecked) upstream homepage
+                          URL
          :return: the just creates `SourcePackageRelease`
         """
 
@@ -669,8 +689,8 @@ class IDistroSeriesPublic(
         If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getSourcePackagePublishing(status, pocket, component=None,
@@ -679,8 +699,8 @@ class IDistroSeriesPublic(
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getBinaryPackageCaches(archive=None):
@@ -785,6 +805,65 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
+    @operation_parameters(
+        name=copy_field(name, required=True),
+        displayname=copy_field(displayname, required=False),
+        title=copy_field(title, required=False),
+        summary=TextLine(
+            title=_("The summary of the distroseries to derive."),
+            required=False),
+        description=copy_field(description, required=False),
+        version=copy_field(version, required=False),
+        distribution=copy_field(distribution, required=False),
+        architectures=List(
+            title=_("The list of architectures to copy to the derived "
+            "distroseries."), value_type=TextLine(),
+            required=False),
+        packagesets=List(
+            title=_("The list of packagesets to copy to the derived "
+            "distroseries"), value_type=TextLine(),
+            required=False),
+        rebuild=Bool(
+            title=_("If binaries will be copied to the derived "
+            "distroseries."),
+            required=True),
+        )
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def deriveDistroSeries(user, name, displayname, title, summary,
+                           description, version, distribution,
+                           architectures, packagesets, rebuild):
+        """Derive a distroseries from this one.
+
+        This method performs checks, can create the new distroseries if
+        necessary, and then creates a job to populate the new
+        distroseries.
+
+        :param name: The name of the new distroseries we will create if it
+            doesn't exist, or the name of the distroseries we will look
+            up, and then initialise.
+        :param displayname: The Display Name for the new distroseries.
+            If the distroseries already exists this parameter is ignored.
+        :param title: The Title for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param summary: The Summary for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param description: The Description for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param version: The version for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param distribution: The distribution the derived series will
+            belong to. If it isn't specified this distroseries'
+            distribution is used.
+        :param architectures: The architectures to copy to the derived
+            series. If not specified, all of the architectures are copied.
+        :param packagesets: The packagesets to copy to the derived series.
+            If not specified, all of the packagesets are copied.
+        :param rebuild: Whether binaries will be copied to the derived
+            series. If it's true, they will not be, and if it's false, they
+            will be.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
                     IStructuralSubscriptionTarget):
@@ -852,10 +931,10 @@ class IDistroSeriesSet(Interface):
         """
 
 
-class NoSuchDistroSeries(NameLookupFailed):
-    """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(400) #Bad request.
-    _message_prefix = "No such distribution series"
+class DerivationError(Exception):
+    """Raised when there is a problem deriving a distroseries."""
+    webservice_error(400) # Bad Request
+    _message_prefix = "Error deriving distro series"
 
 
 # Monkey patch for circular import avoidance done in

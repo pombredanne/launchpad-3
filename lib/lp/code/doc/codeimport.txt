@@ -23,9 +23,9 @@ which is registered as a utility.
 
     >>> from lp.code.interfaces.branchtarget import IBranchTarget
     >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> code_import_set = getUtility(ICodeImportSet)
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True
@@ -89,7 +89,8 @@ three members of the vcs-imports team.
     >>> len(stub.test_emails)
     3
     >>> from canonical.launchpad.helpers import get_contact_email_addresses
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> len(get_contact_email_addresses(vcs_imports))
     3
@@ -105,8 +106,9 @@ three members of the vcs-imports team.
     from
         :pserver:anonymous@cvs.example.com:/cvsroot, hello
     <BLANKLINE>
-    -- 
-    You are getting this email because you are a member of the vcs-imports team.
+    --
+    You are getting this email because you are a member of the vcs-imports
+    team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.
 
@@ -339,8 +341,8 @@ code import can specify a custom update interval, or use a default value.
 There is a separate default update interval for each version control system,
 set in the Launchpad configuration system.
 
-    >>> from datetime import timedelta
     >>> from canonical.config import config
+    >>> from datetime import timedelta
     >>> default_interval_cvs = timedelta(
     ...     seconds=config.codeimport.default_interval_cvs)
     >>> default_interval_subversion = timedelta(

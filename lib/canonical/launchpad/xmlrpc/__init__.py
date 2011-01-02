@@ -5,11 +5,4 @@
 
 """XMLRPC views and APIs on Launchpad objects."""
 
-from canonical.launchpad.xmlrpc.application import *
-from canonical.launchpad.xmlrpc.authserver import *
-from canonical.launchpad.xmlrpc.mailinglist import *
-from lp.bugs.xmlrpc.bug import *
-from lp.code.xmlrpc.branch import *
-from lp.code.xmlrpc.codeimportscheduler import *
-
 

@@ -240,12 +240,13 @@ class Bugzilla(ExternalBugTracker):
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`."""
+        words = remote_importance.lower().split()
         try:
-            words = remote_importance.lower().split()
             return self._importance_lookup[words.pop()]
-
         except KeyError:
             raise UnknownRemoteImportanceError(remote_importance)
+        except IndexError:
+            return BugTaskImportance.UNKNOWN
 
         return BugTaskImportance.UNKNOWN
 
@@ -574,7 +575,7 @@ class BugzillaAPI(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias'] != '':
+            if remote_bug.get('alias', '') != '':
                 self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     @ensure_no_transaction

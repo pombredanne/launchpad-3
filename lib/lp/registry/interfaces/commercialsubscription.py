@@ -46,7 +46,7 @@ class ICommercialSubscription(Interface):
             required=True,
             readonly=True,
             vocabulary='Product',
-            # Really IProduct.  Set properly below.
+            # Really IProduct.  Set properly in lp/registry/interfaces/product.py
             schema=Interface,
             description=_(
                 "Project for which this commercial subscription is "
@@ -102,8 +102,3 @@ class ICommercialSubscription(Interface):
             title=_('Active'),
             readonly=True,
             description=_("Whether this subscription is active.")))
-
-
-# Fix circular dependency issues.
-from lp.registry.interfaces.product import IProduct
-ICommercialSubscription['product'].schema = IProduct

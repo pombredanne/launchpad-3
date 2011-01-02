@@ -16,10 +16,10 @@ a Zope interaction to show it:
 
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('foo.bar@canonical.com')
-  >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+  >>> from zope.component import getUtility
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.person import IPersonSet
-  >>> from zope.component import getUtility
+  >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
   >>> permission_set = getUtility(IArchivePermissionSet)
   >>> main_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
   >>> name12 = getUtility(IPersonSet).getByName('name12')
@@ -170,10 +170,11 @@ Package sets from other series are not shown.
 
 == Queue item filelist ==
 
-First set up some additional data: a package diff to show in the listing.
+First set up some additional data to show in the listing: a package diff
+and an extra, expired, source file.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
@@ -190,6 +191,9 @@ First set up some additional data: a package diff to show in the listing.
     >>> diff.diff_content = getUtility(ILibrarianClient).addFile(
     ...     'alsa-utils.diff.gz', 11, StringIO('i am a diff'),
     ...     'application/gzipped-patch')
+    >>> sprf = new.addFile(factory.makeLibraryFileAlias(
+    ...     filename='alsa-utils_1.0.9a-4ubuntu1.diff.gz'))
+    >>> removeSecurityProxy(sprf.libraryfile).content = None
     >>> logout()
 
 Each queue item has a hidden 'filelist' section which is
@@ -212,20 +216,23 @@ clicked item:
   ...     anon_browser.contents, 'queue-4')
 
 It contains a list of files related to the queue item clicked, followed
-by its size, one file per line:
+by its size, one file per line. Expired files have no size.
 
   >>> for row in filelist:
   ...     print extract_text(row)
   alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+  alsa-utils_1.0.9a-4ubuntu1.diff.gz
   diff from 1.0.9a-4 to 1.0.9a-4ubuntu1 (11 bytes)
 
-Each filename links to its respective librarian URL:
+Each unexpired filename links to its respective librarian URL. Expired
+files have no link, so we just get None.
 
   >>> for row in filelist:
   ...     print row.find('a')
   <a href="http://localhost:58000/.../alsa-utils_1.0.9a-4ubuntu1.dsc">
     alsa-utils_1.0.9a-4ubuntu1.dsc
   </a>
+  None
   <a href="http://localhost:58000/.../alsa-utils.diff.gz">diff from 1.0.9a-4 to 1.0.9a-4ubuntu1</a>
 
 On binary queue items we also present the stamp 'NEW' for files never
@@ -264,7 +271,7 @@ the builds can be created.
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
   >>> login('foo.bar@canonical.com')
@@ -574,6 +581,6 @@ button will be disabled.
 
 == Clean up ==
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
 

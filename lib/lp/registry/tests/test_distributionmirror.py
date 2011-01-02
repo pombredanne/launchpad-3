@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet,

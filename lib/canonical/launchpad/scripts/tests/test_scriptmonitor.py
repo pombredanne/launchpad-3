@@ -12,7 +12,7 @@ from canonical import lp
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.scripts.scriptmonitor import check_script
-from canonical.testing import DatabaseLayer
+from canonical.testing.layers import DatabaseLayer
 
 
 class CheckScriptTestCase(unittest.TestCase):
@@ -25,7 +25,7 @@ class CheckScriptTestCase(unittest.TestCase):
         # away.
         class FakeOptions:
             log_file = '/dev/null'
-            loglevel = logging.INFO
+            loglevel = 1000
             verbose = False
         self.con = connect(lp.dbuser)
         self.log = logger(FakeOptions())

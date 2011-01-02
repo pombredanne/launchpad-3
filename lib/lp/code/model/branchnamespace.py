@@ -27,7 +27,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
-    BranchMergeControlStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     BranchVisibilityRule,
@@ -51,14 +50,15 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import (
     IDistributionSet,
     NoSuchDistribution,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet,
-    NoSuchDistroSeries,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -70,10 +70,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet,
-    NoSuchSourcePackageName,
-    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.utils import iter_split
 
@@ -86,8 +83,7 @@ class _BaseNamespace:
                      lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
                      summary=None, whiteboard=None, date_created=None,
                      branch_format=None, repository_format=None,
-                     control_format=None,
-                     merge_control_status=BranchMergeControlStatus.NO_QUEUE):
+                     control_format=None):
         """See `IBranchNamespace`."""
 
         self.validateRegistrant(registrant)
@@ -121,8 +117,7 @@ class _BaseNamespace:
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            merge_control_status=merge_control_status)
+            sourcepackagename=sourcepackagename)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
@@ -302,7 +297,7 @@ class PersonalNamespace(_BaseNamespace):
     @property
     def name(self):
         """See `IBranchNamespace`."""
-        return '~%s/+junk' % (self.owner.name,)
+        return '~%s/+junk' % self.owner.name
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""

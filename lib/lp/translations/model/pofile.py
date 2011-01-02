@@ -21,13 +21,12 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     IntCol,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.expr import (
     And,
+    Coalesce,
     Exists,
-    In,
     Join,
     LeftJoin,
     Not,
@@ -36,7 +35,10 @@ from storm.expr import (
     SQL,
     )
 from storm.info import ClassAlias
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import (
     getAdapter,
     getUtility,
@@ -44,7 +46,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -56,6 +57,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -66,6 +68,11 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
+from lp.services.propertycache import cachedproperty
+from lp.translations.enums import (
+    RosettaImportStatus,
+    TranslationPermission,
+    )
 from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
@@ -80,10 +87,6 @@ from lp.translations.interfaces.translationcommonformat import (
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat,
-    )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     NotExportedFromLaunchpad,
@@ -91,9 +94,6 @@ from lp.translations.interfaces.translationimporter import (
     TooManyPluralFormsError,
     TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError,
-    )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
@@ -479,9 +479,6 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -525,9 +522,27 @@ class POFile(SQLBase, POFileMixIn):
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
 
-    # joins
-    translation_messages = SQLMultipleJoin(
-        'TranslationMessage', joinColumn='pofile', orderBy='id')
+    @property
+    def translation_messages(self):
+        """See `IPOFile`."""
+        return self.getTranslationMessages()
+
+    def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
+        applicable_template = Coalesce(
+            TranslationMessage.potemplateID, self.potemplate.id)
+        clauses = [
+            TranslationTemplateItem.potmsgsetID ==
+                TranslationMessage.potmsgsetID,
+            TranslationTemplateItem.potemplate == self.potemplate,
+            TranslationMessage.language == self.language,
+            applicable_template == self.potemplate.id,
+            ]
+        if condition is not None:
+            clauses.append(condition)
+
+        return IStore(self).find(
+            TranslationMessage, *clauses).order_by(TranslationMessage.id)
 
     @property
     def title(self):
@@ -1086,9 +1101,8 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setErrorOutput(None)
 
         # Prepare the mail notification.
-        msgsets_imported = TranslationMessage.select(
-            'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
-            (sqlvalues(self.id))).count()
+        msgsets_imported = self.getTranslationMessages(
+            TranslationMessage.was_obsolete_in_last_import == False).count()
 
         replacements = collect_import_info(entry_to_import, self, warnings)
         replacements.update({
@@ -1143,8 +1157,8 @@ class POFile(SQLBase, POFileMixIn):
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
-            entry_to_import.setStatus(RosettaImportStatus.FAILED,
-                                      rosetta_experts)
+            entry_to_import.setStatus(
+                RosettaImportStatus.FAILED, rosetta_experts)
         else:
             if (entry_to_import.is_published and
                 not needs_notification_for_imported):
@@ -1153,8 +1167,8 @@ class POFile(SQLBase, POFileMixIn):
                 # are needed.
                 subject = None
 
-            entry_to_import.setStatus(RosettaImportStatus.IMPORTED,
-                                      rosetta_experts)
+            entry_to_import.setStatus(
+                RosettaImportStatus.IMPORTED, rosetta_experts)
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # comes from upstream.
@@ -1306,7 +1320,6 @@ class DummyPOFile(POFileMixIn):
         self.id = None
         self.potemplate = potemplate
         self.language = language
-        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None
@@ -1354,16 +1367,13 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
-    def emptySelectResults(self):
-        return POFile.select("1=2")
-
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         return None
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -1371,15 +1381,19 @@ class DummyPOFile(POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetChangedInLaunchpad(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
+
+    def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
+        return EmptyResultSet()
 
     def hasMessageID(self, msgid):
         """See `IPOFile`."""
@@ -1555,7 +1569,7 @@ class POFileSet:
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
         if untranslated:
             message_select = Select(
                 True,

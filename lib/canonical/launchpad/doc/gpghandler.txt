@@ -25,8 +25,10 @@ keyserver is a trusted data source, so we have to do that.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
-    >>> from canonical.launchpad.interfaces import (
-    ...      IGPGHandler, IPymeKey)
+    >>> from canonical.launchpad.interfaces.gpghandler import (
+    ...     IGPGHandler,
+    ...     IPymeKey,
+    ...     )
     >>> gpghandler = getUtility(IGPGHandler)
 
 -------------------------------------------------------------------------

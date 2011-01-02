@@ -7,7 +7,8 @@ __metaclass__ = type
 
 from datetime import datetime
 import hashlib
-import os.path
+import os
+import shutil
 
 from storm.store import Store
 from zope.component import getUtility
@@ -20,6 +21,9 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.archiveuploader.uploadprocessor import (
+    parse_build_upload_leaf_name,
+    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -29,17 +33,18 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
-    pocketsuffix,
     )
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -101,7 +106,6 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual('buildd', self.package_build.policy_name)
         self.failUnlessEqual(
             'multiverse', self.package_build.current_component.name)
         self.failUnlessEqual(None, self.package_build.distribution)
@@ -190,15 +194,27 @@ class TestPackageBuild(TestPackageBuildBase):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
-    def test_getUploadDir(self):
-        # getUploadDir is the absolute path to the directory in which things
-        # are uploaded to.
-        build_cookie = self.factory.getUniqueInteger()
-        upload_leaf = self.package_build.getUploadDirLeaf(build_cookie)
-        upload_dir = self.package_build.getUploadDir(upload_leaf)
-        self.assertEqual(
-            os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
-            upload_dir)
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the package build id and record id.
+        # The uploadprocessor relies on this format.
+        Store.of(self.package_build).flush()
+        cookie = self.package_build.getBuildCookie()
+        expected_cookie = "%d-PACKAGEBUILD-%d" % (
+            self.package_build.id, self.package_build.build_farm_job.id)
+        self.assertEquals(expected_cookie, cookie)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
 
 class TestPackageBuildSet(TestPackageBuildBase):
@@ -255,57 +271,19 @@ class TestGetUploadMethodsMixin:
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
 
-    def test_getUploadLogContent_nolog(self):
-        """If there is no log file there, a string explanation is returned.
-        """
-        self.useTempDir()
-        self.assertEquals(
-            'Could not find upload log file',
-            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_only_dir(self):
-        """If there is a directory but no log file, expect the error string,
-        not an exception."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        self.assertEquals(
-            'Could not find upload log file',
-            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_readsfile(self):
-        """If there is a log file, return its contents."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        with open('accepted/myleaf/uploader.log', 'w') as f:
-            f.write('foo')
-        self.assertEquals(
-            'foo', self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploaderCommand(self):
-        upload_leaf = self.factory.getUniqueString('upload-leaf')
-        config_args = list(config.builddmaster.uploader.split())
-        log_file = self.factory.getUniqueString('logfile')
-        config_args.extend(
-            ['--log-file', log_file,
-             '-d', self.build.distribution.name,
-             '-s', (self.build.distro_series.name
-                    + pocketsuffix[self.build.pocket]),
-             '-b', str(self.build.id),
-             '-J', upload_leaf,
-             '--context=%s' % self.build.policy_name,
-             os.path.abspath(config.builddmaster.root),
-             ])
-        uploader_command = self.build.getUploaderCommand(
-            self.build, upload_leaf, log_file)
-        self.assertEqual(config_args, uploader_command)
+    def test_getUploadDirLeafCookie_parseable(self):
+        # getUploadDirLeaf should return a directory name
+        # that is parseable by the upload processor.
+        upload_leaf = self.build.getUploadDirLeaf(
+            self.build.getBuildCookie())
+        job_id = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(job_id, self.build.build_farm_job.id)
 
 
 class TestHandleStatusMixin:
     """Tests for `IPackageBuild`s handleStatus method.
 
-    Note: these tests do *not* test the updating of the build
-    status to FULLYBUILT as this happens during the upload which
-    is stubbed out by a mock function.
+    This should be run with a Trial TestCase.
     """
 
     layer = LaunchpadZopelessLayer
@@ -316,6 +294,7 @@ class TestHandleStatusMixin:
 
     def setUp(self):
         super(TestHandleStatusMixin, self).setUp()
+        self.factory = LaunchpadObjectFactory()
         self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
@@ -327,66 +306,82 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        tmp_dir = self.makeTemporaryDirectory()
+        tempdir = self.mktemp()
+        os.mkdir(tempdir)
+        self.addCleanup(shutil.rmtree, tempdir)
+        self.upload_root = tempdir
         tmp_builddmaster_root = """
         [builddmaster]
         root: %s
-        """ % tmp_dir
+        """ % self.upload_root
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
         # We stub out our builds getUploaderCommand() method so
         # we can check whether it was called as well as
         # verifySuccessfulUpload().
-        self.fake_getUploaderCommand = FakeMethod(
-            result=['echo', 'noop'])
-        removeSecurityProxy(self.build).getUploaderCommand = (
-            self.fake_getUploaderCommand)
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
+
+    def assertResultCount(self, count, result):
+        self.assertEquals(
+            1, len(os.listdir(os.path.join(self.upload_root, result))))
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+            self.assertResultCount(1, "incoming")
+
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-
-        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
-        self.assertEqual(1, self.fake_getUploaderCommand.call_count)
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+            self.assertResultCount(0, "failed")
+            self.assertIdentical(None, self.build.buildqueue_record)
+
+        d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+            self.assertResultCount(0, "failed")
+
+        d = self.build.handleStatus('OK', None, {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
-        self.build.handleStatus('OK', None, {
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        self.assertNotEqual(None, self.build.log)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.log)
+        return d.addCallback(got_status)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
-        self.build.handleStatus('OK', None, {
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        self.assertNotEqual(None, self.build.date_finished)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.date_finished)
+        return d.addCallback(got_status)

@@ -23,13 +23,15 @@ We should have three subscribers now. The bug reporter (also a package
 subscriber), mark, the distro bug supervisor kamion, and foobar, who is
 subscribed to the distribution.
 
+    >>> from itertools import chain
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):
-    ...     subscribers = (
-    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> login(ANONYMOUS)
@@ -43,7 +45,7 @@ subscribed to the distribution.
 When filing a security bug, only the bug reporter and registrant are explicitly
 Cc'd, because the Ubuntu distribution does not have a security contact.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -72,4 +74,3 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     [u'mark', u'ubuntu-team']
 
     >>> logout()
-

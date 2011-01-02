@@ -4,14 +4,19 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only">
 
-  <body>
-
+  <head>
   <div metal:fill-slot="head_epilogue">
     <metal:translations-js
       use-macro="context/@@+translations-macros/translations-js" />
     <metal:languages-table-js
       use-macro="context/@@+translations-macros/languages-table-js" />
+    <tal:robots
+      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:robots>
   </div>
+  </head>
+  <body>
 
     <div metal:fill-slot="main"
          tal:define="admin_user context/required:launchpad.TranslationsAdmin">
@@ -23,14 +28,26 @@
         <div></div><!-- to clear-up all floats -->
       </div>
       <div class="top-portlet notice">
-        <tal:official_use replace="
-            structure
-            context/@@+portlet-not-using-launchpad"/>
+
+        <tal:message
+          condition="not: context/translations_usage/enumvalue:LAUNCHPAD"
+          replace="structure context/@@+portlet-not-using-launchpad"/>
+        <tal:translations-configuration
+          condition="view/can_configure_translations"
+          replace="structure context/@@+portlet-configuration"/>
+        <tal:not-launchpad
+          condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+          <tal:translations-packages
+            condition="not: view/is_translations_admin"
+            replace="structure context/@@+portlet-not-using-launchpad-extra"/>
+        </tal:not-launchpad>
+
         <div tal:condition="view/no_translations_available">
-        There are no translations for this project.
+          There are no translations for this project.
         </div>
       </div>
 
+      <!-- Not sure this should be shown at all if translations is off. -->
       <tal:page_content condition="view/show_page_content">
         <tal:translatable define="target view/primary_translatable">
 

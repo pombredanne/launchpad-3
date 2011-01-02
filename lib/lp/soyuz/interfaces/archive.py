@@ -17,6 +17,7 @@ __all__ = [
     'CannotSwitchPrivacy',
     'ComponentNotFound',
     'CannotRestrictArchitectures',
+    'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
@@ -337,6 +338,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
+    is_partner = Attribute("True if this archive is a partner archive.")
+
     is_copy = Attribute("True if this archive is a copy archive.")
 
     is_main = Bool(
@@ -460,6 +463,12 @@ class IArchivePublic(IHasOwner, IPrivacy):
         not allowed.  However some archive types allow this.
 
         :return: True or False
+        """
+
+    def getComponentsForSeries(distroseries):
+        """Calculate the components available for use in this archive.
+
+        :return: An `IResultSet` of `IComponent` objects.
         """
 
     def updateArchiveCache():
@@ -888,6 +897,16 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
+
+    def validatePPA(person, proposed_name):
+        """Check if a proposed name for a PPA is valid.
+
+        :param person: A Person identifying the requestor.
+        :param proposed_name: A String identifying the proposed PPA name.
+        """
+
+    def getPockets():
+        """Return iterable containing valid pocket names for this archive."""
 
 
 class IArchiveView(IHasBuildRecords):

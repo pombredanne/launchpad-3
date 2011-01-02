@@ -17,7 +17,7 @@ from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     tearDown,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.tests.test_bugtarget import (
     distributionSeriesSetUp,
     distributionSetUp,

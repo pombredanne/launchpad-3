@@ -18,9 +18,9 @@ from zope.testing.loghandler import Handler
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.librarian.ftests.harness import fillLibrarianFile
+from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.interfaces import LibrarianServerError
-from canonical.testing import (
+from canonical.testing.layers import (
     BaseLayer,
     LaunchpadZopelessLayer,
     )

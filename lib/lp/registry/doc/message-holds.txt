@@ -20,7 +20,7 @@ personal standing in Launchpad is unknown.
 When the message is initially held for approval, a message object is
 first created.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
@@ -36,7 +36,7 @@ Then this message is inserted into the approval queue.
 
     >>> held_message = list_one.holdMessage(message)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IMessageApproval
+    >>> from lp.registry.interfaces.mailinglist import IMessageApproval
     >>> verifyObject(IMessageApproval, held_message)
     True
 
@@ -44,7 +44,7 @@ We can get some useful details about this held message by adapting it to the
 IHeldMessageDetails interface.
 
     >>> from zope.component import getAdapter
-    >>> from canonical.launchpad.interfaces import IHeldMessageDetails
+    >>> from lp.registry.interfaces.mailinglist import IHeldMessageDetails
     >>> details = getAdapter(held_message, IHeldMessageDetails)
     >>> print details.message_id
     <first-post>
@@ -282,7 +282,7 @@ that list too.
 
 Here are some helper functions.
 
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
     >>> def print_hold(message_hold):
@@ -292,14 +292,14 @@ Here are some helper functions.
     ...     print message_id, list_name, subject
 
     >>> def print_messages(status):
-    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
-    ...                            key=attrgetter('message_id'))
-    ...     for message_hold in held_messages:
-    ...         print_hold(message_hold)
+    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status))
+    ...     for message_id, team_name in held_messages:
+    ...         held_message = hold_set.getMessageByMessageID(message_id)
+    ...         print_hold(held_message)
 
 Here are all the messages pending approval...
 
-    >>> from canonical.launchpad.interfaces import PostedMessageStatus
+    >>> from lp.registry.interfaces.mailinglist import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
     <first-post> test-one My first test
 
@@ -378,10 +378,10 @@ the notification message is properly encoded.
 
 
 == Posting privileges ==
-
 Message approvals are also used to derived posting privileges for non-team
 members.  To start with, only the team owner can post to the list.
 
+    >>> login('no-priv@canonical.com')
     >>> team_three, list_three = mailinglists_helper.new_team(
     ...     'test-three', True)
     >>> sorted(email.email for email in list_three.getSenderAddresses())
@@ -483,8 +483,8 @@ twice, once as posted from Malone, and once as held by Mailman.
     ...         return self
     ...     signature = object()
 
+    >>> from lp.bugs.mail.handler import MaloneHandler
     >>> from email import message_from_string
-    >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> malone_msg = message_from_string(message_text, _class=SignedMessage)
 
     # Tweak the Subject so we can tell the two message apart.

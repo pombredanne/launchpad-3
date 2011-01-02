@@ -9,7 +9,8 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -24,12 +25,12 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         # in different series ('devel' and 'stable').
         factory = LaunchpadObjectFactory()
         self.factory = factory
-        self.foo = factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is a 'sharing' one if it has the same name ('messages').
         self.devel_potemplate = factory.makePOTemplate(

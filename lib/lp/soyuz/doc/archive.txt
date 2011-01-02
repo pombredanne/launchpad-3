@@ -46,6 +46,8 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_partner
+    False
     >>> cprov_archive.is_active
     True
     >>> cprov_archive.distribution.main_archive.is_main
@@ -881,7 +883,7 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0]
@@ -1365,6 +1367,8 @@ and an ArchivePurpose:
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
     partner
+    >>> print partner_archive.is_partner
+    True
 
 It explicitly fails when purpose is PPA, since such lookup should be
 restricted by archive owner.
@@ -2078,7 +2082,7 @@ checkArchivePermission() can also check someone's permission to upload a specifi
 source package.  Carlos, who does not have permission to upload to any
 Ubuntu components, has permission to upload "mozilla-firefox".
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> mozilla = getUtility(
     ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
     >>> ubuntu.main_archive.checkArchivePermission(carlos, mozilla)

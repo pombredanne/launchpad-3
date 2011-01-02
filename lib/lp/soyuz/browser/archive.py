@@ -56,19 +56,14 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -96,6 +91,12 @@ from canonical.widgets.lazrjs import (
     TextLineEditorWidget,
     )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -107,6 +108,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -132,11 +134,8 @@ from lp.soyuz.interfaces.archive import (
     IArchiveEditDependenciesForm,
     IArchiveSet,
     IPPAActivateForm,
-    NoSuchPPA,
     )
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
@@ -152,6 +151,7 @@ from lp.soyuz.interfaces.publishing import (
     inactive_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -478,10 +478,13 @@ class ArchiveMenuMixin:
     def packages(self):
         text = 'View package details'
         link = Link('+packages', text, icon='info')
-        # Disable the link for P3As if they don't have upload rights.
+        # Disable the link for P3As if they don't have upload rights,
+        # except if the user is a commercial admin.
         if self.context.private:
             if not check_permission('launchpad.Append', self.context):
-                link.enabled = False
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -762,7 +765,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         requested_name_filter = self.request.query_string_params.get(
             'field.name_filter')
 
-        if requested_name_filter is not None:
+        if requested_name_filter and requested_name_filter[0]:
             return requested_name_filter[0]
         else:
             return None
@@ -913,8 +916,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         else:
             description = ''
 
-        if not (self.context.owner.is_probationary and self.context.is_ppa):
-            description = formatter(description).text_to_html()
+        if self.context.is_ppa:
+            description = formatter(description).text_to_html(
+                linkify_text=(not self.context.owner.is_probationary))
 
         return TextAreaEditorWidget(
             self.context,
@@ -949,6 +953,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'NEEDSBUILD': 'Waiting to build',
             'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
+            'UPLOADING': 'Currently uploading',
             }
 
         now = datetime.now(tz=pytz.UTC)
@@ -1022,8 +1027,12 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def initialize(self):
         super(ArchivePackagesView, self).initialize()
         if self.context.private:
+            # To see the +packages page, you must be an uploader, or a
+            # commercial admin.
             if not check_permission('launchpad.Append', self.context):
-                raise Unauthorized
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    raise Unauthorized
 
     @property
     def page_title(self):
@@ -1814,22 +1823,9 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. This check should be revisited when we
-        # start supporting PPAs for other distribution (debian, mainly).
-        if proposed_name is not None and proposed_name == self.ubuntu.name:
-            self.setFieldError(
-                'name',
-                "Archives cannot have the same name as its distribution.")
-
-        try:
-            self.context.getPPAByName(proposed_name)
-        except NoSuchPPA:
-            pass
-        else:
-            self.setFieldError(
-                'name',
-                "You already have a PPA named '%s'." % proposed_name)
+        errors = Archive.validatePPA(self.context, proposed_name)
+        if errors is not None:
+            self.addError(errors)
 
         if default_ppa is None and not data.get('accepted'):
             self.setFieldError(
@@ -1848,11 +1844,9 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. PPA creation should be revisited when we
         # start supporting other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name,
+            distribution=self.ubuntu, name=name,
             displayname=data['displayname'], description=data['description'])
 
         self.next_url = canonical_url(ppa)

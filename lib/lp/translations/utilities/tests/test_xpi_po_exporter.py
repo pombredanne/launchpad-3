@@ -15,9 +15,10 @@ from zope.interface.verify import verifyObject
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
@@ -27,7 +28,6 @@ from lp.translations.interfaces.translationexporter import (
     )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.utilities.tests.test_xpi_import import (
     get_en_US_xpi_file_to_import,

@@ -17,6 +17,7 @@ import tempfile
 
 from launchpadlib.credentials import (
     AccessToken,
+    AnonymousAccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
@@ -26,13 +27,11 @@ from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet,
-    IPersonSet,
-    )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing._login import (
     login,
     logout,
@@ -121,7 +120,7 @@ def _clean_up_cache(cache):
 
 
 def launchpadlib_for(
-    consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
+    consumer_name, person=None, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
 
@@ -136,8 +135,12 @@ def launchpadlib_for(
 
     :return: A launchpadlib Launchpad object.
     """
-    credentials = launchpadlib_credentials_for(
-        consumer_name, person, permission, context)
+    if person is None:
+        token = AnonymousAccessToken()
+        credentials = Credentials(consumer_name, access_token=token)
+    else:
+        credentials = launchpadlib_credentials_for(
+            consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')

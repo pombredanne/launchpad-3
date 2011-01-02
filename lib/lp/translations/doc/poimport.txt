@@ -1,18 +1,24 @@
-= PO Imports =
+PO Imports
+==========
 
 The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
 
-== Test Setup ==
+Test Setup
+----------
 
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.scripts.po_import import TranslationsImport
@@ -29,23 +35,25 @@ We need this for the Librarian to work properly.
 
 Here's a fake logger to capture any errors that happen.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
 
 Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
 
-== Importing a Template ==
+Importing a Template
+--------------------
 
-Normal procedure is to import a template, followed by translations.
-A template is created first.  After that, imports are done using the
+Normal procedure is to import a template, followed by translations. A
+template is created first.  After that, imports are done using the
 POFile.importFromQueue and POTemplate.importFromQueue methods.
 
     >>> from lp.registry.model.productrelease import ProductRelease
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'
+
     >>> series = release.productseries
     >>> subset = POTemplateSubset(productseries=series)
 
@@ -99,8 +107,8 @@ This is the file that'll get imported.
 
 We sometimes saw deadlocks as POFile statistics were updated after
 importing a template.  The operation would read all translation messages
-for the entire template in the same transaction that did the import.
-To prevent this, the importer now does intermediate commits while
+for the entire template in the same transaction that did the import. To
+prevent this, the importer now does intermediate commits while
 recomputing statistics.
 
     >>> from lp.testing.faketransaction import FakeTransaction
@@ -145,6 +153,7 @@ A successful import is confirmed by email.
 
     >>> subject
     u'Translation template import - firefox in Mozilla Firefox trunk'
+
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -174,7 +183,8 @@ The file references field should be there
     u'test.c:13'
 
 
-=== Import Preconditions ===
+Import Preconditions
+....................
 
 The API for POTemplate.importFromQueue demands a translation import
 queue entry to import.
@@ -208,7 +218,8 @@ any other file would be an error.
     to.
 
 
-== Importing a Translation ==
+Importing a Translation
+-----------------------
 
 Now let's get a PO file to import.
 
@@ -224,8 +235,8 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.setPathIfUnique(u'po/cy.po')
 
-It's newly created, so it has only one translation which is the translation
-credits.
+It's newly created, so it has only one translation which is the
+translation credits.
 
     >>> pofile.getPOTMsgSetTranslated().count()
     1
@@ -236,7 +247,8 @@ And the statistics reflect it.
     1
 
 
-=== Import With Errors ===
+Import With Errors
+..................
 
 Here are the contents of the file we'll be importing. It has some
 validation errors.
@@ -345,6 +357,7 @@ We can also get the ones that have validation errors.
     >>> potmsgsets = pofile.getPOTMsgSetWithErrors()
     >>> potmsgsets.count()
     1
+
     >>> for potmsgset in potmsgsets:
     ...     translationmessages = potmsgset.getLocalTranslationMessages(
     ...         pofile.potemplate, pofile.language)
@@ -362,6 +375,7 @@ Check that the plural form was imported correctly.
     ...     pofile.potemplate, pofile.language)
     >>> print imported_translationmessage.validation_status.name
     OK
+
     >>> imported_translationmessage.translations
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
@@ -373,10 +387,12 @@ translator.
     u'Carlos Perell\xf3 Mar\xedn'
 
 The import process produces an email warning us of partial failure, but
-doesn't send it out for published uploads (indicated with subject of None).
+doesn't send it out for published uploads (indicated with subject of
+None).
 
     >>> print subject
     None
+
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -410,7 +426,8 @@ error_output.
     msgstr "blah %i"
 
 
-=== Import With Warnings ===
+Import With Warnings
+....................
 
 The import may also succeed but produce syntax warnings.  These need not
 be tied to particular messages (they could be in the header, for
@@ -473,7 +490,8 @@ that, but it should help a bit.
     >>> warning_entry.setStatus(RosettaImportStatus.DELETED, rosetta_experts)
 
 
-=== Import Without Errors ===
+Import Without Errors
+.....................
 
 Now, let's import one without errors.
 
@@ -518,13 +536,15 @@ We must approve the entry to be able to import it.
 
 At this point, the statistics note that we have 2 translations coming
 from imported files (currentCount), and none updated in Launchpad
-Translations. The translation credits message is counted as translated in
-rosetta.
+Translations. The translation credits message is counted as translated
+in rosetta.
 
     >>> pofile.currentCount()
     2
+
     >>> pofile.updatesCount()
     0
+
     >>> pofile.rosettaCount()
     1
 
@@ -545,17 +565,20 @@ files are now counted as coming from Launchpad translations
 
     >>> pofile.currentCount()
     2
+
     >>> pofile.updatesCount()
     0
+
     >>> pofile.rosettaCount()
     1
 
-This time, our notification email reports complete success, except
-that nothing is emailed out (subject is None) because this is a published
+This time, our notification email reports complete success, except that
+nothing is emailed out (subject is None) because this is a published
 upload.
 
     >>> print subject
     None
+
     >>> print body
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -569,18 +592,20 @@ There was no error output either.
 The translation has been augmented with the strings from the imported
 file.  The translation credits are special; upstream uploads can
 "translate" credits messages to provide translator names, but since
-credits for translations in Launchpad are generated automatically,
-non-upstream translations for these messages are ignored.
+credits for translations in Launchpad are generated automatically, non-
+upstream translations for these messages are ignored.
 
     >>> message = get_pofile_translation_message(pofile, 'foo')
     >>> message.msgstr0.translation
     u'blah'
+
     >>> message = get_pofile_translation_message(pofile, 'translator-credits')
     >>> message.msgstr0.translation
     u'helpful@example.com'
 
 
-=== Import Preconditions ===
+Import Preconditions
+....................
 
 The API for POFile.importFromQueue demands a translation import queue
 entry to import.
@@ -617,14 +642,15 @@ the exact right POFile.
     to.
 
 
-== Cron Scripts ==
+Cron Scripts
+------------
 
-We tested already that the functionality works. Now it's time to know
-if the cronscript has any problem.
+We tested already that the functionality works. Now it's time to know if
+the cronscript has any problem.
 
-First, we are going to reactivate the entries that were already
-imported or failed. Note that we'll only reactivate the entries we use
-in this test; We don't touch entries that were in the queue previously.
+First, we are going to reactivate the entries that were already imported
+or failed. Note that we'll only reactivate the entries we use in this
+test; We don't touch entries that were in the queue previously.
 
     >>> for entry in translation_import_queue:
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
@@ -681,12 +707,12 @@ entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
     >>> import logging
-    >>> from lp.testing.logger import MockLogger
     >>> process = ImportQueueGardener('approver', test_args=[])
-    >>> process.logger = MockLogger()
+    >>> process.logger = FakeLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    log>    Removed 2 entries from the queue.
+    INFO Removed 2 entries from the queue.
+
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
@@ -760,6 +786,7 @@ It's in the queue now.
 
     >>> translation_import_queue.countEntries()
     2
+
     >>> print entry.status.name
     NEEDS_REVIEW
 
@@ -768,12 +795,14 @@ translations and approves them for import based on some heuristic
 intelligence.
 
     >>> process = ImportQueueGardener('approver', test_args=[])
-    >>> process.logger = MockLogger()
+    >>> process.logger = FakeLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    log>    The automatic approval system approved some entries.
+    INFO The automatic approval system approved some entries.
+
     >>> print entry.status.name
     APPROVED
+
     >>> syncUpdate(entry)
 
 Now that these submissions have been approved, the next run of the
@@ -790,6 +819,7 @@ import script picks them up and processes them.
 
     >>> print entry.status.name
     IMPORTED
+
     >>> syncUpdate(entry)
 
 And there are no more entries to import
@@ -812,6 +842,7 @@ message translations were ignored.
     ...     pofile, u'translator-credits')
     >>> message.msgstr0.translation
     u'helpful@example.com'
+
     >>> list(potemplate['translator-credits'].getLocalTranslationMessages(
     ...     potemplate, welsh))
     []
@@ -825,6 +856,7 @@ submit translations for a distroseries.
     >>> warty = ubuntu.getSeries('warty')
     >>> print warty.name
     warty
+
     >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
     >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
     ...     distroseries=warty)
@@ -835,10 +867,10 @@ submit translations for a distroseries.
     ...     owner=person)
 
 As it happens, the administrator has blocked imports to warty, e.g.
-because an in-database update of its translations has been scheduled
-and we don't want interference from queued imports while that happens.
-It doesn't really matter whether entries still get auto-approved, but
-we can't accept new translation imports just now.
+because an in-database update of its translations has been scheduled and
+we don't want interference from queued imports while that happens. It
+doesn't really matter whether entries still get auto-approved, but we
+can't accept new translation imports just now.
 
     >>> warty.defer_translation_imports = True
     >>> syncUpdate(warty)
@@ -856,15 +888,15 @@ normal:
     >>> transaction.commit()
 
 Since imports for warty are suspended, and the only entry we happen to
-have waiting right now is for warty, the queue has no importable
-entries for us.
+have waiting right now is for warty, the queue has no importable entries
+for us.
 
     >>> warty.getFirstEntryToImport() is None
     True
 
 So if we try to import now, nothing happens. Our request remains on the
-queue, but doesn't become a candidate for processing until warty
-imports are resumed.
+queue, but doesn't become a candidate for processing until warty imports
+are resumed.
 
     >>> process = TranslationsImport('poimport', test_args=[])
     >>> process.logger = FakeLogger()
@@ -885,7 +917,8 @@ Once imports are allowed again, the import is done after all.
     IMPORTED
 
 
-== Plural forms handling ==
+Plural forms handling
+---------------------
 
 Apart from the basic plural form handling, which is documented above as
 part of the import process, there are some peculiarities with importing
@@ -930,7 +963,6 @@ We now import this POFile as Divehi translation of Firefox trunk:
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     firefox_dv.path, pofile_with_plurals, True, person,
     ...     productseries=firefox_trunk, potemplate=firefox_potemplate)
-    >>> # Allow Librarian to see the change.
     >>> transaction.commit()
     >>> entry.pofile = firefox_dv
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -957,7 +989,9 @@ language, we should not have to reimport all translations):
     >>> current_dv.msgstr2.translation
     u'Third form %d'
 
-== Published import notifications ==
+
+Published import notifications
+------------------------------
 
 Add a published POFile import (i.e. from a package or bzr branch),
 approve and import it.
@@ -988,12 +1022,14 @@ Import succeeds but no email is sent out.
 
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
+
     >>> print subject
     None
 
 For syntax errors, failure notification is still sent out.
 
     # Remove final quote from the contents, causing a syntax error.
+
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
@@ -1007,6 +1043,7 @@ Import fails and email is sent out even though it's a published upload.
 
     >>> entry.status == RosettaImportStatus.FAILED
     True
+
     >>> subject
     u'Import problem - Serbian (sr) - ...'
 
@@ -1051,3 +1088,5 @@ importer.  It completes normally.
 
     >>> print entry.status.name
     FAILED
+
+

@@ -15,7 +15,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -40,32 +40,8 @@ def peopleKarmaTearDown(test):
 
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
-    # Use the direct API view instance, not retrieved through the component
-    # architecture.  Don't use ServerProxy.  We do this because it's easier to
-    # debug because when things go horribly wrong, you see the errors on
-    # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import MailingListAPIView
-    class ImpedenceMatchingView(MailingListAPIView):
-        @mailinglists_helper.fault_catcher
-        def getPendingActions(self):
-            return super(ImpedenceMatchingView, self).getPendingActions()
-        @mailinglists_helper.fault_catcher
-        def reportStatus(self, statuses):
-            return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @mailinglists_helper.fault_catcher
-        def getMembershipInformation(self, teams):
-            return super(
-                ImpedenceMatchingView, self).getMembershipInformation(teams)
-        @mailinglists_helper.fault_catcher
-        def isLaunchpadMember(self, address):
-            return super(ImpedenceMatchingView, self).isLaunchpadMember(
-                address)
-        @mailinglists_helper.fault_catcher
-        def isTeamPublic(self, team_name):
-            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
-    # Expose in the doctest's globals, the view as the thing with the
-    # IMailingListAPI interface.  Also expose the helper functions.
-    mailinglist_api = ImpedenceMatchingView(context=None, request=None)
+    mailinglist_api = mailinglists_helper.MailingListXMLRPCTestProxy(
+        context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
     test.globs['commit'] = transaction.commit
 
@@ -189,7 +165,7 @@ special = {
 
 def test_suite():
     suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
-    launchpadlib_path = os.path.join(os.path.pardir,  'doc', 'launchpadlib')
+    launchpadlib_path = os.path.join(os.path.pardir, 'doc', 'launchpadlib')
     lplib_suite = build_doctest_suite(here, launchpadlib_path,
                                       layer=DatabaseFunctionalLayer)
     suite.addTest(lplib_suite)

@@ -18,6 +18,7 @@ from datetime import (
     )
 import email
 
+from bzrlib.revision import NULL_REVISION
 import pytz
 from sqlobject import (
     BoolCol,
@@ -31,7 +32,6 @@ from storm.expr import (
     And,
     Asc,
     Desc,
-    Exists,
     Join,
     Not,
     Or,
@@ -39,7 +39,6 @@ from storm.expr import (
     )
 from storm.locals import (
     Bool,
-    DateTime,
     Int,
     Min,
     Reference,
@@ -61,11 +60,11 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
-    IMasterStore,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -117,6 +116,13 @@ class Revision(SQLBase):
         present in the database, using the RevisionSet Zope utility.
         """
         return [parent.parent_id for parent in self.parents]
+
+    def getLefthandParent(self):
+        if len(self.parent_ids) == 0:
+            parent_id = NULL_REVISION
+        else:
+            parent_id = self.parent_ids[0]
+        return RevisionSet().getByRevisionId(parent_id)
 
     def getProperties(self):
         """See `IRevision`."""
@@ -419,26 +425,26 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getRevisionsNeedingKarmaAllocated():
+    def getRevisionsNeedingKarmaAllocated(limit=None):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
         from lp.registry.model.person import ValidPersonCache
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        store = IStore(Revision)
+        results_with_dupes = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
             RevisionAuthor.person == ValidPersonCache.id,
             Not(Revision.karma_allocated),
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Or(Branch.product != None,
-                              Branch.distroseries != None)),
-                       (Branch, BranchRevision))))
+            BranchRevision.revision == Revision.id,
+            BranchRevision.branch == Branch.id,
+            Or(Branch.product != None, Branch.distroseries != None))[:limit]
+        # Eliminate duplicate rows, returning <= limit rows
+        return store.find(
+            Revision, Revision.id.is_in(
+                results_with_dupes.get_select_expr(Revision.id)))
 
     @staticmethod
     def getPublicRevisionsForPerson(person, day_limit=30):

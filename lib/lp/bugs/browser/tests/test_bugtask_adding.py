@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.packaging import (
     IPackagingUtil,
     PackagingType,

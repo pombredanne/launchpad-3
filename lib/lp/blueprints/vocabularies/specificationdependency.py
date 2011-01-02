@@ -4,7 +4,12 @@
 """The vocabularies relating to dependencies of specifications."""
 
 __metaclass__ = type
-__all__ = ['SpecificationDepCandidatesVocabulary']
+__all__ = [
+    'SpecificationDepCandidatesVocabulary',
+    'SpecificationDependenciesVocabulary',
+    ]
+
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -19,12 +24,14 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
+    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.pillar import IPillarNameSet
+
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
@@ -51,6 +58,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     _table = Specification
     _orderBy = 'name'
     displayname = 'Select a blueprint'
+    step_title = 'Search'
 
     def _is_valid_candidate(self, spec, check_target=False):
         """Is `spec` a valid candidate spec for self.context?
@@ -90,7 +98,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         This implementation is a little fuzzy and will return specs for URLs
         that, for example, don't have the host name right.  This seems
         unlikely to cause confusion in practice, and being too anal probably
-        would be confusing (e.g. not accepting edge URLs on lpnet).
+        would be confusing (e.g. not accepting production URLs on staging).
         """
         scheme, netloc, path, params, args, fragment = urlparse(url)
         if not scheme or not netloc:
@@ -158,3 +166,14 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         return self._is_valid_candidate(obj)
 
+
+class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+    """List specifications on which the current specification depends."""
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def __iter__(self):
+        for spec in sorted(
+            self.context.dependencies, key=attrgetter('title')):
+            yield SimpleTerm(spec, spec.name, spec.title)

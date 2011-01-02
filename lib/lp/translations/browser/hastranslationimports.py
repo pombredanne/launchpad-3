@@ -25,25 +25,27 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     safe_action,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.translations.interfaces.translationimportqueue import (
+from lp.services.propertycache import cachedproperty
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
+    )
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     )
 
@@ -239,7 +241,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                     new_status = status
                     break
             if new_status is None:
-                # We are trying to set a bogus status. 
+                # We are trying to set a bogus status.
                 # That means that it's a broken request.
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
@@ -359,6 +361,7 @@ class HasTranslationImportsView(LaunchpadFormView):
             'value': entry.status.title,
             'items': items}
 
+
 class EntryImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of statuses for import."""
 
@@ -376,7 +379,7 @@ class EntryImportStatusVocabularyFactory:
     def __call__(self, context):
         terms = []
         for status in RosettaImportStatus.items:
-            if (status == self.entry.status or 
+            if (status == self.entry.status or
                 self.entry.canSetStatus(status, self.user)):
                 terms.append(
                     SimpleTerm(status.name, status.name, status.title))

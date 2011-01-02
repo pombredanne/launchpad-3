@@ -42,7 +42,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.readonly import is_read_only
 from lp.app.errors import UnexpectedFormData
-from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     IPOTMsgSet,
@@ -109,7 +108,6 @@ class POTMsgSet(SQLBase):
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence')
-    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -237,18 +235,15 @@ class POTMsgSet(SQLBase):
         else:
             return self.msgid_plural.msgid
 
-    def getCurrentDummyTranslationMessage(self, potemplate, language):
+    def getCurrentTranslationMessageOrDummy(self, pofile):
         """See `IPOTMsgSet`."""
-
-        pofile = potemplate.getPOFileByLang(language.code)
-        if pofile is None:
-            pofileset = getUtility(IPOFileSet)
-            pofile = pofileset.getDummy(potemplate, language)
+        current = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
+        if current is None:
+            return DummyTranslationMessage(pofile, self)
         else:
-            assert self.getCurrentTranslationMessage(potemplate,
-                                                     language) is None, (
-                'There is already a translation message in our database.')
-        return DummyTranslationMessage(pofile, self)
+            current.setPOFile(pofile)
+            return current
 
     def _getUsedTranslationMessage(self, potemplate, language, current=True):
         """Get a translation message which is either used in
@@ -360,6 +355,7 @@ class POTMsgSet(SQLBase):
         else:
             query = ["(NOT %s)" % in_use_clause]
         query.append('TranslationMessage.language = %s' % sqlvalues(language))
+        query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
 
         query.append('''
             potmsgset IN (
@@ -367,22 +363,11 @@ class POTMsgSet(SQLBase):
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
                     TranslationTemplateItem.potmsgset = POTMsgSet.id
-                JOIN POTemplate ON
-                    TranslationTemplateItem.potemplate = POTemplate.id
-                LEFT JOIN ProductSeries ON
-                    POTemplate.productseries = ProductSeries.id
-                LEFT JOIN Product ON
-                    ProductSeries.product = Product.id
-                LEFT JOIN DistroSeries ON
-                    POTemplate.distroseries = DistroSeries.id
-                LEFT JOIN Distribution ON
-                    DistroSeries.distribution = Distribution.id
-                WHERE
-                    POTMsgSet.id <> %s AND
-                    msgid_singular = %s AND
-                    POTemplate.iscurrent AND
-                    (Product.official_rosetta OR Distribution.official_rosetta)
-            )''' % sqlvalues(self, self.msgid_singular))
+                JOIN SuggestivePOTemplate ON
+                    TranslationTemplateItem.potemplate =
+                        SuggestivePOTemplate.potemplate
+                WHERE msgid_singular = %s
+            )''' % sqlvalues(self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
@@ -396,8 +381,8 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query)
-        }
+            'where': ' AND '.join(query),
+            }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
@@ -565,14 +550,13 @@ class POTMsgSet(SQLBase):
         # plural forms.
         order.extend([
             'msgstr%s NULLS FIRST' % quote(form)
-            for form in remaining_plural_forms
-            ])
+            for form in remaining_plural_forms])
         matches = list(
             TranslationMessage.select(' AND '.join(clauses), orderBy=order))
 
         if len(matches) > 0:
             if len(matches) > 1:
-                logging.warn(
+                logging.info(
                     "Translation for POTMsgSet %s into %s "
                     "matches %s existing translations." % sqlvalues(
                         self, pofile.language.code, len(matches)))
@@ -722,7 +706,6 @@ class POTMsgSet(SQLBase):
         if is_imported or new_message == imported_message:
             new_message.is_imported = True
 
-
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
                                          force_edition_rights, is_imported,
@@ -843,10 +826,10 @@ class POTMsgSet(SQLBase):
                         imported_message.is_current = False
                 return None
             else:
+                # The pofile=pofile is only needed until 10.09 rollout.
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
-                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,
@@ -921,7 +904,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
         current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language)
+            pofile.potemplate, pofile.language)
         if current is None:
             # Create an empty translation message.
             current = self.updateTranslation(
@@ -1177,4 +1160,3 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationTemplateItem.selectBy(
             potmsgset=self, orderBy=['id'])
-

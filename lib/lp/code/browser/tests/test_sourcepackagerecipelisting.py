@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import BrowserTestCase
 
 

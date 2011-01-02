@@ -29,16 +29,15 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    custom_widget,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -53,6 +52,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalListingBatchNavigator,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.services.propertycache import cachedproperty
 
 
 class BranchMergeProposalListingItem:

@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     )
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

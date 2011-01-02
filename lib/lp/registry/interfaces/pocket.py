@@ -12,6 +12,7 @@ __metaclass__ = type
 __all__ = [
     'PackagePublishingPocket',
     'pocketsuffix',
+    'suffixpocket',
     ]
 
 from lazr.enum import (
@@ -76,3 +77,5 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed",
     PackagePublishingPocket.BACKPORTS: "-backports",
 }
+
+suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())

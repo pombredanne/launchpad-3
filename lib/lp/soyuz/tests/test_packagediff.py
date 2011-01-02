@@ -17,7 +17,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 

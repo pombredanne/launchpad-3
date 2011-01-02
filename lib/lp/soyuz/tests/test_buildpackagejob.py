@@ -13,7 +13,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -265,6 +265,7 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             distroseries=source_package_release.upload_distroseries)
         build = self.factory.makeBinaryPackageBuild(
             source_package_release=source_package_release)
+        build.queueBuild()
         job = build.buildqueue_record.specific_job
         # For now just test that it doesn't raise an Exception
         job.score()

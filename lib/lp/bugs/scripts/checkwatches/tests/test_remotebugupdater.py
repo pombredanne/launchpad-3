@@ -9,7 +9,7 @@ import unittest
 
 import transaction
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater

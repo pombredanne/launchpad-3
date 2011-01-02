@@ -53,23 +53,16 @@ The policies require certain values to be present in the options at times...
   ...     distro = 'ubuntu'
   ...     distroseries = None
   >>> class MockOptions(MockAbstractOptions):
-  ...     buildid = 1
+  ...     builds = True
 
   >>> ab_opts = MockAbstractOptions()
   >>> bd_opts = MockOptions()
 
   >>> insecure_policy.setOptions(ab_opts)
-  >>> insecure_policy.options is ab_opts
-  True
   >>> insecure_policy.distro.name
   u'ubuntu'
   >>> buildd_policy.setOptions(ab_opts)
-  Traceback (most recent call last):
-  ...
-  UploadPolicyError: BuildID required for buildd context
   >>> buildd_policy.setOptions(bd_opts)
-  >>> buildd_policy.options is bd_opts
-  True
   >>> buildd_policy.distro.name
   u'ubuntu'
 
@@ -85,8 +78,8 @@ Policies can make decisions based on whether or not they want to
 approve an upload automatically (I.E. move it straight to ACCEPTED
 instead of UNAPPROVED)
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.series import SeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
 

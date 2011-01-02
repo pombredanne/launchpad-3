@@ -13,16 +13,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import (
-    BufferLogger,
-    QuietFakeLogger,
-    )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
@@ -83,7 +80,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         if test_args is None:
             test_args = []
         script = ArchivePopulator("test copy archives", test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = self.layer.txn
         return script
 
@@ -246,7 +243,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         # Does the script's output contain the specified sub-string?
         if output_substr is not None and not output_substr.isspace():
-            output = script.logger.buffer.getvalue()
+            output = script.logger.getLogBuffer()
             self.assertTrue(output_substr in output)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
@@ -355,10 +352,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Check which source packages are fresher or new in the second stage
         # archive.
         expected_output = (
-            "INFO: Fresher packages: 1\n"
-            "INFO: * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
-            "INFO: New packages: 1\n"
-            "INFO: * new-in-second-round (1.0)\n")
+            "INFO Fresher packages: 1\n"
+            "INFO * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
+            "INFO New packages: 1\n"
+            "INFO * new-in-second-round (1.0)\n")
 
         extra_args = ['--package-set-delta']
         self.runScript(

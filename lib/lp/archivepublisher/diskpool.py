@@ -6,12 +6,12 @@ __all__ = ['DiskPoolEntry', 'DiskPool', 'poolify', 'unpoolify']
 import os
 import tempfile
 
-from canonical.cachedproperty import cachedproperty
 from canonical.librarian.utils import (
     copy_and_close,
     sha1_from_path,
     )
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.publishing import (
     MissingSymlinkInPool,
     NotInPool,

@@ -19,10 +19,8 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-
-import paramiko
-
 from devscripts.ec2test.session import EC2SessionName
+import paramiko
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -62,6 +60,9 @@ def get_user_key():
 # Commands to run to turn a blank image into one usable for the rest of the
 # ec2 functionality.  They come in two parts, one set that need to be run as
 # root and another that should be run as the 'ec2test' user.
+# Note that the sources from http://us.ec2.archive.ubuntu.com/ubuntu/ are per
+# instructions described in http://is.gd/g1MIT .  When we switch to
+# Eucalyptus, we can dump this.
 
 from_scratch_root = """
 # From 'help set':
@@ -77,6 +78,8 @@ cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
+deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
+deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF
 
 # This next part is cribbed from rocketfuel-setup
@@ -492,9 +495,13 @@ class EC2Instance:
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
-    def check_bundling_prerequisites(self):
+    def check_bundling_prerequisites(self, name, credentials):
         """Check, as best we can, that all the files we need to bundle exist.
         """
+        if subprocess.call(['which', 'ec2-register']):
+            raise BzrCommandError(
+                '`ec2-register` command not found.  '
+                'Try `sudo apt-get install ec2-api-tools`.')
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
             raise BzrCommandError(
@@ -509,6 +516,10 @@ class EC2Instance:
             local_ec2_dir, 'cert-*.pem', 'certificate')
         self.local_pk = self._check_single_glob_match(
             local_ec2_dir, 'pk-*.pem', 'private key')
+        # The bucket `name` needs to exist and be accessible. We create it
+        # here to reserve the name. If the bucket already exists and conforms
+        # to the above requirements, this is a no-op.
+        credentials.connect_s3().create_bucket(name)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
@@ -517,6 +528,11 @@ class EC2Instance:
         :param credentials: An `EC2Credentials` object.
         """
         connection = self.connect()
+        # See http://is.gd/g1MIT .  When we switch to Eucalyptus, we can dump
+        # this installation of the ec2-ami-tools.
+        connection.perform(
+            'sudo env DEBIAN_FRONTEND=noninteractive '
+            'apt-get -y  install ec2-ami-tools')
         connection.perform('rm -f .ssh/authorized_keys')
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')

@@ -24,10 +24,6 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
@@ -35,6 +31,10 @@ from canonical.launchpad.webapp.menu import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -124,7 +124,8 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
     schema = IDistroArchSeries
 
     field_names = [
-        'architecturetag', 'official', 'supports_virtualized'
+        'architecturetag', 'official', 'supports_virtualized',
+        'enabled',
         ]
 
     @action(_('Change'), name='update')

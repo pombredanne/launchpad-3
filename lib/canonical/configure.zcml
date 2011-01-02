@@ -15,16 +15,7 @@
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="lazr.restful" file="meta.zcml" />
-    <include package="lp.services.database" />
-    <include package="lp.services.inlinehelp" file="meta.zcml" />
-    <include package="lp.services.openid" />
-    <include package="lp.services.job" />
-    <include package="lp.services.memcache" />
-    <include package="lp.services.profile" />
-    <include package="lp.services.features" />
-    <include package="lp.services.scripts" />
-    <include package="lp.services.worlddata" />
-    <include package="lp.services.salesforce" />
+    <include package="lp.services" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
 
@@ -73,13 +64,13 @@
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="specs"
         layer="lp.blueprints.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.blueprints.publisher.BlueprintsLayer"
@@ -87,13 +78,13 @@
 
     <!-- virtual host: code -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+code"
         layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.code.publisher.CodeLayer"
@@ -101,13 +92,13 @@
 
     <!-- virtual host: translations -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="translations"
         layer="lp.translations.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.translations.publisher.TranslationsLayer"
@@ -115,13 +106,13 @@
 
     <!-- virtual host: bugs -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="bugs"
         layer="lp.bugs.publisher.BugsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.bugs.publisher.BugsLayer"
@@ -129,13 +120,13 @@
 
     <!-- virtual host: answers -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="questions"
         layer="lp.answers.publisher.AnswersLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.answers.publisher.AnswersLayer"

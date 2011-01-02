@@ -40,7 +40,7 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
         # Break into bits.
         while True:
             revisions = list(
-                revision_set.getRevisionsNeedingKarmaAllocated()[:100])
+                revision_set.getRevisionsNeedingKarmaAllocated(100))
             if len(revisions) == 0:
                 break
             for revision in revisions:

@@ -157,9 +157,9 @@ drivers, owners, and admins.
 First, we add a couple of IRC nicknames for Carlos.
 
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.person import IrcID
-    >>> from zope.component import getUtility
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> IrcID(person=carlos, network='freenode', nickname='carlos')

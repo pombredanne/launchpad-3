@@ -11,7 +11,9 @@ __all__ = [
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
     'ProxiedLibraryFileAlias',
+    'SafeStreamOrRedirectLibraryFileAliasView',
     'StreamOrRedirectLibraryFileAliasView',
+    'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
 
 import os
@@ -24,7 +26,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -44,6 +46,7 @@ from canonical.librarian.utils import (
     filechunks,
     guess_librarian_encoding,
     )
+from lp.services.features import getFeatureFlag
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -77,11 +80,29 @@ class LibraryFileAliasMD5View(LaunchpadView):
         return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
-class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
+class MixedFileAliasView(LaunchpadView):
     """Stream or redirects to `ILibraryFileAlias`.
 
-    It streams the contents of restricted library files or redirects
-    to public ones.
+    If the file is public, it will redirect to the files http url.
+
+    Otherwise if the feature flag publicrestrictedlibrarian is set to 'on' this
+    will allocate a token and redirect to the aliases private url.
+
+    Otherwise it will proxy the file in the appserver.
+    
+    Once we no longer have any proxy code at all it should be possible to
+    consolidate this with LibraryFileAliasView.
+
+    Note that streaming restricted files is a security concern - they show up
+    in the launchpad.net domain rather than launchpadlibrarian.net and thus
+    we have to take special care about their origin.
+    SafeStreamOrRedirectLibraryFileAliasView is used when we do not trust the
+    content, otherwise StreamOrRedirectLibraryFileAliasView. We are working
+    to remove both of these views entirely, but some transition will be 
+    needed.
+
+    The context provides a file-like interface - it can be opened and closed
+    and read from.
     """
     implements(IBrowserPublisher)
 
@@ -91,6 +112,8 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         # the shell environment changes. Download the library file
         # content into a local temporary file. Finally, restore original
         # proxy-settings and refresh the urllib2 opener.
+        # XXX: This is not threadsafe, so two calls at once will collide and
+        # can then corrupt the variable. bug=395960
         original_proxy = os.getenv('http_proxy')
         try:
             if original_proxy is not None:
@@ -137,24 +160,64 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         return tmp_file
 
     def browserDefault(self, request):
-        """Decides whether to redirect or stream the file content.
+        """Decides how to deliver the file.
+        
+        The options are:
+         - redirect to the contexts http url
+         - redirect to a time limited secure url
+         - stream the file content.
 
         Only restricted file contents are streamed, finishing the traversal
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
+        # Perhaps we should give a 404 at this point rather than asserting?
+        # If someone has a page open with an attachment link, then someone
+        # else deletes the attachment, this is a normal situation, not an
+        # error. -- RBC 20100726.
         assert not self.context.deleted, (
-            "StreamOrRedirectLibraryFileAliasView can not operate on "
-            "deleted librarian files, since their URL is undefined.")
-
-        if self.context.restricted:
+            "MixedFileAliasView can not operate on deleted librarian files, "
+            "since their URL is undefined.")
+        if not self.context.restricted:
+            # Public file, just point the client at the right place.
+            return RedirectionView(self.context.http_url, self.request), ()
+        if getFeatureFlag(u'publicrestrictedlibrarian') != 'on':
+            # Restricted file and we have not enabled the public 
+            # restricted librarian yet :- deliver inline.
+            self._when_streaming()
             return self, ()
-
-        return RedirectionView(self.context.http_url, self.request), ()
+        # Avoids a circular import seen in
+        # scripts/ftests/librarianformatter.txt
+        from canonical.launchpad.database.librarian import TimeLimitedToken
+        # Allocate a token for the file to be accessed for a limited time and
+        # redirect the client to the file.
+        token = TimeLimitedToken.allocate(self.context.private_url)
+        final_url = self.context.private_url + '?token=%s' % token
+        return RedirectionView(final_url, self.request), ()
 
     def publishTraverse(self, request, name):
-        """See `IBrowserPublisher`."""
+        """See `IBrowserPublisher` - can't traverse below a file."""
         raise NotFound(name, self.context)
+
+    def _when_streaming(self):
+        """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
+
+
+
+class SafeStreamOrRedirectLibraryFileAliasView(MixedFileAliasView):
+    """A view for Librarian files that sets the content disposition header."""
+
+    def _when_streaming(self):
+        super(SafeStreamOrRedirectLibraryFileAliasView, self)._when_streaming()
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment')
+
+
+# The eventual name of MixedFileAliasView once the proxy code
+# is ripped out.
+RedirectPerhapsWithTokenLibraryFileAliasView = MixedFileAliasView
+# The name for the old behaviour being removed:
+StreamOrRedirectLibraryFileAliasView = MixedFileAliasView
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
@@ -192,7 +255,20 @@ class FileNavigationMixin:
 
 
 class ProxiedLibraryFileAlias:
-    """A `LibraryFileAlias` proxied via webapp.
+    """A `LibraryFileAlias` decorator for use in URL generation.
+
+    The URL's output by this decorator will always point at the webapp. This is
+    useful when:
+     - we are proxying files via the webapp (as we do at the moment)
+     - when the webapp has to be contacted to get access to a file (the case
+       for restricted files in the future)
+     - files might change from public to private and thus not work even if the
+       user has access to the once its private, unless they go via the webapp.
+
+    This should be used anywhere we are outputting URL's to LibraryFileAliases
+    other than directly in rendered pages. For rendered pages, using a
+    LibraryFileAlias directly is OK as at that point the status of the file
+    is know.
 
     Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
     even when called from the webservice domain.

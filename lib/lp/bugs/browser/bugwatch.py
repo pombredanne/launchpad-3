@@ -14,22 +14,22 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
-from lp.bugs.browser.bugcomment import should_display_remote_comments
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
@@ -64,10 +64,6 @@ class BugWatchView(LaunchpadView):
         If the current user is not a member of the Launchpad developers
         team, no comments will be returned.
         """
-        user = getUtility(ILaunchBag).user
-        if not should_display_remote_comments(user):
-            return []
-
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
             truncate=True)
 
@@ -76,7 +72,6 @@ class BugWatchView(LaunchpadView):
         displayed_comments = []
         for bug_comment in bug_comments:
             if bug_comment.bugwatch == self.context:
-                bug_comment.display_if_from_bugwatch = True
                 displayed_comments.append(bug_comment)
 
         return displayed_comments
@@ -136,18 +131,21 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return len(self.context.bugtasks) == 0
+        return (
+            len(self.context.bugtasks) == 0 and
+            self.context.getImportedBugMessages().is_empty())
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):
         bugwatch = self.context
-        self.request.response.addInfoNotification(
-            structured(
+        # Build the notification first, whilst we still have the data.
+        notification_message = structured(
             'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a>'
             ' bug watch has been deleted.',
             url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
-            remote_bug=bugwatch.remotebug))
+            remote_bug=bugwatch.remotebug)
         bugwatch.bug.removeWatch(bugwatch, self.user)
+        self.request.response.addInfoNotification(notification_message)
 
     def showResetActionCondition(self, action):
         """Return True if the reset action can be shown to this user."""

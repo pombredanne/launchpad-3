@@ -13,9 +13,12 @@ from unittest import TestLoader
 
 import pytz
 import transaction
+from zope.component import getUtility
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 
@@ -31,8 +34,8 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
         `POTMsgSet`, as well as a Esperanto translation.
         """
         super(TestTranslatableMessageBase, self).setUp()
-        self.product = self.factory.makeProduct()
-        self.product.official_rosetta = True
+        self.product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.trunk = self.product.getSeries('trunk')
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.trunk)
@@ -137,7 +140,8 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
         super(TestTranslatableMessageExternal, self).setUp()
         common_msgid = self.potmsgset.singular_text
         self.external_potemplate = self.factory.makePOTemplate()
-        self.external_potemplate.productseries.product.official_rosetta = True
+        product = self.external_potemplate.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         self.external_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.external_potemplate,
             singular=common_msgid, sequence=1)
@@ -150,6 +154,12 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
             pofile=self.external_pofile, potmsgset=self.external_potmsgset)
 
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
+
+        self._refreshSuggestiveTemplatesCache()
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Refresh the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_getExternalTranslations(self):
         transaction.commit()
@@ -175,24 +185,24 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         super(TestTranslatableMessageSuggestions, self).setUp()
         self.now = self.gen_now().next
         self.suggestion1 = self._createTranslation(date_updated=self.now())
-        self.current =  self._createTranslation(is_current=True,
+        self.current = self._createTranslation(is_current=True,
                                                 date_updated=self.now())
         self.suggestion2 = self._createTranslation(date_updated=self.now())
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
     def test_getAllSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getAllSuggestions()
         self.assertContentEqual([self.suggestion1, self.suggestion2],
                                 suggestions)
 
     def test_getDismissedSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getDismissedSuggestions()
         self.assertContentEqual([self.suggestion1], suggestions)
 
     def test_getUnreviewedSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([self.suggestion2], suggestions)
 

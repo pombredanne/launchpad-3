@@ -13,7 +13,7 @@ from bzrlib.tests import TestCaseWithTransport
 import CVS
 import pysvn
 
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,

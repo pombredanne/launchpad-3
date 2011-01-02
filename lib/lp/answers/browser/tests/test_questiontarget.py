@@ -12,7 +12,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
 from lp.testing import login_person, person_logged_in, TestCaseWithFactory
@@ -131,30 +131,6 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
     def test_template_question_set(self):
         question_set = getUtility(IQuestionSet)
         self.assertViewTemplate(question_set, 'question-listing.pt')
-
-
-class TestSearchQuestionsView_ubuntu_packages(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView.ubuntu_packages."""
-
-    def test_nonproduct_ubuntu_packages(self):
-        distribution = self.factory.makeDistribution()
-        view = create_initialized_view(distribution, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(None, packages)
-
-    def test_product_ubuntu_packages_unlinked(self):
-        product = self.factory.makeProduct()
-        view = create_initialized_view(product, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(None, packages)
-
-    def test_product_ubuntu_packages_linked(self):
-        product = self.factory.makeProduct()
-        self.linkPackage(product, 'cow')
-        view = create_initialized_view(product, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(1, len(packages))
-        self.assertEqual('cow', packages[0].name)
 
 
 class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):

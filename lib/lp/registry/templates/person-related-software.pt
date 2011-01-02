@@ -18,7 +18,6 @@
     <tal:navlinks replace="structure context/@@+related-software-navlinks"/>
   </div>
 
-  <tal:cache content="cache:private, 30 minute">
   <div id="packages">
 
   <tal:maintained-packages
@@ -151,7 +150,6 @@
       doesn't own or drive any projects.
     </p>
   </div>
-  </tal:cache>
 </div>
 
 <metal:macros fill-slot="bogus">

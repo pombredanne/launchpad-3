@@ -3,8 +3,6 @@
 
 """Module docstring goes here."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 __all__ = [
@@ -68,10 +66,6 @@ def referenced_oops():
                 if match.group('oops') is not None:
                     code_string = match.group('oopscode')
                     referenced_codes.add(code_string.upper())
-                    found = True
-            assert found, \
-                'PostgreSQL regexp matched content that Python regexp ' \
-                'did not (%r)' % (content,)
 
     return referenced_codes
 

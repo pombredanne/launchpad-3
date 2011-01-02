@@ -5,12 +5,14 @@
 
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestArchiveSubscriptions(TestCaseWithFactory):
@@ -50,3 +52,32 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         # When a subscription exists, it's fine.
         login_person(self.subscriber)
         self.assertEqual(self.archive.owner.name, "subscribertest")
+
+    def test_new_subscription_sends_email(self):
+        # Creating a new subscription sends an email to all members
+        # of the person or team subscribed.
+        self.assertEqual(0, len(pop_notifications()))
+
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            self.subscriber.preferredemail.email,
+            notifications[0]['to'])
+
+    def test_new_commercial_subscription_no_email(self):
+        # As per bug 611568, an email is not sent for commercial PPAs.
+        with celebrity_logged_in('commercial_admin'):
+            self.archive.commercial = True
+
+        # Logging in as a celebrity team causes an email to be sent
+        # because a person is added as a member of the team, so this
+        # needs to be cleared out before calling newSubscription().
+        pop_notifications()
+
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+
+        self.assertEqual(0, len(pop_notifications()))

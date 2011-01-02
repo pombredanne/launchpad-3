@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,

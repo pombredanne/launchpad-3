@@ -11,9 +11,14 @@
 <div metal:fill-slot="main">
 
   <div class="top-portlet">
-    <tal:permissions replace="
-        structure
-        context/product/@@+portlet-not-using-launchpad"/>
+    <tal:not-using-launchpad
+      condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+      <tal:message
+        replace="structure context/@@+portlet-not-using-launchpad"/>
+      <tal:translations-configuration
+        condition="view/can_configure_translations"
+        replace="structure context/product/@@+portlet-configuration"/>
+    </tal:not-using-launchpad>
   </div>
 
   <p>

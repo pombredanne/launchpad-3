@@ -35,6 +35,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
+from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 
 
 COMMASPACE = ', '
@@ -180,7 +181,7 @@ def new_list_for_team(team):
     """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    experts = getUtility(ILaunchpadCelebrities).registry_experts
     reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
@@ -262,15 +263,36 @@ class MailmanStub:
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
-        message_ids = set()
         for status in (PostedMessageStatus.APPROVAL_PENDING,
                        PostedMessageStatus.REJECTION_PENDING,
                        PostedMessageStatus.DISCARD_PENDING):
-            for message in message_set.getHeldMessagesWithStatus(status):
-                message_ids.add(message.message_id)
-        for message_id in message_ids:
-            message = message_set.getMessageByMessageID(message_id)
-            message.acknowledge()
+            message_set.acknowledgeMessagesWithStatus(status)
 
 
 mailman = MailmanStub()
+
+
+class MailingListXMLRPCTestProxy(MailingListAPIView):
+    """A low impedance test proxy for code that uses MailingListAPIView."""
+
+    @fault_catcher
+    def getPendingActions(self):
+        return super(MailingListXMLRPCTestProxy, self).getPendingActions()
+
+    @fault_catcher
+    def reportStatus(self, statuses):
+        return super(MailingListXMLRPCTestProxy, self).reportStatus(statuses)
+
+    @fault_catcher
+    def getMembershipInformation(self, teams):
+        return super(
+            MailingListXMLRPCTestProxy, self).getMembershipInformation(teams)
+
+    @fault_catcher
+    def isLaunchpadMember(self, address):
+        return super(MailingListXMLRPCTestProxy, self).isLaunchpadMember(
+            address)
+
+    @fault_catcher
+    def isTeamPublic(self, team_name):
+        return super(MailingListXMLRPCTestProxy, self).isTeamPublic(team_name)

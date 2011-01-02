@@ -23,10 +23,11 @@ We will export bug #1 in the context of Firefox.  First some initial setup:
   ...     import xml.etree.cElementTree as ET
   ... except ImportError:
   ...     import cElementTree as ET
-  >>> from cStringIO import StringIO
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import (
-  ...     IBugSet, IPersonSet, IProductSet)
+  >>> from cStringIO import StringIO
+  >>> from lp.bugs.interfaces.bug import IBugSet
+  >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from lp.registry.interfaces.product import IProductSet
   >>> from lp.bugs.scripts.bugexport import (
   ...     serialise_bugtask, export_bugtasks)
 

@@ -42,7 +42,6 @@ class GettextCheckMessages(LaunchpadScript):
     _check_count = 0
     _error_count = 0
     _disable_count = 0
-    _unmask_count = 0
     _commit_count = 0
 
     _commit_interval = timedelta(0, 3)
@@ -73,10 +72,9 @@ class GettextCheckMessages(LaunchpadScript):
         self.logger.info("Messages checked: %d" % self._check_count)
         self.logger.info("Validation errors: %d" % self._error_count)
         self.logger.info("Messages disabled: %d" % self._disable_count)
-        self.logger.info("Messages unmasked: %d" % self._unmask_count)
         self.logger.info("Commit points: %d" % self._commit_count)
 
-    def _log_bad_message(self, bad_message, unmasked_message, error):
+    def _log_bad_message(self, bad_message, error):
         """Report gettext validation error for active message."""
         currency_markers = []
         if bad_message.is_current:
@@ -87,9 +85,6 @@ class GettextCheckMessages(LaunchpadScript):
             currency_markers.append('unused')
         currency = ', '.join(currency_markers)
         self.logger.info("%d (%s): %s" % (bad_message.id, currency, error))
-        if unmasked_message is not None:
-            self.logger.info(
-                "%s: unmasked %s." % (bad_message.id, unmasked_message.id))
 
     def _check_message_for_error(self, translationmessage):
         """Return error message for `translationmessage`, if any.
@@ -108,39 +103,19 @@ class GettextCheckMessages(LaunchpadScript):
 
         return None
 
-    def _get_imported_alternative(self, translationmessage):
-        """Look for a valid, imported alternative for this message."""
-        if translationmessage.is_imported:
-            return None
-
-        potmsgset = translationmessage.potmsgset
-        pofile = translationmessage.pofile
-        return potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language)
-
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""
         error = self._check_message_for_error(translationmessage)
         if error is None:
             return
 
-        imported = self._get_imported_alternative(translationmessage)
-        if imported is not None:
-            # There is also an imported message that the current message
-            # was previously masking.  If that one passes checks, we can
-            # activate it instead.  Disabling the current message
-            # "unmasks" the imported one.
-            imported_error = self._check_message_for_error(imported)
-            if imported_error is not None:
-                imported = None
+        # Here would be the place to check if another message can be used
+        # instead of the bad one.
 
-        self._log_bad_message(translationmessage, imported, error)
+        self._log_bad_message(translationmessage, error)
         if translationmessage.is_current:
             translationmessage.is_current = False
             self._disable_count += 1
-            if imported is not None:
-                imported.is_current = True
-                self._unmask_count += 1
 
     def _do_commit(self):
         """Commit ongoing transaction, start a new one."""

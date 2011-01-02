@@ -28,8 +28,8 @@ from urllib import urlencode
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (
-    getUtility,
     getMultiAdapter,
+    getUtility,
     queryMultiAdapter,
     )
 from zope.formlib import form
@@ -43,7 +43,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages,
@@ -52,12 +51,8 @@ from canonical.launchpad.helpers import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     Link,
-    safe_action,
     stepthrough,
     stepto,
     urlappend,
@@ -67,7 +62,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from lp.app.errors import NotFoundError
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -80,10 +74,19 @@ from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
@@ -204,7 +207,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return self.default_template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
-        if involvement.official_answers:
+        if service_uses_launchpad(involvement.answers_usage):
             # Primary contexts that officially use answers have a
             # search and listing presentation.
             return self.default_template
@@ -504,22 +507,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return '<a href="%s">%s</a>' % (
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
-
-    @property
-    def ubuntu_packages(self):
-        """The Ubuntu `IDistributionSourcePackage`s linked to the context.
-
-        If the context is an `IProduct` and it has `IPackaging` links to
-        Ubuntu, a list is returned. Otherwise None is returned
-        """
-        if IProduct.providedBy(self.context):
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            packages = [
-                package for package in self.context.distrosourcepackages
-                if package.distribution == ubuntu]
-            if len(packages) > 0:
-                return packages
-        return None
 
     @property
     def can_configure_answers(self):

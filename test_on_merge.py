@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
@@ -13,7 +13,7 @@ from StringIO import StringIO
 import psycopg2
 from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM, SIGINT, SIGHUP
-from select import select
+import select
 
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
@@ -73,17 +73,28 @@ def setup_test_database():
     except psycopg2.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
-    cur.execute("""
-        select count(*) from pg_stat_activity
-        where datname in ('launchpad_dev',
-            'launchpad_ftest_template', 'launchpad_ftest')
-        """)
-    existing_connections = cur.fetchone()[0]
-    if existing_connections > 0:
-        print 'Cannot rebuild database. There are %d open connections.' % (
-                existing_connections,
-                )
+
+    # If there are existing database connections, terminate. We have
+    # rogue processes still connected to the database.
+    for loop in range(2):
+        cur.execute("""
+            SELECT usename, current_query
+            FROM pg_stat_activity
+            WHERE datname IN (
+                'launchpad_dev', 'launchpad_ftest_template', 'launchpad_ftest')
+            """)
+        results = list(cur.fetchall())
+        if not results:
+            break
+        # Rogue processes. Report, sleep for a bit, and try again.
+        for usename, current_query in results:
+            print '!! Open connection %s - %s' % (usename, current_query)
+        print 'Sleeping'
+        time.sleep(20)
+    else:
+        print 'Cannot rebuild database. There are open connections.'
         return 1
+
     cur.close()
     con.close()
 
@@ -164,7 +175,24 @@ def run_test_process():
     # Popen.communicate() with large data sets.
     open_readers = set([xvfb_proc.stdout])
     while open_readers:
-        rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
+        # select() blocks for a long time and can easily fail with EINTR
+        # <https://bugs.launchpad.net/launchpad/+bug/615740>.  Really we
+        # should have EINTR protection across the whole script (other syscalls
+        # might be interrupted) but this is the longest and most likely to
+        # hit, and doing it perfectly in python has proved to be quite hard in
+        # bzr. -- mbp 20100924
+        while True:
+            try:
+                rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
+                break
+            except select.error, e:
+                # nb: select.error doesn't expose a named 'errno' attribute,
+                # at least in python 2.6.5; see
+                # <http://mail.python.org/pipermail/python-dev/2000-October/009671.html>
+                if e[0] == errno.EINTR:
+                    continue
+                else:
+                    raise
 
         if len(rlist) == 0:
             # The select() statement timed out!

@@ -26,14 +26,12 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
-    In,
     Join,
     )
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -72,6 +70,7 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackageUploadCustomFormat,
@@ -102,7 +101,6 @@ from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
-
 
 def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
@@ -675,23 +673,20 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return PackageUploadSource(
             packageupload=self,
-            sourcepackagerelease=spr.id
-            )
+            sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
         """See `IPackageUpload`."""
         return PackageUploadBuild(
             packageupload=self,
-            build=build.id
-            )
+            build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
         return PackageUploadCustom(
             packageupload=self,
             libraryfilealias=library_file.id,
-            customformat=custom_type
-            )
+            customformat=custom_type)
 
     def isPPA(self):
         """See `IPackageUpload`."""
@@ -767,12 +762,12 @@ class PackageUpload(SQLBase):
         # uploads.
         for build in self.builds:
             for bpr in build.build.binarypackages:
-                files.extend(
-                    [(bpf.libraryfile.filename,'','') for bpf in bpr.files])
+                files.extend([
+                    (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
 
         if self.customfiles:
             files.extend(
-                [(file.libraryfilealias.filename,'','')
+                [(file.libraryfilealias.filename, '', '')
                 for file in self.customfiles])
 
         return files
@@ -801,16 +796,16 @@ class PackageUpload(SQLBase):
         :changes: A dictionary with the changes file content.
         """
         # Add the date field.
-        message.DATE = 'Date: %s' % changes['date']
+        message.DATE = 'Date: %s' % changes['Date']
 
         # Add the debian 'Changed-By:' field.
-        changed_by = changes.get('changed-by')
+        changed_by = changes.get('Changed-By')
         if changed_by is not None:
             changed_by = sanitize_string(changed_by)
             message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
         # Add maintainer if present and different from changed-by.
-        maintainer = changes.get('maintainer')
+        maintainer = changes.get('Maintainer')
         if maintainer is not None:
             maintainer = sanitize_string(maintainer)
             if maintainer != changed_by:
@@ -831,8 +826,8 @@ class PackageUpload(SQLBase):
                 message.SIGNER = '\nSigned-By: %s' % signer_signature
 
         # Add the debian 'Origin:' field if present.
-        if changes.get('origin') is not None:
-            message.ORIGIN = '\nOrigin: %s' % changes['origin']
+        if changes.get('Origin') is not None:
+            message.ORIGIN = '\nOrigin: %s' % changes['Origin']
 
         if self.sources or self.builds:
             message.SPR_URL = canonical_url(self.my_source_package_release)
@@ -855,7 +850,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -883,9 +878,14 @@ class PackageUpload(SQLBase):
 
         body = message.template % message.__dict__
 
+        subject = "%s rejected" % self.changesfile.filename
+        if self.isPPA():
+            subject = "[PPA %s] %s" % (
+                get_ppa_reference(self.archive), subject)
+
         self._sendMail(
-            recipients, "%s rejected" % self.changesfile.filename,
-            body, dry_run, changesfile_content=changesfile_content,
+            recipients, subject, body, dry_run,
+            changesfile_content=changesfile_content,
             attach_changes=attach_changes)
 
     def _sendSuccessNotification(
@@ -933,7 +933,7 @@ class PackageUpload(SQLBase):
             STATUS = "New"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -948,7 +948,7 @@ class PackageUpload(SQLBase):
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -967,7 +967,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -994,7 +994,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -1045,14 +1045,14 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['Changed-By']):
             return
 
         if announce_list:
             if not self.signing_key:
                 from_addr = None
             else:
-                from_addr = guess_encoding(changes['changed-by'])
+                from_addr = guess_encoding(changes['Changed-By'])
 
             do_sendmail(
                 AnnouncementMessage,
@@ -1110,7 +1110,7 @@ class PackageUpload(SQLBase):
         # There can be no recipients if none of the emails are registered
         # in LP.
         if not recipients:
-            debug(self.logger,"No recipients on email, not sending.")
+            debug(self.logger, "No recipients on email, not sending.")
             return
 
         # Make the content of the actual changes file available to the
@@ -1135,7 +1135,7 @@ class PackageUpload(SQLBase):
         """Return a list of recipients for notification emails."""
         candidate_recipients = []
         debug(self.logger, "Building recipients list.")
-        changer = self._emailToPerson(changes['changed-by'])
+        changer = self._emailToPerson(changes['Changed-By'])
 
         if self.signing_key:
             # This is a signed upload.
@@ -1157,7 +1157,7 @@ class PackageUpload(SQLBase):
 
         # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
-            maintainer = self._emailToPerson(changes['maintainer'])
+            maintainer = self._emailToPerson(changes['Maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")
@@ -1222,7 +1222,7 @@ class PackageUpload(SQLBase):
         :attach_changes: A flag governing whether the original changesfile
             content shall be attached to the email.
         """
-        extra_headers = { 'X-Katie' : 'Launchpad actually' }
+        extra_headers = {'X-Katie': 'Launchpad actually'}
 
         # XXX cprov 20071212: ideally we only need to check archive.purpose,
         # however the current code in uploadprocessor.py (around line 259)
@@ -1398,8 +1398,7 @@ class PackageUploadBuild(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
@@ -1435,6 +1434,7 @@ class PackageUploadBuild(SQLBase):
             # At this point (uploads are already processed) sections are
             # guaranteed to exist in the DB. We don't care if sections are
             # not official.
+            pass
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -1442,20 +1442,30 @@ class PackageUploadBuild(SQLBase):
         build_archtag = self.build.distro_arch_series.architecturetag
         # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
-        target_dar = self.packageupload.distroseries[build_archtag]
+        target_das = self.packageupload.distroseries[build_archtag]
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_dar.distroseries.distribution.name,
-            target_dar.distroseries.name,
+            target_das.distroseries.distribution.name,
+            target_das.distroseries.name,
             build_archtag))
-        # And get the other distroarchseriess
-        other_dars = set(self.packageupload.distroseries.architectures)
-        other_dars = other_dars - set([target_dar])
+
+        # Get the other enabled distroarchseries for this
+        # distroseries.  If the binary is architecture independent then
+        # we need to publish it in all of those too.
+
+        # XXX Julian 2010-09-28 bug=649859
+        # This logic is duplicated in
+        # PackagePublishingSet.copyBinariesTo() and should be
+        # refactored.
+        other_das = set(
+            arch for arch in self.packageupload.distroseries.architectures
+            if arch.enabled)
+        other_das = other_das - set([target_das])
         # First up, publish everything in this build into that dar.
         published_binaries = []
         for binary in self.build.binarypackages:
-            target_dars = set([target_dar])
+            target_dars = set([target_das])
             if not binary.architecturespecific:
-                target_dars = target_dars.union(other_dars)
+                target_dars = target_dars.union(other_das)
                 debug(logger, "... %s/%s (Arch Independent)" % (
                     binary.binarypackagename.name,
                     binary.version))
@@ -1484,8 +1494,7 @@ class PackageUploadBuild(SQLBase):
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    pocket=self.packageupload.pocket
-                    )
+                    pocket=self.packageupload.pocket)
                 published_binaries.append(bpph)
         return published_binaries
 
@@ -1499,13 +1508,11 @@ class PackageUploadSource(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     sourcepackagerelease = ForeignKey(
         dbName='sourcepackagerelease',
-        foreignKey='SourcePackageRelease'
-        )
+        foreignKey='SourcePackageRelease')
 
     def getSourceAncestry(self):
         """See `IPackageUploadSource`."""
@@ -1612,6 +1619,7 @@ class PackageUploadSource(SQLBase):
         # At this point (uploads are already processed) sections are
         # guaranteed to exist in the DB. We don't care if sections are
         # not official.
+        pass
 
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
@@ -1629,8 +1637,7 @@ class PackageUploadSource(SQLBase):
             distroseries=self.packageupload.distroseries,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
-            pocket=self.packageupload.pocket
-            )
+            pocket=self.packageupload.pocket)
 
 
 class PackageUploadCustom(SQLBase):
@@ -1641,8 +1648,7 @@ class PackageUploadCustom(SQLBase):
 
     packageupload = ForeignKey(
         dbName='packageupload',
-        foreignKey='PackageUpload'
-        )
+        foreignKey='PackageUpload')
 
     customformat = EnumCol(dbName='customformat', unique=False,
                            notNull=True, schema=PackageUploadCustomFormat)
@@ -1888,11 +1894,11 @@ class PackageUploadSet:
         # method can be removed and call sites updated to use this one.
         store = Store.of(distroseries)
 
-        def dbitem_values_tuple(item_or_list):
+        def dbitem_tuple(item_or_list):
             if not isinstance(item_or_list, list):
-                return (item_or_list.value,)
+                return (item_or_list,)
             else:
-                return tuple(item.value for item in item_or_list)
+                return tuple(item_or_list)
 
         timestamp_query_clause = ()
         if created_since_date is not None:
@@ -1901,34 +1907,31 @@ class PackageUploadSet:
 
         status_query_clause = ()
         if status is not None:
-            status = dbitem_values_tuple(status)
-            status_query_clause = (
-                In(PackageUpload.status, status),)
+            status = dbitem_tuple(status)
+            status_query_clause = (PackageUpload.status.is_in(status),)
 
         archives = distroseries.distribution.getArchiveIDList(archive)
-        archive_query_clause = (
-            In(PackageUpload.archiveID, archives),)
+        archive_query_clause = (PackageUpload.archiveID.is_in(archives),)
 
         pocket_query_clause = ()
         if pocket is not None:
-            pocket = dbitem_values_tuple(pocket)
-            pocket_query_clause = (
-                In(PackageUpload.pocket, pocket),)
+            pocket = dbitem_tuple(pocket)
+            pocket_query_clause = (PackageUpload.pocket.is_in(pocket),)
 
         custom_type_query_clause = ()
         if custom_type is not None:
-            custom_type = dbitem_values_tuple(custom_type)
+            custom_type = dbitem_tuple(custom_type)
             custom_type_query_clause = (
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
-                In(PackageUploadCustom.customformat, custom_type))
+                PackageUploadCustom.customformat.is_in(custom_type))
 
         return store.find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
             *(status_query_clause + archive_query_clause +
               pocket_query_clause + timestamp_query_clause +
-              custom_type_query_clause)
-            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
+              custom_type_query_clause)).order_by(
+                  Desc(PackageUpload.id)).config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

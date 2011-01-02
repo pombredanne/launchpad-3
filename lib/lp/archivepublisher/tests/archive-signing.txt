@@ -1,4 +1,5 @@
-= Archive signing =
+Archive signing
+===============
 
 `IArchive ` objects may be signed using its a IGPGKey pointed by its
 'signing_key' attribute.
@@ -25,13 +26,14 @@ We will setup and use the test-keyserver (zeca).
     >>> z.setUp()
 
 
-== Querying 'pending signing key' PPAs ==
+Querying 'pending signing key' PPAs
+-----------------------------------
 
 `IArchiveSet.getPPAsPendingSigningKey` allows call-sites to query for
 PPA pending signing key generation.
 
-    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
 Only PPAs with at least one source publication are considered.
 
@@ -112,7 +114,8 @@ It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
     PPA for Celso Providelo
 
 
-== Generating a PPA signing key ==
+Generating a PPA signing key
+----------------------------
 
 As mentioned above, generated signing_keys will be stored in a
 location defined by the system configuration.
@@ -220,7 +223,8 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
     >>> print signing_key.can_encrypt
     False
 
-The generated key UID follows "Launchpad %(ppa.displayname)s" format.
+The generated key UID follows the "Launchpad PPA for %(person.displayname)s"
+format.
 
     >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
@@ -331,11 +335,13 @@ printing the context the key is generated.
     >>> naked_gpghandler.generateKey = mock_key_generator
 
 When the signing key for the named-ppa is requested, it is generated
-in the default PPA context then propagated to the named-ppa.
+in the default PPA context then propagated to the named-ppa. The key is
+named after the user, even if the default PPA name is something different.
 
+    >>> cprov.displayname = "Not Celso Providelo"
     >>> named_ppa_signing_key = IArchiveSigningKey(named_ppa)
     >>> named_ppa_signing_key.generateSigningKey()
-    Generating: Launchpad PPA for Celso Providelo
+    Generating: Launchpad PPA for Not Celso Providelo
 
     >>> print cprov.archive.signing_key.fingerprint
     447DBF38C4F9C4ED752246B77D88913717B05A8F
@@ -348,7 +354,8 @@ Restore the original functionality of GPGHandler.
     >>> naked_gpghandler.generateKey = real_key_generator
 
 
-== Signing PPA repository ==
+Signing PPA repository
+----------------------
 
 `IArchiveSigningKey.signRepository` can be user to sign repositories
 for archive which already contains a 'signing_key'.

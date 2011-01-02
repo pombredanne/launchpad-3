@@ -3,8 +3,6 @@
 
 """Server classes that know how to create various kinds of foreign archive."""
 
-from __future__ import with_statement
-
 __all__ = [
     'CVSServer',
     'GitServer',
@@ -32,7 +30,7 @@ from dulwich.repo import Repo as GitRepo
 import pysvn
 import svn_oo
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from lp.services.log.logger import BufferLogger
 
 
 def local_path_to_url(local_path):
@@ -77,7 +75,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, QuietFakeLogger())
+        svn_oo.Repository.Create(path, BufferLogger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -169,7 +167,7 @@ class CVSServer(Server):
         :param path: The local path to create a repository in.
         :return: A CVS.Repository`.
         """
-        return CVS.init(path, QuietFakeLogger())
+        return CVS.init(path, BufferLogger())
 
     def getRoot(self):
         """Return the CVS root for this server."""
@@ -233,5 +231,5 @@ class MercurialServer(Server):
                 f.write(contents)
             finally:
                 f.close()
-            repo.add([filename])
+            repo[None].add([filename])
         repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')

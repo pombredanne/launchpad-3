@@ -20,6 +20,7 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
 
@@ -78,7 +79,6 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
-        self.log.lines = []
         self.layer.txn.commit()
 
     def assertBuildsCreated(self, amount):
@@ -102,7 +102,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
-            "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+            "Source Upload Failed\nGot: %s" % self.log.getLogBuffer())
         acceptable_statuses = [
             PackageUploadStatus.NEW,
             PackageUploadStatus.UNAPPROVED,
@@ -112,7 +112,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         # Store source queue item for future use.
         self.source_queue = queue_item
 
-    def _uploadBinary(self, archtag):
+    def _uploadBinary(self, archtag, build):
         """Upload the base binary.
 
         Ensure it got processed and has a respective queue record.
@@ -121,11 +121,11 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self._prepareUpload(self.binary_dir)
         self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", self.binary_dir),
-            self.getBinaryChangesfileFor(archtag))
+            self.getBinaryChangesfileFor(archtag), build=build)
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
-            "Binary Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+            "Binary Upload Failed\nGot: %s" % self.log.getLogBuffer())
         self.assertEqual(queue_item.builds.count(), 1)
         return queue_item.builds[0].build
 
@@ -195,6 +195,13 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         real_policy = self.policy
         self.policy = 'insecure'
         super(TestBuilddUploads, self).setUp()
+        # Publish the source package release so it can be found by
+        # NascentUploadFile.findSourcePackageRelease().
+        spr = self.source_queue.sources[0].sourcepackagerelease
+        getUtility(IPublishingSet).newSourcePublication(
+            self.distroseries.main_archive, spr,
+            self.distroseries, spr.component,
+            spr.section, PackagePublishingPocket.RELEASE)
         self.policy = real_policy
 
     def _publishBuildQueueItem(self, queue_item):
@@ -205,10 +212,9 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
 
-    def _setupUploadProcessorForBuild(self, build_candidate):
+    def _setupUploadProcessorForBuild(self):
         """Setup an UploadProcessor instance for a given buildd context."""
         self.options.context = self.policy
-        self.options.buildid = str(build_candidate.id)
         self.uploadprocessor = self.getUploadProcessor(
             self.layer.txn)
 
@@ -223,8 +229,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """
         # Upload i386 binary.
         build_candidate = self._createBuild('i386')
-        self._setupUploadProcessorForBuild(build_candidate)
-        build_used = self._uploadBinary('i386')
+        self._setupUploadProcessorForBuild()
+        build_used = self._uploadBinary('i386', build_candidate)
 
         self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(1)
@@ -239,8 +245,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
         # Upload powerpc binary
         build_candidate = self._createBuild('powerpc')
-        self._setupUploadProcessorForBuild(build_candidate)
-        build_used = self._uploadBinary('powerpc')
+        self._setupUploadProcessorForBuild()
+        build_used = self._uploadBinary('powerpc', build_candidate)
 
         self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(2)

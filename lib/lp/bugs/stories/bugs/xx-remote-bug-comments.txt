@@ -4,14 +4,6 @@ Comments imported into Launchpad from external bug trackers are
 formatted for display in a way that distinguishes them from comments
 entered within Launchpad itself.
 
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [malone]
-    ...     comment_syncing_team: None
-    ...     """)
-    >>> config.push('test_data', test_data)
-
     >>> user_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> remote_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment', only_first=True)
@@ -80,8 +72,9 @@ When the comment is synchronized, it receives a remote comment id, and
 the 'awaiting synchronization' mark goes away.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugMessageSet, IBugSet
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> login('foo.bar@canonical.com')
     >>> bug_15 = getUtility(IBugSet).get(15)
     >>> message = bug_15.messages[-1]
@@ -118,6 +111,3 @@ hidden, since they can't be used anonymously anyway.
     >>> footer = remote_bug_comment.find(attrs={'class': 'boardCommentFooter'})
     >>> 'Reply' in extract_text(footer)
     False
-
-
-    >>> test_config_data = config.pop('test_data')

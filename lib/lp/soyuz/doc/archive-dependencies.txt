@@ -157,7 +157,7 @@ despite the component it is actually published in.
 
 We will use Celso's PPA for testing these mechanisms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> print cprov.archive.displayname
     PPA for Celso Providelo
@@ -250,18 +250,27 @@ returned 'sources_list' content.
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
 
-Similarly, populated PPA dependencies are listed in the building
+Similarly, unpopulated PPA dependencies are *not* listed in the building
 'sources_list'.
 
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> pub_binaries = test_publisher.getPubBinaries(
-    ...     binaryname='dep-bin', archive=mark.archive,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-
     >>> archive_dependency = cprov.archive.addArchiveDependency(
     ...     mark.archive, PackagePublishingPocket.RELEASE,
     ...     getUtility(IComponentSet)['main'])
+    >>> print_building_sources_list(a_build)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
 
+But *populated* PPA dependencies *are* listed in the building 'sources_list'.
+
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     binaryname='dep-bin', archive=mark.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main

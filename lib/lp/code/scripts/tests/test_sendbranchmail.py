@@ -5,14 +5,12 @@
 
 """Test the sendbranchmail script"""
 
-from __future__ import with_statement
-
 import unittest
 
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

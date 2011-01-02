@@ -4,7 +4,6 @@
 """Tests for feature flags."""
 
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import os
@@ -16,6 +15,7 @@ from lp.services.features import (
     per_thread,
     )
 from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.testing import TestCase
 
 
@@ -24,9 +24,9 @@ notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 
 
 testdata = [
-    ('beta_user', notification_name, notification_value, 100),
-    ('default', 'ui.icing', u'3.0', 100),
-    ('beta_user', 'ui.icing', u'4.0', 300),
+    (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'default', 100, u'3.0'),
+    ('ui.icing', 'beta_user', 300, u'4.0'),
     ]
 
 
@@ -46,16 +46,11 @@ class TestFeatureFlags(TestCase):
         def scope_cb(scope):
             call_log.append(scope)
             return scope in scopes
-        return FeatureController(scope_cb), call_log
+        controller = FeatureController(scope_cb, StormFeatureRuleSource())
+        return controller, call_log
 
     def populateStore(self):
-        store = model.getFeatureStore()
-        for (scope, flag, value, priority) in testdata:
-            store.add(model.FeatureFlag(
-                scope=unicode(scope),
-                flag=unicode(flag),
-                value=value,
-                priority=priority))
+        StormFeatureRuleSource().setAllRules(testdata)
 
     def test_getFlag(self):
         self.populateStore()
@@ -129,6 +124,12 @@ class TestFeatureFlags(TestCase):
         finally:
             per_thread.features = None
 
+    def test_threadGetFlagNoContext(self):
+        # If there is no context, please don't crash. workaround for the root
+        # cause in bug 631884.
+        per_thread.features = None
+        self.assertEqual(None, getFeatureFlag('ui.icing'))
+
     def testLazyScopeLookup(self):
         # feature scopes may be a bit expensive to look up, so we do it only
         # when it will make a difference to the result.
@@ -159,3 +160,54 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(False, f.scopes['alpha_user'])
         self.assertEqual(True, f.scopes['beta_user'])
         self.assertEqual(['beta_user', 'alpha_user'], call_log)
+
+
+test_rules_list = [
+    (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'beta_user', 300, u'4.0'),
+    ('ui.icing', 'default', 100, u'3.0'),
+    ]
+
+
+class TestStormFeatureRuleSource(TestCase):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def test_getAllRulesAsTuples(self):
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        self.assertEquals(
+            test_rules_list,
+            list(source.getAllRulesAsTuples()))
+
+    def test_getAllRulesAsText(self):
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        self.assertEquals(
+            """\
+%s\tbeta_user\t100\t%s
+ui.icing\tbeta_user\t300\t4.0
+ui.icing\tdefault\t100\t3.0
+""" % (notification_name, notification_value),
+            source.getAllRulesAsText())
+
+    def test_setAllRulesFromText(self):
+        # We will overwrite existing data.
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        source.setAllRulesFromText("""
+
+flag1   beta_user   200   alpha
+flag1   default     100   gamma with spaces
+flag2   default     0\ton
+""")
+        self.assertEquals({
+            'flag1': [
+                ('beta_user', 200, 'alpha'),
+                ('default', 100, 'gamma with spaces'), 
+                ],
+            'flag2': [
+                ('default', 0, 'on'),
+                ],
+            }, 
+            source.getAllRulesAsDict())

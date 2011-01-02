@@ -35,7 +35,7 @@ from zope.interface import implements
 
 from canonical.lazr.xml import RelaxNGValidator
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from lp.hardwaredb.interfaces.hwdb import (

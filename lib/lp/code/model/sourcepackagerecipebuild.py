@@ -22,7 +22,6 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import (
-    getGlobalSiteManager,
     getUtility,
     )
 from zope.interface import (
@@ -39,12 +38,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (
-    ArchiveUploadType,
-    BuildDaemonUploadPolicy,
-    IArchiveUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -68,33 +61,15 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,
-    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
-    """Policy for uploading the results of a source package recipe build."""
-
-    name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
-    accepted_type = ArchiveUploadType.SOURCE_ONLY
-
-    def getUploader(self, changes):
-        """Return the person doing the upload."""
-        build_id = int(getattr(self.options, 'buildid'))
-        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-        return sprb.requester
-
-
 class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
-
-    policy_name = SourcePackageRecipeUploadPolicy.name
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
@@ -118,7 +93,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        return getUtility(IComponentSet)[default_component_dependency_name]
+        # Since recipes only build into PPAs, they should always build
+        # in main. This will need to change once other archives are
+        # supported.
+        return getUtility(IComponentSet)['main']
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
@@ -131,7 +109,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     is_virtualized = True
 
-    recipe_id = Int(name='recipe', allow_none=False)
+    recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
     manifest = Reference(
@@ -204,7 +182,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return spbuild
 
     @staticmethod
-    def makeDailyBuilds():
+    def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
         builds = []
@@ -222,6 +200,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
+                    if logger is not None:
+                        logger.debug(
+                            'Build for %s/%s requested',
+                            recipe.owner.name, recipe.name)
                     builds.append(build)
             recipe.is_stale = False
         return builds
@@ -245,7 +227,14 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def destroySelf(self):
         self._unqueueBuild()
         store = Store.of(self)
+        releases = store.find(
+            SourcePackageRelease,
+            SourcePackageRelease.source_package_recipe_build == self.id)
+        for release in releases:
+            release.source_package_recipe_build = None
+        package_build = self.package_build
         store.remove(self)
+        package_build.destroySelf()
 
     @classmethod
     def getById(cls, build_id):
@@ -327,11 +316,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """See `IPackageBuild`."""
-        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
+        d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
-        # base implementation doesn't notify on success.
-        if self.status == BuildStatus.FULLYBUILT:
-            self.notify()
+        def uploaded_build(ignored):
+            # Base implementation doesn't notify on success.
+            if self.status == BuildStatus.FULLYBUILT:
+                self.notify()
+        return d.addCallback(uploaded_build)
+
+    def getUploader(self, changes):
+        """See `IPackageBuild`."""
+        return self.requester
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
@@ -382,13 +377,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score
-
-
-def register_archive_upload_policy_adapter():
-    getGlobalSiteManager().registerUtility(
-        component=SourcePackageRecipeUploadPolicy,
-        provided=IArchiveUploadPolicy,
-        name=SourcePackageRecipeUploadPolicy.name)
 
 
 def get_recipe_build_for_build_farm_job(build_farm_job):

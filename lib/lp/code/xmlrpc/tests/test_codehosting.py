@@ -22,9 +22,9 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
@@ -223,7 +223,8 @@ class CodehostingTest(TestCaseWithFactory):
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
-            'test-recordsuccess', 'server-name', started_tuple, completed_tuple)
+            'test-recordsuccess', 'server-name',
+            started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
         activity = self.getLastActivity('test-recordsuccess')
@@ -395,7 +396,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
             owner.name, distroseries.name, sourcepackagename.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -423,7 +425,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -642,11 +645,6 @@ class CodehostingTest(TestCaseWithFactory):
             (branch.control_format, branch.branch_format,
              branch.repository_format))
 
-    def assertCannotTranslate(self, requester, path):
-        """Assert that we cannot translate 'path'."""
-        fault = self.codehosting_api.translatePath(requester.id, path)
-        self.assertEqual(faults.PathTranslationError(path), fault)
-
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
@@ -681,7 +679,7 @@ class CodehostingTest(TestCaseWithFactory):
         # couldn't translate.
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
-        self.assertCannotTranslate(requester, path)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
@@ -963,6 +961,23 @@ class CodehostingTest(TestCaseWithFactory):
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
 
+    def test_translatePath_branch_alias_no_linked_sourcepackage_branch(self):
+        # translatePath returns a not found when there's no linked branch for
+        # a distro series source package.
+        requester = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        distro = sourcepackage.distribution
+        path = '/%s/%s/%s' % (
+            BRANCH_ALIAS_PREFIX, distro.name, sourcepackage.sourcepackagename)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_invalid_product_name(self):
+        # translatePath returns a not found when there is an invalid product name.
+        requester = self.factory.makePerson()
+        invalid_name = '_' + self.factory.getUniqueString()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
+        self.assertNotFound(requester, path)
+
     def test_translatePath_branch_alias_bzrdir_content(self):
         # translatePath('/+branch/.bzr/.*') *must* return not found, otherwise
         # bzr will look for it and we don't have a global bzr dir.
@@ -1182,7 +1197,6 @@ class LaunchpadDatabaseFrontend:
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
-
 
 
 def test_suite():

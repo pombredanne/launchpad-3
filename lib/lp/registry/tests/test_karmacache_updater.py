@@ -16,7 +16,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import KarmaCache

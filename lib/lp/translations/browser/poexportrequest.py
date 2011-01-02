@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View class for requesting translation exports."""
@@ -11,15 +11,17 @@ from datetime import timedelta
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -162,6 +164,7 @@ class BaseExportView(LaunchpadView):
         """Return a list of formats available for translation exports."""
 
         class BrowserFormat:
+
             def __init__(self, title, value, is_default=False):
                 self.title = title
                 self.value = value

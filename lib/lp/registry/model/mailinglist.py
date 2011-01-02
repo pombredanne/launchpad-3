@@ -21,6 +21,7 @@ from email.Header import (
     make_header,
     )
 from itertools import repeat
+import operator
 from socket import getfqdn
 from string import Template
 
@@ -51,7 +52,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
@@ -64,13 +64,18 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -95,6 +100,7 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 EMAIL_ADDRESS_STATUSES = (
@@ -241,8 +247,8 @@ class MailingList(SQLBase):
         return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+        return '<MailingList for team "%s"; status=%s; address=%s at %#x>' % (
+            self.team.name, self.status.name, self.address, id(self))
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -557,15 +563,20 @@ class MailingList(SQLBase):
         notify(ObjectCreatedEvent(held_message))
         return held_message
 
-    def getReviewableMessages(self):
+    def getReviewableMessages(self, message_id_filter=None):
         """See `IMailingList`."""
-        return MessageApproval.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s AND
-            MessageApproval.message = Message.id
-            """ % sqlvalues(self, PostedMessageStatus.NEW),
-            clauseTables=['Message'],
-            orderBy=['posted_date', 'Message.rfc822msgid'])
+        store = Store.of(self)
+        clauses = [
+            MessageApproval.mailing_listID==self.id,
+            MessageApproval.status==PostedMessageStatus.NEW,
+            MessageApproval.messageID==Message.id,
+            ]
+        if message_id_filter is not None:
+            clauses.append(Message.rfc822msgid.is_in(message_id_filter))
+        results = store.find((MessageApproval, Message),
+            *clauses)
+        results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def purge(self):
         """See `IMailingList`."""
@@ -879,7 +890,34 @@ class MessageApprovalSet:
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
-        return MessageApproval.selectBy(status=status)
+        # Use the master store as the messages will also be acknowledged and
+        # we want to make sure we are acknowledging the same messages that we
+        # iterate over.
+        return IMasterStore(MessageApproval).find(
+            (Message.rfc822msgid, Person.name),
+            MessageApproval.status == status,
+            MessageApproval.message == Message.id,
+            MessageApproval.mailing_list == MailingList.id,
+            MailingList.team == Person.id)
+
+    def acknowledgeMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        transitions = {
+            PostedMessageStatus.APPROVAL_PENDING:
+                PostedMessageStatus.APPROVED,
+            PostedMessageStatus.REJECTION_PENDING:
+                PostedMessageStatus.REJECTED,
+            PostedMessageStatus.DISCARD_PENDING:
+                PostedMessageStatus.DISCARDED,
+            }
+        try:
+            next_state = transitions[status]
+        except KeyError:
+            raise AssertionError(
+                'Not an acknowledgeable state: %s' % status)
+        approvals = IMasterStore(MessageApproval).find(
+            MessageApproval, MessageApproval.status == status)
+        approvals.set(status=next_state)
 
 
 class HeldMessageDetails:

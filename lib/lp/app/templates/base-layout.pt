@@ -3,13 +3,12 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define-macro="master"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    release modules/canonical.launchpad.versioninfo/release;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    release modules/lp.app.versioninfo/release;
     version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
-    is_edge modules/canonical.config/config/launchpad/is_edge;
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
@@ -70,12 +69,13 @@
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
-      yui-skin-sam">
+      yui3-skin-sam">
         <script type="text/javascript"
-          tal:condition="python: is_edge or is_lpnet">
+          tal:condition="python: is_lpnet">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
           _gaq.push(['_trackPageview']);
 
           (function() {

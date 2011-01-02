@@ -65,7 +65,7 @@ from canonical.launchpad.webapp.servers import (
     WebServicePublication,
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
@@ -292,7 +292,8 @@ class TestWebServicePublication(TestCaseWithFactory):
         next_oops = error_reporting_utility.getLastOopsReport()
 
         # Ensure the OOPS mentions the correct exception
-        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1)
+        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
+            "next_oops was %r" % next_oops)
 
         # Ensure the OOPS is correctly marked as informational only.
         self.assertEqual(next_oops.informational, 'True')

@@ -16,7 +16,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.database.collection import Collection
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod

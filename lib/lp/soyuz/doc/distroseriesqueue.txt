@@ -44,8 +44,7 @@ queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 We need some setup for the upload handler.
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
 Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
@@ -54,9 +53,9 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.model.component import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> universe = getUtility(IComponentSet)['universe']
@@ -67,9 +66,10 @@ Construct an upload.
   >>> anything_policy = getPolicy(
   ...     name='absolutely-anything', distro='ubuntu', distroseries='hoary')
 
+  >>> from lp.services.log.logger import DevNullLogger
   >>> ed_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
-  ...     anything_policy, mock_logger_quiet)
+  ...     anything_policy, DevNullLogger())
 
   >>> ed_upload.process()
   >>> success = ed_upload.do_accept()
@@ -80,9 +80,8 @@ Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
   >>> from lp.soyuz.enums import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -102,18 +101,19 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
   >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     pub_records = item.realiseUpload(mock_logger)
+  ...     pub_records = item.realiseUpload(FakeLogger())
   ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
+  DEBUG Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
 
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
   >>> from lp.soyuz.enums import PackagePublishingStatus
+  >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -123,8 +123,8 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
 
@@ -161,7 +161,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -260,7 +260,7 @@ Let's process a new upload:
 
   >>> bar_ok = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> bar_ok.process()
   >>> success = bar_ok.do_accept()
   >>> success
@@ -268,8 +268,8 @@ Let's process a new upload:
 
   >>> signed_queue = bar_ok.queue_root
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPackageUpload, IGPGKey)
+  >>> from lp.registry.interfaces.gpg import IGPGKey
+  >>> from lp.soyuz.interfaces.queue import IPackageUpload
 
   >>> verifyObject(IPackageUpload, signed_queue)
   True
@@ -509,8 +509,8 @@ don't raise any exception):
 Check forbidden approval of not selected Section:
 
   >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, ISectionSet)
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.section import ISectionSet
 
 Retrieve mozilla-firefox Upload:
 
@@ -1026,7 +1026,7 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+   >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
 
 

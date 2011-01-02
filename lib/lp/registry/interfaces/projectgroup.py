@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugtarget import (
@@ -67,7 +68,6 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -104,14 +104,23 @@ class IProjectGroupModerate(IPillar):
             title=_('Reviewed'), required=False,
             description=_("Whether or not this project group has been "
                           "reviewed.")))
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                "A unique name, used in URLs, identifying the project "
+                "group.  All lowercase, no special characters. "
+                "Examples: apache, mozilla, gimp."),
+            constraint=name_validator))
 
 
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IRootContext, IHasOfficialBugTags):
+    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -132,16 +141,6 @@ class IProjectGroupPublic(
             vocabulary='ValidPersonOrTeam',
             description=_("Project group registrant. Must be a valid "
                           "Launchpad Person.")))
-
-    name = exported(
-        ProjectNameField(
-            title=_('Name'),
-            required=True,
-            description=_(
-                "A unique name, used in URLs, identifying the project "
-                "group.  All lowercase, no special characters. "
-                "Examples: apache, mozilla, gimp."),
-            constraint=name_validator))
 
     displayname = exported(
         TextLine(
@@ -311,13 +310,28 @@ class IProjectGroupPublic(
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False, readonly=True)
+
     def getProduct(name):
         """Get a product with name `name`."""
+
+    def getConfigurableProducts():
+        """Get all products that can be edited by user."""
 
     def translatables():
         """Return an iterator over products that have resources translatables.
 
         It also should have IProduct.official_rosetta flag set.
+        """
+
+    def has_translatable():
+        """Return a boolean showing the existance of translatables products.
+        """
+
+    def has_branches():
+        """Return a boolean showing the existance of products with branches.
         """
 
     def hasProducts():
@@ -327,6 +341,8 @@ class IProjectGroupPublic(
 
     def getSeries(series_name):
         """Return a ProjectGroupSeries object with name `series_name`."""
+
+    product_milestones = Attribute('all the milestones for all the products.')
 
 
 class IProjectGroup(IProjectGroupPublic,
@@ -380,10 +396,7 @@ class IProjectGroupSet(Interface):
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProjectGroup)
     @export_read_operation()
-    def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               search_products=False):
+    def search(text=None, search_products=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,

@@ -33,7 +33,6 @@ __all__ = [
     'DistributionSpecificationsMenu',
     'DistributionUnofficialMirrorsView',
     'DistributionView',
-    'UsesLaunchpadMixin',
     ]
 
 import datetime
@@ -44,25 +43,17 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.components.request_country import (
-    ipaddress_from_request,
-    request_country,
-    )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -80,7 +71,11 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -107,46 +102,15 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.geoip.helpers import (
+    ipaddress_from_request,
+    request_country,
+    )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-
-
-class UsesLaunchpadMixin:
-    """This mixin is used for the overview page of products and distros."""
-
-    @property
-    def uses_launchpad_for(self):
-        """Return a string of LP apps (comma-separated) this distro uses."""
-        uses = []
-        href_template = """<a href="%s">%s</a>"""
-        if self.context.official_answers:
-            url = canonical_url(self.context, rootsite='answers')
-            uses.append(href_template % (url, 'Answers'))
-        if self.context.official_blueprints:
-            url = canonical_url(self.context, rootsite='blueprints')
-            uses.append(href_template % (url, 'Blueprints'))
-        if self.context.official_malone:
-            url = canonical_url(self.context, rootsite='bugs')
-            uses.append(href_template % (url, 'Bug Tracking'))
-        if IProduct.providedBy(self.context):
-            if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
-                url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Branches'))
-        if self.context.official_rosetta:
-            url = canonical_url(self.context, rootsite='translations')
-            uses.append(href_template % (url, 'Translations'))
-
-        if len(uses) == 0:
-            text = None
-        else:
-            text = english_list(uses)
-
-        return text
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class DistributionNavigation(
@@ -343,6 +307,8 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         'announcements',
         'ppas',
         'configure_answers',
+        'configure_blueprints',
+        'configure_translations',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -453,6 +419,18 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Configure support tracker'
         summary = 'Allow users to ask questions on this project'
         return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of feature planning.'
+        return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def configure_translations(self):
+        text = 'Configure translations'
+        summary = 'Allow users to provide translations for this project.'
+        return Link('+configure-translations', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -574,7 +552,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             name for name in name_list if match_text in name]
 
         if len(matching_names) > 5:
-            more_than_five = True
             matching_names = matching_names[:5]
             matching_names.append('...')
 
@@ -613,7 +590,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
+class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def linkedMilestonesForSeries(self, series):
@@ -764,9 +741,9 @@ class DistributionAddView(LaunchpadFormView):
         "domainname",
         "members",
         "official_malone",
-        "official_blueprints",
+        "blueprints_usage",
         "official_rosetta",
-        "official_answers",
+        "answers_usage",
         ]
 
     @property
@@ -810,9 +787,9 @@ class DistributionEditView(RegistryEditFormView):
         'mugshot',
         'official_malone',
         'enable_bug_expiration',
-        'official_blueprints',
+        'blueprints_usage',
         'official_rosetta',
-        'official_answers',
+        'answers_usage',
         'translation_focus',
         ]
 
@@ -852,13 +829,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

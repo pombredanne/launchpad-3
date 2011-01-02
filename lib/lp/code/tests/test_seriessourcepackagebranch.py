@@ -21,7 +21,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     IMakeOfficialBranchLinks,

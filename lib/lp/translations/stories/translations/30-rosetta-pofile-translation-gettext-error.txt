@@ -42,8 +42,7 @@ submission and doesn't ignore it.
   ...     u'Found %s invalid files')
   >>> user_browser.getControl(name='submit_translations').click()
 
-We got an error, that means the url should be the same.
-We are still in the same URL, because the system detected an error.
+Because of the error, we're still in on the same page.
 
   >>> print user_browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20
@@ -61,8 +60,8 @@ And we can see the error.
     <td>
     </td><td>
       <div>
-        format specifications in 'msgid' and 'msgstr[0]' for argument 1 are
-        not the sameformat specifications in 'msgid' and 'msgstr[1]' for
+        format specifications in ... and 'msgstr[0]' for argument 1 are
+        not the sameformat specifications in ... and 'msgstr[1]' for
         argument 1 are not the same
       </div>
     </td>

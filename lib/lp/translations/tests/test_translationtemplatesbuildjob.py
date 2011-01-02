@@ -10,14 +10,14 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -293,6 +293,12 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         self.assertEqual(head, url[:len(head)])
         tail = branch.name
         self.assertEqual(tail, url[-len(tail):])
+
+    def test_create_with_build(self):
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+        specific_job = self.jobsource.create(branch, testing=True)
+        naked_job = removeSecurityProxy(specific_job)
+        self.assertEquals(naked_job._constructed_build, specific_job.build)
 
 
 def test_suite():

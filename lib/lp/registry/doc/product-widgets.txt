@@ -19,7 +19,7 @@ down menu for choosing the correct tracker.
 
 Firefox uses Launchpad as its bug tracker.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
     True
@@ -28,9 +28,9 @@ The custom field's missing value (i.e. None) represents the 'no bug tracker'
 option.  This is displayed by the widget as the project having a bug tracker
 in a specified external location.
 
-    >>> from canonical.launchpad.interfaces import IProduct
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
+    >>> from lp.registry.interfaces.product import IProduct
 
     >>> product_bugtracker = IProduct['bugtracker'].bind(firefox)
     >>> widget = ProductBugTrackerWidget(
@@ -64,7 +64,7 @@ Firefox has not yet selected a bug tracker.
 Firefox chooses to use the Gnome Bugzilla bug tracker, and the widget displays
 this bug tracker as selected.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> tracker_set = getUtility(IBugTrackerSet)
 
     >>> gnome_bugzilla = tracker_set.getByName('gnome-bugzilla')
@@ -250,7 +250,8 @@ A custom widget is used to display a link to the license policy.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
 The widget has one checkbox for each license, and it also has a link to the
-license policy.  The licenses are split up into categories.
+license policy.  The licenses are split up into categories, and they are
+presented ordered to appear in a 3 column list.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
@@ -268,19 +269,22 @@ license policy.  The licenses are split up into categories.
 
     >>> print extract_text(find_tag_by_id(html, 'more'))
     Academic Free License view license
-    Creative Commons - Attribution Share Alike view license
+    Eclipse Public License view license
     PHP License view license
     Artistic License 1.0 view license
-    Eclipse Public License view license
+    Educational Community License view license
     Public Domain view license
     Artistic License 2.0 view license
-    Educational Community License view license
+    GNU GFDL no options view license
     Python License view license
     Common Public License view license
     Mozilla Public License view license
     Zope Public License view license
     Creative Commons - Attribution view license
+    Open Font License v1.1 view license
+    Creative Commons - Attribution Share Alike view license
     Open Software License v 3.0 view license
+
 
     >>> print extract_text(find_tag_by_id(html, 'special'))
     I don't know yet
@@ -368,9 +372,9 @@ There are three Creative Commons licenses.
     ...
     [ ] Creative Commons - No Rights Reserved ...
     ...
-    [ ] Creative Commons - Attribution Share Alike ...
-    ...
     [ ] Creative Commons - Attribution ...
+    ...
+    [ ] Creative Commons - Attribution Share Alike ...
     ...
 
 Any of the three Creative Commons licenses can be selected.
@@ -384,9 +388,9 @@ Any of the three Creative Commons licenses can be selected.
     ...
     [X] Creative Commons - No Rights Reserved ...
     ...
-    [X] Creative Commons - Attribution Share Alike ...
-    ...
     [X] Creative Commons - Attribution ...
+    ...
+    [X] Creative Commons - Attribution Share Alike ...
     ...
 
 The BSD License can be selected.
@@ -472,9 +476,9 @@ GhostWidget to suppress the markup.
 
 Launchpad form macros do not generate table rows for the GhostWidget.
 
-    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from canonical.config import config
-    >>> from canonical.launchpad.webapp.launchpadform import (
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
 
     >>> class GhostWidgetView(LaunchpadFormView):

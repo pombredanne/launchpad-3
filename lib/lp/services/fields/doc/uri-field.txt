@@ -162,8 +162,8 @@ URIs with an authority but a blank path get canonicalised to a path of
 
 Whitespace is stripped from the value:
 
-  >>> from canonical.launchpad.validators import LaunchpadValidationError
   >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.validators import LaunchpadValidationError
   >>> from canonical.widgets.textwidgets import URIWidget
   >>> field = URIField(__name__='foo', title=u'Foo')
 
@@ -185,8 +185,8 @@ standard text widget with the following differences:
 
 This widget is registered as an input widget:
 
-  >>> from zope.component import getMultiAdapter
   >>> from zope.app.form.interfaces import IInputWidget
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> class URIFieldTest(object):

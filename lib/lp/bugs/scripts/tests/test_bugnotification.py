@@ -1,12 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 """Tests for construction bug notification emails for sending."""
 
 __metaclass__ = type
 
 from datetime import datetime
-from textwrap import dedent
 import unittest
 
 import pytz
@@ -15,10 +13,10 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.database import BugTask
+from lp.bugs.model.bugtask import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -109,7 +107,7 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
 
 
-class TestGetEmailNotificattions(unittest.TestCase):
+class TestGetEmailNotifications(unittest.TestCase):
     """Tests for the exception handling in get_email_notifications()."""
     layer = LaunchpadZopelessLayer
 
@@ -151,17 +149,6 @@ class TestGetEmailNotificattions(unittest.TestCase):
         # We need to commit the transaction, since the error handling
         # will abort the current transaction.
         commit()
-
-        # Disable limiting bug watch notifications to a team, so that
-        # the testing gets easier.
-        config.push(
-            'no-comment-syncing-team', dedent("""
-                [malone]
-                comment_syncing_team:
-                """))
-
-    def tearDown(self):
-        config.pop('no-comment-syncing-team')
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.
@@ -428,7 +415,8 @@ class TestNotificationBatches(unittest.TestCase):
 
     def test_notifications_for_different_owners(self):
         # Batches are grouped by owner.
-        notifications = [FakeNotification(owner=number) for number in range(5)]
+        notifications = [
+            FakeNotification(owner=number) for number in range(5)]
         expected = [[notification] for notification in notifications]
         observed = list(notification_batches(notifications))
         self.assertEquals(expected, observed)

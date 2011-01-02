@@ -4,13 +4,10 @@
 __metaclass__ = type
 
 import lazr.batchnavigator
-from storm import Undef
-# and ISQLObjectResultSet
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
 from zope.interface import implements
 from zope.interface.common.sequence import IFiniteSequence
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -32,24 +29,24 @@ class FiniteSequenceAdapter:
         return iter(self.context)
 
     def __len__(self):
-        # XXX 2010-08-24 leonardr bug=620508
-        #
-        # Slicing a ResultSet object returns a copy with ._limit and
-        # ._offset set appropriately. The original object's ._limit
-        # and ._offset are not affected. However, the original and
-        # the copy share a _select object, which means the original
-        # object's ._select.limit and ._select.offset are shared with
-        # the copy.
-        #
-        # This breaks Storm--count() is not supported on a ResultSet
-        # that has a limit or offset set. This code sets
-        # ._select.limit and ._select.offset to the appropriate values
-        # before running the count() query, just as __getitem__ sets
-        # those values before running its query.
-        resultset = removeSecurityProxy(self.context)
-        if hasattr(resultset, '_select'):
-            resultset._select.limit = Undef
-            resultset._select.offset = Undef
+        return self.context.count()
+
+
+class BoundReferenceSetAdapter:
+    """Adaptor for `BoundReferenceSet` implementations in Storm."""
+
+    implements(IFiniteSequence)
+
+    def __init__(self, context):
+        self.context = context
+
+    def __getitem__(self, ix):
+        return self.context.find()[ix]
+
+    def __iter__(self):
+        return iter(self.context)
+
+    def __len__(self):
         return self.context.count()
 
 
@@ -96,6 +93,24 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
         table.
         """
         return self.batch.total() > self.batch.size
+
+
+class ActiveBatchNavigator(BatchNavigator):
+    """A paginator for active items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'active_start'
+    batch_variable_name = 'active_batch'
+
+
+class InactiveBatchNavigator(BatchNavigator):
+    """A paginator for inactive items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'inactive_start'
+    batch_variable_name = 'inactive_batch'
 
 
 class TableBatchNavigator(BatchNavigator):

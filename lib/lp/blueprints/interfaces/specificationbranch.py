@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
-from lp.services.fields import Summary
 
 
 class ISpecificationBranch(IHasDateCreated):

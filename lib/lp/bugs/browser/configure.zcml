@@ -112,7 +112,7 @@
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"
             facet="bugs"
-            permission="launchpad.Edit"
+            permission="launchpad.BugSupervisor"
             template="../templates/official-bug-target-manage-tags.pt"/>
         <browser:page
             name="+patches"
@@ -136,18 +136,18 @@
         template="../templates/bugtarget-macros-search.pt"/>
     <browser:page
         name="+unlinkbug"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
         permission="launchpad.AnyPerson"
         template="../templates/buglinktarget-unlinkbugs.pt"/>
     <browser:page
         name="+portlet-bugs"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugLinksListingView"
         permission="zope.Public"
         template="../templates/buglinktarget-portlet-bugs.pt"/>
     <browser:page
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         permission="zope.Public"
         name="unlinkbugs_template"
         template="../templates/buglinktarget-unlinkbugs.pt"/>
@@ -164,27 +164,27 @@
             permission="zope.Public"
             template="../templates/bug-attachment-macros.pt"/>
         <browser:defaultView
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"/>
         <browser:url
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             path_expression="string:comments/${index}"
             attribute_to_parent="bugtask"
             rootsite="bugs"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"
             template="../templates/bugcomment-index.pt"
             class="lp.bugs.browser.bugcomment.BugCommentView"
             permission="launchpad.View"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxView"
             permission="launchpad.View"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box-expanded-reply"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxExpandedReplyView"
@@ -197,7 +197,7 @@
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:menu
         id="malone_actions"
         title="Menu for Malone-related actions."/>
@@ -397,7 +397,7 @@
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         facet="bugs"
-        permission="launchpad.Edit"
+        permission="launchpad.BugSupervisor"
         name="+configure-bugtracker"
         template="../../app/templates/generic-edit.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
@@ -531,6 +531,11 @@
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugactivity.IBugActivity"
+            path_expression="string:activity"
+            attribute_to_parent="bug"
+            rootsite="bugs"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"
@@ -720,7 +725,7 @@
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+subscribe"
-            class="lp.bugs.browser.bugtask.BugTaskView"
+            class="lp.bugs.browser.bugsubscription.BugSubscriptionSubscribeSelfView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-subscription.pt"/>
         <browser:page
@@ -786,7 +791,8 @@
             module="lp.bugs.browser.bugtracker"
             classes="
                 BugTrackerNavigation
-                BugTrackerSetNavigation"/>
+                BugTrackerSetNavigation
+                BugTrackerComponentGroupNavigation"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             name="+index"/>
@@ -794,6 +800,16 @@
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             path_expression="string:${name}"
             parent_utility="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            rootsite="bugs"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"
+            path_expression="string:+components/${name}"
+            attribute_to_parent="bug_tracker"
+            rootsite="bugs"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
+            path_expression="name"
+            attribute_to_parent="component_group"
             rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
@@ -824,7 +840,7 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             path_expression="string:bugtrackers"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"
             rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
@@ -937,7 +953,7 @@
         <browser:url
             for="lp.bugs.interfaces.cve.ICveSet"
             path_expression="string:cve"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
         <browser:navigation
             module="lp.bugs.browser.cve"
             classes="
@@ -1076,7 +1092,7 @@
         <browser:url
             for="lp.bugs.interfaces.bug.IBugSet"
             path_expression="string:bugs"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
     </facet>
     <facet
         facet="bugs">
@@ -1159,9 +1175,14 @@
             classes="
                 BugWatchSetNavigation"/>
     </facet>
-    <class class="lp.bugs.browser.bugattachment.SafeStreamOrRedirectLibraryFileAliasView">
-      <allow attributes="__call__" />
-      <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
-    </class>
+
+    <!-- Bug Subscription Filters -->
+    <facet facet="bugs">
+      <browser:url
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          path_expression="string:+filter/${id}"
+          attribute_to_parent="structural_subscription"
+          rootsite="bugs" />
+    </facet>
 
 </configure>

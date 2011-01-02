@@ -253,6 +253,8 @@ class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
     export_as_webservice_entry()
 
+    has_milestones = Bool(title=_("Whether the object has any milestones."))
+
     milestones = exported(
         CollectionField(
             title=_("The visible and active milestones associated with this "

@@ -17,7 +17,8 @@ keysdir = os.path.join(os.path.dirname(__file__), 'keys')
 class ZecaTestSetup(TacTestSetup):
     r"""Setup a zeca for use by functional tests
 
-    >>> ZecaTestSetup().setUp()
+    >>> fixture = ZecaTestSetup()
+    >>> fixture.setUp()
 
     Make sure the server is running
 
@@ -98,17 +99,17 @@ class ZecaTestSetup(TacTestSetup):
     <title>Submit a key</title>
     ...
 
-    >>> ZecaTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     And again for luck
 
-    >>> ZecaTestSetup().setUp()
+    >>> fixture.setUp()
 
     >>> print urlopen(root_url).readline()
     Copyright 2004-2009 Canonical Ltd.
     <BLANKLINE>
 
-    >>> ZecaTestSetup().tearDown()
+    >>> fixture.tearDown()
     """
     def setUpRoot(self):
         """Recreate root directory and copy needed keys"""

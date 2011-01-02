@@ -38,7 +38,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.cachedproperty import clear_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -82,6 +81,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
+    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -89,6 +89,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -129,9 +130,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriptionError,
     IArchiveSubscriberSet,
@@ -350,6 +349,11 @@ class Archive(SQLBase):
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
+
+    @property
+    def is_partner(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PARTNER
 
     @property
     def is_copy(self):
@@ -836,6 +840,14 @@ class Archive(SQLBase):
 
         return permission
 
+    def getComponentsForSeries(self, distroseries):
+        if self.is_partner:
+            return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
+        else:
+            return distroseries.components
+
     def updateArchiveCache(self):
         """See `IArchive`."""
         # Compiled regexp to remove puntication.
@@ -1006,10 +1018,9 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
-             # The 'pending' count is a list because we may append to it
-             # later.
             'pending': [
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 ],
             'succeeded': (
                 BuildStatus.FULLYBUILT,
@@ -1025,6 +1036,7 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
                 ],
@@ -1103,7 +1115,7 @@ class Archive(SQLBase):
 
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PARTNER:
+        if self.is_partner:
             if pocket not in (
                 PackagePublishingPocket.RELEASE,
                 PackagePublishingPocket.PROPOSED):
@@ -1111,6 +1123,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if pocket != PackagePublishingPocket.RELEASE:
                 return InvalidPocketForPPA()
+        elif self.is_copy:
+            # Any pocket is allowed for COPY archives, otherwise it can
+            # make the buildd-manager throw exceptions when dispatching
+            # existing builds after a series is released.
+            return
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
@@ -1294,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
@@ -1699,6 +1717,37 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    @classmethod
+    def validatePPA(self, person, proposed_name):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if person.isTeam() and (
+            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            return "Open teams cannot have PPAs."
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            return (
+                "A PPA cannot have the same name as its distribution.")
+        if proposed_name is None:
+            proposed_name = 'ppa'
+        try:
+            person.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            return None
+        else:
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
+
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1836,7 +1885,7 @@ class ArchiveSet:
                 signing_key = owner.archive.signing_key
             else:
                 # owner.archive is a cached property and we've just cached it.
-                clear_property(owner, '_archive_cached')
+                del get_property_cache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
@@ -2009,6 +2058,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (

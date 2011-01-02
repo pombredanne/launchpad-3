@@ -1,15 +1,15 @@
 <span tal:attributes="id view/id">
-    <span class="yui-activator-data-box">
+    <span class="yui3-activator-data-box">
     <tal:attribute replace="structure view/default_html"/>
     </span>
-    <button class="lazr-btn yui-activator-act yui-activator-hidden">
+    <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
       Edit
     </button>
-    <div class="yui-activator-message-box yui-activator-hidden"/>
+    <div class="yui3-activator-message-box yui3-activator-hidden"/>
 </span>
 <script tal:condition="view/can_write"
         tal:content="structure string:
-YUI().use('lp.app.picker', function(Y) {
+LPS.use('lp.app.picker', function(Y) {
     if (Y.UA.ie) {
         return;
     }

@@ -19,6 +19,8 @@ __all__ = [
 import datetime
 from operator import attrgetter
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
@@ -34,14 +36,12 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 
 
 @block_implicit_flushes
@@ -179,20 +179,15 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
         if recipients is not None:
             recipients.addAssignee(bugtask.assignee)
 
-    if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-        also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    if bugtask.milestone is not None:
-        also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(
-                recipients, level=level))
+    # Get structural subscribers.
+    also_notified_subscribers.update(
+        getUtility(IBugTaskSet).getStructuralSubscribers(
+            [bugtask], recipients, level))
 
     # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
     pillar = bugtask.pillar
-    if pillar.bug_supervisor is None:
+    if pillar.bug_supervisor is None and pillar.official_malone:
         also_notified_subscribers.add(pillar.owner)
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)

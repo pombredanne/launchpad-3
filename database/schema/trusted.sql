@@ -23,8 +23,8 @@ COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    import sha
-    return sha.new(args[0]).hexdigest()
+    import hashlib
+    return hashlib.sha1(args[0]).hexdigest()
 $$;
 
 COMMENT ON FUNCTION sha1(text) IS
@@ -263,7 +263,7 @@ COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
 
     Names must contain only lowercase letters, numbers, ., & -. They
-    must start with an alphanumeric. They are ASCII only. Names are useful 
+    must start with an alphanumeric. They are ASCII only. Names are useful
     for mneumonic identifiers such as nicknames and as URL components.
     This specification is the same as the Debian product naming policy.
 
@@ -447,7 +447,7 @@ COMMENT ON FUNCTION is_team(integer) IS
 
 
 CREATE OR REPLACE FUNCTION is_team(text) returns boolean
-LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS 
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS
 $$
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
 $$;
@@ -464,7 +464,7 @@ $$;
 
 COMMENT ON FUNCTION is_person(text) IS
     'True if the given name identifies a person in the Person table';
-    
+
 SET check_function_bodies=true;
 
 
@@ -785,7 +785,7 @@ CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        NEW.normalized_address = 
+        NEW.normalized_address =
             lower(
                 -- Strip off everything that's not alphanumeric
                 -- characters.
@@ -1298,7 +1298,7 @@ BEGIN
         needs_update := TRUE;
     END IF;
 
-    IF needs_update THEN   
+    IF needs_update THEN
         SELECT
             Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
@@ -1440,18 +1440,39 @@ BEGIN
         registrant, logo, renewal_policy, personal_standing,
         personal_standing_reason, mail_resumption_date,
         mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
-        visibility, verbose_bugnotifications, account) 
+        visibility, verbose_bugnotifications, account)
         SELECT NEW.*;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
 
+-- Obsolete. Remove next cycle.
 CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     INSERT INTO lp_Account (id, openid_identifier)
     VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- Support obsolete lp_Account.openid_identifier as best we can
+    -- until ISD migrates to using lp_OpenIdIdentifier.
+    UPDATE lp_account SET openid_identifier = NEW.identifier
+    WHERE id = NEW.account;
+    IF NOT found THEN
+        INSERT INTO lp_account (id, openid_identifier)
+        VALUES (NEW.account, NEW.identifier);
+    END IF;
+
+    INSERT INTO lp_OpenIdIdentifier (identifier, account, date_created)
+    VALUES (NEW.identifier, NEW.account, NEW.date_created);
+
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1519,7 +1540,7 @@ BEGIN
         personal_standing = NEW.personal_standing,
         personal_standing_reason = NEW.personal_standing_reason,
         mail_resumption_date = NEW.mail_resumption_date,
-        mailing_list_auto_subscribe_policy 
+        mailing_list_auto_subscribe_policy
             = NEW.mailing_list_auto_subscribe_policy,
         mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
         visibility = NEW.visibility,
@@ -1543,6 +1564,24 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.identifier <> NEW.identifier THEN
+        UPDATE lp_Account SET openid_identifier = NEW.identifier
+        WHERE openid_identifier = OLD.identifier;
+    END IF;
+    UPDATE lp_OpenIdIdentifier
+    SET
+        identifier = NEW.identifier,
+        account = NEW.account,
+        date_created = NEW.date_created
+    WHERE identifier = OLD.identifier;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
@@ -1553,6 +1592,49 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+DECLARE
+    next_identifier text;
+BEGIN
+    SELECT INTO next_identifier identifier FROM OpenIdIdentifier
+    WHERE account = OLD.account AND identifier <> OLD.identifier
+    ORDER BY date_created DESC LIMIT 1;
+
+    IF next_identifier IS NOT NULL THEN
+        UPDATE lp_account SET openid_identifier = next_identifier
+        WHERE openid_identifier = OLD.identifier;
+    ELSE
+        DELETE FROM lp_account WHERE openid_identifier = OLD.identifier;
+    END IF;
+
+    DELETE FROM lp_OpenIdIdentifier WHERE identifier = OLD.identifier;
+
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION add_test_openid_identifier(account_ integer)
+RETURNS BOOLEAN SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- The generated OpenIdIdentifier is not a valid OpenId Identity URL
+    -- and does not match tokens generated by the Canonical SSO. They
+    -- are only useful to the test suite, and access to this stored
+    -- procedure on production does not allow you to compromise
+    -- accounts.
+    INSERT INTO OpenIdIdentifier (identifier, account)
+    VALUES ('test' || CAST(account_ AS text), account_);
+    RETURN TRUE;
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN FALSE;
+END;
+$$;
+
+COMMENT ON FUNCTION add_test_openid_identifier(integer) IS
+'Add an OpenIdIdentifier to an account that can be used to login in the test environment. These identifiers are not usable on production or staging.';
 
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
@@ -1705,3 +1787,53 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
 
     return int(total_heat)
 $$;
+
+-- This function is not STRICT, since it needs to handle
+-- dateexpected when it is NULL.
+CREATE OR REPLACE FUNCTION milestone_sort_key(
+    dateexpected timestamp, name text)
+    RETURNS text
+AS $_$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+    import datetime
+
+    date_expected, name = args
+
+    def substitute_filled_numbers(match):
+        return match.group(0).zfill(5)
+
+    name = re.sub(u'\d+', substitute_filled_numbers, name)
+    if date_expected is None:
+        # NULL dates are considered to be in the future.
+        date_expected = datetime.datetime(datetime.MAXYEAR, 1, 1)
+    return '%s %s' % (date_expected, name)
+$_$
+LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
+'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
+        return '~' + match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';

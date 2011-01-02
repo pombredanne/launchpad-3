@@ -17,10 +17,10 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts import FakeLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -162,10 +162,7 @@ class TestPackageRemover(unittest.TestCase):
         remover = PackageRemover(
             name='lp-remove-package', test_args=test_args)
         # Swallowing all log messages.
-        remover.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        remover.logger.message = message
+        remover.logger = DevNullLogger()
         remover.setupLocation()
         return remover
 

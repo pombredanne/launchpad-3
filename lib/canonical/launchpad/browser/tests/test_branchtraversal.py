@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonNavigation
 from lp.registry.browser.personproduct import PersonProductNavigation
 from lp.registry.interfaces.personproduct import (

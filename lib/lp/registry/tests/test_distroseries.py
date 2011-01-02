@@ -3,8 +3,6 @@
 
 """Tests for distroseries."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import transaction
@@ -15,29 +13,23 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet,
-    NoSuchDistroSeries,
-    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (

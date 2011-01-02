@@ -97,6 +97,13 @@ class BuildStatus(DBEnumeratedType):
         will be notified via process-upload about the reason of the rejection.
         """)
 
+    UPLOADING = DBItem(8, """
+        Uploading build
+
+        The build has completed and is waiting to be processed by the 
+        upload processor.
+        """)
+
 
 class BuildFarmJobType(DBEnumeratedType):
     """Soyuz build farm job type.
@@ -128,6 +135,3 @@ class BuildFarmJobType(DBEnumeratedType):
 
         Generate translation templates from a bazaar branch.
         """)
-
-
-

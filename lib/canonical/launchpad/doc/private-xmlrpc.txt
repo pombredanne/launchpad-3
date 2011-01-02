@@ -59,7 +59,7 @@ methods as those exposed publicly.
     404 404 Not Found>
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
     >>> token_string = internal_api.newBugTrackerToken()
     >>> token = getUtility(ILoginTokenSet)[token_string]
     >>> token

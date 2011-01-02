@@ -3,10 +3,10 @@
 The base class for BugChanges doesn't actually implement anything.
 
     >>> import pytz
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from datetime import datetime
     >>> from lp.bugs.adapters.bugchange import BugChangeBase
     >>> from lp.bugs.interfaces.bugchange import IBugChange
-    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -106,7 +106,7 @@ BugActivity entries are added when addChange() is called.
 
 As are BugNotifications.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     Some message text
@@ -300,6 +300,7 @@ This describes a change to the duplicate marker for a bug.
     >>> print bug_duplicate_change.getBugNotification()['text']
     ** This bug has been marked a duplicate of bug ...
        Fish can't walk
+     * You can subscribe to bug ... by following this link:...
 
 BugDuplicateChange overrides getBugActivity() to customize all the
 returned fields.

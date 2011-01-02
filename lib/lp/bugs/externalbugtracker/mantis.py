@@ -18,7 +18,6 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
@@ -37,6 +36,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.propertycache import cachedproperty
 
 
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):

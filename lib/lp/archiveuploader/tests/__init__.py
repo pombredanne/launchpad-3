@@ -3,21 +3,20 @@
 
 """Tests for the archive uploader."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-__all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
-           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
-           'mock_logger', 'mock_logger_quiet']
+__all__ = [
+    'datadir',
+    'getPolicy',
+    'insertFakeChangesFile',
+    'insertFakeChangesFileForAllPackageUploads',
+    ]
 
 import os
-import sys
-import traceback
 
 from zope.component import getGlobalSiteManager
 
-from canonical.librarian.ftests.harness import fillLibrarianFile
+from canonical.librarian.testing.server import fillLibrarianFile
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
     findPolicyByName,
@@ -59,49 +58,17 @@ def insertFakeChangesFileForAllPackageUploads():
 class MockUploadOptions:
     """Mock upload policy options helper"""
 
-    def __init__(self, distro='ubuntutest', distroseries=None, buildid=None):
+    def __init__(self, distro='ubuntutest', distroseries=None):
         self.distro = distro
         self.distroseries = distroseries
-        self.buildid = buildid
 
 
-def getPolicy(name='anything', distro='ubuntu', distroseries=None,
-              buildid=None):
+def getPolicy(name='anything', distro='ubuntu', distroseries=None):
     """Build and return an Upload Policy for the given context."""
     policy = findPolicyByName(name)
-    options = MockUploadOptions(distro, distroseries, buildid)
+    options = MockUploadOptions(distro, distroseries)
     policy.setOptions(options)
     return policy
-
-
-class MockUploadLogger:
-    """Mock upload logger facility helper"""
-
-    def __init__(self, verbose=True):
-        self.verbose = verbose
-
-    def print_traceback(self, exc_info):
-        if exc_info:
-            for err_msg in traceback.format_exception(*sys.exc_info()):
-                print err_msg
-
-    def debug(self, message, exc_info=False, **kw):
-        if self.verbose is not True:
-            return
-        print 'DEBUG:', message
-        self.print_traceback(exc_info)
-
-    def info(self, message, exc_info=False, **kw):
-        print 'INFO:', message
-        self.print_traceback(exc_info)
-
-    def warn(self, message, exc_info=False, **kw):
-        print 'WARN:', message
-        self.print_traceback(exc_info)
-
-    def error(self, message, exc_info=False, **kw):
-        print 'ERROR:', message
-        self.print_traceback(exc_info)
 
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
@@ -155,8 +122,3 @@ def register_archive_upload_policy_adapters():
     for policy in policies:
         sm.registerUtility(
             component=policy, provided=IArchiveUploadPolicy, name=policy.name)
-
-
-mock_options = MockUploadOptions()
-mock_logger = MockUploadLogger()
-mock_logger_quiet = MockUploadLogger(verbose=False)

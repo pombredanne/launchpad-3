@@ -47,7 +47,12 @@ for line in template:
         if not match:
             continue
         # We want to bundle the minimized version
-        module = os.path.join(yui_root, match.group(1)) + '-min.js'
+        # unless it's a lang module.
+        file_path = match.group(1)
+        if 'lang' in file_path:
+            module = os.path.join(yui_root, match.group(1)) + '.js'
+        else:
+            module = os.path.join(yui_root, match.group(1)) + '-min.js'
         if not os.path.isfile(module):
             sys.stderr.write(
                 "Found invalid YUI module: %s\n" % module)

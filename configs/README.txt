@@ -281,9 +281,13 @@ Launchpad schema. This is a general outline of inheritance:
         |         |
         |         + authserver-lazr.conf
         |         |
+        |         + testrunner_\d+/launchpad-lazr.conf
+        |         |
         |         + testrunner-appserver/launchpad-lazr.conf
         |             |
         |             + authserver-lazr.conf
+        |             |
+        |             + testrunner-appserver_\d+/launchpad-lazr.conf
         |
         + staging-lazr.conf
         |    |
@@ -294,10 +298,6 @@ Launchpad schema. This is a general outline of inheritance:
         |    |    + authserver-lazr.conf
         |    |
         |    + staging-mailman/launchpad-lazr.conf
-        |
-        + edge-lazr.conf
-        |    |
-        |    + edge<1-4>/launchpad-lazr.conf
         |
         + lpnet-lazr.conf
         |    |

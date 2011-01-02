@@ -24,7 +24,7 @@ The Bugzilla ExternalBugTracker works differently depending on which
 version of Bugzilla it is talking to. If it's a version we can't parse,
 UnparseableBugTrackerVersion is raised:
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
@@ -58,8 +58,8 @@ And will also handle versions which contain the string 'rc'.
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = (
     ...     getUtility(IBugTrackerSet).getByName('gnome-bugzilla'))
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
@@ -379,6 +379,26 @@ isn't available in which case we map against priority values.
     >>> external_bugzilla.convertRemoteImportance('LOW').title
     'Low'
 
+Some bugzillas don't provide a value, resulting in blank strings for
+priority and severity.  We simply leave the importance unknown in this
+case.
+
+    >>> external_bugzilla.convertRemoteImportance('').title
+    'Unknown'
+
+However, we still treat as an error if the priority or severity are set
+to some other unexpected string.
+
+    >>> external_bugzilla.convertRemoteImportance('foo bar')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: foo bar
+    >>> external_bugzilla.convertRemoteImportance('%&*@*#&$%!')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: %&*@*#&$%!
+
+
 
 Updating Bug Watches
 --------------------
@@ -410,8 +430,9 @@ update:
 
 Let's add a handful of watches:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -556,7 +577,7 @@ from a bug task.
 Importance gets updated for Bugzilla bugs.  Let's set it to some bogus
 value, and see that it gets set to a proper value.
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> thunderbird_task.transitionToImportance(
     ...     BugTaskImportance.HIGH,
     ...     thunderbird_task.pillar.owner)
@@ -591,7 +612,7 @@ If we change the bugtask status, it will be updated again even though
 the remote status hasn't changed. This can happen if we change the
 status mapping.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))

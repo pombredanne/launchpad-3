@@ -147,8 +147,8 @@ status is returned.
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+settings", host='translations.launchpad.dev',
-...       auth=True)
+>>> check("/ubuntu/+configure-translations",
+...       host='translations.launchpad.dev', auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
@@ -369,7 +369,6 @@ This is for a team:
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
->>> check("/~name18/+newpoll", auth=True)
 >>> check("/~name16/+rdf")
 >>> check("/~name18/+rdf")
 
@@ -444,7 +443,7 @@ Check redirects of Unicode URLs works
 
 Icing resources.
 
->>> from canonical.launchpad.versioninfo import revno
+>>> from lp.app.versioninfo import revno
 >>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)

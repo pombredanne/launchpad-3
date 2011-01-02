@@ -12,7 +12,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.adapters.bugchange import (
     BUG_CHANGE_LOOKUP,
     get_bug_change_class,

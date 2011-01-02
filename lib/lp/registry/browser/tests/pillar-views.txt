@@ -24,7 +24,8 @@ be rendered. The newly created pillar does not use any launchpad applications.
 
 Pillars that do use launchpad applications have an involvement menu.
 
-    >>> distribution.official_answers = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True
     >>> view = create_view(
     ...     distribution, '+get-involved', principal=distribution.owner)
@@ -33,14 +34,14 @@ Pillars that do use launchpad applications have an involvement menu.
 
     >>> view.official_malone
     True
-    >>> view.official_answers
-    True
-    >>> view.official_rosetta
-    False
-    >>> view.official_blueprints
-    False
-    >>> view.codehosting_usage.name
-    'NOT_APPLICABLE'
+    >>> print view.answers_usage.name
+    LAUNCHPAD
+    >>> print view.translations_usage.name
+    UNKNOWN
+    >>> print view.blueprints_usage.name
+    UNKNOWN
+    >>> print view.codehosting_usage.name
+    UNKNOWN
 
 The view provides a list of enabled links that is rendered by the template.
 
@@ -65,10 +66,10 @@ Products are supported.
 
     >>> product = factory.makeProduct(name='bread')
     >>> login_person(product.owner)
-    >>> product.official_blueprints = True
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
-    >>> view.official_blueprints
-    True
+    >>> print view.blueprints_usage.name
+    LAUNCHPAD
     >>> for link in view.enabled_links:
     ...     print link.name
     register_blueprint
@@ -114,7 +115,6 @@ dictionary, which makes it easy for use in the page template.
 
 Changing the product's usage is reflected in the view properties.
 
-    >>> from lp.app.enums import ServiceUsage
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
     >>> for key in sorted(view.configuration_states.keys()):
@@ -153,35 +153,6 @@ indicator showing whether it has been configured or not.
     <span class="sprite no">...
     </table>
 
-Until other supporting code lands, the progress bar is not going to be
-shown on lpnet.
-
-    >>> # Pretend that we're on launchpad.net:
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [launchpad]
-    ...     is_lpnet: True
-    ...     """)
-    >>> config.push('test_data', test_data)
-
-The progress bar is not shown on lpnet.
-
-    >>> view = create_view(product, '+get-involved')
-    >>> rendered = view.render()
-    >>> print find_tag_by_id(rendered, 'progressbar')
-    None
-
-Neither are the indicator sprites.
-
-    >>> 'sprite' in find_tag_by_id(rendered, 'configuration_links')
-    False
-
-    >>> # Restore the previous config:
-    >>> config_data = config.pop('test_data')
-    >>> print config.launchpad.is_lpnet
-    False
-
 Project groups are supported too, but they only display the
 applications used by their products.
 
@@ -189,8 +160,8 @@ applications used by their products.
     >>> product.project = project_group
 
     >>> view = create_view(project_group, '+get-involved')
-    >>> view.official_blueprints
-    True
+    >>> print view.blueprints_usage.name
+    LAUNCHPAD
 
 The offical_codehosting for a project is based on whether the project's
 development focus series has a branch.
@@ -200,23 +171,59 @@ development focus series has a branch.
     >>> product.official_codehosting
     False
     >>> view = create_view(product, '+get-involved')
-    >>> view.codehosting_usage.name
-    'UNKNOWN'
+    >>> print view.codehosting_usage.name
+    UNKNOWN
 
     >>> product.development_focus.branch = factory.makeBranch(
     ...     product=product)
     >>> product.official_codehosting
     True
     >>> view = create_view(product, '+get-involved')
-    >>> view.codehosting_usage.name
-    'LAUNCHPAD' 
+    >>> print view.codehosting_usage.name
+    LAUNCHPAD
+
+    >>> from lp.code.enums import BranchType
+    >>> remote = factory.makeProduct()
+    >>> branch = factory.makeProductBranch(product=remote,
+    ...                                    branch_type=BranchType.REMOTE)
+    >>> remote.official_codehosting
+    False
+    >>> view = create_view(remote, '+get-involved')
+    >>> print view.codehosting_usage.name
+    UNKNOWN
+
 
 Project groups cannot make links to register a branch, so
 official_codehosting is always false.
 
     >>> view = create_view(project_group, '+get-involved')
-    >>> view.codehosting_usage.name
-    'NOT_APPLICABLE'
+    >>> print view.codehosting_usage.name
+    NOT_APPLICABLE
+
+Project groups ignore products translations_usage setting if none of the
+products are fully configured as translatable.
+
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> project_group.has_translatable()
+    False
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> print view.translations_usage.name
+    UNKNOWN
+
+If a product is translatable, translations is enabled in the involvment menu.
+
+    >>> series = factory.makeProductSeries(product=product)
+    >>> pot = factory.makePOTemplateAndPOFiles(
+    ...     productseries=series,
+    ...     language_codes=['es'])
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> project_group.has_translatable()
+    True
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> print view.translations_usage.name
+    LAUNCHPAD
 
 DistroSeries can use this view. The distribution is used to set the links.
 
@@ -230,9 +237,10 @@ DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(distribution.owner)
-    >>> distribution.official_blueprints = True
-    >>> distribution.official_rosetta = True
+    >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> distribution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> package = factory.makeDistributionSourcePackage(
     ...     sourcepackagename="box",
     ...     distribution=distribution)
@@ -247,8 +255,8 @@ Involvement links
 
 The pillar involvement view uses the InvolvedMenu when rendering links.
 
+    >>> from lp.app.browser.tales import MenuAPI
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
 
 The menu when viewed from a product page.
 
@@ -263,8 +271,8 @@ The menu when viewed from a product page.
     http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
 
-    >>> from lp.testing.menu import check_menu_links
     >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> from lp.testing.menu import check_menu_links
     >>> check_menu_links(InvolvedMenu(product))
     True
 

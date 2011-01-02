@@ -284,6 +284,12 @@ a.help:hover, a.help:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.invalid-link {
+    disabled: True;
+    color: #909090;
+    text-decoration: none;
+    cursor: default;
+    }
 img, a img {
     /* No border on images that are links. */
     border: none;
@@ -531,7 +537,7 @@ th, td {
     vertical-align: baseline;
     }
 thead th, tr.thead th {
-    text-align: center;
+    text-align: left;
     vertical-align: bottom;
     }
 th.icon, td.icon {
@@ -657,9 +663,6 @@ table.listing table tfoot td, table.listing table td {
 table.listing tfoot td {
     border: 1px solid #d2d2d2;
     }
-table.listing tr.note {
-    font-size: 77%;
-    }
 table.listing th, table.listing td {
     padding: 0.25em;
     }
@@ -675,7 +678,7 @@ table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
-table.listing tr.note td {
+table.listing .note td {
     border-style: none;
     }
 table.listing img {
@@ -963,8 +966,8 @@ h1 .edit {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
     color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
+    margin: 1em auto 1em auto;
+    padding: 0 1em 1em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -1463,11 +1466,20 @@ span.help {
    Universal presentation
    Colors and fonts
 */
-pre .highlighted {
-    border: none;
-    padding: 0em;
-    margin: 0em;
+
+.exception {
+    color: #cc0000;
     }
+.highlight {
+    background: #ddd;
+    border: 1px solid #ddd;
+    }
+.lowlight {
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
+
 .answers-stat {
     color: #3840BE;
     }
@@ -1774,6 +1786,10 @@ a.unofficial-tag {
 .launchpad-gold {
     color: #F8C300;
     }
+
+.discreet, .lesser, .duplicate-details {
+    font-size: 85%;
+    }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
     font-size: 93%;
@@ -1802,6 +1818,20 @@ pre.changelog, table.diff,
     }
 .cloud-light {
     color: #b8b8ff;
+    }
+
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
+    margin: 1em 0;
+    }
+div#edit-description .yui-ieditor-input,
+div#edit-commit_message .yui-ieditor-input {
+    top: 0;
     }
 
 
@@ -2040,10 +2070,6 @@ body.tab-bugs #duplicate-actions .sprite {
     }
 .person-inactive-badge {
     background-image: url(/@@/person-inactive-badge.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.mentoring {
-    background-image: url(/@@/mentoring.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .undecided {
@@ -2304,10 +2330,6 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/launchpad-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.large-mentoring {
-    background-image: url(/@@/mentoring-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .large-proposal {
     background-image: url(/@@/merge-proposal-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2405,7 +2427,7 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
     }
-table#packages_list tr.superseded {
+table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
     }
 ul.latest-ppa-updates li:nth-child(odd) {

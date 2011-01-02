@@ -12,7 +12,7 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branch import (
     BranchURIField,
     get_blacklisted_hostnames,

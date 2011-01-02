@@ -10,6 +10,7 @@ __all__ = [
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
+    'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -54,10 +55,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -72,17 +73,18 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    render_radio_widget_part,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import MenuAPI
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -91,10 +93,8 @@ from lp.app.errors import (
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationImplementationStatus,
-    )
+from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.registry.browser import (
+    BaseRdfView,
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
     StatusCount,
@@ -137,6 +138,7 @@ from lp.registry.interfaces.packaging import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -252,11 +254,11 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.answers_usage = ServiceUsage.NOT_APPLICABLE
         if self.context.branch is not None:
             self.codehosting_usage = ServiceUsage.LAUNCHPAD
         else:
             self.codehosting_usage = ServiceUsage.UNKNOWN
-        self.official_answers = False
 
     @property
     def configuration_links(self):
@@ -278,10 +280,27 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'configure_bugtracker',
+        'create_milestone',
+        'create_release',
+        'delete',
+        'driver',
+        'edit',
+        'link_branch',
+        'rdf',
         'set_branch',
+        'subscribe',
+        'ubuntupkg',
         ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link(
+            canonical_url(self.context.product,
+                          view_name='+configure-bugtracker'),
+            text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -482,12 +501,29 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
+    @cachedproperty
     def latest_release_with_download_files(self):
         for release in self.context.releases:
             if len(list(release.files)) > 0:
                 return release
         return None
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
+
+
+class ProductSeriesDetailedDisplayView(ProductSeriesView):
+
+    @cachedproperty
+    def latest_milestones(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.milestones[:12])
+
+    @cachedproperty
+    def latest_releases(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.releases[:12])
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
@@ -878,31 +914,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
-
-        def render(widget, term_value, current_value, label=None):
-            term = widget.vocabulary.getTerm(term_value)
-            if term.value == current_value:
-                render = widget.renderSelectedItem
-            else:
-                render = widget.renderItem
-            if label is None:
-                label = term.title
-            value = term.token
-            return render(index=term.value,
-                          text=label,
-                          value=value,
-                          name=widget.name,
-                          cssClass='')
-
         widget = self.widgets['rcs_type']
         vocab = widget.vocabulary
         current_value = widget._getFormValue()
-        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
-        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
-                                   'SVN')
-        self.rcs_type_git = render(widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render(widget, vocab.HG, current_value)
-        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_cvs = render_radio_widget_part(
+            widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render_radio_widget_part(
+            widget, vocab.BZR_SVN, current_value, 'SVN')
+        self.rcs_type_git = render_radio_widget_part(
+            widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render_radio_widget_part(
+            widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render_radio_widget_part(
+            widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
 
         widget = self.widgets['branch_type']
@@ -912,7 +936,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         (self.branch_type_link,
          self.branch_type_create,
          self.branch_type_import) = [
-            render(widget, value, current_value)
+            render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
 
     def _validateLinkLpBzr(self, data):
@@ -1223,32 +1247,15 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class ProductSeriesRdfView(object):
+class ProductSeriesRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/productseries-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-%s.rdf' % (
-                                            self.context.product.name,
-                                            self.context.name))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s' % (self.context.product.name, self.context.name)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

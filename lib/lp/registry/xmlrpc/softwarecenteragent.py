@@ -33,7 +33,7 @@ class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):
         try:
             person, db_updated = getUtility(
                 IPersonSet).getOrCreateByOpenIDIdentifier(
-                    openid_identifier, email, full_name,
+                    openid_identifier.decode('ASCII'), email, full_name,
                     PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
                     "when purchasing an application via Software Center.")
         except AccountSuspendedError:

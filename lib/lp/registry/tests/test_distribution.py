@@ -12,12 +12,13 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
     )
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -83,27 +84,26 @@ class TestDistributionCurrentSourceReleases(
         distribution = removeSecurityProxy(
             self.factory.makeDistribution('foo'))
 
+        cache = get_property_cache(distribution)
+
         # Not yet cached.
-        missing = object()
-        cached_series = getattr(distribution, '_cached_series', missing)
-        self.assertEqual(missing, cached_series)
+        self.assertNotIn("series", cache)
 
         # Now cached.
         series = distribution.series
-        self.assertTrue(series is distribution._cached_series)
+        self.assertIs(series, cache.series)
 
         # Cache cleared.
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
             description='', version='1', parent_series=None,
             owner=self.factory.makePerson())
-        cached_series = getattr(distribution, '_cached_series', missing)
-        self.assertEqual(missing, cached_series)
+        self.assertNotIn("series", cache)
 
         # New cached value.
         series = distribution.series
         self.assertEqual(1, len(series))
-        self.assertTrue(series is distribution._cached_series)
+        self.assertIs(series, cache.series)
 
 
 class SeriesByStatusTests(TestCaseWithFactory):

@@ -9,16 +9,6 @@
   <body>
     <div class="top-portlet" metal:fill-slot="main">
       <h1 class="exception">Timeout error</h1>
-      <div tal:condition="is_edge"
-           id="redirect_notice" class="informational message">
-        <p>Our edge server has a lower timeout threshold than launchpad.net,
-        so we can catch those before they hit a wider audience.
-        If this is blocking your work and you are a member of the Launchpad
-        Beta Testers team, you can disable automatic redirection
-        to edge in order to use launchpad.net.</p>
-        <p><button onclick="setBetaRedirect(false)">Disable redirection
-        for 2 hours</button></p>
-      </div>
       <p>
         Sorry, something just went wrong in Launchpad.
       </p>

@@ -313,8 +313,8 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from lp.bugs.model.bug import Bug
     >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.bugs.model.bug import Bug
     >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
     >>> def hidden_bugs():

@@ -5,9 +5,11 @@ IBugTask instances. For convenience, Launchpad provides a default
 implementation of IBugTaskSet, allowing retrieval of any bug task in
 Launchpad. We'll use this implementation for demonstration purposes:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTask, IBugTaskSet)
     >>> from lp.app.errors import NotFoundError
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTask,
+    ...     IBugTaskSet,
+    ...     )
     >>> task_set = getUtility(IBugTaskSet)
 
 
@@ -42,7 +44,7 @@ The IBugTaskSet getMultiple method can retrieve multiple bug tasks in a
 single operation. To demonstrate, we'll begin by generating a list of
 sample bug tasks:
 
-    >>> from canonical.launchpad.database import BugTask
+    >>> from lp.bugs.model.bugtask import BugTask
     >>> sample_task_count = 10
     >>> sample_tasks = BugTask.select(limit=sample_task_count)
     >>> sample_task_ids = [task.id for task in sample_tasks]

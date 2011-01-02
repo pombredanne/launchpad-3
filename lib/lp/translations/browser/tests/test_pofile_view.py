@@ -11,7 +11,7 @@ from datetime import (
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.errors import UnexpectedFormData
 from lp.testing import (
     login,

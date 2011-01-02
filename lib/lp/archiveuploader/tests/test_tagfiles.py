@@ -76,7 +76,7 @@ class Testtagfiles(unittest.TestCase):
                           parse_tagfile, datadir("bad-multiline-changes"), 1)
 
     def testCheckParseUnterminatedSigRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
+        """lp.archiveuploader.tagfiles.parse_changes should raise
            TagFileParseError on unterminated signatures
         """
         self.assertRaises(TagFileParseError,
@@ -128,7 +128,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['binary'])
+            self.parse_tagfile_version['Binary'])
 
     def test_parse_tagfile_with_newline_delimited_field(self):
         """parse_tagfile should not leave leading or tailing '\n' when
@@ -157,7 +157,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['files'])
+            self.parse_tagfile_version['Files'])
 
     def test_parse_description_field(self):
         """Apt-pkg preserves the blank-line indicator and does not strip
@@ -186,4 +186,4 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         # replaced by ParseTagFiles).
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['description'])
+            self.parse_tagfile_version['Description'])

@@ -52,6 +52,11 @@ LPMAIN_SEED = frozenset([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ('public', 'databasereplicationlag'),
+    ('public', 'featureflag'),
+    # suggestivepotemplate can be removed when the
+    # suggestivepotemplate.potemplate foreign key constraint exists on
+    # production.
+    ('public', 'suggestivepotemplate'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -64,6 +69,7 @@ IGNORED_TABLES = set([
     # Mirror tables, per Bug #489078. These tables have their own private
     # replication set that is setup manually.
     'public.lp_account',
+    'public.lp_openididentifier',
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',

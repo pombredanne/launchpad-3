@@ -60,9 +60,9 @@ The +edit page for a watch also displays some details about the watch.
 If we change the next_check date of the watch its will be shown in the
 Next check column.
 
+    >>> from zope.component import getUtility
     >>> from datetime import datetime
     >>> from pytz import utc
-    >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet

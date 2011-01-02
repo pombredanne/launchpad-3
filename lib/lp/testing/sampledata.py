@@ -10,16 +10,18 @@ just a small number, then you should define it as a constant here.
 __metaclass__ = type
 __all__ = [
     'ADMIN_EMAIL',
+    'BOB_THE_BUILDER_NAME',
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
-    'ADMIN_EMAIL',
     'COMMERCIAL_ADMIN_EMAIL',
-    'SAMPLE_PERSON_EMAIL',
+    'FROG_THE_BUILDER_NAME',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
+    'LAUNCHPAD_ADMIN',
     'LAUNCHPAD_DBUSER_NAME',
     'MAIN_COMPONENT_NAME',
     'NO_PRIVILEGE_EMAIL',
+    'SAMPLE_PERSON_EMAIL',
     'UBUNTU_DEVELOPER_ADMIN_NAME',
     'UBUNTU_DISTRIBUTION_NAME',
     'UBUNTU_UPLOAD_TEAM_NAME',
@@ -41,10 +43,14 @@ ADMIN_EMAIL = 'foo.bar@canonical.com'
 
 # A user with buildd admin rights and upload rights to Ubuntu.
 BUILDD_ADMIN_USERNAME = 'cprov'
+# A couple of builders.
+BOB_THE_BUILDER_NAME = 'bob'
+FROG_THE_BUILDER_NAME = 'frog'
 # The LibraryFileAlias of a chroot for attaching to a DistroArchSeries
 CHROOT_LIBRARYFILEALIAS = 1
 HOARY_DISTROSERIES_NAME = 'hoary'
 I386_ARCHITECTURE_NAME = 'i386'
+LAUNCHPAD_ADMIN = 'admin@canonical.com'
 LAUNCHPAD_DBUSER_NAME = 'launchpad'
 MAIN_COMPONENT_NAME = 'main'
 
@@ -52,7 +58,6 @@ NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
 USER_EMAIL = 'test@canonical.com'
 VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'
 COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
-ADMIN_EMAIL = 'foo.bar@canonical.com'
 SAMPLE_PERSON_EMAIL = USER_EMAIL
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.

@@ -9,8 +9,8 @@ In order to test its behavior we will create a bunch of sample
 publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest, which is empty:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

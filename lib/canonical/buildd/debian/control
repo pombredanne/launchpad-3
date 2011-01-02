@@ -8,7 +8,7 @@ Build-Depends-Indep: debhelper (>= 5)
 Package: launchpad-buildd
 Section: misc
 Architecture: all
-Depends: python-twisted-core, python-twisted-web, debootstrap, dpkg-dev, linux32, file, bzip2, sudo, ntpdate, adduser, apt-transport-https, lsb-release, apache2, ${misc:Depends}
+Depends: python-twisted-core, python-twisted-web, debootstrap, dpkg-dev, linux32, file, bzip2, sudo, ntpdate, adduser, apt-transport-https, lsb-release, apache2, bzr-builder (>=0.5), ${misc:Depends}
 Description: Launchpad buildd slave
  This is the launchpad buildd slave package. It contains everything needed to
  get a launchpad buildd going apart from the database manipulation required to

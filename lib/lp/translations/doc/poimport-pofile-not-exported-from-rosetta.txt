@@ -1,4 +1,5 @@
-= PO Import test with a .po file that lacks X-Rosetta-Export-Date header =
+PO Import test with a .po file that lacks X-Rosetta-Export-Date header
+======================================================================
 
 When we import a .po file as not 'published', it needs to have a header
 named 'X-Rosetta-Export-Date' to be able to detect conflicts with other
@@ -19,10 +20,12 @@ warn the uploader about this.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')

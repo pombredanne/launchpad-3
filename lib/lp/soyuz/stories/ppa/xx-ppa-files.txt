@@ -331,8 +331,8 @@ proxy redirects to the public http url. We'll copy the test sources and
 binaries across to no-priv's public ppa.
 
     >>> login_person(no_priv)
-    >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(
     ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
     ...     no_priv.archive, series=ubuntu['warty'],
@@ -405,7 +405,6 @@ immediately deleted in case of reported ToS violation.
 
     # Attach an existing file (the 'test-pkg_1.0.dsc') to a deleted
     # LibraryFileContent.
-    >>> from canonical.launchpad.database import LibraryFileContent
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> login('foo.bar@canonical.com')
@@ -466,7 +465,7 @@ the page.
     ...
     Include the error ID OOPS-...
     ...
-    DeletedProxiedLibraryFileAlias:
-    Object: u'test-pkg_1.0.dsc', name: &lt;Archive at
+    NotFound:
+    Object: &lt;Archive at ...&gt;, name: u'test-pkg_1.0.dsc'...
     ...
 

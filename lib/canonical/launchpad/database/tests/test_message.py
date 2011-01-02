@@ -18,7 +18,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
+from canonical.launchpad.database.message import (
     MessageJob,
     MessageJobAction,
     MessageSet,
@@ -27,7 +27,7 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory

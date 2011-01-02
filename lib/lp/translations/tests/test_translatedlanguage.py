@@ -7,7 +7,8 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
@@ -24,8 +25,10 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def setUp(self):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage = ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(
+            product=product)
         self.parent = self.productseries
         self.psl_set = getUtility(IProductSeriesLanguageSet)
         self.language = self.factory.makeLanguage('sr@test')

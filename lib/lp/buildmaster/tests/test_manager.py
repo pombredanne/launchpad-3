@@ -6,21 +6,24 @@
 import os
 import signal
 import time
-import unittest
+import xmlrpclib
+
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
 
 import transaction
+
 from twisted.internet import (
     defer,
     reactor,
     task,
     )
-from twisted.internet.error import ConnectionClosed
 from twisted.internet.task import (
-    Clock,
     deferLater,
     )
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -30,543 +33,66 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.scripts.logger import BufferLogger
+from lp.services.log.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
-    TwistedLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    BaseDispatchResult,
-    buildd_success_result_map,
+    assessFailureCounts,
     BuilddManager,
-    FailDispatchResult,
     NewBuildersScanner,
-    RecordingSlave,
-    ResetDispatchResult,
     SlaveScanner,
     )
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
+from lp.buildmaster.tests.mock_slaves import (
+    BrokenSlave,
+    BuildingSlave,
+    make_publisher,
+    OkSlave,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase as LaunchpadTestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
-class TestRecordingSlaves(TrialTestCase):
-    """Tests for the recording slave class."""
-    layer = TwistedLayer
-
-    def setUp(self):
-        """Setup a fresh `RecordingSlave` for tests."""
-        TrialTestCase.setUp(self)
-        self.slave = RecordingSlave(
-            'foo', 'http://foo:8221/rpc', 'foo.host')
-
-    def test_representation(self):
-        """`RecordingSlave` has a custom representation.
-
-        It encloses builder name and xmlrpc url for debug purposes.
-        """
-        self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
-
-    def assert_ensurepresent(self, func):
-        """Helper function to test results from calling ensurepresent."""
-        self.assertEqual(
-            [True, 'Download'],
-            func('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
-
-    def test_ensurepresent(self):
-        """`RecordingSlave.ensurepresent` always succeeds.
-
-        It returns the expected succeed code and records the interaction
-        information for later use.
-        """
-        self.assert_ensurepresent(self.slave.ensurepresent)
-
-    def test_sendFileToSlave(self):
-        """RecordingSlave.sendFileToSlave always succeeeds.
-
-        It calls ensurepresent() and hence returns the same results.
-        """
-        self.assert_ensurepresent(self.slave.sendFileToSlave)
-
-    def test_build(self):
-        """`RecordingSlave.build` always succeeds.
-
-        It returns the expected succeed code and records the interaction
-        information for later use.
-        """
-        self.assertEqual(
-            ['BuilderStatus.BUILDING', 'boing'],
-            self.slave.build('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('build', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
-
-    def test_resume(self):
-        """`RecordingSlave.resume` always returns successs."""
-        # Resume isn't requested in a just-instantiated RecordingSlave.
-        self.assertFalse(self.slave.resume_requested)
-
-        # When resume is called, it returns the success list and mark
-        # the slave for resuming.
-        self.assertEqual(['', '', os.EX_OK], self.slave.resume())
-        self.assertTrue(self.slave.resume_requested)
-
-    def test_resumeHost_success(self):
-        # On a successful resume resumeHost() fires the returned deferred
-        # callback with 'None'.
-
-        # The configuration testing command-line.
-        self.assertEqual(
-            'echo %(vm_host)s', config.builddmaster.vm_resume_command)
-
-        # On success the response is None.
-        def check_resume_success(response):
-            out, err, code = response
-            self.assertEqual(os.EX_OK, code)
-            self.assertEqual("%s\n" % self.slave.vm_host, out)
-        d = self.slave.resumeSlave()
-        d.addBoth(check_resume_success)
-        return d
-
-    def test_resumeHost_failure(self):
-        # On a failed resume, 'resumeHost' fires the returned deferred
-        # errorback with the `ProcessTerminated` failure.
-
-        # Override the configuration command-line with one that will fail.
-        failed_config = """
-        [builddmaster]
-        vm_resume_command: test "%(vm_host)s = 'no-sir'"
-        """
-        config.push('failed_resume_command', failed_config)
-        self.addCleanup(config.pop, 'failed_resume_command')
-
-        # On failures, the response is a twisted `Failure` object containing
-        # a tuple.
-        def check_resume_failure(failure):
-            out, err, code = failure.value
-            # The process will exit with a return code of "1".
-            self.assertEqual(code, 1)
-        d = self.slave.resumeSlave()
-        d.addBoth(check_resume_failure)
-        return d
-
-    def test_resumeHost_timeout(self):
-        # On a resume timeouts, 'resumeHost' fires the returned deferred
-        # errorback with the `TimeoutError` failure.
-
-        # Override the configuration command-line with one that will timeout.
-        timeout_config = """
-        [builddmaster]
-        vm_resume_command: sleep 5
-        socket_timeout: 1
-        """
-        config.push('timeout_resume_command', timeout_config)
-        self.addCleanup(config.pop, 'timeout_resume_command')
-
-        # On timeouts, the response is a twisted `Failure` object containing
-        # a `TimeoutError` error.
-        def check_resume_timeout(failure):
-            self.assertIsInstance(failure, Failure)
-            out, err, code = failure.value
-            self.assertEqual(code, signal.SIGKILL)
-        clock = Clock()
-        d = self.slave.resumeSlave(clock=clock)
-        # Move the clock beyond the socket_timeout but earlier than the
-        # sleep 5.  This stops the test having to wait for the timeout.
-        # Fast tests FTW!
-        clock.advance(2)
-        d.addBoth(check_resume_timeout)
-        return d
-
-
-class TestingXMLRPCProxy:
-    """This class mimics a twisted XMLRPC Proxy class."""
-
-    def __init__(self, failure_info=None):
-        self.calls = []
-        self.failure_info = failure_info
-        self.works = failure_info is None
-
-    def callRemote(self, *args):
-        self.calls.append(args)
-        if self.works:
-            result = buildd_success_result_map.get(args[0])
-        else:
-            result = 'boing'
-        return defer.succeed([result, self.failure_info])
-
-
-class TestingResetDispatchResult(ResetDispatchResult):
-    """Override the evaluation method to simply annotate the call."""
-
-    def __init__(self, slave, info=None):
-        ResetDispatchResult.__init__(self, slave, info)
-        self.processed = False
-
-    def __call__(self):
-        self.processed = True
-
-
-class TestingFailDispatchResult(FailDispatchResult):
-    """Override the evaluation method to simply annotate the call."""
-
-    def __init__(self, slave, info=None):
-        FailDispatchResult.__init__(self, slave, info)
-        self.processed = False
-
-    def __call__(self):
-        self.processed = True
-
-
-class TestingSlaveScanner(SlaveScanner):
-    """Override the dispatch result factories """
-
-    reset_result = TestingResetDispatchResult
-    fail_result = TestingFailDispatchResult
-
-
-class TestSlaveScanner(TrialTestCase):
-    """Tests for the actual build slave manager."""
-    layer = TwistedLayer
-
-    def setUp(self):
-        TrialTestCase.setUp(self)
-        self.manager = TestingSlaveScanner("bob", BufferLogger())
-
-        # We will use an instrumented SlaveScanner instance for tests in
-        # this context.
-
-        # Stop cyclic execution and record the end of the cycle.
-        self.stopped = False
-
-        def testNextCycle():
-            self.stopped = True
-
-        self.manager.scheduleNextScanCycle = testNextCycle
-
-        # Return the testing Proxy version.
-        self.test_proxy = TestingXMLRPCProxy()
-
-        def testGetProxyForSlave(slave):
-            return self.test_proxy
-        self.manager._getProxyForSlave = testGetProxyForSlave
-
-        # Deactivate the 'scan' method.
-        def testScan():
-            pass
-        self.manager.scan = testScan
-
-        # Stop automatic collection of dispatching results.
-        def testslaveConversationEnded():
-            pass
-        self._realslaveConversationEnded = self.manager.slaveConversationEnded
-        self.manager.slaveConversationEnded = testslaveConversationEnded
-
-    def assertIsDispatchReset(self, result):
-        self.assertTrue(
-            isinstance(result, TestingResetDispatchResult),
-            'Dispatch failure did not result in a ResetBuildResult object')
-
-    def assertIsDispatchFail(self, result):
-        self.assertTrue(
-            isinstance(result, TestingFailDispatchResult),
-            'Dispatch failure did not result in a FailBuildResult object')
-
-    def test_checkResume(self):
-        """`SlaveScanner.checkResume` is chained after resume requests.
-
-        If the resume request succeed it returns None, otherwise it returns
-        a `ResetBuildResult` (the one in the test context) that will be
-        collect and evaluated later.
-
-        See `RecordingSlave.resumeHost` for more information about the resume
-        result contents.
-        """
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-
-        successful_response = ['', '', os.EX_OK]
-        result = self.manager.checkResume(successful_response, slave)
-        self.assertEqual(
-            None, result, 'Successful resume checks should return None')
-
-        failed_response = ['stdout', 'stderr', 1]
-        result = self.manager.checkResume(failed_response, slave)
-        self.assertIsDispatchReset(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
-        self.assertEqual(
-            result.info, "stdout\nstderr")
-
-    def test_fail_to_resume_slave_resets_slave(self):
-        # If an attempt to resume and dispatch a slave fails, we reset the
-        # slave by calling self.reset_result(slave)().
-
-        reset_result_calls = []
-
-        class LoggingResetResult(BaseDispatchResult):
-            """A DispatchResult that logs calls to itself.
-
-            This *must* subclass BaseDispatchResult, otherwise finishCycle()
-            won't treat it like a dispatch result.
-            """
-
-            def __init__(self, slave, info=None):
-                self.slave = slave
-
-            def __call__(self):
-                reset_result_calls.append(self.slave)
-
-        # Make a failing slave that is requesting a resume.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.resume_requested = True
-        slave.resumeSlave = lambda: deferLater(
-            reactor, 0, defer.fail, Failure(('out', 'err', 1)))
-
-        # Make the manager log the reset result calls.
-        self.manager.reset_result = LoggingResetResult
-
-        # We only care about this one slave. Reset the list of manager
-        # deferreds in case setUp did something unexpected.
-        self.manager._deferred_list = []
-
-        # Here, we're patching the slaveConversationEnded method so we can
-        # get an extra callback at the end of it, so we can
-        # verify that the reset_result was really called.
-        def _slaveConversationEnded():
-            d = self._realslaveConversationEnded()
-            return d.addCallback(
-                lambda ignored: self.assertEqual([slave], reset_result_calls))
-        self.manager.slaveConversationEnded = _slaveConversationEnded
-
-        self.manager.resumeAndDispatch(slave)
-
-    def test_failed_to_resume_slave_ready_for_reset(self):
-        # When a slave fails to resume, the manager has a Deferred in its
-        # Deferred list that is ready to fire with a ResetDispatchResult.
-
-        # Make a failing slave that is requesting a resume.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.resume_requested = True
-        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
-
-        # We only care about this one slave. Reset the list of manager
-        # deferreds in case setUp did something unexpected.
-        self.manager._deferred_list = []
-        # Restore the slaveConversationEnded method. It's very relevant to
-        # this test.
-        self.manager.slaveConversationEnded = self._realslaveConversationEnded
-        self.manager.resumeAndDispatch(slave)
-        [d] = self.manager._deferred_list
-
-        # The Deferred for our failing slave should be ready to fire
-        # successfully with a ResetDispatchResult.
-        def check_result(result):
-            self.assertIsInstance(result, ResetDispatchResult)
-            self.assertEqual(slave, result.slave)
-            self.assertFalse(result.processed)
-        return d.addCallback(check_result)
-
-    def testCheckDispatch(self):
-        """`SlaveScanner.checkDispatch` is chained after dispatch requests.
-
-        If the dispatch request fails or a unknown method is given, it
-        returns a `FailDispatchResult` (in the test context) that will
-        be evaluated later.
-
-        Builders will be marked as failed if the following responses
-        categories are received.
-
-         * Legitimate slave failures: when the response is a list with 2
-           elements but the first element ('status') does not correspond to
-           the expected 'success' result. See `buildd_success_result_map`.
-
-         * Unexpected (code) failures: when the given 'method' is unknown
-           or the response isn't a 2-element list or Failure instance.
-
-        Communication failures (a twisted `Failure` instance) will simply
-        cause the builder to be reset, a `ResetDispatchResult` object is
-        returned. In other words, network failures are ignored in this
-        stage, broken builders will be identified and marked as so
-        during 'scan()' stage.
-
-        On success dispatching it returns None.
-        """
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-
-        # Successful legitimate response, None is returned.
-        successful_response = [
-            buildd_success_result_map.get('ensurepresent'), 'cool builder']
-        result = self.manager.checkDispatch(
-            successful_response, 'ensurepresent', slave)
-        self.assertEqual(
-            None, result, 'Successful dispatch checks should return None')
-
-        # Failed legitimate response, results in a `FailDispatchResult`.
-        failed_response = [False, 'uncool builder']
-        result = self.manager.checkDispatch(
-            failed_response, 'ensurepresent', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure (uncool builder)',
-            repr(result))
-
-        # Twisted Failure response, results in a `ResetDispatchResult`.
-        twisted_failure = Failure(ConnectionClosed('Boom!'))
-        result = self.manager.checkDispatch(
-            twisted_failure, 'ensurepresent', slave)
-        self.assertIsDispatchReset(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
-
-        # Unexpected response, results in a `FailDispatchResult`.
-        unexpected_response = [1, 2, 3]
-        result = self.manager.checkDispatch(
-            unexpected_response, 'build', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
-            '(Unexpected response: [1, 2, 3])', repr(result))
-
-        # Unknown method was given, results in a `FailDispatchResult`
-        result = self.manager.checkDispatch(
-            successful_response, 'unknown-method', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
-            '(Unknown slave method: unknown-method)', repr(result))
-
-    def test_initiateDispatch(self):
-        """Check `dispatchBuild` in various scenarios.
-
-        When there are no recording slaves (i.e. no build got dispatched
-        in scan()) it simply finishes the cycle.
-
-        When there is a recording slave with pending slave calls, they are
-        performed and if they all succeed the cycle is finished with no
-        errors.
-
-        On slave call failure the chain is stopped immediately and an
-        FailDispatchResult is collected while finishing the cycle.
-        """
-        def check_no_events(results):
-            errors = [
-                r for s, r in results if isinstance(r, BaseDispatchResult)]
-            self.assertEqual(0, len(errors))
-
-        def check_events(results):
-            [error] = [r for s, r in results if r is not None]
-            self.assertEqual(
-                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
-                repr(error))
-            self.assertTrue(error.processed)
-
-        def _wait_on_deferreds_then_check_no_events():
-            dl = self._realslaveConversationEnded()
-            dl.addCallback(check_no_events)
-
-        def _wait_on_deferreds_then_check_events():
-            dl = self._realslaveConversationEnded()
-            dl.addCallback(check_events)
-
-        # A functional slave charged with some interactions.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.ensurepresent('arg1', 'arg2', 'arg3')
-        slave.build('arg1', 'arg2', 'arg3')
-
-        # If the previous step (resuming) has failed nothing gets dispatched.
-        reset_result = ResetDispatchResult(slave)
-        result = self.manager.initiateDispatch(reset_result, slave)
-        self.assertTrue(result is reset_result)
-        self.assertFalse(slave.resume_requested)
-        self.assertEqual(0, len(self.manager._deferred_list))
-
-        # Operation with the default (funcional slave), no resets or
-        # failures results are triggered.
-        slave.resume()
-        result = self.manager.initiateDispatch(None, slave)
-        self.assertEqual(None, result)
-        self.assertTrue(slave.resume_requested)
-        self.assertEqual(
-            [('ensurepresent', 'arg1', 'arg2', 'arg3'),
-             ('build', 'arg1', 'arg2', 'arg3')],
-            self.test_proxy.calls)
-        self.assertEqual(2, len(self.manager._deferred_list))
-
-        # Monkey patch the slaveConversationEnded method so we can chain a
-        # callback to check the end of the result chain.
-        self.manager.slaveConversationEnded = \
-            _wait_on_deferreds_then_check_no_events
-        events = self.manager.slaveConversationEnded()
-
-        # Create a broken slave and insert interaction that will
-        # cause the builder to be marked as fail.
-        self.test_proxy = TestingXMLRPCProxy('very broken slave')
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.ensurepresent('arg1', 'arg2', 'arg3')
-        slave.build('arg1', 'arg2', 'arg3')
-
-        result = self.manager.initiateDispatch(None, slave)
-        self.assertEqual(None, result)
-        self.assertEqual(3, len(self.manager._deferred_list))
-        self.assertEqual(
-            [('ensurepresent', 'arg1', 'arg2', 'arg3')],
-            self.test_proxy.calls)
-
-        # Monkey patch the slaveConversationEnded method so we can chain a
-        # callback to check the end of the result chain.
-        self.manager.slaveConversationEnded = \
-            _wait_on_deferreds_then_check_events
-        events = self.manager.slaveConversationEnded()
-
-        return events
-
-
-class TestSlaveScannerScan(TrialTestCase):
+class TestSlaveScannerScan(TestCase):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
     """
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def setUp(self):
-        """Setup TwistedLayer, TrialTestCase and BuilddSlaveTest.
+        """Set up BuilddSlaveTest.
 
         Also adjust the sampledata in a way a build can be dispatched to
         'bob' builder.
         """
-        TwistedLayer.testSetUp()
-        TrialTestCase.setUp(self)
-        BuilddSlaveTestSetup().setUp()
+        super(TestSlaveScannerScan, self).setUp()
+        self.slave = self.useFixture(BuilddSlaveTestSetup())
 
         # Creating the required chroots needed for dispatching.
-        login('foo.bar@canonical.com')
-        test_publisher = SoyuzTestPublisher()
+        test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        BuilddSlaveTestSetup().tearDown()
-        TrialTestCase.tearDown(self)
-        TwistedLayer.testTearDown()
 
     def _resetBuilder(self, builder):
-        """Reset the given builder and it's job."""
-        login('foo.bar@canonical.com')
+        """Reset the given builder and its job."""
 
         builder.builderok = True
         job = builder.currentjob
@@ -574,7 +100,6 @@ class TestSlaveScannerScan(TrialTestCase):
             job.reset()
 
         transaction.commit()
-        login(ANONYMOUS)
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
@@ -590,78 +115,53 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
-    def _getManager(self):
+    def _getScanner(self, builder_name=None):
         """Instantiate a SlaveScanner object.
 
         Replace its default logging handler by a testing version.
         """
-        manager = SlaveScanner("bob", BufferLogger())
-        manager.logger.name = 'slave-scanner'
+        if builder_name is None:
+            builder_name = BOB_THE_BUILDER_NAME
+        scanner = SlaveScanner(builder_name, BufferLogger())
+        scanner.logger.name = 'slave-scanner'
 
-        return manager
+        return scanner
 
     def _checkDispatch(self, slave, builder):
-        """`SlaveScanner.scan` returns a `RecordingSlave`.
+        # SlaveScanner.scan returns a slave when a dispatch was
+        # successful.  We also check that the builder has a job on it.
 
-        The single slave returned should match the given builder and
-        contain interactions that should be performed asynchronously for
-        properly dispatching the sampledata job.
-        """
-        self.assertFalse(
-            slave is None, "Unexpected recording_slaves.")
-
-        self.assertEqual(slave.name, builder.name)
-        self.assertEqual(slave.url, builder.url)
-        self.assertEqual(slave.vm_host, builder.vm_host)
-
-        self.assertEqual(
-            [('ensurepresent',
-              ('0feca720e2c29dafb2c900713ba560e03b758711',
-               'http://localhost:58000/93/fake_chroot.tar.gz',
-               '', '')),
-             ('ensurepresent',
-              ('4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33',
-               'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
-               '', '')),
-             ('build',
-              ('6358a89e2215e19b02bf91e2e4d009640fae5cf8',
-               'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
-               {'alsa-utils_1.0.9a-4ubuntu1.dsc':
-                '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
-               {'arch_indep': True,
-                'arch_tag': 'i386',
-                'archive_private': False,
-                'archive_purpose': 'PRIMARY',
-                'archives':
-                ['deb http://ftpmaster.internal/ubuntu hoary main'],
-                'build_debug_symbols': False,
-                'ogrecomponent': 'main',
-                'suite': u'hoary'}))],
-            slave.calls, "Job was not properly dispatched.")
+        self.assertTrue(slave is not None, "Expected a slave.")
+        self.assertEqual(0, builder.failure_count)
+        self.assertTrue(builder.currentjob is not None)
 
     def testScanDispatchForResetBuilder(self):
         # A job gets dispatched to the sampledata builder after it's reset.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
+        # Set this to 1 here so that _checkDispatch can make sure it's
+        # reset to 0 after a successful dispatch.
+        builder.failure_count = 1
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
         return d
 
-    def _checkNoDispatch(self, recording_slave, builder):
+    def _checkNoDispatch(self, slave, builder):
         """Assert that no dispatch has occurred.
 
-        'recording_slave' is None, so no interations would be passed
+        'slave' is None, so no interations would be passed
         to the asynchonous dispatcher and the builder remained active
         and IDLE.
         """
-        self.assertTrue(
-            recording_slave is None, "Unexpected recording_slave.")
+        self.assertTrue(slave is None, "Unexpected slave.")
 
         builder = getUtility(IBuilderSet).get(builder.id)
         self.assertTrue(builder.builderok)
@@ -673,7 +173,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # and the builder used should remain active and IDLE.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
 
         # Remove hoary/i386 chroot.
@@ -686,9 +186,9 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
@@ -714,7 +214,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # The job assigned to a broken builder is rescued.
 
         # Sampledata builder is enabled and is assigned to an active job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self.assertTrue(builder.builderok)
         job = builder.currentjob
         self.assertBuildingJob(job, builder)
@@ -726,9 +226,9 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
         return d
 
@@ -747,11 +247,9 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertBuildingJob(job, builder, logtail='This is a build log')
 
     def testScanUpdatesBuildingJobs(self):
-        # The job assigned to a broken builder is rescued.
-
         # Enable sampledata builder attached to an appropriate testing
         # slave. It will respond as if it was building the sampledata job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
 
         login('foo.bar@canonical.com')
         builder.builderok = True
@@ -763,106 +261,174 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
+    def test_scan_with_nothing_to_dispatch(self):
+        factory = LaunchpadObjectFactory()
+        builder = factory.makeBuilder()
+        builder.setSlaveForTesting(OkSlave())
+        scanner = self._getScanner(builder_name=builder.name)
+        d = scanner.scan()
+        return d.addCallback(self._checkNoDispatch, builder)
 
-class TestDispatchResult(unittest.TestCase):
-    """Tests `BaseDispatchResult` variations.
+    def test_scan_with_manual_builder(self):
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
+        builder.manual = True
+        scanner = self._getScanner()
+        d = scanner.scan()
+        d.addCallback(self._checkNoDispatch, builder)
+        return d
 
-    Variations of `BaseDispatchResult` when evaluated update the database
-    information according to their purpose.
-    """
+    def test_scan_with_not_ok_builder(self):
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
+        builder.builderok = False
+        scanner = self._getScanner()
+        d = scanner.scan()
+        # Because the builder is not ok, we can't use _checkNoDispatch.
+        d.addCallback(
+            lambda ignored: self.assertIs(None, builder.currentjob))
+        return d
 
-    layer = LaunchpadZopelessLayer
+    def test_scan_of_broken_slave(self):
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(BrokenSlave())
+        builder.failure_count = 0
+        scanner = self._getScanner(builder_name=builder.name)
+        d = scanner.scan()
+        return assert_fails_with(d, xmlrpclib.Fault)
 
-    def _getBuilder(self, name):
-        """Return a fixed `IBuilder` instance from the sampledata.
+    def _assertFailureCounting(self, builder_count, job_count,
+                               expected_builder_count, expected_job_count):
+        # If scan() fails with an exception, failure_counts should be
+        # incremented.  What we do with the results of the failure
+        # counts is tested below separately, this test just makes sure that
+        # scan() is setting the counts.
+        def failing_scan():
+            return defer.fail(Exception("fake exception"))
+        scanner = self._getScanner()
+        scanner.scan = failing_scan
+        from lp.buildmaster import manager as manager_module
+        self.patch(manager_module, 'assessFailureCounts', FakeMethod())
+        builder = getUtility(IBuilderSet)[scanner.builder_name]
 
-        Ensure it's active (builderok=True) and it has a in-progress job.
-        """
-        login('foo.bar@canonical.com')
+        builder.failure_count = builder_count
+        builder.currentjob.specific_job.build.failure_count = job_count
+        # The _scanFailed() calls abort, so make sure our existing
+        # failure counts are persisted.
+        self.layer.txn.commit()
 
-        builder = getUtility(IBuilderSet)[name]
-        builder.builderok = True
+        # singleCycle() calls scan() which is our fake one that throws an
+        # exception.
+        d = scanner.singleCycle()
 
-        job = builder.currentjob
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual(
-            'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
-            build.title)
+        # Failure counts should be updated, and the assessment method
+        # should have been called.  The actual behaviour is tested below
+        # in TestFailureAssessments.
+        def got_scan(ignored):
+            self.assertEqual(expected_builder_count, builder.failure_count)
+            self.assertEqual(
+                expected_job_count,
+                builder.currentjob.specific_job.build.failure_count)
+            self.assertEqual(
+                1, manager_module.assessFailureCounts.call_count)
 
-        self.assertEqual('BUILDING', build.status.name)
-        self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.date_started)
-        self.assertNotEqual(None, job.logtail)
+        return d.addCallback(got_scan)
 
-        transaction.commit()
+    def test_scan_first_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=0, job_count=0, expected_builder_count=1,
+            expected_job_count=1)
 
-        return builder, job.id
+    def test_scan_second_builder_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=1, job_count=0, expected_builder_count=2,
+            expected_job_count=1)
 
-    def assertJobIsClean(self, job_id):
-        """Re-fetch the `IBuildQueue` record and check if it's clean."""
-        job = getUtility(IBuildQueueSet).get(job_id)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual('NEEDSBUILD', build.status.name)
-        self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.date_started)
-        self.assertEqual(None, job.logtail)
+    def test_scan_second_job_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=0, job_count=1, expected_builder_count=1,
+            expected_job_count=2)
 
-    def testResetDispatchResult(self):
-        """`ResetDispatchResult` clean any existing jobs.
+    def test_scanFailed_handles_lack_of_a_job_on_the_builder(self):
+        def failing_scan():
+            return defer.fail(Exception("fake exception"))
+        scanner = self._getScanner()
+        scanner.scan = failing_scan
+        builder = getUtility(IBuilderSet)[scanner.builder_name]
+        builder.failure_count = Builder.FAILURE_THRESHOLD
+        builder.currentjob.reset()
+        self.layer.txn.commit()
 
-        Although it keeps the builder active in pool.
-        """
-        builder, job_id = self._getBuilder('bob')
-        builder.builderok = True
+        d = scanner.singleCycle()
 
-        # Setup a interaction to satisfy 'write_transaction' decorator.
-        login(ANONYMOUS)
-        slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-        result = ResetDispatchResult(slave)
-        result()
+        def scan_finished(ignored):
+            self.assertFalse(builder.builderok)
 
-        self.assertJobIsClean(job_id)
+        return d.addCallback(scan_finished)
 
-        # XXX Julian
-        # Disabled test until bug 586362 is fixed.
-        #self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
+    def test_fail_to_resume_slave_resets_job(self):
+        # If an attempt to resume and dispatch a slave fails, it should
+        # reset the job via job.reset()
 
-    def testFailDispatchResult(self):
-        """`FailDispatchResult` excludes the builder from pool.
+        # Make a slave with a failing resume() method.
+        slave = OkSlave()
+        slave.resume = lambda: deferLater(
+            reactor, 0, defer.fail, Failure(('out', 'err', 1)))
 
-        It marks the build as failed (builderok=False) and clean any
-        existing jobs.
-        """
-        builder, job_id = self._getBuilder('bob')
+        # Reset sampledata builder.
+        builder = removeSecurityProxy(
+            getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
+        self._resetBuilder(builder)
+        self.assertEqual(0, builder.failure_count)
+        builder.setSlaveForTesting(slave)
+        builder.vm_host = "fake_vm_host"
 
-        # Setup a interaction to satisfy 'write_transaction' decorator.
-        login(ANONYMOUS)
-        slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-        result = FailDispatchResult(slave, 'does not work!')
-        result()
+        scanner = self._getScanner()
 
-        self.assertJobIsClean(job_id)
+        # Get the next job that will be dispatched.
+        job = removeSecurityProxy(builder._findBuildCandidate())
+        job.virtualized = True
+        builder.virtualized = True
+        d = scanner.singleCycle()
 
-        self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
-        self.assertEqual('does not work!', builder.failnotes)
+        def check(ignored):
+            # The failure_count will have been incremented on the
+            # builder, we can check that to see that a dispatch attempt
+            # did indeed occur.
+            self.assertEqual(1, builder.failure_count)
+            # There should also be no builder set on the job.
+            self.assertTrue(job.builder is None)
+            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+            self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+
+        return d.addCallback(check)
 
 
-class TestBuilddManager(TrialTestCase):
+class TestBuilddManager(TestCase):
 
     layer = LaunchpadZopelessLayer
 
     def _stub_out_scheduleNextScanCycle(self):
         # stub out the code that adds a callLater, so that later tests
         # don't get surprises.
-        self.patch(SlaveScanner, 'scheduleNextScanCycle', FakeMethod())
+        self.patch(SlaveScanner, 'startCycle', FakeMethod())
 
     def test_addScanForBuilders(self):
         # Test that addScanForBuilders generates NewBuildersScanner objects.
@@ -891,7 +457,62 @@ class TestBuilddManager(TrialTestCase):
         self.assertNotEqual(0, manager.new_builders_scanner.scan.call_count)
 
 
-class TestNewBuilders(TrialTestCase):
+class TestFailureAssessments(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.builder = self.factory.makeBuilder()
+        self.build = self.factory.makeSourcePackageRecipeBuild()
+        self.buildqueue = self.build.queueBuild()
+        self.buildqueue.markAsBuilding(self.builder)
+
+    def test_equal_failures_reset_job(self):
+        self.builder.gotFailure()
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+
+    def test_job_failing_more_than_builder_fails_job(self):
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.gotFailure()
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
+        self.assertEqual(0, self.builder.failure_count)
+
+    def test_builder_failing_more_than_job_but_under_fail_threshold(self):
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertTrue(self.builder.builderok)
+
+    def test_builder_failing_more_than_job_but_over_fail_threshold(self):
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
+
+    def test_builder_failing_with_no_attached_job(self):
+        self.buildqueue.reset()
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
+
+
+class TestNewBuilders(TestCase):
     """Test detecting of new builders."""
 
     layer = LaunchpadZopelessLayer
@@ -935,11 +556,8 @@ class TestNewBuilders(TrialTestCase):
             new_builders, builder_scanner.checkForNewBuilders())
 
     def test_scan(self):
-        # See if scan detects new builders and schedules the next scan.
+        # See if scan detects new builders.
 
-        # stub out the addScanForBuilders and scheduleScan methods since
-        # they use callLater; we only want to assert that they get
-        # called.
         def fake_checkForNewBuilders():
             return "new_builders"
 
@@ -955,9 +573,6 @@ class TestNewBuilders(TrialTestCase):
         builder_scanner.scan()
         advance = NewBuildersScanner.SCAN_INTERVAL + 1
         clock.advance(advance)
-        self.assertNotEqual(
-            0, builder_scanner.scheduleScan.call_count,
-            "scheduleScan did not get called")
 
 
 def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
@@ -998,14 +613,16 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
     return False
 
 
-class TestBuilddManagerScript(LaunchpadTestCase):
+class TestBuilddManagerScript(TestCaseWithFactory):
 
     layer = LaunchpadScriptLayer
 
     def testBuilddManagerRuns(self):
         # The `buildd-manager.tac` starts and stops correctly.
-        BuilddManagerTestSetup().setUp()
-        BuilddManagerTestSetup().tearDown()
+        fixture = BuilddManagerTestSetup()
+        fixture.setUp()
+        fixture.tearDown()
+        self.layer.force_dirty_database()
 
     # XXX Julian 2010-08-06 bug=614275
     # These next 2 tests are in the wrong place, they should be near the
@@ -1016,10 +633,8 @@ class TestBuilddManagerScript(LaunchpadTestCase):
 
     def disabled_testBuilddManagerLogging(self):
         # The twistd process logs as execpected.
-        test_setup = BuilddManagerTestSetup()
+        test_setup = self.useFixture(BuilddManagerTestSetup())
         logfilepath = test_setup.logfile
-        test_setup.setUp()
-        self.addCleanup(test_setup.tearDown)
         # The process logs to its logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
@@ -1044,8 +659,7 @@ class TestBuilddManagerScript(LaunchpadTestCase):
         # Prefill the log file to just under 1000000 bytes.
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
-        test_setup.setUp()
-        self.addCleanup(test_setup.tearDown)
+        self.useFixture(test_setup)
         # The process logs to the logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # No rotation occured.

@@ -20,7 +20,7 @@ from canonical.launchpad.ftests import (
     syncUpdate,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
