@@ -11,24 +11,40 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
-    TranslationValidationStatus)
-from lp.translations.interfaces.translations import TranslationConstants
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessage,
+    ITranslationMessageSet,
+    RosettaTranslationOrigin,
+    TranslationValidationStatus,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 
 
 def make_plurals_fragment(fragment, separator):
@@ -100,19 +116,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     implements(ITranslationMessage)
 
     def __init__(self, pofile, potmsgset):
-        # Check whether we already have a suitable TranslationMessage, in
-        # which case, the dummy one must not be used.
-        assert potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate,
-            pofile.language) is None, (
-                'This translation message already exists in the database.')
-
         self.id = None
-        self.pofile = pofile
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
-        self.variant = pofile.variant
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
@@ -145,6 +152,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return None
 
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        return self.browser_pofile
+
     @property
     def all_msgstrs(self):
         """See `ITranslationMessage`."""
@@ -171,7 +182,7 @@ def validate_is_current(self, attr, value):
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
                 self.potemplate,
-                self.language, self.variant))
+                self.language))
         if (current_translation_message is not None and
             current_translation_message != self and
             current_translation_message.potemplate == self.potemplate):
@@ -199,7 +210,7 @@ def validate_is_imported(self, attr, value):
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
                 self.potemplate,
-                self.language, self.variant))
+                self.language))
         if (imported_translation_message is not None and
             imported_translation_message != self and
             imported_translation_message.potemplate == self.potemplate):
@@ -217,14 +228,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=False)
     browser_pofile = None
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
     language = ForeignKey(
         foreignKey='Language', dbName='language', notNull=False, default=None)
-    variant = StringCol(dbName='variant', notNull=False, default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(
@@ -334,8 +343,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate,
-            self.language, self.variant)
+            pofile.potemplate, self.language)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
@@ -349,24 +357,29 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         from lp.translations.model.pofile import POFile
-        clauses = [
-            "POFile.potemplate = TranslationTemplateItem.potemplate",
-            "TranslationTemplateItem.potmsgset = %s" % (
-                sqlvalues(self.potmsgset)),
-            "POFile.language = %s" % sqlvalues(self.language),
-            ]
-        if self.variant is None:
-            clauses.append("POFile.variant IS NULL")
-        else:
-            clauses.append("POFile.variant = %s" % sqlvalues(self.variant))
 
-        pofiles = POFile.select(' AND '.join(clauses),
-                                clauseTables=['TranslationTemplateItem'])
-        pofile = list(pofiles[:1])
-        if len(pofile) > 0:
-            return pofile[0]
-        else:
-            return None
+        # Get any POFile where this translation exists.
+        # Because we can't create a subselect with "LIMIT" using Storm,
+        # we directly embed a subselect using raw SQL instead.
+        # We can do this because our message sharing code ensures a POFile
+        # exists for any of the sharing templates.
+        # This approach gives us roughly a 100x performance improvement
+        # compared to straightforward join as of 2010-11-11. - danilo
+        pofile = IStore(self).find(
+            POFile,
+            POFile.potemplateID == SQL(
+              """(SELECT potemplate
+                    FROM TranslationTemplateItem
+                    WHERE potmsgset = %s AND sequence > 0
+                    LIMIT 1)""" % sqlvalues(self.potmsgset)),
+            POFile.language == self.language).one()
+        return pofile
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        if self.browser_pofile is None:
+            self.browser_pofile = self.getOnePOFile()
+        return self.browser_pofile
 
     def _getSharedEquivalent(self):
         """Get shared message that otherwise exactly matches this one.
@@ -376,12 +389,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             'potmsgset = %s' % sqlvalues(self.potmsgset),
             'language = %s' % sqlvalues(self.language),
             ]
-
-        if self.variant:
-            variant_clause = 'variant = %s' % sqlvalues(self.variant)
-        else:
-            variant_clause = 'variant IS NULL'
-        clauses.append(variant_clause)
 
         for form in range(TranslationConstants.MAX_PLURAL_FORMS):
             msgstr_name = 'msgstr%d' % form
@@ -412,12 +419,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # Existing shared current translation for this POTMsgSet, if
         # any.
         current = self.potmsgset.getCurrentTranslationMessage(
-            potemplate=None, language=self.language, variant=self.variant)
+            potemplate=None, language=self.language)
 
         # Existing shared imported translation for this POTMsgSet, if
         # any.
         imported = self.potmsgset.getImportedTranslationMessage(
-            potemplate=None, language=self.language, variant=self.variant)
+            potemplate=None, language=self.language)
 
         if shared is None:
             clash_with_shared_current = (
@@ -465,7 +472,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             TranslationMessage.potmsgset == target_potmsgset,
             TranslationMessage.potemplate == target_potemplate,
             TranslationMessage.language == self.language,
-            TranslationMessage.variant == self.variant,
             TranslationMessage.id != self.id,
             forms_match))
 

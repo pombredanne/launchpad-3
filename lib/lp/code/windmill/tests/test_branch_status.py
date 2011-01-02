@@ -6,13 +6,16 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
 
+import transaction
 import windmill
 
 from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
@@ -45,7 +48,7 @@ class TestBranchStatus(WindmillTestCase):
             id=u'branch-details-status-value', timeout=PAGE_LOAD)
         client.click(id=u'branch-details-status-value')
         client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
 
         # Change the status to experimental.
         client.click(link=u'Experimental')

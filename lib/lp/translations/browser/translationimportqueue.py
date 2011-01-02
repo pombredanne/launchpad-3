@@ -14,32 +14,55 @@ __all__ = [
     ]
 
 import os
-from os.path import basename, splitext
+from os.path import (
+    basename,
+    splitext,
+    )
+
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from lp.app.errors import NotFoundError, UnexpectedFormData
-from lp.translations.browser.hastranslationimports import (
-    HasTranslationImportsView)
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter, TranslationFileType)
+from lp.translations.browser.hastranslationimports import (
+    HasTranslationImportsView,
+    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.utilities.template import make_domain, make_name
-
-from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView)
-from canonical.launchpad.validators.name import valid_name
+from lp.translations.interfaces.translationimportqueue import (
+    IEditTranslationImportQueueEntry,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    SpecialTranslationImportTargetFilter,
+    TranslationFileType,
+    )
+from lp.translations.utilities.template import (
+    make_domain,
+    make_name,
+    )
 
 
 def replace(string, replacement):
@@ -113,7 +136,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
                 field_values['language'] = self.context.pofile.language
-                field_values['variant'] = self.context.pofile.variant
             else:
                 # The entries that are translations usually have the language
                 # code
@@ -121,9 +143,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 language_set = getUtility(ILanguageSet)
                 filename = os.path.basename(self.context.path)
                 guessed_language, file_ext = filename.split(u'.', 1)
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(
-                        guessed_language))
+                language = language_set.getLanguageByCode(guessed_language)
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
@@ -131,8 +151,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     self.request.response.addWarningNotification(
                         "Review the language selection as we guessed it and"
                         " could not be accurate.")
-                if variant is not None:
-                    field_values['variant'] = variant
 
         return field_values
 
@@ -207,12 +225,12 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if len(translatable_series) == 0:
             return "Project has no translatable series."
         else:
+            max_series_to_display = self.max_series_to_display
             links = [
                 self._composeProductSeriesLink(series)
-                for series in translatable_series[:self.max_series_to_display]
-                ]
+                for series in translatable_series[:max_series_to_display]]
             links_text = ', '.join(links)
-            if len(translatable_series) > self.max_series_to_display:
+            if len(translatable_series) > max_series_to_display:
                 tail = ", ..."
             else:
                 tail = "."
@@ -251,7 +269,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.field_names = ['file_type', 'path', 'sourcepackagename',
                             'potemplate', 'potemplate_name',
                             'name', 'translation_domain', 'languagepack',
-                            'language', 'variant']
+                            'language']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -440,8 +458,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename
-            ):
+            self.context.sourcepackagename != potemplate.sourcepackagename):
             # We got the template from a different package than the one
             # selected by the user where the import should done, so we
             # note it here.
@@ -465,7 +482,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         path = data.get('path')
         language = data.get('language')
-        variant = data.get('variant')
 
         # Use manual potemplate, if given.
         # man_potemplate is set in validate().
@@ -474,11 +490,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate = data.get('potemplate')
 
-        pofile = potemplate.getPOFileByLang(language.code, variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
             # We don't have such IPOFile, we need to create it.
             pofile = potemplate.newPOFile(
-                language.code, variant, self.context.importer)
+                language.code, self.context.importer)
         self.context.pofile = pofile
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
@@ -536,8 +552,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 "'%s': '%s'" % (
                     escape_js_string(template.name),
                     escape_js_string(template.translation_domain))
-                for template in target.getCurrentTranslationTemplates()
-                ])
+                for template in target.getCurrentTranslationTemplates()])
         return "var template_domains = {%s};" % contents
 
 

@@ -6,13 +6,15 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
+from canonical.launchpad.ftests import login_person
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.ftests import login_person
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestProductBugTaskCreationStep(TestCaseWithFactory):

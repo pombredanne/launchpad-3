@@ -13,11 +13,12 @@ __all__ = [
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOExporter)
+    TranslationFileFormat,
+    )
+from lp.translations.utilities.gettext_po_exporter import GettextPOExporter
 
 
 class XPIPOExporter(GettextPOExporter):

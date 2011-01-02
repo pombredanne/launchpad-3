@@ -8,7 +8,11 @@ __all__ = ["LPOptionParser"]
 
 from copy import copy
 from datetime import datetime
-from optparse import Option, OptionParser, OptionValueError
+from optparse import (
+    Option,
+    OptionParser,
+    OptionValueError,
+    )
 
 from canonical.launchpad.scripts.logger import logger_options
 
@@ -37,9 +41,10 @@ class LPOption(Option):
 
     Adds a 'datetime' option type.
     """
-    TYPES = Option.TYPES + ("datetime",)
+    TYPES = Option.TYPES + ("datetime", datetime)
     TYPE_CHECKER = copy(Option.TYPE_CHECKER)
     TYPE_CHECKER["datetime"] = _check_datetime
+    TYPE_CHECKER[datetime] = _check_datetime
 
 
 class LPOptionParser(OptionParser):

@@ -11,7 +11,8 @@ Homepage
 
 The Rosetta homepage.
 
-    >>> from canonical.launchpad.interfaces import IRosettaApplication
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IRosettaApplication)
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'
 
@@ -29,7 +30,7 @@ First, the distribution kind.  We'll need the source package name.
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distroset = getUtility(IDistributionSet)
@@ -70,8 +71,8 @@ Also, we can get the url to a translation message.
 Even for a dummy one.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
     http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/20
 
@@ -81,7 +82,7 @@ product series.  Let's get a product series.
 Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> evolution_product = productset['evolution']
     >>> evolution_trunk_series = evolution_product.getSeries('trunk')
@@ -108,8 +109,8 @@ Also, we can get the url to a dummy one
 Even for a dummy PO msgset
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/20
 

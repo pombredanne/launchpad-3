@@ -6,17 +6,29 @@
 __metaclass__ = type
 
 from zope.app.pagetemplate.simpleviewclass import simple
-from zope.component import getSiteManager, getUtility
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.security.checker import CheckerPublic, Checker, defineChecker
+from zope.security.checker import (
+    Checker,
+    CheckerPublic,
+    defineChecker,
+    )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.publication import test_traverse
 
 

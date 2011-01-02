@@ -70,17 +70,6 @@
     </dl>
   </div>
 
-  <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
-    <tal:uses_launchpad condition="uses_launchpad">
-      <dt>Uses Launchpad for:</dt>
-      <dd><tal:uses content="structure uses_launchpad" />.</dd>
-    </tal:uses_launchpad>
-    <tal:no_launchpad condition="not: uses_launchpad">
-      <dt>Does not use Launchpad for development.</dt>
-      <dd></dd>
-    </tal:no_launchpad>
-  </dl>
-
   <dl id="uploaders" style="clear:left">
     <dt>Uploaders:</dt>
 

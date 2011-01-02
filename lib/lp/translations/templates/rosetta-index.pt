@@ -55,7 +55,7 @@
              tal:attributes="style string:font-size:${product/font_size}%;">
             <a
               tal:attributes="
-                href string:${product/pillar/fmt:url}/+translations"
+                href product/pillar/fmt:url:translations/+translations"
               tal:content="product/pillar/displayname" />
           </span>
           <div>

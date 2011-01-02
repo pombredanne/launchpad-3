@@ -10,28 +10,67 @@ __all__ = [
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
+    'TimeLimitedToken',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from hashlib import md5
+import random
+from urlparse import urlparse
+
+from lazr.delegates import delegates
 import pytz
-
-from zope.component import adapts, getUtility
-from zope.interface import implements, Interface
-
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Desc, Int, Reference, Store
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLRelatedJoin,
+    StringCol,
+    )
+import storm.base
+from storm.locals import (
+    Date,
+    Desc,
+    Int,
+    Reference,
+    Store,
+    )
+from zope.component import (
+    adapts,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    ILibraryFileAlias, ILibraryFileAliasWithParent, ILibraryFileAliasSet,
-    ILibraryFileContent, ILibraryFileDownloadCount, IMasterStore)
-from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
-from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from lazr.delegates import delegates
+from canonical.database.sqlbase import (
+    session_store,
+    SQLBase,
+    )
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    ILibraryFileAliasWithParent,
+    ILibraryFileContent,
+    ILibraryFileDownloadCount,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.librarian.interfaces import (
+    DownloadFailed,
+    ILibrarianClient,
+    IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 
 
 class LibraryFileContent(SQLBase):
@@ -86,7 +125,7 @@ class LibraryFileAlias(SQLBase):
     @property
     def http_url(self):
         """See ILibraryFileAlias.http_url"""
-        return self.client.getURLForAlias(self.id)
+        return self.client.getURLForAliasObject(self)
 
     @property
     def https_url(self):
@@ -96,8 +135,15 @@ class LibraryFileAlias(SQLBase):
             return url
         return url.replace('http', 'https', 1)
 
+    @property
+    def private_url(self):
+        """See ILibraryFileAlias.https_url"""
+        return self.client.getURLForAlias(self.id, secure=True)
+
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
+        if self.restricted:
+            return self.private_url
         if config.librarian.use_https:
             return self.https_url
         else:
@@ -190,10 +236,11 @@ class LibraryFileAlias(SQLBase):
 
     @property
     def deleted(self):
-        return self.content is None
+        return self.contentID is None
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
+        super(LibraryFileAlias, self).__storm_invalidated__()
         self.close()
 
 
@@ -253,3 +300,56 @@ class LibraryFileDownloadCount(SQLBase):
     count = Int(allow_none=False)
     country_id = Int(name='country', allow_none=True)
     country = Reference(country_id, 'Country.id')
+
+
+class TimeLimitedToken(storm.base.Storm):
+    """A time limited access token for accessing a private file."""
+
+    __storm_table__ = 'TimeLimitedToken'
+
+    created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    path = StringCol(notNull=True)
+    token = StringCol(notNull=True)
+    __storm_primary__ = ("path", "token")
+
+    def __init__(self, path, token, created=None):
+        """Create a TimeLimitedToken."""
+        if created is not None:
+            self.created = created
+        self.path = path
+        self.token = token
+
+    @staticmethod
+    def allocate(url):
+        """Allocate a token for url path in the librarian.
+
+        :param url: A url bytestring. e.g.
+            https://i123.restricted.launchpad-librarian.net/123/foo.txt
+            Note that the token is generated for 123/foo.txt
+        :return: A url fragment token ready to be attached to the url.
+            e.g. 'a%20token'
+        """
+        # We use random.random to get a string which varies reasonably, and we
+        # hash it to distribute it widely and get a easily copy and pastable
+        # single string (nice for debugging). The randomness is not a key
+        # factor here: as long as tokens are not guessable, they are hidden by
+        # https, not exposed directly in the API (tokens will be allocated by
+        # the appropriate objects), not by direct access to the
+        # TimeLimitedToken class.
+        baseline = str(random.random())
+        hashed = md5(baseline).hexdigest()
+        token = hashed
+        store = session_store()
+        path = TimeLimitedToken.url_to_token_path(url)
+        store.add(TimeLimitedToken(path, token))
+        # The session isn't part of the main transaction model, and in fact it
+        # has autocommit on. The commit here is belts and bracers: after
+        # allocation the external librarian must be able to serve the file
+        # immediately.
+        store.commit()
+        return token
+
+    @staticmethod
+    def url_to_token_path(url):
+        """Return the token path used for authorising access to url."""
+        return urlparse(url)[2]

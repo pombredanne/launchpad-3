@@ -15,17 +15,21 @@ import os
 import shutil
 import tempfile
 
-from zope.component import getUtility
-
-from bzrlib.transport import get_transport, Server
-
+from bzrlib.transport import (
+    get_transport,
+    Server,
+    )
 from twisted.python.util import sibpath
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.interfaces import (
-    IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.ssh import ISSHKeySet
 
 
 def set_up_test_user(test_user, test_team):
@@ -42,7 +46,7 @@ def set_up_test_user(test_user, test_team):
     testUser.join(testTeam)
     ssh_key_set = getUtility(ISSHKeySet)
     ssh_key_set.new(
-        testUser, 
+        testUser,
         'ssh-dss AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u'
         '0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON'
         '9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95E'

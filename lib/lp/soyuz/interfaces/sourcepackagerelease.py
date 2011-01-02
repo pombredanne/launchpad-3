@@ -14,8 +14,14 @@ __all__ = [
 
 
 from lazr.restful.fields import Reference
-from zope.schema import TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
@@ -92,11 +98,20 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
+    sourcepackagenameID = Attribute("SourcePackageName id.")
     upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')

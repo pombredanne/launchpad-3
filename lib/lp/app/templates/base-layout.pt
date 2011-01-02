@@ -3,17 +3,18 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define-macro="master"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    release modules/canonical.launchpad.versioninfo/release;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    release modules/lp.app.versioninfo/release;
     version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
-    is_edge modules/canonical.config/config/launchpad/is_edge;
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    features request/features;
+    feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 ><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
@@ -68,12 +69,13 @@
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
-      yui-skin-sam">
+      yui3-skin-sam">
         <script type="text/javascript"
-          tal:condition="python: is_edge or is_lpnet">
+          tal:condition="python: is_lpnet">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
           _gaq.push(['_trackPageview']);
 
           (function() {
@@ -171,7 +173,7 @@
 
 <tal:template>
   <tal:comment
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace="structure string:&lt;!--
     Facet name: ${view/menu:selectedfacetname}
     Page type: ${view/macro:pagetype}
@@ -180,6 +182,9 @@
     Has side portlets: ${view/macro:pagehas/portlets}
 
     At least ${log}
+
+    Features: ${request/features/usedFlags} 
+    in scopes ${request/features/usedScopes} 
 
     r${revno}
   --&gt;" />

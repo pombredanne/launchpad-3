@@ -9,11 +9,14 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
-
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
-
-from lp.vostok.publisher import VostokLayer, VostokRoot
+from lp.vostok.publisher import (
+    VostokBrowserRequest,
+    VostokBrowserResponse,
+    VostokLayer,
+    VostokRoot,
+    )
 
 
 class TestRegistration(TestCase):
@@ -36,6 +39,26 @@ class TestRegistration(TestCase):
         self.assertProvides(request, VostokLayer)
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
+
+
+class TestVostokBrowserRequest(TestCase):
+
+    def test_createResponse(self):
+        request = VostokBrowserRequest(None, {})
+        self.assertIsInstance(
+            request._createResponse(), VostokBrowserResponse)
+
+
+class TestVostokBrowserResponse(TestCase):
+
+    def test_redirect_to_different_host(self):
+        # Unlike Launchpad's BrowserResponse class, VostokBrowserResponse
+        # doesn't allow redirects to any host other than the current one.
+        request = VostokBrowserRequest(None, {})
+        response = request._createResponse()
+        response._request = request
+        self.assertRaises(
+            ValueError, response.redirect, 'http://launchpad.dev')
 
 
 def test_suite():

@@ -33,8 +33,8 @@ members should be deactivated before the teams are merged.
     'http://launchpad.dev/~guadamen'
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> login(ANONYMOUS)
     >>> new_team.merged.name
     u'guadamen'

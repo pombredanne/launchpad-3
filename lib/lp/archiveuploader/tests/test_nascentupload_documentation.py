@@ -10,36 +10,50 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.ftests import (
+    import_public_test_keys,
+    login,
+    logout,
+    )
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
-    datadir, getPolicy, mock_logger_quiet)
-from canonical.launchpad.database import (
-    ComponentSelection, LibraryFileAlias)
-from canonical.launchpad.ftests import import_public_test_keys, login, logout
-from lp.soyuz.interfaces.component import IComponentSet
+    datadir,
+    getPolicy,
+    )
+from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs)
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 def getUploadForSource(upload_path):
     """Return a NascentUpload object for a source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, DevNullLogger())
+
 
 def getPPAUploadForSource(upload_path, ppa):
     """Return a NascentUpload object for a PPA source."""
     policy = getPolicy(name='insecure', distro='ubuntu', distroseries='hoary')
     policy.archive = ppa
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, DevNullLogger())
+
 
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    policy.can_upload_binaries = True
-    policy.can_upload_mixed = True
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, DevNullLogger())
 
 
 def testGlobalsSetup(test):

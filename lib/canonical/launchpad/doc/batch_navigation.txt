@@ -55,9 +55,9 @@ used with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
 
 Imports and initialization:
 
-  >>> from canonical.launchpad.database import EmailAddress
   >>> from canonical.ftests.pgsql import CursorWrapper
-  >>> from canonical.launchpad.interfaces import IStore
+  >>> from canonical.launchpad.database.emailaddress import EmailAddress
+  >>> from canonical.launchpad.interfaces.lpstorm import IStore
   >>> ignore = IStore(EmailAddress) # Prime the database connection.
   ... # (Priming is important if this test is run in isolation).
   >>> CursorWrapper.record_sql = True
@@ -69,27 +69,57 @@ Prepare a query, and create a batch of the results:
   >>> email_batch = batch_nav.currentBatch()
   >>> batch_items = list(email_batch)
 
-Because we're only looking at the first batch, the database is only asked for
-the number of rows, and the first 10 rows:
+Because we're only looking at the first batch, the database is only
+asked for the first 11 rows. (lazr.batchnavigator asks for 11 instead
+of 10 so that it can reliably detect the end of the dataset).
 
   >>> len(CursorWrapper.last_executed_sql)
-  2
-  >>> print CursorWrapper.last_executed_sql[1]
-  SELECT ... FROM EmailAddress ... LIMIT 10...
+  1
   >>> print CursorWrapper.last_executed_sql[0]
-  SELECT COUNT(*) FROM EmailAddress
+  SELECT ... FROM EmailAddress ... LIMIT 11...
 
-Get the next 10.  The database is only asked for the next 10 rows -- no further
-COUNTs are issued:
+Get the next 10.  The database is only asked for the next 11 rows:
 
   >>> CursorWrapper.last_executed_sql = []
   >>> email_batch2 = email_batch.nextBatch()
   >>> batch_items = list(email_batch2)
   >>> len(CursorWrapper.last_executed_sql)
   1
-  >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 10 OFFSET 10')
+  >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 11 OFFSET 10')
   True
 
+As seen above, simply accessing the batch doesn't trigger a SQL query
+asking for the length of the entire resultset. But explicitly asking
+for the length will trigger a SQL query in most circumstances.
+
+  >>> CursorWrapper.last_executed_sql = []
+  >>> ignored = email_batch.total()
+  >>> print CursorWrapper.last_executed_sql[0]
+  SELECT COUNT(*) FROM EmailAddress
+
+There are exceptions. When the current batch is the last one in the
+list, it's possible to get the length of the entire resultset without
+triggering a COUNT query.
+
+  >>> CursorWrapper.last_executed_sql = []
+  >>> batch_nav = BatchNavigator(select_results, build_request(), size=50)
+  >>> final_batch = batch_nav.currentBatch().nextBatch()
+  >>> batch_items = list(final_batch)
+  >>> ignored = final_batch.total()
+  >>> print "\n".join(CursorWrapper.last_executed_sql)
+  SELECT ... FROM EmailAddress ... OFFSET 0
+  SELECT ... FROM EmailAddress ... OFFSET 50
+
+When the current batch contains the entire resultset, it's possible to
+get the length of the resultset without triggering a COUNT query.
+
+  >>> CursorWrapper.last_executed_sql = []
+  >>> one_page_nav = BatchNavigator(select_results, build_request(), size=200)
+  >>> only_batch = one_page_nav.currentBatch()
+  >>> batch_items = list(only_batch)
+  >>> ignored = only_batch.total()
+  >>> print "\n".join(CursorWrapper.last_executed_sql)
+  SELECT ... FROM EmailAddress ... OFFSET 0
 
 Multiple pages
 ==============
@@ -99,6 +129,8 @@ The batch navigator tells us whether multiple pages will be used.
     >>> batch_nav.has_multiple_pages
     True
 
+    >>> one_page_nav.has_multiple_pages
+    False
 
 Maximum batch size
 ==================

@@ -18,30 +18,49 @@ __all__ = [
 import cgi
 import mimetypes
 
-from zope.event import notify
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
-
-from zope.formlib.form import FormFields
-from zope.schema import Bool
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFileAddForm)
-
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from canonical.lazr.utils import smartquote
-from lp.registry.browser.product import ProductDownloadFileMixin
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, stepthrough)
-from canonical.widgets import DateTimeWidget
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import Bool
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from canonical.lazr.utils import smartquote
+from canonical.widgets import DateTimeWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.registry.browser import (
+    BaseRdfView,
+    MilestoneOverlayMixin,
+    RegistryDeleteViewMixin,
+    )
+from lp.registry.browser.product import ProductDownloadFileMixin
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFileAddForm,
+    )
 
 
 class ProductReleaseNavigation(Navigation):
@@ -240,33 +259,17 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class ProductReleaseRdfView(object):
+class ProductReleaseRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile('../templates/productrelease-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition',
-            'attachment; filename=%s-%s-%s.rdf' % (
-                self.context.product.name,
-                self.context.productseries.name,
-                self.context.version))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s-%s' % (
+            self.context.product.name,
+            self.context.productseries.name,
+            self.context.version)
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):

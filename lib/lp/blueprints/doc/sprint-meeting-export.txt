@@ -13,10 +13,10 @@ First we import the classes required to test the view:
     >>> from pytz import timezone
     >>> from zope.component import getUtility, getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.blueprints.browser.sprint import SprintMeetingExportView
+    >>> from lp.blueprints.interfaces.sprint import ISprintSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.blueprints.interfaces.sprint import ISprintSet
-    >>> from lp.blueprints.browser.sprint import SprintMeetingExportView
 
 Look up a few Launchpad objects to be used in the tests
 

@@ -21,6 +21,7 @@ from zope.security.checker import canAccess, canWrite
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -46,7 +47,7 @@ class TextLineEditorWidget:
     #   value: the current field value
     WIDGET_TEMPLATE = dedent(u"""\
         <%(tag)s id="%(id)s"><span
-            class="yui-editable_text-text">%(value)s</span>
+            class="yui3-editable_text-text">%(value)s</span>
             %(trigger)s
         </%(tag)s>
         %(activation_script)s
@@ -54,7 +55,7 @@ class TextLineEditorWidget:
 
     # Template for the trigger button.
     TRIGGER_TEMPLATE = dedent(u"""\
-        <a href="%(edit_url)s" class="yui-editable_text-trigger sprite edit"
+        <a href="%(edit_url)s" class="yui3-editable_text-trigger sprite edit"
         ></a>
         """)
 
@@ -184,7 +185,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             %(edit_controls)s
             <h2>%(title)s</h2>
           </div>
-          <div class="yui-editable_text-text">%(value)s</div>
+          <div class="yui3-editable_text-text">%(value)s</div>
         </div>
         %(activation_script)s
         """)
@@ -359,24 +360,28 @@ def vocabulary_to_choice_edit_items(
         disabled_items = []
     items = []
     for item in vocab:
+        # Introspect to make sure we're dealing with the object itself.
+        # SimpleTerm objects have the object itself at item.value.
+        if safe_hasattr(item, 'value'):
+            item = item.value
         if name_fn is not None:
-            name = name_fn(item.value)
+            name = name_fn(item)
         else:
-            name = item.value.title
+            name = item.title
         if value_fn is not None:
-            value = value_fn(item.value)
+            value = value_fn(item)
         else:
-            value = item.value.title
+            value = item.title
         new_item = {
             'name': name,
             'value': value,
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
-            if disabled_item == item.value:
+            if disabled_item == item:
                 new_item['disabled'] = True
                 break
         if css_class_prefix is not None:
-            new_item['css_class'] = css_class_prefix + item.value.name
+            new_item['css_class'] = css_class_prefix + item.name
         items.append(new_item)
 
     if as_json:

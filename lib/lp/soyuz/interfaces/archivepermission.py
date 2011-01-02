@@ -8,48 +8,35 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchivePermissionType',
     'IArchivePermission',
     'IArchivePermissionSet',
     'IArchiveUploader',
     'IArchiveQueueAdmin',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PublicPersonChoice
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-
-
-class ArchivePermissionType(DBEnumeratedType):
-    """Archive Permission Type.
-
-    The permission being granted, such as upload rights, or queue
-    manipulation rights.
-    """
-
-    UPLOAD = DBItem(1, """
-        Archive Upload Rights
-
-        This permission allows a user to upload.
-        """)
-
-    QUEUE_ADMIN = DBItem(2, """
-        Queue Administration Rights
-
-        This permission allows a user to administer the distroseries
-        upload queue.
-        """)
 
 
 class IArchivePermission(Interface):

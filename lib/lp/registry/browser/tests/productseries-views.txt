@@ -23,24 +23,26 @@ ProductSeries Involvement links
 The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(product.owner)
-    >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(series, '+get-involved')
 
-    # official_answers is always false for product series.
-    >>> print view.official_answers
-    False
-    >>> print view.official_blueprints
-    True
+    # answers_usage is never LAUNCHPAD for product series.
+    >>> print view.answers_usage.name
+    NOT_APPLICABLE
+    >>> print view.blueprints_usage.name
+    LAUNCHPAD
     >>> print view.official_malone
     True
-    >>> print view.official_rosetta
-    True
-    >>> print view.official_codehosting
-    False
+    >>> print view.translations_usage.name
+    LAUNCHPAD
+    >>> print view.codehosting_usage.name
+    UNKNOWN
+
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -54,8 +56,8 @@ Setting a branch for the series should enable the +addbranch link.
 
     >>> series.branch = factory.makeBranch()
     >>> view = create_view(series, '+get-involved')
-    >>> print view.official_codehosting
-    True
+    >>> print view.codehosting_usage.name
+    LAUNCHPAD
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -80,7 +82,7 @@ update the milestones and releases table.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'lp.registry.milestoneoverlay',
+        LPS.use(... 'lp.registry.milestoneoverlay',
                       'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
@@ -158,7 +160,7 @@ The view provides access to the latest release if it has one.
 The view also provides a link to register a new code import.
 
     >>> print view.request_import_link
-    http://launchpad.dev/firefox/+new-import
+    http://code.launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries
@@ -307,7 +309,7 @@ series, the most important of which are milestones. Bugtasks and
 specifications that will be unassigned, and release files that will be
 deleted are available.
 
-    >>> view.milestones
+    >>> list(view.milestones)
     []
     >>> view.bugtasks
     []
@@ -476,7 +478,7 @@ The series status is set to obsolete and the releasefileglob was set to None.
 A series cannot be deleted if it is has translation templates.
 
     >>> translated_series = factory.makeProductSeries(product=product)
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> po_template = factory.makePOTemplate(
     ...     name='gibberish', productseries=translated_series)
     >>> translated_view = create_initialized_view(

@@ -1,13 +1,14 @@
 In order to prepare the tests below some initialization is required.
 
     >>> from lp.archiveuploader.nascentupload import NascentUpload
-    >>> from lp.archiveuploader.tests import (
-    ...     datadir, getPolicy, mock_logger_quiet)
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet, IPackagesetSet,
-    ...     IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+    >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
 
     >>> insecure_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')
@@ -20,7 +21,7 @@ Let's modify the current ACL rules for ubuntu, moving the upload
 rights to all components from 'ubuntu-team' to 'mark':
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.database import ArchivePermission
+    >>> from lp.soyuz.model.archivepermission import ArchivePermission
     >>> new_uploader = getUtility(IPersonSet).getByName('mark')
     >>> for permission in ArchivePermission.select():
     ...     permission.person = new_uploader
@@ -31,9 +32,10 @@ rights to all components from 'ubuntu-team' to 'mark':
 This time the upload will fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
-    >>> bar_failed = NascentUpload(
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-    ...     insecure_policy, mock_logger_quiet)
+    ...     insecure_policy, DevNullLogger())
 
     >>> bar_failed.process()
     >>> bar_failed.is_rejected
@@ -71,7 +73,7 @@ in order to facilitate uploads.
 name16 does not have any package set based upload permissions for 'bar'
 at present.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu_archive = ubuntu.main_archive
     >>> print_permission(
@@ -111,9 +113,9 @@ There are still no package sets that include 'bar'.
 
 Let's retry the upload.
 
-    >>> bar_failed = NascentUpload(
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-    ...     insecure_policy, mock_logger_quiet)
+    ...     insecure_policy, DevNullLogger())
 
     >>> bar_failed.process()
     >>> bar_failed.is_rejected
@@ -166,9 +168,9 @@ With the authorization above the upload should work again.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
-    >>> bar2 = NascentUpload(
+    >>> bar2 = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-    ...     insecure_policy, mock_logger_quiet)
+    ...     insecure_policy, DevNullLogger())
     >>> bar2.process()
     >>> bar2.is_rejected
     False

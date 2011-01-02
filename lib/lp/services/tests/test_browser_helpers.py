@@ -12,6 +12,7 @@ import unittest
 
 from lp.services.browser_helpers import get_user_agent_distroseries
 
+
 class TestGetUserAgentDistroSeries(unittest.TestCase):
     """Test that the user_agent string is correctly parsed for os version."""
 

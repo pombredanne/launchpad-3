@@ -23,35 +23,58 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.bugs.browser.bugtask import BugTaskListingItem
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.milestone import (
-    IMilestone, IMilestoneSet, IProjectGroupMilestone)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Navigation,
+    )
 from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects)
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, ContextMenu, Link, NavigationMenu)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+    ApplicationMenu,
+    ContextMenu,
+    Link,
+    NavigationMenu,
+    )
 from canonical.widgets import DateWidget
-
-from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.interfaces.bugtask import (
+    IBugTaskSet,
+    )
+from lp.registry.browser import (
+    get_status_counts,
+    RegistryDeleteViewMixin,
+    )
 from lp.registry.browser.product import ProductDownloadFileMixin
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.milestone import (
+    IMilestone,
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import cachedproperty
 
 
 class MilestoneSetNavigation(GetitemNavigation):
@@ -224,23 +247,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @cachedproperty
     def _bugtasks(self):
         """The list of non-conjoined bugtasks targeted to this milestone."""
-        user = getUtility(ILaunchBag).user
-        params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['status', '-importance', 'id'],
-                    omit_dupes=True)
-        tasks = getUtility(IBugTaskSet).search(params)
-        # We could replace all the code below with a simple
-        # >>> [task for task in tasks if task.conjoined_master is None]
-        # But that'd cause one extra hit to the DB for every bugtask returned
-        # by the search above, so we do a single query to get all of a task's
-        # siblings here and use that to find whether or not a given bugtask
-        # has a conjoined master.
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
-            [task.bug.id for task in tasks])
-        non_conjoined_slaves = []
-        for task in tasks:
-            if task.getConjoinedMaster(bugs_and_tasks[task.bug]) is None:
-                non_conjoined_slaves.append(task)
+        # Put the results in a list so that iterating over it multiple
+        # times in this method does not make multiple queries.
+        non_conjoined_slaves = list(
+            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
+                self.user, self.context))
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
         precache_permission_for_objects(
@@ -261,7 +272,6 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         badge_property = self._bug_badge_properties[bugtask]
         return BugTaskListingItem(
             bugtask,
-            badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'])

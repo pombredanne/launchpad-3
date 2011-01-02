@@ -29,7 +29,7 @@ about the bug.
 
 The methods are called by the CheckwatchesMaster class:
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = transaction
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

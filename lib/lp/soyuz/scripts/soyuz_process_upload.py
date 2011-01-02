@@ -8,9 +8,12 @@ __all__ = ['ProcessUpload']
 
 import os
 
+from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessUpload(LaunchpadCronScript):
@@ -34,6 +37,11 @@ class ProcessUpload(LaunchpadCronScript):
             help="Whether to suppress the sending of mails or not.")
 
         self.parser.add_option(
+            "--builds", action="store_true",
+            dest="builds", default=False,
+            help="Whether to interpret leaf names as build ids.")
+
+        self.parser.add_option(
             "-J", "--just-leaf", action="store", dest="leafname",
             default=None, help="A specific leaf dir to limit to.",
             metavar = "LEAF")
@@ -53,11 +61,6 @@ class ProcessUpload(LaunchpadCronScript):
             help="Distro series to give back from.")
 
         self.parser.add_option(
-            "-b", "--buildid", action="store", type="int", dest="buildid",
-            metavar="BUILD",
-            help="The build ID to which to attach this upload.")
-
-        self.parser.add_option(
             "-a", "--announce", action="store", dest="announcelist",
             metavar="ANNOUNCELIST", help="Override the announcement list")
 
@@ -74,8 +77,20 @@ class ProcessUpload(LaunchpadCronScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initialising connection.")
-        UploadProcessor(
-            self.options, self.txn, self.logger).processUploadQueue()
+        def getPolicy(distro, build):
+            self.options.distro = distro.name
+            policy = findPolicyByName(self.options.context)
+            policy.setOptions(self.options)
+            if self.options.builds:
+                assert build, "--builds specified but no build"
+                policy.distroseries = build.distro_series
+                policy.pocket = build.pocket
+                policy.archive = build.archive
+            return policy
+        processor = UploadProcessor(self.options.base_fsroot,
+            self.options.dryrun, self.options.nomails, self.options.builds,
+            self.options.keep, getPolicy, self.txn, self.logger)
+        processor.processUploadQueue(self.options.leafname)
 
     @property
     def lockfilename(self):

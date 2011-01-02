@@ -6,7 +6,7 @@ DistoSeries
 -----------
 
 The index page for a POTemplate lists all available translations
-for a source package. No Privileges Person visits the 
+for a source package. No Privileges Person visits the
 evolution-2.2 POTemplate page.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
@@ -40,7 +40,7 @@ that represents, when the translation was updated, and by whom.
     Afrikaans               22           ...         ...     &mdash; &mdash;
     Japanese                21           ...         ...     ...     Carlos...
     Sotho, Southern         22           ...         ...     &mdash; &mdash;
-    Spanish                 15           1           1       ...     Valentina Commissari
+    Spanish                 15           1           1       ...     Valent...
     Xhosa                   22           ...         ...     ...     &mdash;
     Zulu                    22           ...         ...     &mdash; &mdash;
 
@@ -85,7 +85,7 @@ The notice links to the alternate template.
     </p>
 
 
-DistroSeries and ProductSeries links to related templates 
+DistroSeries and ProductSeries links to related templates
 ---------------------------------------------------------
 
 We are presented not only with links to alternate templates from the same
@@ -119,6 +119,7 @@ A source package with five templates is created.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
@@ -209,11 +210,10 @@ page showing all templates for that product series.
 
 A product series with 7 templates is created.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.enums import ServiceUsage
     >>> login('admin@canonical.com')
-    >>> product = factory.makeProduct(name="fusa", official_rosetta=True)
+    >>> product = factory.makeProduct(name="fusa",
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> product_trunk = product.getSeries('trunk')
     >>> template = factory.makePOTemplate(
     ...     productseries=product_trunk, name='first')
@@ -253,7 +253,9 @@ Administering templates
 Anonymous visitors see only a list of all existing templates, with no
 administration or download/upload links.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> anon_browser.getLink('upload')
     Traceback (most recent call last):
     ...
@@ -267,7 +269,9 @@ administration or download/upload links.
 As an authenticated user, you should see the download link,
 but not the one for uploading file to this potemplate.
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> user_browser.getLink('upload')
     Traceback (most recent call last):
     ...
@@ -275,35 +279,38 @@ but not the one for uploading file to this potemplate.
 
     >>> user_browser.getLink('download').click()
     >>> print user_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
-Translation administrators will see both download and upload links. 
+Translation administrators will see both download and upload links.
 Beside administering this template, "Change permissions"
 and "Change details" should be also accessible.
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('upload').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('download').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Administer this template').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Change details').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
-
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
-    >>> admin_browser.getLink('Change permissions').click()
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
 
 

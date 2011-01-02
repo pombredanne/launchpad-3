@@ -16,12 +16,16 @@ __all__ = [
     ]
 
 import cgi
-import pytz
 import urllib
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.interface import alsoProvides, directlyProvides, Interface
+from zope.interface import (
+    alsoProvides,
+    directlyProvides,
+    Interface,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -29,24 +33,44 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGVerificationError,
-    IGPGHandler)
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from canonical.launchpad.interfaces.logintoken import (
-    IGPGKeyValidationForm, ILoginTokenSet)
+    IGPGKeyValidationForm,
+    ILoginTokenSet,
+    )
+from canonical.launchpad.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IAlwaysSubmittedWidget, IPlacelessLoginSource)
+    IAlwaysSubmittedWidget,
+    IPlacelessLoginSource,
+    )
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 from canonical.widgets import LaunchpadRadioWidget
-
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import IPersonSet, ITeam
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    ITeam,
+    )
 
 
 UTC = pytz.UTC

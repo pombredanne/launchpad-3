@@ -10,17 +10,25 @@ __metaclass__ = type
 __all__ = ["BugBranch",
            "BugBranchSet"]
 
-from sqlobject import ForeignKey, IN, StringCol
-
+from sqlobject import (
+    ForeignKey,
+    IN,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+from lp.bugs.interfaces.bugbranch import (
+    IBugBranch,
+    IBugBranchSet,
+    )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
 

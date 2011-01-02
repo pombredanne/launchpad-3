@@ -7,11 +7,17 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.adapters.bugchange import (
-    BUG_CHANGE_LOOKUP, get_bug_change_class)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    BUG_CHANGE_LOOKUP,
+    get_bug_change_class,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class BugChangeTestCase(unittest.TestCase):

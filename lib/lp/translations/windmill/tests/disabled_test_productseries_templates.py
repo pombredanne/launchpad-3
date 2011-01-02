@@ -7,8 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 class EnableActionLinksTest(WindmillTestCase):
     """Test that action links are enabled on mouseover."""
@@ -47,8 +48,8 @@ class EnableActionLinksTest(WindmillTestCase):
           * verifies that the action links of the row are deactivated;
         """
         client = self.client
-        url = ('http://translations.launchpad.dev:8085/evolution/trunk/'
-               '+templates')
+        url = ('%s/evolution/trunk/+templates'
+               % TranslationsWindmillLayer.base_url)
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to templates page logged in as translations admin.
         client.open(url=url)

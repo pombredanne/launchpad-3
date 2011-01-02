@@ -20,8 +20,30 @@
         id string:dupe-${subscription/css_name};
       "
     >
-      <metal:subscriber
-          metal:use-macro="bug/@@+bug-portlet-subscribers-content/subscriber-row" />
+
+            <a
+               tal:condition="subscription/person/name|nothing"
+               tal:attributes="
+                 href subscription/person/fmt:url;
+                 title subscription/display_duplicate_subscribed_by;
+                 name subscription/person/fmt:displayname
+               "
+            >
+              <tal:block replace="structure subscription/person/fmt:icon" />
+              <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
+            </a>
+
+            <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
+               href="+subscribe"
+               tal:attributes="
+                 title string:Unsubscribe ${subscription/person/fmt:displayname};
+                 id string:unsubscribe-${subscription/css_name};
+                 class python: view.getSubscriptionClassForUser(subscription.person)
+               "
+            >
+              <img class="unsub-icon" src="/@@/remove"
+                tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />
+            </a>
     </div>
   </div>
 </div>

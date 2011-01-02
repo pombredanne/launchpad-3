@@ -25,12 +25,14 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'BeautifulSoup',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
         # Required for pydkim
         'dnspython',
+        'fixtures',
         'FeedParser',
         'feedvalidator',
         'funkload',
@@ -50,9 +52,9 @@ setup(
         'meliae',
         'mercurial',
         'mocker',
-        'numpy',
         'oauth',
         'paramiko',
+        'psycopg2',
         'python-memcached',
         'pyasn1',
         'pydkim',
@@ -62,6 +64,7 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
         'testtools',
@@ -149,6 +152,8 @@ setup(
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
+            'compile_templates '
+                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

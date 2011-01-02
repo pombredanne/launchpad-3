@@ -14,7 +14,7 @@ TESTOPTS=
 SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
-LPCONFIG=development
+LPCONFIG?=development
 
 JSFLAGS=
 ICING=lib/canonical/launchpad/icing
@@ -34,6 +34,9 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # Do not add bin/buildout to this list.
 # It is impossible to get buildout to tell us all the files it would
 # build, since each egg's setup.py doesn't tell us that information.
+#
+# NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
+# buildout.
 BUILDOUT_BIN = \
     $(PY) bin/apiindex bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
@@ -45,10 +48,12 @@ BUILDOUT_BIN = \
     bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
     bin/twistd bin/update-download-cache bin/windmill
 
+BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema: build clean_codehosting
+schema: build
 	$(MAKE) -C database/schema
 	$(RM) -r /var/tmp/fatsam
 
@@ -58,15 +63,16 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(API_INDEX): $(BZR_VERSION_INFO)
+$(API_INDEX): $(BZR_VERSION_INFO) $(PY)
+	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
 # Run by PQM.
-check_merge: $(PY)
+check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
@@ -125,6 +131,12 @@ pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
 inplace: build
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	mkdir -p /var/tmp/bzrsync
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
+	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 build: compile apidoc jsbuild css_combine
 
@@ -139,13 +151,15 @@ ${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${I
 sprite_image:
 	${SHHH} bin/sprite-util create-image
 
+# We absolutely do not want to include the lazr.testing module and
+# its jsTestDriver test harness modifications in the lazr.js and
+# launchpad.js roll-up files.  They fiddle with built-in functions!
+# See Bug 482340.
 jsbuild_lazr: bin/jsbuild
-	# We absolutely do not want to include the lazr.testing module and its
-	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
-	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
+	-c $(LAZR_BUILT_JS_ROOT)/yui
 
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
+jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 	${SHHH} bin/jsbuild \
 		$(JSFLAGS) \
 		-n launchpad \
@@ -154,7 +168,6 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
-	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -177,33 +190,54 @@ buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
-# warning before the eggs directory is made.  The target for the eggs directory
-# is only there for deployment convenience.
+# warning before the eggs directory is made.  The target for the eggs
+# directory is only there for deployment convenience.
+# Note that the buildout version must be maintained here and in versions.cfg
+# to make sure that the build does not go over the network.
+#
+# buildout won't touch files that would have the same contents, but for Make's
+# sake we need them to get fresh timestamps, so we touch them after building.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
-		--download-base=download-cache/dist --eggs=eggs
+		--download-base=download-cache/dist --eggs=eggs \
+		--version=1.5.1
+	touch --no-create $@
 
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want eggs: they are the expensive bits,
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: $(BUILDOUT_BIN) clean_buildout
+build_eggs: $(BUILDOUT_BIN)
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
-$(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
-	$(RM) $@
+buildout_bin: $(BUILDOUT_BIN)
+
+# buildout won't touch files that would have the same contents, but for Make's
+# sake we need them to get fresh timestamps, so we touch them after building.
+#
+# If we listed every target on the left-hand side, a parallel make would try
+# multiple copies of this rule to build them all.  Instead, we nominally build
+# just $(PY), and everything else is implicitly updated by that.
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
+		$(BUILDOUT_TEMPLATES)
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
+	touch $@
 
+$(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
+
+# bin/compile_templates is responsible for building all chameleon templates,
+# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -222,18 +256,18 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: check_schema inplace stop support_files
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop hosted_branches
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+run_all: check_schema inplace stop
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -245,10 +279,9 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop hosted_branches
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
-
+run_codehosting: check_schema inplace stop
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian
@@ -334,12 +367,13 @@ clean: clean_js clean_buildout
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
+	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
-	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -rf $(CODEHOSTING_ROOT)
 	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
@@ -366,14 +400,6 @@ clean: clean_js clean_buildout
 realclean: clean
 	$(RM) TAGS tags
 
-clean_codehosting:
-	$(RM) -r $(CODEHOSTING_ROOT)
-	mkdir -p $(CODEHOSTING_ROOT)/mirrors
-	mkdir -p $(CODEHOSTING_ROOT)/push-branches
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	mkdir -p /var/tmp/bzrsync
-	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-
 zcmldocs:
 	mkdir -p doc/zcml/namespaces.zope.org
 	bin/stxdocs \
@@ -399,7 +425,8 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vosok
+	cp configs/development/local-vostok-apache \
+		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
@@ -424,8 +451,9 @@ ID: compile
 
 lp.sfood:
 	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
-	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
+	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
+	-I lib/contrib -I lib/canonical/not-used lib/canonical \
+	lib/lp 2>/dev/null | grep -v contrib/ \
 	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
 	| grep -v schoolbell > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
@@ -457,10 +485,10 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
-	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge \
-	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
-	sprite_css sprite_image css_combine compile check_schema pydoctor
+.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+	stop start run ftest_build ftest_inplace test_build test_inplace \
+	pagetests check check_merge schema default launchpad.pot \
+	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
+	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
+	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
+	sprite_image css_combine compile check_schema pydoctor

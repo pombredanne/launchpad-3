@@ -27,7 +27,7 @@ These are the builders available.
 The 'alsa-utils' package is the one to be built (in the ubuntu/hoary
 distroseries).
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> hoary.main_archive.require_virtualized
@@ -44,7 +44,7 @@ Create new Build and BuildQueue instances (in ubuntu/hoary/i386) for
 the pending job.
 
     >>> from datetime import timedelta
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> alsa_build = alsa_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)

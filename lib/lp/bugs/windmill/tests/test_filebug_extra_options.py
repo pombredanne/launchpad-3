@@ -3,7 +3,10 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser, constants
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
@@ -22,7 +25,7 @@ class TestFilebugExtras(WindmillTestCase):
         client = self.client
 
         # Open a +filebug page and wait for it to finish loading.
-        client.open(url=u'http://bugs.launchpad.dev:8085/firefox/+filebug')
+        client.open(url=u'%s/firefox/+filebug' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.SAMPLE_PERSON.ensure_login(client)
 

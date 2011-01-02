@@ -12,97 +12,173 @@ __all__ = ['Archive', 'ArchiveSet']
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
-from sqlobject import  (
-    BoolCol, ForeignKey, IntCol, StringCol)
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, Or, Select, Sum
-from storm.locals import Count, Join
+from storm.expr import (
+    And,
+    Desc,
+    Or,
+    Select,
+    Sum,
+    )
+from storm.locals import (
+    Count,
+    Join,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
-from lp.app.errors import NotFoundError
-from lp.archivepublisher.debversion import Version
-from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.url import urlappend
+from lp.app.errors import NotFoundError
+from lp.archivepublisher.debversion import Version
+from lp.archiveuploader.utils import (
+    re_isadeb,
+    re_issource,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.adapters.archivedependencies import expand_dependencies
-from lp.soyuz.adapters.packagelocation import PackageLocation
-from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table)
-from lp.soyuz.model.archivedependency import ArchiveDependency
-from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
-from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.registry.model.teammembership import TeamParticipation
-from lp.soyuz.interfaces.archive import (
-    AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
-    ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
-    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPPA,
-    CannotUploadToPocket, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InsufficientUploadRights, InvalidPocketForPPA,
-    InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
-    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
-    NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
-    default_name_by_purpose)
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    validate_person,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import get_property_cache
+from lp.soyuz.adapters.archivedependencies import expand_dependencies
+from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    AlreadySubscribed,
+    ArchiveDependencyError,
+    ArchiveDisabled,
+    ArchiveNotPrivate,
+    CannotCopy,
+    CannotRestrictArchitectures,
+    CannotSwitchPrivacy,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    default_name_by_purpose,
+    DistroSeriesNotFound,
+    IArchive,
+    IArchiveSet,
+    IDistributionArchive,
+    InsufficientUploadRights,
+    InvalidComponent,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    IPPA,
+    MAIN_ARCHIVE_PURPOSES,
+    NoRightsForArchive,
+    NoRightsForComponent,
+    NoSuchPPA,
+    NoTokensForTeams,
+    PocketNotFound,
+    VersionRequiresName,
+    )
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    ArchiveSubscriptionError,
+    IArchiveSubscriberSet,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus, IPublishingSet)
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    active_publishing_status,
+    IPublishingSet,
+    )
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
+from lp.soyuz.model.archivedependency import ArchiveDependency
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadSource,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import do_copy
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
 
 
 class Archive(SQLBase):
@@ -112,7 +188,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -172,6 +248,9 @@ class Archive(SQLBase):
 
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
+
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
@@ -270,6 +349,11 @@ class Archive(SQLBase):
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
+
+    @property
+    def is_partner(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PARTNER
 
     @property
     def is_copy(self):
@@ -756,6 +840,14 @@ class Archive(SQLBase):
 
         return permission
 
+    def getComponentsForSeries(self, distroseries):
+        if self.is_partner:
+            return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
+        else:
+            return distroseries.components
+
     def updateArchiveCache(self):
         """See `IArchive`."""
         # Compiled regexp to remove puntication.
@@ -926,10 +1018,9 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
-             # The 'pending' count is a list because we may append to it
-             # later.
             'pending': [
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 ],
             'succeeded': (
                 BuildStatus.FULLYBUILT,
@@ -945,6 +1036,7 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
                 ],
@@ -1023,7 +1115,7 @@ class Archive(SQLBase):
 
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PARTNER:
+        if self.is_partner:
             if pocket not in (
                 PackagePublishingPocket.RELEASE,
                 PackagePublishingPocket.PROPOSED):
@@ -1031,6 +1123,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if pocket != PackagePublishingPocket.RELEASE:
                 return InvalidPocketForPPA()
+        elif self.is_copy:
+            # Any pocket is allowed for COPY archives, otherwise it can
+            # make the buildd-manager throw exceptions when dispatching
+            # existing builds after a series is released.
+            return
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
@@ -1214,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
@@ -1619,6 +1717,37 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    @classmethod
+    def validatePPA(self, person, proposed_name):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if person.isTeam() and (
+            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            return "Open teams cannot have PPAs."
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            return (
+                "A PPA cannot have the same name as its distribution.")
+        if proposed_name is None:
+            proposed_name = 'ppa'
+        try:
+            person.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            return None
+        else:
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
+
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1751,8 +1880,12 @@ class ArchiveSet:
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
-        if purpose == ArchivePurpose.PPA and owner.archive is not None:
-            signing_key = owner.archive.signing_key
+        if purpose == ArchivePurpose.PPA:
+            if owner.archive is not None:
+                signing_key = owner.archive.signing_key
+            else:
+                # owner.archive is a cached property and we've just cached it.
+                del get_property_cache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
@@ -1804,6 +1937,7 @@ class ArchiveSet:
 
     def getPPAOwnedByPerson(self, person, name=None):
         """See `IArchiveSet`."""
+        # See Person._all_members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
@@ -1924,6 +2058,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (

@@ -9,41 +9,62 @@ __all__ = ['DistroArchSeries',
            'PocketChroot'
            ]
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
-from storm.locals import SQL, Join
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Join,
+    SQL,
+    )
 from storm.store import EmptyResultSet
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import (
-    IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
-from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages, PackagePublishingStatus)
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage)
-from lp.registry.interfaces.person import validate_public_person
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
-from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distroarchseries import (
+    IDistroArchSeries,
+    IDistroArchSeriesSet,
+    IPocketChroot,
+    )
+from lp.soyuz.interfaces.publishing import (
+    ICanPublishPackages,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseriesbinarypackage import (
+    DistroArchSeriesBinaryPackage,
+    )
+from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
@@ -61,6 +82,7 @@ class DistroArchSeries(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     supports_virtualized = BoolCol(notNull=False, default=False)
+    enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -203,7 +225,7 @@ class DistroArchSeries(SQLBase):
         result = result.order_by("rank DESC, BinaryPackageName.name")
 
         # import here to avoid circular import problems
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting
@@ -245,7 +267,8 @@ class DistroArchSeries(SQLBase):
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            [self.id], build_state, name, pocket)
+            self.distroseries.distribution, [self.id], build_state, name,
+            pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None,

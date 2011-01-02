@@ -61,7 +61,7 @@ give an idea of overall and recent activity on the project.
 
     >>> revisions = find_tag_by_id(sample_browser.contents, 'branch-revision-details')
     >>> print extract_text(revisions)
-    15 revisions, 5 in the past month.
+    15 revisions.
 
 A helpful informational message is also shown to the user.
 

@@ -10,11 +10,9 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import INotificationRecipientSet
-
+from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
 from lp.services.mail.basemailer import RecipientReason
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class BugNotificationRecipientReason(RecipientReason):
@@ -209,21 +207,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugSupervisor(self, person, distro):
-        """Registers a distribution bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % distro.displayname
-        # All displaynames in these reasons should be changed to bugtargetname
-        # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively
-        # disruptive.
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, distro.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % distro.displayname
-        self._addReason(person, text, reason)
-
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname
@@ -233,17 +216,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             reason += " @%s" % person.name
         else:
             text = "are subscribed to %s" % target.displayname
-        self._addReason(person, text, reason)
-
-    def addUpstreamBugSupervisor(self, person, upstream):
-        """Registers an upstream bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
     def addRegistrant(self, person, upstream):

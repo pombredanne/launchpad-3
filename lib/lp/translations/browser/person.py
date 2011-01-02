@@ -11,33 +11,46 @@ __all__ = [
     'TranslationActivityView',
 ]
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import urllib
 
+import pytz
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, Link, action, canonical_url, custom_widget)
-from canonical.launchpad.webapp.menu import NavigationMenu
+    canonical_url,
+    Link,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translationlinksaggregator import (
-    TranslationLinksAggregator)
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
+    TranslationLinksAggregator,
+    )
+from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
-    TranslationRelicensingAgreementOptions)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+    TranslationRelicensingAgreementOptions,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class WorkListLinksAggregator(TranslationLinksAggregator):
@@ -54,6 +67,9 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
         """See `TranslationLinksAggregator.describe`."""
         strings_count = sum(
             [self.countStrings(pofile) for pofile in covered_files])
+        languages = set(
+            [pofile.language.englishname for pofile in covered_files])
+        languages_list = ", ".join(sorted(languages))
 
         if strings_count == 1:
             strings_wording = "%d string"
@@ -66,6 +82,7 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
             'count_wording': strings_wording % strings_count,
             'is_product': not ISourcePackage.providedBy(target),
             'link': link,
+            'languages': languages_list,
         }
 
 
@@ -146,22 +163,24 @@ class PersonTranslationsMenu(NavigationMenu):
 
     def overview(self):
         text = 'Overview'
-        return Link('', text, icon='info')
+        return Link('', text, icon='info', site='translations')
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text, icon='info')
+        return Link('+imports', text, icon='info', site='translations')
 
     def licensing(self):
         text = 'Translations licensing'
         enabled = (self.person == self.user)
-        return Link('+licensing', text, enabled=enabled, icon='info')
+        return Link('+licensing', text, enabled=enabled, icon='info',
+                    site='translations')
 
     def translations_to_review(self):
         text = 'Translations to review'
         enabled = person_is_reviewer(self.person)
         return Link(
-            '+translations-to-review', text, enabled=enabled, icon='info')
+            '+translations-to-review', text, enabled=enabled, icon='info',
+            site='translations')
 
 
 class PersonTranslationView(LaunchpadView):
@@ -449,19 +468,20 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def relicensing_url(self):
         """Return an URL for this view."""
-        return canonical_url(self.context, view_name='+licensing')
+        return canonical_url(self.context, view_name='+licensing',
+                             rootsite='translations')
 
     @property
     def cancel_url(self):
         """Escape to the person's main Translations page."""
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite='translations')
 
     def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
         if url and url.startswith(self.request.getApplicationURL()):
             return url
         else:
-            return canonical_url(self.context)
+            return canonical_url(self.context, rootsite='translations')
 
     @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):

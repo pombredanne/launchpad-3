@@ -176,11 +176,12 @@ class XMLRPCBuildDSlaveTests(unittest.TestCase):
 
     def setUp(self):
         super(XMLRPCBuildDSlaveTests, self).setUp()
-        BuilddSlaveTestSetup().setUp()
+        self.slave = BuilddSlaveTestSetup()
+        self.slave.setUp()
         self.server = xmlrpclib.Server('http://localhost:8221/rpc/')
 
     def tearDown(self):
-        BuilddSlaveTestSetup().tearDown()
+        self.slave.tearDown()
         super(XMLRPCBuildDSlaveTests, self).tearDown()
 
     def test_build_unknown_builder(self):

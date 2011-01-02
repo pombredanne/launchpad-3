@@ -3,10 +3,24 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
@@ -14,6 +28,7 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
 from lp.translations.interfaces.potranslation import IPOTranslation
+
 
 __metaclass__ = type
 __all__ = [
@@ -88,10 +103,6 @@ class ITranslationMessage(Interface):
         title=_("The ID for this translation message"),
         readonly=True, required=True)
 
-    pofile = Object(
-        title=_("The translation file from where this translation comes"),
-        readonly=False, required=False, schema=IPOFile)
-
     browser_pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
@@ -103,10 +114,6 @@ class ITranslationMessage(Interface):
     language = Choice(
         title=_('Language of this translation message.'),
         vocabulary='Language', required=False)
-
-    variant = TextLine(
-        title=_('The language variant for this translation message.'),
-        default=None)
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
@@ -214,6 +221,12 @@ class ITranslationMessage(Interface):
 
     def getOnePOFile():
         """Get any POFile containing this translation."""
+
+    def ensureBrowserPOFile():
+        """Assign the result of getOnePOFile to browser_pofile.
+
+        If browser_pofile is already set, it is left unchanged.
+        """
 
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.

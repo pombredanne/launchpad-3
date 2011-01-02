@@ -8,7 +8,7 @@ from twisted.application import service, internet, strports
 from twisted.web import server
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.zeca import Zeca, KeyServer, LookUp, SubmitKey
 
@@ -21,7 +21,7 @@ application = service.Application('Zeca')
 zecaService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(zecaService)
+readyservice.ReadyService().setServiceParent(zecaService)
 
 zeca = Zeca()
 keyserver = KeyServer()

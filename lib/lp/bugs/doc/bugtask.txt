@@ -15,7 +15,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
     >>> from zope.component import getUtility
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
 To create a bug task, you have to be logged in:
@@ -27,8 +27,12 @@ There are three kinds of bug tasks. We need to pass the bug task creation
 methods some other objects to create a task, so lets get the utilities we need
 to access those other objects:
 
-    >>> from canonical.launchpad.interfaces import (IBugSet, IPersonSet,
-    ...     IProductSet, IDistributionSet, IDistroSeriesSet,
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> productset = getUtility(IProductSet)
     >>> distroset = getUtility(IDistributionSet)
@@ -41,8 +45,10 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -57,7 +63,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> upstream_task.product == evolution
     True
 
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
     >>> IUpstreamBugTask.providedBy(upstream_task)
     True
 
@@ -70,7 +76,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_task.distribution == ubuntu
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> IDistroBugTask.providedBy(distro_task)
     True
 
@@ -84,7 +90,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_series_task.distroseries == warty
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
@@ -105,8 +111,8 @@ The created bugtasks are guaranteed to implement the correct interface.
 
 == Bug Task Targets ==
 
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
-    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
 
 The "target" of an IBugTask can be one of the items in the following
 list.
@@ -118,7 +124,7 @@ list.
 
   * a product series
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")
@@ -165,8 +171,8 @@ list.
 
   * a distroseries sourcepackage
 
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.registry.model.sourcepackage import SourcePackage
-    >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
@@ -308,7 +314,8 @@ IProduct.developmentfocus. The following attributes are synched:
 We'll open a bug on just the distribution, and also a bug on a specific
 package.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> launchbag = getUtility(ILaunchBag)
     >>> params = CreateBugParams(
     ...     owner=launchbag.user,
@@ -563,80 +570,6 @@ require extra privileges.)
     >>> generic_alsa_utils_task.date_assigned == (
     ...     devel_focus_alsa_utils_task.date_assigned)
     True
-
-Ordinary users can assign themselves and teams they are a member of.
-
-    >>> login('test@canonical.com')
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(None)
-    Traceback (most recent call last):
-    ...
-    UserCannotEditBugTaskAssignee: Regular users can assign and unassign
-    only themselves and their teams. Only project owners, bug supervisors,
-    drivers and release managers can assign others.
-
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(sample_person)
-    >>> print generic_alsa_utils_task.assignee.displayname
-    Sample Person
-    >>> login('no-priv@canonical.com')
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(no_priv)
-    >>> print devel_focus_alsa_utils_task.assignee.displayname
-    No Privileges Person
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(None)
-    >>> print generic_alsa_utils_task.assignee
-    None
-
-    >>> warty_security_team = getUtility(IPersonSet).getByName('name20')
-    >>> no_priv.inTeam(warty_security_team)
-    False
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(warty_security_team)
-    Traceback (most recent call last):
-    ...
-    UserCannotEditBugTaskAssignee: Regular users can assign and unassign
-    only themselves and their teams. Only project owners, bug supervisors,
-    drivers and release managers can assign others.
-
-    >>> login('test@canonical.com')
-    >>> sample_person.inTeam(warty_security_team)
-    True
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(warty_security_team)
-    >>> print devel_focus_alsa_utils_task.assignee.displayname
-    Warty Security Team
-
-These persons can assign anybody: Project owners...
-
-    >>> from lp.testing import login_person
-    >>> login_person(devel_focus_alsa_utils_task.pillar.owner)
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(no_priv)
-    >>> print generic_alsa_utils_task.assignee.displayname
-    No Privileges Person
-
-...drivers...
-
-    >>> devel_focus_alsa_utils_task.pillar.driver = sample_person
-    >>> login('test@canonical.com')
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(None)
-    >>> print devel_focus_alsa_utils_task.assignee
-    None
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(mark)
-    >>> print devel_focus_alsa_utils_task.assignee.displayname
-    Mark Shuttleworth
-
-...bug supervisors...
-
-    >>> login_person(devel_focus_alsa_utils_task.pillar.owner)
-    >>> devel_focus_alsa_utils_task.pillar.setBugSupervisor(
-    ...     sample_person, devel_focus_alsa_utils_task.pillar.owner)
-    >>> devel_focus_alsa_utils_task.pillar.driver = None
-    >>> login('test@canonical.com')
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(no_priv)
-    >>> print devel_focus_alsa_utils_task.assignee.displayname
-    No Privileges Person
-
- ...and Launchpad admins.
-
-    >>> login('foo.bar@canonical.com')
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(sample_person)
-
 
 3. Importance
 
@@ -898,8 +831,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
@@ -942,7 +875,7 @@ The private bugs will be invisible to No Privileges Person in the search
 results:
 
     >>> from canonical.launchpad.searchbuilder import any
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
@@ -1093,7 +1026,7 @@ As will attribute access:
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
@@ -1127,7 +1060,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
 
 An IBugTask can be adapted to an IBug.
 
-   >>> from canonical.launchpad.interfaces import IBug
+   >>> from lp.bugs.interfaces.bug import IBug
 
    >>> bugtask_four = bugtaskset.get(4)
    >>> bug = IBug(bugtask_four)
@@ -1250,7 +1183,7 @@ it can also be invoked directly.
 
     >>> from lp.bugs.scripts.bugtasktargetnamecaches import (
     ...     BugTaskTargetNameCacheUpdater)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> logger = FakeLogger()
     >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
     >>> updater.run()
@@ -1307,25 +1240,16 @@ multiple bug tasks in one go.
     >>> print_badge_properties(badge_properties)
     Properties for bug 2:
      has_branch: False
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
     Properties for bug 3:
      has_branch: False
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
 
-If a mentoring offer gets made...
-
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> bug_two.offerMentoring(no_priv, ubuntu_team)
-    <MentoringOffer at ...>
-
 ..., a specification gets linked...
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> spec = getUtility(ISpecificationSet).all_specifications[0]
     >>> spec.linkBug(bug_two)
     <SpecificationBug at ...>
@@ -1343,12 +1267,10 @@ If a mentoring offer gets made...
     >>> print_badge_properties(badge_properties)
     Properties for bug 2:
      has_branch: False
-     has_mentoring_offer: True
      has_patch: False
      has_specification: True
     Properties for bug 3:
      has_branch: True
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
 

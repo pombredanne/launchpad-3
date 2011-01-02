@@ -6,11 +6,14 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
+from canonical.launchpad.windmill.testing.constants import (
+    PAGE_LOAD,
+    SLEEP,
+    )
 from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 LANGUAGE=(u"//table[@id='languagestats']/descendant::a[text()='%s']"
          u"/parent::td/parent::tr")
@@ -44,7 +47,7 @@ class LanguagesSeriesTest(WindmillTestCase):
         person having Catalan and Spanish as preferred languages.
         """
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/ubuntu'
+        start_url = '%s/ubuntu' % TranslationsWindmillLayer.base_url
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to the distribution languages page
         self.client.open(url=start_url)
@@ -75,4 +78,3 @@ class LanguagesSeriesTest(WindmillTestCase):
             u'French': True,
             u'Croatian': True,
             })
-

@@ -9,7 +9,7 @@ BugWatch's addActivity() method.
 
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces.lpstorm import IStore
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.model.bugwatch import BugWatchActivity
 
 In order to create a BugWatch to test with we need to switch DB users.
@@ -73,10 +73,10 @@ BugWatchActivity entry.
 We can demonstrate this by passing our bug watch to
 CheckwatchesMaster.updateBugWatches().
 
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from lp.services.log.logger import BufferLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
-    >>> updater = CheckwatchesMaster(transaction, QuietFakeLogger())
+    >>> updater = CheckwatchesMaster(transaction, BufferLogger())
     >>> updater.updateBugWatches(
     ...     TestExternalBugTracker('http://example.com'), [bug_watch])
 

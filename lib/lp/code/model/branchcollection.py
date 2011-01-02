@@ -8,34 +8,47 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
-
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    Union,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.vocabulary import CountableIterator
+from lp.code.interfaces.branch import user_has_special_branch_access
+from lp.code.interfaces.branchcollection import (
+    IBranchCollection,
+    InvalidFilter,
+    )
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal)
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
-from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranch)
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import Owner, Person
+from lp.registry.model.person import (
+    Owner,
+    Person,
+    )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
-from lp.code.interfaces.branch import (
-    user_has_special_branch_access)
-from lp.code.interfaces.branchcollection import (
-    IBranchCollection, InvalidFilter)
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.vocabulary import CountableIterator
 
 
 class GenericBranchCollection:
@@ -132,7 +145,7 @@ class GenericBranchCollection:
         return self.store.using(*tables).find(Branch, *expressions)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
-                          target_branch=None):
+                          target_branch=None, merged_revnos=None):
         """See `IBranchCollection`."""
         expressions = [
             BranchMergeProposal.source_branchID.is_in(
@@ -145,6 +158,9 @@ class GenericBranchCollection:
         if target_branch is not None:
             expressions.append(
                 BranchMergeProposal.target_branch == target_branch)
+        if merged_revnos is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revno.is_in(merged_revnos))
         expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(

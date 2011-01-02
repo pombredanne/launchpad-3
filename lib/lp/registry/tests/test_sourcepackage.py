@@ -3,8 +3,6 @@
 
 """Unit tests for ISourcePackage implementations."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest
@@ -13,19 +11,28 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
-from lp.registry.interfaces.distribution import NoPartnerArchive
-from lp.registry.interfaces.series import SeriesStatus
+from canonical.launchpad.ftests import (
+    login_person,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.testing import person_logged_in, TestCaseWithFactory
-from lp.testing.views import create_initialized_view
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks,
+    )
+from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestSourcePackage(TestCaseWithFactory):

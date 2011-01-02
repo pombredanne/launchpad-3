@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 
 class PPAMissingBuilds(LaunchpadScript):
@@ -31,7 +31,7 @@ class PPAMissingBuilds(LaunchpadScript):
                 % distroseries.name)
             return
 
-        architectures_available = set(distroseries.enabled_architectures)
+        architectures_available = set(distroseries.buildable_architectures)
         if not architectures_available:
             self.logger.error(
                 "Chroots missing for %s" % distroseries.name)

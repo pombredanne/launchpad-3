@@ -20,25 +20,43 @@ __all__ = [
 
 import operator
 
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
+from canonical.widgets import HiddenUserWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets import HiddenUserWidget
 
 
 class BuilderSetNavigation(GetitemNavigation):

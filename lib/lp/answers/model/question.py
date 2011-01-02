@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,67 +16,102 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
-import pytz
-
 from email.Utils import make_msgid
+import operator
 
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.security.proxy import isinstance as zope_isinstance
-
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from lazr.enum import DBItem, Item
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.database.message import (
+    Message,
+    MessageChunk,
+    )
+from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessage
-from lp.services.worlddata.interfaces.language import ILanguage
-from lp.registry.interfaces.person import IPerson, validate_public_person
-from lp.registry.interfaces.product import IProduct, IProductSet
-from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.mailnotification import NotificationRecipientSet
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.question import (
+    InvalidQuestionStateError,
+    IQuestion,
+    )
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionParticipation,
+    QuestionPriority,
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.answercontact import AnswerContact
+from lp.answers.model.questionmessage import QuestionMessage
+from lp.answers.model.questionsubscription import QuestionSubscription
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.questionenums import (
-    QuestionAction, QuestionParticipation, QuestionPriority, QuestionSort,
-    QuestionStatus)
-from lp.answers.interfaces.question import (
-    InvalidQuestionStateError, IQuestion)
-from lp.answers.interfaces.questioncollection import (
-    IQuestionSet, QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.enumcol import EnumCol
-
-from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.message import Message, MessageChunk
 from lp.coop.answersbugs.model import QuestionBug
-from lp.answers.model.questionmessage import QuestionMessage
-from lp.answers.model.questionsubscription import (
-    QuestionSubscription)
-from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.mailnotification import (
-    NotificationRecipientSet)
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.model.language import Language
 
 
 class notify_question_modified:
@@ -646,8 +681,8 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.official_answers is True
-                    OR Distribution.official_answers is TRUE)
+                    (Product.answers_usage = %s
+                    OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
                 LIMIT 5000
@@ -655,7 +690,8 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            """ % sqlvalues(limit))
+            """ % sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.LAUNCHPAD, limit))
 
         projects = []
         product_set = getUtility(IProductSet)
@@ -669,6 +705,7 @@ class QuestionSet:
                 raise AssertionError(
                     'product_id and distribution_id are NULL')
         return projects
+        
 
     @staticmethod
     def new(title=None, description=None, owner=None,

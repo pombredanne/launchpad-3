@@ -5,10 +5,10 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView)
+    StreamOrRedirectLibraryFileAliasView,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.librarian.interfaces import LibrarianServerError
-
 from lp.testing import TestCase
 
 

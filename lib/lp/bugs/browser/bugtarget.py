@@ -25,83 +25,123 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
-from pytz import timezone
-from simplejson import dumps
 import urllib
 
+from lazr.restful.interface import copy_field
+from pytz import timezone
+from simplejson import dumps
 from sqlobject import SQLObjectNotFound
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
-from zope import formlib
-from zope.interface import alsoProvides, implements, Interface
+from zope.interface import (
+    alsoProvides,
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Bool, Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.restful.interface import copy_field
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
-from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.browser.bugrole import BugRoleMixin
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugFeedLink,
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker, ILaunchpadUsage)
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.validators.name import valid_name_pattern
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.app.errors import NotFoundError, UnexpectedFormData
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
+from canonical.widgets.bug import (
+    BugTagsWidget,
+    LargeBugTagsWidget,
+    )
+from canonical.widgets.bugtask import NewLineToSpacesWidget
+from canonical.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.tales import BugTrackerFormatterAPI
+from lp.app.enums import ServiceUsage
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.bugs.browser.bugrole import BugRoleMixin
+from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
+    CreateBugParams,
+    IBug,
+    IBugAddForm,
+    IBugSet,
+    IProjectGroupBugAddForm,
+    )
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.utilities.filebugdataparser import FileBugData
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.job.interfaces.job import JobStatus
-from lp.registry.browser.product import ProductConfigureBase
-from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget, safe_action)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.launchpad.validators.name import valid_name_pattern
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
-from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.product import (
-    ProductBugTrackerWidget, GhostCheckBoxWidget, GhostWidget)
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
-
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
@@ -123,6 +163,8 @@ class IProductBugConfiguration(Interface):
         IBugTarget['bug_reporting_guidelines'])
     bug_reported_acknowledgement = copy_field(
         IBugTarget['bug_reported_acknowledgement'])
+    enable_bugfiling_duplicate_search = copy_field(
+        IBugTarget['enable_bugfiling_duplicate_search'])
 
 
 def product_to_productbugconfiguration(product):
@@ -137,25 +179,33 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     label = "Configure bug tracker"
     schema = IProductBugConfiguration
-    field_names = [
-        "bug_supervisor",
-        "security_contact",
-        "bugtracker",
-        "enable_bug_expiration",
-        "remote_product",
-        "bug_reporting_guidelines",
-        "bug_reported_acknowledgement",
-        ]
     # This ProductBugTrackerWidget renders enable_bug_expiration and
     # remote_product as subordinate fields, so this view suppresses them.
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
     custom_widget('remote_product', GhostWidget)
 
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        field_names = [
+            "bugtracker",
+            "enable_bug_expiration",
+            "remote_product",
+            "bug_reporting_guidelines",
+            "bug_reported_acknowledgement",
+            "enable_bugfiling_duplicate_search",
+            ]
+        if check_permission("launchpad.Edit", self.context):
+            field_names.extend(["bug_supervisor", "security_contact"])
+
+        return field_names
+
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
-        self.validateBugSupervisor(data)
-        self.validateSecurityContact(data)
+        if check_permission("launchpad.Edit", self.context):
+            self.validateBugSupervisor(data)
+            self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
@@ -170,10 +220,11 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
-        self.changeBugSupervisor(data['bug_supervisor'])
-        del data['bug_supervisor']
-        self.changeSecurityContact(data['security_contact'])
-        del data['security_contact']
+        if check_permission("launchpad.Edit", self.context):
+            self.changeBugSupervisor(data['bug_supervisor'])
+            del data['bug_supervisor']
+            self.changeSecurityContact(data['security_contact'])
+            del data['security_contact']
         self.updateContextFromData(data)
 
 
@@ -349,7 +400,7 @@ class FileBugViewBase(LaunchpadFormView):
         # actually uses Malone for its bug tracking.
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
-            not product_or_distro.official_malone):
+            product_or_distro.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             self.setFieldError(
                 'bugtarget',
                 "%s does not use Launchpad as its bug tracker " %
@@ -391,10 +442,11 @@ class FileBugViewBase(LaunchpadFormView):
         if IProjectGroup.providedBy(self.context):
             products_using_malone = [
                 product for product in self.context.products
-                if product.official_malone]
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
             return len(products_using_malone) > 0
         else:
-            return self.getMainContext().official_malone
+            bug_tracking_usage = self.getMainContext().bug_tracking_usage
+            return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     def getMainContext(self):
         if IDistributionSourcePackage.providedBy(self.context):
@@ -548,7 +600,8 @@ class FileBugViewBase(LaunchpadFormView):
                 bug.linkAttachment(
                     owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
-                    comment=attachment_comment)
+                    comment=attachment_comment,
+                    send_notifications=False)
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
                         cgi.escape(attachment['file_alias'].filename))
@@ -931,13 +984,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
-        # Remove all the prejoins, since we won't use them and they slow
-        # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin([])
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
-
         return matching_bugs
 
     @property
@@ -1054,7 +1102,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def products_using_malone(self):
         return [
             product for product in self.context.products
-            if product.official_malone]
+            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
 
     @property
     def default_product(self):
@@ -1217,25 +1265,18 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
     @property
-    def uses_launchpad_bugtracker(self):
-        """Whether this distro or product tracks bugs in launchpad.
-
-        :returns: boolean
-        """
-        launchpad_usage = ILaunchpadUsage(self.context)
-        return launchpad_usage.official_malone
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
 
     @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
+    def bug_tracking_usage(self):
+        """Whether the context tracks bugs in launchpad.
 
-        :returns: `IBugTracker` or None
+        :returns: ServiceUsage enum value
         """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
+        service_usage = IServiceUsage(self.context)
+        return service_usage.bug_tracking_usage
 
     @property
     def bugtracker(self):
@@ -1243,7 +1284,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
 
         :returns: str which may contain HTML.
         """
-        if self.uses_launchpad_bugtracker:
+        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return 'Launchpad'
         elif self.external_bugtracker:
             return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
@@ -1343,7 +1384,7 @@ class BugTargetBugTagsView(LaunchpadView):
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
-                check_permission('launchpad.Edit', self.context))
+                check_permission('launchpad.BugSupervisor', self.context))
 
 
 class OfficialBugTagsManageView(LaunchpadEditFormView):
@@ -1469,3 +1510,7 @@ class BugsPatchesView(LaunchpadView):
         """Return a timedelta object for the age of a patch attachment."""
         now = datetime.now(timezone('UTC'))
         return now - patch.message.datecreated
+
+    def proxiedUrlForLibraryFile(self, patch):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url

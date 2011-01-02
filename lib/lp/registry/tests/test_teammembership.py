@@ -3,31 +3,49 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import subprocess
 import unittest
-from datetime import datetime, timedelta
 
 import pytz
-
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, sqlvalues)
-from lp.registry.model.teammembership import TeamMembership
-from canonical.launchpad.ftests import login, login_person
-from lp.registry.interfaces.person import (
-    IPersonSet, TeamSubscriptionPolicy)
-from lp.registry.interfaces.teammembership import (
-    CyclicalTeamMembershipError, ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing.factory import LaunchpadObjectFactory
+    cursor,
+    flush_database_caches,
+    flush_database_updates,
+    sqlvalues,
+    )
+from canonical.launchpad.ftests import (
+    login,
+    login_person,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    default_optionflags, LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+    default_optionflags,
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.registry.model.teammembership import TeamMembership
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestTeamMembershipSet(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -139,7 +157,7 @@ class TestTeamMembershipSet(unittest.TestCase):
 
 class TeamParticipationTestCase(unittest.TestCase):
     """Tests for team participation using 5 teams."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('foo.bar@canonical.com')
@@ -172,6 +190,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
                     team5
                        no-priv
     """
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup the team hierarchy."""
@@ -238,6 +257,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
                      team5
                        no-priv
     """
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup the team hierarchy."""
@@ -302,6 +322,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
                      team5
                        no-priv
     """
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup the team hierarchy."""
@@ -363,7 +384,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
 
 
 class TestTeamMembership(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_teams_not_kicked_from_themselves_bug_248498(self):
         """The self-participation of a team must not be removed.
@@ -425,7 +446,7 @@ class TestTeamMembership(unittest.TestCase):
 
 class TestTeamMembershipSetStatus(unittest.TestCase):
     """Test the behaviour of TeamMembership's setStatus()."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('foo.bar@canonical.com')
@@ -633,9 +654,52 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
 
+    def test_invited_member_can_be_declined(self):
+        # A team can decline an invited member.
+        self.team2.addMember(self.team1, self.no_priv)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        tm.setStatus(
+            TeamMembershipStatus.INVITATION_DECLINED, self.team2.teamowner)
+        self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
+
+    def test_retractTeamMembership_invited(self):
+        # A team can retract a membership invitation.
+        self.team2.addMember(self.team1, self.no_priv)
+        self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
+
+    def test_retractTeamMembership_proposed(self):
+        # A team can retract the proposed membership in a team.
+        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team1.join(self.team2, self.team1.teamowner)
+        self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(TeamMembershipStatus.DECLINED, tm.status)
+
+    def test_retractTeamMembership_active(self):
+        # A team can retract the membership in a team.
+        self.team1.join(self.team2, self.team1.teamowner)
+        self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
+
+    def test_retractTeamMembership_admin(self):
+        # A team can retract the membership in a team.
+        self.team1.join(self.team2, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        tm.setStatus(TeamMembershipStatus.ADMIN, self.team2.teamowner)
+        self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
+        self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
+
 
 class TestCheckTeamParticipationScript(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def _runScript(self, expected_returncode=0):
         process = subprocess.Popen(
@@ -742,6 +806,6 @@ def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
     bug_249185 = LayeredDocFileSuite(
         'bug-249185.txt', optionflags=default_optionflags,
-        layer=LaunchpadFunctionalLayer, setUp=setUp, tearDown=tearDown)
+        layer=DatabaseFunctionalLayer, setUp=setUp, tearDown=tearDown)
     suite.addTest(bug_249185)
     return suite

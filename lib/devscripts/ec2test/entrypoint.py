@@ -12,8 +12,8 @@ import readline
 import rlcompleter
 import sys
 
+import bzrlib
 from bzrlib.errors import BzrCommandError
-from bzrlib import ui
 
 from devscripts.ec2test import builtins
 from devscripts.ec2test.controller import (
@@ -33,19 +33,15 @@ def main():
 
     We run the specified command, or give help if none was specified.
     """
-    # XXX MichaelHudson, 2009-12-23, bug=499637: run_bzr fails unless you set
-    # a ui_factory.
-    ui.ui_factory = ui.make_ui_for_terminal(
-        sys.stdin, sys.stdout, sys.stderr)
+    with bzrlib.initialize():
+        controller = EC2CommandController()
+        controller.install_bzrlib_hooks()
+        controller.load_module(builtins)
 
-    controller = EC2CommandController()
-    controller.install_bzrlib_hooks()
-    controller.load_module(builtins)
-
-    args = sys.argv[1:]
-    if not args:
-        args = ['help']
-    try:
-        controller.run(args)
-    except BzrCommandError, e:
-        sys.exit('ec2: ERROR: ' + str(e))
+        args = sys.argv[1:]
+        if not args:
+            args = ['help']
+        try:
+            controller.run(args)
+        except BzrCommandError, e:
+            sys.exit('ec2: ERROR: ' + str(e))

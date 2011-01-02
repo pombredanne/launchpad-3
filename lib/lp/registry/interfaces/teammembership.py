@@ -8,25 +8,40 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
-    'UserCannotChangeMembershipSilently',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, Text
-from zope.interface import Attribute, Interface
-from zope.security.interfaces import Unauthorized
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-   call_with, export_as_webservice_entry, export_write_operation, exported,
-   operation_parameters, REQUEST_USER, webservice_error)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 
@@ -34,15 +49,6 @@ from canonical.launchpad import _
 # either inviting him to renew his own membership or asking him to get a team
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
-
-
-class UserCannotChangeMembershipSilently(Unauthorized):
-    """User not permitted to change membership status silently.
-
-    Raised when a user tries to change someone's membership silently, and is not
-    a Launchpad Administrator.
-    """
-    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 class TeamMembershipStatus(DBEnumeratedType):
@@ -104,6 +110,9 @@ class TeamMembershipStatus(DBEnumeratedType):
         You have been invited as a member of this team but the invitation has
         been declined.
         """)
+
+
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class ITeamMembership(Interface):
@@ -196,7 +205,8 @@ class ITeamMembership(Interface):
 
         A membership can be renewed if the team's renewal policy is ONDEMAND,
         the membership itself is active (status = [ADMIN|APPROVED]) and it's
-        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT
+        days.
         """
 
     def sendSelfRenewalNotification():
@@ -224,8 +234,8 @@ class ITeamMembership(Interface):
     @operation_parameters(
         status=copy_field(status),
         comment=copy_field(reviewer_comment),
-        silent=Bool(title=_("Do not send notifications of status change.  For "
-                            "use by Launchpad administrators only."),
+        silent=Bool(title=_("Do not send notifications of status change.  "
+                            "For use by Launchpad administrators only."),
                             required=False, default=False))
     @export_write_operation()
     def setStatus(status, user, comment=None, silent=False):
@@ -309,4 +319,4 @@ class CyclicalTeamMembershipError(Exception):
     any cyclical relationships.  So if A is a member of B and B is
     a member of C then attempting to make C a member of A will
     result in this error being raised.
-    """    
+    """

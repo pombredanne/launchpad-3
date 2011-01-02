@@ -8,7 +8,10 @@ __metaclass__ = type
 __all__ = [ 'copy_active_translations' ]
 
 from canonical.database.multitablecopy import MultiTableCopy
-from canonical.database.sqlbase import cursor, quote
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    )
 
 
 def copy_active_translations(child, transaction, logger):

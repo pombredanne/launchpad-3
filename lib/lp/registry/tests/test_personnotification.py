@@ -6,17 +6,22 @@
 __metaclass__ = type
 
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
+
 import pytz
 import transaction
-from datetime import timedelta, datetime
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import DatabaseFunctionalLayer, reset_logging
-
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    reset_logging,
+    )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.scripts.personnotification import PersonNotificationManager
 from lp.testing import TestCaseWithFactory

@@ -341,8 +341,8 @@ Next, we return the link as HTML.
     # We need to use a real launchpad test request so the view adapter
     # lookups will work.  That request also needs to implement
     # IParticipation so that the login machinery will work.
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.security.interfaces import IParticipation
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> class InteractiveTestRequest(LaunchpadTestRequest):
     ...     implements(IParticipation)
     ...     principal = None
@@ -687,10 +687,10 @@ IMenu.iterlinks, so that it can properly decide whether a particular
 link should appear linked. The request is also set as the menu's
 'request' attribute.
 
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp import LaunchpadView
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from canonical.launchpad.webapp.vhosts import allvhosts
     >>> class FakeRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)

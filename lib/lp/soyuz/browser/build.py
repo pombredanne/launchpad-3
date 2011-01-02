@@ -19,26 +19,39 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin, ProxiedLibraryFileAlias)
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
-    StandardLaunchpadFacets)
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
-    IBinaryPackageBuild, IBuildRescoreForm, IBinaryPackageBuildSet)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    IBinaryPackageBuild,
+    IBinaryPackageBuildSet,
+    IBuildRescoreForm,
+    )
 
 
 class BuildUrl:
@@ -229,6 +242,39 @@ class BuildView(LaunchpadView):
             self.context.status == BuildStatus.NEEDSBUILD and
             self.context.buildqueue_record.job.status == JobStatus.WAITING)
 
+    @cachedproperty
+    def eta(self):
+        """The datetime when the build job is estimated to complete.
+
+        This is the BuildQueue.estimated_duration plus the
+        Job.date_started or BuildQueue.getEstimatedJobStartTime.
+        """
+        if self.context.buildqueue_record is None:
+            return None
+        queue_record = self.context.buildqueue_record
+        if queue_record.job.status == JobStatus.WAITING:
+            start_time = queue_record.getEstimatedJobStartTime()
+            if start_time is None:
+                return None
+        else:
+            start_time = queue_record.job.date_started
+        duration = queue_record.estimated_duration
+        return start_time + duration
+
+    @cachedproperty
+    def date(self):
+        """The date when the build completed or is estimated to complete."""
+        if self.estimate:
+            return self.eta
+        return self.context.date_finished
+
+    @cachedproperty
+    def estimate(self):
+        """If true, the date value is an estimate."""
+        if self.context.date_finished is not None:
+            return False
+        return self.eta is not None
+
 
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
@@ -250,7 +296,7 @@ class BuildRetryView(BuildView):
 
             # Invoke context method to retry the build record.
             self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
+            self.request.response.addInfoNotification('Build retried')
 
         self.request.response.redirect(canonical_url(self.context))
 
@@ -331,9 +377,11 @@ def setupCompleteBuilds(batch):
 
     complete_builds = []
     for build in builds:
-        buildqueue = prefetched_data.get(build.id)
-        complete_builds.append(CompleteBuild(build, buildqueue))
-
+        if IBinaryPackageBuild.providedBy(build):
+            buildqueue = prefetched_data.get(build.id)
+            complete_builds.append(CompleteBuild(build, buildqueue))
+        else:
+            complete_builds.append(build)
     return complete_builds
 
 

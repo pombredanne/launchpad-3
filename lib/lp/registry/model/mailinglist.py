@@ -16,48 +16,91 @@ __all__ = [
 
 
 from email import message_from_string
-from email.Header import decode_header, make_header
+from email.Header import (
+    decode_header,
+    make_header,
+    )
 from itertools import repeat
+import operator
 from socket import getfqdn
 from string import Template
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Join,
+    LeftJoin,
+    )
 from storm.info import ClassAlias
-from storm.expr import And, Join, LeftJoin
 from storm.store import Store
-
-from sqlobject import ForeignKey, StringCol
-
-from zope.component import getUtility, queryAdapter
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import _
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
-from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.mailinglist import (
-    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    IHeldMessageDetails, IMailingList, IMailingListSet,
-    IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
+    CannotChangeSubscription,
+    CannotSubscribe,
+    CannotUnsubscribe,
+    IHeldMessageDetails,
+    IMailingList,
+    IMailingListSet,
+    IMailingListSubscription,
+    IMessageApproval,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    PURGE_STATES,
+    UnsafeToPurge,
+    )
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 EMAIL_ADDRESS_STATUSES = (
@@ -204,8 +247,8 @@ class MailingList(SQLBase):
         return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+        return '<MailingList for team "%s"; status=%s; address=%s at %#x>' % (
+            self.team.name, self.status.name, self.address, id(self))
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -352,7 +395,7 @@ class MailingList(SQLBase):
                              TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
-        return results.order_by(Person.displayname)
+        return results.order_by(Person.displayname, Person.name)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
@@ -414,8 +457,9 @@ class MailingList(SQLBase):
                      MailingListSubscription.personID
                      == EmailAddress.personID),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -435,8 +479,9 @@ class MailingList(SQLBase):
                      MailingListSubscription.email_addressID
                      == EmailAddress.id),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -518,15 +563,20 @@ class MailingList(SQLBase):
         notify(ObjectCreatedEvent(held_message))
         return held_message
 
-    def getReviewableMessages(self):
+    def getReviewableMessages(self, message_id_filter=None):
         """See `IMailingList`."""
-        return MessageApproval.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s AND
-            MessageApproval.message = Message.id
-            """ % sqlvalues(self, PostedMessageStatus.NEW),
-            clauseTables=['Message'],
-            orderBy=['posted_date', 'Message.rfc822msgid'])
+        store = Store.of(self)
+        clauses = [
+            MessageApproval.mailing_listID==self.id,
+            MessageApproval.status==PostedMessageStatus.NEW,
+            MessageApproval.messageID==Message.id,
+            ]
+        if message_id_filter is not None:
+            clauses.append(Message.rfc822msgid.is_in(message_id_filter))
+        results = store.find((MessageApproval, Message),
+            *clauses)
+        results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def purge(self):
         """See `IMailingList`."""
@@ -627,8 +677,9 @@ class MailingListSet:
                      MailingListSubscription.personID
                      == EmailAddress.personID),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -641,8 +692,7 @@ class MailingListSet:
             team.id for team in store.find(
                 Person,
                 And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
+                    Person.teamowner != None)))
         list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
@@ -672,8 +722,9 @@ class MailingListSet:
                      MailingListSubscription.email_addressID
                      == EmailAddress.id),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -719,8 +770,7 @@ class MailingListSet:
             team.id for team in store.find(
                 Person,
                 And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
+                    Person.teamowner != None)))
         team_members = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
@@ -840,7 +890,34 @@ class MessageApprovalSet:
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
-        return MessageApproval.selectBy(status=status)
+        # Use the master store as the messages will also be acknowledged and
+        # we want to make sure we are acknowledging the same messages that we
+        # iterate over.
+        return IMasterStore(MessageApproval).find(
+            (Message.rfc822msgid, Person.name),
+            MessageApproval.status == status,
+            MessageApproval.message == Message.id,
+            MessageApproval.mailing_list == MailingList.id,
+            MailingList.team == Person.id)
+
+    def acknowledgeMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        transitions = {
+            PostedMessageStatus.APPROVAL_PENDING:
+                PostedMessageStatus.APPROVED,
+            PostedMessageStatus.REJECTION_PENDING:
+                PostedMessageStatus.REJECTED,
+            PostedMessageStatus.DISCARD_PENDING:
+                PostedMessageStatus.DISCARDED,
+            }
+        try:
+            next_state = transitions[status]
+        except KeyError:
+            raise AssertionError(
+                'Not an acknowledgeable state: %s' % status)
+        approvals = IMasterStore(MessageApproval).find(
+            MessageApproval, MessageApproval.status == status)
+        approvals.set(status=next_state)
 
 
 class HeldMessageDetails:

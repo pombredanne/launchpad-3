@@ -13,24 +13,6 @@ serve those requests properly.
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
-    >>> import traceback
-
-    >>> class MockLogger:
-    ...     messages = []
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         print 'log>', ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff, **{'exc_info': True})
 
 Here's somebody to make a request.
 
@@ -59,10 +41,11 @@ database).
     >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> transaction.commit()
-    >>> process_queue(transaction, MockLogger())
-    log> Exporting objects for Happy Downloader, related to template pmount
+    >>> from lp.services.log.logger import FakeLogger
+    >>> process_queue(transaction, FakeLogger())
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    log> Stored file at http://.../launchpad-export.tar.gz
+    INFO Stored file at http://.../launchpad-export.tar.gz
 
 The user receives a confirmation email.
 
@@ -193,10 +176,10 @@ Let's try requesting an export in MO format:
     >>> request_set.addRequest(
     ...     person, None, [cs, cs.potemplate], TranslationFileFormat.MO)
     >>> transaction.commit()
-    >>> process_queue(transaction, MockLogger())
-    log> Exporting objects for Happy Downloader, related to template pmount
+    >>> process_queue(transaction, FakeLogger())
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
+    INFO Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
     >>> emails = pop_notifications()
     >>> len(emails)
@@ -263,12 +246,13 @@ The script is run.
 
     >>> import subprocess
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-v'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   ...
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk

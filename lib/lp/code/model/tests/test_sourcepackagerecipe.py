@@ -3,51 +3,81 @@
 
 """Tests for the SourcePackageRecipe content type."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import textwrap
 import unittest
 
-from bzrlib.plugins.builder.recipe import RecipeParser
-
+from bzrlib.plugins.builder.recipe import (
+    ForbiddenInstructionError,
+)
 from pytz import UTC
 from storm.locals import Store
-
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
-
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
-    InvalidPocketForPPA)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe,
-    TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending,
+    PrivateBranchRecipe,
+    TooManyBuilds,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    recipes_enabled,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.code.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest, SourcePackageRecipe)
+    NonPPABuildRequest,
+    SourcePackageRecipe,
+    )
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild,
+    SourcePackageRecipeBuildJob,
+    )
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
-    IJob, JobStatus)
+    IJob,
+    JobStatus,
+    )
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
+    CannotUploadToArchive,
+    InvalidPocketForPPA,
+    )
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
-    TestCaseWithFactory, ws_object)
+    ANONYMOUS,
+    feature_flags,
+    launchpadlib_for,
+    login,
+    login_person,
+    person_logged_in,
+    set_feature_flag,
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -55,22 +85,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSourcePackageRecipe, self).setUp()
+        self.useContext(feature_flags())
+
     def test_implements_interface(self):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
         recipe = self.factory.makeSourcePackageRecipe()
         verifyObject(ISourcePackageRecipe, recipe)
-
-    def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
-        """Make a SourcePackageRecipe from a recipe with arbitrary other data.
-        """
-        registrant = self.factory.makePerson()
-        owner = self.factory.makeTeam(owner=registrant)
-        distroseries = self.factory.makeDistroSeries()
-        name = self.factory.getUniqueString(u'recipe-name')
-        description = self.factory.getUniqueString(u'recipe-description')
-        return getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, builder_recipe=builder_recipe)
 
     def makeRecipeComponents(self, branches=()):
         """Return a dict of values that can be used to make a recipe.
@@ -86,7 +108,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             distroseries = [self.factory.makeDistroSeries()],
             name = self.factory.getUniqueString(u'recipe-name'),
             description = self.factory.getUniqueString(u'recipe-description'),
-            builder_recipe = self.factory.makeRecipe(*branches))
+            recipe = self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -150,17 +172,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_recipe_implements_interface(self):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
-        recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            self.factory.makeRecipe())
+        recipe = self.factory.makeSourcePackageRecipe()
         transaction.commit()
-        self.assertProvides(recipe, ISourcePackageRecipe)
+        with person_logged_in(recipe.owner):
+            self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_base_branch(self):
         # When a recipe is created, we can access its base branch.
         branch = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        sp_recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
         transaction.commit()
         self.assertEquals(branch, sp_recipe.base_branch)
 
@@ -168,9 +188,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # When a recipe is created, we can query it for links to the branch
         # it references.
         branch = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch])
         transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
@@ -179,9 +198,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # returns all of them.
         branch1 = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch1, branch2)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
         transaction.commit()
         self.assertEquals(
             sorted([branch1, branch2]),
@@ -190,65 +208,90 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_random_user_cant_edit(self):
         # An arbitrary user can't set attributes.
         branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
-        branch2 = self.factory.makeAnyBranch()
-        builder_recipe2 = self.factory.makeRecipe(branch2)
+        recipe_1 = self.factory.makeRecipeText(branch1)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            recipe=recipe_1)
         login_person(self.factory.makePerson())
         self.assertRaises(
-            Unauthorized, setattr, sp_recipe, 'builder_recipe',
-            builder_recipe2)
+            Unauthorized, getattr, sp_recipe, 'setRecipeText')
 
     def test_set_recipe_text_resets_branch_references(self):
         # When the recipe_text is replaced, getReferencedBranches returns
         # (only) the branches referenced by the new recipe.
         branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1])
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe2 = self.factory.makeRecipe(branch2)
-        login_person(sp_recipe.owner.teamowner)
-        sp_recipe.builder_recipe = builder_recipe2
+        new_recipe = self.factory.makeRecipeText(branch2)
+        with person_logged_in(sp_recipe.owner):
+            sp_recipe.setRecipeText(new_recipe)
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
     def test_rejects_run_command(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
-        parser = RecipeParser(textwrap.dedent(recipe_text))
-        builder_recipe = parser.parse()
+        recipe_text = textwrap.dedent(recipe_text)
         self.assertRaises(
-            ForbiddenInstruction,
-            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+            ForbiddenInstructionError, self.factory.makeSourcePackageRecipe,
+            recipe=recipe_text)
 
     def test_run_rejected_without_mangling_recipe(self):
-        branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
+        sp_recipe = self.factory.makeSourcePackageRecipe()
+        old_branches = list(sp_recipe.getReferencedBranches())
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
-        parser = RecipeParser(textwrap.dedent(recipe_text))
-        builder_recipe2 = parser.parse()
-        login_person(sp_recipe.owner.teamowner)
-        self.assertRaises(
-            ForbiddenInstruction, setattr, sp_recipe, 'builder_recipe',
-            builder_recipe2)
-        self.assertEquals([branch1], list(sp_recipe.getReferencedBranches()))
+        recipe_text = textwrap.dedent(recipe_text)
+        with person_logged_in(sp_recipe.owner):
+            self.assertRaises(
+                ForbiddenInstructionError, sp_recipe.setRecipeText,
+                recipe_text)
+        self.assertEquals(
+            old_branches, list(sp_recipe.getReferencedBranches()))
 
-    def test_reject_newer_formats(self):
+    def test_nest_part(self):
+        """nest-part instruction can be round-tripped."""
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo bar tag:foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+
+    def test_nest_part_no_target(self):
+        """nest-part instruction with no target-dir can be round-tripped."""
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+
+    def test_accept_format_0_3(self):
+        """Recipe format 0.3 is accepted."""
         builder_recipe = self.factory.makeRecipe()
         builder_recipe.format = 0.3
-        self.assertRaises(
-            TooNewRecipeFormat,
-            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+        self.factory.makeSourcePackageRecipe(recipe=str(builder_recipe))
+
+    def test_reject_newer_formats(self):
+        with recipe_parser_newest_version(145.115):
+            builder_recipe = self.factory.makeRecipe()
+            builder_recipe.format = 145.115
+            self.assertRaises(
+                TooNewRecipeFormat,
+                self.factory.makeSourcePackageRecipe,
+                recipe=str(builder_recipe))
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -311,7 +354,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2405, queue_record.lastscore)
+        self.assertEqual(2505, queue_record.lastscore)
 
     def test_requestBuildManualScore(self):
         """Normal build requests have a score equivalent to binary builds."""
@@ -321,7 +364,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2505, queue_record.lastscore)
+        self.assertEqual(2605, queue_record.lastscore)
 
     def test_requestBuild_relative_build_score(self):
         """Offsets for archives are respected."""
@@ -333,7 +376,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2605, queue_record.lastscore)
+        self.assertEqual(2705, queue_record.lastscore)
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -343,6 +386,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
             PackagePublishingPocket.RELEASE)
+
+    def test_recipes_enabled_config(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        self.assertFalse(recipes_enabled())
+
+    def test_recipes_enabled_flag(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        set_feature_flag(u'code.recipes_enabled', u'on')
+        self.assertTrue(recipes_enabled())
 
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
@@ -355,7 +407,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -382,7 +434,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -460,9 +512,44 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=past_build)
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
-        recipe.destroySelf()
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_destroySelf_preserves_release(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        self.assertIsNot(None, release.source_package_recipe_build)
+
+    def test_destroySelf_retains_build(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        store = Store.of(build)
+        store.flush()
+        build_id = build.id
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertEqual(recipe, build.recipe)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertIs(None, build.recipe)
+        transaction.commit()
 
     def test_findStaleDailyBuilds(self):
         # Stale recipe not built daily.
@@ -477,18 +564,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
+
+        def set_duration(build, minutes):
+            duration = timedelta(minutes=minutes)
+            build = removeSecurityProxy(build)
+            build.date_started = self.factory.getUniqueDate()
+            build.date_finished = build.date_started + duration
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
-        build = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-        build.buildduration = timedelta(minutes=10)
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        set_duration(build, 10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
 
         def addBuild(minutes):
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-            build.buildduration = timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            set_duration(build, minutes)
         addBuild(20)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
@@ -513,7 +604,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             }
 
     def get_recipe(self, recipe_text):
-        builder_recipe = RecipeParser(textwrap.dedent(recipe_text)).parse()
+        recipe_text = textwrap.dedent(recipe_text)
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
@@ -521,7 +612,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, builder_recipe=builder_recipe)
+            name=name, description=description, recipe=recipe_text)
         transaction.commit()
         return recipe.builder_recipe
 
@@ -541,7 +632,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_simplest_recipe(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
@@ -551,7 +642,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge bar %(merged)s
         ''' % self.branch_identities
@@ -566,7 +657,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
@@ -581,7 +672,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest_then_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         merge zam %(merged)s
@@ -601,7 +692,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge_then_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge zam %(merged)s
         nest bar %(nested)s baz
@@ -621,7 +712,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_a_merge_in_to_a_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           merge zam %(merged)s
@@ -644,7 +735,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nested2 = self.factory.makeAnyBranch()
         self.branch_identities['nested2'] = nested2.bzr_identity
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           nest zam %(nested2)s zoo
@@ -664,7 +755,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def tests_builds_recipe_with_revspecs(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s revid:a
         nest bar %(nested)s baz tag:b
         merge zam %(merged)s 2
@@ -695,8 +786,8 @@ class TestWebservice(TestCaseWithFactory):
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
-        # rockstar 21 Jul 2010 - This function does more commits than I'd like,
-        # but it's the result of the fact that the webservice runs in a
+        # rockstar 21 Jul 2010 - This function does more commits than I'd
+        # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
         # commits.
         if user is None:
@@ -709,7 +800,7 @@ class TestWebservice(TestCaseWithFactory):
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         transaction.commit()
         launchpad = launchpadlib_for('test', user,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)

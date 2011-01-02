@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
+from datetime import datetime, timedelta
+import os
 import shutil
+from subprocess import Popen, PIPE, STDOUT
 import sys
 import tempfile
-import os
-from subprocess import Popen, PIPE, STDOUT
-from cStringIO import StringIO
-from unittest import TestCase, TestLoader
-from datetime import datetime, timedelta
+from unittest import TestLoader
 
 from pytz import utc
 from sqlobject import SQLObjectNotFound
@@ -20,41 +20,28 @@ import transaction
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
+    connect,
+    cursor,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.testing import LaunchpadZopelessLayer
-
-
-class MockLogger:
-    def __init__(self, fail_on_error=True, fail_on_warning=True):
-        self.fail_on_error = fail_on_error
-        self.fail_on_warning = fail_on_warning
-
-    def error(self, *args, **kw):
-        if self.fail_on_error:
-            raise RuntimeError("An error was indicated: %r %r" % (args, kw))
-
-    def warning(self, *args, **kw):
-        if self.fail_on_warning:
-            raise RuntimeError("A warning was indicated: %r %r" % (args, kw))
-
-    def debug(self, *args, **kw):
-        #print '%r %r' % (args, kw)
-        pass
-
-    def info(self, *args, **kw):
-        #print '%r %r' % (args, kw)
-        pass
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
+from lp.testing import TestCase
 
 
 class TestLibrarianGarbageCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestLibrarianGarbageCollection, self).setUp()
         self.client = LibrarianClient()
-        librariangc.log = MockLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
         # A value we use in a number of tests. This represents the
         # stay of execution hard coded into the garbage collector.
@@ -104,7 +91,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.con.rollback()
         self.con.close()
         del self.con
-        librariangc.log = None
+        super(TestLibrarianGarbageCollection, self).tearDown()
 
     def _makeDupes(self):
         """Create two duplicate LibraryFileContent entries with one
@@ -493,9 +480,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
     def test_deleteUnwantedFilesIgnoresNoise(self):
         # Directories with invalid names in the storage area are
-        # ignored. They are reported as warnings though, so don't let
-        # warnings fail this test.
-        librariangc.log = MockLogger(fail_on_warning=False)
+        # ignored. They are reported as warnings though.
 
         # Not a hexidecimal number.
         noisedir1_path = os.path.join(config.librarian_server.root, 'zz')
@@ -544,6 +529,12 @@ class TestLibrarianGarbageCollection(TestCase):
             shutil.rmtree(noisedir1_path)
             shutil.rmtree(noisedir2_path)
             shutil.rmtree(noisedir3_path)
+
+        # Can't check the ordering, so we'll just check that one of the
+        # warnings are there.
+        self.assertIn(
+            "WARNING Ignoring invalid directory zz",
+            librariangc.log.getLogBuffer())
 
     def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
@@ -640,6 +631,7 @@ class TestBlobCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestBlobCollection, self).setUp()
         # Add in some sample data
         cur = cursor()
 
@@ -763,12 +755,12 @@ class TestBlobCollection(TestCase):
         self.con = connect(config.librarian_gc.dbuser)
         self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-        librariangc.log = MockLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
     def tearDown(self):
         self.con.rollback()
         self.con.close()
-        librariangc.log = None
+        super(TestBlobCollection, self).tearDown()
 
     def test_DeleteExpiredBlobs(self):
         # Delete expired blobs from the TemporaryBlobStorage table

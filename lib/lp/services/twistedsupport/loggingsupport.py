@@ -22,7 +22,10 @@ import os
 import signal
 import sys
 
-from twisted.python import log, logfile
+from twisted.python import (
+    log,
+    logfile,
+    )
 from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
 from zope.interface import implements

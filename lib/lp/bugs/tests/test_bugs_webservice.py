@@ -8,19 +8,36 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-from simplejson import dumps
-
-from zope.component import getMultiAdapter
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from simplejson import dumps
+from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
+from zope.component import getMultiAdapter
 
-from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bug import IBug
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    USER_EMAIL,
+    )
+from lp.testing._webservice import QueryCollector
 
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
@@ -29,7 +46,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        login('foo.bar@canonical.com')
+        login(ADMIN_EMAIL)
         # Make two bugs, one whose description points to the other, so it will
         # get turned into a HTML link.
         self.bug_one = self.factory.makeBug(title="generic")
@@ -126,12 +143,90 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
             rendered_comment, self.expected_comment_html)
 
 
+class TestBugScaling(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_attachments_query_counts_constant(self):
+        # XXX j.c.sackett 2010-09-02 bug=619017
+        # This test was being thrown off by the reference bug. To get around
+        # the problem, flush and reset are called on the bug storm cache
+        # before each call to the webservice. When lp's storm is updated
+        # to release the committed fix for this bug, please see about
+        # updating this test.
+        login(USER_EMAIL)
+        self.bug = self.factory.makeBug()
+        store = Store.of(self.bug)
+        self.factory.makeBugAttachment(self.bug)
+        self.factory.makeBugAttachment(self.bug)
+        person = self.factory.makePerson()
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = '/bugs/%d/attachments?ws.size=75' % self.bug.id
+        # First request.
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(LessThan(22)))
+        with_2_count = collector.count
+        self.failUnlessEqual(response.status, 200)
+        login(USER_EMAIL)
+        for i in range(5):
+            self.factory.makeBugAttachment(self.bug)
+        logout()
+        # Second request.
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(Equals(with_2_count)))
+
+    def test_messages_query_counts_constant(self):
+        # XXX Robert Collins 2010-09-15 bug=619017
+        # This test may be thrown off by the reference bug. To get around the
+        # problem, flush and reset are called on the bug storm cache before
+        # each call to the webservice. When lp's storm is updated to release
+        # the committed fix for this bug, please see about updating this test.
+        login(USER_EMAIL)
+        bug = self.factory.makeBug()
+        store = Store.of(bug)
+        self.factory.makeBugComment(bug)
+        self.factory.makeBugComment(bug)
+        self.factory.makeBugComment(bug)
+        person = self.factory.makePerson()
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = '/bugs/%d/messages?ws.size=75' % bug.id
+        # First request.
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(LessThan(22)))
+        with_2_count = collector.count
+        self.failUnlessEqual(response.status, 200)
+        login(USER_EMAIL)
+        for i in range(50):
+            self.factory.makeBugComment(bug)
+        self.factory.makeBugAttachment(bug)
+        logout()
+        # Second request.
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(Equals(with_2_count)))
+
+
 class TestBugMessages(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugMessages, self).setUp('test@canonical.com')
+        super(TestBugMessages, self).setUp(USER_EMAIL)
         self.bug = self.factory.makeBug()
         self.message1 = self.factory.makeMessage()
         self.message2 = self.factory.makeMessage(parent=self.message1)
@@ -189,7 +284,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
         try:
-            login('foo.bar@canonical.com')
+            login(ADMIN_EMAIL)
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePerson()
                 bug.subscribe(person, person)

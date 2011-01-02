@@ -16,7 +16,10 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 from lp.code.enums import BranchLifecycleStatus
 

@@ -13,33 +13,62 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch, BranchReferenceFormat
-from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
-from bzrlib.errors import NoSuchFile, NotBranchError
+from bzrlib.branch import (
+    Branch,
+    BranchReferenceFormat,
+    )
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    format_registry,
+    )
+from bzrlib.errors import (
+    NoSuchFile,
+    NotBranchError,
+    )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib import trace
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import join as urljoin, local_path_from_url
-
-from CVS import Repository, tree as CVSTree
+from bzrlib.urlutils import (
+    join as urljoin,
+    local_path_from_url,
+    )
+from CVS import (
+    Repository,
+    tree as CVSTree,
+    )
+from dulwich.repo import Repo as GitRepo
+import pysvn
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import BaseLayer
-
+from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
-from lp.codehosting.codeimport.tarball import create_tarball, extract_tarball
-from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
-    ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
-    ImportWorker, CSCVSImportWorker, get_default_bazaar_branch_store)
+from lp.codehosting.codeimport.tarball import (
+    create_tarball,
+    extract_tarball,
+    )
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, MercurialServer, SubversionServer)
-from lp.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
+    CVSServer,
+    GitServer,
+    MercurialServer,
+    SubversionServer,
+    )
+from lp.codehosting.codeimport.worker import (
+    BazaarBranchStore,
+    BzrSvnImportWorker,
+    CodeImportWorkerExitCode,
+    CSCVSImportWorker,
+    ForeignTreeStore,
+    get_default_bazaar_branch_store,
+    GitImportWorker,
+    HgImportWorker,
+    ImportDataStore,
+    ImportWorker,
+    )
+from lp.codehosting.tests.helpers import create_branch_with_one_revision
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
-
-import pysvn
 
 
 class ForeignBranchPluginLayer(BaseLayer):
@@ -104,7 +133,10 @@ class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
     def setUp(self):
-        super(TestBazaarBranchStore, self).setUp()
+        WorkerTest.setUp(self)
+        # XXX: JonathanLange 2010-12-24 bug=694140: Avoid spurious "No
+        # handlers for logger 'bzr'" messages.
+        trace._bzr_logger = logging.getLogger('bzr')
         self.temp_dir = self.makeTemporaryDirectory()
         self.arbitrary_branch_id = 10
 
@@ -878,7 +910,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
         time.sleep(1)
-        repo = Repository(source_details.cvs_root, QuietFakeLogger())
+        repo = Repository(source_details.cvs_root, BufferLogger())
         repo.get(source_details.cvs_module, 'working_dir')
         wt = CVSTree('working_dir')
         self.build_tree_contents([('working_dir/README', 'New content')])
@@ -952,7 +984,7 @@ class PullingImportWorkerTests:
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
-        BranchReferenceFormat().initialize(a_bzrdir, branch)
+        BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
         return a_bzrdir.root_transport.base
 
     def test_reject_branch_reference(self):
@@ -1027,15 +1059,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        from bzrlib.plugins.git.tests import run_git
-        wd = os.getcwd()
-        os.chdir(source_details.url)
-        try:
-            run_git('config', 'user.name', 'Joe Random Hacker')
-            run_git('commit', '-m', 'dsadas')
-            self.foreign_commit_count += 1
-        finally:
-            os.chdir(wd)
+        repo = GitRepo(source_details.url)
+        repo.do_commit(message=self.factory.getUniqueString(),
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.

@@ -26,17 +26,19 @@ category_report() {
     echo Generating report from $from until $until into $dir `date`
 
     ./page-performance-report.py -v --from=$from --until=$until \
-        --directory=${dir} $logs
+        --top-urls=200 --directory=${dir} $logs
 
     ln -sf ${dir}/categories.html ${root}/latest-${type}-categories.html
     ln -sf ${dir}/pageids.html    ${root}/latest-${type}-pageids.html
     ln -sf ${dir}/combined.html   ${root}/latest-${type}-combined.html
+    ln -sf ${dir}/top200.html   ${root}/latest-${type}-top200.html
+    ln -sf ${dir}/timeout-candidates.html   \
+        ${root}/latest-${type}-timeout-candidates.html
 
     return 0
     }
 
 report() {
-    category_report $* edge /srv/launchpad.net-logs/edge
     category_report $* lpnet /srv/launchpad.net-logs/production
     return 0
 }
@@ -57,8 +59,4 @@ if [ `date +%d` = '01' ]; then
     report 32 monthly `date -d 'last month' $fmt` $now
 fi
 
-# One off reports to populate history.
-## report 40 monthly `date -d '1 june 2010' $fmt` `date -d '1 july 2010' $fmt`
-## report 23 weekly `date -d '19 june 2010' $fmt` `date -d '26 june 2010' $fmt`
-## report 16 weekly `date -d '26 june 2010' $fmt` `date -d '3 july 2010' $fmt`
 

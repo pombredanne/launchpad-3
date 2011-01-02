@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -17,23 +17,23 @@
   <!-- LaunchpadStatisticSet -->
   <securedutility
     class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatisticSet"
-    provides="canonical.launchpad.interfaces.ILaunchpadStatisticSet">
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
+    provides="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet">
+    <allow interface="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet" />
   </securedutility>
 
   <browser:url
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     path_expression="string:+statistics"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     name="+index"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     facet="overview"
     class="canonical.launchpad.browser.launchpadstatistic.LaunchpadStatisticSet"
     permission="launchpad.Admin">

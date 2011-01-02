@@ -7,48 +7,76 @@ __metaclass__ = type
 
 from difflib import unified_diff
 from textwrap import dedent
-import transaction
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
 from storm.store import Store
+import transaction
 from zope.component import getUtility
-from zope.interface import directlyProvides, directlyProvidedBy
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database import MessageSet
+from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.mail.handlers import mail_handlers
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
-    get_current_principal, setupInteraction)
+    get_current_principal,
+    setupInteraction,
+    )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.testing import LaunchpadZopelessLayer, ZopelessAppServerLayer
-
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
-from lp.code.enums import BranchVisibilityRule
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
-    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    AddReviewerEmailCommand,
+    CodeEmailCommands,
+    CodeHandler,
     CodeReviewEmailCommandExecutionContext,
     InvalidBranchMergeProposalAddress,
-    MissingMergeDirective, NonLaunchpadTarget,
-    UpdateStatusEmailCommand, VoteEmailCommand)
+    MissingMergeDirective,
+    NonLaunchpadTarget,
+    UpdateStatusEmailCommand,
+    VoteEmailCommand,
+    )
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    CreateMergeProposalJob,
+    MergeProposalNeedsReviewEmailJob,
+    )
 from lp.code.model.diff import PreviewDiff
+from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
-from lp.testing import login, login_person, TestCase, TestCaseWithFactory
+from lp.services.mail.handlers import mail_handlers
+from lp.services.osutils import override_environ
+from lp.testing import (
+    login,
+    login_person,
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -164,7 +192,7 @@ class TestCodeHandler(TestCaseWithFactory):
             target_branch=target_branch)
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
-        self.code_handler.process( mail, email_addr, None)
+        self.code_handler.process(mail, email_addr, None)
         self.assertIn(
             '<my-id>', [comment.message.rfc822msgid
                         for comment in bmp.all_comments])
@@ -315,9 +343,8 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
-        bmp = self.factory.makeBranchMergeProposal()
         sender = self.factory.makePerson()
-        bmp.nominateReviewer(sender, bmp.registrant)
+        bmp = self.factory.makeBranchMergeProposal(reviewer=sender)
         email_addr = bmp.address
         [vote] = list(bmp.votes)
         self.assertEqual(sender, vote.reviewer)
@@ -538,7 +565,7 @@ class TestCodeHandler(TestCaseWithFactory):
         messages = pop_notifications()
         self.assertEqual(0, len(messages))
         # Only a job created.
-        runner = JobRunner.fromReady(MergeProposalCreatedJob)
+        runner = JobRunner.fromReady(MergeProposalNeedsReviewEmailJob)
         self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
 
@@ -664,7 +691,8 @@ class TestCodeHandler(TestCaseWithFactory):
             None, None)
         # To record the diff in the librarian.
         transaction.commit()
-        bmp = self.factory.makeBranchMergeProposal(preview_diff=preview_diff)
+        bmp = make_merge_proposal_without_reviewers(
+            self.factory, preview_diff=preview_diff)
         eric = self.factory.makePerson(name="eric", email="eric@example.com")
         mail = self.factory.makeSignedMessage(body=' reviewer eric')
         email_addr = bmp.address
@@ -736,8 +764,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification.get_payload(),
             'Your email did not contain a merge directive. Please resend '
-            'your email with\nthe merge directive attached.\n'
-            )
+            'your email with\nthe merge directive attached.\n')
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -825,8 +852,7 @@ class TestCodeHandler(TestCaseWithFactory):
             'The target branch at %s is not known to Launchpad.  It\'s\n'
             'possible that your submit branch is not set correctly, or that '
             'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
-            % ('http://www.example.com')
-            )
+            % ('http://www.example.com'))
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -848,8 +874,7 @@ class TestCodeHandler(TestCaseWithFactory):
             notification.get_payload(decode=True),
             'Your message did not contain a subject.  Launchpad code '
             'reviews require all\nemails to contain subject lines.  '
-            'Please re-send your email including the\nsubject line.\n\n'
-            )
+            'Please re-send your email including the\nsubject line.\n\n')
         self.assertEqual(notification['to'],
             mail['from'])
         self.assertEqual(0, bmp.all_comments.count())
@@ -888,12 +913,16 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         db_target_branch, target_tree = self.create_branch_and_tree(
             tree_location='.', format=format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
-        target_tree.commit('rev1')
-        # Make sure that the created branch has been mirrored.
-        removeSecurityProxy(db_target_branch).branchChanged(
-            '', 'rev1', None, None, None)
-        source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
-        source_tree.commit('rev2')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            target_tree.commit('rev1')
+            # Make sure that the created branch has been mirrored.
+            removeSecurityProxy(db_target_branch).branchChanged(
+                '', 'rev1', None, None, None)
+            sprout_bzrdir = target_tree.bzrdir.sprout('source')
+            source_tree = sprout_bzrdir.open_workingtree()
+            source_tree.commit('rev2')
         message = self.factory.makeBundleMergeDirectiveEmail(
             source_tree.branch, db_target_branch)
         return db_target_branch, source_tree.branch, message
@@ -994,7 +1023,10 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         target_tree = WorkingTree.open('.')
-        target_tree.commit('rev2b')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            target_tree.commit('rev2b')
         bmp = self._processMergeDirective(message)
         lp_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(source.last_revision(), lp_branch.last_revision())
@@ -1005,20 +1037,24 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         db_target_branch, target_tree = self.create_branch_and_tree(
             'target', format=target_format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
-        revid = target_tree.commit('rev1')
-        removeSecurityProxy(db_target_branch).branchChanged(
-            '', revid, None, None, None)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revid = target_tree.commit('rev1')
+            removeSecurityProxy(db_target_branch).branchChanged(
+                '', revid, None, None, None)
 
-        db_source_branch, source_tree = self.create_branch_and_tree(
-            'lpsource', db_target_branch.product, format=source_format)
-        # The branch is not scheduled to be mirrorred.
-        self.assertIs(db_source_branch.next_mirror_time, None)
-        source_tree.pull(target_tree.branch)
-        source_tree.commit('rev2', rev_id='rev2')
-        # bundle_tree is effectively behaving like a local copy of
-        # db_source_branch, and is used to create the merge directive.
-        bundle_tree = source_tree.bzrdir.sprout('source').open_workingtree()
-        bundle_tree.commit('rev3', rev_id='rev3')
+            db_source_branch, source_tree = self.create_branch_and_tree(
+                'lpsource', db_target_branch.product, format=source_format)
+            # The branch is not scheduled to be mirrorred.
+            self.assertIs(db_source_branch.next_mirror_time, None)
+            source_tree.pull(target_tree.branch)
+            source_tree.commit('rev2', rev_id='rev2')
+            # bundle_tree is effectively behaving like a local copy of
+            # db_source_branch, and is used to create the merge directive.
+            sprout_bzrdir = source_tree.bzrdir.sprout('source')
+            bundle_tree = sprout_bzrdir.open_workingtree()
+            bundle_tree.commit('rev3', rev_id='rev3')
         bundle_tree.branch.set_public_branch(db_source_branch.bzr_identity)
         message = self.factory.makeBundleMergeDirectiveEmail(
             bundle_tree.branch, db_target_branch,
@@ -1117,6 +1153,7 @@ class TestVoteEmailCommand(TestCase):
 
     def setUp(self):
         super(TestVoteEmailCommand, self).setUp()
+
         class FakeExecutionContext:
             vote = None
             vote_tags = None
@@ -1214,6 +1251,7 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(
             self.merge_proposal, self.merge_proposal.target_branch.owner)
+        self.jrandom = self.factory.makePerson()
         transaction.commit()
         self.layer.switchDbUser(config.processmail.dbuser)
 
@@ -1299,11 +1337,24 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
             str(error))
 
     def test_not_a_reviewer(self):
-        # If the user is not a reviewer, they can not update the status.
+        # If the user is not a reviewer, they cannot update the status.
+        self.context.user = self.jrandom
+        command = UpdateStatusEmailCommand('status', ['approve'])
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
+        target = self.merge_proposal.target_branch.bzr_identity
+        self.assertEqual(
+            "You are not a reviewer for the branch %s.\n" % target,
+            str(error))
+
+    def test_registrant_not_a_reviewer(self):
+        # If the registrant is not a reviewer, they cannot update the status.
         self.context.user = self.context.merge_proposal.registrant
         command = UpdateStatusEmailCommand('status', ['approve'])
-        error = self.assertRaises(
-            EmailProcessingError, command.execute, self.context)
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
         target = self.merge_proposal.target_branch.bzr_identity
         self.assertEqual(
             "You are not a reviewer for the branch %s.\n" % target,
@@ -1319,7 +1370,8 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
         super(TestAddReviewerEmailCommand, self).setUp(
             user='test@canonical.com')
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal = (
+            make_merge_proposal_without_reviewers(self.factory))
         # Default the user to be the target branch owner, so they are
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(
@@ -1372,8 +1424,3 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
             "There's no such person with the specified name or email: "
             "unknown@example.com\n",
             str(error))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

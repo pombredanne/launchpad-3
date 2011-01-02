@@ -30,46 +30,77 @@ __all__ = [
     'ProjectView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.app.errors import NotFoundError
-from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.product import (
-    ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
-from lp.registry.browser.objectreassignment import (
-    ObjectReassignmentView)
-from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission, stepthrough,
-    structured)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    QuestionCollectionAnswersMenu,
+    QuestionTargetFacetMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.registry.browser import BaseRdfView
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.product import (
+    ProductAddView,
+    ProjectAddStepOne,
+    ProjectAddStepTwo,
+    )
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    IProjectGroupSet,
+    )
+from lp.services.fields import (
+    PillarAliases,
+    PublicPersonChoice,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class ProjectNavigation(Navigation,
@@ -115,7 +146,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectGroupSet
     links = ['register', 'listall']
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
@@ -160,7 +191,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
 class ProjectAdminMenuMixin:
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
@@ -225,7 +256,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download-icon')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
@@ -319,15 +350,14 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
     implements(IProjectGroupEditMenu)
-
     label = "Change project group details"
+    page_title = label
     schema = IProjectGroup
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description',
+        'displayname', 'title', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
-
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -346,7 +376,7 @@ class ProjectEditView(LaunchpadEditFormView):
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
-    field_names = ['name', 'owner', 'active', 'reviewed']
+    default_field_names = ['name', 'owner', 'active', 'reviewed']
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -355,9 +385,18 @@ class ProjectReviewView(ProjectEditView):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('owner')
+        moderator = check_permission('launchpad.Moderate', self.context)
+        if not moderator:
+            self.field_names.remove('name')
         super(ProjectReviewView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProjectGroup.aliases."""
@@ -457,7 +496,7 @@ class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
         'view_all_project_groups',
         ]
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register_project_group(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
@@ -477,17 +516,9 @@ class ProjectSetView(LaunchpadView):
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
         self.form = self.request.form_ng
-        self.soyuz = self.form.getOne('soyuz', None)
-        self.rosetta = self.form.getOne('rosetta', None)
-        self.malone = self.form.getOne('malone', None)
-        self.bazaar = self.form.getOne('bazaar', None)
         self.search_string = self.form.getOne('text', None)
         self.search_requested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if (self.search_string is not None):
             self.search_requested = True
         self.results = None
 
@@ -499,10 +530,6 @@ class ProjectSetView(LaunchpadView):
         """
         self.results = self.context.search(
             text=self.search_string,
-            bazaar=self.bazaar,
-            malone=self.malone,
-            rosetta=self.rosetta,
-            soyuz=self.soyuz,
             search_products=True)
         return self.results
 
@@ -558,31 +585,15 @@ class ProjectBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class ProjectRdfView(object):
+class ProjectRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/project-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition',
-            'attachment; filename=%s-project.rdf' % self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-project' % self.context.name
 
 
 class ProjectAddQuestionView(QuestionAddView):

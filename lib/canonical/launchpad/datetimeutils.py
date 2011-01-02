@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import date, timedelta
+from datetime import (
+    date,
+    timedelta,
+    )
 
 
 def make_mondays_between(start, end):

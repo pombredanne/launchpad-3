@@ -18,15 +18,7 @@ import _pythonpath
 
 import apt_pkg
 import commands
-try:
-    from debian.deb822 import Dsc
-except ImportError:
-    # In older versions of python-debian the main package was named
-    # debian_bundle
-    # XXX: Remove this when an up to date version of python-debian lands in
-    # the PPA or Ubuntu. Maverick will be the first release that has an
-    # up to date version of python-debian.
-    from debian_bundle.deb822 import Dsc
+from debian.deb822 import Dsc
 
 import errno
 import optparse
@@ -36,7 +28,6 @@ import shutil
 import stat
 import string
 import tempfile
-import time
 import urllib
 
 import dak_utils
@@ -45,15 +36,30 @@ from _syncorigins import origins
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
-from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus)
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.scripts.ftpmaster import (
+    generate_changes,
+    SyncSource,
+    SyncSourceError,
+    )
 
 
 reject_message = ""
@@ -80,19 +86,20 @@ def md5sum_file(filename):
     return md5sum
 
 
-def reject (str, prefix="Rejected: "):
+def reject(str, prefix="Rejected: "):
     global reject_message
     if str:
         reject_message += prefix + str + "\n"
 
+
 # Following two functions are borrowed and (modified) from apt-listchanges
 def urgency_to_numeric(u):
     urgency_map = {
-        'low' : 1,
-        'medium' : 2,
-        'high' : 3,
-        'emergency' : 4,
-        'critical' : 4,
+        'low': 1,
+        'medium': 2,
+        'high': 3,
+        'emergency': 4,
+        'critical': 4,
         }
     return urgency_map.get(u.lower(), 1)
 
@@ -136,53 +143,6 @@ def sign_changes(changes, dsc):
                         (output_filename, result))
 
     os.unlink(temp_filename)
-
-
-def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                     lp_closes, section, priority, description,
-                     files_from_librarian, requested_by, origin):
-    """Generate a .changes as a string"""
-
-    # XXX cprov 2007-07-03:
-    # Changed-By can be extracted from most-recent changelog footer,
-    # but do we care?
-    # XXX James Troup 2006-01-30:
-    # 'Closes' but could be gotten from changelog, but we don't use them?
-
-    changes = ""
-    changes += "Origin: %s/%s\n" % (origin["name"], origin["suite"])
-    changes += "Format: 1.7\n"
-    changes += "Date: %s\n" % (time.strftime("%a,  %d %b %Y %H:%M:%S %z"))
-    changes += "Source: %s\n" % (dsc["source"])
-    changes += "Binary: %s\n" % (dsc["binary"])
-    changes += "Architecture: source\n"
-    changes += "Version: %s\n"% (dsc["version"])
-    # XXX: James Troup 2006-01-30:
-    # 'suite' forced to string to avoid unicode-vs-str grudge match
-    changes += "Distribution: %s\n" % (str(suite))
-    changes += "Urgency: %s\n" % (urgency)
-    changes += "Maintainer: %s\n" % (dsc["maintainer"])
-    changes += "Changed-By: %s\n" % (requested_by)
-    if description:
-        changes += "Description: \n"
-        changes += " %s\n" % (description)
-    if closes:
-        changes += "Closes: %s\n" % (" ".join(closes))
-    if lp_closes:
-        changes += "Launchpad-Bugs-Fixed: %s\n" % (" ".join(lp_closes))
-    changes += "Changes: \n"
-    changes += changelog
-    changes += "Files: \n"
-    for filename in dsc_files:
-        if filename in files_from_librarian:
-            continue
-        changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
-                                          dsc_files[filename]["size"],
-                                          section, priority, filename)
-    # Strip trailing newline
-    changes = changes[:-1]
-
-    return changes
 
 
 def parse_changelog(changelog_filename, previous_version):
@@ -291,22 +251,20 @@ def parse_control(control_filename):
 
 def extract_source(dsc_filename):
     # Create and move into a temporary directory
-    tmpdir = tempfile.mktemp()
-    os.mkdir(tmpdir)
+    tmpdir = tempfile.mkdtemp()
     old_cwd = os.getcwd()
-    os.chdir(tmpdir)
 
     # Extract the source package
-    cmd = "dpkg-source -sn -x %s" % (dsc_filename)
-    (result, output) = commands.getstatusoutput(cmd)
-    if (result != 0):
-        print " * command was '%s'" % (cmd)
-        print dak_utils.prefix_multi_line_string(
-            output, " [dpkg-source output:] "), ""
+    try:
+        extract_dpkg_source(dsc_filename, tmpdir)
+    except DpkgSourceError, e:
+        print " * command was '%s'" % (e.command)
+        print e.output
         dak_utils.fubar(
             "'dpkg-source -x' failed for %s [return code: %s]." %
-            (dsc_filename, result))
+            (dsc_filename, e.result))
 
+    os.chdir(tmpdir)
     return (old_cwd, tmpdir)
 
 
@@ -342,12 +300,12 @@ def cleanup_source(tmpdir, old_cwd, dsc):
 
 def check_dsc(dsc, current_sources, current_binaries):
     source = dsc["source"]
-    if current_sources.has_key(source):
+    if source in current_sources:
         source_component = current_sources[source][1]
     else:
         source_component = "universe"
     for binary in map(string.strip, dsc["binary"].split(',')):
-        if current_binaries.has_key(binary):
+        if binary in current_binaries:
             (current_version, current_component) = current_binaries[binary]
 
             # Check that a non-main source package is not trying to
@@ -365,76 +323,13 @@ def check_dsc(dsc, current_sources, current_binaries):
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
             ubuntu_bin = current_binaries[binary][0].find("ubuntu")
-            if not Options.force and  ubuntu_bin != -1:
+            if not Options.force and ubuntu_bin != -1:
                 dak_utils.fubar(
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
             print "I: %s [%s] -> %s_%s [%s]." % (
                 source, source_component, binary, current_version,
                 current_component)
-
-def split_gpg_and_payload(sequence):
-    """Return a (gpg_pre, payload, gpg_post) tuple
-
-    Each element of the returned tuple is a list of lines (with trailing
-    whitespace stripped).
-    """
-    # XXX JRV 20100211: Copied from deb822.py in python-debian. When 
-    # Launchpad switches to Lucid this copy should be removed.
-    # bug=520508
-
-    gpg_pre_lines = []
-    lines = []
-    gpg_post_lines = []
-    state = 'SAFE'
-    gpgre = re.compile(r'^-----(?P<action>BEGIN|END) PGP (?P<what>[^-]+)-----$')
-    blank_line = re.compile('^$')
-    first_line = True
-
-    for line in sequence:
-        line = line.strip('\r\n')
-
-        # skip initial blank lines, if any
-        if first_line:
-            if blank_line.match(line):
-                continue
-            else:
-                first_line = False
-
-        m = gpgre.match(line)
-
-        if not m:
-            if state == 'SAFE':
-                if not blank_line.match(line):
-                    lines.append(line)
-                else:
-                    if not gpg_pre_lines:
-                        # There's no gpg signature, so we should stop at
-                        # this blank line
-                        break
-            elif state == 'SIGNED MESSAGE':
-                if blank_line.match(line):
-                    state = 'SAFE'
-                else:
-                    gpg_pre_lines.append(line)
-            elif state == 'SIGNATURE':
-                gpg_post_lines.append(line)
-        else:
-            if m.group('action') == 'BEGIN':
-                state = m.group('what')
-            elif m.group('action') == 'END':
-                gpg_post_lines.append(line)
-                break
-            if not blank_line.match(line):
-                if not lines:
-                    gpg_pre_lines.append(line)
-                else:
-                    gpg_post_lines.append(line)
-
-    if len(lines):
-        return (gpg_pre_lines, lines, gpg_post_lines)
-    else:
-        raise EOFError('only blank lines found in input')
 
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
@@ -445,17 +340,15 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     if signing_rules.startswith("must be signed"):
         dsc_file.seek(0)
-        # XXX JRV 20100211: When Launchpad starts depending on Lucid,
-        # use dsc.split_gpg_and_payload() instead. 
-        # bug=520508
-        (gpg_pre, payload, gpg_post) = split_gpg_and_payload(dsc_file)
+        (gpg_pre, payload, gpg_post) = Dsc.split_gpg_and_payload(dsc_file)
         if gpg_pre == [] and gpg_post == []:
-            dak_utils.fubar("signature required for %s but not present" 
+            dak_utils.fubar("signature required for %s but not present"
                 % dsc_filename)
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
                 gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
-                dak_utils.fubar("signature for %s invalid %r %r" % (dsc_filename, gpg_pre, gpg_post))
+                dak_utils.fubar("signature for %s invalid %r %r" % (
+                    dsc_filename, gpg_pre, gpg_post))
 
     dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
@@ -499,9 +392,10 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
 
     filehandle = open(output_filename, 'w')
-    # XXX cprov 2007-07-03: The Soyuz .changes parser requires the extra '\n'
-    filehandle.write(changes+'\n')
-    filehandle.close()
+    try:
+        changes.dump(filehandle, encoding="utf-8")
+    finally:
+        filehandle.close()
 
 
 def read_current_source(distro_series, valid_component=None, arguments=None):
@@ -518,12 +412,11 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
             status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE
-            )
+            pocket=PackagePublishingPocket.RELEASE)
     else:
         spp = []
         for package in arguments:
-            spp.extend(distro_series.getPublishedReleases(package))
+            spp.extend(distro_series.getPublishedSources(package))
 
     for sp in spp:
         component = sp.component.name
@@ -537,7 +430,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
                 pkg, version, component))
             continue
 
-        if not S.has_key(pkg):
+        if pkg not in S:
             S[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
@@ -573,7 +466,7 @@ def read_current_binaries(distro_series):
     #             version = bp.binarypackagerelease.version
     #             pkg = bp.binarypackagerelease.binarypackagename.name
     #
-    #             if not B.has_key(pkg):
+    #             if pkg not in B:
     #                 B[pkg] = [version, component]
     #             else:
     #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -601,7 +494,7 @@ def read_current_binaries(distro_series):
 
     print "Getting binaries for %s..." % (distro_series.name)
     for (pkg, version, component) in cur.fetchall():
-        if not B.has_key(pkg):
+        if pkg not in B:
             B[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -626,7 +519,7 @@ def read_Sources(filename, origin):
         pkg = Sources.Section.Find("Package")
         version = Sources.Section.Find("Version")
 
-        if S.has_key(pkg) and apt_pkg.VersionCompare(
+        if pkg in S and apt_pkg.VersionCompare(
             S[pkg]["version"], version) > 0:
             continue
 
@@ -652,7 +545,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
-    if not Sources.has_key(pkg):
+    if pkg not in Sources:
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
@@ -665,7 +558,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         dak_utils.fubar("Fetching files failed: %s" % (str(e),))
 
     if dsc_filename is None:
-        dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
+        dak_utils.fubar(
+            "No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
                origin["dsc"], files_from_librarian, requested_by, origin,
@@ -691,7 +585,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         stat_count += 1
         dest_version = Suite.get(pkg, [None, ""])[0]
 
-        if not Sources.has_key(pkg):
+        if pkg not in Sources:
             if not Options.all:
                 dak_utils.fubar("%s: not found" % (pkg))
             else:
@@ -699,7 +593,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                 stat_us += 1
                 continue
 
-        if Blacklisted.has_key(pkg):
+        if pkg in Blacklisted:
             print "[BLACKLISTED] %s_%s" % (pkg, dest_version)
             stat_blacklisted += 1
             continue

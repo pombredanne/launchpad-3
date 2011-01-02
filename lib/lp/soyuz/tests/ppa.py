@@ -9,26 +9,31 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.testing.sampledata import (
-    HOARY_DISTROSERIES_NAME, I386_ARCHITECTURE_NAME, MAIN_COMPONENT_NAME,
-    UBUNTU_DEVELOPER_ADMIN_NAME, UBUNTU_UPLOAD_TEAM_NAME,
-    WARTY_ONLY_SOURCEPACKAGENAME, WARTY_ONLY_SOURCEPACKAGEVERSION)
+    HOARY_DISTROSERIES_NAME,
+    I386_ARCHITECTURE_NAME,
+    MAIN_COMPONENT_NAME,
+    UBUNTU_DEVELOPER_ADMIN_NAME,
+    UBUNTU_UPLOAD_TEAM_NAME,
+    WARTY_ONLY_SOURCEPACKAGENAME,
+    WARTY_ONLY_SOURCEPACKAGEVERSION,
+    )
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None,

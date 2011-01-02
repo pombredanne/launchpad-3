@@ -3,14 +3,23 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.common.sequence import IFiniteSequence
-from zope.schema import Datetime, Object
+from zope.schema import (
+    Datetime,
+    Object,
+    )
 
 from canonical.launchpad import _
-from lp.services.worlddata.interfaces.language import ILanguage
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
+
 
 __metaclass__ = type
 

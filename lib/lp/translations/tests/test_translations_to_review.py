@@ -5,20 +5,23 @@
 
 __metaclass__ = type
 
-from datetime import timedelta, datetime
-from pytz import timezone
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
+from pytz import timezone
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
+from lp.services.worlddata.model.language import LanguageSet
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.testing import TestCaseWithFactory
-from lp.services.worlddata.model.language import LanguageSet
 
 
 UTC = timezone('UTC')
@@ -26,6 +29,7 @@ UTC = timezone('UTC')
 
 class ReviewTestMixin:
     """Base for testing which translations a reviewer can review."""
+
     def setUpMixin(self, for_product=True):
         """Set up test environment.
 
@@ -66,7 +70,7 @@ class ReviewTestMixin:
         transaction.commit()
 
         self.supercontext.translationgroup = self.translationgroup
-        self.supercontext.official_rosetta = True
+        self.supercontext.translations_usage = ServiceUsage.LAUNCHPAD
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.productseries, distroseries=self.distroseries,
@@ -109,6 +113,7 @@ class ReviewableTranslationFilesTest:
 
     Can be applied to product or distribution setups.
     """
+
     def test_OneFileToReview(self):
         # In the base case, the method finds one POFile for self.person
         # to review.
@@ -129,7 +134,7 @@ class ReviewableTranslationFilesTest:
     def test_getReviewableTranslationFiles_not_translating_in_launchpad(self):
         # We don't see products/distros that don't use Launchpad for
         # translations.
-        self.supercontext.official_rosetta = False
+        self.supercontext.translations_usage = ServiceUsage.NOT_APPLICABLE
         self.assertEqual(self._getReviewables(), [])
 
     def test_getReviewableTranslationFiles_non_reviewer(self):
@@ -198,7 +203,7 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         other_pofile = removeSecurityProxy(other_pofile)
 
         product = other_pofile.potemplate.productseries.product
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
 
         if with_unreviewed:
             other_pofile.unreviewed_count = 1

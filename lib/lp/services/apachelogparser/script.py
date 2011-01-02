@@ -8,9 +8,14 @@ import os
 
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.lazr.utils import safe_hasattr
 from lp.app.errors import NotFoundError
 from lp.services.apachelogparser.base import (
-    create_or_update_parsedlog_entry, get_files_to_parse, parse_file)
+    create_or_update_parsedlog_entry,
+    get_files_to_parse,
+    parse_file,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.worlddata.interfaces.country import ICountrySet
 
@@ -62,8 +67,15 @@ class ParseApacheLogs(LaunchpadCronScript):
 
         self.setUpUtilities()
         country_set = getUtility(ICountrySet)
-        for fd, position in files_to_parse.items():
-            downloads, parsed_bytes = parse_file(
+        parsed_lines = 0
+        max_parsed_lines = getattr(
+            config.launchpad, 'logparser_max_parsed_lines', None)
+        max_is_set = max_parsed_lines is not None
+        for fd, position in files_to_parse:
+            # If we've used up our budget of lines to process, stop.
+            if (max_is_set and parsed_lines >= max_parsed_lines):
+                break
+            downloads, parsed_bytes, parsed_lines = parse_file(
                 fd, position, self.logger, self.getDownloadKey)
             # Use a while loop here because we want to pop items from the dict
             # in order to free some memory as we go along. This is a good
@@ -91,6 +103,10 @@ class ParseApacheLogs(LaunchpadCronScript):
             fd.close()
             create_or_update_parsedlog_entry(first_line, parsed_bytes)
             self.txn.commit()
-            self.logger.info('Finished parsing %s' % fd)
+            if safe_hasattr(fd, 'name'):
+                name = fd.name
+            else:
+                name = fd
+            self.logger.info('Finished parsing %s' % name)
 
         self.logger.info('Done parsing apache log files')

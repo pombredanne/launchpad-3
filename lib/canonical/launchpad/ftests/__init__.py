@@ -7,14 +7,28 @@ import os
 
 import canonical.launchpad
 from canonical.launchpad.ftests._launchpadformharness import (
-    LaunchpadFormHarness)
+    LaunchpadFormHarness,
+    )
 from canonical.launchpad.ftests._sqlobject import (
-    print_date_attribute, sync, syncUpdate, set_so_attr)
+    print_date_attribute,
+    set_so_attr,
+    sync,
+    syncUpdate,
+    )
 from canonical.launchpad.ftests.keys_for_tests import (
-    import_public_test_keys, import_public_key, import_secret_test_key,
-    decrypt_content)
+    decrypt_content,
+    import_public_key,
+    import_public_test_keys,
+    import_secret_test_key,
+    )
 from lp.testing import (
-    login, login_person, logout, ANONYMOUS, is_logged_in, test_tales)
+    ANONYMOUS,
+    is_logged_in,
+    login,
+    login_person,
+    logout,
+    test_tales,
+    )
 
 
 def set_branding(browser, icon=True, logo=True, mugshot=True):

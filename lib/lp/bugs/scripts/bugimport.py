@@ -22,6 +22,7 @@ import logging
 import os
 import time
 
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -407,7 +408,9 @@ class BugImporter:
         if date is None:
             raise BugXMLSyntaxError('No date for comment %r' % title)
         text = get_value(commentnode, 'text')
-        if text is None or text == '':
+        # If there is no comment text and no attachment, use a place-holder
+        if ((text is None or text == '') and
+            get_element(commentnode, 'attachment') is None):
             text = '<empty comment>'
         return getUtility(IMessageSet).fromText(title, text, sender, date)
 

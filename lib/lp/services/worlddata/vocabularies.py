@@ -8,12 +8,10 @@ __all__ = [
 __metaclass__ = type
 
 import pytz
-
 from zope.interface import alsoProvides
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
-
 
 # create a sorted list of the common time zone names, with UTC at the start
 _values = sorted(pytz.common_timezones)

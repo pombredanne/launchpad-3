@@ -6,40 +6,44 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
 
+import transaction
 import windmill
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
 from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person)
+    login_person as windmill_login_person,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase, login_person
+from lp.testing import (
+    login_person,
+    WindmillTestCase,
+    )
 
 
 POPUP_DIFF = (
     u'//dd[contains(@class, "popup-diff")]'
     '/a[contains(@class, "js-action")]')
 VISIBLE_DIFF = (
-    u'//div[contains(@class, "yui-diff-overlay ") and '
-     'not(contains(@class, "yui-diff-overlay-hidden"))]')
+    u'//div[contains(@class, "yui3-diff-overlay ") and '
+     'not(contains(@class, "yui3-diff-overlay-hidden"))]')
 CLOSE_VISIBLE_DIFF = (
-    u'//div[contains(@class, "yui-diff-overlay ")]'
+    u'//div[contains(@class, "yui3-diff-overlay ")]'
      '//a[@class="close-button"]')
 JS_ONLOAD_EXECUTE_DELAY = 2000
 ADD_BRANCH_MENU = u'//a[contains(@class, "menu-link-addbranch")]'
 VISIBLE_PICKER_OVERLAY = (
-    u'//div[contains(@class, "yui-picker ") and '
-     'not(contains(@class, "yui-picker-hidden"))]')
+    u'//div[contains(@class, "yui3-picker ") and '
+     'not(contains(@class, "yui3-picker-hidden"))]')
 BRANCH_SEARCH_FIELD = VISIBLE_PICKER_OVERLAY + u'//input[@name="search"]'
 BRANCH_SEARCH_BUTTON = (
-    VISIBLE_PICKER_OVERLAY + u'//div[@class="yui-picker-search-box"]//button')
+    VISIBLE_PICKER_OVERLAY + u'//div[@class="yui3-picker-search-box"]//button')
 BRANCH_SEARCCH_RESULT = (
     VISIBLE_PICKER_OVERLAY +
-    u'//ul[@class="yui-picker-results"]//span[@class="yui-picker-result-title"]')
+    u'//ul[@class="yui3-picker-results"]//span[@class="yui3-picker-result-title"]')
 
 
 #class TestPopupOnBranchPage(WindmillTestCase):
@@ -130,6 +134,7 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
 
         client.click(xpath=ADD_BRANCH_MENU)
+        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
         client.waits.forElement(xpath=BRANCH_SEARCH_FIELD)
         client.type(text='~fred/fooix/proposed', xpath=BRANCH_SEARCH_FIELD)
         client.click(xpath=BRANCH_SEARCH_BUTTON)

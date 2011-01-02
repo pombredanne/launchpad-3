@@ -10,14 +10,21 @@ __all__ = [
     ]
 
 from datetime import timedelta
+
 import pytz
 
 from canonical.launchpad import _
-from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url, custom_widget)
+    canonical_url,
+    )
 from canonical.widgets.date import DateTimeWidget
 from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):

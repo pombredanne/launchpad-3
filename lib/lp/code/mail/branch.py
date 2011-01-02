@@ -5,13 +5,16 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
@@ -190,7 +193,7 @@ class BranchMailer(BaseMailer):
                     RecipientReason.forBranchSubscriber(
                     subscription, recipient, rationale)
         from_address = format_address(
-            user.displayname, user.preferredemail.email)
+            user.displayname, removeSecurityProxy(user).preferredemail.email)
         return cls(
             '[Branch %(unique_name)s]', 'branch-modified.txt',
             actual_recipients, from_address, delta=delta,
@@ -302,4 +305,5 @@ class BranchMailer(BaseMailer):
 
     @staticmethod
     def _format_user_address(user):
-        return format_address(user.displayname, user.preferredemail.email)
+        naked_email = removeSecurityProxy(user).preferredemail.email
+        return format_address(user.displayname, naked_email)

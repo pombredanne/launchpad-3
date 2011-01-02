@@ -33,13 +33,14 @@
           <tr>
             <th>Code...</th>
             <th>...maps to language</th>
-            <th tal:condition="context/required:launchpad.Admin"></th>
+            <th tal:condition="context/required:launchpad.TranslationsAdmin">
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="entry context/custom_language_codes">
             <td align="center">
-              <a tal:attributes="href entry/fmt:url"
+              <a tal:attributes="href entry/fmt:url:translations"
                  tal:content="entry/language_code">pt-PT</a>
             </td>
             <td>
@@ -51,8 +52,8 @@
                 &mdash;
               </tal:nolanguage>
             </td>
-            <td tal:condition="context/required:launchpad.Admin">
-              <a tal:attributes="href entry/fmt:url/+remove"
+            <td tal:condition="context/required:launchpad.TranslationsAdmin">
+              <a tal:attributes="href entry/fmt:url:translations/+remove"
                  alt="Remove"
                  title="Remove"
                  class="remove sprite"></a>
@@ -69,8 +70,8 @@
     </p>
 
     <div>
-      <a tal:attributes="href context/fmt:url/+add-custom-language-code"
-         tal:condition="context/required:launchpad.Admin"
+      <a tal:attributes="href context/fmt:url:translations/+add-custom-language-code"
+         tal:condition="context/required:launchpad.TranslationsAdmin"
          class="add sprite">
         Add a custom language code
       </a>

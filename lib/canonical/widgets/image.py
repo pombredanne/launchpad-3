@@ -19,7 +19,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.launchpad.fields import KEEP_SAME_IMAGE
+from lp.services.fields import KEEP_SAME_IMAGE
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _

@@ -6,23 +6,23 @@
 __metaclass__ = type
 __all__ = ['BranchSubscription']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
 from canonical.database.constants import DEFAULT
-from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import IBranchNavigationMenu
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 
 
 class BranchSubscription(SQLBase):
@@ -34,7 +34,7 @@ class BranchSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
@@ -44,7 +44,7 @@ class BranchSubscription(SQLBase):
                                  notNull=True, default=DEFAULT)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     @property
     def target(self):

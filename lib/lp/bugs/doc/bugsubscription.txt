@@ -12,8 +12,8 @@ First, let's login:
 
 IBug has a subscriptions attribute:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
     >>> bug.subscriptions.count()
@@ -43,13 +43,15 @@ a bug is unduped, and so forth.
 Let's create a new bug to demonstrate how direct and indirect
 subscriptions work.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, IPersonSet, CreateBugParams)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> personset = getUtility(IPersonSet)
 
     >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
-    >>> linux_source.bug_subscriptions
+    >>> list(linux_source.bug_subscriptions)
     []
     >>> print linux_source.distribution.bug_supervisor
     None
@@ -78,7 +80,7 @@ IBug.getDirectSubscribers().
     >>> mark = personset.getByName("mark")
 
     >>> linux_source_bug.subscribe(mark, mark)
-    <BugSubscription ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -101,10 +103,8 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     get_bugtask_indirect_subscribers)
-    >>> get_bugtask_indirect_subscribers(
-    ...     linux_source_bug.bugtasks[0])
+    >>> from lp.bugs.subscribers.bug import get_bugtask_indirect_subscribers
+    >>> get_bugtask_indirect_subscribers(linux_source_bug.bugtasks[0])
     [<Person at ...>]
 
 The list of all bug subscribers can also be accessed via
@@ -180,7 +180,8 @@ Here are some examples of the three types of indirect subscribers:
 After adding a product bugtask we can see that the upstream bug
 supervisor is also an indirect subscriber.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> getUtility(IBugTaskSet).createTask(
@@ -254,8 +255,7 @@ subscription is currently set to COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
@@ -356,23 +356,12 @@ subscribed to the dupe target.
 
 If Scott James Remnant makes a structural subscription to linux_source,
 he will no longer appear in the list of subscribers of the duplicate
-bug...
+bug.
 
     >>> subscription_keybuk = linux_source.addBugSubscription(
     ...     keybuk, keybuk)
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
-
-...but if he sets his subscription level to LIFECYCLE and the parameter
-`level` with a value greater than LIFECYCLE is passed to
-Bug.getDuplicateSubscribers(), he will be again listed as a subscriber
-of a duplicate bug.
-
-    >>> subscription_keybuk.bug_notification_level = (
-    ...     BugNotificationLevel.LIFECYCLE)
-    >>> print_displayname(linux_source_bug.getSubscribersFromDuplicates(
-    ...     level=BugNotificationLevel.METADATA))
-    Scott James Remnant
 
 When a bug is marked private, all its indirect subscribers become direct
 subscribers.
@@ -381,7 +370,7 @@ subscribers.
 
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -530,7 +519,7 @@ be unsubscribed from dupes.
     False
 
     >>> bug_six.subscribe(sample_person, sample_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription...>
 
     >>> bug_five.isSubscribedToDupes(sample_person)
     True
@@ -544,14 +533,31 @@ IBug.subscribe and IBug.unsubscribe:
 
     >>> bug.isSubscribed(foobar)
     False
-    >>> bug.subscribe(foobar, foobar)
-    <BugSubscription at ...>
+    >>> subscription = bug.subscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     True
 
     >>> bug.unsubscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     False
+
+By default, the bug_notification_level of the new subscription will be
+COMMENTS, so the user will receive all notifications about the bug.
+
+    >>> print subscription.bug_notification_level.name
+    COMMENTS
+
+It's possible to subscribe to a bug at a different BugNotificationLevel
+by passing a `level` parameter to subscribe().
+
+    >>> metadata_subscriber = factory.makePerson()
+    >>> metadata_subscribed_bug = factory.makeBug()
+    >>> metadata_subscription = metadata_subscribed_bug.subscribe(
+    ...     metadata_subscriber, metadata_subscriber,
+    ...     level=BugNotificationLevel.METADATA)
+
+    >>> print metadata_subscription.bug_notification_level.name
+    METADATA
 
 To unsubscribe from all dupes for a bug, call
 IBug.unsubscribeFromDupes. This is useful because direct subscribers
@@ -779,7 +785,7 @@ Now let's create a bug on a specific package, which has no package bug
 contacts:
 
     >>> evolution = ubuntu.getSourcePackage("evolution")
-    >>> evolution.bug_subscriptions
+    >>> list(evolution.bug_subscriptions)
     []
 
     >>> params = CreateBugParams(
@@ -856,12 +862,12 @@ subscriptions themselves, rather than the subscribers.
     ...     owner=mark)
     >>> ff_bug = firefox.createBug(params)
     >>> ff_bug.subscribe(lifeless, mark)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getDirectSubscriptions():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
     ...         subscription.display_subscribed_by)
-    Mark Shuttleworth (Subscribed themselves)
+    Mark Shuttleworth (Self-subscribed)
     Robert Collins (Subscribed by Mark Shuttleworth)
     >>> params = CreateBugParams(
     ...     title="one more dupe test bug",
@@ -871,10 +877,10 @@ subscriptions themselves, rather than the subscribers.
     >>> dupe_ff_bug.markAsDuplicate(ff_bug)
     >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
-    ...         subscription.display_subscribed_by)
-    Foo Bar (Subscribed by Robert Collins)
-    Scott James Remnant (Subscribed themselves)
+    ...         subscription.display_duplicate_subscribed_by)
+    Scott James Remnant (Self-subscribed to bug ...)
+    Foo Bar (Subscribed to bug ... by Robert Collins)

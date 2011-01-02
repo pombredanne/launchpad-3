@@ -8,35 +8,47 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
-from __future__ import with_statement
-
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from pytz import UTC
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import UTC
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
-    SourcePackageNameSet)
+    SourcePackageNameSet,
+    )
+from lp.services.worlddata.model.language import (
+    Language,
+    LanguageSet,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.services.worlddata.model.language import Language, LanguageSet
-from lp.translations.model.customlanguagecode import CustomLanguageCode
-from lp.translations.model.pofile import POFile
-from lp.translations.model.potemplate import POTemplateSet, POTemplateSubset
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue, TranslationImportQueueEntry)
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, translation_import_queue_entry_age)
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadZopelessLayer
+    translation_import_queue_entry_age,
+    )
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
+    POTemplateSet,
+    POTemplateSubset,
+    )
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueue,
+    TranslationImportQueueEntry,
+    )
 
 
 class GardenerDbUserMixin(object):
@@ -158,7 +170,7 @@ class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
     def setUp(self):
         super(TestGuessPOFileCustomLanguageCode, self).setUp()
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeSeries(product=self.product)
+        self.series = self.factory.makeProductSeries(product=self.product)
         self.queue = TranslationImportQueue()
         self.template = POTemplateSubset(productseries=self.series).new(
             'test', 'test', 'test.pot', self.product.owner)
@@ -297,7 +309,8 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     def _setUpProduct(self):
         """Set up a `Product` with release series and two templates."""
         self.product = self.factory.makeProduct()
-        self.productseries = self.factory.makeSeries(product=self.product)
+        self.productseries = self.factory.makeProductSeries(
+            product=self.product)
         product_subset = POTemplateSubset(productseries=self.productseries)
         self.producttemplate1 = product_subset.new(
             'test1', 'test1', 'test.pot', self.product.owner)
@@ -701,8 +714,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will find an enabled template, and
         # return either an existing POFile for the given language, or a
         # newly created one.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -719,8 +732,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will not consider a disabled
         # template as an auto-approval target, and so will not return a
         # POFile for it.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -737,8 +750,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # When the template has translation credits, a new dummy translation
         # is created in the new POFile. Since this is running with gardener
         # privileges, we need to check that this works, too.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -765,8 +778,8 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
 
     def _makeProductEntry(self, path='foo.pot', status=None):
         """Simulate upload for a product."""
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         entry = self.queue.addOrUpdateEntry(
             path, '# contents', False, product.owner, productseries=trunk)

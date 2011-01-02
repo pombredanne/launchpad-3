@@ -14,7 +14,9 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
-    default_optionflags, LayeredDocFileSuite)
+    default_optionflags,
+    LayeredDocFileSuite,
+    )
 from canonical.testing import reset_logging
 
 

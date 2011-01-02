@@ -5,14 +5,45 @@
 
 __metaclass__ = type
 
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.model.potranslation import POTranslation
+
+
+class TestTranslationMessage(TestCaseWithFactory):
+    """Basic unit tests for TranslationMessage class.
+    """
+    layer = ZopelessDatabaseLayer
+
+    def test_getOnePOFile(self):
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.factory.makePOFile(language.code)
+        tm = self.factory.makeTranslationMessage(pofile=pofile)
+        self.assertEquals(pofile, tm.getOnePOFile())
+
+    def test_getOnePOFile_shared(self):
+        language = self.factory.makeLanguage('sr@test')
+        pofile1 = self.factory.makePOFile(language.code)
+        pofile2 = self.factory.makePOFile(language.code)
+        tm = self.factory.makeTranslationMessage(pofile=pofile1)
+        # Share this POTMsgSet with the other POTemplate (and POFile).
+        tm.potmsgset.setSequence(pofile2.potemplate, 1)
+        self.assertTrue(tm.getOnePOFile() in [pofile1, pofile2])
+
+    def test_getOnePOFile_no_pofile(self):
+        # When POTMsgSet is obsolete (sequence=0), no matching POFile
+        # is returned.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.factory.makePOFile(language.code)
+        tm = self.factory.makeTranslationMessage(pofile=pofile)
+        tm.potmsgset.setSequence(pofile.potemplate, 0)
+        self.assertEquals(None, tm.getOnePOFile())
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
@@ -127,12 +158,6 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         # If another message has a different POTemplate than the one
         # we're looking for, it is not considered identical.
         self.other_message.language = self._getLanguage('el')
-        nonclone = self._find(self.other_potmsgset, self.other_template)
-        self.assertEqual(nonclone, None)
-
-    def test_findIdenticalMessageChecksLanguageVariant(self):
-        # A difference in variants also makes messages different.
-        self.other_message.variant = 'Lithp'
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
 

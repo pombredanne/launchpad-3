@@ -21,7 +21,7 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
-YUI().use('node', 'lazr.effects', function(Y) {
+LPS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
@@ -42,7 +42,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 // the slider depends on whether there are any checked
                 // licenses in that category.  A '0' means 'no'.
                 var arrow = Y.get(arrow_name);
-                if (arrow.getAttribute('count') == '0') {
+                if (arrow.getAttribute('start_expanded') == '0') {
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
@@ -76,6 +76,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 target.slide.run();
             }, target_name);
         }
+        make_slider({which: 'copyright'});
         make_slider({which: 'recommended'});
         make_slider({which: 'more'});
         make_slider({which: 'deprecated'});
@@ -100,8 +101,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.get(Y.DOM.byId('field.licenses.25'));
-        var other_os = Y.get(Y.DOM.byId('field.licenses.26'));
+        var other_com = Y.get('input[value=OTHER_PROPRIETARY]');
+        var other_os = Y.get('input[value=OTHER_OPEN_SOURCE]');
         var details = Y.get('#license-details');
         var proprietary = Y.get('#proprietary');
 
@@ -136,6 +137,23 @@ YUI().use('node', 'lazr.effects', function(Y) {
 //]]>
 </script>
 <div style="color: black">
+  <tal:copyright condition="view/source_package_release">
+    <a href="" id="copyright-expand" class="js-action">
+      <img id="copyright-expand-arrow"
+            src="/@@/treeCollapsed"
+            title="Copyright info from source package"
+            alt="Copyright info from source package"
+            start_expanded="0"/>
+      Copyright info from source package
+    </a>
+    <div id="copyright">
+      <div
+        tal:content="structure view/source_package_release/@@+copyright"
+        style="overflow-x: hidden; overflow-y: auto;
+               max-width: 60em; max-height: 32em; background: #f7f7f7"
+        />
+    </div>
+  </tal:copyright>
 
   Select the license(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
@@ -159,7 +177,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
            src="/@@/treeExpanded"
            title="Recommended open source licenses"
            alt="Recommended open source licenses"
-           tal:attributes="count view/recommended_count"/>
+           tal:attributes="start_expanded view/recommended_count"/>
       Recommended open source licenses
     </a>
     <input tal:replace="structure view/recommended" />
@@ -168,7 +186,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
            src="/@@/treeCollapsed"
            title="More open source licenses"
            alt="More open source licenses"
-           tal:attributes="count view/more_count"/>
+           tal:attributes="start_expanded view/more_count"/>
       More open source licenses
     </a>
     <input tal:replace="structure view/more" />
@@ -178,7 +196,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
              src="/@@/treeCollapsed"
              title="Deprecated licenses"
              alt="Deprecated licenses"
-             tal:attributes="count view/deprecated_count"/>
+             tal:attributes="start_expanded view/deprecated_count"/>
         Deprecated licenses
       </a>
       <input tal:replace="structure view/deprecated" />
@@ -188,7 +206,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
            src="/@@/treeCollapsed"
            title="Other choices"
            alt="Other choices"
-           tal:attributes="count view/special_count"/>
+           tal:attributes="start_expanded view/special_count"/>
       Other choices
     </a>
     <input tal:replace="structure view/special" />
@@ -227,7 +245,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             voucher management page</a>.
         </li>
       </ol>
-      <a href="mailto:feedback@launchpad.net">Contact us</a>
+      <a href="mailto:commercial@launchpad.net">Contact us</a>
       for more information regarding commercial subscriptions.
     </div>
 </div>

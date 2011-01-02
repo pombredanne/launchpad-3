@@ -7,20 +7,23 @@ __metaclass__ = type
 
 import unittest
 
+from storm.info import get_obj_info
 import transaction
-
 import zope.security.checker
 import zope.security.proxy
 
-from storm.info import get_obj_info
-
 from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore, ISlaveStore, IStore)
-from canonical.testing import LaunchpadZopelessLayer
-
+    IMasterStore,
+    ISlaveStore,
+    IStore,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.model.bug import BugAffectsPerson
 from lp.services.database import bulk
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 object_is_key = lambda thing: thing

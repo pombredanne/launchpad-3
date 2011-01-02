@@ -5,22 +5,24 @@
 
 __metaclass__ = type
 
-import re
 import os
+import re
 import signal
 import subprocess
 import unittest
 
 import transaction
-
 from zope.security.proxy import removeSecurityProxy
 
-from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from lp.testing import FakeTime, TestCaseWithFactory
-from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.codehosting.rewrite import BranchRewriter
+from lp.codehosting.vfs import branch_id_to_path
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    FakeTime,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchRewriter(TestCaseWithFactory):
@@ -35,7 +37,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         return BranchRewriter(BufferLogger(), self.fake_time.now)
 
     def getLoggerOutput(self, rewriter):
-        return rewriter.logger.buffer.getvalue()
+        return rewriter.logger.getLogBuffer()
 
     def test_rewriteLine_found_dot_bzr(self):
         # Requests for /$branch_name/.bzr/... are redirected to where the
@@ -116,7 +118,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         logging_output = self.getLoggerOutput(rewriter)
         self.assertIsNot(
             None,
-            re.match("INFO: .* -> .* (.*s, cache: MISS)", logging_output),
+            re.match("INFO .* -> .* (.*s, cache: MISS)", logging_output),
             "No miss found in %r" % logging_output)
 
     def test_rewriteLine_logs_cache_hit(self):
@@ -130,7 +132,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         self.assertEqual(2, len(logging_output_lines))
         self.assertIsNot(
             None,
-            re.match("INFO: .* -> .* (.*s, cache: HIT)",
+            re.match("INFO .* -> .* (.*s, cache: HIT)",
                      logging_output_lines[-1]),
             "No hit found in %r" % logging_output_lines[-1])
 
@@ -147,7 +149,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         self.assertEqual(2, len(logging_output_lines))
         self.assertIsNot(
             None,
-            re.match("INFO: .* -> .* (.*s, cache: MISS)",
+            re.match("INFO .* -> .* (.*s, cache: MISS)",
                      logging_output_lines[-1]),
             "No miss found in %r" % logging_output_lines[-1])
 

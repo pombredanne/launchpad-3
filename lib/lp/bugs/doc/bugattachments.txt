@@ -10,8 +10,10 @@ Let's look at a bug that has no attachments:
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -211,7 +213,8 @@ must have at least one.
 
 If the request contains no attachment description the filename should be used.
 
-    >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
+    >>> filecontent = StringIO(
+    ...     "No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -232,7 +235,7 @@ If the request contains no attachment description the filename should be used.
 Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     ** Attachment added: "RA.txt"
@@ -381,8 +384,11 @@ Search for attachments
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
@@ -476,7 +482,7 @@ The libraryfile of this bug attachment is marked as "deleted".
 Deleting an attachment causes a notification to be sent. It's worth
 noting that the notification still includes the URL to the attachment.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> latest_notification.is_comment
@@ -524,7 +530,12 @@ Linking existing LibraryFileAliases as attachments
 --------------------------------------------------
 
 It's possible to link an existing LibraryFileAliases to a bug as an
-attachment by calling the bug's linkAttachment() method.
+attachment by calling the bug's linkAttachment() method. Please note
+that this method must not be used to reference the same LibraryFileAlias
+record more than once. Doing this could cause inconsistencies between
+LibraryFileAlias.restricted and Bug.private. See also the section
+"Adding bug attachments to private bugs" below.
+
 
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
@@ -596,3 +607,58 @@ returned by Bug.attachments.
     >>> removeSecurityProxy(attachment.libraryfile).content = None
     >>> [attachment.title for attachment in bug.attachments]
     [u'foobar']
+
+
+Adding bug attachments to private bugs
+--------------------------------------
+
+If an attachment is added to a private bug, the "restricted" flag of
+its Librarian file is set.
+
+    >>> private_bug_owner = factory.makePerson()
+    >>> login_person(private_bug_owner)
+    >>> private_bug = factory.makeBug(private=True, owner=private_bug_owner)
+    >>> private_attachment = private_bug.addAttachment(
+    ...     owner=private_bug_owner, data="secret", filename="baz.txt",
+    ...     comment="Some attachment")
+    >>> private_attachment.libraryfile.restricted
+    True
+
+But the "restricted" flag of Librarian files belonging to bug attachments
+of public bugs is not set.
+
+    >>> attachment.libraryfile.restricted
+    False
+
+If a private bug becomes public, the restricted flag of the related
+Librarian files are no longer set.
+
+    >>> changed = private_bug.setPrivate(False, private_bug.owner)
+    >>> private_attachment.libraryfile.restricted
+    False
+
+Similary, if a public bug becomes private, the "restricted" flag of
+its Librarian files are set.
+
+    >>> changed = bug.setPrivate(True, bug.owner)
+    >>> attachment.libraryfile.restricted
+    True
+
+
+Miscellaneous
+-------------
+
+The method IBugAttachment.getFileByName() returns the Librarian file.
+
+    >>> attachment.libraryfile.filename
+    u'foobar'
+    >>> attachment.getFileByName('foobar')
+    <LibraryFileAlias at...
+
+A NotFoundError is raised if the file name passed to getFileByName()
+does not match the file name of the Librarian file.
+
+    >>> attachment.getFileByName('nonsense')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'nonsense'

@@ -3,14 +3,13 @@
 
 """Tests for lp.registry.scripts.productreleasefinder.walker."""
 
-import StringIO
 import logging
+import StringIO
 import unittest
 import urlparse
 
 from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
-
 from lp.testing import TestCase
 
 

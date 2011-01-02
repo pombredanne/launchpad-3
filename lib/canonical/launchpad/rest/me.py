@@ -9,14 +9,19 @@ __all__ = [
     'MeLink',
     ]
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    ITopLevelEntryLink,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from lazr.restful.interfaces import (
-    IJSONRequestCache, ITopLevelEntryLink)
 
 class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""

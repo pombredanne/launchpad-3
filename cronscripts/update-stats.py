@@ -11,10 +11,12 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchpadStatisticSet, IPersonSet
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
     )
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.config import config
 
 

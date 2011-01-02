@@ -2,7 +2,7 @@
 
 Let's use Celso's PPA for the tests.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
@@ -360,7 +360,7 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
@@ -449,7 +449,17 @@ from using PPAs.
     True
 
     >>> print view.archive_description_html.value
-    http://example.dom/
+    <p>http://example.dom/</p>
+
+The description is HTML escaped, and not linkified even when it contains HTML
+tags.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = (
+    ...     '<a href="http://example.com/">http://example.com/</a>')
+    >>> login(ANONYMOUS)
+    >>> print view.archive_description_html.value
+    <p>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;</p>
 
 The PPA description is linked when the user has made a contribution.
 
@@ -1164,8 +1174,8 @@ team he is member of.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu_team_ppa = getUtility(IArchiveSet).new(
     ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
     ...     description="Don't we have a distribution ?")

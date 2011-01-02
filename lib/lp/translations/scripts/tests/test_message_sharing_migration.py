@@ -6,22 +6,26 @@ __metaclass__ = type
 from datetime import timedelta
 import gc
 from logging import ERROR
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
+from lp.testing import (
+    record_statements,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import ADMIN_EMAIL
+from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.scripts.message_sharing_migration import (
-    MessageSharingMerge)
-from canonical.testing import LaunchpadZopelessLayer
+    MessageSharingMerge,
+    )
 
 
 class TranslatableProductMixin:
@@ -30,6 +34,7 @@ class TranslatableProductMixin:
     Sets up a product with series "trunk" and "stable," each with a
     template.
     """
+
     def setUpProduct(self):
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
@@ -58,8 +63,8 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # This test needs the privileges of rosettaadmin (to delete
         # POTMsgSets) but it also needs to set up test conditions which
         # requires other privileges.
-        self.layer.switchDbUser('postgres')
-        super(TestPOTMsgSetMerging, self).setUp(user='mark@example.com')
+        super(TestPOTMsgSetMerging, self).setUp(user=ADMIN_EMAIL)
+        self.becomeDbUser('postgres')
         super(TestPOTMsgSetMerging, self).setUpProduct()
 
     def test_matchedPOTMsgSetsShare(self):
@@ -138,6 +143,7 @@ class TranslatedProductMixin(TranslatableProductMixin):
     Creates one POTMsgSet for trunk and one for stable, i.e. a
     pre-sharing situation.
     """
+
     def setUpProduct(self):
         super(TranslatedProductMixin, self).setUpProduct()
 
@@ -247,9 +253,9 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         The matching POTMsgSets will be merged by the _mergePOTMsgSets
         call.
         """
-        self.layer.switchDbUser('postgres')
         super(TestPOTMsgSetMergingAndTranslations, self).setUp(
-            user='mark@example.com')
+            user=ADMIN_EMAIL)
+        self.becomeDbUser('postgres')
         super(TestPOTMsgSetMergingAndTranslations, self).setUpProduct()
 
     def test_sharingDivergedMessages(self):
@@ -369,9 +375,8 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('postgres')
-        super(TestTranslationMessageNonMerging, self).setUp(
-            user='mark@example.com')
+        super(TestTranslationMessageNonMerging, self).setUp(user=ADMIN_EMAIL)
+        self.becomeDbUser('postgres')
         super(TestTranslationMessageNonMerging, self).setUpProduct()
 
     def test_MessagesAreNotSharedAcrossPOTMsgSets(self):
@@ -397,9 +402,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('postgres')
-        super(TestTranslationMessageMerging, self).setUp(
-            user='mark@example.com')
+        super(TestTranslationMessageMerging, self).setUp(user=ADMIN_EMAIL)
+        self.becomeDbUser('postgres')
         super(TestTranslationMessageMerging, self).setUpProduct()
 
     def test_messagesCanStayDiverged(self):
@@ -560,8 +564,8 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('postgres')
-        super(TestRemoveDuplicates, self).setUp(user='mark@example.com')
+        super(TestRemoveDuplicates, self).setUp(user=ADMIN_EMAIL)
+        self.becomeDbUser('postgres')
         super(TestRemoveDuplicates, self).setUpProduct()
 
     def test_duplicatesAreCleanedUp(self):
@@ -590,7 +594,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
+
         # The is_current and is_imported flags from the duplicate
         # messages have been merged into a single, current, imported
         # message.
@@ -730,8 +734,8 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('postgres')
         super(TestSharingMigrationPerformance, self).setUp()
+        self.becomeDbUser('postgres')
         super(TestSharingMigrationPerformance, self).setUpProduct()
 
     def _flushDbObjects(self):
@@ -741,22 +745,6 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
         """
         transaction.commit()
         gc.collect()
-
-    def _listLoadedObjects(self, of_class, ignore_list=None):
-        """Return the set of objects of a given type that are in memory.
-
-        :param of_class: A class to filter for.
-        :param ignore_list: A previous return value.  Any POMsgIDs that
-            were already in that list are ignored here.
-        """
-        pomsgids = set([
-            whatever
-            for whatever in gc.get_objects()
-            if isinstance(whatever, of_class)
-            ])
-        if ignore_list is not None:
-            pomsgids -= ignore_list
-        return pomsgids
 
     def _resetReferences(self):
         """Reset translation-related references in the test object.
@@ -782,50 +770,31 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
 
         self.templates = [POTemplate.get(id) for id in template_ids]
 
-    def test_merging_loads_no_msgids(self):
-        # Migration does not load actual msgids into memory.
-        self._flushDbObjects()
-        msgids_before = self._listLoadedObjects(POMsgID)
+    def assertNoStatementsInvolvingTable(self, table_name, statements):
+        """The specified table name is not in any of the statements."""
+        table_name = table_name.upper()
+        self.assertFalse(
+            any([table_name in statement.upper()
+                 for statement in statements]))
 
+    def test_merging_loads_no_msgids_or_potranslations(self):
+        # Migration does not touch the POMsgID or POTranslation tables.
         self._makeTranslationMessages('x', 'y', trunk_diverged=True)
         self._makeTranslationMessages('1', '2', stable_diverged=True)
-
         self._resetReferences()
         self.assertNotEqual([], self.templates)
-        self.assertEqual(
-            set(), self._listLoadedObjects(POMsgID, msgids_before))
-        
-        self.script._mergePOTMsgSets(self.templates)
-        self.script._mergeTranslationMessages(self.templates)
 
-        self.assertEqual(
-            set(), self._listLoadedObjects(POMsgID, msgids_before))
+        _ignored, statements = record_statements(
+            self.script._mergePOTMsgSets, self.templates)
+        self.assertNoStatementsInvolvingTable(POMsgID._table, statements)
+        self.assertNoStatementsInvolvingTable(
+            POTranslation._table, statements)
 
-    def test_merging_loads_no_potranslations(self):
-        # Migration does not load actual POTranslations into memory.
-        self._flushDbObjects()
-        potranslations_before = self._listLoadedObjects(POTranslation)
-
-        self._makeTranslationMessages('x', 'y', trunk_diverged=True)
-        self._makeTranslationMessages('1', '2', stable_diverged=True)
-
-        self._resetReferences()
-        self.assertNotEqual([], self.templates)
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
-        
-        self.script._mergePOTMsgSets(self.templates)
-
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
-        
-        self.script._mergeTranslationMessages(self.templates)
-
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
+        _ignored, statements = record_statements(
+            self.script._mergeTranslationMessages, self.templates)
+        self.assertNoStatementsInvolvingTable(POMsgID._table, statements)
+        self.assertNoStatementsInvolvingTable(
+            POTranslation._table, statements)
 
 
 def test_suite():

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -32,60 +32,99 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
-from collections import defaultdict
 import operator
 
+from lazr.delegates import delegates
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 import simplejson
 from zope.app.form.browser import TextAreaWidget
-from zope.component import adapter, adapts, getMultiAdapter, getUtility
+from zope.component import (
+    adapter,
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface, implementer, implements
-from zope.schema import Choice, Int, Text
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    Text,
+    )
 from zope.schema.interfaces import IText
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IWebServiceClientRequest)
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, stepto, Navigation)
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+   )
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget, vocabulary_to_choice_edit_items)
-
+    TextAreaEditorWidget,
+    vocabulary_to_choice_edit_items,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
-from lp.code.browser.decorations import DecoratedBranch, DecoratedBug
+from lp.code.browser.decorations import (
+    DecoratedBranch,
+    DecoratedBug,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
-    CodeReviewVote)
+    BranchMergeProposalStatus,
+    BranchType,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
 from lp.code.errors import WrongBranchMergeProposal
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import (
-    IComment, IConversation)
-
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
+    IComment,
+    IConversation,
+    )
+from lp.services.fields import (
+    Summary,
+    Whiteboard,
+    )
+from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
 
 
 def latest_proposals_for_each_branch(proposals):
@@ -130,6 +169,7 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
+
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
@@ -140,6 +180,7 @@ def notify(func):
 
 def update_and_notify(func):
     """Decorate an action to update from a form and send a notification."""
+
     @notify
     def decorator(view, action, data):
         result = func(view, action, data)
@@ -155,16 +196,16 @@ class BranchMergeCandidateView(LaunchpadView):
     def friendly_text(self):
         """Prints friendly text for a branch."""
         friendly_texts = {
-            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
-            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
-            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
-            BranchMergeProposalStatus.REJECTED : 'Rejected',
-            BranchMergeProposalStatus.MERGED : 'Merged',
-            BranchMergeProposalStatus.MERGE_FAILED :
+            BranchMergeProposalStatus.WORK_IN_PROGRESS: 'On hold',
+            BranchMergeProposalStatus.NEEDS_REVIEW: 'Ready for review',
+            BranchMergeProposalStatus.CODE_APPROVED: 'Approved',
+            BranchMergeProposalStatus.REJECTED: 'Rejected',
+            BranchMergeProposalStatus.MERGED: 'Merged',
+            BranchMergeProposalStatus.MERGE_FAILED:
                 'Approved [Merge Failed]',
-            BranchMergeProposalStatus.QUEUED : 'Queued',
-            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
-            }
+            BranchMergeProposalStatus.QUEUED: 'Queued',
+            BranchMergeProposalStatus.SUPERSEDED: 'Superseded',
+        }
         return friendly_texts[self.context.queue_status]
 
     @property
@@ -176,8 +217,7 @@ class BranchMergeCandidateView(LaunchpadView):
         result = ''
         if self.context.queue_status in (
             BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED
-            ):
+            BranchMergeProposalStatus.REJECTED):
             formatter = DateTimeFormatterAPI(self.context.date_reviewed)
             result = '%s %s' % (
                 self.context.reviewer.displayname,
@@ -511,7 +551,7 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
-class ICodeReviewNewRevisions(Interface):
+class ICodeReviewNewRevisions(IComment):
     """Marker interface used to register views for CodeReviewNewRevisions."""
 
 
@@ -521,15 +561,23 @@ class CodeReviewNewRevisions:
     Each object instance represents a number of revisions scanned at a
     particular time.
     """
-    implements(IComment, ICodeReviewNewRevisions)
+    implements(ICodeReviewNewRevisions)
 
-    def __init__(self, revisions, date, branch):
+    def __init__(self, revisions, date, branch, diff):
         self.revisions = revisions
         self.branch = branch
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+        self.diff = diff
+
+        # Other standard IComment attributes are not used.
+        self.extra_css_class = None
+        self.comment_author = None
+        self.body_text = None
+        self.comment_date = None
+        self.display_attachments = False
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
@@ -565,46 +613,26 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
 
-    @property
-    def revision_end_date(self):
-        """The cutoff date for showing revisions.
-
-        If the proposal has been merged, then we stop at the merged date. If
-        it is rejected, we stop at the reviewed date. For superseded
-        proposals, it should ideally use the non-existant date_last_modified,
-        but could use the last comment date.
-        """
-        status = self.context.queue_status
-        if status == BranchMergeProposalStatus.MERGED:
-            return self.context.date_merged
-        if status == BranchMergeProposalStatus.REJECTED:
-            return self.context.date_reviewed
-        # Otherwise return None representing an open end date.
-        return None
-
-    def _getRevisionsSinceReviewStart(self):
-        """Get the grouped revisions since the review started."""
-        # Work out the start of the review.
-        start_date = self.context.date_review_requested
-        if start_date is None:
-            start_date = self.context.date_created
-        source = DecoratedBranch(self.context.source_branch)
-        resultset = source.getMainlineBranchRevisions(
-            start_date, self.revision_end_date, oldest_first=True)
-        # Now group by date created.
-        groups = defaultdict(list)
-        for branch_revision, revision, revision_author in resultset:
-            groups[revision.date_created].append(branch_revision)
-        return [
-            CodeReviewNewRevisions(revisions, date, source)
-            for date, revisions in groups.iteritems()]
-
     @cachedproperty
     def conversation(self):
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
-        comments = self._getRevisionsSinceReviewStart()
         merge_proposal = self.context
+        groups = list(merge_proposal.getRevisionsSinceReviewStart())
+        source = DecoratedBranch(merge_proposal.source_branch)
+        comments = []
+        if getFeatureFlag('code.incremental_diffs.enabled'):
+            ranges = [
+                (revisions[0].revision.getLefthandParent(),
+                 revisions[-1].revision)
+                for revisions in groups]
+            diffs = merge_proposal.getIncrementalDiffs(ranges)
+        else:
+            diffs = [None] * len(groups)
+        for revisions, diff in zip(groups, diffs):
+            newrevs = CodeReviewNewRevisions(
+                revisions, revisions[-1].revision.date_created, source, diff)
+            comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
@@ -637,7 +665,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def pending_diff(self):
-        return self.context.next_preview_diff_job is not None
+        return (
+            self.context.next_preview_diff_job is not None or
+            self.context.source_branch.pending_writes)
 
     @cachedproperty
     def preview_diff(self):
@@ -910,7 +940,6 @@ class MergeProposalEditView(LaunchpadEditFormView,
         self.cancel_url = self.next_url
         super(MergeProposalEditView, self).initialize()
 
-
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
 
@@ -954,20 +983,51 @@ class MergeProposalEditView(LaunchpadEditFormView,
                         % revision_name)
 
 
-class BranchMergeProposalResubmitView(MergeProposalEditView,
+class ResubmitSchema(IBranchMergeProposal):
+
+    break_link = Bool(
+        title=u'Start afresh',
+        description=(
+            u'Do not show old conversation and do not link to superseded'
+            ' proposal.'),
+        default=False,)
+
+
+class BranchMergeProposalResubmitView(LaunchpadFormView,
                                       UnmergedRevisionsMixin):
     """The view to resubmit a proposal to merge."""
 
-    schema = IBranchMergeProposal
+    schema = ResubmitSchema
+    for_input = True
     page_title = label = "Resubmit proposal to merge"
-    field_names = []
+    field_names = [
+        'source_branch',
+        'target_branch',
+        'prerequisite_branch',
+        'description',
+        'break_link',
+        ]
+
+    def initialize(self):
+        self.cancel_url = canonical_url(self.context)
+        super(BranchMergeProposalResubmitView, self).initialize()
+
+    @property
+    def initial_values(self):
+        UNSET = object()
+        items = ((key, getattr(self.context, key, UNSET)) for key in
+                  self.field_names if key != 'break_link')
+        return dict(item for item in items if item[1] is not UNSET)
 
     @action('Resubmit', name='resubmit')
-    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(self.user)
+        proposal = self.context.resubmit(
+            self.user, data['source_branch'], data['target_branch'],
+            data['prerequisite_branch'], data['description'],
+            data['break_link'])
         self.next_url = canonical_url(proposal)
+        return proposal
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):
@@ -1436,9 +1496,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 def text_xhtml_representation(context, field, request):
     """Render an `IText` as XHTML using the webservice."""
     formatter = FormattersAPI
+
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
 

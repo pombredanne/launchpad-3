@@ -10,33 +10,61 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
-from sqlobject import BoolCol, ForeignKey
-from storm.expr import In, SQL
-from storm.locals import Int, Reference
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
+from storm.expr import SQL
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues, SQLBase
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ComponentNotFound, IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
-    IArchiveUploader, IArchiveQueueAdmin)
-from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
+from lp.soyuz.interfaces.archive import (
+    ComponentNotFound,
+    IArchive,
+    )
+from lp.soyuz.enums import ArchivePermissionType
+from lp.soyuz.interfaces.archivepermission import (
+    IArchivePermission,
+    IArchivePermissionSet,
+    IArchiveQueueAdmin,
+    IArchiveUploader,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.model.packageset import Packageset
 
 
 def _extract_type_name(value):
@@ -85,7 +113,7 @@ class ArchivePermission(SQLBase):
         elif self.permission == ArchivePermissionType.QUEUE_ADMIN:
             alsoProvides(self, IArchiveQueueAdmin)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "Unknown permission type %s" % self.permission)
 
     @property
@@ -132,8 +160,7 @@ class ArchivePermissionSet:
             ArchivePermission.permission = %s AND
             ArchivePermission.person = TeamParticipation.team AND
             TeamParticipation.person = %s
-            """ % sqlvalues(archive, permission, person)
-            ]
+            """ % sqlvalues(archive, permission, person)]
 
         prejoins = []
 
@@ -217,8 +244,7 @@ class ArchivePermissionSet:
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s
-            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)
-            ]
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)]
 
         if component is not None:
             component = self._nameToComponent(component)
@@ -355,7 +381,8 @@ class ArchivePermissionSet:
                 AND ap.packageset IS NOT NULL
         '''
         query = SQL(query, (person.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def uploadersForPackageset(
         self, archive, packageset, direct_permissions=True):
@@ -374,7 +401,8 @@ class ArchivePermissionSet:
             '''
         query += " AND ap.archive = ?"
         query = SQL(query, (packageset.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def newPackagesetUploader(
         self, archive, person, packageset, explicit=False):
@@ -393,7 +421,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(query, (person.id, packageset.id, archive.id))
         permissions = list(
-            store.find(ArchivePermission, In(ArchivePermission.id, query)))
+            store.find(
+                ArchivePermission, ArchivePermission.id.is_in(query)))
         if len(permissions) > 0:
             # Found permissions in the database, does the 'explicit' flag
             # have the requested value?
@@ -465,7 +494,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(
             query, (person.id, sourcepackagename.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def packagesetsForSource(
         self, archive, sourcepackagename, direct_permissions=True):

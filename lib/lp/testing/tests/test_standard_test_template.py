@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCase
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCase # or TestCaseWithFactory
 
 
 class TestSomething(TestCase):

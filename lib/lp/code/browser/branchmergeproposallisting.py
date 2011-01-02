@@ -16,28 +16,43 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
 
-from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item, use_template
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    IBranchMergeProposalListingBatchNavigator)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator,
+    )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.services.propertycache import cachedproperty
 
 
 class BranchMergeProposalListingItem:

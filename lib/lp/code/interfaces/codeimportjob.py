@@ -17,13 +17,18 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Text
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import CodeImportJobState
 from lp.code.interfaces.codeimport import ICodeImport
-from lp.code.interfaces.codeimportmachine import (
-    ICodeImportMachine)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachine
 from lp.registry.interfaces.person import IPerson
 
 

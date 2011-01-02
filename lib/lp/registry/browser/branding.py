@@ -9,9 +9,13 @@ __all__ = [
     'BrandingChangeView',
     ]
 
-from canonical.widgets.image import ImageChangeWidget
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    )
+from canonical.widgets.image import ImageChangeWidget
 
 
 class BrandingChangeView(LaunchpadEditFormView):

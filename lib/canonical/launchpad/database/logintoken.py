@@ -8,37 +8,51 @@ __all__ = ['LoginToken', 'LoginTokenSet']
 
 from itertools import chain
 
-from zope.interface import implements
+import pytz
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import And
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-import pytz
-
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
-from storm.expr import And
-
 from canonical.config import config
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table)
+    create_unique_token_for_table,
+    )
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler, IPersonSet,
-    LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginToken,
+    ILoginTokenSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
 
 
 class LoginToken(SQLBase):

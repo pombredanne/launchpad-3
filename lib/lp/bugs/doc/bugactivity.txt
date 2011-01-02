@@ -22,15 +22,19 @@ are simple little functions.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTaskSet,
+    ...     IDistroBugTask,
+    ...     IUpstreamBugTask,
+    ...     )
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> user = getUtility(ILaunchBag).user
 
 
 == User files a bug ==
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> params = CreateBugParams(
     ...     title="a test bug",
@@ -48,7 +52,7 @@ are simple little functions.
 
 == Bug title edited ==
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.title = "new bug title"
     >>> bug_edited = ObjectModifiedEvent(
@@ -66,9 +70,9 @@ are simple little functions.
 == Source package assignment edited ==
 
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageNameSet, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(

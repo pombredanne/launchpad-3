@@ -234,7 +234,7 @@ The name begins with a 't', so the thing's value is THINGVIEW.
 
 == ZCML for browser:navigation ==
 
-The zcml processor `browser:navigation` processes navigation classes.
+The zcml processor `browser:navigation` registers navigation classes.
 
     >>> class ThingSetView:
     ...
@@ -265,6 +265,14 @@ The zcml processor `browser:navigation` processes navigation classes.
     ...       />
     ... </configure>
     ... """)
+
+Once registered, we can look the navigation up using getMultiAdapter().
+
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> navigation = getMultiAdapter(
+    ...     (thingset, LaunchpadTestRequest()), IBrowserPublisher, name='')
 
 This time, we get the view object for the page that was registered.
 

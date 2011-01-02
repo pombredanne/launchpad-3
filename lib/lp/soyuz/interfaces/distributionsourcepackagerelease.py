@@ -13,8 +13,7 @@ __all__ = [
 
 from zope.interface import Attribute
 
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class IDistributionSourcePackageRelease(ISourcePackageRelease):

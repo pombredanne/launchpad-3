@@ -1,15 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Author: Carlos Perello Marin <carlos.perello@canonical.com>
-#         David Allouche <david.allouche@canonical.com>
-
-# Make this a package.
-
-# Note: by adding one's name to the copyright section, one is arguably making
-# a substantial modification.
-
-
 import os.path
 import subprocess
 
@@ -31,5 +22,5 @@ def run_script(script_relpath, args, expect_returncode=0):
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     if process.returncode != expect_returncode:
-        raise AssertionError('Failed:\n%s' % stderr)
+        raise AssertionError('Failed:\n%s\n%s' % (stdout, stderr))
     return (process.returncode, stdout, stderr)

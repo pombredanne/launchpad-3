@@ -12,13 +12,17 @@ __all__ = [
     'IArchiveAuthTokenSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import (
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
-from lazr.restful.fields import Reference
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IArchiveAuthTokenView(Interface):

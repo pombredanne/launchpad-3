@@ -1,4 +1,4 @@
-%(comment_author)s added the following comment to Launchpad bug #%(launchpad_bug)s:
+%(comment_author)s added the following comment to Launchpad bug report %(launchpad_bug)s:
 
 %(comment_body)s
 

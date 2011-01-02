@@ -230,6 +230,23 @@ ID or alias.
     >>> bugzilla._getActualBugId(2)
     2
 
+Sometimes a Bugzilla will return bug data without an alias field.
+_storeBugs() handles that, too.
+
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     NoAliasTestBugzillaAPIXMLRPCTransport)
+    >>> no_alias_transport = NoAliasTestBugzillaAPIXMLRPCTransport(
+    ...     'http://bugzilla-3.4.example.com/')
+    >>> no_alias_bugzilla = BugzillaAPI(
+    ...     'http://bugzilla-3.4.example.com/',
+    ...     xmlrpc_transport=no_alias_transport)
+    >>> no_alias_transport.print_method_calls = True
+    >>> no_alias_bugzilla.initializeRemoteBugDB([1])
+    CALLED Bug.get({'ids': [1], 'permissive': True})
+
+    >>> print len(no_alias_bugzilla._bug_aliases)
+    0
+
 
 Getting remote statuses
 -----------------------
@@ -246,6 +263,15 @@ bug as a string. If the bug has a resolution, that will be returned too.
     >>> print bugzilla.getRemoteStatus(2)
     NEW
 
+Similarly, BugzillaAPI.getRemoteStatus() returns the remote priority and
+severity as a string.
+
+    >>> print bugzilla.getRemoteImportance(1)
+    P1 normal
+
+    >>> print bugzilla.getRemoteImportance(2)
+    P1 high
+
 If a bug can't be found a BugNotFound error will be raised.
 
     >>> bugzilla.getRemoteStatus('no-such-bug')
@@ -261,7 +287,7 @@ error will be raised. We can add a sample bug to demonstrate this.
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
-    UnparseableBugData
+    UnparseableBugData: No status or resolution defined for bug 999
 
     >>> del bugzilla._bugs[999]
 
@@ -360,8 +386,8 @@ BugzillaAPI implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
@@ -370,7 +396,7 @@ bugtracker and a couple of bugwatches.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -593,7 +619,7 @@ BugzillaAPI implements the ISupportsBackLinking interface, which means
 that it can be used to tell the remote bug tracker that a given remote
 bug is linked to a Launchpad bug.
 
-    >>> from canonical.launchpad.interfaces import ISupportsBackLinking
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
     >>> verifyObject(ISupportsBackLinking, bugzilla)
     True
 

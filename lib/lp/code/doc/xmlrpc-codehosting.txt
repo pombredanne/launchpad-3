@@ -1,11 +1,12 @@
-= The BranchPuller application =
+The BranchPuller application
+============================
 
 The codehosting application is an XMLRPC service that allows the
 codehosting service and puller to find and update the status of
 branches.  It is available as the codehosting attribute of our private
 XMLRPC instance.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     IPrivateApplication)
     >>> from lp.code.interfaces.codehosting import (
     ...     ICodehostingApplication)

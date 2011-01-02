@@ -261,8 +261,8 @@ We can still access the opstats page.
 
 But our database connections are broken.
 
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from lp.registry.model.person import Person
-    >>> from canonical.launchpad.interfaces import IStore
     >>> IStore(Person).find(Person, name='janitor')
     Traceback (most recent call last):
     ...

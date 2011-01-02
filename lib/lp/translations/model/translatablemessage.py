@@ -12,7 +12,8 @@ __all__ = [
 from zope.interface import implements
 
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
+    ITranslatableMessage,
+    )
 
 
 class TranslatableMessage(object):
@@ -30,7 +31,7 @@ class TranslatableMessage(object):
           to.
         :param pofile: The `IPOFile` instance that the potmsgset is used
           with.
-          
+
         Both potmsgset and pofile must be related, meaning they refer to the
         same `IPOTemplate` instance.
         """
@@ -42,11 +43,10 @@ class TranslatableMessage(object):
         self.sequence = potmsgset.getSequence(pofile.potemplate)
         self.potemplate = pofile.potemplate
         self.language = pofile.language
-        self.variant = pofile.variant
 
         self._current_translation = (
             self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language, self.variant))
+                self.potemplate, self.language))
 
     @property
     def is_obsolete(self):
@@ -94,13 +94,11 @@ class TranslatableMessage(object):
     def getImportedTranslation(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getImportedTranslationMessage(self.potemplate,
-                                                            self.language,
-                                                            self.variant)
+                                                            self.language)
 
     def getSharedTranslation(self):
         """See `ITranslatableMessage`"""
-        return self.potmsgset.getSharedTranslationMessage(self.language,
-                                                          self.variant)
+        return self.potmsgset.getSharedTranslationMessage(self.language)
 
     def getAllSuggestions(self):
         """See `ITranslatableMessage`"""

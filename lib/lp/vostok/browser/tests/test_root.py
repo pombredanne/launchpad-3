@@ -5,19 +5,31 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
-from zope.app.publisher.browser import getDefaultViewName
+from zope.publisher.defaultview import getDefaultViewName
 
-from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
-from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
-
-from lp.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
+from lp.app.browser.tales import IMainTemplateFile
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
-from lp.vostok.publisher import VostokLayer, VostokRoot
-
+from lp.vostok.publisher import (
+    VostokLayer,
+    VostokRoot,
+    )
 
 
 class TestRootRegistrations(TestCase):
@@ -70,6 +82,16 @@ class TestRootTemplate(TestCaseWithFactory):
         self.assertEqual(len(link_list), len(distro_list))
         for distro, link in zip(distro_list, link_list):
             self.assertEqual(distro.displayname, extract_text(link))
+
+
+class TestVostokLayerToMainTemplateAdapter(TestCase):
+
+    layer = FunctionalLayer
+
+    def test_path(self):
+        main_template_path = IMainTemplateFile(VostokTestRequest()).path
+        self.assertIn('lp/vostok', main_template_path)
+        self.assertTrue(os.path.isfile(main_template_path))
 
 
 def test_suite():

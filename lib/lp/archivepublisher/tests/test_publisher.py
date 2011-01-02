@@ -7,35 +7,48 @@ __metaclass__ = type
 
 
 import bz2
+import crypt
 import gzip
 import os
 import shutil
 import stat
 import tempfile
-import transaction
+from textwrap import dedent
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.publishing import Publisher, getPublisher
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ArchiveStatus, IArchiveSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.zeca.ftests.harness import ZecaTestSetup
+from lp.archivepublisher.config import (
+    Config,
+    getPubConfig,
+    )
+from lp.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
+from lp.archivepublisher.publishing import (
+    getPublisher,
+    Publisher,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -384,11 +397,9 @@ class TestPublisher(TestPublisherBase):
         # Stub parameters.
         allowed_suites = [
             ('breezy-autotest', PackagePublishingPocket.RELEASE)]
-        distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -405,7 +416,7 @@ class TestPublisher(TestPublisherBase):
         partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntutest, ArchivePurpose.PARTNER)
         distro_publisher = getPublisher(
-            partner_archive, allowed_suites, self.logger, distsroot)
+            partner_archive, allowed_suites, self.logger)
         self.assertEqual(partner_archive, distro_publisher.archive)
         self.assertEqual('/var/tmp/archive/ubuntutest-partner/dists',
             distro_publisher._config.distsroot)
@@ -628,13 +639,10 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # Check if apt_handler.release_files_needed has the right requests.
-        # 'source' & 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components. Note that 'debian-installer'
-        # indexes do not need Release files.
-
         # We always regenerate all Releases file for a given suite.
-        self.checkAllRequestedReleaseFiles(archive_publisher)
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            archive_publisher.release_files_needed)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -652,10 +660,8 @@ class TestPublisher(TestPublisherBase):
         work on the deleted publications.
         """
         allowed_suites = []
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -727,10 +733,8 @@ class TestPublisher(TestPublisherBase):
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
             ('breezy-autotest', PackagePublishingPocket.UPDATES),
             ]
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -758,49 +762,6 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
-    def assertReleaseFileRequested(self, publisher, suite_name,
-                                   component_name, arch_name):
-        """Assert the given context will have it's Release file regenerated.
-
-        Check if a request for the given context is correctly stored in:
-           publisher.apt_handler.release_files_needed
-        """
-        suite = publisher.apt_handler.release_files_needed.get(suite_name)
-        self.assertTrue(
-            suite is not None, 'Suite %s not requested' % suite_name)
-        self.assertTrue(
-            component_name in suite,
-            'Component %s/%s not requested' % (suite_name, component_name))
-        self.assertTrue(
-            arch_name in suite[component_name],
-            'Arch %s/%s/%s not requested' % (
-            suite_name, component_name, arch_name))
-
-    def checkAllRequestedReleaseFiles(self, publisher):
-        """Check if all expected Release files are going to be regenerated.
-
-        'source', 'binary-i386' and 'binary-hppa' Release Files should be
-        requested for regeneration in all breezy-autotest components.
-        """
-        available_components = sorted([
-            c.name for c in self.breezy_autotest.components])
-        self.assertEqual(available_components,
-                         ['main', 'multiverse', 'restricted', 'universe'])
-
-        available_archs = ['binary-%s' % a.architecturetag
-                           for a in self.breezy_autotest.architectures]
-        self.assertEqual(available_archs, ['binary-hppa', 'binary-i386'])
-
-        # XXX cprov 20071210: Include the artificial component 'source' as a
-        # location to check for generated indexes. Ideally we should
-        # encapsulate this task in publishing.py and this common method
-        # in tests as well.
-        dists = ['source'] + available_archs
-        for component in available_components:
-            for dist in dists:
-                self.assertReleaseFileRequested(
-                    publisher, 'breezy-autotest', component, dist)
-
     def _getReleaseFileOrigin(self, contents):
         origin_header = 'Origin: '
         [origin_line] = [
@@ -824,8 +785,9 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        # We always regenerate all Releases file for a given suite.
-        self.checkAllRequestedReleaseFiles(publisher)
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
 
@@ -924,19 +886,19 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 15]
+        plain_sources_md5_line = release_contents[md5_header_index + 16]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 17]
+        release_md5_line = release_contents[md5_header_index + 15]
         self.assertEqual(
             release_md5_line,
             (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
             '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        bz2_sources_md5_line = release_contents[md5_header_index + 16]
+        bz2_sources_md5_line = release_contents[md5_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
         gz_sources_md5_line = release_contents[md5_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
@@ -945,18 +907,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 15]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 17]
+        release_sha1_line = release_contents[sha1_header_index + 15]
         self.assertEqual(
             release_sha1_line,
             (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
              '130 main/source/Release'))
         # See above.
-        bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
+        bz2_sources_sha1_line = release_contents[sha1_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
         gz_sources_sha1_line = release_contents[sha1_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
@@ -965,18 +927,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 15]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 17]
+        release_sha256_line = release_contents[sha256_header_index + 15]
         self.assertEqual(
             release_sha256_line,
             (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
              '1e2c505aa              130 main/source/Release'))
         # See above.
-        bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
+        bz2_sources_sha256_line = release_contents[sha256_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
@@ -1074,27 +1036,164 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
-    def testWorldAndGroupReadablePackagesAndSources(self):
-        """Test Packages.gz and Sources.gz files are world and group readable.
+    def testHtaccessForPrivatePPA(self):
+        # A htaccess file is created for new private PPA's.
 
-        Packages.gz and Sources.gz files generated by NoMoreAF must be
-        world and group readable.  We'll test this in the partner archive
-        as that uses NoMoreAF. (No More Apt-Ftparchive)
-        """
-        archive = self.ubuntutest.getArchiveByComponent('partner')
-        allowed_suites = []
-        publisher = getPublisher(archive, allowed_suites, self.logger)
-        self.getPubSource(filecontent='Hello world', archive=archive)
-        publisher.A_publish(False)
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, private=True)
+        ppa.buildd_secret = "geheim"
+
+        # Setup the publisher for it and publish its repository.
+        archive_publisher = getPublisher(ppa, [], self.logger)
+        pubconf = getPubConfig(ppa)
+        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        self.assertTrue(os.path.exists(htaccess_path))
+        with open(htaccess_path, 'r') as htaccess_f:
+            self.assertEquals(htaccess_f.read(), dedent("""
+                AuthType           Basic
+                AuthName           "Token Required"
+                AuthUserFile       %s/.htpasswd
+                Require            valid-user
+                """) % pubconf.htaccessroot)
+
+        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+
+        # Read it back in.
+        with open(htpasswd_path, "r") as htpasswd_f:
+            file_contents = htpasswd_f.readlines()
+
+        self.assertEquals(1, len(file_contents))
+
+        # The first line should be the buildd_secret.
+        [user, password] = file_contents[0].strip().split(":", 1)
+        self.assertEqual(user, "buildd")
+        # We can re-encrypt the buildd_secret and it should match the
+        # one in the .htpasswd file.
+        encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
+        self.assertEqual(encrypted_secret, password)
+
+
+class TestArchiveIndices(TestPublisherBase):
+    """Tests for the native publisher's index generation.
+
+    Verifies that all Packages/Sources/Release files are generated when
+    appropriate.
+    """
+
+    def runStepC(self, publisher):
+        """Run the index generation step of the publisher."""
         publisher.C_writeIndexes(False)
+
+    def assertIndices(self, publisher, suites, present=(), absent=()):
+        """Assert that the given suites have correct indices."""
+        for series, pocket in suites:
+            self.assertIndicesForSuite(
+                publisher, series, pocket, present, absent)
+
+    def assertIndicesForSuite(self, publisher, series, pocket,
+                              present=(), absent=()):
+        """Assert that the suite has correct indices.
+
+        Checks that the architecture tags in 'present' have Packages and
+        Release files and are in the series' Release file, and confirms
+        that those in 'absent' are not.
+        """
+
+        self.assertTrue(
+            (series.name, pocket) in publisher.release_files_needed)
+
+        arch_template = os.path.join(
+            publisher._config.distsroot, series.getSuite(pocket), '%s/%s')
+
+        release_template = os.path.join(arch_template, 'Release')
+        packages_template = os.path.join(arch_template, 'Packages')
+        sources_template = os.path.join(arch_template, 'Sources')
+        release_content = open(os.path.join(
+            publisher._config.distsroot, series.getSuite(pocket),
+            'Release')).read()
+
+        for comp in ('main', 'restricted', 'universe', 'multiverse'):
+            # Check that source indices are present.
+            for path in (release_template, sources_template):
+                self.assertTrue(os.path.exists(path % (comp, 'source')))
+
+            # Check that wanted binary indices are present.
+            for arch_tag in present:
+                arch = 'binary-' + arch_tag
+                for path in (release_template, packages_template):
+                    self.assertTrue(os.path.exists(path % (comp, arch)))
+                self.assertTrue(arch in release_content)
+
+            # Check that unwanted binary indices are absent.
+            for arch_tag in absent:
+                arch = 'binary-' + arch_tag
+                self.assertFalse(os.path.exists(arch_template % (comp, arch)))
+                self.assertFalse(arch in release_content)
+
+    def testAllIndicesArePublished(self):
+        """Test that indices are created for all components and archs."""
+        # Dirty breezy-autotest with a source. Even though there are no
+        # new binaries in the suite, all its indices will still be published.
+        self.getPubSource()
+        self.getPubSource(pocket=PackagePublishingPocket.PROPOSED)
+
+        # Override the series status to FROZEN, which allows publication
+        # of all pockets.
+        self.ubuntutest.getSeries('breezy-autotest').status = (
+            SeriesStatus.FROZEN)
+
+        self.config = getPubConfig(self.ubuntutest.main_archive)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        publisher.A_publish(False)
+        self.runStepC(publisher)
+        publisher.D_writeReleaseFiles(False)
+
+        self.assertIndices(
+            publisher, [
+                (self.breezy_autotest, PackagePublishingPocket.RELEASE),
+                (self.breezy_autotest, PackagePublishingPocket.PROPOSED),
+            ], present=['hppa', 'i386'])
+
+    def testNoIndicesForDisabledArchitectures(self):
+        """Test that no indices are created for disabled archs."""
+        self.getPubBinaries()
+
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.getDistroArchSeries('i386').enabled = False
+        self.config = getPubConfig(self.ubuntutest.main_archive)
+
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        publisher.A_publish(False)
+        self.runStepC(publisher)
+        publisher.D_writeReleaseFiles(False)
+
+        self.assertIndicesForSuite(
+            publisher, self.breezy_autotest, PackagePublishingPocket.RELEASE,
+            present=['hppa'], absent=['i386'])
+
+    def testWorldAndGroupReadablePackagesAndSources(self):
+        """Test Packages.gz and Sources.gz files are world readable."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive, allowed_suites=[])
+
+        self.getPubSource(filecontent='Hello world')
+        publisher.A_publish(False)
+        self.runStepC(publisher)
 
         # Find a Sources.gz and Packages.gz that were just published
         # in the breezy-autotest distroseries.
         sourcesgz_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'partner',
+            publisher._config.distsroot, 'breezy-autotest', 'main',
             'source', 'Sources.gz')
         packagesgz_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'partner',
+            publisher._config.distsroot, 'breezy-autotest', 'main',
             'binary-i386', 'Packages.gz')
 
         # What permissions are set on those files?
@@ -1104,6 +1203,14 @@ class TestPublisher(TestPublisherBase):
                 (mode & (stat.S_IROTH | stat.S_IRGRP)),
                 (stat.S_IROTH | stat.S_IRGRP),
                 "%s is not world/group readable." % file)
+
+
+class TestFtparchiveIndices(TestArchiveIndices):
+    """Tests for the apt-ftparchive publisher's index generation."""
+
+    def runStepC(self, publisher):
+        """Run the apt-ftparchive index generation step of the publisher."""
+        publisher.C_doFTPArchive(False)
 
 
 class TestPublisherRepositorySignatures(TestPublisherBase):

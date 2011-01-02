@@ -12,7 +12,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Object, Text, TextLine
+from zope.schema import (
+    Datetime,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson

@@ -11,36 +11,50 @@ __all__ = [
     'ArchiveSubscribersView',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
-    'traverse_archive_subscription_for_subscriber'
+    'traverse_archive_subscription_for_subscriber',
     ]
 
 import datetime
 
 import pytz
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
-from zope.schema import Date, Text
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Date,
+    Text,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -93,7 +107,7 @@ class IArchiveSubscriberUI(Interface):
     we simply want to use a date field when users create or edit new
     subscriptions.
     """
-    subscriber = ParticipatingPersonChoice(
+    subscriber = PersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person or team to grant access."))
 
@@ -383,6 +397,3 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
             self.context.archive, self.context.subscriber)
-
-
-

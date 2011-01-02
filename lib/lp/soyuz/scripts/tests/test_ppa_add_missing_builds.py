@@ -7,17 +7,20 @@ import os
 import subprocess
 import sys
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from canonical.config import config
+from canonical.database.sqlbase import (
+    clear_current_connection_cache,
+    flush_database_updates,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.scripts.ppa_add_missing_builds import PPAMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-
-from canonical.config import config
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, flush_database_updates)
-from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class TestPPAAddMissingBuilds(TestCaseWithFactory):
@@ -68,7 +71,7 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
     def getScript(self):
         """Return an instance of the script object."""
         script = PPAMissingBuilds("test", test_args=[])
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         return script
 
     def getBuilds(self):

@@ -35,7 +35,6 @@
   </metal:contact>
 
   <tal:menu replace="structure view/@@+global-actions" />
-  <tal:polls replace="structure context/@@+portlet-polls" />
 
 </div>
 
@@ -88,9 +87,6 @@
       <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
   </div>
-
-  <div tal:content="structure context/@@+portlet-map" />
-
 </div>
 </body>
 </html>

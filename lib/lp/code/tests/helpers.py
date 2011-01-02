@@ -8,28 +8,41 @@ __all__ = [
     'add_revision_to_branch',
     'make_erics_fooix_project',
     'make_linked_package_branch',
+    'make_merge_proposal_without_reviewers',
     'make_official_package_branch',
+    'make_project_branch_with_revisions',
+    'make_project_cloud_data',
     ]
 
 
+from contextlib import contextmanager
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
+import transaction
 
+from bzrlib.plugins.builder.recipe import RecipeParser
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJobSource)
+    IBranchMergeProposalJobSource,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.registry.interfaces.series import SeriesStatus
+    IMakeOfficialBranchLinks,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, time_counter
+from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import (
+    run_with_login,
+    time_counter,
+    )
 
 
 def mark_all_merge_proposal_jobs_done():
@@ -54,9 +67,14 @@ def add_revision_to_branch(factory, branch, revision_date, date_created=None,
     """
     if date_created is None:
         date_created = revision_date
+    parent = branch.revision_history.last()
+    if parent is None:
+        parent_ids = []
+    else:
+        parent_ids = [parent.revision.revision_id]
     revision = factory.makeRevision(
         revision_date=revision_date, date_created=date_created,
-        log_body=commit_msg)
+        log_body=commit_msg, parent_ids=parent_ids)
     if mainline:
         sequence = branch.revision_count + 1
         branch_revision = branch.createBranchRevision(sequence, revision)
@@ -102,7 +120,7 @@ def make_erics_fooix_project(factory):
     preview.remvoed_lines_count = 13
     preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
     return {
-        'eric': eric, 'fooix': fooix, 'trunk':trunk, 'feature': feature,
+        'eric': eric, 'fooix': fooix, 'trunk': trunk, 'feature': feature,
         'proposed': proposed, 'fred': fred}
 
 
@@ -250,3 +268,57 @@ def make_official_package_branch(factory, owner=None):
         ICanHasLinkedBranch(suite_sourcepackage).setBranch,
         branch, registrant)
     return branch
+
+
+def make_project_branch_with_revisions(factory, date_generator, product=None,
+                                       private=None, revision_count=None):
+    """Make a new branch with revisions."""
+    if revision_count is None:
+        revision_count = 5
+    branch = factory.makeProductBranch(product=product, private=private)
+    naked_branch = removeSecurityProxy(branch)
+    factory.makeRevisionsForBranch(
+        naked_branch, count=revision_count, date_generator=date_generator)
+    # The code that updates the revision cache doesn't need to care about
+    # the privacy of the branch.
+    getUtility(IRevisionSet).updateRevisionCacheForBranch(naked_branch)
+    return branch
+
+
+def make_project_cloud_data(factory, details):
+    """Make test data to populate the project cloud.
+
+    Details is a list of tuples containing:
+      (project-name, num_commits, num_authors, last_commit)
+    """
+    delta = timedelta(seconds=1)
+    for project_name, num_commits, num_authors, last_commit in details:
+        project = factory.makeProduct(name=project_name)
+        start_date = last_commit - delta * (num_commits - 1)
+        gen = time_counter(start_date, delta)
+        commits_each = num_commits / num_authors
+        for committer in range(num_authors - 1):
+            make_project_branch_with_revisions(
+                factory, gen, project, commits_each)
+            num_commits -= commits_each
+        make_project_branch_with_revisions(
+            factory, gen, project, revision_count=num_commits)
+    transaction.commit()
+
+
+@contextmanager
+def recipe_parser_newest_version(version):
+    old_version = RecipeParser.NEWEST_VERSION
+    RecipeParser.NEWEST_VERSION = version
+    try:
+        yield
+    finally:
+        RecipeParser.NEWEST_VERSION = old_version
+
+
+def make_merge_proposal_without_reviewers(factory, **kwargs):
+    """Make a merge proposal and strip of any review votes."""
+    proposal = factory.makeBranchMergeProposal(**kwargs)
+    for vote in proposal.votes:
+        removeSecurityProxy(vote).destroySelf()
+    return proposal

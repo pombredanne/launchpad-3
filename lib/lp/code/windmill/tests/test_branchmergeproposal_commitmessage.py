@@ -6,27 +6,31 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
+
+import transaction
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 
 
 EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
-# There seem to be two textareas rendered for the yui-ieditor-input for some
+# There seem to be two textareas rendered for the yui3-ieditor-input for some
 # reason.
 EDIT_COMMENT_TEXTBOX = (
-    u'//div[@id="edit-commit_message"]//textarea[@class="yui-ieditor-input"][1]')
+    u'//div[@id="edit-commit_message"]//textarea[@class="yui3-ieditor-input"][1]')
 EDIT_COMMENT_SUBMIT = (
     u'//div[@id="edit-commit_message"]//'
-    'button[contains(@class, "yui-ieditor-submit_button")]')
+    'button[contains(@class, "yui3-ieditor-submit_button")]')
 COMMIT_MESSAGE_TEXT = (
-    u'//div[@id="edit-commit_message"]//div[@class="yui-editable_text-text"]')
+    u'//div[@id="edit-commit_message"]//div[@class="yui3-editable_text-text"]')
 
 
 class TestCommitMessage(WindmillTestCase):
@@ -97,7 +101,7 @@ class TestQueueStatus(WindmillTestCase):
             id=u'branchmergeproposal-status-value', timeout=PAGE_LOAD)
         client.click(id=u'branchmergeproposal-status-value')
         client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
 
         # Change the status to experimental.
         client.click(link=u'Approved')

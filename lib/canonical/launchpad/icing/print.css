@@ -1,5 +1,5 @@
 	body {
-    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
 	font-size: 12px;
 	color: #656565;
 	margin: 20px;
@@ -9,7 +9,7 @@
  	background-position: top center;
  	}
 	td {
-    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
 	font-size: 11px;
 	color: #656565;
 	}
@@ -25,8 +25,8 @@
 	dt {  }
 	dd {  }
 	em { font-style: normal; }
-	input, select {font-family: bitstream vera sans, dejavu sans, verdana, sans-serif; font-size: 10px; color: #656565; background-color: #FFFFFF; margin: 0;}
-	textarea {font-family: bitstream vera sans, dejavu sans, verdana, sans-serif; font-size: 11px; color: #656565; background-color: #FFFFFF; margin: 0;}
+	input, select {font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif; font-size: 10px; color: #656565; background-color: #FFFFFF; margin: 0;}
+	textarea {font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif; font-size: 11px; color: #656565; background-color: #FFFFFF; margin: 0;}
 	a img { border: none; }
 	form { border: 0; margin: 0; padding: 0; }
 	@media print { 

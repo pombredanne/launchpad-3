@@ -4,8 +4,10 @@ SourcePackagePublishingHistory
 
 This class provides public access to publishing records via a SQL view.
 
-    >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-    >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
+    >>> from lp.soyuz.model.publishing import (
+    ...     BinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     )
 
 Select a publishing record from the sampledata (pmount is a
 interesting one):
@@ -17,8 +19,8 @@ interesting one):
 None of the sources in the sample data are signed, so we can fake one here
 to make sure verifyObject will work.
 
-    >>> from lp.registry.model.gpgkey import GPGKey
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
@@ -26,12 +28,14 @@ to make sure verifyObject will work.
 Verify if the object follows its interface contracts:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageRelease, IDistroSeries,
-    ...     ISourcePackagePublishingHistory,
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackage,
-    ...     IDistributionSourcePackageRelease)
+    ...     ISourcePackagePublishingHistory,
+    ...     )
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -131,7 +135,16 @@ source package release will be returned.
     ...     distroseries=pub.distroseries, version="1.1",
     ...     sourcename='iceweasel')
 
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(pub).newer_distroseries_version
     >>> print pub.newer_distroseries_version.title
+    "iceweasel" 1.1 source package in The Warty Warthog Release
+
+We can calculate the newer_distroseries_version for many spph objects at once.
+
+    >>> del get_property_cache(pub).newer_distroseries_version
+    >>> pub.distroseries.setNewerDistroSeriesVersions([pub])
+    >>> print get_property_cache(pub).newer_distroseries_version.title
     "iceweasel" 1.1 source package in The Warty Warthog Release
 
 A helper is also included to create a summary of the build statuses for
@@ -139,7 +152,7 @@ the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
@@ -172,7 +185,7 @@ Note: if the related archive for this source package publishing is
 a rebuild archive then the status summary will always display
 FULLY_BUILT.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> spph.archive.purpose = ArchivePurpose.COPY
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
@@ -185,7 +198,7 @@ FULLY_BUILT.
 
 If one of the builds becomes published, it will not appear in the summary:
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
@@ -296,9 +309,10 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 Stanza generation
 =================
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing)
+    ...     ISourcePackageFilePublishing,
+    ...     )
 
 Retrieve any SourcePackagePublishingHistory entry.
 
@@ -595,7 +609,7 @@ getPublishedBinaries().
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> universe = getUtility(IComponentSet)['universe']
 
     >>> first_binary = copied_source.getPublishedBinaries()[0]
@@ -896,8 +910,7 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and IBinaryPackagePublishingHistory
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBinaryPackageFilePublishing)
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackageFilePublishing
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
     >>> print bpph.displayname
@@ -1526,8 +1539,14 @@ source publication set size:
     >>> cprov_published_sources.count()
     4
 
-    >>> len(list(decorated_set))
+    >>> decorated_sources_list = list(decorated_set)
+    >>> len(decorated_sources_list)
     4
+
+The objects loaded have their newer_distroseries_version preloaded.
+
+    >>> actual_pub = decorated_sources_list[0].context
+    >>> get_property_cache(actual_pub).newer_distroseries_version
 
 The decorated objects are returned in the same order used in the given
 'source_publications'.
@@ -1693,17 +1712,6 @@ getStatusSummaryForBuilds() method.
     >>> print_build_status_summary(
     ...     decorated_pub.getStatusSummaryForBuilds())
     FULLYBUILT
-    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
-
-We can verify that this decorated version is in fact using the cached
-builds by explicitly modifying the cached builds on the delegate. We'll
-modify the cached builds by appending the same build to the cached builds.
-
-    >>> decorated_pub._builds += decorated_pub.getBuilds()
-    >>> print_build_status_summary(
-    ...     decorated_pub.getStatusSummaryForBuilds())
-    FULLYBUILT
-    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
     i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
 
 

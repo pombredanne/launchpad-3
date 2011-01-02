@@ -12,14 +12,18 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.xmlrpc.helpers import return_fault
-
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
+    ICodeImportJobSet,
+    ICodeImportJobWorkflow,
+    )
 from lp.code.interfaces.codeimportscheduler import ICodeImportScheduler
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 

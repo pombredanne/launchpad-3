@@ -3,32 +3,43 @@
 
 """Tests for distroseries."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
+    IDistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import person_logged_in, TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestDistroSeriesCurrentSourceReleases(TestCase):

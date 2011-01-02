@@ -3,7 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+
 
 __metaclass__ = type
 
@@ -11,6 +15,7 @@ __all__ = (
     'TranslationConstants',
     'TranslationsBranchImportMode',
     )
+
 
 class TranslationConstants:
     """Set of constants used inside the context of translations."""
@@ -27,6 +32,8 @@ class TranslationConstants:
     TAB_CHAR_ESCAPED = '<code>' + r'\[tab]' + '</code>'
     NO_BREAK_SPACE_CHAR = '<code>[nbsp]</code>'
     NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nbsp]' + '</code>'
+    NARROW_NO_BREAK_SPACE_CHAR = '<code>[nnbsp]</code>'
+    NARROW_NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nnbsp]' + '</code>'
 
 
 class TranslationsBranchImportMode(DBEnumeratedType):
@@ -50,5 +57,3 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         Import all translation files (templates and translations)
         found in the branch.
         """)
-
-

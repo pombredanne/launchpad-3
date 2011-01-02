@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 

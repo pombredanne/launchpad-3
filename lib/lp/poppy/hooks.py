@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 import logging
-import shutil
 import os
+import shutil
 import stat
 import time
 

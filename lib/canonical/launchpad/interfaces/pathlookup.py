@@ -8,7 +8,10 @@ __all__ = ['IPathLookupError',
            'IPathStepRequiredError',
            'IPathStepNotFoundError']
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IPathLookupError(Interface):

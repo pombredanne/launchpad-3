@@ -14,10 +14,16 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, get_linked_branch, ICanHasLinkedBranch)
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+    CannotHaveLinkedBranch,
+    get_linked_to_branch,
+    ICanHasLinkedBranch,
+    )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
@@ -74,6 +80,13 @@ class TestProductLinkedBranch(TestCaseWithFactory):
         product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(product).setBranch(branch)
         self.assertEqual(branch, product.development_focus.branch)
+
+    def test_get_linked_to_branch(self):
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        got_linkable = get_linked_to_branch(product)
+        self.assertEqual(got_linkable, ICanHasLinkedBranch(product))
 
     def test_bzr_path(self):
         # The bzr_path of a product linked branch is the product name.
@@ -203,7 +216,7 @@ class TestProjectLinkedBranch(TestCaseWithFactory):
         # ProjectGroups cannot have linked branches.
         project = self.factory.makeProject()
         self.assertRaises(
-            CannotHaveLinkedBranch, get_linked_branch, project)
+            CannotHaveLinkedBranch, get_linked_to_branch, project)
 
 
 class TestLinkedBranchSorting(TestCaseWithFactory):

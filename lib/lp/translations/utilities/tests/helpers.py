@@ -10,15 +10,19 @@ __all__ = [
     'is_valid_mofile',
     ]
 
-from canonical.database.sqlbase import commit, ZopelessTransactionManager
 import transaction
-
 from zope.component import getUtility
 
+from canonical.database.sqlbase import (
+    commit,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.log.logger import FakeLogger
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.scripts import FakeLogger
+    ITranslationImportQueue,
+    )
 
 
 def import_pofile_or_potemplate(file_contents, person,

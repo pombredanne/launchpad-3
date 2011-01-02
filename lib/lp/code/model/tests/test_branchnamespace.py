@@ -12,26 +12,41 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.code.model.branchnamespace import (
-    PackageNamespace, PersonalNamespace, ProductNamespace)
-from lp.registry.model.sourcepackage import SourcePackage
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule)
+    BranchLifecycleStatus,
+    BranchType,
+    BranchVisibilityRule,
+    )
 from lp.code.errors import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, InvalidNamespace, NoSuchBranch)
+    BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchExists,
+    InvalidNamespace,
+    NoSuchBranch,
+    )
 from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
-    IBranchNamespaceSet, lookup_branch_namespace)
+    get_branch_namespace,
+    IBranchNamespace,
+    IBranchNamespacePolicy,
+    IBranchNamespaceSet,
+    lookup_branch_namespace,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.branchnamespace import (
+    PackageNamespace,
+    PersonalNamespace,
+    ProductNamespace,
+    )
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
 
 

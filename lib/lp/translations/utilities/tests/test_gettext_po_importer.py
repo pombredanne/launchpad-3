@@ -6,21 +6,25 @@
 __metaclass__ = type
 
 import unittest
+
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
+    ITranslationFormatImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    )
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+
 
 test_template = r'''
 msgid ""

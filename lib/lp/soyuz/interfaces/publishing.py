@@ -21,30 +21,48 @@ __all__ = [
     'ISourcePackagePublishingHistoryPublic',
     'MissingSymlinkInPool',
     'NotInPool',
-    'PackagePublishingPriority',
-    'PackagePublishingStatus',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
     ]
 
-from zope.schema import Choice, Date, Datetime, Int, TextLine, Text
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagerelease import (
-    IBinaryPackageReleaseDownloadCount)
-
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    IBinaryPackageReleaseDownloadCount,
+    )
 
 #
 # Exceptions
@@ -73,108 +91,6 @@ class MissingSymlinkInPool(Exception):
     The corresponding record is marked as removed and the process
     continues.
     """
-
-class PackagePublishingStatus(DBEnumeratedType):
-    """Package Publishing Status
-
-     A package has various levels of being published within a DistroSeries.
-     This is important because of how new source uploads dominate binary
-     uploads bit-by-bit. Packages (source or binary) enter the publishing
-     tables as 'Pending', progress through to 'Published' eventually become
-     'Superseded' and then become 'PendingRemoval'. Once removed from the
-     DistroSeries the publishing record is also removed.
-     """
-
-    PENDING = DBItem(1, """
-        Pending
-
-        This [source] package has been accepted into the DistroSeries and
-        is now pending the addition of the files to the published disk area.
-        In due course, this source package will be published.
-        """)
-
-    PUBLISHED = DBItem(2, """
-        Published
-
-        This package is currently published as part of the archive for that
-        distroseries. In general there will only ever be one version of any
-        source/binary package published at any one time. Once a newer
-        version becomes published the older version is marked as superseded.
-        """)
-
-    SUPERSEDED = DBItem(3, """
-        Superseded
-
-        When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
-
-    DELETED = DBItem(4, """
-        Deleted
-
-        When a publication was "deleted" from the archive by user request.
-        Records in this state contain a reference to the Launchpad user
-        responsible for the deletion and a text comment with the removal
-        reason.
-        """)
-
-    OBSOLETE = DBItem(5, """
-        Obsolete
-
-        When a distroseries becomes obsolete, its published packages
-        are no longer required in the archive.  The publications for
-        those packages are marked as "obsolete" and are subsequently
-        removed during domination and death row processing.
-        """)
-
-
-class PackagePublishingPriority(DBEnumeratedType):
-    """Package Publishing Priority
-
-    Binary packages have a priority which is related to how important
-    it is to have that package installed in a system. Common priorities
-    range from required to optional and various others are available.
-    """
-
-    REQUIRED = DBItem(50, """
-        Required
-
-        This priority indicates that the package is required. This priority
-        is likely to be hard-coded into various package tools. Without all
-        the packages at this priority it may become impossible to use dpkg.
-        """)
-
-    IMPORTANT = DBItem(40, """
-        Important
-
-        If foo is in a package; and "What is going on?! Where on earth is
-        foo?!?!" would be the reaction of an experienced UNIX hacker were
-        the package not installed, then the package is important.
-        """)
-
-    STANDARD = DBItem(30, """
-        Standard
-
-        Packages at this priority are standard ones you can rely on to be in
-        a distribution. They will be installed by default and provide a
-        basic character-interface userland.
-        """)
-
-    OPTIONAL = DBItem(20, """
-        Optional
-
-        This is the software you might reasonably want to install if you did
-        not know what it was or what your requiredments were. Systems such
-        as X or TeX will live here.
-        """)
-
-    EXTRA = DBItem(10, """
-        Extra
-
-        This contains all the packages which conflict with those at the
-        other priority levels; or packages which are only useful to people
-        who have very specialised needs.
-        """)
-
 
 name_priority_map = {
     'required': PackagePublishingPriority.REQUIRED,
@@ -320,16 +236,28 @@ class IPublishingView(Interface):
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
 
-    @call_with(removed_by=REQUEST_USER)
-    @operation_parameters(
-        removal_comment=TextLine(title=_("Removal comment"), required=False))
-    @export_write_operation()
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
         """
+
+    @call_with(removed_by=REQUEST_USER)
+    @operation_parameters(
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_operation_as("requestDeletion")
+    @export_write_operation()
+    def api_requestDeletion(removed_by, removal_comment=None):
+        """Delete this source and its binaries.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+        """
+        # This is a special API method that allows a different code path
+        # to the regular requestDeletion().  In the case of sources
+        # getting deleted, it ensures source and binaries are both
+        # deleted in tandem.
 
 
 class IFilePublishing(Interface):
@@ -592,6 +520,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """Return a resultset of `IBuild` objects in this context that are
         not published.
 
+        Note that this is convenience glue for
+        PublishingSet.getUnpublishedBuildsForSources - and that method should
+        be considered authoritative.
+
         :param build_states: list of build states to which the result should
             be limited. Defaults to BuildStatus.FULLYBUILT if none are
             specified.
@@ -642,7 +574,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -679,6 +612,17 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """URLs for this source publication's binary files.
 
         :return: A collection of URLs for this source.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        to_version=TextLine(title=_("To Version"), required=True))
+    def packageDiffUrl(to_version):
+        """URL of the debdiff file between this and the supplied version.
+
+        :param to_version: The version of the source package for which you
+            want to get the diff to.
+        :return: A URL to the librarian file containing the diff.
         """
 
 
@@ -858,7 +802,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -966,7 +911,8 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None,
+                              need_build_farm_job=False):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -987,13 +933,17 @@ class IPublishingSet(Interface):
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :param archive: An optional archive with which to filter the source
-                        ids.
+            ids.
         :type archive: `IArchive`
         :param build_states: optional list of build states to which the
             result will be limited. Defaults to all states if ommitted.
         :type build_states: ``list`` or None
+        :param need_build_farm_job: whether to include the `PackageBuild`
+            and `BuildFarmJob` in the result.
+        :type need_build_farm_job: bool
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`,
+             [`PackageBuild`, `BuildFarmJob` if need_build_farm_job])
         :rtype: `storm.store.ResultSet`.
         """
 

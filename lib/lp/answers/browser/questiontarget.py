@@ -25,38 +25,69 @@ __all__ = [
 from operator import attrgetter
 from urllib import urlencode
 
-from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, queryMultiAdapter
-from zope.formlib import form
-from zope.schema import Bool, Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import DropdownWidget
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.formlib import form
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, preferred_or_request_languages)
+    browserLanguages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, Link,
-    safe_action, stepto, stepthrough, urlappend)
+    canonical_url,
+    Link,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from lp.app.errors import NotFoundError
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.distribution import IDistribution
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection, IQuestionSet, ISearchableByQuestionOwner)
+    IQuestionCollection,
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
-    IQuestionTarget, ISearchQuestionsForm)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
+    IQuestionTarget,
+    ISearchQuestionsForm,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class AskAQuestionButtonView:
@@ -162,7 +193,32 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    default_template = ViewPageTemplateFile(
+        '../templates/question-listing.pt')
+    unknown_template = ViewPageTemplateFile('../templates/unknown-support.pt')
+
+    @property
+    def template(self):
+        """The template to render the presentation.
+
+        Subclasses can redefine this property to choose their own template.
+        """
+        if IQuestionSet.providedBy(self.context):
+            return self.default_template
+        involvement = getMultiAdapter(
+            (self.context, self.request), name='+get-involved')
+        if service_uses_launchpad(involvement.answers_usage):
+            # Primary contexts that officially use answers have a
+            # search and listing presentation.
+            return self.default_template
+        else:
+            # Primary context that do not officially use answers have an
+            # an explanation about about the current state.
+            return self.unknown_template
+
+    def render(self):
+        """See `LaunchpadView`."""
+        return self.template()
 
     @property
     def page_title(self):
@@ -451,6 +507,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return '<a href="%s">%s</a>' % (
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
+
+    @property
+    def can_configure_answers(self):
+        """Can the user configure answers for the `IQuestionTarget`."""
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):

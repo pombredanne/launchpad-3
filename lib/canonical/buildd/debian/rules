@@ -3,7 +3,6 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-export DH_COMPAT=4
 export DH_OPTIONS
 
 # This is an incomplete debian rules file for making the launchpad-buildd deb
@@ -41,11 +40,12 @@ install:
 	  etc/launchpad-buildd \
 	  usr/share/launchpad-buildd/canonical/launchpad/daemons \
 	  usr/share/doc/launchpad-buildd
+	dh_installexamples
 
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
 	touch $(pytarget)/../launchpad/daemons/__init__.py
-	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
+	cp launchpad-files/readyservice.py $(pytarget)/../launchpad/daemons/
 	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
 	cp -r pottery $(pytarget)
 	for pyfile in $(pyfiles); do \
@@ -89,10 +89,11 @@ binary: binary-indep
 clean:
 	dh_clean
 
-package:
-	mkdir -p launchpad-files
+prepare:
 	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
-	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+	cp ../launchpad/daemons/readyservice.py launchpad-files/readyservice.py
+
+package: prepare
 	debuild -uc -us -S
 
 build:

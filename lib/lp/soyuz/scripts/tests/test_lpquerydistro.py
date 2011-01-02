@@ -13,12 +13,14 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.testing import LaunchpadLayer
+from canonical.testing.layers import (
+    LaunchpadLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestLpQueryDistroScript(unittest.TestCase):

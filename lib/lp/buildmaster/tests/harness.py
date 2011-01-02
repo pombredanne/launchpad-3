@@ -14,7 +14,6 @@ import os
 
 import canonical
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-
 from lp.services.osutils import remove_tree
 
 

@@ -90,6 +90,9 @@ about its process such as the time it was started and finished and its
     >>> print firefox_build.upload_changesfile.filename
     firefox_0.9_i386.changes
 
+    >>> print firefox_build.changesfile_url
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/firefox_0.9_i386.changes
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
@@ -136,7 +139,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)
@@ -221,8 +224,8 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
@@ -299,30 +302,19 @@ it won't interfere in the next tests.
 Initialize all the required arguments to create a binary package for a
 given build record entry.
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
     >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
-    >>> shlibdeps = None
-    >>> depends = None
-    >>> recommends = None
-    >>> suggests = None
-    >>> conflicts = None
-    >>> replaces = None
-    >>> provides = None
-    >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
-    >>> pre_depends = None
-    >>> enhances = None
-    >>> breaks = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -330,14 +322,14 @@ Invoke createBinaryPackageRelease with all required arguments.
     >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...     binarypackagename, version, summary, description,
-    ...     binpackageformat, component, section, priority, shlibdeps,
-    ...     depends, recommends, suggests, conflicts, replaces, provides,
-    ...     pre_depends, enhances, breaks, essential, installedsize,
-    ...     architecturespecific)
+    ...     binarypackagename=binarypackagename, version=version,
+    ...     summary=summary, description=description,
+    ...     binpackageformat=binpackageformat, component=component,
+    ...     section=section, priority=priority, installedsize=installedsize,
+    ...     architecturespecific=architecturespecific)
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
@@ -363,11 +355,12 @@ Emulate a huge list of binaries for 'pmount':
     ...     version = "%d" % i
     ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...         binarypackagename, version, summary, description,
-    ...         binpackageformat, component, section, priority, shlibdeps,
-    ...         depends, recommends, suggests, conflicts, replaces, provides,
-    ...         pre_depends, enhances, breaks, essential, installedsize,
-    ...         architecturespecific)
+    ...         binarypackagename=binarypackagename, version=version,
+    ...         summary=summary, description=description,
+    ...         binpackageformat=binpackageformat, component=component,
+    ...         section=section, priority=priority,
+    ...         installedsize=installedsize,
+    ...         architecturespecific=architecturespecific)
 
 
 Check if the property is still working:
@@ -422,33 +415,33 @@ It receives list of architectures IDs:
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> arch_ids = [arch.id for arch in hoary.architectures]
-    >>> bs.getBuildsByArchIds(arch_ids).count()
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids).count()
     5
 
 It still working for empty list or None:
 
-    >>> bs.getBuildsByArchIds([]).count()
+    >>> bs.getBuildsByArchIds(ubuntu, []).count()
     0
 
-    >>> bs.getBuildsByArchIds(None).count()
+    >>> bs.getBuildsByArchIds(ubuntu, None).count()
     0
 
 Using build status, only the successfully built ones:
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT).count()
     2
 
 Check the result content:
 
-    >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
+    >>> [b.title for b in bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
     [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'hppa build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT,
     ...     name='pmo').count()
     2
@@ -456,11 +449,11 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 Checking optional 'pocket' restriction:
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
     5
 
@@ -470,7 +463,7 @@ primary archive.
     >>> breezy = ubuntu.getSeries('breezy-autotest')
     >>> arch_ids = [arch.id for arch in breezy.architectures]
     >>> [(build.archive.purpose.name, build.title) for build in
-    ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
+    ...    bs.getBuildsByArchIds(ubuntu, arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 `IBinaryPackageBuildSet` also provides getStatusSummaryForBuilds which
@@ -496,8 +489,8 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> from storm.expr import In
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from storm.expr import In
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -599,7 +592,7 @@ getBuildRecords() ordered by descending creation date.
 
     # Create a DELETED and a SUPERSEDED source publication in
     # ubuntutest/breezy-autotest.
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> old_source_pub = test_publisher.getPubSource(
     ...     sourcename='old-source', version='1.0',
@@ -626,7 +619,7 @@ domain of SourcePackage.
     # Create a rebuild archive, copy the 'old-source' source
     # publications to it and create builds in the rebuild archive
     # context.
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = factory.makeArchive(
     ...     ubuntutest, ubuntutest.owner, 'test-rebuild',
@@ -730,12 +723,12 @@ Log in as admin to avoid security on IBinaryPackageBuild for the moment.
 
 Let's create a private PPA for cprov (and hence its builds become private):
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, private=True, name='p3a',
     ...     distribution=cprov.archive.distribution)
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> binaries = test_publisher.getPubBinaries(
     ...     archive=cprov_private_ppa, builder=bob,
@@ -763,7 +756,7 @@ The default set of builds with no user specified excludes private builds:
 If we include an admin user, we can see all the builds.  Here, we get
 an additional private build for cprov:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
@@ -1199,7 +1192,7 @@ launchpad.Edit.
     >>> properties = {
     ...     'log': 1,
     ...     'date_finished': UTC_NOW,
-    ...     'date_started': None,
+    ...     'date_started': UTC_NOW,
     ...     'builder': bob,
     ...     'status': BuildStatus.FAILEDTOUPLOAD,
     ...     'dependencies': u'whatever',
@@ -1416,10 +1409,12 @@ specified builder ID, ordered from most-recently built.
     >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
     >>> eg_build_date = earlier_builds[0].date_created
     >>> for build in earlier_builds:
+    ...     build.date_started = eg_build_date - timedelta(1)
     ...     build.date_finished = eg_build_date - timedelta(1)
 
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
+    ...     build.date_started = eg_build_date
     ...     build.date_finished = eg_build_date
 
     Ensure that the i386 builds are created by the 'frog' builder,

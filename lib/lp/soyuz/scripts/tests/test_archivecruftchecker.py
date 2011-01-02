@@ -18,13 +18,14 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
-    ArchiveCruftChecker, ArchiveCruftCheckerError)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
-
+    ArchiveCruftChecker,
+    ArchiveCruftCheckerError,
+    )
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -51,7 +52,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
     def setUp(self):
         """Setup the test environment."""
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        self.log = QuietFakeLogger()
+        self.log = BufferLogger()
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.archive_path = "/var/tmp/archive"

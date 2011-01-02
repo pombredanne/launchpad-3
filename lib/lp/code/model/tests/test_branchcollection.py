@@ -14,23 +14,36 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
+    remove_all_sample_data_branches,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import GenericBranchCollection
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):
@@ -625,6 +638,24 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_merge_proposals_merging_revno(self):
+        """Specifying merged_revnos selects the correct merge proposals."""
+        target = self.factory.makeBranch()
+        mp1 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp2 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp3 = self.factory.makeBranchMergeProposal(target_branch=target)
+        with person_logged_in(target.owner):
+            mp1.markAsMerged(123)
+            mp2.markAsMerged(123)
+            mp3.markAsMerged(321)
+        collection = self.all_branches
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123])
+        self.assertEqual(sorted([mp1, mp2]), sorted(result))
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123, 321])
+        self.assertEqual(sorted([mp1, mp2, mp3]), sorted(result))
 
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the

@@ -7,10 +7,10 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.mail.bugnotificationrecipients import (
-    BugNotificationRecipientReason)
+    BugNotificationRecipientReason,
+    )
 from lp.testing import TestCaseWithFactory
 
 

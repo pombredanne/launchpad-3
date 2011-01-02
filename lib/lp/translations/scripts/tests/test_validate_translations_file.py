@@ -8,16 +8,20 @@
 import logging
 import os.path
 from textwrap import dedent
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from canonical.launchpad.ftests.script import run_script
-
 import lp.translations
-
 from lp.translations.scripts.validate_translations_file import (
-    UnknownFileType, ValidateTranslationsFile)
+    UnknownFileType,
+    ValidateTranslationsFile,
+    )
 from lp.translations.utilities.tests.xpi_helpers import (
-    get_en_US_xpi_file_to_import)
+    get_en_US_xpi_file_to_import,
+    )
 
 
 class TestValidateTranslationsFile(TestCase):

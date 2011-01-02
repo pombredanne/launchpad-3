@@ -6,8 +6,8 @@ to point it to our test debbugs db. Let's set up the db location for our
 test:
 
     >>> import os.path
-    >>> from canonical.launchpad.components.ftests import __file__
     >>> from canonical.config import config
+    >>> from canonical.launchpad.components.ftests import __file__
     >>> test_db_location = os.path.join(
     ...     os.path.dirname(__file__), 'debbugs_db')
 
@@ -15,7 +15,7 @@ You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
     ...     BATCH_SIZE_UNLIMITED, DebBugs)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
@@ -89,7 +89,7 @@ being correct.
 
 == Checking debbugs bug watches ==
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
@@ -122,7 +122,7 @@ option, is disabled here and will be tested later.
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches for 5 bugs on http://...
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -280,7 +280,7 @@ be raised.
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ISupportsBugImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> verifyObject(ISupportsBugImport, external_debbugs)
     True
 
@@ -348,8 +348,8 @@ ISupportsCommentImport interface.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, ISupportsCommentImport)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> external_debbugs = get_external_bugtracker(
@@ -364,8 +364,10 @@ DebBugs implements all of these.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(
@@ -436,8 +438,10 @@ getMessageForComment() will return an imported comment as a Launchpad
 Message. It requires a Person instance to be used as the Message's
 owner, so we'll turn Teun Vink into a Person.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonCreationRationale)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonCreationRationale,
+    ...     )
     >>> poster = getUtility(IPersonSet).ensurePerson(
     ...     poster_email, poster_name, PersonCreationRationale.BUGIMPORT,
     ...     comment='when importing comments for %s.' % bug_watch.title)
@@ -554,7 +558,7 @@ The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
 interface, which allows checkwatches to use it to push Launchpad
 comments back to the remote DebBugs instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> ISupportsCommentPushing.providedBy(external_debbugs)
     True
 

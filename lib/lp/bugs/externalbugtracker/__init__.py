@@ -38,8 +38,8 @@ from lp.bugs.externalbugtracker.bugzilla import *
 from lp.bugs.externalbugtracker.debbugs import *
 from lp.bugs.externalbugtracker.mantis import *
 from lp.bugs.externalbugtracker.roundup import *
-from lp.bugs.externalbugtracker.sourceforge import *
 from lp.bugs.externalbugtracker.rt import *
+from lp.bugs.externalbugtracker.sourceforge import *
 from lp.bugs.externalbugtracker.trac import *
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 

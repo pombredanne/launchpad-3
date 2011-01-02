@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -21,17 +21,21 @@ from zope.app.form.utility import setUpWidget
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
-from canonical.launchpad.interfaces import (
-    IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+from lp.services.fields import URIField
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import TeamFormatterAPI
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.browser.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 from lp.app.errors import NotFoundError, UnexpectedFormData
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class BugTaskAssigneeWidget(Widget):
@@ -83,23 +87,11 @@ class BugTaskAssigneeWidget(Widget):
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Missing value for assignee")
-                        )
+                        ValidationError("Missing value for assignee"))
             if not self.assignee_chooser_widget.hasValidInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Assignee not found")
-                        )
-            #try:
-                # A ConversionError is expected if the user provides
-                # an assignee value that doesn't exist in the
-                # assignee_chooser_widget's vocabulary.
-            #except ConversionError:
-                # Turn the ConversionError into a WidgetInputError.
-            #    raise WidgetInputError(
-            #        self.assignee_chooser_widget.name,
-            #        self.assignee_chooser_widget.label,
-            #        ValidationError("Assignee not found"))
+                        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""

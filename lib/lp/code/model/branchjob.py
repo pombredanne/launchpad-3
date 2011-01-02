@@ -20,64 +20,99 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.errors import NoSuchFile
-from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
+from bzrlib.errors import NoSuchFile
+from bzrlib.log import (
+    log_formatter,
+    show_log,
+    )
 from bzrlib.revision import NULL_REVISION
-from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.revisionspec import (
+    RevisionInfo,
+    RevisionSpec,
+    )
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-
-from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 import simplejson
-
-from sqlobject import ForeignKey, StringCol
-from storm.expr import And, SQL
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    SQL,
+    )
 from storm.locals import Store
-
 import transaction
-
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.code.bzr import get_branch_formats
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    )
+from lp.code.interfaces.branchjob import (
+    IBranchDiffJob,
+    IBranchDiffJobSource,
+    IBranchJob,
+    IBranchScanJob,
+    IBranchScanJobSource,
+    IBranchUpgradeJob,
+    IBranchUpgradeJobSource,
+    IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource,
+    IRevisionMailJob,
+    IRevisionMailJobSource,
+    IRevisionsAddedJob,
+    IRosettaUploadJob,
+    IRosettaUploadJobSource,
+    )
+from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
-    branch_id_to_path, get_rw_server, get_ro_server)
-from lp.services.job.model.job import Job
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.runner import BaseRunnableJob
+    branch_id_to_path,
+    get_ro_server,
+    get_rw_server,
+    )
 from lp.registry.interfaces.productseries import IProductSeriesSet
-from lp.translations.model.approver import TranslationBranchApprover
-from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel)
-from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchScanJob,
-    IBranchScanJobSource, IBranchUpgradeJob, IBranchUpgradeJobSource,
-    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionsAddedJob,
-    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
-    IRosettaUploadJobSource)
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.code.mail.branch import BranchMailer
-from lp.translations.utilities.translation_import import (
-    TranslationImporter)
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
+    ITranslationImportQueue,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
+from lp.translations.model.approver import TranslationBranchApprover
+from lp.translations.utilities.translation_import import TranslationImporter
 
 # Use at most the first 100 characters of the commit message for the subject
 # the mail describing the revision.
@@ -195,8 +230,11 @@ class BranchJobDerived(BaseRunnableJob):
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
+        # removeSecurityProxy, since 'other' might well be a delegated object
+        # and the context attribute is not exposed by design.
+        from zope.security.proxy import removeSecurityProxy
         return (self.__class__ == other.__class__ and
-                self.context == other.context)
+                self.context == removeSecurityProxy(other).context)
 
     def __ne__(self, other):
         return not (self == other)

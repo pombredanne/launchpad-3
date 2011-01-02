@@ -134,7 +134,7 @@ offered by the Bugzilla Launchpad plugin.
 
 The Gnome Bugzilla is a celebrity in Launchpad.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
 
 If the gnome_bugzilla doesn't have the Launchpad plugin installed, it
@@ -389,7 +389,7 @@ comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
     ...     implements(ISupportsCommentImport)
@@ -433,9 +433,10 @@ Only bugs that have been checked before are passed on to
 getModifiedRemoteBugs(). I.e., if we have a set of newly created bug
 watches, the getModifiedRemoteBugs() method won't be called.
 
-    >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.bugs.model.bugtracker import BugTracker
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
@@ -652,7 +653,7 @@ its own _convertRemoteStatus() method.
 ExternalBugTracker.convertRemoteStatus() will either return a
 BugTaskStatus or will raise an UnknownRemoteStatusError.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.bugs.externalbugtracker import (
     ...     UnknownRemoteStatusError)
     >>> class StatusConvertingExternalBugTracker(TestExternalBugTracker):
@@ -713,8 +714,8 @@ ExternalBugTracker.
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
     ...     'http://example.com')
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> bug_watch_updater = CheckwatchesMaster(transaction, QuietFakeLogger())
+    >>> from lp.services.log.logger import BufferLogger
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, BufferLogger())
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
@@ -1080,7 +1081,7 @@ external_bugtracker.
     ...         return [(external_bugtracker, bug_watches)]
 
     >>> bug_watch_updater = NonConnectingCheckwatchesMaster(
-    ...     transaction, QuietFakeLogger())
+    ...     transaction, BufferLogger())
     >>> transaction.commit()
     >>> bug_watch_updater._updateBugTracker(
     ...     standard_bugzilla, batch_size=2)

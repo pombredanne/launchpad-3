@@ -13,8 +13,15 @@ from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing.layers import LaunchpadFunctionalLayer, MemcachedLayer
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    MemcachedLayer,
+    )
 from lp.services.testing import build_test_suite
 
 
@@ -43,8 +50,8 @@ class TestPageTemplate(PageTemplate):
     def pt_getContext(self, args=(), options={}):
         # Build a minimal context. The cache: expression requires
         # a request.
-        context = {'request': TestRequest()}
-        context.update(options)
+        context = dict(options)
+        context.setdefault('request', TestRequest())
         return context
 
 
@@ -53,6 +60,7 @@ def memcacheSetUp(test):
     test.globs['TestPageTemplate'] = TestPageTemplate
     test.globs['dedent'] = dedent
     test.globs['MemcachedLayer'] = MemcachedLayer
+    test.globs['LaunchpadTestRequest'] = LaunchpadTestRequest
 
 
 def suite_for_doctest(filename):

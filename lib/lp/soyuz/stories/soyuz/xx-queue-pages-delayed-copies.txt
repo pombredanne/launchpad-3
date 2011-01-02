@@ -107,8 +107,8 @@ become available to everyone.
     # DB objects that have no security adapter are modified during the
     # delayed copy, the modification must be done in Zopeless mode.
     >>> import os.path
-    >>> from canonical.launchpad.ftests.script import run_script
     >>> from canonical.config import config
+    >>> from canonical.launchpad.ftests.script import run_script
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> result, stdout, stderr = run_script(script, ["ubuntu"])
     >>> if result != 0:

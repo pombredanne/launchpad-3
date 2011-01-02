@@ -16,26 +16,56 @@ __all__ = [
     'SourcePackageUrgency',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Object, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasCodeImports, IHasMergeProposals)
+    IHasBranches,
+    IHasCodeImports,
+    IHasMergeProposals,
+    )
 from lp.soyuz.interfaces.component import IComponent
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                      IHasOfficialBugTags, IHasCodeImports,
-                     IHasTranslationTemplates):
+                     IHasTranslationImports, IHasTranslationTemplates):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less

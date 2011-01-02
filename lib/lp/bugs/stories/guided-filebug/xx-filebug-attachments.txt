@@ -48,7 +48,7 @@ No Privileges Person can see the attachment in the attachments portlet.
     A description of the attachment
 
     >>> user_browser.getLink('A description of the attachment').url
-    'http://localhost:58000/.../example.txt'
+    'http://bugs.launchpad.dev/firefox/+bug/.../+attachment/1/+files/ex...'
 
 
 == Empty Attachment Fields ==

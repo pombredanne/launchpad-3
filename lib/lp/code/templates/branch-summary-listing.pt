@@ -4,10 +4,10 @@
        tal:content="context/bzr_identity"
        class="sprite branch" >Mozilla Thunderbird 0.9.1</a>
     <tal:person-link condition="view/show_person_link">
-      - <a tal:replace="structure context/owner/fmt:link/+ownedbranches" />
+      - <a tal:replace="structure context/owner/fmt:link:code/+ownedbranches" />
     </tal:person-link>
     <tal:product-link condition="view/show_product_link">
-      - <a tal:attributes="href string:${context/product/fmt:url}/+branches"
+      - <a tal:attributes="href context/product/fmt:url:code/+branches"
          tal:content="context/product/displayname"
          class="sprite product">Project</a>
     </tal:product-link>

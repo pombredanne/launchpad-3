@@ -18,6 +18,7 @@ At the top level we provide a collection of bugs.
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> pprint_entry(bug_entries[0])
+  activity_collection_link: u'http://.../bugs/11/activity'
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
@@ -115,8 +116,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
@@ -572,7 +573,7 @@ similar to bug 1 for Firefox.
   ...     firefox_bugtask['self_link'],
   ...     'findSimilarBugs')
   HTTP/1.1 200 Ok...
-  {"total_size": 0, "start": null, "entries": []}
+  {"total_size": 0, "start": 0, "entries": []}
 
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
@@ -626,12 +627,18 @@ Initially there are no nominations.
 
     >>> pprint_collection(webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
+    >>> debuntu = removeSecurityProxy(debuntu)
+    >>> debuntu.bug_supervisor = john
+    >>> fooix = removeSecurityProxy(fooix)
+    >>> fooix.bug_supervisor = john
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -1031,7 +1038,7 @@ report described by the bugwatch.
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
-  remote_importance: None
+  remote_importance: u''
   remote_status: u''
   resource_type_link: u'http://.../#bug_watch'
   self_link: u'http://.../bugs/1/+watch/2'
@@ -1216,7 +1223,7 @@ Bug 1 has no attachments:
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://.../#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
 
@@ -1348,9 +1355,49 @@ But we can remove the attachment altogether.
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
+
+
+Attachments of private bugs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Attachments of private bugs are served by the app server itself.
+
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 209 Content Returned...
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addAttachment',
+  ...     data="67890", filename="more-numbers.txt", content_type='foo/bar',
+  ...     comment="The numbers you asked for.")
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> attachment = attachments['entries'][0]
+  >>> pprint_entry(attachment)
+  bug_link:...
+  data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
+  ...
+
+XXX Abel Deuring 2010-09-03, bug=629804: Please note that the http URLs in this
+example are part of a temporary hack.  Please see the comment in
+canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage.
+alias_url for details.
+
+  >>> response = webservice.get(attachment['data_link'])
+  >>> print response
+  HTTP/1.1 303 See Other
+  Status: 303 See Other
+  ...
+  Location: http://localhost:58005/94/more-numbers.txt
+  ...
+
+  >>> # Let's make the bug public again for later tests.
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
 
 
 Searching for bugs
@@ -1433,17 +1480,44 @@ setting the tags_combinator parameter to 'All'.
     ...     '/ubuntu', 'searchTasks',
     ...     tags=['crash', 'dataloss'],
     ...     tags_combinator='All').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
 It can also be used to find bugs modified since a certain date.
 
+    >>> from datetime import timedelta
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> target = factory.makeProduct()
+    >>> bug = factory.makeBug(product=target)
+    >>> bug = removeSecurityProxy(bug)
+    >>> date = bug.date_last_updated - timedelta(days=6)
+    >>> logout()
+
     >>> pprint_collection(webservice.named_get(
-    ...     '/ubuntu', 'searchTasks',
-    ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
-    start: None
-    total_size: 0
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     modified_since=u'%s' % date ).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+It can also be used to find bug tasks created since a certain date.
+
+    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
+    >>> login(ADMIN_EMAIL)
+    >>> target = IBugTarget(factory.makeProduct())
+    >>> task = factory.makeBugTask(target=target)
+    >>> date = task.datecreated - timedelta(days=8)
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     created_since=u'%s' % date).jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 It is possible to search for bugs targeted to a milestone within a
@@ -1684,7 +1758,7 @@ empty:
     ...     '/~testuser3', 'searchTasks'
     ...     ).jsonBody()
     >>> pprint_collection(related)
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1725,7 +1799,7 @@ We can search for bugs that are linked to branches...
     http://api.launchpad.dev/beta/firefox/+bug/1
     http://api.launchpad.dev/beta/firefox/+bug/16
     http://api.launchpad.dev/beta/firefox/+bug/20
-    http://api.launchpad.dev/beta/firefox/+bug/22
+    http://api.launchpad.dev/beta/firefox/+bug/24
 
 
 Affected users
@@ -1841,7 +1915,7 @@ Unlink CVEs from that bug.
     HTTP/1.1 200 Ok...
     >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
     resource_type_link: u'http://.../#cve-page-resource'
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -2044,3 +2118,33 @@ can_expire is not exported in the development version of the API.
     Traceback (most recent call last):
     ...
     NameError: name 'can_expire' is not defined
+
+
+Bug activity
+------------
+
+Each bug has a collection of activities that have taken place with it.
+
+  >>> from lazr.restful.testing.webservice import (
+  ...     pprint_collection, pprint_entry)
+  >>> activity = webservice.get(
+  ...     bug_one['activity_collection_link']).jsonBody()
+  >>> pprint_collection(activity)
+  next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
+  resource_type_link: u'http://.../#bug_activity-page-resource'
+  start: 0
+  total_size: 26
+  ...
+
+  >>> bug_nine_activity = webservice.get(
+  ...   "/bugs/9/activity").jsonBody()
+  >>> pprint_entry(bug_nine_activity['entries'][1])
+  bug_link: u'http://.../bugs/9'
+  datechanged: u'2006-02-23T16:42:40.288553+00:00'
+  message: None
+  newvalue: u'Confirmed'
+  oldvalue: u'Unconfirmed'
+  person_link: u'http://.../~name12'
+  resource_type_link: u'http://.../#bug_activity'
+  self_link: u'http://.../bugs/9/activity'
+  whatchanged: u'thunderbird: status'

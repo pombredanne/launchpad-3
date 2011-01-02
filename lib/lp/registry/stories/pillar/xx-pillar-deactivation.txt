@@ -7,10 +7,10 @@ XXX: Distributions can't yet be marked inactive, so this test won't
 cover that part of the change. See bug #156263 for more details.
     -- kiko, 2007-10-23
 
-    >>> from lp.testing import unlink_source_packages
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.pillar import IPillarNameSet
     >>> from lp.registry.interfaces.product import IProduct
-    >>> from zope.component import getUtility
+    >>> from lp.testing import unlink_source_packages
     >>> pillar_set = getUtility(IPillarNameSet)
     >>> def toggleProject(name):
     ...     login('admin@canonical.com')

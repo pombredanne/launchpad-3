@@ -4,7 +4,7 @@ In order to arbitrary group bugs together a bug can be associated with
 one or more tags. A tag is a simple text string, not contain a space
 character. The tags are available as a list of strings on the bug:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
 
 There are no tags currently, so let's add some. It doesn't matter which
@@ -67,9 +67,9 @@ Let's correct the spelling mistake we did and delete one of the tags:
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.bug import BugTagsWidget
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
     >>> request = LaunchpadTestRequest()
@@ -178,9 +178,9 @@ A LargeBugTagsWidget is rendered as a <textarea>,
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet)
     >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(tag=all(u'svg'), user=None))
@@ -243,7 +243,8 @@ tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet, BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
@@ -256,7 +257,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> firefox.getUsedBugTags()
     [u'doc', u'layout-test', u'sco', u'svg']
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> mozilla.getUsedBugTags()
     [u'crash', u'doc', u'layout-test', u'sco', u'svg']

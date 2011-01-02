@@ -11,7 +11,11 @@ __all__ = [
     'IPackageRelationshipSet',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IPackageRelationship(Interface):
     """The details of a relationship with a package.

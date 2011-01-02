@@ -8,9 +8,12 @@ __all__ = ['test_suite']
 
 
 import os
-import wadllib
 import unittest
+
+import wadllib
+
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+
 
 topdir = os.path.dirname(wadllib.__file__)
 

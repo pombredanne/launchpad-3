@@ -1,4 +1,5 @@
-= Bug Reporting Guidelines and acknowledgement messages =
+Bug Reporting Guidelines and acknowledgement messages
+=====================================================
 
 Some helpful explanatory text - guidelines - can be set for
 distributions, product groups, products, and source packages, as wel
@@ -17,7 +18,8 @@ filed.
     ...     admin_browser.open(edit_url)
     ...     admin_browser.getControl(
     ...         name='field.bug_reporting_guidelines').value = (
-    ...         "The version of %s you're using." % (context_name,))
+    ...         "The version of %s you're using.\n"
+    ...         "See http://example.com for more details." % (context_name,))
     ...     admin_browser.getControl(
     ...         name='field.bug_reported_acknowledgement').value = (
     ...         "Thank you for filing a bug for %s" % context_name)
@@ -67,26 +69,31 @@ description.
       <http://launchpad.dev/ubuntu/+filebug>
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
+    See http://example.com for more details.
     Thank you for filing a bug for Ubuntu
     *
     Mozilla
       <http://launchpad.dev/mozilla/+filebug>
     The Mozilla Project bug reporting guidelines:
     The version of Mozilla you're using.
+    See http://example.com for more details.
     Thank you for filing a bug for Mozilla
     *
     Firefox
       <http://launchpad.dev/firefox/+filebug>
     Mozilla Firefox bug reporting guidelines:
     The version of Firefox you're using.
+    See http://example.com for more details.
     Thank you for filing a bug for Firefox
     *
     alsa-utils in Ubuntu
       <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug>
     alsa-utils (Ubuntu) bug reporting guidelines:
     The version of alsa-utils in Ubuntu you're using.
+    See http://example.com for more details.
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
+    See http://example.com for more details.
     Thank you for filing a bug for alsa-utils in Ubuntu
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
@@ -103,9 +110,21 @@ which the guidelines are taken from the respective distribution.
     ...     user_browser.contents, 'bug-reporting-guidelines'))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
+    See http://example.com for more details.
+
+Any URLS in the guidelines will be linkified, with the target attribute
+of the link being set to "_new" so that the links always open in a new
+page. This prevents the user being taken away from the bug filing
+process by clicking on the links.
+
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines')
+    <td...
+    See <a ... target="_new">...</a> for more details...
 
 
-== Limitations ==
+Limitations
+-----------
 
 There are some limitations to where we can show guidelines, because
 it's not always possible to know what the current context is. The
@@ -129,6 +148,7 @@ shown.
     ...     user_browser.contents, 'bug-reporting-guidelines'))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
+    See http://example.com for more details.
 
 Changing the package to alsa-utils does not make the alsa-utils
 guidelines appear.
@@ -141,13 +161,15 @@ guidelines appear.
     ...     user_browser.contents, 'bug-reporting-guidelines'))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
+    See http://example.com for more details.
 
 XXX: allenap 2008-11-14 bug=297743: These limitations have been filed
 as bug #297743, "When filing a bug always display the appropriate
 reporting guidelines".
 
 
-== Editing the guidelines ==
+Editing the guidelines
+----------------------
 
 Unprivileged Launchpad users do not see the link to the page where the
 bug reporting guidelines can be changed, but admins do.

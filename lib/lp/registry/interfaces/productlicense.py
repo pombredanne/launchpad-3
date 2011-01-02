@@ -7,7 +7,11 @@ __metaclass__ = type
 
 __all__ = ['IProductLicense']
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IProductLicense(Interface):
     """A link between a product and a license."""

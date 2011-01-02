@@ -3,31 +3,48 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.fields import CollectionField, Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    exported, export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PersonChoice
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.launchpad import _
+    TranslationFileFormat,
+    )
 
 
 __metaclass__ = type
 
 __all__ = [
-    'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
     'IPOTemplateSharingSubset',
@@ -117,14 +134,14 @@ class IPOTemplate(IRosettaStats):
         required=True)
 
     iscurrent = exported(Bool(
-        title=_("Accept translations?"),
+        title=_("Template is active"),
         description=_(
             "If unchecked, people can no longer change the template's "
             "translations."),
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -182,7 +199,7 @@ class IPOTemplate(IRosettaStats):
     path = exported(TextLine(
         title=_(
             "Path of the template in the source tree, including filename."),
-        required=False))
+        required=True))
 
     source_file = Object(
         title=_('Source file for this translation template'),
@@ -370,9 +387,6 @@ class IPOTemplate(IRosettaStats):
     def languages():
         """This Return the set of languages for which we have POFiles for
         this POTemplate.
-
-        NOTE that variants are simply ignored, if we have three variants for
-        en_GB we will simply return the one with variant=NULL.
         """
 
     def getPOFileByPath(path):
@@ -381,10 +395,8 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such `IPOFile`.
         """
 
-    def getPOFileByLang(language_code, variant=None):
-        """Get the PO file of the given language and (potentially)
-        variant. If no variant is specified then the translation
-        without a variant is given.
+    def getPOFileByLang(language_code):
+        """Get the PO file of the given language.
 
         Return None if there is no such POFile.
         """
@@ -405,18 +417,16 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None, create_sharing=True):
+    def newPOFile(language_code, create_sharing=True):
         """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an `IPOFile` for the given language_code
-        and variant.
+        We should not have already an `IPOFile` for the given language_code.
 
         :param language_code: The code of the language for which to create
             the IPOFile.
-        :param variant: Optional language variant.
         :param requester: The requester person. If given and will have edit
             permissions on the IPOFile, it becomes the owner. Otherwise
             rosetta_experts own the file.
@@ -425,8 +435,7 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language, variant=None, requester=None,
-                       check_for_existing=True):
+    def getDummyPOFile(language, requester=None, check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -435,9 +444,8 @@ class IPOTemplate(IRosettaStats):
         This method is designed to be used by read only actions. This way you
         only create a POFile when you actually need to store data.
 
-        We should not have already a POFile for the given language_code and
-        variant: if check_for_existing is set to False, no check will be
-        done for this.
+        We should not have already a POFile for the given language:
+        if check_for_existing is set to False, no check will be done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
@@ -642,6 +650,18 @@ class IPOTemplateSet(Interface):
         migration spec.
         """
 
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
+
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
+        """
+
 
 class IPOTemplateSharingSubset(Interface):
     """A subset of sharing PO templates."""
@@ -702,85 +722,6 @@ class IPOTemplateWithContent(IPOTemplate):
         required=True)
 
 
-class IHasTranslationTemplates(Interface):
-    """An entity that has translation templates attached.
-
-    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
-    """
-
-    has_translation_templates = Bool(
-        title=_("Does this object have any translation templates?"),
-        readonly=True)
-
-    has_current_translation_templates = Bool(
-        title=_("Does this object have current translation templates?"),
-        readonly=True)
-
-    def getTemplatesCollection():
-        """Return templates as a `TranslationTemplatesCollection`.
-
-        The collection selects all `POTemplate`s attached to the
-        translation target that implements this interface.
-        """
-
-    def getCurrentTemplatesCollection():
-        """Return `TranslationTemplatesCollection` of current templates.
-
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
-        """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
-
-    def getCurrentTranslationTemplates(just_ids=False):
-        """Return an iterator over all active translation templates.
-
-        :param just_ids: If True, return only the `POTemplate.id` rather
-            than the full `POTemplate`.  Used to save time on retrieving
-            and deserializing the objects from the database.
-
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
-        """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
-
-    def getCurrentTranslationFiles(just_ids=False):
-        """Return an iterator over all active translation files.
-
-        A translation file is active if it's attached to an
-        active translation template.
-        """
-
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
-    @export_read_operation()
-    @operation_returns_collection_of(IPOTemplate)
-    def getTranslationTemplates():
-        """Return an iterator over all its translation templates.
-
-        The returned templates are either obsolete or current.
-        """
-
-    def getTranslationTemplateFormats():
-        """A list of native formats for all current translation templates.
-        """
-
-    def getTemplatesAndLanguageCounts():
-        """List tuples of `POTemplate` and its language count.
-
-        A template's language count is the number of `POFile`s that
-        exist for it.
-        """
-
 class ITranslationTemplatesCollection(Interface):
     """A `Collection` of `POTemplate`s."""
 
@@ -793,7 +734,3 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
-
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py

@@ -3,6 +3,7 @@
 
 import doctest
 
+
 def test_suite():
     return doctest.DocTestSuite(
             'canonical.launchpad.testing.tests.googleserviceharness',

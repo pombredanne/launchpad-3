@@ -11,34 +11,47 @@ __all__ = [
     'needs_authentication',
     ]
 
-import pytz
+from email.Utils import parseaddr
 import re
+from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
-from email.Utils import parseaddr
-from xml.dom import minidom
-
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend, urlparse
-
+from canonical.launchpad.webapp.url import (
+    urlappend,
+    urlparse,
+    )
 from lp.bugs.externalbugtracker.base import (
-    BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
-    ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion)
+    BugNotFound,
+    BugTrackerAuthenticationError,
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteImportanceError,
+    UnknownRemoteStatusError,
+    UnparseableBugData,
+    UnparseableBugTrackerVersion,
+    )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
+    )
 
 
 class Bugzilla(ExternalBugTracker):
@@ -52,6 +65,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+        self.remote_bug_importance = {}
         self.remote_bug_product = {}
 
     @ensure_no_transaction
@@ -209,13 +223,31 @@ class Bugzilla(ExternalBugTracker):
 
         return tuple(int(number) for number in version_numbers)
 
-    def convertRemoteImportance(self, remote_importance):
-        """See `ExternalBugTracker`.
+    _importance_lookup = {
+        'blocker':     BugTaskImportance.CRITICAL,
+        'critical':    BugTaskImportance.CRITICAL,
+        'immediate':   BugTaskImportance.CRITICAL,
+        'urgent':      BugTaskImportance.CRITICAL,
+        'major':       BugTaskImportance.HIGH,
+        'high':        BugTaskImportance.HIGH,
+        'normal':      BugTaskImportance.MEDIUM,
+        'medium':      BugTaskImportance.MEDIUM,
+        'minor':       BugTaskImportance.LOW,
+        'low':         BugTaskImportance.LOW,
+        'trivial':     BugTaskImportance.LOW,
+        'enhancement': BugTaskImportance.WISHLIST,
+        }
 
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        BugTaskImportance.UNKNOWN will always be returned.
-        """
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`."""
+        words = remote_importance.lower().split()
+        try:
+            return self._importance_lookup[words.pop()]
+        except KeyError:
+            raise UnknownRemoteImportanceError(remote_importance)
+        except IndexError:
+            return BugTaskImportance.UNKNOWN
+
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
@@ -223,6 +255,7 @@ class Bugzilla(ExternalBugTracker):
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),
         ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+         'PLEASETEST',
          BugTaskStatus.INCOMPLETE),
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
          BugTaskStatus.FIXCOMMITTED),
@@ -230,11 +263,19 @@ class Bugzilla(ExternalBugTracker):
         ('RESOLVED', 'VERIFIED', 'CLOSED',
             LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 'DOCUMENTED',
                  BugTaskStatus.FIXRELEASED),
-                ('WONTFIX', BugTaskStatus.WONTFIX),
-                (BugTaskStatus.INVALID,))),
-        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+                ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG', 'UPSTREAM',
+                 BugTaskStatus.WONTFIX),
+                ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
+                 BugTaskStatus.EXPIRED),
+                ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
+                 'UNREPRODUCIBLE',
+                 BugTaskStatus.INVALID),
+                (BugTaskStatus.UNKNOWN,))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
+         BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
         )
 
@@ -285,6 +326,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'issue_id'
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = None
         elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
@@ -292,6 +335,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'bug_id'
             status_tag = 'bug_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = 'bug_severity'
         else:
             buglist_page = 'buglist.cgi'
             data = {'form_name'   : 'buglist.cgi',
@@ -307,6 +352,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
             resolution_tag = 'bz:resolution'
+            priority_tag = 'bz:priority'
+            severity_tag = 'bz:bug_severity'
 
         buglist_xml = self._postPage(buglist_page, data)
         try:
@@ -365,6 +412,33 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            # Priority (for Importance)
+            priority = ''
+            priority_nodes = bug_node.getElementsByTagName(priority_tag)
+            assert len(priority_nodes) <= 1, (
+                "Should only be one priority node for bug %s" % bug_id)
+            if priority_nodes:
+                bug_priority_node = priority_nodes[0]
+                assert len(bug_priority_node.childNodes) == 1, (
+                    "priority node for bug %s should contain a non-empty "
+                    "text string." % bug_id)
+                priority = bug_priority_node.childNodes[0].data
+
+            # Severity (for Importance)
+            if severity_tag:
+                severity_nodes = bug_node.getElementsByTagName(severity_tag)
+                assert len(severity_nodes) <= 1, (
+                    "Should only be one severity node for bug %s." % bug_id)
+                if severity_nodes:
+                    assert len(severity_nodes[0].childNodes) <= 1, (
+                        "Severity for bug %s should just contain "
+                        "a string." % bug_id)
+                    if severity_nodes[0].childNodes:
+                        severity = severity_nodes[0].childNodes[0].data
+                        priority += ' %s' % severity
+            self.remote_bug_importance[bug_id] = priority
+
+            # Product
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
                 "Should be at most one product node for bug %s." % bug_id)
@@ -375,14 +449,18 @@ class Bugzilla(ExternalBugTracker):
                 self.remote_bug_product[bug_id] = (
                     product_node.childNodes[0].data)
 
-    def getRemoteImportance(self, bug_id):
-        """See `ExternalBugTracker`.
+    def initializeRemoteImportance(self, bug_ids):
+        for bug_id in bug_ids:
+            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
 
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
-        """
-        return UNKNOWN_REMOTE_IMPORTANCE
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`."""
+        try:
+            if bug_id not in self.remote_bug_importance:
+                return "Bug %s is not in remote_bug_importance" %(bug_id)
+            return self.remote_bug_importance[bug_id]
+        except:
+            return UNKNOWN_REMOTE_IMPORTANCE
 
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
@@ -408,6 +486,7 @@ def needs_authentication(func):
     If an `xmlrpclib.Fault` with error code 410 is raised by the
     function, we'll try to authenticate and call the function again.
     """
+
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -415,6 +494,7 @@ def needs_authentication(func):
             # Catch authentication errors only.
             if fault.faultCode != 410:
                 raise
+
             self._authenticate()
             return func(self, *args, **kwargs)
     return decorator
@@ -495,7 +575,7 @@ class BugzillaAPI(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias'] != '':
+            if remote_bug.get('alias', '') != '':
                 self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     @ensure_no_transaction
@@ -579,12 +659,31 @@ class BugzillaAPI(Bugzilla):
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError:
-            raise UnparseableBugData
+            raise UnparseableBugData('No status or resolution defined '
+                'for bug %i' % (bug_id))
 
         if resolution != '':
             return "%s %s" % (status, resolution)
         else:
             return status
+
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        # Attempt to get the priority and severity from the bug.
+        # If we don't have the data for either, raise an error.
+        try:
+            priority = self._bugs[actual_bug_id]['priority']
+            severity = self._bugs[actual_bug_id]['severity']
+        except KeyError:
+            raise UnparseableBugData('No priority or severity defined '
+                'for bug %i' % (bug_id))
+
+        if severity != '':
+            return "%s %s" % (priority, severity)
+        else:
+            return priority
 
     @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):

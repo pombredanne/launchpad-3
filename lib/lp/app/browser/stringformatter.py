@@ -15,17 +15,19 @@ __all__ = [
 
 import cgi
 import re
+from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
-    ITraversable, TraversalError)
+    ITraversable,
+    TraversalError,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
 
@@ -156,6 +158,7 @@ def break_long_words(text):
 
     The text may contain entity references or HTML tags.
     """
+
     def replace(match):
         if match.group('tag'):
             return match.group()
@@ -176,7 +179,7 @@ class FormattersAPI:
 
     def nl_to_br(self):
         """Quote HTML characters, then replace newlines with <br /> tags."""
-        return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
+        return cgi.escape(self._stringtoformat).replace('\n', '<br />\n')
 
     def escape(self):
         return escape(self._stringtoformat)
@@ -199,6 +202,35 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # Don't look up the bug or display anything about the bug, just
+        # linkify to the general bug url.
+        url = '/bugs/%s' % bugnum
+        # The text will have already been cgi escaped.
+        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+
+    @staticmethod
+    def _handle_parens_in_trailers(url, trailers):
+        """Move closing parens from the trailer back into the url if needed.
+
+        If there are opening parens in the url that are matched by closing
+        parens at the start of the trailer, those closing parens should be
+        part of the url."""
+        assert trailers != '', ( "Trailers must not be an empty string.")
+        opencount = url.count('(')
+        closedcount = url.count(')')
+        missing = opencount - closedcount
+        slice_idx = 0
+        while slice_idx < missing:
+            if trailers[slice_idx] == ')':
+                slice_idx += 1
+            else:
+                break
+        url += trailers[:slice_idx]
+        trailers = trailers[slice_idx:]
+        return url, trailers
+
+    @staticmethod
     def _split_url_and_trailers(url):
         """Given a URL return a tuple of the URL and punctuation trailers.
 
@@ -212,17 +244,34 @@ class FormattersAPI:
         if match:
             trailers = match.group(1)
             url = url[:-len(trailers)]
+            return FormattersAPI._handle_parens_in_trailers(url, trailers)
         else:
-            trailers = ''
-        return url, trailers
+            # No match, return URL with empty string for trailers
+            return url, ''
 
     @staticmethod
-    def _linkify_bug_number(text, bugnum, trailers=''):
-        # Don't look up the bug or display anything about the bug, just
-        # linkify to the general bug url.
-        url = '/bugs/%s' % bugnum
-        # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+    def _linkify_url_should_be_ignored(url):
+        """Don't linkify URIs consisting of just the protocol."""
+
+        protocol_bases = [
+            'about',
+            'gopher',
+            'http',
+            'https',
+            'sftp',
+            'news',
+            'ftp',
+            'mailto',
+            'irc',
+            'jabber',
+            'apt',
+            'data',
+            ]
+
+        for base in protocol_bases:
+            if url in ('%s' % base, '%s:' % base, '%s://' % base):
+                return True
+        return False
 
     @staticmethod
     def _linkify_substitution(match):
@@ -233,16 +282,22 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = match.group('url')
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            full_url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(full_url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                cgi.escape(url, quote=True),
-                add_word_breaks(cgi.escape(url)),
-                cgi.escape(trailers))
+            if not FormattersAPI._linkify_url_should_be_ignored(url):
+                link_string = ('<a rel="nofollow" '
+                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                                    'url': cgi.escape(url, quote=True),
+                                    'linked_text': add_word_breaks(cgi.escape(url)),
+                                    'trailers': cgi.escape(trailers)
+                                    })
+                return link_string
+            else:
+                return full_url
         elif match.group('faq') is not None:
             # This is *BAD*.  We shouldn't be doing database lookups to
             # linkify text.
@@ -272,7 +327,9 @@ class FormattersAPI:
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>%s' % (
+            # Mark the links with a 'branch-short-link' class so they can be
+            # harvested and validated when the page is rendered.
+            return '<a href="%s" class="branch-short-link">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
@@ -291,6 +348,19 @@ class FormattersAPI:
             return match.group("leader") + "".join(bug_parts)
         else:
             raise AssertionError("Unknown pattern matched.")
+
+    @staticmethod
+    def _linkify_substitution_with_target(match):
+        """See `_linkify_substitution`().
+
+        The target attribute of the links will be updated to point to
+        "_new", so that links will open in a new window.
+        """
+        linkified_text = FormattersAPI._linkify_substitution(match)
+        element_tree = html.fromstring(linkified_text)
+        for link in element_tree.xpath('//a'):
+            link.set('target', '_new')
+        return html.tostring(element_tree)
 
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
@@ -356,7 +426,7 @@ class FormattersAPI:
     _re_linkify = re.compile(r'''
       (?P<url>
         \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt|data)
         :
         (?:
           (?:
@@ -401,11 +471,13 @@ class FormattersAPI:
          )
       ) |
       (?P<bug>
-        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bbug(?:[\s=-]|<br\s*/>)*
+            (?:(?:(?:\#|report|number|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)+)|
+            (?:(?:\s\#)?(?:[\s=-]|<br\s*/>)*))
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
@@ -419,11 +491,13 @@ class FormattersAPI:
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
 
-    # a pattern to match common trailing punctuation for URLs that we
-    # don't want to include in the link.
+    # There is various punctuation that can occur at the end of a link that
+    # shouldn't be included. The regex below matches on the set of characters
+    # we don't generally want. See also _handle_parens_in_trailers, which
+    # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self):
+    def text_to_html(self, linkify_text=True, linkify_substitution=None):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -456,11 +530,23 @@ class FormattersAPI:
 
         text = ''.join(output)
 
-        # Linkify the text.
-        text = re_substitute(self._re_linkify, self._linkify_substitution,
-                             break_long_words, text)
+        # Linkify the text, if allowed.
+        if linkify_text is True:
+            if linkify_substitution is None:
+                linkify_substitution = self._linkify_substitution
+            text = re_substitute(self._re_linkify, linkify_substitution,
+                break_long_words, text)
 
         return text
+
+    def text_to_html_with_target(self):
+        """See `text_to_html`().
+
+        URLs will be linkified with a target="_new" attribute.
+        """
+        return self.text_to_html(
+            linkify_text=True,
+            linkify_substitution=self._linkify_substitution_with_target)
 
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
@@ -580,7 +666,7 @@ class FormattersAPI:
             if in_fold and line.endswith('</p>') and in_false_paragraph:
                 # The line ends with a false paragraph in a PGP signature.
                 # Restore the line break to join with the next paragraph.
-                line = '%s<br />\n<br />' %  strip_trailing_p_tag(line)
+                line = '%s<br />\n<br />' % strip_trailing_p_tag(line)
             elif (in_quoted and self._re_quoted.match(line) is None):
                 # The line is not quoted like the previous line.
                 # End fold before we append this line.
@@ -684,7 +770,8 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 # Circular dependancies now. Should be resolved by moving the
                 # object image display api.
-                from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+                from lp.app.browser.tales import (
+                    ObjectImageDisplayAPI)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">%s</a>' % (
@@ -770,7 +857,7 @@ class FormattersAPI:
         letter.
 
         :param prefix: an optional string to prefix to the id. It can be
-            used to ensure that the start of the id is predicable.
+            used to ensure that the start of the id is predictable.
         """
         if prefix is not None:
             raw_text = prefix + self._stringtoformat
@@ -805,6 +892,8 @@ class FormattersAPI:
             return self.break_long_words()
         elif name == 'text-to-html':
             return self.text_to_html()
+        elif name == 'text-to-html-with-target':
+            return self.text_to_html_with_target()
         elif name == 'nice_pre':
             return self.nice_pre()
         elif name == 'email-to-html':

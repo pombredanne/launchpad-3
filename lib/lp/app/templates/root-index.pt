@@ -20,6 +20,7 @@
           border-bottom: 1px solid;
           margin-top: 2em;
           font-size: 167%;
+          padding-bottom: 2px;
           }
       .homepage-whatslaunchpad h2 {
           font-size: 189%;
@@ -46,10 +47,8 @@
       #homepage-blogposts {
           padding-right: 4em;
       }
-      .homepage-getstarted h2 {
-          border-bottom: 1px solid;
-          margin-top: 1em;
-          font-size: 161%;
+      #homepage-getstarted ul {
+          padding-top: 0.5em;
           }
       .featured-project-top h3 {
           font-size: 131%;
@@ -165,6 +164,9 @@
               <input id="text" type="text" name="field.text" size="25%" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
+            <script type="text/javascript"><!--
+              setFocusByName('field.text');
+            // --></script>
             <div id="homepage-stats" tal:content="cache:public, 1 hour">
               <strong class="registry-stat"
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
@@ -215,6 +217,10 @@
                   <li>
                     <a class="sprite question"
                       tal:attributes="href apphomes/answers">Find answers</a>
+                  </li>
+                  <li>
+                    <a class="sprite ppa-icon"
+                      href="/ubuntu/+ppas">Browse Ubuntu PPAs</a>
                   </li>
                   <li>
                      <a class="sprite tour" href="/+tour">Take the tour</a>

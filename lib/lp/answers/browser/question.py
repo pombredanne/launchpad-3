@@ -26,63 +26,98 @@ __all__ = [
     'QuestionWorkflowView',
     ]
 
-import re
-
 from operator import attrgetter
+import re
 from xml.sax.saxutils import escape
-
-from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.widget import renderElement
-from zope.component import getUtility
-from zope.event import notify
-from zope.formlib import form
-from zope.interface import alsoProvides, implements, providedBy
-from zope.schema import Choice
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-import zope.security
-
-from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.app.form.browser.widget import renderElement
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    alsoProvides,
+    implements,
+    providedBy,
+    )
+from zope.schema import Choice
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+import zope.security
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.answers.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.helpers import (
-    is_english_variant, preferred_or_request_languages)
-
-from lp.app.errors import NotFoundError, UnexpectedFormData
+    is_english_variant,
+    preferred_or_request_languages,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, Link, canonical_url,
-    enabled_with_permission, Navigation, LaunchpadView, action,
-    LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
-    safe_action, NavigationMenu)
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
-from canonical.widgets.project import ProjectScopeWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.lazr.utils import smartquote
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from lp.registry.interfaces.projectgroup import IProjectGroup
+from canonical.widgets import (
+    LaunchpadRadioWidget,
+    TokensTextWidget,
+    )
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.widgets.project import ProjectScopeWidget
+from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questionenums import (
-    QuestionAction, QuestionSort, QuestionStatus)
 from lp.answers.interfaces.question import (
-    IQuestion, IQuestionAddMessageForm, IQuestionChangeStatusForm,
-    IQuestionLinkFAQForm)
-from lp.answers.interfaces.questioncollection import (
-    IQuestionSet)
+    IQuestion,
+    IQuestionAddMessageForm,
+    IQuestionChangeStatusForm,
+    IQuestionLinkFAQForm,
+    )
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionSort,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.questiontarget import (
-    IAnswersFrontPageSearchForm, IQuestionTarget)
+    IAnswersFrontPageSearchForm,
+    IQuestionTarget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionLinksMixin:
@@ -506,7 +541,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The fields displayed on the search page.
     search_field_names = ['language', 'title']
 
-    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('title', TextWidget, displayWidth=40, displayMaxWidth=250)
 
     search_template = ViewPageTemplateFile(
         '../templates/question-add-search.pt')
@@ -568,6 +603,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         if 'title' not in data:
             self.setFieldError(
                 'title', _('You must enter a summary of your problem.'))
+        else:
+            if len(data['title']) > 250:
+                self.setFieldError(
+                    'title', _('The summary cannot exceed 250 characters.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(

@@ -12,8 +12,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import (
     ISOLATION_LEVEL_AUTOCOMMIT, flush_database_updates)
-from canonical.launchpad.interfaces import IKarmaCacheManager
 from lp.app.errors import NotFoundError
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.services.scripts.base import LaunchpadCronScript
 
 

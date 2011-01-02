@@ -18,10 +18,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, List, TextLine
+from zope.schema import (
+    Bool,
+    Int,
+    List,
+    TextLine,
+    )
 
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
 
 
 class OutdatedTranslationError(TranslationImportExportBaseException):

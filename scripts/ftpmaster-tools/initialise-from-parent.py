@@ -3,16 +3,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Initialise a new distroseries from its parent
-
-It performs two additional tasks before call initialiseFromParent:
-
-* check_queue (ensure parent's mutable queues are empty)
-* copy_architectures (copy parent's architectures and set
-                      nominatedarchindep properly)
-
-which eventually may be integrated in its workflow.
-"""
+"""Initialise a new distroseries from its parent series."""
 
 import _pythonpath
 
@@ -23,15 +14,14 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor, flush_database_caches)
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from lp.app.errors import NotFoundError
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 
+from lp.app.errors import NotFoundError
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialisationError, InitialiseDistroSeries)
 
 def main():
     # Parse command-line arguments
@@ -45,6 +35,11 @@ def main():
     parser.add_option("-d", "--distro", dest="distribution", metavar="DISTRO",
                       default="ubuntu",
                       help="Distribution name")
+
+    parser.add_option(
+        "-a", "--arches", dest="arches",
+        help="A comma-seperated list of arches to limit the child "
+        "distroseries to inheriting")
 
     (options, args) = parser.parse_args()
 
@@ -71,23 +66,24 @@ def main():
         distribution = getUtility(IDistributionSet)[options.distribution]
         distroseries = distribution[distroseries_name]
     except NotFoundError, info:
-        log.error(info)
+        log.error('%s not found' % info)
         return 1
 
-    # XXX cprov 2006-05-26: these two extra functions must be
-    # integrated in IDistroSeries.initialiseFromParent workflow.
-    log.debug('Check empty mutable queues in parentseries')
-    check_queue(distroseries)
-
-    log.debug('Check for no pending builds in parentseries')
-    check_builds(distroseries)
-
-    log.debug('Copying distroarchseries from parent '
-              'and setting nominatedarchindep.')
-    copy_architectures(distroseries)
-
-    log.debug('initialising from parent, copying publishing records.')
-    distroseries.initialiseFromParent()
+    try:
+        log.debug('Check empty mutable queues in parentseries')
+        log.debug('Check for no pending builds in parentseries')
+        log.debug('Copying distroarchseries from parent '
+                      'and setting nominatedarchindep.')
+        arches = ()
+        if options.arches is not None:
+            arches = tuple(options.arches.split(','))
+        ids = InitialiseDistroSeries(distroseries, arches)
+        ids.check()
+        log.debug('initialising from parent, copying publishing records.')
+        ids.initialise()
+    except InitialisationError, e:
+        log.error(e)
+        return 1
 
     if options.dryrun:
         log.debug('Dry-Run mode, transaction aborted.')
@@ -99,79 +95,6 @@ def main():
     log.debug("Releasing lock")
     lock.release()
     return 0
-
-
-def check_builds(distroseries):
-    """Assert there are no pending builds for parent series.
-
-    Only cares about the RELEASE pocket, which is the only one inherited
-    via initialiseFromParent method.
-    """
-    # Avoid circular import.
-    from lp.buildmaster.interfaces.buildbase import BuildStatus
-    from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-    parentseries = distroseries.parent_series
-
-    # only the RELEASE pocket is inherited, so we only check
-    # pending build records for it.
-    pending_builds = parentseries.getBuildRecords(
-        BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
-
-    assert pending_builds.count() == 0, (
-            'Parent must not have PENDING builds')
-
-def check_queue(distroseries):
-    """Assert upload queue is empty on parent series.
-
-    Only cares about the RELEASE pocket, which is the only one inherited
-    via initialiseFromParent method.
-    """
-    # Avoid circular import.
-    from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-    parentseries = distroseries.parent_series
-
-    # only the RELEASE pocket is inherited, so we only check
-    # queue items for it.
-    new_items = parentseries.getQueueItems(
-        PackageUploadStatus.NEW,
-        pocket=PackagePublishingPocket.RELEASE)
-    accepted_items = parentseries.getQueueItems(
-        PackageUploadStatus.ACCEPTED,
-        pocket=PackagePublishingPocket.RELEASE)
-    unapproved_items = parentseries.getQueueItems(
-        PackageUploadStatus.UNAPPROVED,
-        pocket=PackagePublishingPocket.RELEASE)
-
-    assert new_items.count() == 0, (
-            'Parent NEW queue must be empty')
-    assert accepted_items.count() == 0, (
-            'Parent ACCEPTED queue must be empty')
-    assert unapproved_items.count() == 0, (
-            'Parent UNAPPROVED queue must be empty')
-
-def copy_architectures(distroseries):
-    """Overlap SQLObject and copy architecture from the parent.
-
-    Also set the nominatedarchindep properly in target.
-    """
-    assert distroseries.architectures.count() is 0, (
-        "Can not copy distroarchseries from parent, there are already "
-        "distroarchseries(s) initialised for this series.")
-    flush_database_updates()
-    cur = cursor()
-    cur.execute("""
-    INSERT INTO DistroArchSeries
-          (distroseries, processorfamily, architecturetag, owner, official)
-    SELECT %s, processorfamily, architecturetag, %s, official
-    FROM DistroArchSeries WHERE distroseries = %s
-    """ % sqlvalues(distroseries, distroseries.owner,
-                    distroseries.parent_series))
-    flush_database_caches()
-
-    distroseries.nominatedarchindep = distroseries[
-        distroseries.parent_series.nominatedarchindep.architecturetag]
 
 
 if __name__ == '__main__':

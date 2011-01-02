@@ -5,24 +5,28 @@
 
 import unittest
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.database import BugNotification
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.ftests import login
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.enum import BugNotificationLevel
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -689,13 +693,17 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment added',
             'oldvalue': None,
             'newvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         attachment_added_notification = {
             'person': self.user,
             'text': '** Attachment added: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         self.assertRecordedChange(
@@ -708,7 +716,9 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
-        download_url = attachment.libraryfile.http_url
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -922,7 +932,8 @@ class TestBugChanges(unittest.TestCase):
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
-        source_package_bug = self.factory.makeBug(owner=self.user)
+        source_package_bug = self.factory.makeBug(
+            owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
@@ -946,8 +957,8 @@ class TestBugChanges(unittest.TestCase):
         expected_recipients = [self.user, metadata_subscriber]
         expected_recipients.extend(
             bug_task.pillar.owner
-            for bug_task in source_package_bug.bugtasks)
-
+            for bug_task in source_package_bug.bugtasks
+            if bug_task.pillar.official_malone)
         expected_notification = {
             'text': u"** Package changed: %s => %s" % (
                 bug_task_before_modification.bugtargetname,
@@ -1282,8 +1293,17 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'person': self.user,
-            'text': ("** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (self.bug.id, self.bug.title)),
+            'text': (
+                "** This bug has been marked a duplicate of bug "
+                "%(bug_id)d\n   %(bug_title)s\n"
+                " * You can subscribe to bug %(bug_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'bug_id': self.bug.id,
+                    'bug_title': self.bug.title,
+                    'subscribe_link': canonical_url(
+                        self.bug.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': duplicate_bug_recipients,
             }
 
@@ -1351,11 +1371,21 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'person': self.user,
-            'text': ("** This bug is no longer a duplicate of bug %d\n"
-                     "   %s\n"
-                     "** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (bug_one.id, bug_one.title,
-                                bug_two.id, bug_two.title)),
+            'text': (
+                "** This bug is no longer a duplicate of bug "
+                "%(bug_one_id)d\n   %(bug_one_title)s\n"
+                "** This bug has been marked a duplicate of bug "
+                "%(bug_two_id)d\n   %(bug_two_title)s\n"
+                " * You can subscribe to bug %(bug_two_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'bug_one_id': bug_one.id,
+                    'bug_one_title': bug_one.title,
+                    'bug_two_id': bug_two.id,
+                    'bug_two_title': bug_two.title,
+                    'subscribe_link': canonical_url(
+                        bug_two.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': bug_recipients,
             }
 
@@ -1464,10 +1494,20 @@ class TestBugChanges(unittest.TestCase):
         expected_notification = {
             'person': self.user,
             'text': (
-                "** This bug is no longer a duplicate of private bug %d\n"
-                "** This bug has been marked a duplicate of bug %d\n"
-                "   %s" % (private_bug.id, public_bug.id,
-                           public_bug.title)),
+                "** This bug is no longer a duplicate of private bug "
+                "%(private_bug_id)d\n"
+                "** This bug has been marked a duplicate of bug "
+                "%(public_bug_id)d\n   %(public_bug_title)s\n"
+                " * You can subscribe to bug %(public_bug_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'private_bug_id': private_bug.id,
+                    'private_bug_title': private_bug.title,
+                    'public_bug_id': public_bug.id,
+                    'public_bug_title': public_bug.title,
+                    'subscribe_link': canonical_url(
+                        public_bug.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': bug_recipients,
             }
 

@@ -8,129 +8,63 @@
 
 __metaclass__ = type
 
-import datetime
 from difflib import unified_diff
-import operator
-
 from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, make_msgid
-
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    make_msgid,
+    )
 import re
 
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces import (
-    IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
-    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
-    TeamMembershipStatus)
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from canonical.launchpad.mail import (
-    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
+    format_address,
+    sendmail,
+    simple_sendmail,
+    simple_sendmail_from_person,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
-
-from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import (
-    BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
-from lp.bugs.interfaces.bugchange import IBugChange
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+from lp.registry.interfaces.mailinglist import IHeldMessageDetails
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.services.mail.mailwrapper import MailWrapper
-
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
 #     which is sad.
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
-from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder)
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+# Silence lint warnings.
+NotificationRecipientSet
+
 
 CC = "CC"
-
-
-def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers, subscribed_by=None,
-    event_creator=None):
-    """Send an email containing full bug details to new bug subscribers.
-
-    This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bug subscribers
-    need to be notified of the bug.
-    """
-    prev_subs_set = set(previous_subscribers)
-    cur_subs_set = set(current_subscribers)
-    new_subs = cur_subs_set.difference(prev_subs_set)
-
-    to_addrs = set()
-    for new_sub in new_subs:
-        to_addrs.update(get_contact_email_addresses(new_sub))
-
-    if not to_addrs:
-        return
-
-    from_addr = format_address(
-        'Launchpad Bug Tracker',
-        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-    # Now's a good a time as any for this email; don't use the original
-    # reported date for the bug as it will just confuse mailer and
-    # recipient.
-    email_date = datetime.datetime.now()
-
-    # The new subscriber email is effectively the initial message regarding
-    # a new bug. The bug's initial message is used in the References
-    # header to establish the message's context in the email client.
-    references = [bug.initial_message.rfc822msgid]
-    recipients = bug.getBugNotificationRecipients()
-
-    bug_notification_builder = BugNotificationBuilder(bug, event_creator)
-    for to_addr in sorted(to_addrs):
-        reason, rationale = recipients.getReason(to_addr)
-        subject, contents = generate_bug_add_email(
-            bug, new_recipients=True, subscribed_by=subscribed_by,
-            reason=reason, event_creator=event_creator)
-        msg = bug_notification_builder.build(
-            from_addr, to_addr, contents, subject, email_date,
-            rationale=rationale, references=references)
-        sendmail(msg)
-
-
-@block_implicit_flushes
-def update_security_contact_subscriptions(modified_bugtask, event):
-    """Subscribe the new security contact when a bugtask's product changes.
-
-    Only subscribes the new security contact if the bug was marked a
-    security issue originally.
-
-    No change is made for private bugs.
-    """
-    if event.object.bug.private:
-        return
-
-    if not IUpstreamBugTask.providedBy(event.object):
-        return
-
-    bugtask_before_modification = event.object_before_modification
-    bugtask_after_modification = event.object
-
-    if (bugtask_before_modification.product !=
-        bugtask_after_modification.product):
-        new_product = bugtask_after_modification.product
-        if (bugtask_before_modification.bug.security_related and
-            new_product.security_contact):
-            bugtask_after_modification.bug.subscribe(
-                new_product.security_contact, IPerson(event.user))
 
 
 def send_process_error_notification(to_address, subject, error_msg,
@@ -175,100 +109,6 @@ def send_process_error_notification(to_address, subject, error_msg,
     sendmail(msg)
 
 
-def notify_errors_list(message, file_alias_url):
-    """Sends an error to the Launchpad errors list."""
-    template = get_email_template('notify-unhandled-email.txt')
-    # We add the error message in as a header too
-    # (X-Launchpad-Unhandled-Email) so we can create filters in the
-    # Launchpad-Error-Reports Mailman mailing list.
-    simple_sendmail(
-        get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message},
-        headers={'X-Launchpad-Unhandled-Email': message})
-
-def generate_bug_add_email(bug, new_recipients=False, reason=None,
-                           subscribed_by=None, event_creator=None):
-    """Generate a new bug notification from the given IBug.
-
-    If new_recipients is supplied we generate a notification explaining
-    that the new recipients have been subscribed to the bug. Otherwise
-    it's just a notification of a new bug report.
-    """
-    subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
-    contents = ''
-
-    if bug.private:
-        # This is a confidential bug.
-        visibility = u"Private"
-    else:
-        # This is a public bug.
-        visibility = u"Public"
-
-    if bug.security_related:
-        visibility += ' security'
-        contents += '*** This bug is a security vulnerability ***\n\n'
-
-    bug_info = []
-    # Add information about the affected upstreams and packages.
-    for bugtask in bug.bugtasks:
-        bug_info.append(u"** Affects: %s" % bugtask.bugtargetname)
-        bug_info.append(u"     Importance: %s" % bugtask.importance.title)
-
-        if bugtask.assignee:
-            # There's a person assigned to fix this task, so show that
-            # information too.
-            bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
-        bug_info.append(u"         Status: %s\n" % bugtask.status.title)
-
-    if bug.tags:
-        bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
-
-    mailwrapper = MailWrapper(width=72)
-    content_substitutions = {
-        'visibility': visibility,
-        'bug_url': canonical_url(bug),
-        'bug_info': "\n".join(bug_info),
-        'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason,
-        }
-
-    if new_recipients:
-        if "assignee" in reason:
-            contents += "You have been assigned a bug task for a %(visibility)s bug"
-            if event_creator is not None:
-                contents += " by %(assigner)s"
-                content_substitutions['assigner'] = (
-                    event_creator.unique_displayname)
-        else:
-            contents += "You have been subscribed to a %(visibility)s bug"
-        if subscribed_by is not None:
-            contents += " by %(subscribed_by)s"
-            content_substitutions['subscribed_by'] = (
-                subscribed_by.unique_displayname)
-        contents += (":\n\n"
-                     "%(description)s\n\n%(bug_info)s")
-        # The visibility appears mid-phrase so.. hack hack.
-        content_substitutions['visibility'] = visibility.lower()
-        # XXX: kiko, 2007-03-21:
-        # We should really have a centralized way of adding this
-        # footer, but right now we lack a INotificationRecipientSet
-        # for this particular situation.
-        contents += (
-            "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
-    else:
-        contents += ("%(visibility)s bug reported:\n\n"
-                     "%(description)s\n\n%(bug_info)s")
-
-    contents = contents % content_substitutions
-
-    contents = contents.rstrip()
-
-    return (subject, contents)
-
-
 def get_unified_diff(old_text, new_text, text_width):
     r"""Return a unified diff of the two texts.
 
@@ -307,254 +147,6 @@ def get_unified_diff(old_text, new_text, text_width):
         for line in text_diff]
     text_diff = '\n'.join(text_diff)
     return text_diff
-
-
-def _get_task_change_row(label, oldval_display, newval_display):
-    """Return a row formatted for display in task change info."""
-    return u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-        'label': label.capitalize(),
-        'oldval': oldval_display,
-        'newval': newval_display}
-
-
-def _get_task_change_values(task_change, displayattrname):
-    """Return the old value and the new value for a task field change."""
-    oldval = task_change.get('old')
-    newval = task_change.get('new')
-
-    oldval_display = None
-    newval_display = None
-
-    if oldval:
-        oldval_display = getattr(oldval, displayattrname)
-    if newval:
-        newval_display = getattr(newval, displayattrname)
-
-    return (oldval_display, newval_display)
-
-
-def get_bug_delta(old_bug, new_bug, user):
-    """Compute the delta from old_bug to new_bug.
-
-    old_bug and new_bug are IBug's. user is an IPerson. Returns an
-    IBugDelta if there are changes, or None if there were no changes.
-    """
-    changes = {}
-
-    for field_name in ("title", "description", "name", "private",
-                       "security_related", "duplicateof", "tags"):
-        # fields for which we show old => new when their values change
-        old_val = getattr(old_bug, field_name)
-        new_val = getattr(new_bug, field_name)
-        if old_val != new_val:
-            changes[field_name] = {}
-            changes[field_name]["old"] = old_val
-            changes[field_name]["new"] = new_val
-
-    if changes:
-        changes["bug"] = new_bug
-        changes["bug_before_modification"] = old_bug
-        changes["bugurl"] = canonical_url(new_bug)
-        changes["user"] = user
-
-        return BugDelta(**changes)
-    else:
-        return None
-
-
-@block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-
-    bug.addCommentNotification(bug.initial_message)
-
-
-@block_implicit_flushes
-def notify_bug_modified(modified_bug, event):
-    """Notify the Cc'd list that this bug has been modified.
-
-    modified_bug bug must be an IBug. event must be an
-    IObjectModifiedEvent.
-    """
-    bug_delta = get_bug_delta(
-        old_bug=event.object_before_modification,
-        new_bug=event.object, user=IPerson(event.user))
-
-    if bug_delta is not None:
-        add_bug_change_notifications(bug_delta)
-
-
-def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
-    """Return the indirect subscribers for a bug task.
-
-    Return the list of people who should get notifications about
-    changes to the task because of having an indirect subscription
-    relationship with it (by subscribing to its target, being an
-    assignee or owner, etc...)
-
-    If `recipients` is present, add the subscribers to the set of
-    bug notification recipients.
-    """
-    if bugtask.bug.private:
-        return set()
-
-    also_notified_subscribers = set()
-
-    # Assignees are indirect subscribers.
-    if bugtask.assignee:
-        also_notified_subscribers.add(bugtask.assignee)
-        if recipients is not None:
-            recipients.addAssignee(bugtask.assignee)
-
-    if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-        also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    if bugtask.milestone is not None:
-        also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    # If the target's bug supervisor isn't set,
-    # we add the owner as a subscriber.
-    pillar = bugtask.pillar
-    if pillar.bug_supervisor is None:
-        also_notified_subscribers.add(pillar.owner)
-        if recipients is not None:
-            recipients.addRegistrant(pillar.owner, pillar)
-
-    return sorted(
-        also_notified_subscribers,
-        key=operator.attrgetter('displayname'))
-
-
-def add_bug_change_notifications(bug_delta, old_bugtask=None,
-                                 new_subscribers=None):
-    """Generate bug notifications and add them to the bug."""
-    changes = get_bug_changes(bug_delta)
-    recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
-        level=BugNotificationLevel.METADATA)
-    if old_bugtask is not None:
-        old_bugtask_recipients = BugNotificationRecipients()
-        get_bugtask_indirect_subscribers(
-            old_bugtask, recipients=old_bugtask_recipients,
-            level=BugNotificationLevel.METADATA)
-        recipients.update(old_bugtask_recipients)
-    for change in changes:
-        # XXX 2009-03-17 gmb [bug=344125]
-        #     This if..else should be removed once the new BugChange API
-        #     is complete and ubiquitous.
-        if IBugChange.providedBy(change):
-            if isinstance(change, BugDuplicateChange):
-                no_dupe_master_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=BugNotificationLevel.METADATA,
-                        include_master_dupe_subscribers=False))
-                bug_delta.bug.addChange(
-                    change, recipients=no_dupe_master_recipients)
-            elif (isinstance(change, BugTaskAssigneeChange) and
-                  new_subscribers is not None):
-                for person in new_subscribers:
-                    reason, rationale = recipients.getReason(person)
-                    if 'Assignee' in rationale:
-                        recipients.remove(person)
-                bug_delta.bug.addChange(change, recipients=recipients)
-            else:
-                bug_delta.bug.addChange(change, recipients=recipients)
-        else:
-            bug_delta.bug.addChangeNotification(
-                change, person=bug_delta.user, recipients=recipients)
-
-
-@block_implicit_flushes
-def notify_bugtask_edited(modified_bugtask, event):
-    """Notify CC'd subscribers of this bug that something has changed
-    on this task.
-
-    modified_bugtask must be an IBugTask. event must be an
-    IObjectModifiedEvent.
-    """
-    bugtask_delta = event.object.getDelta(event.object_before_modification)
-    bug_delta = BugDelta(
-        bug=event.object.bug,
-        bugurl=canonical_url(event.object.bug),
-        bugtask_deltas=bugtask_delta,
-        user=IPerson(event.user))
-
-    event_creator = IPerson(event.user)
-    previous_subscribers = event.object_before_modification.bug_subscribers
-    current_subscribers = event.object.bug_subscribers
-    prev_subs_set = set(previous_subscribers)
-    cur_subs_set = set(current_subscribers)
-    new_subs = cur_subs_set.difference(prev_subs_set)
-
-    add_bug_change_notifications(
-        bug_delta, old_bugtask=event.object_before_modification,
-        new_subscribers=new_subs)
-
-    _send_bug_details_to_new_bug_subscribers(
-        event.object.bug, previous_subscribers, current_subscribers,
-        event_creator=event_creator)
-    update_security_contact_subscriptions(modified_bugtask, event)
-
-
-@block_implicit_flushes
-def notify_bug_comment_added(bugmessage, event):
-    """Notify CC'd list that a message was added to this bug.
-
-    bugmessage must be an IBugMessage. event must be an
-    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
-    comment will also be sent to the dup target's subscribers.
-    """
-    bug = bugmessage.bug
-    bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_added(bugattachment, event):
-    """Notify CC'd list that a new attachment has been added.
-
-    bugattachment must be an IBugAttachment. event must be an
-    IObjectCreatedEvent.
-    """
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'new': bugattachment, 'old': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_removed(bugattachment, event):
-    """Notify that an attachment has been removed."""
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'old': bugattachment, 'new': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_subscription_added(bug_subscription, event):
-    """Notify that a new bug subscription was added."""
-    # When a user is subscribed to a bug by someone other
-    # than themselves, we send them a notification email.
-    if bug_subscription.person != bug_subscription.subscribed_by:
-        _send_bug_details_to_new_bug_subscribers(
-            bug_subscription.bug, [], [bug_subscription.person],
-            subscribed_by=bug_subscription.subscribed_by)
 
 
 @block_implicit_flushes
@@ -946,6 +538,12 @@ def notify_new_ppa_subscription(subscription, event):
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
     archive = subscription.archive
+
+    # We don't send notification emails for commercial PPAs as these
+    # are purchased via software center (and do not mention Launchpad).
+    if archive.commercial:
+        return
+
     registrant_name = subscription.registrant.displayname
     ppa_displayname = archive.displayname
     ppa_reference = "ppa:%s/%s" % (
@@ -964,13 +562,17 @@ def notify_new_ppa_subscription(subscription, event):
         to_address = [person.preferredemail.email]
         recipient_subscriptions_url = "%s/+archivesubscriptions" % (
             canonical_url(person))
+        description_blurb = '.'
+        if ppa_description is not None and ppa_description != '':
+            description_blurb = (
+                ' and has the following description:\n\n%s' % ppa_description)
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_displayname': ppa_displayname,
             'ppa_reference': ppa_reference,
-            'ppa_description': ppa_description,
+            'ppa_description_blurb': description_blurb,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,
@@ -1051,9 +653,9 @@ def send_direct_contact_email(
     additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by the user',
+        u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
+        u'%s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ])

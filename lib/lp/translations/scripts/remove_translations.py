@@ -10,18 +10,25 @@ __all__ = [
     ]
 
 import logging
-
-from optparse import Option, OptionValueError
+from optparse import (
+    Option,
+    OptionValueError,
+    )
 
 from zope.component import getUtility
 
 from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import IPersonSet
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    )
 
 
 def check_bool_option(option, opt, value):
@@ -76,6 +83,9 @@ def get_id(identifier, lookup_function=None):
 
 def get_person_id(name):
     """`get_id` helper.  Look up person by name."""
+    # XXX sinzui 2010-10-04 bug=654537: Account and EmailAddress cause cyclic
+    # imports because they are not in the lp tree.
+    from lp.registry.interfaces.person import IPersonSet
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
         return None
@@ -122,22 +132,10 @@ def check_option_type(options, option_name, option_type):
 def compose_language_match(language_code):
     """Compose SQL condition for matching a language in the deletion query.
 
-    :param: Language code to match.  May include a variant.
+    :param: Language code to match.
     :return: SQL condition in string form.
     """
-    if '@' in language_code:
-        language, variant = language_code.split('@')
-    else:
-        language = language_code
-        variant = None
-
-    language_conditions = ['Language.code = %s' % sqlvalues(language)]
-    if variant is None:
-        language_conditions.append('TranslationMessage.variant IS NULL')
-    else:
-        language_conditions.append(
-            'TranslationMessage.variant = %s' % sqlvalues(variant))
-    return ' AND '.join(language_conditions)
+    return 'Language.code = %s' % sqlvalues(language_code)
 
 
 def add_bool_match(conditions, expression, match_value):
@@ -223,7 +221,7 @@ class RemoveTranslations(LaunchpadScript):
             help="Override safety check on moderately unsafe action."),
         ExtendedOption(
             '-d', '--dry-run', action='store_true', dest='dry_run',
-            help="Go through the motions, but don't really delete.")
+            help="Go through the motions, but don't really delete."),
         ]
 
     def add_my_options(self):
@@ -313,7 +311,7 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, 
+def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
                         is_current=None, is_imported=None,
@@ -422,7 +420,6 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             -- Is alternative for the message we're about to delete.
             Imported.potmsgset = Doomed.potmsgset AND
             Imported.language = Doomed.language AND
-            Imported.variant IS NOT DISTINCT FROM Doomed.variant AND
             Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
             -- Came from published source.
             Imported.is_imported IS TRUE AND

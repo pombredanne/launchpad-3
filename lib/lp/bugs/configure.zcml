@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -6,26 +6,33 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
 
-    <publisher
-       name="bugs"
-       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+  <authorizations module=".security" />
+
+  <include package=".browser"/>
+
+  <publisher
+      name="bugs"
+      factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+  <utility
+      component="lp.bugs.publisher.BugsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="bugs" />
 
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
-        class="canonical.launchpad.database.BugActivity">
+        class="lp.bugs.model.bugactivity.BugActivity">
         <allow
             interface="lp.bugs.interfaces.bugactivity.IBugActivity"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.BugActivitySet"
+        class="lp.bugs.model.bugactivity.BugActivitySet"
         provides="lp.bugs.interfaces.bugactivity.IBugActivitySet">
         <allow
             interface="lp.bugs.interfaces.bugactivity.IBugActivitySet"/>
@@ -40,80 +47,77 @@
         <class
             class="lp.bugs.browser.bugcomment.BugComment">
             <allow
-                interface="canonical.launchpad.interfaces.IBugComment"/>
+                interface="lp.bugs.interfaces.bugmessage.IBugComment"/>
         </class>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.cve.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.cve.cve_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_added"/>
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_modified"/>
-    <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_added"/>
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed"/>
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_removed"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.cve_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_comment_added"/>
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugwatch_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bug_watch_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_subscription_added"/>
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.bugs.subscribers.bug.notify_bug_subscription_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
     <securedutility
         class="canonical.launchpad.systemhomes.MaloneApplication"
@@ -127,7 +131,7 @@
     <xmlrpc:view
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         methods="filebug"
-        class="canonical.launchpad.xmlrpc.FileBugAPI"
+        class="lp.bugs.xmlrpc.bug.FileBugAPI"
         permission="launchpad.AnyPerson"/>
 
     <!-- Global Malone portlets -->
@@ -157,7 +161,7 @@
     <!-- CveReference -->
 
     <class
-        class="canonical.launchpad.database.CveReference">
+        class="lp.bugs.model.cvereference.CveReference">
         <allow
             interface="lp.bugs.interfaces.cvereference.ICveReference"/>
         <require
@@ -170,7 +174,7 @@
         <!-- IBugTask -->
 
         <class
-            class="canonical.launchpad.database.BugTask">
+            class="lp.bugs.model.bugtask.BugTask">
             <allow
                 attributes="
                     id
@@ -188,12 +192,11 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    productseriesID
                     task_age
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
-                    isMentor
-                    canMentor
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
@@ -253,11 +256,6 @@
             <require
                 permission="launchpad.Edit"
                 set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -270,7 +268,7 @@
             factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            provides="canonical.launchpad.interfaces.IBug"
+            provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
@@ -304,7 +302,7 @@
         <!-- BugTaskSet -->
 
         <class
-            class="canonical.launchpad.database.BugTaskSet">
+            class="lp.bugs.model.bugtask.BugTaskSet">
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskSet"/>
             <allow
@@ -312,7 +310,7 @@
         </class>
         <securedutility
             provides="lp.bugs.interfaces.bugtask.IBugTaskSet"
-            class="canonical.launchpad.database.BugTaskSet">
+            class="lp.bugs.model.bugtask.BugTaskSet">
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskSet"/>
         </securedutility>
@@ -326,7 +324,7 @@
         </class>
     </facet>
     <class
-        class="canonical.launchpad.database.BugAttachment">
+        class="lp.bugs.model.bugattachment.BugAttachment">
         <require
             permission="launchpad.View"
             interface="lp.bugs.interfaces.bugattachment.IBugAttachment"/>
@@ -338,12 +336,12 @@
     <!-- BugAttachmentSet -->
 
     <class
-        class="canonical.launchpad.database.BugAttachmentSet">
+        class="lp.bugs.model.bugattachment.BugAttachmentSet">
         <allow
             interface="lp.bugs.interfaces.bugattachment.IBugAttachmentSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.BugAttachmentSet"
+        class="lp.bugs.model.bugattachment.BugAttachmentSet"
         provides="lp.bugs.interfaces.bugattachment.IBugAttachmentSet">
         <allow
             interface="lp.bugs.interfaces.bugattachment.IBugAttachmentSet"/>
@@ -354,7 +352,7 @@
         <!-- BugTracker -->
 
         <class
-            class="canonical.launchpad.database.BugTracker">
+            class="lp.bugs.model.bugtracker.BugTracker">
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTracker"/>
             <require
@@ -364,10 +362,13 @@
                     aliases
                     baseurl
                     bugtrackertype
+                    componentForDistroSourcePackage
                     contactdetails
+                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentGroup
                     has_lp_plugin
                     id
                     imported_bug_messages
@@ -387,9 +388,11 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
-                    linkPersonToSelf"
+                    linkPersonToSelf
+                    "
                 set_attributes="
                     aliases
                     baseurl
@@ -415,12 +418,12 @@
         <!-- BugTrackerSet -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerSet">
+            class="lp.bugs.model.bugtracker.BugTrackerSet">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.BugTrackerSet"
+            class="lp.bugs.model.bugtracker.BugTrackerSet"
             provides="lp.bugs.interfaces.bugtracker.IBugTrackerSet">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
@@ -434,7 +437,7 @@
         <!-- BugTrackerAlias -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerAlias">
+            class="lp.bugs.model.bugtracker.BugTrackerAlias">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAlias"/>
             <require
@@ -445,16 +448,60 @@
         <!-- BugTrackerAliasSet -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerAliasSet">
+            class="lp.bugs.model.bugtracker.BugTrackerAliasSet">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.BugTrackerAliasSet"
+            class="lp.bugs.model.bugtracker.BugTrackerAliasSet"
             provides="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </securedutility>
+
+        <!--BugTrackerComponent -->
+
+        <class
+            class="lp.bugs.model.bugtracker.BugTrackerComponent">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    is_visible
+                    is_custom
+                    distro_source_package
+                    component_group
+                    "/>
+            <require
+                permission="launchpad.AnyPerson"
+                set_attributes="
+                    is_visible
+                    is_custom
+                    distro_source_package
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
+        </class>
+
+        <!--BugTrackerComponentGroup -->
+
+        <class
+            class="lp.bugs.model.bugtracker.BugTrackerComponentGroup">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    bug_tracker
+                    components
+                    getComponent
+                    addComponent
+                    addCustomComponent
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
+        </class>
 
         <!-- RemoteBug -->
 
@@ -468,7 +515,7 @@
     <!-- IBugBranch -->
 
     <class
-        class="canonical.launchpad.database.BugBranch">
+        class="lp.bugs.model.bugbranch.BugBranch">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranch"/>
         <require
@@ -490,12 +537,12 @@
     <!-- BugBranchSet -->
 
     <class
-        class="canonical.launchpad.database.BugBranchSet">
+        class="lp.bugs.model.bugbranch.BugBranchSet">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.BugBranchSet"
+        class="lp.bugs.model.bugbranch.BugBranchSet"
         provides="lp.bugs.interfaces.bugbranch.IBugBranchSet">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
@@ -504,7 +551,7 @@
     <!-- BugCve -->
 
     <class
-        class="canonical.launchpad.database.BugCve">
+        class="lp.bugs.model.cve.BugCve">
         <allow
             interface="lp.bugs.interfaces.bugcve.IBugCve"/>
     </class>
@@ -514,7 +561,7 @@
         <!-- CVE -->
 
         <class
-            class="canonical.launchpad.database.Cve">
+            class="lp.bugs.model.cve.Cve">
             <allow
                 interface="lp.bugs.interfaces.cve.ICve"/>
             <require
@@ -536,12 +583,12 @@
         <!-- CveSet -->
 
         <class
-            class="canonical.launchpad.database.CveSet">
+            class="lp.bugs.model.cve.CveSet">
             <allow
                 interface="lp.bugs.interfaces.cve.ICveSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.CveSet"
+            class="lp.bugs.model.cve.CveSet"
             provides="lp.bugs.interfaces.cve.ICveSet">
             <allow
                 interface="lp.bugs.interfaces.cve.ICveSet"/>
@@ -551,20 +598,32 @@
     <!-- BugSubscription -->
 
     <class
-        class="canonical.launchpad.database.BugSubscription">
+        class="lp.bugs.model.bugsubscription.BugSubscription">
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
             permission="zope.Public"
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
+
+    <!-- BugSubscriptionFilter -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <require
+          permission="launchpad.Edit"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
     <facet
         facet="bugs">
 
         <!-- Bug -->
 
         <class
-            class="canonical.launchpad.database.Bug">
+            class="lp.bugs.model.bug.Bug">
             <implements
                 interface="lp.bugs.interfaces.bug.IBug"/>
             <allow
@@ -583,11 +642,9 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    mentoring_offers
-                    canMentor
-                    isMentor
                     getNullBugTask
                     is_complete
+                    official_tags
                     who_made_private
                     date_made_private
                     userCanView
@@ -620,10 +677,12 @@
                     initial_message
                     linked_branches
                     watches
+                    has_cves
                     cves
                     cve_links
                     duplicates
                     attachments
+                    attachments_unpopulated
                     questions
                     specifications
                     followup_subject
@@ -637,6 +696,8 @@
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
+                    getSubscribersForPerson
+                    getSubscriptionForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -663,35 +724,35 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addAttachment
+                    addChange
                     addChangeNotification
                     addCommentNotification
+                    addNomination
+                    addTask
                     addWatch
-                    removeWatch
+                    convertToQuestion
+                    expireNotifications
+                    findCvesInText
+                    linkAttachment
+                    linkBranch
                     linkCVE
                     linkCVEAndReturnNothing
-                    unlinkCVE
-                    findCvesInText
-                    newMessage
+                    linkHWSubmission
                     linkMessage
-                    addAttachment
-                    unsubscribeFromDupes
-                    subscribe
-                    unsubscribe
-                    addNomination
-                    expireNotifications
-                    setStatus
+                    markAsDuplicate
+                    markUserAffected
+                    newMessage
+                    removeWatch
                     setPrivate
                     setSecurityRelated
-                    convertToQuestion
-                    markUserAffected
-                    addTask
-                    addChange
-                    markAsDuplicate
-                    linkHWSubmission
-                    unlinkHWSubmission
-                    linkBranch
+                    setStatus
+                    subscribe
                     unlinkBranch
-                    linkAttachment
+                    unlinkCVE
+                    unlinkHWSubmission
+                    unsubscribe
+                    unsubscribeFromDupes
                     updateHeat"
                 set_attributes="
                     activity initial_message
@@ -712,11 +773,6 @@
                     title description
                     who_made_private"/>
             <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
-            <require
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
@@ -734,12 +790,12 @@
         <!-- BugSet -->
 
         <class
-            class="canonical.launchpad.database.BugSet">
+            class="lp.bugs.model.bug.BugSet">
             <allow
                 interface="lp.bugs.interfaces.bug.IBugSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.BugSet"
+            class="lp.bugs.model.bug.BugSet"
             provides="lp.bugs.interfaces.bug.IBugSet">
             <allow
                 interface="lp.bugs.interfaces.bug.IBugSet"/>
@@ -757,7 +813,7 @@
     <!-- BugMessage -->
 
     <class
-        class="canonical.launchpad.database.BugMessage">
+        class="lp.bugs.model.bugmessage.BugMessage">
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
@@ -768,12 +824,12 @@
     <!-- BugMessageSet -->
 
     <class
-        class="canonical.launchpad.database.BugMessageSet">
+        class="lp.bugs.model.bugmessage.BugMessageSet">
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessageSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.BugMessageSet"
+        class="lp.bugs.model.bugmessage.BugMessageSet"
         provides="lp.bugs.interfaces.bugmessage.IBugMessageSet">
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessageSet"/>
@@ -785,7 +841,7 @@
     <facet
         facet="bugs">
         <class
-            class="canonical.launchpad.database.BugNomination">
+            class="lp.bugs.model.bugnomination.BugNomination">
             <require
                 permission="launchpad.View"
                 attributes="
@@ -810,17 +866,17 @@
                     decline"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.BugNominationSet"
+            class="lp.bugs.model.bugnomination.BugNominationSet"
             provides="lp.bugs.interfaces.bugnomination.IBugNominationSet">
             <allow
                 interface="lp.bugs.interfaces.bugnomination.IBugNominationSet"/>
         </securedutility>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -829,10 +885,10 @@
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectDeletedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_edited"/>
     <facet
         facet="bugs">
@@ -840,7 +896,7 @@
         <!-- BugWatch -->
 
         <class
-            class="canonical.launchpad.database.BugWatch">
+            class="lp.bugs.model.bugwatch.BugWatch">
             <implements
                 interface="lp.bugs.interfaces.bugwatch.IBugWatch"/>
             <require
@@ -880,7 +936,9 @@
                 attributes="
                     addComment
                     updateImportance
-                    updateStatus"
+                    updateStatus
+                    reset
+                    "
                 set_attributes="
                     last_error_type
                     lastchanged
@@ -888,7 +946,8 @@
                     needscheck
                     next_check
                     remote_importance
-                    remotestatus"/>
+                    remotestatus
+                    "/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->
@@ -897,14 +956,14 @@
         <!--BugWatchSet -->
 
         <class
-            class="canonical.launchpad.database.BugWatchSet">
+            class="lp.bugs.model.bugwatch.BugWatchSet">
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
             <allow
                 interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.BugWatchSet"
+            class="lp.bugs.model.bugwatch.BugWatchSet"
             provides="lp.bugs.interfaces.bugwatch.IBugWatchSet">
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
@@ -918,25 +977,25 @@
         </class>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_created"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bugtask_edited"/>
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <class
-        class="canonical.launchpad.database.BugNotification">
+        class="lp.bugs.model.bugnotification.BugNotification">
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotification"/>
         <require
@@ -944,18 +1003,18 @@
             set_schema="lp.bugs.interfaces.bugnotification.IBugNotification"/>
     </class>
     <class
-        class="canonical.launchpad.database.BugNotificationRecipient">
+        class="lp.bugs.model.bugnotification.BugNotificationRecipient">
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationRecipient"/>
     </class>
     <class
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
+            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
-        class="canonical.launchpad.database.BugNotificationSet">
+        class="lp.bugs.model.bugnotification.BugNotificationSet">
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
@@ -963,6 +1022,12 @@
         name="bugs"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
 
@@ -990,4 +1055,7 @@
         mail_header
         recipient"/>
   </class>
+
+  <webservice:register module="lp.bugs.interfaces.webservice" />
+
 </configure>

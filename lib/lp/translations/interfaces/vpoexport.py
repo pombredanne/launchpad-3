@@ -12,7 +12,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, Object, Text
+from zope.schema import (
+    Bool,
+    Int,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile

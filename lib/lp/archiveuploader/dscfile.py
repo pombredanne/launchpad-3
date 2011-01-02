@@ -13,41 +13,98 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findChangelog',
-    'findCopyright',
+    'find_changelog',
+    'find_copyright',
     ]
 
-import apt_pkg
+from cStringIO import StringIO
 import errno
 import glob
 import os
 import shutil
-import subprocess
 import tempfile
 
+import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
+    NascentUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFileParseError)
+    parse_tagfile,
+    TagFileParseError,
+    )
 from lp.archiveuploader.utils import (
-    determine_source_file_type, get_source_file_extension,
-    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
-    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+    determine_source_file_type,
+    DpkgSourceError,
+    extract_dpkg_source,
+    get_source_file_extension,
+    ParseMaintError,
+    re_is_component_orig_tar_ext,
+    re_issource,
+    re_valid_pkg_name,
+    re_valid_version,
+    safe_fix_maintainer,
+    )
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+
+
+def unpack_source(dsc_filepath):
+    """Unpack a source package into a temporary directory
+
+    :param dsc_filepath: Path to the dsc file
+    :return: Path to the temporary directory with the unpacked sources
+    """
+    # Get a temporary dir together.
+    unpacked_dir = tempfile.mkdtemp()
+    try:
+        extract_dpkg_source(dsc_filepath, unpacked_dir)
+    except:
+        shutil.rmtree(unpacked_dir)
+        raise
+
+    return unpacked_dir
+
+
+def cleanup_unpacked_dir(unpacked_dir):
+    """Remove the directory with an unpacked source package.
+
+    :param unpacked_dir: Path to the directory.
+    """
+    try:
+        shutil.rmtree(unpacked_dir)
+    except OSError, error:
+        if errno.errorcode[error.errno] != 'EACCES':
+            raise UploadError(
+                "couldn't remove tmp dir %s: code %s" % (
+                unpacked_dir, error.errno))
+        else:
+            result = os.system("chmod -R u+rwx " + unpacked_dir)
+            if result != 0:
+                raise UploadError("chmod failed with %s" % result)
+            shutil.rmtree(unpacked_dir)
 
 
 class SignableTagFile:
@@ -116,8 +173,8 @@ class SignableTagFile:
 
         person = getUtility(IPersonSet).getByEmail(email)
         if person is None and self.policy.create_people:
-            package = self._dict['source']
-            version = self._dict['version']
+            package = self._dict['Source']
+            version = self._dict['Version']
             if self.policy.distroseries and self.policy.pocket:
                 policy_suite = ('%s/%s' % (self.policy.distroseries.name,
                                            self.policy.pocket.name))
@@ -137,7 +194,7 @@ class SignableTagFile:
             "rfc2047": rfc2047,
             "name": name,
             "email": email,
-            "person": person
+            "person": person,
             }
 
 
@@ -145,18 +202,29 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     """Models a given DSC file and its content."""
 
     mandatory_fields = set([
-        "source",
-        "version",
-        "binary",
-        "maintainer",
-        "architecture",
-        "files"])
+        "Source",
+        "Version",
+        "Binary",
+        "Maintainer",
+        "Architecture",
+        "Files"])
+
+    known_fields = mandatory_fields.union(set([
+        "Build-Depends",
+        "Build-Depends-Indep",
+        "Build-Conflicts",
+        "Build-Conflicts-Indep",
+        "Format",
+        "Standards-Version",
+        "filecontents",
+        "homepage",
+        ]))
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyright and changelog_path are only set inside unpackAndCheckSource().
+    # Copyright and changelog are only set inside unpackAndCheckSource().
     copyright = None
-    changelog_path = None
+    changelog = None
 
     def __init__(self, filepath, digest, size, component_and_section,
                  priority, package, version, changes, policy, logger):
@@ -188,68 +256,64 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
 
-        self.maintainer = self.parseAddress(self._dict['maintainer'])
+        self.maintainer = self.parseAddress(self._dict['Maintainer'])
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
         # to accept them.
-        if 'format' not in self._dict:
-            self._dict['format'] = "1.0"
+        if 'Format' not in self._dict:
+            self._dict['Format'] = "1.0"
 
         if self.format is None:
             raise EarlyReturnUploadError(
-                "Unsupported source format: %s" % self._dict['format'])
+                "Unsupported source format: %s" % self._dict['Format'])
 
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
             self.processSignature()
 
-        self.unpacked_dir = None
-
     #
     # Useful properties.
     #
-
     @property
     def source(self):
         """Return the DSC source name."""
-        return self._dict['source']
+        return self._dict['Source']
 
     @property
     def dsc_version(self):
         """Return the DSC source version."""
-        return self._dict['version']
+        return self._dict['Version']
 
     @property
     def format(self):
         """Return the DSC format."""
         try:
             return SourcePackageFormat.getTermByToken(
-                self._dict['format']).value
+                self._dict['Format']).value
         except LookupError:
             return None
 
     @property
     def architecture(self):
         """Return the DSC source architecture."""
-        return self._dict['architecture']
+        return self._dict['Architecture']
 
     @property
     def binary(self):
         """Return the DSC claimed binary line."""
-        return self._dict['binary']
+        return self._dict['Binary']
 
 
     #
     # DSC file checks.
     #
-
     def verify(self):
         """Verify the uploaded .dsc file.
 
-        This method is an error generator, i.e, it returns an iterator over all
-        exceptions that are generated while processing DSC file checks.
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing DSC file checks.
         """
 
         for error in SourceUploadFile.verify(self):
@@ -262,7 +326,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
         files = []
-        for fileline in self._dict['files'].strip().split("\n"):
+        for fileline in self._dict['Files'].strip().split("\n"):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME
             digest, size, filename = fileline.strip().split()
             if not re_issource.match(filename):
@@ -296,7 +360,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
-        for field_name in ['build-depends', 'build-depends-indep']:
+        for field_name in ['Build-Depends', 'Build-Depends-Indep']:
             field = self._dict.get(field_name, None)
             if field is not None:
                 if field.startswith("ARRAY"):
@@ -366,11 +430,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             archives = [self.policy.archive]
 
+        archives = [archive for archive in archives if archive is not None]
+
         library_file = None
         for archive in archives:
             try:
-                library_file = self.policy.distro.getFileByName(
-                    filename, source=True, binary=False, archive=archive)
+                library_file = archive.getFileByName(filename)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive
@@ -485,110 +550,52 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         self.logger.debug(
             "Verifying uploaded source package by unpacking it.")
 
-        # Get a temporary dir together.
-        self.unpacked_dir = tempfile.mkdtemp()
-
-        # chdir into it
-        cwd = os.getcwd()
-        os.chdir(self.unpacked_dir)
-        dsc_in_tmpdir = os.path.join(self.unpacked_dir, self.filename)
-
-        package_files = self.files + [self]
         try:
-            for source_file in package_files:
-                os.symlink(
-                    source_file.filepath,
-                    os.path.join(self.unpacked_dir, source_file.filename))
-            args = ["dpkg-source", "-sn", "-x", dsc_in_tmpdir]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-            output, unused = dpkg_source.communicate()
-            result = dpkg_source.wait()
-        finally:
-            # When all is said and done, chdir out again so that we can
-            # clean up the tree with shutil.rmtree without leaving the
-            # process in a directory we're trying to remove.
-            os.chdir(cwd)
-
-        if result != 0:
-            dpkg_output = prefix_multi_line_string(output, "  ")
+            unpacked_dir = unpack_source(self.filepath)
+        except DpkgSourceError, e:
             yield UploadError(
                 "dpkg-source failed for %s [return: %s]\n"
                 "[dpkg-source output: %s]"
-                % (self.filename, result, dpkg_output))
-
-        # Copy debian/copyright file content. It will be stored in the
-        # SourcePackageRelease records.
-
-        # Check if 'dpkg-source' created only one directory.
-        temp_directories = [
-            dirname for dirname in os.listdir(self.unpacked_dir)
-            if os.path.isdir(dirname)]
-        if len(temp_directories) > 1:
-            yield UploadError(
-                'Unpacked source contains more than one directory: %r'
-                % temp_directories)
-
-        # XXX cprov 20070713: We should access only the expected directory
-        # name (<sourcename>-<no_epoch(no_revision(version))>).
-
-        # Locate both the copyright and changelog files for later processing.
-        for error in findCopyright(self, self.unpacked_dir, self.logger):
-            yield error
-
-        for error in findChangelog(self, self.unpacked_dir, self.logger):
-            yield error
-
-        self.logger.debug("Cleaning up source tree.")
-        self.logger.debug("Done")
-
-    def cleanUp(self):
-        if self.unpacked_dir is None:
+                % (self.filename, e.result, e.output))
             return
+
         try:
-            shutil.rmtree(self.unpacked_dir)
-        except OSError, error:
-            # XXX: dsilvers 2006-03-15: We currently lack a test for this.
-            if errno.errorcode[error.errno] != 'EACCES':
-                raise UploadError(
-                    "%s: couldn't remove tmp dir %s: code %s" % (
-                    self.filename, self.unpacked_dir, error.errno))
-            else:
-                result = os.system("chmod -R u+rwx " + self.unpacked_dir)
-                if result != 0:
-                    raise UploadError("chmod failed with %s" % result)
-                shutil.rmtree(self.unpacked_dir)
-        self.unpacked_dir = None
+            # Copy debian/copyright file content. It will be stored in the
+            # SourcePackageRelease records.
 
+            # Check if 'dpkg-source' created only one directory.
+            temp_directories = [
+                dirname for dirname in os.listdir(unpacked_dir)
+                if os.path.isdir(dirname)]
+            if len(temp_directories) > 1:
+                yield UploadError(
+                    'Unpacked source contains more than one directory: %r'
+                    % temp_directories)
 
-    def findBuild(self):
-        """Find and return the SourcePackageRecipeBuild, if one is specified.
+            # XXX cprov 20070713: We should access only the expected directory
+            # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        If by any chance an inconsistent build was found this method will
-        raise UploadError resulting in a upload rejection.
-        """
-        build_id = getattr(self.policy.options, 'buildid', None)
-        if build_id is None:
-            return None
+            # Locate both the copyright and changelog files for later
+            # processing.
+            try:
+                self.copyright = find_copyright(unpacked_dir, self.logger)
+            except UploadError, error:
+                yield error
+                return
+            except UploadWarning, warning:
+                yield warning
 
-        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-
-        # The master verifies the status to confirm successful upload.
-        build.buildstate = BuildStatus.FULLYBUILT
-        # If this upload is successful, any existing log is wrong and
-        # unuseful.
-        build.upload_log = None
-
-        # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense.
-        if (build.pocket != self.policy.pocket or
-            build.distroseries != self.policy.distroseries or
-            build.archive != self.policy.archive):
-            raise UploadError(
-                "Attempt to upload source specifying "
-                "recipe build %s, where it doesn't fit." % build.id)
-
-        return build
+            try:
+                self.changelog = find_changelog(unpacked_dir, self.logger)
+            except UploadError, error:
+                yield error
+                return
+            except UploadWarning, warning:
+                yield warning
+        finally:
+            self.logger.debug("Cleaning up source tree.")
+            cleanup_unpacked_dir(unpacked_dir)
+        self.logger.debug("Done")
 
     def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
@@ -604,7 +611,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
                 encoded[key] = guess_encoding(value)
@@ -618,31 +625,35 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         changelog_lfa = self.librarian.create(
             "changelog",
-            os.stat(self.changelog_path).st_size,
-            open(self.changelog_path, "r"),
+            len(self.changelog),
+            StringIO(self.changelog),
             "text/x-debian-source-changelog",
             restricted=self.policy.archive.private)
 
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
+        user_defined_fields = self.extractUserDefinedFields([
+            (field, encoded[field]) for field in self._dict.iterkeys()])
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
             maintainer=self.maintainer['person'],
-            builddepends=encoded.get('build-depends', ''),
-            builddependsindep=encoded.get('build-depends-indep', ''),
-            build_conflicts=encoded.get('build-conflicts', ''),
-            build_conflicts_indep=encoded.get('build-conflicts-indep', ''),
-            architecturehintlist=encoded.get('architecture', ''),
+            builddepends=encoded.get('Build-Depends', ''),
+            builddependsindep=encoded.get('Build-Depends-Indep', ''),
+            build_conflicts=encoded.get('Build-Conflicts', ''),
+            build_conflicts_indep=encoded.get('Build-Conflicts-Indep', ''),
+            architecturehintlist=encoded.get('Architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
+            homepage=encoded.get('homepage'),
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
-            dsc_maintainer_rfc822=encoded['maintainer'],
-            dsc_format=encoded['format'],
-            dsc_binaries=encoded['binary'],
-            dsc_standards_version=encoded.get('standards-version'),
+            dsc_maintainer_rfc822=encoded['Maintainer'],
+            dsc_format=encoded['Format'],
+            dsc_binaries=encoded['Binary'],
+            dsc_standards_version=encoded.get('Standards-Version'),
             component=self.component,
             changelog=changelog_lfa,
             changelog_entry=encoded.get('simulated_changelog'),
@@ -651,6 +662,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
+            user_defined_fields=user_defined_fields,
             )
 
         # SourcePackageFiles should contain also the DSC
@@ -679,6 +691,7 @@ class DSCUploadedFile(NascentUploadFile):
           validation inside DSCFile.verify(); there is no
           store_in_database() method.
     """
+
     def __init__(self, filepath, digest, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
@@ -698,7 +711,7 @@ def findFile(source_dir, filename):
 
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
-    :return fullpath: The full path of the file, else return None if the 
+    :return fullpath: The full path of the file, else return None if the
                       file is not found.
     """
     # Instead of trying to predict the unpacked source directory name,
@@ -721,49 +734,42 @@ def findFile(source_dir, filename):
             return fullpath
     return None
 
-def findCopyright(dsc_file, source_dir, logger):
+
+def find_copyright(source_dir, logger):
     """Find and store any debian/copyright.
 
-    :param dsc_file: A DSCFile object where the copyright will be stored.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
+    :return: Contents of copyright file
     """
-    try:
-        copyright_file = findFile(source_dir, 'debian/copyright')
-    except UploadError, error:
-        yield error
-        return
+    copyright_file = findFile(source_dir, 'debian/copyright')
     if copyright_file is None:
-        yield UploadWarning("No copyright file found.")
-        return
+        raise UploadWarning("No copyright file found.")
 
     logger.debug("Copying copyright contents.")
-    dsc_file.copyright = open(copyright_file).read().strip()
+    return open(copyright_file).read().strip()
 
-def findChangelog(dsc_file, source_dir, logger):
+
+def find_changelog(source_dir, logger):
     """Find and move any debian/changelog.
 
     This function finds the changelog file within the source package. The
     changelog file is later uploaded to the librarian by
     DSCFile.storeInDatabase().
 
-    :param dsc_file: A DSCFile object where the copyright will be stored.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
+    :return: Changelog contents
     """
-    try:
-        changelog_file = findFile(source_dir, 'debian/changelog')
-    except UploadError, error:
-        yield error
-        return
+    changelog_file = findFile(source_dir, 'debian/changelog')
     if changelog_file is None:
         # Policy requires debian/changelog to always exist.
-        yield UploadError("No changelog file found.")
-        return
+        raise UploadError("No changelog file found.")
 
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
-    dsc_file.changelog_path = changelog_file
+    return open(changelog_file, 'r').read()
+
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

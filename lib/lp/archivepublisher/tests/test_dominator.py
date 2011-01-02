@@ -7,24 +7,25 @@ __metaclass__ = type
 
 import datetime
 
-from lp.archivepublisher.domination import Dominator
-from lp.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
+from lp.archivepublisher.domination import Dominator, STAY_OF_EXECUTION
+from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 class TestDominator(TestNativePublishingBase):
     """Test Dominator class."""
 
-    def createSourceAndBinaries(self, version):
+    def createSourceAndBinaries(self, version, with_debug=False,
+                                archive=None):
         """Create a source and binaries with the given version."""
         source = self.getPubSource(
-            version=version,
+            version=version, archive=archive,
             status=PackagePublishingStatus.PUBLISHED)
         binaries = self.getPubBinaries(
-            pub_source=source,
+            pub_source=source, with_debug=with_debug,
             status=PackagePublishingStatus.PUBLISHED)
         return (source, binaries)
 
@@ -95,7 +96,37 @@ class TestDominator(TestNativePublishingBase):
 
         dominator = Dominator(self.logger, foo_10_source.archive)
         dominator.judgeAndDominate(
-            foo_10_source.distroseries, foo_10_source.pocket, self.config)
+            foo_10_source.distroseries, foo_10_source.pocket)
+
+        self.checkPublications(
+            [foo_12_source] + foo_12_binaries,
+            PackagePublishingStatus.PUBLISHED)
+        self.checkPublications(
+            [foo_11_source] + foo_11_binaries,
+            PackagePublishingStatus.SUPERSEDED)
+        self.checkPublications(
+            [foo_10_source] + foo_10_binaries,
+            PackagePublishingStatus.SUPERSEDED)
+
+    def testJudgeAndDominateWithDDEBs(self):
+        """Verify that judgeAndDominate ignores DDEBs correctly.
+
+        DDEBs are superseded by their corresponding DEB publications, so they
+        are forbidden from superseding publications (an attempt would result
+        in an AssertionError), and shouldn't be directly considered for
+        superseding either.
+        """
+        ppa = self.factory.makeArchive()
+        foo_10_source, foo_10_binaries = self.createSourceAndBinaries(
+            '1.0', with_debug=True, archive=ppa)
+        foo_11_source, foo_11_binaries = self.createSourceAndBinaries(
+            '1.1', with_debug=True, archive=ppa)
+        foo_12_source, foo_12_binaries = self.createSourceAndBinaries(
+            '1.2', with_debug=True, archive=ppa)
+
+        dominator = Dominator(self.logger, ppa)
+        dominator.judgeAndDominate(
+            foo_10_source.distroseries, foo_10_source.pocket)
 
         self.checkPublications(
             [foo_12_source] + foo_12_binaries,
@@ -141,10 +172,6 @@ class TestDomination(TestNativePublishingBase):
             status=PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
-        # Ensure the stay of execution is 5 days.  This is so that we
-        # can do a sensible check later (see comment below).
-        publisher._config.stayofexecution = 5
-
         publisher.B_dominate(True)
 
         # The publishing records will be scheduled for removal.
@@ -163,7 +190,7 @@ class TestDomination(TestNativePublishingBase):
             superseded_source, PackagePublishingStatus.SUPERSEDED)
         self.checkPastDate(
             superseded_source.scheduleddeletiondate,
-            lag=datetime.timedelta(days=publisher._config.stayofexecution))
+            lag=datetime.timedelta(days=STAY_OF_EXECUTION))
 
 
 class TestDominationOfObsoletedSeries(TestDomination):

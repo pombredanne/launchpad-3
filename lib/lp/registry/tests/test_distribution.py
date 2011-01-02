@@ -5,17 +5,24 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.tests.test_distroseries import (
-    TestDistroSeriesCurrentSourceReleases)
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
-from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
-from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.tests.test_distroseries import (
+    TestDistroSeriesCurrentSourceReleases,
+    )
+from lp.services.propertycache import get_property_cache
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -77,27 +84,26 @@ class TestDistributionCurrentSourceReleases(
         distribution = removeSecurityProxy(
             self.factory.makeDistribution('foo'))
 
+        cache = get_property_cache(distribution)
+
         # Not yet cached.
-        missing = object()
-        cached_series = getattr(distribution, '_cached_series', missing)
-        self.assertEqual(missing, cached_series)
+        self.assertNotIn("series", cache)
 
         # Now cached.
         series = distribution.series
-        self.assertTrue(series is distribution._cached_series)
+        self.assertIs(series, cache.series)
 
         # Cache cleared.
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
             description='', version='1', parent_series=None,
             owner=self.factory.makePerson())
-        cached_series = getattr(distribution, '_cached_series', missing)
-        self.assertEqual(missing, cached_series)
+        self.assertNotIn("series", cache)
 
         # New cached value.
         series = distribution.series
         self.assertEqual(1, len(series))
-        self.assertTrue(series is distribution._cached_series)
+        self.assertIs(series, cache.series)
 
 
 class SeriesByStatusTests(TestCaseWithFactory):
@@ -140,3 +146,31 @@ class SeriesTests(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere", version="42.6")
         self.assertEquals(series, distro.getSeries("42.6"))
+
+
+class DistroSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for distribution snapshots."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(DistroSnapshotTestCase, self).setUp()
+        self.distribution = self.factory.makeDistribution(name="boobuntu")
+
+    def test_snapshot(self):
+        """Snapshots of products should not include marked attribues.
+
+        Wrap an export with 'doNotSnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(self.distribution, providing=IDistribution)
+        omitted = [
+            'archive_mirrors',
+            'cdimage_mirrors',
+            'series',
+            'all_distro_archives',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "Snapshot should not include %s." % attribute)

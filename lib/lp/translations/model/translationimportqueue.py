@@ -6,66 +6,95 @@
 __metaclass__ = type
 __all__ = [
     'collect_import_info',
-    'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
     'TranslationImportQueue',
     ]
 
-import logging
-import tarfile
-import os.path
-import posixpath
-import datetime
-import re
-import pytz
 from cStringIO import StringIO
+import datetime
+import logging
+import os.path
+import re
+import tarfile
 from textwrap import dedent
-from zope.interface import implements
-from zope.component import getUtility
-from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Like, Or
-from storm.locals import Int, Reference
 
-from canonical.database.sqlbase import (
-    cursor, quote, quote_like, SQLBase, sqlvalues)
+import posixpath
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Or,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPersonRoles)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership)
+    IPerson,
+    validate_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate,
+    IPOTemplateSet,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
-    TranslationImportQueueConflictError,
     translation_import_queue_entry_age,
-    UserCannotSetTranslationImportStatus)
-from lp.translations.interfaces.potemplate import IPOTemplate
+    TranslationImportQueueConflictError,
+    UserCannotSetTranslationImportStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.approver import TranslationNullApprover
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 
 
 def is_gettext_name(path):
@@ -115,7 +144,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
@@ -405,8 +434,7 @@ class TranslationImportQueueEntry(SQLBase):
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            lang_code)
+        language = language_set.getLanguageByCode(lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -450,9 +478,9 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
-            pofile = potemplate.newPOFile(language.code, variant=variant)
+            pofile = potemplate.newPOFile(language.code)
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
@@ -617,12 +645,24 @@ class TranslationImportQueueEntry(SQLBase):
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
                 'srlatn': 'sr@Latn',
+                'sr-latin': 'sr@latin',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
 
             lang_code = re.sub(
                 kde_prefix_pattern, '', self.sourcepackagename.name)
+
+            path_components = os.path.normpath(self.path).split(os.path.sep)
+            # Top-level directory (path_components[0]) is something like
+            # "source" or "messages", and only then comes the
+            # language code: we generalize it so it supports language code
+            # in any part of the path.
+            for path_component in path_components:
+                if path_component.startswith(lang_code + '@'):
+                    # There are language variants inside a language pack.
+                    lang_code = path_component
+                    break
             lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
@@ -658,8 +698,7 @@ class TranslationImportQueueEntry(SQLBase):
 
         # Let's check if whether the filename is a valid language.
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            filename)
+        language = language_set.getLanguageByCode(filename)
 
         if language is None:
             # The filename is not a valid language, so let's try it as a
@@ -964,7 +1003,7 @@ class TranslationImportQueue:
 
     def _makePath(self, name, path_filter):
         """Make the file path from the name stored in the tarball."""
-        path = posixpath.normpath(name)
+        path = posixpath.normpath(name).lstrip('/')
         if path_filter:
             path = path_filter(path)
         return path
@@ -1253,8 +1292,7 @@ class TranslationImportQueue:
         importer = getUtility(ITranslationImporter)
         template_patterns = "(%s)" % ' OR '.join([
             "path LIKE ('%%' || %s)" % quote_like(suffix)
-            for suffix in importer.template_suffixes
-            ])
+            for suffix in importer.template_suffixes])
 
         store = self._getSlaveStore()
         result = store.execute("""
@@ -1335,7 +1373,7 @@ class TranslationImportQueue:
         deletion_clauses.append(And(
             TranslationImportQueueEntry.distroseries_id != None,
             TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
-            Like(TranslationImportQueueEntry.path, '%.po')))
+            TranslationImportQueueEntry.path.like(u'%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))
@@ -1396,24 +1434,3 @@ class TranslationImportQueue:
     def remove(self, entry):
         """See ITranslationImportQueue."""
         TranslationImportQueueEntry.delete(entry.id)
-
-
-class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
-
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(target=self)
-
-    def getTranslationImportQueueEntries(self, import_status=None,
-                                         file_extension=None):
-        """See `IHasTranslationImports`."""
-        if file_extension is None:
-            extensions = None
-        else:
-            extensions = [file_extension]
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getAllEntries(
-            self, import_status=import_status, file_extensions=extensions)

@@ -7,15 +7,15 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.archive import IArchiveSet
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
 from lp.testing import TestCase
 from lp.testing.faketransaction import FakeTransaction
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestPPAKeyGenerator(TestCase):

@@ -8,10 +8,13 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser, widgets
-
+from canonical.launchpad.windmill.testing import (
+    lpuser,
+    widgets,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 class TestProductIndexPage(WindmillTestCase):
     """Test product index page."""
@@ -20,7 +23,7 @@ class TestProductIndexPage(WindmillTestCase):
 
     def test_title_inline_edit(self):
         test = widgets.InlineEditorWidgetTest(
-            url='http://launchpad.dev:8085/firefox',
+            url='%s/firefox' % RegistryWindmillLayer.base_url,
             widget_id='product-title',
             expected_value='Mozilla Firefox',
             new_value='The awesome Mozilla Firefox',
@@ -31,7 +34,7 @@ class TestProductIndexPage(WindmillTestCase):
 
     def test_programming_languages_edit(self):
         test = widgets.InlineEditorWidgetTest(
-            url='http://launchpad.dev:8085/firefox',
+            url='%s/firefox' % RegistryWindmillLayer.base_url,
             widget_id='programminglang',
             widget_tag='span',
             expected_value='Not yet specified',

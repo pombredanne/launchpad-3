@@ -26,6 +26,13 @@
       />
 
   <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="call"
+      schema="canonical.launchpad.webapp.metazcml.ICallDirective"
+      handler="canonical.launchpad.webapp.metazcml.call"
+      />
+
+  <directive
       namespace="http://namespaces.zope.org/browser"
       name="feeds"
       schema="canonical.launchpad.webapp.metazcml.IFeedsDirective"

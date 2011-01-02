@@ -10,8 +10,11 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IMailBox
-from canonical.launchpad.mail import get_msgid, MailController
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.mail import (
+    get_msgid,
+    MailController,
+    )
 
 
 def create_mail_for_directoryMailBox(from_addr, to_addrs, subject, body,

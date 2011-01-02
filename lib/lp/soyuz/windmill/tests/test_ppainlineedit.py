@@ -3,8 +3,10 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing import widgets
+from canonical.launchpad.windmill.testing import (
+    lpuser,
+    widgets,
+    )
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
 
 
@@ -17,7 +19,7 @@ class TestPPAInlineEditing(unittest.TestCase):
         """Ensure the PPA dispalyname can be edited inline."""
 
         ppa_displayname_inline_edit_test = widgets.InlineEditorWidgetTest(
-            url='http://launchpad.dev:8085/~cprov/+archive/ppa',
+            url='%s/~cprov/+archive/ppa' % SoyuzWindmillLayer.base_url,
             widget_id='displayname',
             expected_value='PPA for Celso Providelo',
             new_value="Celso's default PPA",

@@ -3,12 +3,26 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, List, Object, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
+
 
 __metaclass__ = type
 
@@ -51,6 +65,7 @@ class TranslationCreditsType(EnumeratedType):
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
 
+
 class POTMsgSetInIncompatibleTemplatesError(Exception):
     """Raised when a POTMsgSet appears in multiple incompatible templates.
 
@@ -87,8 +102,6 @@ class IPOTMsgSet(Interface):
 
     sequence = Attribute("The ordering of this set within its file.")
 
-    potemplate = Attribute("The template this set is associated with.")
-
     commenttext = Attribute("The manual comments this set has.")
 
     filereferences = Attribute("The files where this set appears.")
@@ -120,29 +133,28 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
-    def getCurrentDummyTranslationMessage(potemplate, language):
-        """Return a DummyTranslationMessage for this message language.
+    def getCurrentTranslationMessageOrDummy(pofile):
+        """Return the current `TranslationMessage`, or a dummy.
 
-        :param potemplate: PO template you want a translation message for.
-        :param language: language we want a dummy translations for.
-
-        If a TranslationMessage for this language already exists,
-        an exception is raised.
+        :param pofile: PO template you want a translation message for.
+        :return: The current translation for `self` in `pofile`, if
+            there is one.  Otherwise, a `DummyTranslationMessage` for
+            `self` in `pofile`.
         """
 
-    def getCurrentTranslationMessage(potemplate, language, variant=None):
+    def getCurrentTranslationMessage(potemplate, language):
         """Returns a TranslationMessage marked as being currently used.
 
         Diverged messages are preferred.
         """
 
-    def getImportedTranslationMessage(potemplate, language, variant=None):
+    def getImportedTranslationMessage(potemplate, language):
         """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
 
-    def getSharedTranslationMessage(language, variant=None):
+    def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
     def getLocalTranslationMessages(potemplate, language,

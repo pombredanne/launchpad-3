@@ -15,44 +15,76 @@ __all__ = [
     ]
 
 
-import email
-
-from email.Header import make_header, decode_header
-from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
+import email
+from email.Header import (
+    decode_header,
+    make_header,
+    )
+from email.Utils import (
+    make_msgid,
+    mktime_tz,
+    parseaddr,
+    parsedate_tz,
+    )
 from operator import attrgetter
 
-from canonical.database.enumcol import EnumCol
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.config import as_timedelta
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+import pytz
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    And,
+    DateTime,
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import ForeignKey, StringCol, IntCol
-from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.locals import And, DateTime, Int, Reference, Store, Storm, Unicode
-
-import pytz
-
 from canonical.config import config
-from canonical.encoding import guess as ensure_unicode
-from canonical.launchpad.helpers import get_filename_from_message_id
-from lp.services.job.model.job import Job
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IPersonSet, PersonCreationRationale,
-    UnknownSender)
-from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
-    IMessageSet, IUserToUserEmail, InvalidEmailMessage)
-from canonical.launchpad.mail import signed_message_from_string
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import validate_public_person
-from lazr.config import as_timedelta
-
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+from canonical.encoding import guess as ensure_unicode
+from canonical.launchpad.helpers import get_filename_from_message_id
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasSet,
+    )
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization,
+    IMessage,
+    IMessageChunk,
+    IMessageJob,
+    IMessageSet,
+    InvalidEmailMessage,
+    IUserToUserEmail,
+    UnknownSender,
+    )
+from canonical.launchpad.mail import signed_message_from_string
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    validate_public_person,
+    )
+from lp.services.job.model.job import Job
+from lp.services.propertycache import cachedproperty
 
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
@@ -98,7 +130,7 @@ class Message(SQLBase):
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
-    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
+    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
 
     def __iter__(self):
         """See IMessage.__iter__"""
@@ -129,10 +161,14 @@ class Message(SQLBase):
         """See IMessage."""
         return self.owner
 
-    @property
+    @cachedproperty
     def text_contents(self):
         """See IMessage."""
-        bits = [unicode(chunk) for chunk in self if chunk.content]
+        return Message.chunks_text(self.chunks)
+
+    @classmethod
+    def chunks_text(cls, chunks):
+        bits = [unicode(chunk) for chunk in chunks if chunk.content]
         return '\n\n'.join(bits)
 
     # XXX flacoste 2006-09-08: Bogus attribute only present so that
@@ -202,8 +238,8 @@ class MessageSet:
         If the header isn't encoded properly, the characters that can't
         be decoded are replaced with unicode question marks.
 
-            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
-            u'F\ufffd\ufffd'
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6?=')
+            u'F\ufffd'
         """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())

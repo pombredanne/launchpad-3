@@ -44,7 +44,7 @@ Note that:
 The 'domination' procedure is the 2nd step of the publication pipeline and
 it is performed for each suite using:
 
-  * judgeAndDominate(distroseries, pocket, pubconfig)
+  * judgeAndDominate(distroseries, pocket)
 
 """
 
@@ -58,14 +58,28 @@ import gc
 import operator
 
 import apt_pkg
+from storm.expr import And, Count, Select
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor,
-    clear_current_connection_cache)
+    clear_current_connection_cache,
+    flush_database_updates,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
-from canonical.launchpad.interfaces import PackagePublishingStatus
+
+# Days before a package will be removed from disk.
+STAY_OF_EXECUTION = 1
 
 
 def clear_cache():
@@ -154,7 +168,7 @@ class Dominator:
 
         return outpkgs
 
-    def _setScheduledDeletionDate(self, pub_record, conf):
+    def _setScheduledDeletionDate(self, pub_record):
         """Set the scheduleddeletiondate on a publishing record.
 
         If the status is DELETED we set the date to UTC_NOW, otherwise
@@ -164,9 +178,9 @@ class Dominator:
             pub_record.scheduleddeletiondate = UTC_NOW
         else:
             pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=conf.stayofexecution))
+                UTC_NOW + timedelta(days=STAY_OF_EXECUTION))
 
-    def _judgeSuperseded(self, source_records, binary_records, conf):
+    def _judgeSuperseded(self, source_records, binary_records):
         """Determine whether the superseded packages supplied should
         be moved to death row or not.
 
@@ -216,7 +230,7 @@ class Dominator:
                        (binpkg_release.binarypackagename.name,
                         binpkg_release.version,
                         pub_record.distroarchseries.architecturetag))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is useless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
@@ -263,12 +277,12 @@ class Dominator:
                 "%s/%s (%s) source has been judged eligible for removal" %
                 (srcpkg_release.sourcepackagename.name,
                  srcpkg_release.version, pub_record.id))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is pointless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
+    def judgeAndDominate(self, dr, pocket, do_clear_cache=True):
         """Perform the domination and superseding calculations
 
         It only works across the distroseries and pocket specified.
@@ -282,58 +296,67 @@ class Dominator:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchseries.architecturetag))
 
-            # Here we go behind SQLObject's back to generate an assistance
-            # table which will seriously improve the performance of this
-            # part of the publisher.
-            # XXX: dsilvers 2006-02-04: It would be nice to not have to do
-            # this. Most of this methodology is stolen from person.py
-            # XXX: malcc 2006-08-03: This should go away when we shift to
-            # doing this one package at a time.
-            flush_database_updates()
-            cur = cursor()
-            cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO
-                temporary table PubDomHelper FROM BinaryPackageRelease bpr,
-                BinaryPackageName bpn, BinaryPackagePublishingHistory
-                sbpph WHERE bpr.binarypackagename = bpn.id AND
-                sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchseries = %s AND sbpph.archive = %s AND
-                sbpph.status = %s AND sbpph.pocket = %s
-                GROUP BY bpn.id""" % sqlvalues(
-                distroarchseries, self.archive,
-                PackagePublishingStatus.PUBLISHED, pocket))
-
-            binaries = BinaryPackagePublishingHistory.select(
-                """
-                binarypackagepublishinghistory.distroarchseries = %s
-                AND binarypackagepublishinghistory.archive = %s
-                AND binarypackagepublishinghistory.pocket = %s
-                AND binarypackagepublishinghistory.status = %s AND
-                binarypackagepublishinghistory.binarypackagerelease =
-                    binarypackagerelease.id
-                AND binarypackagerelease.binarypackagename IN (
-                    SELECT name FROM PubDomHelper WHERE count > 1)"""
-                % sqlvalues(distroarchseries, self.archive,
-                            pocket, PackagePublishingStatus.PUBLISHED),
-                clauseTables=['BinaryPackageRelease'])
-
+            bpph_location_clauses = And(
+                BinaryPackagePublishingHistory.status ==
+                    PackagePublishingStatus.PUBLISHED,
+                BinaryPackagePublishingHistory.distroarchseries ==
+                    distroarchseries,
+                BinaryPackagePublishingHistory.archive == self.archive,
+                BinaryPackagePublishingHistory.pocket == pocket,
+                )
+            candidate_binary_names = Select(
+                BinaryPackageName.id,
+                And(
+                    BinaryPackageRelease.binarypackagenameID ==
+                        BinaryPackageName.id,
+                    BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                        BinaryPackageRelease.id,
+                    bpph_location_clauses,
+                ),
+                group_by=BinaryPackageName.id,
+                having=Count(BinaryPackagePublishingHistory.id) > 1)
+            binaries = IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                    BinaryPackagePublishingHistory.binarypackagereleaseID,
+                BinaryPackageRelease.binarypackagenameID.is_in(
+                    candidate_binary_names),
+                BinaryPackageRelease.binpackageformat !=
+                    BinaryPackageFormat.DDEB,
+                bpph_location_clauses)
             self.debug("Dominating binaries...")
             self._dominatePublications(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()
 
-            flush_database_updates()
-            cur.execute("DROP TABLE PubDomHelper")
-
-        if do_clear_cache:
-            self.debug("Flushing SQLObject cache.")
-            clear_cache()
-
         self.debug("Performing domination across %s/%s (Source)" %
                    (dr.name, pocket.title))
-        sources = SourcePackagePublishingHistory.selectBy(
-            distroseries=dr, archive=self.archive, pocket=pocket,
-            status=PackagePublishingStatus.PUBLISHED)
+        spph_location_clauses = And(
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            SourcePackagePublishingHistory.distroseries == dr,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.pocket == pocket,
+            )
+        candidate_source_names = Select(
+            SourcePackageName.id,
+            And(
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                spph_location_clauses,
+            ),
+            group_by=SourcePackageName.id,
+            having=Count(SourcePackagePublishingHistory.id) > 1)
+        sources = IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageRelease.sourcepackagenameID.is_in(
+                candidate_source_names),
+            spph_location_clauses)
         self.debug("Dominating sources...")
         self._dominatePublications(self._sortPackages(sources))
         flush_database_updates()
@@ -359,7 +382,7 @@ class Dominator:
                             ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
 
-        self._judgeSuperseded(sources, binaries, config)
+        self._judgeSuperseded(sources, binaries)
 
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))

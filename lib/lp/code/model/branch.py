@@ -7,83 +7,135 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'compose_public_url',
     ]
 
 from datetime import datetime
-import os.path
+import operator
+import simplejson
 
-from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
+from bzrlib.revision import NULL_REVISION
 import pytz
-
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    NamedFunc,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import (
+    AutoReload,
+    Int,
+    Reference,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-
-from storm.expr import (
-    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
-from storm.locals import AutoReload
-from storm.store import Store
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
-
-from lazr.uri import URI
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import (
-    cursor, quote, SQLBase, sqlvalues)
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import _
-from lp.services.job.model.job import Job
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPrivacy)
+    ILaunchpadCelebrities,
+    IPrivacy,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
-    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
-    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
+    BranchFormat,
+    ControlFormat,
+    CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchMergeProposalStatus, BranchType)
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    BranchType,
+    )
 from lp.code.errors import (
-    BranchCannotBePrivate, BranchCannotBePublic, BranchTargetError,
-    BranchTypeError, BranchMergeProposalExists, CannotDeleteBranch,
-    InvalidBranchMergeProposal)
-from lp.code.mail.branch import send_branch_modified_notifications
-from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal, BranchMergeProposalGetter)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision, RevisionAuthor
-from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
+    BranchCannotBePrivate,
+    BranchCannotBePublic,
+    BranchMergeProposalExists,
+    BranchTargetError,
+    BranchTypeError,
+    CannotDeleteBranch,
+    InvalidBranchMergeProposal,
+    InvalidMergeQueueConfig,
+    )
+from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
+    NewBranchMergeProposalEvent,
+    )
 from lp.code.interfaces.branch import (
-    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
+    BzrIdentityMixin,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    IBranchNavigationMenu,
+    IBranchSet,
+    user_has_special_branch_access,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    )
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import compose_public_url
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
+from lp.code.mail.branch import send_branch_modified_notifications
+from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal,
+    BranchMergeProposalGetter,
+    )
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchsubscription import BranchSubscription
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    )
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person,
+    validate_public_person,
+    )
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.job.model.job import Job
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -126,7 +178,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def setOwner(self, new_owner, user):
         """See `IBranch`."""
@@ -228,11 +280,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def revision_history(self):
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(self),
-            prejoins=['revision'], orderBy='-sequence')
+        result = Store.of(self).find(
+            (BranchRevision, Revision),
+            BranchRevision.branch_id == self.id,
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.sequence != None)
+        result = result.order_by(Desc(BranchRevision.sequence))
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -309,8 +363,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IHasMergeProposals`."""
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """See `IBranch`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
@@ -318,7 +373,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status, target_branch=self)
+        return collection.getMergeProposals(
+            status, target_branch=self, merged_revnos=merged_revnos)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -376,6 +432,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_requests is None:
             review_requests = []
 
+        # If no reviewer is specified, use the default for the branch.
+        if len(review_requests) == 0:
+            review_requests.append((target_branch.code_reviewer, None))
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch,
@@ -391,6 +451,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                 reviewer, registrant, review_type, _notify_listeners=False)
 
         notify(NewBranchMergeProposalEvent(bmp))
+        if needs_review:
+            notify(BranchMergeProposalNeedsReviewEvent(bmp))
+
         return bmp
 
     def _createMergeProposal(
@@ -413,20 +476,19 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
-        jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets
-                if target.target_branch.last_scanned_id is not None]
+        from lp.code.model.branchmergeproposaljob import (
+                GenerateIncrementalDiffJob,
+                UpdatePreviewDiffJob,
+            )
+        jobs = []
+        for merge_proposal in self.active_landing_targets:
+            if merge_proposal.target_branch.last_scanned_id is None:
+                continue
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+            for old, new in merge_proposal.getMissingIncrementalDiffs():
+                GenerateIncrementalDiffJob.create(
+                    merge_proposal, old.revision_id, new.revision_id)
         return jobs
-
-    # XXX: Tim Penhey, 2008-06-18, bug 240881
-    merge_queue = ForeignKey(
-        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
-        default=None)
-
-    merge_control_status = EnumCol(
-        enum=BranchMergeControlStatus, notNull=True,
-        default=BranchMergeControlStatus.NO_QUEUE)
 
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
@@ -440,14 +502,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
-
-    def getMergeQueue(self):
-        """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
-            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
@@ -511,7 +565,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
-        return self.revision_history.limit(quantity)
+        return self.revision_history.config(limit=quantity)
 
     def getMainlineBranchRevisions(self, start_date, end_date=None,
                                    oldest_first=False):
@@ -534,14 +588,15 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
-        return BranchRevision.select(
-            'Revision.id=BranchRevision.revision AND '
-            'BranchRevision.branch = %d AND '
-            'BranchRevision.sequence IS NOT NULL AND '
-            'Revision.revision_date > %s' %
-            (self.id, quote(timestamp)),
-            orderBy='-sequence',
-            clauseTables=['Revision'])
+        result = Store.of(self).find(
+            (BranchRevision, Revision),
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            Revision.revision_date > timestamp)
+        result = result.order_by(Desc(BranchRevision.sequence))
+        # Return BranchRevision but prejoin Revision as well.
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     def canBeDeleted(self):
         """See `IBranch`."""
@@ -646,6 +701,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # actually a very interesting thing to tell the user about.
         if self.code_import is not None:
             DeleteCodeImport(self.code_import)()
+        Store.of(self).flush()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -753,6 +809,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision,
             BranchRevision.branch == self,
             query).one()
+
+    def removeBranchRevisions(self, revision_ids):
+        """See `IBranch`."""
+        if isinstance(revision_ids, basestring):
+            revision_ids = [revision_ids]
+        IMasterStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.revision_id.is_in(
+                Select(Revision.id,
+                       Revision.revision_id.is_in(revision_ids)))).remove()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
@@ -862,24 +929,20 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        cur = cursor()
-        cur.execute("""
-            SELECT BranchRevision.id, BranchRevision.sequence,
-                Revision.revision_id
-            FROM Revision, BranchRevision
-            WHERE Revision.id = BranchRevision.revision
-                AND BranchRevision.branch = %s
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(self))
+        columns = (
+            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        rows = Store.of(self).using(Revision, BranchRevision).find(
+            columns,
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == self.id)
+        rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchall():
+        for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
                 history.append(revision_id)
-        return ancestry, history, branch_revision_map
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""
@@ -938,8 +1001,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
-        if self.last_mirrored_id != last_revision_id:
-            self.last_mirrored_id = last_revision_id
+        self.last_mirrored_id = last_revision_id
+        if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             BranchScanJob.create(self)
         self.control_format = control_format
@@ -975,10 +1038,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Delete jobs for this branch prior to deleting branch.
 
         This deletion includes `BranchJob`s associated with the branch,
-        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s
+        and `TranslationTemplateBuild`s.
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
 
         store = Store.of(self)
         affected_jobs = Select(
@@ -991,6 +1058,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
+        store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.branch == self).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
@@ -1017,12 +1088,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             name = "date_trunc"
 
         results = Store.of(self).find(
-            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
-            Revision.id == BranchRevision.revisionID,
+            (DateTrunc(u'day', Revision.revision_date), Count(Revision.id)),
+            Revision.id == BranchRevision.revision_id,
             Revision.revision_date > since,
             BranchRevision.branch == self)
         results = results.group_by(
-            DateTrunc('day', Revision.revision_date))
+            DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
     @property
@@ -1090,6 +1161,23 @@ class Branch(SQLBase, BzrIdentityMixin):
             SourcePackageRecipeData)
         return SourcePackageRecipeData.findRecipes(self)
 
+    merge_queue_id = Int(name='merge_queue', allow_none=True)
+    merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
+
+    merge_queue_config = StringCol(dbName='merge_queue_config')
+
+    def addToQueue(self, queue):
+        """See `IBranchEdit`."""
+        self.merge_queue = queue
+
+    def setMergeQueueConfig(self, config):
+        """See `IBranchEdit`."""
+        try:
+            simplejson.loads(config)
+            self.merge_queue_config = config
+        except ValueError: # The json string is invalid
+            raise InvalidMergeQueueConfig
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
@@ -1129,7 +1217,6 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1143,7 +1230,6 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):
@@ -1156,9 +1242,8 @@ class ClearSeriesTranslationsBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.branch == self.branch:
-            self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        if self.affected_object.translations_branch == self.branch:
+            self.affected_object.translations_branch = None
 
 
 class ClearOfficialPackageBranch(DeletionOperation):
@@ -1259,37 +1344,6 @@ class BranchSet:
         return branches
 
 
-class BranchCloud:
-    """See `IBranchCloud`."""
-
-    def getProductsWithInfo(self, num_products=None, store_flavor=None):
-        """See `IBranchCloud`."""
-        # Circular imports are fun.
-        from lp.registry.model.product import Product
-        # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store by default.
-        if store_flavor is None:
-            store_flavor = SLAVE_FLAVOR
-        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
-        # Get all products, the count of all hosted & mirrored branches and
-        # the last revision date.
-        result = store.find(
-            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
-            Branch.private == False,
-            Branch.product == Product.id,
-            Or(Branch.branch_type == BranchType.HOSTED,
-               Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id)
-        result = result.group_by(Product.name)
-        result = result.order_by(Desc(Count(Branch.id)))
-        if num_products:
-            result.config(limit=num_products)
-        # XXX: JonathanLange 2009-02-10: The revision date in the result set
-        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
-        # for the purposes of cloud calculation though.
-        return result
-
-
 def update_trigger_modified_fields(branch):
     """Make the trigger updated fields reload when next accessed."""
     # Not all the fields are exposed through the interface, and some are read
@@ -1308,18 +1362,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def compose_public_url(scheme, unique_name, suffix=None):
-    # Avoid circular imports.
-    from lp.code.xmlrpc.branch import PublicCodehostingAPI
-
-    # Accept sftp as a legacy protocol.
-    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
-    accepted_schemes.add('sftp')
-    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
-    host = URI(config.codehosting.supermirror_root).host
-    path = '/' + urlutils.escape(unique_name)
-    if suffix is not None:
-        path = os.path.join(path, suffix)
-    return str(URI(scheme=scheme, host=host, path=path))

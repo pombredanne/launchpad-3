@@ -6,14 +6,16 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.lazr.utils import smartquote
-
+from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
+    IProductSeriesLanguageSet,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
@@ -151,7 +153,7 @@ class TestPOTemplateBreadcrumbs(BaseBreadcrumbTestCase):
     def test_potemplate(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester",
-            official_rosetta=True)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series = self.factory.makeProductSeries(
             name="test", product=product)
         potemplate = self.factory.makePOTemplate(
@@ -175,7 +177,7 @@ class TestPOFileBreadcrumbs(BaseBreadcrumbTestCase):
     def test_pofiletranslate(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester",
-            official_rosetta=True)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series = self.factory.makeProductSeries(name="test", product=product)
         potemplate = self.factory.makePOTemplate(series, name="test-template")
         pofile = self.factory.makePOFile('eo', potemplate)

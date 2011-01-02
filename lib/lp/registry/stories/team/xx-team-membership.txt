@@ -54,8 +54,8 @@ We get a nice error message
 Give up on change, nothing should have changed with Colin:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)

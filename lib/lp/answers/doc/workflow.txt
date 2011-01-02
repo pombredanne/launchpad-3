@@ -590,7 +590,7 @@ Users without launchpad.Moderator privileges cannot set the assignee.
     >>> question.assignee = sample_person
     Traceback (most recent call last):
       ...
-    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Moderate')
+    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Append')
 
 
 Events
@@ -602,8 +602,8 @@ the message they create and a ObjectModifiedEvent for the question.
     # Register an event listener that will print events it receives.
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from lp.answers.interfaces.question import IQuestion
     >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.answers.interfaces.question import IQuestion
 
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (

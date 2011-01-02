@@ -16,16 +16,22 @@ import logging
 import socket
 import xmlrpclib
 
+from twisted.internet import defer
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
-
-from lp.buildmaster.interfaces.builder import CorruptBuildCookie
+from lp.buildmaster.interfaces.builder import (
+    BuildSlaveFailure,
+    CorruptBuildCookie,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+    BuildBehaviorMismatch,
+    IBuildFarmJobBehavior,
+    )
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -68,54 +74,53 @@ class BuildFarmJobBehaviorBase:
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
 
-        try:
-            slave_status = self._builder.slaveStatus()
-        except (xmlrpclib.Fault, socket.error), info:
-            # XXX cprov 2005-06-29:
-            # Hmm, a problem with the xmlrpc interface,
-            # disable the builder ?? or simple notice the failure
-            # with a timestamp.
+        d = self._builder.slaveStatus()
+
+        def got_failure(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
+            info = failure.value
             info = ("Could not contact the builder %s, caught a (%s)"
                     % (queueItem.builder.url, info))
-            logger.debug(info, exc_info=True)
-            # keep the job for scan
-            return
+            raise BuildSlaveFailure(info)
 
-        builder_status_handlers = {
-            'BuilderStatus.IDLE': self.updateBuild_IDLE,
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
-            'BuilderStatus.WAITING': self.updateBuild_WAITING,
-            }
+        def got_status(slave_status):
+            builder_status_handlers = {
+                'BuilderStatus.IDLE': self.updateBuild_IDLE,
+                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+                'BuilderStatus.WAITING': self.updateBuild_WAITING,
+                }
 
-        builder_status = slave_status['builder_status']
-        if builder_status not in builder_status_handlers:
-            logger.critical(
-                "Builder on %s returned unknown status %s, failing it"
-                % (self._builder.url, builder_status))
-            self._builder.failBuilder(
-                "Unknown status code (%s) returned from status() probe."
-                % builder_status)
-            # XXX: This will leave the build and job in a bad state, but
-            # should never be possible, since our builder statuses are
-            # known.
-            queueItem._builder = None
-            queueItem.setDateStarted(None)
-            return
+            builder_status = slave_status['builder_status']
+            if builder_status not in builder_status_handlers:
+                logger.critical(
+                    "Builder on %s returned unknown status %s, failing it"
+                    % (self._builder.url, builder_status))
+                self._builder.failBuilder(
+                    "Unknown status code (%s) returned from status() probe."
+                    % builder_status)
+                # XXX: This will leave the build and job in a bad state, but
+                # should never be possible, since our builder statuses are
+                # known.
+                queueItem._builder = None
+                queueItem.setDateStarted(None)
+                return
 
-        # Since logtail is a xmlrpclib.Binary container and it is returned
-        # from the IBuilder content class, it arrives protected by a Zope
-        # Security Proxy, which is not declared, thus empty. Before passing
-        # it to the status handlers we will simply remove the proxy.
-        logtail = removeSecurityProxy(slave_status.get('logtail'))
+            # Since logtail is a xmlrpclib.Binary container and it is
+            # returned from the IBuilder content class, it arrives
+            # protected by a Zope Security Proxy, which is not declared,
+            # thus empty. Before passing it to the status handlers we
+            # will simply remove the proxy.
+            logtail = removeSecurityProxy(slave_status.get('logtail'))
 
-        method = builder_status_handlers[builder_status]
-        try:
-            method(queueItem, slave_status, logtail, logger)
-        except TypeError, e:
-            logger.critical("Received wrong number of args in response.")
-            logger.exception(e)
+            method = builder_status_handlers[builder_status]
+            return defer.maybeDeferred(
+                method, queueItem, slave_status, logtail, logger)
+
+        d.addErrback(got_failure)
+        d.addCallback(got_status)
+        return d
 
     def updateBuild_IDLE(self, queueItem, slave_status, logtail, logger):
         """Somehow the builder forgot about the build job.
@@ -145,11 +150,13 @@ class BuildFarmJobBehaviorBase:
 
         Clean the builder for another jobs.
         """
-        queueItem.builder.cleanSlave()
-        queueItem.builder = None
-        if queueItem.job.status != JobStatus.FAILED:
-            queueItem.job.fail()
-        queueItem.specific_job.jobAborted()
+        d = queueItem.builder.cleanSlave()
+        def got_cleaned(ignored):
+            queueItem.builder = None
+            if queueItem.job.status != JobStatus.FAILED:
+                queueItem.job.fail()
+            queueItem.specific_job.jobAborted()
+        return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):
         """Read build status name.
@@ -184,7 +191,8 @@ class BuildFarmJobBehaviorBase:
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
 
         build = queueItem.specific_job.build
-        build.handleStatus(build_status, librarian, slave_status)
+        d = build.handleStatus(build_status, librarian, slave_status)
+        return d
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):

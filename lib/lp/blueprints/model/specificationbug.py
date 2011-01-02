@@ -7,12 +7,11 @@ __metaclass__ = type
 
 __all__ = ['SpecificationBug']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from lp.blueprints.interfaces.specificationbug import ISpecificationBug
 from canonical.database.sqlbase import SQLBase
+from lp.blueprints.interfaces.specificationbug import ISpecificationBug
 
 
 class SpecificationBug(SQLBase):

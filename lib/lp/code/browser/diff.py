@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Display classes relating to diff objects of one sort or another."""
@@ -13,7 +13,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import Navigation
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tales import ObjectFormatterAPI
+from lp.app.browser.tales import ObjectFormatterAPI
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.services.browser_helpers import get_plural_text
 

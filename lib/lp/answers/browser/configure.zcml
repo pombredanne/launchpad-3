@@ -199,7 +199,7 @@
     name="+reject"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionRejectView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../templates/question-reject.pt"
     />
 
@@ -239,7 +239,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 
@@ -308,7 +308,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 

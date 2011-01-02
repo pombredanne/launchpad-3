@@ -24,7 +24,7 @@ For example, let's say No Privileges Person wants to contact Salgado...
 ...No Priv would start by going to Salgado's +contactuser page.
 
     >>> from canonical.launchpad.ftests import login
-    >>> login(no_priv.preferredemail.email)
+    >>> login_person(no_priv)
     >>> view = create_view(no_priv, salgado)
 
 This contact is allowed.
@@ -304,9 +304,10 @@ Non-members may only contact the team owner.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Bart (http://launchpad.dev/~bart)
-    using the "Contact this team" owner link on the GuadaMen team page.
+    using the "Contact this team's owner" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 1
@@ -344,10 +345,10 @@ the same subject and body from the same sender.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    to each member of the GuadaMen team using the "Contact this team" link on
+    the GuadaMen team page (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -397,10 +398,11 @@ Foo Bar's message gets sent to each individual member of he team.
     Bodies:
     Can one of you help me with "%s" usage!
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
+    to each member of the GuadaMen team
     using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    team page (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -459,9 +461,10 @@ sent, and that to the new contact address.
     <BLANKLINE>
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page.
+    using the "Contact this team" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
@@ -541,9 +544,10 @@ that contains an explanation as well.
     <BLANKLINE>
     Can you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Cris (http://launchpad.dev/~cris)
-    using the "Contact this user" link on your profile page.
+    using the "Contact this user" link on your profile page
+    (http://launchpad.dev/~dave).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
@@ -573,10 +577,11 @@ to minimise long lines.
     ^Can you help me? Can you help me? Can you help me? Can you help me? Can$
     ^you help me? Can you help me? Can you help me? Can you help me?$
     ^-- $
-    ^This message was sent from Launchpad by the user$
+    ^This message was sent from Launchpad by$
     ^Sample Person (http://launchpad.dev/~name12)$
-    ^using the "Contact this team" link on the Landscape Developers$
-    ^team page to each member directly.$
+    ^to each member of the Landscape Developers team using the "Contact this$
+    ^team" link on the Landscape Developers team page$
+    ^(http://launchpad.dev/~landscape-developers).$
     ^For more information see$
     ^https://help.launchpad.net/YourAccount/ContactingPeople$
 

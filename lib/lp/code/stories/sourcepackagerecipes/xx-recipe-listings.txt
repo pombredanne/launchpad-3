@@ -86,7 +86,7 @@ Let's use the product from the former branch test.
     >>> nopriv_browser.open(product_url)
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
-    http://launchpad.dev/product-name.../+recipes
+    http://code.launchpad.dev/product-name.../+recipes
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
@@ -119,7 +119,7 @@ Create a person, make some recipes for that person.
     >>> nopriv_browser.open(person_url)
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
-    http://launchpad.dev/~person-name.../+recipes
+    http://code.launchpad.dev/~person-name.../+recipes
 
 The "Owner" section should be missing.
 

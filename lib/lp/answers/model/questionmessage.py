@@ -11,16 +11,17 @@ __all__ = [
     'QuestionMessage',
     ]
 
+from lazr.delegates import delegates
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from lazr.delegates import delegates
-
-from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.message import IMessage
-from lp.answers.interfaces.questionenums import QuestionAction, QuestionStatus
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 
 

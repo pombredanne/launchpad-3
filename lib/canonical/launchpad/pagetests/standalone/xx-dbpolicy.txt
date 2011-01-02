@@ -20,9 +20,11 @@ request is querying the master or slave database.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    >>> from canonical.testing.layers import DatabaseLayer
     >>> master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> master.execute("SELECT current_database()").get_one()[0]
-    u'launchpad_ftest'
+    >>> dbname = DatabaseLayer._db_fixture.dbname
+    >>> dbname == master.execute("SELECT current_database()").get_one()[0]
+    True
     >>> slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
     >>> slave.execute("SELECT current_database()").get_one()[0]
     u'launchpad_empty'
@@ -47,7 +49,7 @@ needs to be created externally to this pagetest).
 
     >>> def whichdb(browser):
     ...     dbname = extract_text(find_tag_by_id(browser.contents, 'dbname'))
-    ...     if dbname == 'launchpad_ftest':
+    ...     if dbname == DatabaseLayer._db_fixture.dbname:
     ...         return 'MASTER'
     ...     elif dbname == 'launchpad_empty':
     ...         return 'SLAVE'

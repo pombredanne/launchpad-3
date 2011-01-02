@@ -9,48 +9,85 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
 import cgi
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.lifecycle.event import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import MissingInputError, WidgetsError
+from zope.app.form.interfaces import (
+    MissingInputError,
+    WidgetsError,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from z3c.ptcompat import ViewPageTemplateFile
-from lazr.enum import EnumeratedType, Item
-from lazr.lifecycle.event import ObjectCreatedEvent
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask, validate_new_distrotask)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
-from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
-from lp.registry.interfaces.product import (IProductSet, License)
+    valid_upstreamtask,
+    validate_new_distrotask,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, LaunchpadFormView)
+    canonical_url,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-
 from canonical.widgets.bugtask import (
-    BugTaskAlsoAffectsSourcePackageNameWidget)
+    BugTaskAlsoAffectsSourcePackageNameWidget,
+    )
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from canonical.widgets.popup import SearchForUpstreamPopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.enums import ServiceUsage
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IAddBugTaskForm,
+    IAddBugTaskWithProductCreationForm,
+    valid_remote_bug_url,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
+from lp.registry.interfaces.product import (
+    IProductSet,
+    License,
+    )
+from lp.services.fields import StrippedTextLine
+from lp.services.propertycache import cachedproperty
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -158,7 +195,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
             structured("""
                 There is no project in Launchpad named "%s". Please
                 <a href="/projects"
-                onclick="YUI().use('event').Event.simulate(
+                onclick="LPS.use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
                          return false;"
                 >search for it</a> as it may be
@@ -285,10 +322,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-            if not target.official_malone:
+            if target.bug_tracking_usage != ServiceUsage.LAUNCHPAD:
                 task_added.bugwatch = bug_watch
 
-        if (not target.official_malone and task_added.bugwatch is not None
+        if (target.bug_tracking_usage != ServiceUsage.LAUNCHPAD
+            and task_added.bugwatch is not None
             and (task_added.bugwatch.bugtracker.bugtrackertype !=
                  BugTrackerType.EMAILADDRESS)):
             # A remote bug task gets its status from a bug watch, so
@@ -337,7 +375,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
         if (not bug_url and
             not self.request.get('ignore_missing_remote_bug') and
-            not target.official_malone):
+            target.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # We have no URL for the remote bug and the target does not use
             # Launchpad for bug tracking, so we warn the user this is not
             # optimal and ask for his confirmation.
@@ -370,7 +408,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         """
         target = self.getTarget(data)
         bug_url = data.get('bug_url')
-        if bug_url and target.official_malone:
+        if bug_url and target.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             self.addError(
                 "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"

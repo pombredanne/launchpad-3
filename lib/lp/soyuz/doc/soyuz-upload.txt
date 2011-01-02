@@ -68,8 +68,8 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  >>> from lp.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
+  >>> from lp.archiveuploader.tagfiles import parse_tagfile
   >>> import glob
   >>> test_files_dir = os.path.join(config.root,
   ...                               "lib/lp/soyuz/scripts/"
@@ -94,14 +94,14 @@ session.
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
-  ...     if tf.has_key("source"):
-  ...         package_names.append(tf["source"])
+  ...     if tf.has_key("Source"):
+  ...         package_names.append(tf["Source"])
   ...
   ...     send_filepaths = [changes_filepath]
-  ...     if tf.has_key("files"):
+  ...     if tf.has_key("Files"):
   ...         send_filepaths.extend(
   ...             [os.path.join(test_files_dir, line.split()[-1])
-  ...              for line in tf["files"].splitlines() if line])
+  ...              for line in tf["Files"].splitlines() if line])
   ...
   ...     sent_filenames.extend(
   ...         os.path.basename(filepath) for filepath in send_filepaths)
@@ -212,9 +212,9 @@ policy in process-upload.py.
 
 So, load the GPG key:
 
-  >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-  >>> from canonical.launchpad.interfaces import IGPGHandler
   >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+  >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
   >>> gpg_handler = getUtility(IGPGHandler)
   >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
   >>> key_data = open(key_path).read()
@@ -227,9 +227,15 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IEmailAddressSet, PersonCreationRationale, IGPGKeySet,
-  ...     GPGKeyAlgorithm)
+  >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+  >>> from lp.registry.interfaces.gpg import (
+  ...     GPGKeyAlgorithm,
+  ...     IGPGKeySet,
+  ...     )
+  >>> from lp.registry.interfaces.person import (
+  ...     IPersonSet,
+  ...     PersonCreationRationale,
+  ...     )
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
   >>> user = getUtility(IPersonSet).ensurePerson(
   ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
@@ -260,13 +266,14 @@ just imported. Remember that process-upload.py is running as
 a different process.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> ZecaTestSetup().setUp()
+  >>> zeca = ZecaTestSetup()
+  >>> zeca.setUp()
 
 
 Include non-free in the database. This will be done by the
 NascentUpload in the 'sync' policy in the future.
 
-  >>> from canonical.launchpad.interfaces import IComponentSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> component_set = getUtility(IComponentSet)
   >>> non_free = component_set.new("non-free")
   >>> contrib = component_set.new("contrib")
@@ -429,8 +436,9 @@ candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> from lp.soyuz.interfaces.queue import (
-  ...     PackageUploadStatus, QueueInconsistentStateError)
+  ...     QueueInconsistentStateError)
 
 Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
@@ -527,7 +535,7 @@ Now we process the accepted queue items, one more time.
 
 These packages must now be in the publishing history. Let's check it.
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.publishing import (
   ...    SourcePackagePublishingHistory as SSPPH)
   >>> package_names.sort()
   >>> for name in package_names:
@@ -708,7 +716,7 @@ and SHA256) for each index published.
   Version: 6.6.6
   Codename: breezy-autotest
   Date: ...
-  Architectures: 
+  Architectures:
   Components: main restricted universe multiverse
   Description: ubuntutest Breezy Badger Autotest 6.6.6
   MD5Sum:
@@ -730,7 +738,7 @@ Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "archive-cruft-check.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-vvn",
+  >>> process = subprocess.Popen([sys.executable, script, "-vn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",
   ...                             "/var/tmp/archive"],
@@ -762,7 +770,7 @@ everything up.
 Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
-  >>> ZecaTestSetup().tearDown()
+  >>> zeca.tearDown()
 
 
 Feito! ;-)

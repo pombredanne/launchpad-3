@@ -11,14 +11,15 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from storm.expr import And
+from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.lpstorm import IStore
-
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 
 

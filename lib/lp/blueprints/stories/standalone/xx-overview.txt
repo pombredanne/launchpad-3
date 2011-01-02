@@ -7,6 +7,17 @@ product or distribution. There's a page where users can find the latest
 blueprints, and also other pages where users can browse through complete
 lists of blueprints for a given product or distribution.
 
+A number of tests in this need a product with blueprints enabled, so we'll
+enable them on firefox.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
 
 Viewing lists of blueprints
 ===========================

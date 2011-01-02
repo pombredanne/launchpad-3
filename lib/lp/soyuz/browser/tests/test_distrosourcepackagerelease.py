@@ -9,9 +9,10 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer

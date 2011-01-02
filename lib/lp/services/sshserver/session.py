@@ -9,10 +9,13 @@ __all__ = [
     'PatchedSSHSession',
     ]
 
-from zope.interface import implements
-
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import channel, connection, session
+from twisted.conch.ssh import (
+    channel,
+    connection,
+    session,
+    )
+from zope.interface import implements
 
 
 class PatchedSSHSession(session.SSHSession, object):

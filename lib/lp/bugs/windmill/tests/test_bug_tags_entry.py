@@ -6,15 +6,19 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
 
+import transaction
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing import constants, lpuser
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
-from zope.security.proxy import removeSecurityProxy
 
 class TestBugTagsEntry(WindmillTestCase):
 
@@ -55,7 +59,7 @@ class TestBugTagsEntry(WindmillTestCase):
             id=u'tag-input', timeout=constants.FOR_ELEMENT)
         client.type(text=u'ee', id=u'tag-input')
         client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertNode(classname=u'yui-autocomplete-list')
+        client.asserts.assertNode(classname=u'yui3-autocomplete-list')
         client.click(id=u'item0')
         client.click(id=u'edit-tags-ok')
         client.waits.sleep(milliseconds=constants.SLEEP)

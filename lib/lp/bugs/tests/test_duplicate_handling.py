@@ -8,8 +8,7 @@ import unittest
 
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import InvalidDuplicateValue
 from lp.testing import TestCaseWithFactory
 

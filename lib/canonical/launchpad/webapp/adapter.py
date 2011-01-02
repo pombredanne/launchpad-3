@@ -6,44 +6,74 @@
 
 __metaclass__ = type
 
+import logging
 import os
 import re
 import sys
 import thread
 import threading
-import traceback
 from time import time
+import traceback
 import warnings
 
 import psycopg2
 from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
-
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    QueryCanceledError,
+    )
+import pytz
 from storm.database import register_scheme
 from storm.databases.postgres import (
-    Postgres, PostgresConnection, PostgresTimeoutTracer)
+    Postgres,
+    PostgresConnection,
+    PostgresTimeoutTracer,
+    )
 from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
-
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classImplements, classProvides, alsoProvides, implements)
+    alsoProvides,
+    classImplements,
+    classProvides,
+    implements,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config, dbconfig, DatabaseConfig
+from canonical.config import (
+    config,
+    DatabaseConfig,
+    )
 from canonical.database.interfaces import IRequestExpired
-from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR,
-    ReadOnlyModeViolation, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    ReadOnlyModeDisallowedStore,
+    ReadOnlyModeViolation,
+    SLAVE_FLAVOR,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
+from canonical.lazr.timeout import set_default_timeout_function
+from lp.services import features
+from lp.services.log.loglevels import DEBUG2
+from lp.services.timeline.timeline import Timeline
+from lp.services.timeline.requesttimeline import (
+    get_request_timeline,
+    set_request_timeline,
+    )
 
 
 __all__ = [
@@ -54,11 +84,12 @@ __all__ = [
     'get_request_start_time',
     'get_request_duration',
     'get_store_name',
-    'hard_timeout_expired',
     'soft_timeout_expired',
     'StoreSelector',
     ]
 
+
+UTC = pytz.utc
 
 classImplements(TimeoutError, IRequestExpired)
 
@@ -75,10 +106,17 @@ class LaunchpadTimeoutError(TimeoutError):
         return ('Statement: %r\nParameters:%r\nOriginal error: %r'
                 % (self.statement, self.params, self.original_error))
 
+
+class RequestExpired(RuntimeError):
+    """Request has timed out."""
+    implements(IRequestExpired)
+
+
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
     from canonical.ftests.pgsql import ConnectionWrapper
     return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
+
 
 def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     """Set the dirty commit status to False unless previous is True"""
@@ -93,6 +131,7 @@ _local = threading.local()
 
 
 class CommitLogger:
+
     def __init__(self, txn):
         self.txn = txn
 
@@ -103,9 +142,9 @@ class CommitLogger:
         pass
 
     def afterCompletion(self, txn):
-        now = time()
-        _log_statement(
-            now, now, None, 'Transaction completed, status: %s' % txn.status)
+        action = get_request_timeline(get_current_browser_request()).start(
+            "SQL-nostore", 'Transaction completed, status: %s' % txn.status)
+        action.finish()
 
 
 def set_request_started(
@@ -131,25 +170,32 @@ def set_request_started(
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    if request_statements is None:
-        _local.request_statements = []
+    request = get_current_browser_request()
+    if request_statements is not None:
+        # Specify a specific sequence object for the timeline.
+        set_request_timeline(request, Timeline(request_statements))
     else:
-        _local.request_statements = request_statements
+        # Ensure a timeline is created, so that time offset for actions is
+        # reasonable.
+        set_request_timeline(request, Timeline())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
+    set_permit_timeout_from_features(False)
+
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
     the request completes.
     """
     if getattr(_local, 'request_start_time', None) is None:
-        warnings.warn('clear_request_started() called outside of a request')
-
+        warnings.warn('clear_request_started() called outside of a request',
+            stacklevel=2)
     _local.request_start_time = None
-    _local.request_statements = []
+    request = get_current_browser_request()
+    set_request_timeline(request, Timeline())
     commit_logger = getattr(_local, 'commit_logger', None)
     if commit_logger is not None:
         _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
@@ -159,7 +205,8 @@ def clear_request_started():
 def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
-    statements = getattr(_local, 'request_statements', [])
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
     from canonical.launchpad.webapp.errorlog import (
         maybe_record_user_requested_oops)
     oopsid = maybe_record_user_requested_oops()
@@ -167,14 +214,15 @@ def summarize_requests():
         oops_str = ""
     else:
         oops_str = " %s" % oopsid
-    log = "%s queries issued in %.2f seconds%s" % (
-        len(statements), secs, oops_str)
+    log = "%s queries/external actions issued in %.2f seconds%s" % (
+        len(timeline.actions), secs, oops_str)
     return log
 
 
 def store_sql_statements_and_request_duration(event):
+    actions = get_request_timeline(get_current_browser_request()).actions
     event.request.setInWSGIEnvironment(
-        'launchpad.sqlstatements', len(get_request_statements()))
+        'launchpad.nonpythonactions', len(actions))
     event.request.setInWSGIEnvironment(
         'launchpad.requestduration', get_request_duration())
 
@@ -185,7 +233,16 @@ def get_request_statements():
     The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
-    return getattr(_local, 'request_statements', [])
+    result = []
+    request = get_current_browser_request()
+    for action in get_request_timeline(request).actions:
+        if not action.category.startswith("SQL-"):
+            continue
+        # Can't show incomplete requests in this API
+        if action.duration is None:
+            continue
+        result.append(action.logTuple())
+    return result
 
 
 def get_request_start_time():
@@ -204,55 +261,86 @@ def get_request_duration(now=None):
     return now - starttime
 
 
-def _log_statement(starttime, endtime, connection_wrapper, statement):
-    """Log that a database statement was executed."""
-    request_starttime = getattr(_local, 'request_start_time', None)
-    if request_starttime is None:
-        return
+def set_permit_timeout_from_features(enabled):
+    """Control request timeouts being obtained from the 'hard_timeout' flag.
 
-    # convert times to integer millisecond values
-    starttime = int((starttime - request_starttime) * 1000)
-    endtime = int((endtime - request_starttime) * 1000)
-    # A string containing no whitespace that lets us identify which Store
-    # is being used.
-    if connection_wrapper is not None:
-        database_identifier = connection_wrapper._database.name
-    else:
-        database_identifier = None
-    _local.request_statements.append(
-        (starttime, endtime, database_identifier, statement))
+    Until we've fully setup a page to render - routed the request to the
+    right object, setup a participation etc, feature flags cannot be
+    completely used; and because doing feature flag lookups will trigger
+    DB access, attempting to do a DB lookup will cause a nested DB
+    lookup (the one being done, and the flags lookup). To resolve all of
+    this, timeouts start as a config file only setting, and are then
+    overridden once the request is ready to execute.
 
-    # store the last executed statement as an attribute on the current
-    # thread
-    threading.currentThread().lp_last_sql_statement = statement
+    :param enabled: If True permit looking up request timeouts in
+        feature flags.
+    """
+    _local._permit_feature_timeout = enabled
 
 
-def _check_expired(timeout):
-    """Checks whether the current request has passed the given timeout."""
-    if timeout is None or not getattr(_local, 'enable_timeout', True):
-        return False # no timeout configured or timeout disabled.
+def _get_request_timeout(timeout=None):
+    """Get the timeout value in ms for the current request.
 
-    starttime = getattr(_local, 'request_start_time', None)
-    if starttime is None:
-        return False # no current request
+    :param timeout: A custom timeout in ms.
+    :return None or a time in ms representing the budget to grant the request.
+    """
+    if not getattr(_local, 'enable_timeout', True):
+        return None
+    if timeout is None:
+        timeout = config.database.db_statement_timeout
+        if getattr(_local, '_permit_feature_timeout', False):
+            set_permit_timeout_from_features(False)
+            try:
+                timeout_str = features.getFeatureFlag('hard_timeout')
+            finally:
+                set_permit_timeout_from_features(True)
+            if timeout_str:
+                try:
+                    timeout = float(timeout_str)
+                except ValueError:
+                    logging.error('invalid hard timeout flag %r', timeout_str)
+    return timeout
 
-    requesttime = (time() - starttime) * 1000
-    return requesttime > timeout
+
+def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
+    """Return how many seconds are remaining in the current request budget.
+
+    If timeouts are disabled, None is returned.
+
+    :param no_exception: If True, do not raise an error if the request
+        is out of time. Instead return a float e.g. -2.0 for 2 seconds over
+        budget.
+    :param now: Override the result of time.time()
+    :param timeout: A custom timeout in ms.
+    :return: None or a float representing the remaining time budget.
+    """
+    timeout = _get_request_timeout(timeout=timeout)
+    if not timeout:
+        return None
+    duration = get_request_duration(now)
+    if duration == -1:
+        return None
+    remaining = timeout / 1000.0 - duration
+    if remaining <= 0:
+        if no_exception:
+            return remaining
+        raise RequestExpired('request expired.')
+    return remaining
 
 
-def hard_timeout_expired():
-    """Returns True if the hard request timeout been reached."""
-    return _check_expired(config.database.db_statement_timeout)
+def set_launchpad_default_timeout(event):
+    """Set the LAZR default timeout function on IProcessStartingEvent."""
+    set_default_timeout_function(get_request_remaining_seconds)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(config.database.soft_request_timeout)
-
-
-class RequestExpired(RuntimeError):
-    """Request has timed out."""
-    implements(IRequestExpired)
+    try:
+        get_request_remaining_seconds(
+            timeout=config.database.soft_request_timeout)
+        return False
+    except RequestExpired:
+        return True
 
 
 # ---- Prevent database access in the main thread of the app server
@@ -265,6 +353,7 @@ class StormAccessFromMainThread(Exception):
     """
 
 _main_thread_id = None
+
 
 def break_main_thread_db_access(*ignored):
     """Ensure that Storm connections are not made in the main thread.
@@ -306,6 +395,7 @@ isolation_level_map = {
 
 class ReadOnlyModeConnection(PostgresConnection):
     """storm.database.Connection for read-only mode Launchpad."""
+
     def execute(self, statement, params=None, noresult=False):
         """See storm.database.Connection."""
         try:
@@ -398,6 +488,11 @@ class LaunchpadDatabase(Postgres):
                 'DB connection URL %s does not meet naming convention.')
 
         _reset_dirty_commit_flags(*flags)
+
+        logging.log(
+            DEBUG2,
+            "Connected to %s backend %d, as user %s, at isolation level %s.",
+            flavor, raw_connection.get_backend_pid(), dbuser, self._isolation)
         return raw_connection
 
     @property
@@ -447,7 +542,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     @property
     def granularity(self):
-        return dbconfig.db_statement_timeout_precision / 1000.0
+        return config.database.db_statement_timeout_precision / 1000.0
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
@@ -457,15 +552,26 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         if not isinstance(connection._database, LaunchpadDatabase):
             return
         # If we are outside of a request, don't do timeout adjustment.
-        if self.get_remaining_time() is None:
-            return
         try:
+            if self.get_remaining_time() is None:
+                return
             super(LaunchpadTimeoutTracer, self).connection_raw_execute(
                 connection, raw_cursor, statement, params)
-        except TimeoutError:
+        except (RequestExpired, TimeoutError):
+            # XXX: This code does not belong here - see bug=636804.
+            # Robert Collins 20100913.
+            OpStats.stats['timeouts'] += 1
+            # XXX bug=636801 Robert Colins 20100914 This is duplicated
+            # from the statement tracer, because the tracers are not
+            # arranged in a stack rather a queue: the done-code in the
+            # statement tracer never runs.
+            action = getattr(connection, '_lp_statement_action', None)
+            if action is not None:
+                # action may be None if the tracer was installed after
+                # the statement was submitted.
+                action.finish()
             info = sys.exc_info()
             transaction.doom()
-            OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
             finally:
@@ -484,15 +590,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if (not dbconfig.db_statement_timeout or
-            not getattr(_local, 'enable_timeout', True)):
-            return None
-        start_time = getattr(_local, 'request_start_time', None)
-        if start_time is None:
-            return None
-        now = time()
-        ellapsed = now - start_time
-        return  dbconfig.db_statement_timeout / 1000.0 - ellapsed
+        return get_request_remaining_seconds()
 
 
 class LaunchpadStatementTracer:
@@ -500,6 +598,8 @@ class LaunchpadStatementTracer:
 
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
+        self._debug_sql_bind_values = bool(
+            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
@@ -508,17 +608,30 @@ class LaunchpadStatementTracer:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
         if self._debug_sql or self._debug_sql_extra:
-            sys.stderr.write(statement + "\n")
+            stmt_to_log = statement
+            if self._debug_sql_bind_values:
+                from storm.database import Connection
+                param_strings = Connection.to_database(params)
+                stmt_to_log = statement % tuple(param_strings)
+            sys.stderr.write(stmt_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
-
-        now = time()
-        connection._lp_statement_start_time = now
+        # store the last executed statement as an attribute on the current
+        # thread
+        threading.currentThread().lp_last_sql_statement = statement
+        request_starttime = getattr(_local, 'request_start_time', None)
+        if request_starttime is None:
+            return
+        action = get_request_timeline(get_current_browser_request()).start(
+            'SQL-%s' % connection._database.name, statement)
+        connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,
                                        statement, params):
-        end = time()
-        start = getattr(connection, '_lp_statement_start_time', end)
-        _log_statement(start, end, connection, statement)
+        action = getattr(connection, '_lp_statement_action', None)
+        if action is not None:
+            # action may be None if the tracer was installed after the
+            # statement was submitted.
+            action.finish()
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):
@@ -565,6 +678,20 @@ class StoreSelector:
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
+        if is_read_only():
+            # If we are in read-only mode, override the default to the
+            # slave no matter what the existing policy says (it might
+            # work), and raise an exception if the master was explicitly
+            # requested. Most of the time, this doesn't matter as when
+            # we are in read-only mode we have a suitable database
+            # policy installed. However, code can override the policy so
+            # we still need to catch disallowed requests here.
+            if flavor == DEFAULT_FLAVOR:
+                flavor = SLAVE_FLAVOR
+            elif flavor == MASTER_FLAVOR:
+                raise ReadOnlyModeDisallowedStore(name, flavor)
+            else:
+                pass
         db_policy = StoreSelector.get_current()
         if db_policy is None:
             db_policy = MasterDatabasePolicy(None)

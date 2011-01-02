@@ -1,0 +1,8 @@
+<tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+
+  <tal:message replace="structure context/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+
+</tal:root>

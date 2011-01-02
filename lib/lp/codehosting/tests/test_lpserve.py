@@ -1,27 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the lp-serve plugin."""
 
 __metaclass__ = type
 
-import os
-import re
-from subprocess import PIPE
-import unittest
-
-from bzrlib import errors, osutils
+from bzrlib import (
+    errors,
+    )
 from bzrlib.smart import medium
-from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
+from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
-from canonical.config import config
-
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.bzrutils import make_error_utility
 
 
-class TestLaunchpadServe(TestCaseWithTransport):
+class TestLaunchpadServe(TestCaseWithSubprocess):
     """Tests for the lp-serve plugin.
 
     Most of the helper methods here are copied from bzrlib.tests and
@@ -32,59 +26,6 @@ class TestLaunchpadServe(TestCaseWithTransport):
     def assertFinishedCleanly(self, result):
         """Assert that a server process finished cleanly."""
         self.assertEqual((0, '', ''), tuple(result))
-
-    def get_python_path(self):
-        """Return the path to the Python interpreter."""
-        return '%s/bin/py' % config.root
-
-    def start_bzr_subprocess(self, process_args, env_changes=None,
-                             working_dir=None):
-        """Start bzr in a subprocess for testing.
-
-        Copied and modified from `bzrlib.tests.TestCase.start_bzr_subprocess`.
-        This version removes some of the skipping stuff, some of the
-        irrelevant comments (e.g. about win32) and uses Launchpad's own
-        mechanisms for getting the path to 'bzr'.
-
-        Comments starting with 'LAUNCHPAD' are comments about our
-        modifications.
-        """
-        if env_changes is None:
-            env_changes = {}
-        env_changes['BZR_PLUGIN_PATH'] = get_BZR_PLUGIN_PATH_for_subprocess()
-        old_env = {}
-
-        def cleanup_environment():
-            for env_var, value in env_changes.iteritems():
-                old_env[env_var] = osutils.set_or_unset_env(env_var, value)
-
-        def restore_environment():
-            for env_var, value in old_env.iteritems():
-                osutils.set_or_unset_env(env_var, value)
-
-        cwd = None
-        if working_dir is not None:
-            cwd = osutils.getcwd()
-            os.chdir(working_dir)
-
-        # LAUNCHPAD: Because of buildout, we need to get a custom Python
-        # binary, not sys.executable.
-        python_path = self.get_python_path()
-        # LAUNCHPAD: We can't use self.get_bzr_path(), since it'll find
-        # lib/bzrlib, rather than the path to sourcecode/bzr/bzr.
-        bzr_path = get_bzr_path()
-        try:
-            cleanup_environment()
-            command = [python_path, bzr_path]
-            command.extend(process_args)
-            process = self._popen(
-                command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        finally:
-            restore_environment()
-            if cwd is not None:
-                os.chdir(cwd)
-
-        return process
 
     def finish_lpserve_subprocess(self, process):
         """Shut down the server process.
@@ -164,4 +105,10 @@ class TestLaunchpadServe(TestCaseWithTransport):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    from bzrlib import tests
+    from bzrlib.plugins import lpserve
+
+    loader = tests.TestLoader()
+    suite = loader.loadTestsFromName(__name__)
+    suite = lpserve.load_tests(suite, lpserve, loader)
+    return suite

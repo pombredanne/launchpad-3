@@ -7,9 +7,9 @@ is actually determined by the field's vocabulary. In this example,
 we will use the Project vocabulary which allows any project to be
 selected.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.schema import Choice
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.widgets.project import ProjectScopeWidget
 
     >>> empty_request = LaunchpadTestRequest()
@@ -21,8 +21,8 @@ selected.
 
 The widget complies to both IInputWidget and IBrowserWidget.
 
-    >>> from zope.app.form.interfaces import IInputWidget
     >>> from zope.app.form.browser.interfaces import IBrowserWidget
+    >>> from zope.app.form.interfaces import IInputWidget
     >>> verifyObject(IInputWidget, widget)
     True
     >>> verifyObject(IBrowserWidget, widget)
@@ -92,7 +92,7 @@ by getInputValue().
 
     >>> form = {'field.scope': 'project',
     ...         'field.scope.target': 'mozilla'}
-    >>> from canonical.launchpad.interfaces import IProjectGroup
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary,
     ...     LaunchpadTestRequest(form=form))
@@ -160,7 +160,7 @@ In order to initialize the widget with a value, setRenderedValue() is
 used. Passing a product to it will select the 'One project' radio
 button, as well as displaying the product name in the project widget.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary, empty_request)
     >>> projectgroups = getUtility(IProjectGroupSet)

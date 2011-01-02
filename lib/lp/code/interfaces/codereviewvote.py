@@ -8,20 +8,29 @@ __all__ = [
     'ICodeReviewVoteReference',
     ]
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, TextLine
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
-from lp.code.interfaces.codereviewcomment import (
-    ICodeReviewComment)
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.registry.interfaces.person import IPerson
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_destructor_operation,
-    export_write_operation, exported, operation_parameters, REQUEST_USER)
+from lp.services.fields import PublicPersonChoice
 
 
 class ICodeReviewVoteReferencePublic(Interface):

@@ -17,37 +17,57 @@ __all__ = [
     'DistroHandler',
     ]
 
+from cStringIO import StringIO
 import os
 import re
 
-from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
-
+from sqlobject import (
+    SQLObjectMoreThanOneResultError,
+    SQLObjectNotFound,
+    )
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import log
-
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
-from lp.archiveuploader.utils import (determine_binary_file_type,
-    determine_source_file_type)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.section import Section
 from lp.soyuz.scripts.gina.library import getLibraryAlias
-from lp.soyuz.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
+from lp.soyuz.scripts.gina.packages import (
+    get_dsc_path,
+    PoolFileNotFound,
+    prioritymap,
+    SourcePackageData,
+    urgencymap,
+    )
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -502,6 +522,9 @@ class SourcePackageHandler:
         log.debug("Found a source package for %s (%s) in %s" % (sp_name,
             sp_version, sp_component))
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
+        dsc_contents = dict([
+            (name.lower(), value) for
+            (name, value) in dsc_contents.iteritems()])
 
         # Since the dsc doesn't know, we add in the directory, package
         # component and section
@@ -603,11 +626,7 @@ class SourcePackageHandler:
         to_upload = check_not_in_librarian(src.files, src.archive_root,
                                            src.directory)
 
-        #
-        # DO IT! At this point, we've decided we have everything we need
-        # to create the SPR.
-        #
-
+        # Create the SourcePackageRelease (SPR)
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
@@ -624,7 +643,7 @@ class SourcePackageHandler:
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog_entry=src.changelog,
+            changelog_entry=src.changelog_entry,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
             build_conflicts=src.build_conflicts,
@@ -639,6 +658,15 @@ class SourcePackageHandler:
             upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
+
+        # Upload the changelog to the Librarian
+        if src.changelog is not None:
+            changelog_lfa = getUtility(ILibraryFileAliasSet).create(
+                "changelog",
+                len(src.changelog),
+                StringIO(src.changelog),
+                "text/x-debian-source-changelog")
+            spr.changelog = changelog_lfa
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.

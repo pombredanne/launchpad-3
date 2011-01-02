@@ -4,24 +4,28 @@
 __metaclass__ = type
 
 from textwrap import dedent
+
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.helpers import test_diff
-from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 from lp.translations.utilities.gettext_po_exporter import (
-    comments_text_representation, strip_last_newline)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOExporter)
-from lp.translations.utilities.gettext_po_parser import (
-    POParser)
+    comments_text_representation,
+    GettextPOExporter,
+    strip_last_newline,
+    )
+from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_export import ExportFileStorage
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class GettextPOExporterTestCase(TestCaseWithFactory):
@@ -480,3 +484,10 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         data.source_comment = "Line One\nLine Two\n"
         self.assertEqual("#. Line One\n#. Line Two",
                          comments_text_representation(data))
+
+    def test_export_handles_empty_files(self):
+        # Exporting an empty gettext file does not break the exporter.
+        # The output does contain one message: the header.
+        output = self.factory.makePOFile('nl').export()
+        self.assertTrue(output.startswith('# Dutch translation for '))
+        self.assertEqual(1, output.count('msgid'))
