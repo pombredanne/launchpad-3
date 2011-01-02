@@ -9,8 +9,6 @@ import os
 import tempfile
 import unittest
 
-import apt_pkg
-
 from lp.soyuz.model.publishing import IndexStanzaFields
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
@@ -57,7 +55,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
-        """Check just-created source publication Index stanza 
+        """Check just-created source publication Index stanza
         with custom fields (Python-Version).
         """
         pub_source = self.getPubSource(
@@ -381,9 +379,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
         Provides an method to format the option in a ready-to-use string.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import IndexStanzaFields
-
         fields = IndexStanzaFields(Packages)
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
@@ -415,7 +410,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         fields.append('Files', {
             "md5sum": "foo",
             "size": "42",
-            "name": "universe" })
+            "name": "universe"})
         self.assertEqual(
             ['one: um', 'Files:  foo 42 universe'],
             fields.makeOutput().splitlines())
