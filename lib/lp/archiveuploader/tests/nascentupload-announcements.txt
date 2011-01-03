@@ -39,9 +39,14 @@ We need to be logged into the security model in order to get any further
 Helper functions to examine emails that were sent:
 
   >>> from lp.services.mail import stub
+  >>> from lp.testing.mail_helpers import pop_notifications
+
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
-  >>> from lp.testing.mail_helpers import pop_notifications
+
+  >>> def print_addrlist(field):
+  ...    for entry in field.split(','):
+  ...        print entry.strip()
 
 Import the test keys to use 'insecure' policy.
 
@@ -105,8 +110,8 @@ There is only one email generated:
   >>> notification['Subject']
   '[ubuntu/hoary] bar 1.0-1 (New)'
 
-  >>> notification['To']
-  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
 Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
@@ -152,8 +157,8 @@ Uploading the same package again will result in a rejection email:
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
 Upload notifications from primary archive do not contain the
 'X-Launchpad-PPA' header, since it doesn't apply to this context.
@@ -277,8 +282,8 @@ A PPA upload will contain the X-Launchpad-PPA header.
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Foo Bar <foo.bar@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Foo Bar <foo.bar@canonical.com>
 
 On PPA upload notifications the 'X-Launchpad-PPA' is present and
 contains the target PPA owner account name.
@@ -435,8 +440,9 @@ the upload is waiting for approval:
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Foo Bar <foo.bar@canonical.com>
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
   >>> notification['Subject']
   '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
@@ -464,8 +470,9 @@ saying they are waiting for approval:
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Foo Bar <foo.bar@canonical.com>
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
   >>> notification['Subject']
   '[ubuntu/hoary-backports] bar 1.0-3 (Waiting for approval)'
@@ -515,8 +522,8 @@ There is one email generated:
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Celso Providelo <celso.providelo@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Celso Providelo <celso.providelo@canonical.com>
 
   >>> notification['Subject']
   '[ubuntu/hoary-backports] bar 1.0-4 (Accepted)'
@@ -814,8 +821,8 @@ And then try to upload using the changes file with the malformed name.
   >>> notification['X-Katie']
   'Launchpad actually'
 
-  >>> notification['To']
-  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> print_addrlist(notification['To'])
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
 Remove the misnamed changes file copy used for testing.
 
