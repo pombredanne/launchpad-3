@@ -35,7 +35,6 @@ import lp.services.features
 from lp.services.features.flags import NullFeatureController
 from lp.testing import (
     launchpadlib_for,
-    launchpadlib_for_anonymous,
     login_person,
     TestCaseWithFactory,
     ws_object,
@@ -180,7 +179,7 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         # Need to endInteraction() because launchpadlib_for_anonymous() will
         # setup a new one.
         endInteraction()
-        launchpad = launchpadlib_for_anonymous('test', version='devel')
+        launchpad = launchpadlib_for('test', None, version='devel')
         ws_bug = ws_object(launchpad, self.bug)
         ws_bugattachment = ws_bug.attachments[0]
         self.assertEqual(
