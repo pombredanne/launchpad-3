@@ -278,7 +278,6 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -342,6 +341,7 @@ def validate_person_visibility(person, attr, value):
 
 
 _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
 
 def person_sort_key(person):
     """Identical to `person_sort_key` in the database."""

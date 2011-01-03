@@ -2169,7 +2169,6 @@ class IPersonSet(Interface):
         """
 
 
-
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
