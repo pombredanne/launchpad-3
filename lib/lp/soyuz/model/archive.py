@@ -1936,7 +1936,7 @@ class ArchiveSet:
         return int(size)
 
     def getPPAOwnedByPerson(self, person, name=None, statuses=None,
-                            has_packages=None):
+                            has_packages=False):
         """See `IArchiveSet`."""
         # See Person._all_members which also directly queries this.
         store = Store.of(person)

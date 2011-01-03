@@ -891,7 +891,9 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet,
+    ...     )
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0]
@@ -1365,8 +1367,8 @@ corresponds to what we state in our policy, 2048 MiB:
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
 
-     >>> sandbox_archive.distribution.name
-     u'ubuntu'
+    >>> sandbox_archive.distribution.name
+    u'ubuntu'
 
 An Archive can be retrieved via IPerson.archive property:
 
@@ -1665,12 +1667,14 @@ None is returned.
     >>> print archive_set.getPPAOwnedByPerson(ppa_owner).displayname
     PPA named first-ppa for PPA Owner
 
-    >>> print archive_set.getPPAOwnedByPerson(ppa_owner, name="second-ppa").displayname
+    >>> print archive_set.getPPAOwnedByPerson(
+    ...     ppa_owner, name="second-ppa").displayname
     PPA named second-ppa for PPA Owner
 
 If the named PPA does not exist, a NoSuchPPA exception is raised.
 
-    >>> print archive_set.getPPAOwnedByPerson(ppa_owner, name="goat").displayname
+    >>> print archive_set.getPPAOwnedByPerson(
+    ...     ppa_owner, name="goat").displayname
     Traceback (most recent call last):
     ...
     NoSuchPPA: No such ppa: 'goat'.
@@ -2110,10 +2114,10 @@ package in the provided list of archives for a specific distribution.
 Archive Permission Checking
 ---------------------------
 
-IArchive has two public methods, checkArchivePermission() and canAdministerQueue()
-that check a user's permission to upload and/or administer a
-distroseries upload queue respectively.  See archivepermission.txt
-for more details.
+IArchive has two public methods, checkArchivePermission() and
+canAdministerQueue() that check a user's permission to upload and/or
+administer a distroseries upload queue respectively.  See
+archivepermission.txt for more details.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
@@ -2124,17 +2128,21 @@ for more details.
     >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
     False
 
-    >>> ubuntu.main_archive.checkArchivePermission(ubuntu_team, main_component)
+    >>> ubuntu.main_archive.checkArchivePermission(
+    ...     ubuntu_team, main_component)
     True
 
     >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
     True
 
-checkArchivePermission() can also check someone's permission to upload a specific
-source package.  Carlos, who does not have permission to upload to any
-Ubuntu components, has permission to upload "mozilla-firefox".
+checkArchivePermission() can also check someone's permission to upload
+a specific source package.  Carlos, who does not have permission to
+upload to any Ubuntu components, has permission to upload
+"mozilla-firefox".
 
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
     >>> mozilla = getUtility(
     ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
     >>> ubuntu.main_archive.checkArchivePermission(carlos, mozilla)
@@ -2145,8 +2153,8 @@ Cprov does not have permission, however.
     >>> ubuntu.main_archive.checkArchivePermission(cprov, mozilla)
     False
 
-checkArchivePermission() also works in the same way for PPAs.  By default, it allows
-anyone in the PPA owning team to upload.
+checkArchivePermission() also works in the same way for PPAs.  By
+default, it allows anyone in the PPA owning team to upload.
 
     >>> cprov_archive.checkArchivePermission(cprov)
     True

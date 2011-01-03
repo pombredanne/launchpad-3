@@ -1538,7 +1538,7 @@ class IArchiveSet(Interface):
         """Iterates over existent archives, including the main_archives."""
 
     def getPPAOwnedByPerson(person, name=None, statuses=None,
-                            has_packages=None):
+                            has_packages=False):
         """Return the named PPA owned by person.
 
         :param person: An `IPerson`.  Required.
