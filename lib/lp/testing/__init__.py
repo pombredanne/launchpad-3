@@ -57,6 +57,7 @@ from inspect import (
     isclass,
     ismethod,
     )
+import logging
 import os
 from pprint import pformat
 import re
@@ -71,6 +72,7 @@ from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
+from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -154,7 +156,6 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
-    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
@@ -568,6 +569,13 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.direct_database_server = False
         self._use_bzr_branch_called = False
+        # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
+        # messing with global log state (see
+        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # necessarily equal logging.getLogger('bzr'), so we have to explicitly
+        # make it so in order to avoid "No handlers for "bzr" logger'
+        # messages.
+        trace._bzr_logger = logging.getLogger('bzr')
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.

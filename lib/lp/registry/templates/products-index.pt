@@ -52,6 +52,9 @@
         value="Search projects"
         />
     </form>
+    <script type="text/javascript"><!--
+        setFocusByName('text');
+        // --></script>
 
   <tal:searching condition="view/search_requested">
 

@@ -192,7 +192,6 @@ For example, Steve Alexander can currently subscribe to bug #3.
     ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
     >>> print_also_notified(stevea_browser.contents)
     Also notified:
-    Mark Shuttleworth
 
 But if bug #2, a bug that Steve is directly subscribed to, is marked as
 a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
@@ -243,7 +242,6 @@ to bug #3.)
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
   >>> print_also_notified(stevea_browser.contents)
   Also notified:
-  Mark Shuttleworth
 
 Let's repeat this example, with Steve subscribed to two different dupes,
 to see how the unsubscribe notification changes slightly, because he
@@ -274,7 +272,6 @@ previous example.)
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
   >>> print_also_notified(stevea_browser.contents)
   Also notified:
-  Mark Shuttleworth
 
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
   >>> stevea_browser.getLink("Unsubscribe").click()
@@ -317,7 +314,6 @@ include that team.
 
   >>> print_also_notified(foobar_browser.contents)
   Also notified:
-  Mark Shuttleworth
 
 The subscribe link for Foo Bar still says "Subscribe", because
 Foo Bar can subscribe himself directly to this bug. For unsubscribing
@@ -350,7 +346,6 @@ up in the indirect subscriptions.
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
   >>> print_also_notified(foobar_browser.contents)
   Also notified:
-  Mark Shuttleworth
 
 
 == Displaying subscribers ==

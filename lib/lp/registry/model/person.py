@@ -15,6 +15,7 @@ __all__ = [
     'JoinTeamEvent',
     'Owner',
     'Person',
+    'person_sort_key',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
@@ -22,7 +23,8 @@ __all__ = [
     'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
-    'WikiNameSet']
+    'WikiNameSet',
+    ]
 
 from datetime import (
     datetime,
@@ -268,11 +270,15 @@ from lp.services.salesforce.interfaces import (
     VOUCHER_STATUSES,
     )
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -333,6 +339,16 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+_person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
+def person_sort_key(person):
+    """Identical to `person_sort_key` in the database."""
+    # Strip noise out of displayname. We do not have to bother with
+    # name, as we know it is just plain ascii.
+    displayname = _person_sort_re.sub(u'', person.displayname.lower())
+    return "%s, %s" % (displayname.strip(), person.name)
 
 
 class Person(
@@ -2659,6 +2675,29 @@ class Person(
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
 
+    @property
+    def has_existing_ppa(self):
+        """See `IPerson`."""
+        result = Store.of(self).find(
+            Archive,
+            Archive.owner == self.id,
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.status.is_in(
+                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
+        return not result.is_empty()
+
+    @property
+    def has_ppa_with_published_packages(self):
+        """See `IPerson`."""
+        result = Store.of(self).find(
+            Archive,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            Archive.owner == self.id,
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.status.is_in(
+                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
+        return not result.is_empty()
+
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
@@ -3758,6 +3797,10 @@ class PersonSet:
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
+
+        if from_person.has_existing_ppa:
+            raise AssertionError(
+                'from_person has a ppa in ACTIVE or DELETING status')
 
         if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(

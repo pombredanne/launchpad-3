@@ -51,7 +51,9 @@ def add_custom_loglevels():
 
 def silence_bzr_logger():
     """Install the NullHandler on the bzr logger to silence logs."""
-    logging.getLogger('bzr').addHandler(NullHandler())
+    bzr_logger = logging.getLogger('bzr')
+    bzr_logger.addHandler(NullHandler())
+    bzr_logger.propagate = False
 
 
 def silence_zcml_logger():

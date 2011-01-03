@@ -91,7 +91,8 @@ class SearchTestBase:
         # search result.
         user = self.factory.makePerson()
         with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.subscribe(user, self.owner)
+            bug = self.bugtasks[-1].bug
+            bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 

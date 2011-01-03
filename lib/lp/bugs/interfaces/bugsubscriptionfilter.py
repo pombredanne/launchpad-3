@@ -9,12 +9,18 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_destructor_operation,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
     Bool,
     Choice,
     FrozenSet,
+    Int,
     Text,
     )
 
@@ -32,14 +38,18 @@ from lp.services.fields import SearchTag
 class IBugSubscriptionFilterAttributes(Interface):
     """Attributes of `IBugSubscriptionFilter`."""
 
-    structural_subscription = Reference(
-        IStructuralSubscription,
-        title=_("Structural subscription"),
-        required=True, readonly=True)
+    id = Int(required=True, readonly=True)
 
-    find_all_tags = Bool(
-        title=_("All given tags must be found, or any."),
-        required=True, default=False)
+    structural_subscription = exported(
+        Reference(
+            IStructuralSubscription,
+            title=_("Structural subscription"),
+            required=True, readonly=True))
+
+    find_all_tags = exported(
+        Bool(
+            title=_("All given tags must be found, or any."),
+            required=True, default=False))
     include_any_tags = Bool(
         title=_("Include any tags."),
         required=True, default=False)
@@ -47,31 +57,36 @@ class IBugSubscriptionFilterAttributes(Interface):
         title=_("Exclude all tags."),
         required=True, default=False)
 
-    description = Text(
-        title=_("Description of this filter."),
-        required=False)
+    description = exported(
+        Text(
+            title=_("Description of this filter."),
+            required=False))
 
-    statuses = FrozenSet(
-        title=_("The statuses to filter on."),
-        required=True, default=frozenset(),
-        value_type=Choice(
-            title=_('Status'), vocabulary=BugTaskStatus))
+    statuses = exported(
+        FrozenSet(
+            title=_("The statuses to filter on."),
+            required=True, default=frozenset(),
+            value_type=Choice(
+                title=_('Status'), vocabulary=BugTaskStatus)))
 
-    importances = FrozenSet(
-        title=_("The importances to filter on."),
-        required=True, default=frozenset(),
-        value_type=Choice(
-            title=_('Importance'), vocabulary=BugTaskImportance))
+    importances = exported(
+        FrozenSet(
+            title=_("The importances to filter on."),
+            required=True, default=frozenset(),
+            value_type=Choice(
+                title=_('Importance'), vocabulary=BugTaskImportance)))
 
-    tags = FrozenSet(
-        title=_("The tags to filter on."),
-        required=True, default=frozenset(),
-        value_type=SearchTag())
+    tags = exported(
+        FrozenSet(
+            title=_("The tags to filter on."),
+            required=True, default=frozenset(),
+            value_type=SearchTag()))
 
 
 class IBugSubscriptionFilterMethods(Interface):
     """Methods of `IBugSubscriptionFilter`."""
 
+    @export_destructor_operation()
     def delete():
         """Delete this bug subscription filter."""
 
@@ -79,3 +94,4 @@ class IBugSubscriptionFilterMethods(Interface):
 class IBugSubscriptionFilter(
     IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
     """A bug subscription filter."""
+    export_as_webservice_entry()

@@ -13,7 +13,6 @@ from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,
-    launchpadlib_for_anonymous,
     TestCaseWithFactory,
     )
 
@@ -44,10 +43,10 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
     def test_anonymous_cannot_access(self):
         # An anonymous launchpadlib connection cannot see email addresses.
 
-        # Need to endInteraction() because launchpadlib_for_anonymous() will
+        # Need to endInteraction() because launchpadlib_for() will
         # setup a new one.
         endInteraction()
-        lp = launchpadlib_for_anonymous('test', version='devel')
+        lp = launchpadlib_for('test', person=None, version='devel')
         person = lp.people['target']
         emails = list(person.confirmed_email_addresses)
         self.assertEqual([], emails)
