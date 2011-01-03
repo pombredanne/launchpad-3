@@ -327,6 +327,8 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -4138,7 +4140,10 @@ class PersonEditView(BasePersonEditView):
         When a user has a PPA renames are prohibited.
         """
         has_ppa_with_published_packages = (
-            self.context.has_ppa_with_published_packages)
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                self.context, has_packages=True,
+                statuses=[ArchiveStatus.ACTIVE,
+                          ArchiveStatus.DELETING]) is not None)
         if has_ppa_with_published_packages:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True

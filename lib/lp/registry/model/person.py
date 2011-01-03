@@ -2675,29 +2675,6 @@ class Person(
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
 
-    @property
-    def has_existing_ppa(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
-    @property
-    def has_ppa_with_published_packages(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            SourcePackagePublishingHistory.archive == Archive.id,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
@@ -3798,7 +3775,9 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
-        if from_person.has_existing_ppa:
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            from_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
 

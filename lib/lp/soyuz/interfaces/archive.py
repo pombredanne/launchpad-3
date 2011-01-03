@@ -1537,13 +1537,16 @@ class IArchiveSet(Interface):
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
 
-    def getPPAOwnedByPerson(person, name=None):
+    def getPPAOwnedByPerson(person, name=None, statuses=None, has_packages=None):
         """Return the named PPA owned by person.
 
-        :param person: An `IPerson`
-        :param name: The PPA name required.
+        :param person: An `IPerson`.  Required.
+        :param name: The PPA name.  Optional.
+        :param statuses: A list of statuses the PPAs must match.  Optional.
+        :param has_packages: If True will only select PPAs that have published
+            source packages.
 
-        If the person is not supplied it will default to the
+        If the name is not supplied it will default to the
         first PPA that the person created.
 
         :raises NoSuchPPA: if the named PPA does not exist.

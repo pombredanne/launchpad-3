@@ -1628,22 +1628,57 @@ method returns an empty SelectResults.
     >>> jblack_ppas.count()
     0
 
-Another similar method, getPPAOwnedByPersonUser(), will return the named PPA
-owned by the person, or if the person is not supplied will default to the
+Another similar method, getPPAOwnedByPerson(), will return the named PPA
+owned by the person, or if a name is not supplied will default to the
 first PPA that the person created.
 
-    >>> print archive_set.getPPAOwnedByPerson(cprov).displayname
-    PPA for Celso Providelo
+    >>> ppa_owner = factory.makePerson(
+    ...     name="ppa-owner", displayname="PPA Owner")
+    >>> login_person(ppa_owner)
 
-    >>> print archive_set.getPPAOwnedByPerson(cprov, name="ppa").displayname
-    PPA for Celso Providelo
+If no PPAs match the search criteria, and a name is not given, then
+None is returned.
+
+    >>> print archive_set.getPPAOwnedByPerson(ppa_owner)
+    None
+
+    >>> zoobuntu = factory.makeDistribution(name='zoobuntu')
+    >>> ppa1 = factory.makeArchive(
+    ...     owner=ppa_owner, name="first-ppa", distribution=zoobuntu)
+    >>> ppa2 = factory.makeArchive(
+    ...     owner=ppa_owner, name="second-ppa", distribution=zoobuntu)
+
+    >>> print archive_set.getPPAOwnedByPerson(ppa_owner).displayname
+    PPA named first-ppa for PPA Owner
+
+    >>> print archive_set.getPPAOwnedByPerson(ppa_owner, name="second-ppa").displayname
+    PPA named second-ppa for PPA Owner
 
 If the named PPA does not exist, a NoSuchPPA exception is raised.
 
-    >>> print archive_set.getPPAOwnedByPerson(cprov, name="goat").displayname
+    >>> print archive_set.getPPAOwnedByPerson(ppa_owner, name="goat").displayname
     Traceback (most recent call last):
     ...
     NoSuchPPA: No such ppa: 'goat'.
+
+A list of statuses may be optionally used, which cause the search to
+only select PPAs with one of those statuses.  The first PPA will not
+be selected and the second is returned.
+
+    >>> ppa1.status = ArchiveStatus.DELETED
+    >>> ppa2.status = ArchiveStatus.ACTIVE
+    >>> print archive_set.getPPAOwnedByPerson(
+    ...     ppa_owner, statuses=[ArchiveStatus.ACTIVE]).displayname
+    PPA named second-ppa for PPA Owner
+
+The parameter has_packages can be specified to filter based on whether
+the PPA has published packages.
+
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     archive=ppa2, status=PackagePublishingStatus.PUBLISHED)
+    >>> print archive_set.getPPAOwnedByPerson(
+    ...     ppa_owner, has_packages=True).displayname
+    PPA named second-ppa for PPA Owner
 
 The method getPrivatePPAs() will return a result set of all PPAs that are
 private.
@@ -1999,7 +2034,7 @@ if requested:
     true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 
-If exclude_disabled is set to True no disabled archives will be 
+If exclude_disabled is set to True no disabled archives will be
 included:
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
@@ -2025,8 +2060,8 @@ be able to view the private team archive:
     team-archive     t1            True     True
     ultimate-copy    copy-owner1   False    True
 
-A separate argument allows forcing the inclusion of all disabled archives 
-the user has access to, so it doesn't include the archive 
+A separate argument allows forcing the inclusion of all disabled archives
+the user has access to, so it doesn't include the archive
 of juergen that is disabled.
 
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(

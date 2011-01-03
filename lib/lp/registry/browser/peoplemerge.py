@@ -48,6 +48,8 @@ from lp.registry.interfaces.person import (
     IRequestPeopleMerge,
     )
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class RequestPeopleMergeView(LaunchpadFormView):
@@ -134,7 +136,10 @@ class AdminMergeBaseView(LaunchpadFormView):
                   mapping=dict(name=dupe_person.name)))
         # We cannot merge the teams if there is a PPA with published
         # packages on the duplicate person, unless that PPA is removed.
-        if dupe_person.has_existing_ppa:
+        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            dupe_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING])
+        if dupe_person_ppas is not None:
             self.addError(_(
                 "${name} has a PPA that must be deleted before it "
                 "can be merged. It may take ten minutes to remove the "
