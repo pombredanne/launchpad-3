@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -525,7 +524,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
@@ -1430,13 +1429,6 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 
     label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
