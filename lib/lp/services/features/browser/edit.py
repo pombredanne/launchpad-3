@@ -10,13 +10,12 @@ __all__ = [
     ]
 
 
-import logging 
+import logging
 
 
 from zope.interface import Interface
-from zope.schema import (
-    Text,
-    )
+from zope.schema import Text
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp.authorization import (
     check_permission,
@@ -39,10 +38,8 @@ class IFeatureControlForm(Interface):
             u"Rules to control feature flags on Launchpad.  "
             u"On each line: (flag, scope, priority, value), "
             u"whitespace-separated.  Numerically higher "
-            u"priorities match first."
-            ),
-        required=False,
-        )
+            u"priorities match first."),
+        required=False)
 
 
 class FeatureControlView(LaunchpadFormView):
@@ -65,12 +62,15 @@ class FeatureControlView(LaunchpadFormView):
         logger.warning("Change feature rules to: %s" % (rules_text,))
         self.request.features.rule_source.setAllRulesFromText(
             rules_text)
+        self.request.response.addNotification(
+            'Your changes have been applied.')
 
     @property
     def initial_values(self):
-        return dict(
-            feature_rules=self.request.features.rule_source.getAllRulesAsText(),
-            )
+        return {
+            'feature_rules':
+                self.request.features.rule_source.getAllRulesAsText(),
+        }
 
     def validate(self, data):
         # Try parsing the rules so we give a clean error: at the moment the
