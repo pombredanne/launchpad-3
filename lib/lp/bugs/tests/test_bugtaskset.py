@@ -35,8 +35,9 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
     def get_counts(self, user):
         counts = self.bugtask_set.getStatusCountsForProductSeries(
                 user, self.series)
-        return [(BugTaskStatus.items[status_id], count)
-                for status_id, count in counts]
+        return [
+            (BugTaskStatus.items[status_id], count)
+            for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
         # An unauthenticated user should see bug counts for each status
