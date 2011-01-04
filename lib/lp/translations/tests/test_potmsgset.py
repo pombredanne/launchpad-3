@@ -22,6 +22,7 @@ from canonical.testing.layers import (
     )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import get_property_cache
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
@@ -1220,7 +1221,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         # makeCurrentTranslationMessage calls singular_text and caches the
         # upstream msgid, causing the test to pass even without the
         # Ubuntu message being present.
-        removeSecurityProxy(self.potmsgset).clearCachedSingularText()
+        del get_property_cache(self.potmsgset).singular_text
         self.assertEquals(upstream_msgid, self.potmsgset.singular_text)
 
     def test_singular_text_xpi_english_falls_back_to_ubuntu(self):
