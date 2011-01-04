@@ -817,7 +817,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2010
+      &copy; 2004-2011
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
