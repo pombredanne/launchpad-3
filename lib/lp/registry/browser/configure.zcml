@@ -1443,13 +1443,6 @@
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureBlueprintsView"/>
     <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
-        name="+configure-translations"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
-    <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"

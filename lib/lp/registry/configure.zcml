@@ -1107,6 +1107,7 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
+                official_rosetta
                 translation_focus
                 translationgroup
                 translationpermission"/>
@@ -1123,13 +1124,6 @@
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
-
-        <!-- Changes to official_rosetta must be available to Launchpad
-                                 Translations admins so we need its own permission. -->
-
-        <require
-            permission="launchpad.TranslationsAdmin"
-            set_attributes="official_rosetta"/>
 
         <!-- IHasAliases -->
 
@@ -1400,7 +1394,6 @@
                 official_answers
                 official_blueprints
                 official_malone
-                official_rosetta
                 owner
                 security_contact
                 summary
@@ -1413,6 +1406,7 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
+                official_rosetta
                 translationgroup
                 translationpermission
                 translation_focus"/>
