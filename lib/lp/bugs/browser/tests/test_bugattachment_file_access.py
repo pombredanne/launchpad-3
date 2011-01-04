@@ -195,16 +195,18 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         ws_bugattachment = ws_bug.attachments[0]
 
         # The attachment contains a link to a HostedBytes resource;
-        # accessing this link results normally in a redirect to a
-        # Librarian URL.  We cannot simply access these Librarian URLS
+        # the response to a GET request of this URL is a redirect to a
+        # Librarian URL.  We cannot simply access these Librarian URLs
         # for restricted Librarian files because the host name used in
         # the URLs is different for each file, and our test envireonment
         # does not support wildcard DNS. So let's disable the redirection
         # mechanism in our client's HTTP connection and inspect the
         # the Librarian URL.
-        launchpad._browser._connection.follow_redirects = False
-        response, content = launchpad._browser.get(
-            ws_bugattachment.data._wadl_resource._url, return_response=True)
+        # The Librarian URL has, for our test case, the form
+        # "https://NNNN.restricted.localhost:58000/NNNN/foo.txt?token=..."
+        # where NNNN is an integer.
+        response, content = launchpad.rawGet(
+            ws_bugattachment.data._wadl_resource._url, follow_redirects=False)
         self.assertEqual(303, response.status)
         parsed_url = urlparse(response['location'])
         self.assertEqual('https', parsed_url.scheme)

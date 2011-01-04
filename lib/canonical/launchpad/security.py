@@ -2525,6 +2525,8 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
 
 
 class ViewLibraryFileAliasWithParent(AuthorizationBase):
+    """Authorization class for viewing LibraryFileAliass having a parent."""
+
     permission = 'launchpad.View'
     usedfor = ILibraryFileAliasWithParent
 
@@ -2532,11 +2534,9 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         """Only persons which can edit an LFA's parent can edit an LFA.
 
         By default, a LibraryFileAlias does not know about its parent.
-        Such aliases are never editable. Use an adapter to provide a
-        parent object.
 
-        If a parent is known, users which can edit the parent can also
-        edit properties of the LibraryFileAlias.
+        If a parent is known, users which can view the parent can also
+        view the LibraryFileAlias.
         """
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
