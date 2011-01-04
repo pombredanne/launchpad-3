@@ -1012,7 +1012,7 @@ class POExportView(BaseExportView):
         return self.context.potemplate.source_file_format
 
     @property
-    def show_pochanged_option(self):
+    def has_pochanged_option(self):
         other_side_pofile = self.context.getOtherSidePOFile()
         return other_side_pofile is not None
 

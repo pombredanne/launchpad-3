@@ -228,11 +228,11 @@ class TestPOExportView(TestCaseWithFactory):
         self._makeUbuntuTemplateAndPOFile()
         view = self._createView()
 
-        self.assertTrue(view.show_pochanged_option)
+        self.assertTrue(view.has_pochanged_option)
 
     def test_pochanged_option_not_available(self):
         # The option for partial exports is not available if no POFile can
         # be found on the other side.
         view = self._createView()
 
-        self.assertFalse(view.show_pochanged_option)
+        self.assertFalse(view.has_pochanged_option)
