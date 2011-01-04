@@ -41,17 +41,6 @@ class IFeatureControlForm(Interface):
         required=False)
 
 
-def diff_rules(rules1, rules2):
-    # Just generate a one-block diff.
-    lines_of_context = 999999
-    diff = unified_diff(
-        rules1.splitlines(),
-        rules2.splitlines(),
-        n=lines_of_context)
-    # The three line header is meaningless here.
-    return list(diff)[3:]
-
-
 class FeatureControlView(LaunchpadFormView):
     """Text view of feature rules.
 
@@ -73,8 +62,19 @@ class FeatureControlView(LaunchpadFormView):
         logger = logging.getLogger('lp.services.features')
         logger.warning("Change feature rules to: %s" % (new_rules,))
         self.request.features.rule_source.setAllRulesFromText(new_rules)
-        diff = '\n'.join(diff_rules(original_rules, new_rules))
+        diff = '\n'.join(self.diff_rules(original_rules, new_rules))
         self.diff = FormattersAPI(diff).format_diff()
+
+    @staticmethod
+    def diff_rules(rules1, rules2):
+        # Just generate a one-block diff.
+        lines_of_context = 999999
+        diff = unified_diff(
+            rules1.splitlines(),
+            rules2.splitlines(),
+            n=lines_of_context)
+        # The three line header is meaningless here.
+        return list(diff)[3:]
 
     @property
     def initial_values(self):
