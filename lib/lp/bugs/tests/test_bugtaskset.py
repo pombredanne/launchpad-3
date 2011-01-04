@@ -39,6 +39,8 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
                 for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
+        # An unauthenticated user should see bug counts for each status
+        # that do not include private bugs.
         self.factory.makeBug(milestone=self.milestone)
         self.factory.makeBug(milestone=self.milestone, private=True)
         self.factory.makeBug(series=self.series)
@@ -48,6 +50,8 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.get_counts(None))
 
     def test_privacy_and_counts_for_owner(self):
+        # The owner should see bug counts for each status that do
+        # include all private bugs.
         self.factory.makeBug(milestone=self.milestone)
         self.factory.makeBug(milestone=self.milestone, private=True)
         self.factory.makeBug(series=self.series)
@@ -57,6 +61,10 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.get_counts(self.owner))
 
     def test_privacy_and_counts_for_other_user(self):
+        # A random authenticated user should see bug counts for each
+        # status that do include all private bugs, since it is costly to
+        # query just the private bugs that the user has access to view,
+        # and this query may be run many times on a single page.
         self.factory.makeBug(milestone=self.milestone)
         self.factory.makeBug(milestone=self.milestone, private=True)
         self.factory.makeBug(series=self.series)
@@ -67,6 +75,8 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.get_counts(other))
 
     def test_multiple_statuses(self):
+        # Test that separate counts are provided for each status that
+        # bugs are found in.
         for status in (BugTaskStatus.INVALID, BugTaskStatus.OPINION):
             self.factory.makeBug(milestone=self.milestone, status=status)
             self.factory.makeBug(series=self.series, status=status)
