@@ -120,18 +120,30 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             browser.contents,
-            Contains('Your changes have been applied.'))
+            Contains('Your changes have been applied'))
 
-    def test_change_message(self):
-        """Submitting shows a message that the changes have been applied."""
+    def test_change_diff(self):
+        """Submitting shows a diff of the changes."""
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesEditURL())
-        textarea = browser.getControl(name="field.feature_rules")
-        textarea.value = 'beta_user some_key 10 some value with spaces'
+        browser.getControl(name="field.feature_rules"
+            ).value = 'beta_user some_key 10 some value with spaces'
         browser.getControl(name="field.actions.change").click()
+        browser.getControl(name="field.feature_rules"
+            ).value = 'beta_user some_key 10 another value with spaces'
+        browser.getControl(name="field.actions.change").click()
+        # The diff is formatted nicely using CSS.
         self.assertThat(
             browser.contents,
-            Contains('Your changes have been applied.'))
+            Contains('<td class="diff-added text">'))
+        # Removed rules are displayed as being removed.
+        self.assertThat(
+            browser.contents.replace('\t', ' '),
+            Contains('-beta_user some_key 10 some value with spaces'))
+        # Added rules are displayed as being added.
+        self.assertThat(
+            browser.contents.replace('\t', ' '),
+            Contains('+beta_user some_key 10 another value with spaces'))
 
     def test_feature_page_submit_change_to_empty(self):
         """Correctly handle submitting an empty value."""

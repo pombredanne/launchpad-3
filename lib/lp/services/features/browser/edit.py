@@ -10,20 +10,19 @@ __all__ = [
     ]
 
 
+from difflib import unified_diff
 import logging
-
 
 from zope.interface import Interface
 from zope.schema import Text
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 class IFeatureControlForm(Interface):
@@ -42,6 +41,17 @@ class IFeatureControlForm(Interface):
         required=False)
 
 
+def diff_rules(rules1, rules2):
+    # Just generate a one-block diff.
+    lines_of_context = 999999
+    diff = unified_diff(
+        rules1.splitlines(),
+        rules2.splitlines(),
+        n=lines_of_context)
+    # The three line header is meaningless here.
+    return list(diff)[3:]
+
+
 class FeatureControlView(LaunchpadFormView):
     """Text view of feature rules.
 
@@ -52,18 +62,19 @@ class FeatureControlView(LaunchpadFormView):
     schema = IFeatureControlForm
     page_title = label = 'Feature control'
     field_names = ['feature_rules']
+    diff = None
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
         if not check_permission('launchpad.Admin', self.context):
             raise Unauthorized()
-        rules_text = data.get('feature_rules') or ''
+        original_rules = self.request.features.rule_source.getAllRulesAsText()
+        new_rules = data.get('feature_rules') or ''
         logger = logging.getLogger('lp.services.features')
-        logger.warning("Change feature rules to: %s" % (rules_text,))
-        self.request.features.rule_source.setAllRulesFromText(
-            rules_text)
-        self.request.response.addNotification(
-            'Your changes have been applied.')
+        logger.warning("Change feature rules to: %s" % (new_rules,))
+        self.request.features.rule_source.setAllRulesFromText(new_rules)
+        diff = '\n'.join(diff_rules(original_rules, new_rules))
+        self.diff = FormattersAPI(diff).format_diff()
 
     @property
     def initial_values(self):

@@ -10,8 +10,12 @@
 <body>
 
 <div metal:fill-slot="main">
-
   <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_top"
+        tal:condition="view/diff">
+        <p>Your changes have been applied:</p>
+        <tal:diff replace="structure view/diff"/>
+    </div>
   </div>
 </div>
 </body>
