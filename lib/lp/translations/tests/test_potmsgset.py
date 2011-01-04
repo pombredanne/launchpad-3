@@ -1217,7 +1217,10 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             pofile=self.ubuntu_pofile, potmsgset=self.potmsgset,
             translations=[ubuntu_msgid])
 
-        removeSecurityProxy(self.potmsgset)._cached_singular_text = None
+        # makeCurrentTranslationMessage calls singular_text and caches the
+        # upstream msgid, causing the test to pass even without the
+        # Ubuntu message being present.
+        removeSecurityProxy(self.potmsgset).clearCachedSingularText()
         self.assertEquals(upstream_msgid, self.potmsgset.singular_text)
 
     def test_singular_text_xpi_english_falls_back_to_ubuntu(self):
@@ -1233,7 +1236,6 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             pofile=self.ubuntu_pofile, potmsgset=self.potmsgset,
             translations=[ubuntu_msgid])
 
-        removeSecurityProxy(self.potmsgset)._cached_singular_text = None
         self.assertEquals(ubuntu_msgid, self.potmsgset.singular_text)
 
 
