@@ -7,7 +7,6 @@
 
 This module should not contain tests (but it should be tested).
 """
-from lp.code.model.recipebuild import RecipeBuildRecord
 
 __metaclass__ = type
 __all__ = [
@@ -161,6 +160,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
