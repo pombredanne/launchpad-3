@@ -145,6 +145,17 @@ class TestFeatureControlPage(BrowserTestCase):
             browser.contents.replace('\t', ' '),
             Contains('+beta_user some_key 10 another value with spaces'))
 
+    def test_change_logging_note(self):
+        """When submitting changes the name of the logger is shown."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        browser.getControl(name="field.feature_rules").value = (
+            'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            browser.contents,
+            Contains('logged by the lp.services.features logger'))
+
     def test_feature_page_submit_change_to_empty(self):
         """Correctly handle submitting an empty value."""
         # Zope has the quirk of conflating empty with absent; make sure we

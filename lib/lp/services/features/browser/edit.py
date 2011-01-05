@@ -52,6 +52,7 @@ class FeatureControlView(LaunchpadFormView):
     page_title = label = 'Feature control'
     field_names = ['feature_rules']
     diff = None
+    logger_name = 'lp.services.features'
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
@@ -59,8 +60,9 @@ class FeatureControlView(LaunchpadFormView):
             raise Unauthorized()
         original_rules = self.request.features.rule_source.getAllRulesAsText()
         new_rules = data.get('feature_rules') or ''
-        logger = logging.getLogger('lp.services.features')
+        logger = logging.getLogger(self.logger_name)
         logger.warning("Change feature rules to: %s" % (new_rules,))
+        logger.warning("Previous feature rules were: %s" % (original_rules,))
         self.request.features.rule_source.setAllRulesFromText(new_rules)
         # Why re-fetch the rules here?  This way we get them reformatted
         # (whitespace normalized) and ordered consistently so the diff is
