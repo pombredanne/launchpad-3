@@ -47,6 +47,8 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        # Required for launchpadlib
+        'keyring',
         'manuel',
         'mechanize',
         'meliae',
