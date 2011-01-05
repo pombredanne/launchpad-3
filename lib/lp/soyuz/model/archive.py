@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1743,7 +1743,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         if self.is_ppa:
             return [PackagePublishingPocket.RELEASE]
-        
+
         # Cast to a list so we don't trip up with the security proxy not
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
@@ -1935,7 +1935,8 @@ class ArchiveSet:
             return 0
         return int(size)
 
-    def getPPAOwnedByPerson(self, person, name=None):
+    def getPPAOwnedByPerson(self, person, name=None, statuses=None,
+                            has_packages=False):
         """See `IArchiveSet`."""
         # See Person._all_members which also directly queries this.
         store = Store.of(person)
@@ -1944,6 +1945,11 @@ class ArchiveSet:
             Archive.owner == person]
         if name is not None:
             clause.append(Archive.name == name)
+        if statuses is not None:
+            clause.append(Archive.status.is_in(statuses))
+        if has_packages:
+            clause.append(
+                    SourcePackagePublishingHistory.archive == Archive.id)
         result = store.find(Archive, *clause).order_by(Archive.id).first()
         if name is not None and result is None:
             raise NoSuchPPA(name)
