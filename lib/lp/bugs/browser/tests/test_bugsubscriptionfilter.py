@@ -9,6 +9,7 @@ from functools import partial
 from urlparse import urlparse
 
 from lazr.restfulclient.errors import BadRequest
+from lxml import html
 from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
@@ -27,6 +28,7 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
 from lp.testing import (
+    normalize_whitespace,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
@@ -289,3 +291,14 @@ class TestBugSubscriptionFilterView(
         self.assertEqual(
             [u"the bug is tagged with *, bar, and foo"],
             self.view.conditions)
+
+    def test_render(self):
+        # If no conditions are set, the rendered description is very simple.
+        root = html.fromstring(self.view.render())
+        self.assertEqual("dl", root.tag)
+        self.assertEqual(
+            u"Filter:", normalize_whitespace(
+                root.find("dt").text_content()))
+        self.assertEqual(
+            u"Matches nothing", normalize_whitespace(
+                root.find("dd").text_content()))
