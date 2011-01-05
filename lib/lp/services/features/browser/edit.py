@@ -59,16 +59,16 @@ class FeatureControlView(LaunchpadFormView):
         if not check_permission('launchpad.Admin', self.context):
             raise Unauthorized()
         original_rules = self.request.features.rule_source.getAllRulesAsText()
-        new_rules = data.get('feature_rules') or ''
+        rules_text = data.get('feature_rules') or ''
         logger = logging.getLogger(self.logger_name)
-        logger.warning("Change feature rules to: %s" % (new_rules,))
+        logger.warning("Change feature rules to: %s" % (rules_text,))
         logger.warning("Previous feature rules were: %s" % (original_rules,))
-        self.request.features.rule_source.setAllRulesFromText(new_rules)
+        self.request.features.rule_source.setAllRulesFromText(rules_text)
         # Why re-fetch the rules here?  This way we get them reformatted
         # (whitespace normalized) and ordered consistently so the diff is
         # minimal.
-        diff = '\n'.join(self.diff_rules(original_rules,
-            self.request.features.rule_source.getAllRulesAsText()))
+        new_rules = self.request.features.rule_source.getAllRulesAsText()
+        diff = '\n'.join(self.diff_rules(original_rules, new_rules))
         self.diff = FormattersAPI(diff).format_diff()
 
     @staticmethod
