@@ -116,7 +116,11 @@ ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class ITeamMembership(Interface):
-    """TeamMembership for Users"""
+    """TeamMembership for Users.
+
+    This table includes *direct* team members only.  Indirect memberships are
+    handled by the TeamParticipation table.
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)

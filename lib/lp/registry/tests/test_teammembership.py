@@ -9,7 +9,10 @@ from datetime import (
     )
 import re
 import subprocess
-import unittest
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 import pytz
 from zope.component import getUtility
@@ -41,10 +44,10 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.model.teammembership import TeamMembership
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 
 
-class TestTeamMembershipSet(unittest.TestCase):
+class TestTeamMembershipSet(TestCase):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -155,11 +158,12 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.failIf(sample_person.inTeam(motu))
 
 
-class TeamParticipationTestCase(unittest.TestCase):
+class TeamParticipationTestCase(TestCaseWithFactory):
     """Tests for team participation using 5 teams."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TeamParticipationTestCase, self).setUp()
         login('foo.bar@canonical.com')
         person_set = getUtility(IPersonSet)
         self.foo_bar = person_set.getByEmail('foo.bar@canonical.com')
@@ -252,9 +256,10 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
     Create a team hierarchy looking like this:
         team1
            team2
-         team5  team3
-                  team4
-                     team5
+              team5
+              team3
+                 team4
+                    team5
                        no-priv
     """
     layer = DatabaseFunctionalLayer
@@ -268,6 +273,10 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.team2.addMember(self.team5, self.foo_bar, force_team_add=True)
         self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
         self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+
+    def tearDown(self):
+        super(TestTeamParticipationTree, self).tearDown()
+        self.layer.force_dirty_database()
 
     def testTeamParticipationSetUp(self):
         """Make sure that the TeamParticipation are sane after setUp."""
@@ -310,6 +319,37 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
 
 
+class TestParticipationCleanup(TeamParticipationTestCase):
+    """Test deletion of a member from a team with many superteams.
+    Create a team hierarchy looking like this:
+        team1
+           team2
+              team3
+                 team4
+                    team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestParticipationCleanup, self).setUp()
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+        self.team5.addMember(self.no_priv, self.foo_bar)
+
+    def testMemberRemoval(self):
+        """Remove the member from the last team.
+
+        The number of db queries should be constant not O(depth).
+        """
+        self.assertStatementCount(
+            18,
+            self.team5.setMembershipData, self.no_priv,
+            TeamMembershipStatus.DEACTIVATED,  self.team5.teamowner)
+
+
 class TestTeamParticipationMesh(TeamParticipationTestCase):
     """Participation management tests using two roots and some duplicated
     branches.
@@ -337,6 +377,10 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
         self.team6.addMember(self.team2, self.foo_bar, force_team_add=True)
         self.team6.addMember(self.team4, self.foo_bar, force_team_add=True)
+
+    def tearDown(self):
+        super(TestTeamParticipationMesh, self).tearDown()
+        self.layer.force_dirty_database()
 
     def testTeamParticipationSetUp(self):
         """Make sure that the TeamParticipation are sane after setUp."""
@@ -383,7 +427,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
             ['name16', 'team2', 'team3', 'team4'], self.team6)
 
 
-class TestTeamMembership(unittest.TestCase):
+class TestTeamMembership(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_teams_not_kicked_from_themselves_bug_248498(self):
@@ -400,12 +444,11 @@ class TestTeamMembership(unittest.TestCase):
         This test will make sure that doesn't happen in the future.
         """
         login('test@canonical.com')
-        factory = LaunchpadObjectFactory()
-        person = factory.makePerson()
+        person = self.factory.makePerson()
         login_person(person) # Now login with the future owner of the teams.
-        teamA = factory.makeTeam(
+        teamA = self.factory.makeTeam(
             person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        teamB = factory.makeTeam(
+        teamB = self.factory.makeTeam(
             person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self.failUnless(
             teamA.inTeam(teamA), "teamA is not a participant of itself")
@@ -444,21 +487,21 @@ class TestTeamMembership(unittest.TestCase):
         self.assertEqual(new_status, TeamMembershipStatus.DEACTIVATED.value)
 
 
-class TestTeamMembershipSetStatus(unittest.TestCase):
+class TestTeamMembershipSetStatus(TestCaseWithFactory):
     """Test the behaviour of TeamMembership's setStatus()."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TestTeamMembershipSetStatus, self).setUp()
         login('foo.bar@canonical.com')
         self.foobar = getUtility(IPersonSet).getByName('name16')
         self.no_priv = getUtility(IPersonSet).getByName('no-priv')
         self.ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         self.admins = getUtility(IPersonSet).getByName('admins')
         # Create a bunch of arbitrary teams to use in the tests.
-        factory = LaunchpadObjectFactory()
-        self.team1 = factory.makeTeam(self.foobar)
-        self.team2 = factory.makeTeam(self.foobar)
-        self.team3 = factory.makeTeam(self.foobar)
+        self.team1 = self.factory.makeTeam(self.foobar)
+        self.team2 = self.factory.makeTeam(self.foobar)
+        self.team3 = self.factory.makeTeam(self.foobar)
 
     def test_proponent_is_stored(self):
         for status in [TeamMembershipStatus.DEACTIVATED,
@@ -698,7 +741,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
 
 
-class TestCheckTeamParticipationScript(unittest.TestCase):
+class TestCheckTeamParticipationScript(TestCase):
     layer = DatabaseFunctionalLayer
 
     def _runScript(self, expected_returncode=0):
@@ -803,7 +846,7 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
+    suite = TestLoader().loadTestsFromName(__name__)
     bug_249185 = LayeredDocFileSuite(
         'bug-249185.txt', optionflags=default_optionflags,
         layer=DatabaseFunctionalLayer, setUp=setUp, tearDown=tearDown)
