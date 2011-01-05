@@ -12,36 +12,13 @@
     <div metal:fill-slot="main">
       <dl>
         <dt>Description</dt>
-        <dd>
-          <span tal:condition="context/description"
-                tal:content="context/description" />
-          <span tal:condition="not:context/description">&mdash;</span>
-        </dd>
+        <dd tal:content="view/description" />
         <dt>Statuses</dt>
-        <dd>
-          <tal:statuses repeat="status context/statuses">
-            <span tal:content="status/title" />
-            <span tal:condition="not:repeat/status/end">, </span>
-          </tal:statuses>
-        </dd>
+        <dd tal:content="view/statuses" />
         <dt>Importances</dt>
-        <dd>
-          <tal:importances repeat="importance context/importances">
-            <span tal:content="importance/title" />
-            <span tal:condition="not:repeat/importance/end">, </span>
-          </tal:importances>
-        </dd>
-        <dt>
-          Tags,
-          <span tal:condition="context/find_all_tags">all of</span>
-          <span tal:condition="not:context/find_all_tags">any of</span>
-        </dt>
-        <dd>
-          <tal:tags repeat="tag context/tags">
-            <span tal:content="tag/title" />
-            <span tal:condition="not:repeat/tag/end">, </span>
-          </tal:tags>
-        </dd>
+        <dd tal:content="view/importances" />
+        <dt>Tags</dt>
+        <dd tal:content="view/tags" />
       </dl>
     </div>
   </body>
