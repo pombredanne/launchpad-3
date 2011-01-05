@@ -10,15 +10,20 @@
     i18n:domain="malone">
   <body>
     <div metal:fill-slot="main">
-      <dl>
-        <dt>Description</dt>
-        <dd tal:content="view/description" />
-        <dt>Statuses</dt>
-        <dd tal:content="view/statuses" />
-        <dt>Importances</dt>
-        <dd tal:content="view/importances" />
-        <dt>Tags</dt>
-        <dd tal:content="view/tags" />
+      <dl tal:define="conditions view/conditions">
+        <dt>Filter: <span tal:content="view/description" /></dt>
+        <dd tal:condition="conditions">
+          Matches when
+          <tal:conditions repeat="condition conditions">
+            <span tal:content="condition" />
+            <tal:conjunction condition="not:repeat/condition/end">
+              <br /><strong>and</strong>
+            </tal:conjunction>
+          </tal:conditions>
+        </dd>
+        <dd tal:condition="not:conditions">
+          <em>Matches nothing</em>
+        </dd>
       </dl>
     </div>
   </body>

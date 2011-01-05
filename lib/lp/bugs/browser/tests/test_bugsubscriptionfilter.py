@@ -226,12 +226,13 @@ class TestBugSubscriptionFilterView(
         self.assertEqual(u"Bug filter", self.view.page_title)
 
     def test_description(self):
-        # If the description is not set then an em-dash is returned.
-        self.assertEqual(u"\u2014", self.view.description)
-        # If the description is just whitespace then an em-dash is returned.
+        # If the description is not set then the empty string is returned.
+        self.assertEqual(u"", self.view.description)
+        # If the description is just whitespace then the empty string is
+        # returned.
         with person_logged_in(self.owner):
             self.subscription_filter.description = u"  "
-        self.assertEqual(u"\u2014", self.view.description)
+        self.assertEqual(u"", self.view.description)
         # If the description is set it is returned.
         with person_logged_in(self.owner):
             self.subscription_filter.description = u"Foo"
@@ -241,10 +242,14 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.description = u"  Foo\t  "
         self.assertEqual(u"Foo", self.view.description)
 
-    def test_statuses(self):
-        # If no statuses have been specified an em-dash is returned.
-        self.assertEqual(u"\u2014", self.view.statuses)
-        # If set, an English list of the status titles is returned.
+    def test_conditions_with_nothing_set(self):
+        # If nothing is set the conditions list is empty.
+        self.assertEqual([], self.view.conditions)
+
+    def test_conditions_for_statuses(self):
+        # If no statuses have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the statuses is returned.
         with person_logged_in(self.owner):
             self.subscription_filter.statuses = [
                 BugTaskStatus.NEW,
@@ -252,12 +257,13 @@ class TestBugSubscriptionFilterView(
                 BugTaskStatus.TRIAGED,
                 ]
         self.assertEqual(
-            u"New, Confirmed, or Triaged", self.view.statuses)
+            [u"the status is New, Confirmed, or Triaged"],
+            self.view.conditions)
 
-    def test_importances(self):
-        # If no importances have been specified an em-dash is returned.
-        self.assertEqual(u"\u2014", self.view.importances)
-        # If set, an English list of the importance titles is returned.
+    def test_conditions_for_importances(self):
+        # If no importances have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the importances is returned.
         with person_logged_in(self.owner):
             self.subscription_filter.importances = [
                 BugTaskImportance.LOW,
@@ -265,18 +271,21 @@ class TestBugSubscriptionFilterView(
                 BugTaskImportance.HIGH,
                 ]
         self.assertEqual(
-            u"High, Medium, or Low", self.view.importances)
+            [u"the importance is High, Medium, or Low"],
+             self.view.conditions)
 
-    def test_tags(self):
-        # If no tags have been specified an em-dash is returned.
-        self.assertEqual(u"\u2014", self.view.tags)
-        # If set, an English list of the tags is returned.
+    def test_conditions_for_tags(self):
+        # If no tags have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the tags is returned.
         with person_logged_in(self.owner):
             self.subscription_filter.tags = [u"foo", u"bar", u"*"]
         self.assertEqual(
-            u"*, bar, or foo", self.view.tags)
+            [u"the bug is tagged with *, bar, or foo"],
+            self.view.conditions)
         # If find_all_tags is set, the conjunction changes.
         with person_logged_in(self.owner):
             self.subscription_filter.find_all_tags = True
         self.assertEqual(
-            u"*, bar, and foo", self.view.tags)
+            [u"the bug is tagged with *, bar, and foo"],
+            self.view.conditions)

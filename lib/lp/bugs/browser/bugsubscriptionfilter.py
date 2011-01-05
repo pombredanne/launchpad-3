@@ -9,52 +9,62 @@ __all__ = [
     ]
 
 
+from functools import wraps
+
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
+def listify(func):
+    """Decorator to listify the return value of the wrapped function."""
+
+    @wraps(func)
+    def wrapper(self):
+        return list(func(self))
+    return wrapper
+
+
 class BugSubscriptionFilterView(LaunchpadView):
+    """View for `IBugSubscriptionFilter`.
+
+    The properties and methods herein are intended to construct a view
+    something like:
+
+      Filter: "A filter description"
+        Matches when status is New, Confirmed, or Triaged
+        *and* importance is High, Medium, or Low
+        *and* the bug is tagged with bar or foo.
+
+    """
 
     page_title = u"Bug filter"
 
     @property
     def description(self):
+        """Return the bug filter description.
+
+        Leading and trailing whitespace is trimmed. If the description is not
+        set the empty string is returned.
+        """
         description = self.context.description
-        if description is None:
-            description = u""
-        else:
-            description = description.strip()
-        if len(description) == 0:
-            return u"\u2014"
-        else:
-            return description
+        return u"" if description is None else description.strip()
 
     @property
-    def statuses(self):
+    @listify
+    def conditions(self):
+        """Descriptions of the bug filter's conditions."""
         statuses = self.context.statuses
-        if len(statuses) == 0:
-            return u"\u2014"
-        else:
-            return english_list(
+        if len(statuses) > 0:
+            yield u"the status is %s" % english_list(
                 (status.title for status in sorted(statuses)),
                 conjunction=u"or")
-
-    @property
-    def importances(self):
         importances = self.context.importances
-        if len(importances) == 0:
-            return u"\u2014"
-        else:
-            return english_list(
+        if len(importances) > 0:
+            yield u"the importance is %s" % english_list(
                 (importance.title for importance in sorted(importances)),
                 conjunction=u"or")
-
-    @property
-    def tags(self):
         tags = self.context.tags
-        if len(tags) == 0:
-            return u"\u2014"
-        elif self.context.find_all_tags:
-            return english_list(sorted(tags), u"and")
-        else:
-            return english_list(sorted(tags), u"or")
+        if len(tags) > 0:
+            yield u"the bug is tagged with %s" % english_list(
+                sorted(tags), conjunction=(
+                    u"and" if self.context.find_all_tags else u"or"))
