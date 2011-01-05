@@ -28,7 +28,10 @@ from canonical.launchpad.interfaces.librarian import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    AppServerLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lazr.restfulclient.errors import Unauthorized as RestfulUnauthorized
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
 import lp.services.features
@@ -162,7 +165,7 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
 class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
     """Tests access to bug attachments via the webservice."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = AppServerLayer
 
     def setUp(self):
         super(TestWebserviceAccessToBugAttachmentFiles, self).setUp()
