@@ -1443,7 +1443,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         if milestone is not None:
             bugtask.transitionToMilestone(milestone, milestone.target.owner)
-        else:
+        if series is not None:
             task = bug.addTask(owner, series)
             task.transitionToStatus(status, owner)
 
