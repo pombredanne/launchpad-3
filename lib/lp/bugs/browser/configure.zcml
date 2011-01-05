@@ -1183,6 +1183,15 @@
           path_expression="string:+filter/${id}"
           attribute_to_parent="structural_subscription"
           rootsite="bugs" />
+      <browser:page
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterView"
+          template="../templates/bug-subscription-filter.pt"
+          permission="launchpad.View"
+          name="+index" />
+      <browser:defaultView
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          name="+index" />
     </facet>
 
 </configure>

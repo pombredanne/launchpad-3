@@ -1,0 +1,48 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xml:lang="en"
+    lang="en"
+    dir="ltr"
+    metal:use-macro="view/macro:page/main_only"
+    i18n:domain="malone">
+  <body>
+    <div metal:fill-slot="main">
+      <dl>
+        <dt>Description</dt>
+        <dd>
+          <span tal:condition="context/description"
+                tal:content="context/description" />
+          <span tal:condition="not:context/description">&mdash;</span>
+        </dd>
+        <dt>Statuses</dt>
+        <dd>
+          <tal:statuses repeat="status context/statuses">
+            <span tal:content="status/title" />
+            <span tal:condition="not:repeat/status/end">, </span>
+          </tal:statuses>
+        </dd>
+        <dt>Importances</dt>
+        <dd>
+          <tal:importances repeat="importance context/importances">
+            <span tal:content="importance/title" />
+            <span tal:condition="not:repeat/importance/end">, </span>
+          </tal:importances>
+        </dd>
+        <dt>
+          Tags,
+          <span tal:condition="context/find_all_tags">all of</span>
+          <span tal:condition="not:context/find_all_tags">any of</span>
+        </dt>
+        <dd>
+          <tal:tags repeat="tag context/tags">
+            <span tal:content="tag/title" />
+            <span tal:condition="not:repeat/tag/end">, </span>
+          </tal:tags>
+        </dd>
+      </dl>
+    </div>
+  </body>
+</html>
