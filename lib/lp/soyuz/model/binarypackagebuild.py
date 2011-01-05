@@ -941,7 +941,7 @@ class BinaryPackageBuildSet:
     def getBuildsByArchIds(self, distribution, arch_ids, status=None,
                            name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
-        # If not distroarchseries was found return empty list
+        # If no distroarchseries were passed in, return an empty list
         if not arch_ids:
             return EmptyResultSet()
 
