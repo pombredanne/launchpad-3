@@ -741,21 +741,32 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer DEFAULT 0)
+RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
 EXTERNAL SECURITY DEFINER AS
 $$
     import re
     name = args[0].decode("UTF-8")
+    user_id = args[1]
     if not SD.has_key("select_plan"):
         SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp FROM NameBlacklist ORDER BY id
+            SELECT id, regexp, admin FROM NameBlacklist ORDER BY id
             """)
         SD["compiled"] = {}
     compiled = SD["compiled"]
+    # Get the list of team ids that the user is a member of because regexps
+    # that those teams admin will be skipped.
+    results = plpy.execute(
+        "SELECT team FROM TeamParticipation WHERE person = %d" % user_id)
+    user_teams = [row['team'] for row in results]
     for row in plpy.execute(SD["select_plan"]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
+        regexp_admin = row["admin"]
+        if regexp_admin in user_teams:
+            # The user is exempt from the blacklisted name restriction.
+            continue
         if (compiled.get(regexp_id) is None
             or compiled[regexp_id][0] != regexp_txt):
             regexp = re.compile(
@@ -769,16 +780,17 @@ $$
     return None
 $$;
 
-COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer DEFAULT 0)
+RETURNS boolean
 LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
 $$
-    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+    SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
 
-COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+COMMENT ON FUNCTION is_blacklisted_name(text, integer) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 
 
 CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
