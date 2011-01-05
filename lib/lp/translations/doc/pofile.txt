@@ -86,8 +86,9 @@ We need a helper method to better display test results.
     ...             if len(plural) > 20:
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
-    ...             translation = potmsgset.getCurrentTranslationMessage(
-    ...                 pofile.potemplate, pofile.language).translations[0]
+    ...             translation = potmsgset.getCurrentTranslation(
+    ...                 pofile.potemplate, pofile.language,
+    ...                 pofile.potemplate.translation_side).translations[0]
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
@@ -545,8 +546,9 @@ Now, just to be sure that this entry doesn't exist yet:
 
     >>> potmsgset = pofile_sr.potemplate.getOrCreateSharedPOTMsgSet(
     ...     singular_text=msgid, plural_text=msgid_plural)
-    >>> print potmsgset.getCurrentTranslationMessage(
-    ...     pofile_sr.potemplate, pofile_sr.language)
+    >>> print potmsgset.getCurrentTranslation(
+    ...     pofile_sr.potemplate, pofile_sr.language,
+    ...     pofile_sr.potemplate.translation_side)
     None
 
 Is time to create it.  We need some extra privileges here.
@@ -558,9 +560,9 @@ Is time to create it.  We need some extra privileges here.
     >>> translations = {0: u''}
     >>> is_current_upstream = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
-    >>> translation_message = potmsgset.updateTranslation(
-    ...     pofile_sr, rosetta_experts, translations, is_current_upstream,
-    ...     lock_timestamp)
+    >>> translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, rosetta_experts, translations=translations,
+    ...     current_other=is_current_upstream)
 
 As we can see, is the msgid we were looking for.
 
@@ -659,8 +661,9 @@ translated for a given POFile.
     ...     print "%-10s %-5s %-10s %-11s" % (
     ...         "msgid", "form", "translat.", "Has plurals")
     ...     for potmsgset in potmsgsets:
-    ...         translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...             pofile.potemplate, pofile.language)
+    ...         translationmessage = potmsgset.getCurrentTranslation(
+    ...             pofile.potemplate, pofile.language,
+    ...             pofile.potemplate.translation_side)
     ...         msgid = potmsgset.msgid_singular.msgid
     ...         if len(msgid) > 10:
     ...             msgid = msgid[:7] + '...'
@@ -743,8 +746,9 @@ it is created with a dummy translation
 
     >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u'translation-credits')
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_template, alsa_translation.language)
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     alsa_template, alsa_translation.language,
+    ...     alsa_template.translation_side)
     >>> print current.translations
     [u'This is a dummy translation so that
     the credits are counted as translated.']
@@ -752,28 +756,28 @@ it is created with a dummy translation
 If we submit an upstream translation, the translation for this message
 is updated.
 
-    >>> new_credits = potmsgset.updateTranslation(
-    ...     alsa_translation, alsa_translation.owner,
-    ...     {0: u'Happy translator'}, is_current_upstream=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_credits = factory.makeCurrentTranslationMessage(
+    ...     alsa_translation, potmsgset, alsa_translation.owner,
+    ...     translations={0: u'Happy translator'}, current_other=True)
     >>> flush_database_updates()
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_template, alsa_translation.language)
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     alsa_template, alsa_translation.language,
+    ...     alsa_template.translation_side)
     >>> print current.translations
     [u'Happy translator']
 
 If we submit non-upstream translation, it's rejected.
 
-    >>> no_credits = potmsgset.updateTranslation(
+    >>> no_credits = potmsgset.submitSuggestion(
     ...     alsa_translation, alsa_translation.owner,
-    ...     {0: u'Unhappy translator'}, is_current_upstream=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     {0: u'Unhappy translator'})
     >>> print no_credits
     None
 
     >>> flush_database_updates()
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_template, alsa_translation.language)
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     alsa_template, alsa_translation.language,
+    ...     alsa_template.translation_side)
     >>> print current.translations
     [u'Happy translator']
 
