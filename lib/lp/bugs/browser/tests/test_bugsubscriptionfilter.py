@@ -31,6 +31,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestBugSubscriptionFilterBase:
@@ -208,3 +209,74 @@ class TestBugSubscriptionFilterAPIModifications(
         self.assertRaises(
             LostObjectError, getattr, self.subscription_filter,
             "find_all_tags")
+
+
+class TestBugSubscriptionFilterView(
+    TestBugSubscriptionFilterBase, TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterView, self).setUp()
+        self.view = create_initialized_view(
+            self.subscription_filter, "+index")
+
+    def test_page_title(self):
+        # The page title is static.
+        self.assertEqual(u"Bug filter", self.view.page_title)
+
+    def test_description(self):
+        # If the description is not set then an em-dash is returned.
+        self.assertEqual(u"\u2014", self.view.description)
+        # If the description is just whitespace then an em-dash is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"  "
+        self.assertEqual(u"\u2014", self.view.description)
+        # If the description is set it is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"Foo"
+        self.assertEqual(u"Foo", self.view.description)
+        # Leading and trailing whitespace is trimmed.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"  Foo\t  "
+        self.assertEqual(u"Foo", self.view.description)
+
+    def test_statuses(self):
+        # If no statuses have been specified an em-dash is returned.
+        self.assertEqual(u"\u2014", self.view.statuses)
+        # If set, an English list of the status titles is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.statuses = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.TRIAGED,
+                ]
+        self.assertEqual(
+            u"New, Confirmed, or Triaged", self.view.statuses)
+
+    def test_importances(self):
+        # If no importances have been specified an em-dash is returned.
+        self.assertEqual(u"\u2014", self.view.importances)
+        # If set, an English list of the importance titles is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.importances = [
+                BugTaskImportance.LOW,
+                BugTaskImportance.MEDIUM,
+                BugTaskImportance.HIGH,
+                ]
+        self.assertEqual(
+            u"High, Medium, or Low", self.view.importances)
+
+    def test_tags(self):
+        # If no tags have been specified an em-dash is returned.
+        self.assertEqual(u"\u2014", self.view.tags)
+        # If set, an English list of the tags is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.tags = [u"foo", u"bar", u"*"]
+        self.assertEqual(
+            u"*, bar, or foo", self.view.tags)
+        # If find_all_tags is set, the conjunction changes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.find_all_tags = True
+        self.assertEqual(
+            u"*, bar, and foo", self.view.tags)

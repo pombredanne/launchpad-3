@@ -15,7 +15,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 
 class BugSubscriptionFilterView(LaunchpadView):
 
-    page_title = u"Bug subscription filter"
+    page_title = u"Bug filter"
 
     @property
     def description(self):
@@ -27,9 +27,7 @@ class BugSubscriptionFilterView(LaunchpadView):
         if len(description) == 0:
             return u"\u2014"
         else:
-            return english_list(
-                (status.title for status in sorted(description)),
-                conjunction=u"or")
+            return description
 
     @property
     def statuses(self):
