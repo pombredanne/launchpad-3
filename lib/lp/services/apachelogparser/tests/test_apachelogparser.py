@@ -359,6 +359,7 @@ class TestParsedFilesDetection(TestCase):
     layer = LaunchpadZopelessLayer
     # The directory in which the sample log files live.
     root = os.path.join(here, 'apache-log-files')
+    file_path = os.path.join(root, 'launchpadlibrarian.net.access-log')
 
     def setUp(self):
         super(TestParsedFilesDetection, self).setUp()
@@ -367,31 +368,28 @@ class TestParsedFilesDetection(TestCase):
     def test_not_parsed_file(self):
         # A file that has never been parsed will have to be parsed from the
         # start.
-        file_name = 'launchpadlibrarian.net.access-log'
-        files_to_parse = get_files_to_parse(self.root, [file_name])
+        files_to_parse = get_files_to_parse([self.file_path])
         fd, position = list(files_to_parse)[0]
         self.assertEqual(position, 0)
 
     def test_completely_parsed_file(self):
         # A file that has been completely parsed will be skipped.
-        file_name = 'launchpadlibrarian.net.access-log'
-        fd = open(os.path.join(self.root, file_name))
+        fd = open(self.file_path)
         first_line = fd.readline()
         fd.seek(0)
         ParsedApacheLog(first_line, len(fd.read()))
 
-        files_to_parse = get_files_to_parse(self.root, [file_name])
+        files_to_parse = get_files_to_parse([self.file_path])
         self.failUnlessEqual(list(files_to_parse), [])
 
     def test_parsed_file_with_new_content(self):
         # A file that has been parsed already but in which new content was
         # added will be parsed again, starting from where parsing stopped last
         # time.
-        file_name = 'launchpadlibrarian.net.access-log'
-        first_line = open(os.path.join(self.root, file_name)).readline()
+        first_line = open(self.file_path).readline()
         ParsedApacheLog(first_line, len(first_line))
 
-        files_to_parse = list(get_files_to_parse(self.root, [file_name]))
+        files_to_parse = list(get_files_to_parse([self.file_path]))
         self.assertEqual(len(files_to_parse), 1)
         fd, position = files_to_parse[0]
         # Since we parsed the first line above, we'll be told to start where
@@ -409,31 +407,33 @@ class TestParsedFilesDetection(TestCase):
         # This file has the same name of the previous one (which has been
         # parsed already), but its first line is different, so we'll have to
         # parse it from the start.
-        fd, file_name = tempfile.mkstemp()
+        fd, new_path = tempfile.mkstemp()
         content2 = 'Different First Line\nSecond Line'
-        fd = open(file_name, 'w')
+        fd = open(new_path, 'w')
         fd.write(content2)
         fd.close()
-        files_to_parse = get_files_to_parse(self.root, [file_name])
+        files_to_parse = get_files_to_parse([new_path])
         positions = map(itemgetter(1), files_to_parse)
         self.failUnlessEqual(positions, [0])
 
     def test_fresh_gzipped_file(self):
         # get_files_to_parse() handles gzipped files just like uncompressed
         # ones.  The first time we see one, we'll parse from the beginning.
-        file_name = 'launchpadlibrarian.net.access-log.1.gz'
-        first_line = gzip.open(os.path.join(self.root, file_name)).readline()
-        files_to_parse = get_files_to_parse(self.root, [file_name])
+        gz_name = 'launchpadlibrarian.net.access-log.1.gz'
+        gz_path = os.path.join(self.root, gz_name)
+        first_line = gzip.open(gz_path).readline()
+        files_to_parse = get_files_to_parse([gz_path])
         positions = map(itemgetter(1), files_to_parse)
         self.assertEqual(positions, [0])
 
     def test_resumed_gzipped_file(self):
         # In subsequent runs of the script we will resume from where we
         # stopped last time. (Here we pretend we parsed only the first line)
-        file_name = 'launchpadlibrarian.net.access-log.1.gz'
-        first_line = gzip.open(os.path.join(self.root, file_name)).readline()
+        gz_name = 'launchpadlibrarian.net.access-log.1.gz'
+        gz_path = os.path.join(self.root, gz_name)
+        first_line = gzip.open(gz_path).readline()
         ParsedApacheLog(first_line, len(first_line))
-        files_to_parse = get_files_to_parse(self.root, [file_name])
+        files_to_parse = get_files_to_parse([gz_path])
         positions = map(itemgetter(1), files_to_parse)
         self.failUnlessEqual(positions, [len(first_line)])
 

@@ -32,6 +32,10 @@ class ParsePPAApacheLogs(ParseApacheLogs):
         """See `ParseApacheLogs`."""
         return config.ppa_apache_log_parser.logs_root
 
+    @property
+    def log_file_glob(self):
+        return config.ppa_apache_log_parser.log_file_glob
+
     def getDownloadKey(self, path):
         """See `ParseApacheLogs`."""
         return get_ppa_file_key(path)

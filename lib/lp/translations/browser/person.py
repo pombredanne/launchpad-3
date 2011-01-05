@@ -67,6 +67,9 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
         """See `TranslationLinksAggregator.describe`."""
         strings_count = sum(
             [self.countStrings(pofile) for pofile in covered_files])
+        languages = set(
+            [pofile.language.englishname for pofile in covered_files])
+        languages_list = ", ".join(sorted(languages))
 
         if strings_count == 1:
             strings_wording = "%d string"
@@ -79,6 +82,7 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
             'count_wording': strings_wording % strings_count,
             'is_product': not ISourcePackage.providedBy(target),
             'link': link,
+            'languages': languages_list,
         }
 
 
