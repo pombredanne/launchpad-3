@@ -3,8 +3,6 @@
 
 __all__ = ['DBUSER', 'get_ppa_file_key']
 
-import re
-
 from lp.archiveuploader.utils import re_isadeb
 
 
