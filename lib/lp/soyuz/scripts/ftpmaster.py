@@ -61,7 +61,6 @@ from lp.soyuz.adapters.packagelocation import (
     PackageLocationError,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
@@ -329,9 +328,7 @@ class ArchiveCruftChecker:
 
         Ensure the package is still published in the suite before add.
         """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
+        result = self.distroseries.getBinaryPackagePublishing(name=package)
 
         if len(list(result)) == 0:
             return

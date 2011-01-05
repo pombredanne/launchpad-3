@@ -284,6 +284,10 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    IPollSubset,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -558,6 +562,10 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
@@ -1327,6 +1335,17 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show member photos'
         return Link(target, text, icon='team')
 
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a poll'
+        return Link(target, text, icon='add')
+
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
@@ -1411,6 +1430,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'moderate_mailing_list',
         'editlanguages',
         'map',
+        'polls',
+        'add_poll',
         'join',
         'leave',
         'add_my_teams',
@@ -1431,7 +1452,7 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'members', 'ppas']
+    links = ['profile', 'polls', 'members', 'ppas']
 
 
 class TeamMembershipView(LaunchpadView):
@@ -2921,6 +2942,21 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ''
 
     @cachedproperty
+    def openpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getOpenPolls()
+
+    @cachedproperty
+    def closedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getClosedPolls()
+
+    @cachedproperty
+    def notyetopenedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getNotYetOpenedPolls()
+
+    @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
@@ -3088,6 +3124,19 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
+
+    @property
+    def should_show_polls_portlet(self):
+        menu = TeamOverviewMenu(self.context)
+        return (
+            self.has_current_polls or self.closedpolls
+            or menu.add_poll().enabled)
+
+    @property
+    def has_current_polls(self):
+        """Return True if this team has any non-closed polls."""
+        assert self.context.isTeam()
+        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""

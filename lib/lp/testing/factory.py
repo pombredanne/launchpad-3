@@ -7,7 +7,6 @@
 
 This module should not contain tests (but it should be tested).
 """
-from lp.code.model.recipebuild import RecipeBuildRecord
 
 __metaclass__ = type
 __all__ = [
@@ -161,6 +160,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -206,6 +206,11 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    PollAlgorithm,
+    PollSecrecy,
+    )
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -729,6 +734,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             for member in members:
                 naked_team.addMember(member, owner)
         return team
+
+    def makePoll(self, team, name, title, proposition,
+                 poll_type=PollAlgorithm.SIMPLE):
+        """Create a new poll which starts tomorrow and lasts for a week."""
+        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
+        datecloses = dateopens + timedelta(days=7)
+        return getUtility(IPollSet).new(
+            team, name, title, proposition, dateopens, datecloses,
+            PollSecrecy.SECRET, allowspoilt=True,
+            poll_type=poll_type)
 
     def makeTranslationGroup(self, owner=None, name=None, title=None,
                              summary=None, url=None):
@@ -1377,26 +1392,41 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
-                status=None, distribution=None):
+                status=None, distribution=None, milestone=None, series=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
 
         :param product: If the product is not set, and if the parameter
-            distribution is not set, a product is created and this is
-            used as the primary bug target.
+            distribution, milestone, and series are not set, a product
+            is created and this is used as the primary bug target.
         :param owner: The reporter of the bug. If not set, one is created.
         :param bug_watch_url: If specified, create a bug watch pointing
             to this URL.
         :param distribution: If set, the distribution is used as the
             default bug target.
+        :param milestone: If set, the milestone.target must match the product
+            or distribution parameters, or the those parameters must be None.
+        :param series: If set, the series.product must match the product
+            parameter, or the series.distribution must match the distribution
+            parameter, or the those parameters must be None.
 
         At least one of the parameters distribution and product must be
         None, otherwise, an assertion error will be raised.
         """
         if product is None and distribution is None:
-            product = self.makeProduct()
+            if milestone is not None:
+                # One of these will be None.
+                product = milestone.product
+                distribution = milestone.distribution
+            elif series is not None:
+                if IProductSeries.providedBy(series):
+                    product = series.product
+                else:
+                    distribution = series.distribution
+            else:
+                product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
         if title is None:
@@ -1413,10 +1443,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        bugtask = bug.default_bugtask
         if date_closed is not None:
-            [bugtask] = bug.bugtasks
             bugtask.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, owner, when=date_closed)
+        if milestone is not None:
+            bugtask.transitionToMilestone(milestone, milestone.target.owner)
+        if series is not None:
+            task = bug.addTask(owner, series)
+            task.transitionToStatus(status, owner)
+
         return bug
 
     def makeBugTask(self, bug=None, target=None, owner=None):

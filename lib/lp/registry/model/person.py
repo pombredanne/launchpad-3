@@ -3805,17 +3805,12 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
+            # Polls are not carried over when merging teams.
+            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
-            ('translationrelicensingagreement', 'person'),
-            # Polls are not carried over when merging teams.
-            # XXX: BradCrittenden 2010-12-16 bug=691105:
-            # Even though polls have been removed as a feature and from the
-            # data model, they still exist in the database and must be skipped
-            # here to avoid violating uniqueness constraints.
-            ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
@@ -3824,6 +3819,7 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
