@@ -243,7 +243,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         # Does the script's output contain the specified sub-string?
         if output_substr is not None and not output_substr.isspace():
-            output = script.logger.buffer.getvalue()
+            output = script.logger.getLogBuffer()
             self.assertTrue(output_substr in output)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
@@ -352,10 +352,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Check which source packages are fresher or new in the second stage
         # archive.
         expected_output = (
-            "INFO: Fresher packages: 1\n"
-            "INFO: * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
-            "INFO: New packages: 1\n"
-            "INFO: * new-in-second-round (1.0)\n")
+            "INFO Fresher packages: 1\n"
+            "INFO * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
+            "INFO New packages: 1\n"
+            "INFO * new-in-second-round (1.0)\n")
 
         extra_args = ['--package-set-delta']
         self.runScript(

@@ -380,13 +380,13 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> print backslashreplace(browser.title)
     Bug...in Mozilla Firefox...
 
-    >>> browser.getLink('Target to release').click()
+    >>> browser.getLink('Target to series').click()
     >>> print browser.title
     Target bug #19 to series...
 
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Target').click()
 
 The bug page now lists a bug task for each series:
 
@@ -474,12 +474,12 @@ When we explicitly target the bug to the development focus series, the
 bug still appears in the milestone's bug listing:
 
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Target to release').click()
+    >>> browser.getLink('Target to series').click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/.../+nominate
 
     >>> browser.getControl('Trunk').selected = True
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Target').click()
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
     Affects             Status                  ...
     Mozilla Firefox ... Status tracked in Trunk ...

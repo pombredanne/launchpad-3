@@ -21,14 +21,14 @@ Watson's account, he's one of the owners of Ubuntu.
     >>> ubuntu_owner_browser = setupBrowser(
     ...     auth='Basic colin.watson@ubuntulinux.com:test')
     >>> ubuntu_owner_browser.open(anon_browser.url)
-    >>> ubuntu_owner_browser.getLink('Change permissions').click()
+    >>> ubuntu_owner_browser.getLink('Configure translations').click()
     >>> print ubuntu_owner_browser.title
-    Set translation permissions for Ubuntu...
+    Settings : Translations : Ubuntu
 
 Other users cannot access this page, nor see the menu link to it.
 
     >>> user_browser.open(anon_browser.url)
-    >>> user_browser.getLink('Change permissions').click()
+    >>> user_browser.getLink('Configure translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError

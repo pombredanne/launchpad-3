@@ -106,8 +106,8 @@ class TestLibrarianLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 1 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 1 download stats.')
 
         date = datetime(2008, 6, 13)
         self.assertEqual(downloads,
@@ -125,8 +125,8 @@ class TestLibrarianLogFileParsing(TestCase):
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(
-            self.logger.buffer.getvalue().strip(),
-            'INFO: Parsed 1 lines resulting in 0 download stats.')
+            self.logger.getLogBuffer().strip(),
+            'INFO Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
