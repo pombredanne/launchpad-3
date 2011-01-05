@@ -626,17 +626,16 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
     def test_getOrCreateSharedPOTMsgSet_package(self):
         # Trying to create an identical POTMsgSet in a product as exists
         # in a linked sourcepackage will return the existing POTMsgset.
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.packagename,
-            distroseries=self.hoary)
-        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
-        hoary_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.hoary_template, sequence=1)
+        sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, self.hoary)
+        sourcepackage.setPackaging(self.trunk, self.owner)
+        trunk_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.trunk_template, sequence=1)
 
-        trunk_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
-                singular_text=hoary_potmsgset.singular_text,
-                plural_text=hoary_potmsgset.plural_text)
-        self.assertEqual(hoary_potmsgset, trunk_potmsgset)
+        hoary_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
+                singular_text=trunk_potmsgset.singular_text,
+                plural_text=trunk_potmsgset.plural_text)
+        self.assertEqual(trunk_potmsgset, hoary_potmsgset)
 
 
 def test_suite():
