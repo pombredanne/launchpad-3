@@ -2547,3 +2547,23 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class ViewLibraryFileAliasWithParent(AuthorizationBase):
+    """Authorization class for viewing LibraryFileAliass having a parent."""
+
+    permission = 'launchpad.View'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+
+        If a parent is known, users which can view the parent can also
+        view the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)
