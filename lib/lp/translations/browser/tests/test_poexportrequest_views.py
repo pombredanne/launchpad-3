@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -128,9 +130,12 @@ class TestPOExportView(TestCaseWithFactory):
         # All exports can be requested by an unprivileged user.
         self.translator = self.factory.makePerson()
 
-    def _createView(self, form):
+    def _createView(self, form=None):
         login_person(self.translator)
-        request = LaunchpadTestRequest(method='POST', form=form)
+        if form is None:
+            request = LaunchpadTestRequest()
+        else:
+            request = LaunchpadTestRequest(method='POST', form=form)
         view = POExportView(self.pofile, request)
         view.initialize()
         return view
@@ -151,13 +156,63 @@ class TestPOExportView(TestCaseWithFactory):
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
 
-    def test_request_partial_po(self):
+    def _makeUbuntuTemplateAndPOFile(self):
+        """Create a sharing template in Ubuntu with a POFile to go with it."""
+        upstream_series = self.potemplate.productseries
+        template_name = self.potemplate.name
+        language = self.pofile.language
+
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        naked_distribution = removeSecurityProxy(distroseries.distribution)
+        naked_distribution.translation_focus = distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename, distroseries)
+        sourcepackage.setPackaging(upstream_series, self.factory.makePerson())
+
+        potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            name=template_name)
+
+        # The sharing POFile is created automatically when the template is
+        # created because self.pofile already exists.
+        return (potemplate, potemplate.getPOFileByLang(language.code))
+
+    def test_request_partial_po_upstream(self):
         # Partial po exports are requested by an extra check box.
+        # For an upstream project, the export is requested on the
+        # corresponding (same language, sharing template) on the Ubuntu side.
+        ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
+
+        self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
+
+        expected = (
+            ubuntu_potemplate,
+            ubuntu_pofile,
+            TranslationFileFormat.POCHANGED,
+            )
+        self.assertContentEqual(
+            [expected], get_poexportrequests(include_format=True))
+
+    def test_request_partial_po_ubuntu(self):
+        # Partial po exports are requested by an extra check box.
+        # For an Ubuntu package, the export is requested on the file itself.
+        ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
+        self.potemplate = ubuntu_potemplate
+        self.pofile = ubuntu_pofile
+
         self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
 
         self.assertContentEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.POCHANGED)],
             get_poexportrequests(include_format=True))
+
+    def test_request_partial_po_no_link(self):
+        # Partial po exports are requested by an extra check box.
+        # Without a packaging link, no request is created.
+        self._createView({'format': 'PO', 'pochanged': 'POCHANGED'})
+
+        self.assertContentEqual([], get_poexportrequests())
 
     def test_request_partial_mo(self):
         # With the MO format, the partial export check box is ignored.
@@ -166,3 +221,18 @@ class TestPOExportView(TestCaseWithFactory):
         self.assertContentEqual(
             [(self.potemplate, self.pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
+
+    def test_pochanged_option_available(self):
+        # The option for partial exports is only available if a POFile can
+        # be found on the other side.
+        self._makeUbuntuTemplateAndPOFile()
+        view = self._createView()
+
+        self.assertTrue(view.has_pochanged_option)
+
+    def test_pochanged_option_not_available(self):
+        # The option for partial exports is not available if no POFile can
+        # be found on the other side.
+        view = self._createView()
+
+        self.assertFalse(view.has_pochanged_option)
