@@ -38,7 +38,7 @@ class TestRequestPeopleMergeView(TestCaseWithFactory):
         super(TestRequestPeopleMergeView, self).setUp()
         self.person_set = getUtility(IPersonSet)
         self.dupe = self.factory.makePerson(name='dupe')
-        self.target = self.factory.makeTeam(name='target-team')
+        self.target = self.factory.makeTeam(name='target')
 
     def test_cannot_merge_person_with_ppas(self):
         # A team with a PPA cannot be merged.
@@ -50,10 +50,10 @@ class TestRequestPeopleMergeView(TestCaseWithFactory):
             'field.target_person': self.target.name,
             'field.actions.continue': 'Continue',
             }
-        return create_initialized_view(
+        view = create_initialized_view(
             self.person_set, '+requestmerge', form=form)
         self.assertEqual(
-            [u"dupe-team has a PPA that must be deleted before it can be "
+            [u"dupe has a PPA that must be deleted before it can be "
               "merged. It may take ten minutes to remove the deleted PPA's "
               "files."],
             view.errors)
