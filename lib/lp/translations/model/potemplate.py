@@ -1437,39 +1437,6 @@ class POTemplateSharingSubset(object):
         self.sourcepackagename = sourcepackagename
         self.product = product
 
-    def _findUpstreamProduct(self, distribution, sourcepackagename):
-        """Find the upstream product by looking at the translation focus.
-
-        The translation focus is used to pick a distroseries, so a source
-        package instance can be created. If no translation focus is set,
-        the distribution's current series is used."""
-
-        from lp.registry.model.sourcepackage import SourcePackage
-        distroseries = distribution.translation_focus
-        if distroseries is None:
-            distroseries = distribution.currentseries
-        sourcepackage = SourcePackage(sourcepackagename, distroseries)
-        if sourcepackage.productseries is None:
-            return None
-        return sourcepackage.productseries.product
-
-    def _canShareByName(self, distribution, sourcepackagename):
-        """Determine if sharing by sourcepackagename is a wise thing.
-
-        Without a product, the linkage between sharing packages can only be
-        determined by their name. This is only (fairly) safe if none of these
-        is packaged elsewhere.
-        """
-        from lp.registry.model.distroseries import DistroSeries
-        origin = Join(
-            Packaging, DistroSeries,
-            Packaging.distroseries == DistroSeries.id)
-        matches = Store.of(distribution).using(origin).find(
-            Packaging,
-            And(DistroSeries.distribution == distribution.id,
-                Packaging.sourcepackagename == sourcepackagename.id))
-        return not bool(matches.any())
-
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
         if template.sourcepackagename is None:
