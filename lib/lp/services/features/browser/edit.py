@@ -10,21 +10,19 @@ __all__ = [
     ]
 
 
-import logging 
-
+from difflib import unified_diff
+import logging
 
 from zope.interface import Interface
-from zope.schema import (
-    Text,
-    )
+from zope.schema import Text
+from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 class IFeatureControlForm(Interface):
@@ -39,10 +37,8 @@ class IFeatureControlForm(Interface):
             u"Rules to control feature flags on Launchpad.  "
             u"On each line: (flag, scope, priority, value), "
             u"whitespace-separated.  Numerically higher "
-            u"priorities match first."
-            ),
-        required=False,
-        )
+            u"priorities match first."),
+        required=False)
 
 
 class FeatureControlView(LaunchpadFormView):
@@ -55,22 +51,43 @@ class FeatureControlView(LaunchpadFormView):
     schema = IFeatureControlForm
     page_title = label = 'Feature control'
     field_names = ['feature_rules']
+    diff = None
+    logger_name = 'lp.services.features'
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
         if not check_permission('launchpad.Admin', self.context):
             raise Unauthorized()
+        original_rules = self.request.features.rule_source.getAllRulesAsText()
         rules_text = data.get('feature_rules') or ''
-        logger = logging.getLogger('lp.services.features')
+        logger = logging.getLogger(self.logger_name)
         logger.warning("Change feature rules to: %s" % (rules_text,))
-        self.request.features.rule_source.setAllRulesFromText(
-            rules_text)
+        logger.warning("Previous feature rules were: %s" % (original_rules,))
+        self.request.features.rule_source.setAllRulesFromText(rules_text)
+        # Why re-fetch the rules here?  This way we get them reformatted
+        # (whitespace normalized) and ordered consistently so the diff is
+        # minimal.
+        new_rules = self.request.features.rule_source.getAllRulesAsText()
+        diff = '\n'.join(self.diff_rules(original_rules, new_rules))
+        self.diff = FormattersAPI(diff).format_diff()
+
+    @staticmethod
+    def diff_rules(rules1, rules2):
+        # Just generate a one-block diff.
+        lines_of_context = 999999
+        diff = unified_diff(
+            rules1.splitlines(),
+            rules2.splitlines(),
+            n=lines_of_context)
+        # The three line header is meaningless here.
+        return list(diff)[3:]
 
     @property
     def initial_values(self):
-        return dict(
-            feature_rules=self.request.features.rule_source.getAllRulesAsText(),
-            )
+        return {
+            'feature_rules':
+                self.request.features.rule_source.getAllRulesAsText(),
+        }
 
     def validate(self, data):
         # Try parsing the rules so we give a clean error: at the moment the
