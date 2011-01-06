@@ -53,7 +53,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class ValidatingMergeView(LaunchpadFormView):
-    
+
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
@@ -479,7 +479,7 @@ class RequestPeopleMergeMultipleEmailsView:
     def email_hidden(self):
         """Does the duplicate account hide email addresses?"""
         return self.dupe.hide_email_addresses
-    
+
 
 class RequestPeopleMergeView(ValidatingMergeView):
     """The view for the page where the user asks a merge of two accounts.
