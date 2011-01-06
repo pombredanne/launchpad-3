@@ -31,11 +31,19 @@
                                  title string:Modify subscription to ${subscription/target/title};">
                 <img src="/@@/edit" />
               </a>
-              <dl style="padding-left: 2em">
-                <tal:bug-filters
-                    repeat="bug_filter subscription/bug_filters"
-                    content="structure bug_filter/@@+definition" />
-              </dl>
+              <div style="padding: 1em 2em"
+                   tal:define="bug_filters python:list(subscription.bug_filters)"
+                   tal:condition="bug_filters">
+                <p>
+                  Bug mail will be sent if it matches <em>any</em> of
+                  the following filters:
+                </p>
+                <dl>
+                  <tal:definitions
+                      repeat="bug_filter bug_filters"
+                      content="structure bug_filter/@@+definition" />
+                </dl>
+              </div>
             </li>
           </ul>
 
