@@ -1196,7 +1196,7 @@
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="archive"
-        path_expression="string:+build/${id}"
+        path_expression="string:+build/${url_id}"
         rootsite="code" />
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"

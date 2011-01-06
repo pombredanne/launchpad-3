@@ -84,7 +84,7 @@ class BuildUrl:
 
     @property
     def path(self):
-        return u"+build/%d" % self.context.id
+        return u"+build/%d" % self.context.url_id
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
