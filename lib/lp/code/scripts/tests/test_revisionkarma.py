@@ -17,8 +17,8 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
+from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
-from lp.testing.logger import MockLogger
 
 
 class TestRevisionKarma(TestCaseWithFactory):
@@ -77,7 +77,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson(email=email)
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
@@ -109,7 +109,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
 
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.

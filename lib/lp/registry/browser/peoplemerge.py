@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """People Merge related wiew classes."""
@@ -48,6 +48,8 @@ from lp.registry.interfaces.person import (
     IRequestPeopleMerge,
     )
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class RequestPeopleMergeView(LaunchpadFormView):
@@ -132,6 +134,17 @@ class AdminMergeBaseView(LaunchpadFormView):
         if dupe_person == target_person and dupe_person is not None:
             self.addError(_("You can't merge ${name} into itself.",
                   mapping=dict(name=dupe_person.name)))
+        # We cannot merge the teams if there is a PPA with published
+        # packages on the duplicate person, unless that PPA is removed.
+        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            dupe_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING])
+        if dupe_person_ppas is not None:
+            self.addError(_(
+                "${name} has a PPA that must be deleted before it "
+                "can be merged. It may take ten minutes to remove the "
+                "deleted PPA's files.",
+                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually

@@ -1,50 +1,39 @@
-Sample person tries to change the bug's nickname to a existing one and gets a nice error message. 
-
-  >>> user_browser.open(
-  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
-  >>> user_browser.getLink(url="+edit").click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
-  >>> user_browser.getControl('Nickname').value = 'blackhole'
-  >>> user_browser.getControl('Change').click()
-  >>> print user_browser.contents
-  <...
-  ...There is 1 error...
-  ...
-  ...blackhole is already in use by another bug...
+Bug editing
+===========
 
 The user should be able to look at the page title or heading and
 see the bug number being edited.
 
-  >>> user_browser.open(
-  ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+edit')
-  >>> print user_browser.title
-  Edit details for bug #11 ...
-  >>> main = find_main_content(user_browser.contents)
-  >>> print extract_text(main.h1)
-  Edit details for bug #11
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+edit')
+    >>> print user_browser.title
+    Edit details for bug #11 ...
+    >>> main = find_main_content(user_browser.contents)
+    >>> print extract_text(main.h1)
+    Edit details for bug #11
 
-And now we show that any logged-in user can edit public bugs. 
+And now we show that any logged-in user can edit public bugs.
 
-  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-  >>> browser.open(
-  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
-  >>> browser.getLink(url="+edit").click()
-  >>> browser.url
-  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
-  >>> browser.getControl('Summary').value = 'New Summary'
-  >>> browser.getControl('Nickname').value = 'testbug'
-  >>> browser.getControl('Description').value = 'New description.'
-  >>> browser.getControl('Change').click()
-  >>> browser.url
-  'http://.../debian/+source/mozilla-firefox/+bug/3'
-  >>> print browser.contents
-  <...testbug...
-  ...New Summary...
-  ...New description...
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
+    >>> browser.getLink(url="+edit").click()
+    >>> browser.url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
+    >>> browser.getControl('Summary').value = 'New Summary'
+    >>> browser.getControl('Description').value = 'New description.'
+    >>> browser.getControl('Change').click()
+    >>> browser.url
+    'http://.../debian/+source/mozilla-firefox/+bug/3'
+    >>> content = find_main_content(browser.contents)
+    >>> print extract_text(content.h1)
+    New Summary
+    >>> print extract_text(find_tag_by_id(content, 'maincontentsub'))
+    Bug Description New description. ...
 
 
-== Viewing the original description ==
+Viewing the original description
+--------------------------------
 
 If a bug's description has not been changed since it was reported,
 there is no link to the original description.
@@ -73,55 +62,54 @@ tags. Therefore, if you try to add a tag that hasn't been used in the
 current context before, you have to confirm that you indeed want to add
 the tag.
 
-  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink(url="+edit").click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> user_browser.getLink(url="+edit").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
 
-  >>> user_browser.getControl('Tags').value = 'new-tag'
-  >>> user_browser.getControl('Change').click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-  >>> print user_browser.contents
-  <...The tag "new-tag" hasn't been used by Mozilla Firefox before...
+    >>> user_browser.getControl('Tags').value = 'new-tag'
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+    >>> print user_browser.contents
+    <...The tag "new-tag" hasn't been used by Mozilla Firefox before...
 
 Here we can confirm that we want to add the tag, or change the tag name
 and submit the form again.
 
-  >>> user_browser.getControl('Create the new tag') is not None
-  True
-  >>> user_browser.getControl('Change') is not None
-  True
+    >>> user_browser.getControl('Create the new tag') is not None
+    True
+    >>> user_browser.getControl('Change') is not None
+    True
 
 Let's edit it, changing it to an existing tag.
 
-  >>> user_browser.getControl('Tags').value = 'layout-test'
-  >>> user_browser.getControl('Change').click()
+    >>> user_browser.getControl('Tags').value = 'layout-test'
+    >>> user_browser.getControl('Change').click()
 
 Now we are back at the bug page, and the tag has been added.
 
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1'
-  >>> 'layout-test' in user_browser.contents
-  True
-  >>> 'new-tag' in user_browser.contents
-  False
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+    >>> 'layout-test' in user_browser.contents
+    True
+    >>> 'new-tag' in user_browser.contents
+    False
 
 Now, let's add 'new-tag' again, and confirm it this time.
 
-  >>> user_browser.getLink(url="+edit").click()
-  >>> user_browser.getControl('Tags').value = 'new-tag'
-  >>> user_browser.getControl('Change').click()
+    >>> user_browser.getLink(url="+edit").click()
+    >>> user_browser.getControl('Tags').value = 'new-tag'
+    >>> user_browser.getControl('Change').click()
 
-  >>> user_browser.getControl('Create the new tag').click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1'
+    >>> user_browser.getControl('Create the new tag').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
-  >>> tags_div = extract_text(
-  ...       find_tag_by_id(user_browser.contents, 'bug-tags'))
+    >>> tags_div = extract_text(
+    ...       find_tag_by_id(user_browser.contents, 'bug-tags'))
 
-  >>> 'layout-test' in tags_div
-  False
-  >>> 'new-tag' in tags_div
-  True
-
+    >>> 'layout-test' in tags_div
+    False
+    >>> 'new-tag' in tags_div
+    True

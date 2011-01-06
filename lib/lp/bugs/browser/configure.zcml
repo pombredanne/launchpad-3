@@ -1176,4 +1176,13 @@
                 BugWatchSetNavigation"/>
     </facet>
 
+    <!-- Bug Subscription Filters -->
+    <facet facet="bugs">
+      <browser:url
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          path_expression="string:+filter/${id}"
+          attribute_to_parent="structural_subscription"
+          rootsite="bugs" />
+    </facet>
+
 </configure>

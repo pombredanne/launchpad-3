@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -284,6 +284,10 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    IPollSubset,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -328,6 +332,7 @@ from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
 from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -557,6 +562,10 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
@@ -1326,6 +1335,17 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show member photos'
         return Link(target, text, icon='team')
 
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a poll'
+        return Link(target, text, icon='add')
+
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
@@ -1410,6 +1430,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'moderate_mailing_list',
         'editlanguages',
         'map',
+        'polls',
+        'add_poll',
         'join',
         'leave',
         'add_my_teams',
@@ -1430,7 +1452,7 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'members', 'ppas']
+    links = ['profile', 'polls', 'members', 'ppas']
 
 
 class TeamMembershipView(LaunchpadView):
@@ -2920,6 +2942,21 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ''
 
     @cachedproperty
+    def openpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getOpenPolls()
+
+    @cachedproperty
+    def closedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getClosedPolls()
+
+    @cachedproperty
+    def notyetopenedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getNotYetOpenedPolls()
+
+    @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
@@ -3087,6 +3124,19 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
+
+    @property
+    def should_show_polls_portlet(self):
+        menu = TeamOverviewMenu(self.context)
+        return (
+            self.has_current_polls or self.closedpolls
+            or menu.add_poll().enabled)
+
+    @property
+    def has_current_polls(self):
+        """Return True if this team has any non-closed polls."""
+        assert self.context.isTeam()
+        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -4138,16 +4188,16 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        active_ppas = [
-            ppa for ppa in self.context.ppas
-            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
-        num_packages = sum(
-            ppa.getPublishedSources().count() for ppa in active_ppas)
-        if num_packages > 0:
+        has_ppa_with_published_packages = (
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                self.context, has_packages=True,
+                statuses=[ArchiveStatus.ACTIVE,
+                          ArchiveStatus.DELETING]) is not None)
+        if has_ppa_with_published_packages:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if num_packages > 0:
+        if has_ppa_with_published_packages:
             self.widgets['name'].hint = _(
                 'This user has an active PPA with packages published and '
                 'may not be renamed.')

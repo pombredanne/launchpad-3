@@ -71,3 +71,9 @@ class BinaryAndSourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     displayname = 'Select a Package'
     _orderBy = 'name'
     iterator = BinaryAndSourcePackageNameIterator
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # package names are always lowercase.
+        super_class = super(BinaryAndSourcePackageNameVocabulary, self)
+        return super_class.getTermByToken(token.lower())

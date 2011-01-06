@@ -107,6 +107,40 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+class TestLinkifyingBugs(TestCase):
+
+    def test_regular_bug_case_works(self):
+        test_strings = [
+            "bug 34434",
+            "bugnumber 34434",
+            "bug number 34434",
+            ]
+        expected_html = [
+            '<p><a href="/bugs/34434">bug 34434</a></p>',
+            '<p><a href="/bugs/34434">bugnumber 34434</a></p>',
+            '<p><a href="/bugs/34434">bug number 34434</a></p>',
+            ]
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
+    def test_things_do_not_link_if_they_should_not(self):
+        test_strings = [
+            "bugnumber.4",
+            "bug number.4",
+            "bugno.4",
+            "bug no.4",
+            ]
+        expected_html = [
+            "<p>bugnumber.4</p>",
+            "<p>bug number.4</p>",
+            "<p>bugno.4</p>",
+            "<p>bug no.4</p>",
+            ]
+        self.assertEqual(
+            expected_html,
+            [FormattersAPI(text).text_to_html() for text in test_strings])
+
 
 class TestLinkifyingProtocols(TestCase):
 
@@ -139,6 +173,7 @@ class TestLinkifyingProtocols(TestCase):
             'http://example.com/path_(with_parens)',
             '(http://example.com/path_(with_parens))',
             '(http://example.com/path_(with_parens)and_stuff)',
+            'http://example.com/path_(with_parens',
             ]
 
         expected_html = [
@@ -156,6 +191,10 @@ class TestLinkifyingProtocols(TestCase):
              'href="http://example.com/path_(with_parens)and_stuff">'
              'http://<wbr></wbr>example.<wbr></wbr>com'
              '/path_<wbr></wbr>(with_parens)<wbr></wbr>and_stuff</a>)</p>'),
+            ('<p><a rel="nofollow" '
+             'href="http://example.com/path_(with_parens">'
+             'http://<wbr></wbr>example.<wbr></wbr>com'
+             '/path_<wbr></wbr>(with_parens</a></p>'),           
             ]
 
         self.assertEqual(
@@ -266,7 +305,7 @@ class TestDiffFormatter(TestCase):
         html = FormattersAPI(diff).format_diff()
         line_numbers = find_tags_by_class(html, 'line-no')
         self.assertEqual(
-            ['1','2','3','4','5','6','7','8','9', '10', '11'],
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'],
             [tag.renderContents() for tag in line_numbers])
         text = find_tags_by_class(html, 'text')
         self.assertEqual(

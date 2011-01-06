@@ -187,7 +187,7 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
     # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
     pillar = bugtask.pillar
-    if pillar.bug_supervisor is None:
+    if pillar.bug_supervisor is None and pillar.official_malone:
         also_notified_subscribers.add(pillar.owner)
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)

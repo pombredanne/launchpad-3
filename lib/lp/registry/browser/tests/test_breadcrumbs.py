@@ -58,7 +58,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             http_url=http_url)
         crumbs = self.getBreadcrumbsForObject(mirror)
         last_crumb = crumbs[-1]
-        self.assertEqual("Example.com-archive", last_crumb.text)
+        self.assertEqual(mirror.displayname, last_crumb.text)
 
     def test_distributionmirror_withFtpUrl(self):
         # If no displayname, the breadcrumb text will be the mirror name,
@@ -70,7 +70,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             ftp_url=ftp_url)
         crumbs = self.getBreadcrumbsForObject(mirror)
         last_crumb = crumbs[-1]
-        self.assertEqual("Example.com-archive", last_crumb.text)
+        self.assertEqual(mirror.displayname, last_crumb.text)
 
 
 class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
@@ -104,6 +104,26 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
         last_crumb = crumbs[-1]
         self.assertEqual(self.milestone.name, last_crumb.text)
 
+
+class TestPollBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for an `IPoll`."""
+
+    def setUp(self):
+        super(TestPollBreadcrumb, self).setUp()
+        self.team = self.factory.makeTeam(displayname="Poll Team")
+        name = "pollo-poll"
+        title = "Marco Pollo"
+        proposition = "Be mine"
+        self.poll = self.factory.makePoll(
+            team=self.team,
+            name=name,
+            title=title,
+            proposition=proposition)
+
+    def test_poll(self):
+        crumbs = self.getBreadcrumbsForObject(self.poll)
+        last_crumb = crumbs[-1]
+        self.assertEqual(self.poll.title, last_crumb.text)
 
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 

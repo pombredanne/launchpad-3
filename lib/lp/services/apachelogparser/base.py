@@ -23,18 +23,16 @@ from lp.services.geoip.interfaces import IGeoIP
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
-def get_files_to_parse(root, file_names):
+def get_files_to_parse(file_paths):
     """Return an iterator of file and position where reading should start.
 
     The lines read from that position onwards will be the ones that have not
     been parsed yet.
 
-    :param root: The directory where the files are stored.
-    :param file_names: The names of the files.
+    :param file_paths: The paths to the files.
     """
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    for file_name in file_names:
-        file_path = os.path.join(root, file_name)
+    for file_path in file_paths:
         fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
         parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
