@@ -31,7 +31,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -450,7 +453,7 @@ class TestPersonSet(TestCaseWithFactory):
         team = self.factory.makeTeam()
         name_blacklist_set = getUtility(INameBlacklistSet)
         self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
-        self.store = IMasterStore(self.admin_exp)
+        self.store = IStore(self.admin_exp)
         self.store.flush()
         user = team.teamowner
         self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
