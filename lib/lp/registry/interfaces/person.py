@@ -1874,8 +1874,13 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(name):
-        """Is the given name blacklisted by Launchpad Administrators?"""
+    def isNameBlacklisted(name, user=None):
+        """Is the given name blacklisted by Launchpad Administrators?
+
+        :param name: The name to be checked.
+        :param user: The `IPerson` that wants to use the name. If the user
+            is an admin for the nameblacklist expression, he can use the name.
+        """
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
