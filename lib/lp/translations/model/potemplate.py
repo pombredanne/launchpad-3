@@ -32,12 +32,12 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    Func,
     In,
     Join,
     LeftJoin,
     Or,
     Select,
-    SQL,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -1480,8 +1480,10 @@ class POTemplateSharingSubset(object):
                 Or(
                   ProductSeries.product == self.product,
                   In(
-                     SQL("(DistroSeries.distribution, "
-                         "POTemplate.sourcepackagename)"),
+                     Func(
+                         'ROW',
+                         DistroSeries.distributionID,
+                         POTemplate.sourcepackagenameID),
                      subquery))))
 
     def _queryBySourcepackagename(self, templatename_clause):
