@@ -319,13 +319,11 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
 
     def test_getSharingPOTemplates_product_multiple_series(self):
         # Sharing templates for a product include the same templates from
-        # a linked source package, even from multiple product series.
-        # But templates for the same sourcepackagename are not returned
-        # if they are not linked.
+        # a linked source package, even from multiple product series and
+        # multiple distro series.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
-        # This will not be returned.
-        self.factory.makePOTemplate(
+        warty_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
         self.factory.makeSourcePackagePublishingHistory(
@@ -336,15 +334,17 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         templates = self._assertStatements(
             1, subset.getSharingPOTemplates(self.templatename))
 
-        self.assertContentEqual(
-            [self.trunk_template, self.hoary_template, stable_template],
-            templates)
+        expected_templates = [
+            self.trunk_template,
+            self.hoary_template,
+            stable_template,
+            warty_template,
+            ]
+        self.assertContentEqual(expected_templates, templates)
 
     def test_getSharingPOTemplates_package_multiple_series(self):
         # Sharing templates for a source package include the same templates 
         # from a linked product, even with multiple product series.
-        # To include templates from other source packages, the product must
-        # be linked to that one, too.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
         warty_template = self.factory.makePOTemplate(
@@ -362,10 +362,13 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         templates = self._assertStatements(
             1, subset.getSharingPOTemplates(self.templatename))
 
-        self.assertContentEqual(
-            [self.trunk_template, self.hoary_template,
-             stable_template, warty_template],
-            templates)
+        expected_templates = [
+            self.trunk_template,
+            self.hoary_template,
+            stable_template,
+            warty_template,
+            ]
+        self.assertContentEqual(expected_templates, templates)
 
     def test_getSharingPOTemplates_package_name_changed(self):
         # When the name of a package changes (but not the name of the
@@ -490,25 +493,71 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             templates)
 
     def test_getSharingPOTemplates_package_different_products(self):
+        # A package from different distroseries can be packaging different
+        # products. These products may also have templates in different
+        # series which are not linked to the package but have the same name.
         warty_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
         warty_sourcepackage = self.factory.makeSourcePackage(
                 self.packagename, self.warty)
         warty_productseries = self.factory.makeProductSeries()
+        warty_productseries_template = self.factory.makePOTemplate(
+            productseries=warty_productseries, name=self.templatename)
         warty_sourcepackage.setPackaging(warty_productseries, self.owner)
+        
+        other_productseries = self.factory.makeProductSeries(
+            product=warty_productseries.product)
+        other_productseries_template = self.factory.makePOTemplate(
+            productseries=other_productseries, name=self.templatename)
 
         hoary_sourcepackage = self.factory.makeSourcePackage(
                 self.packagename, self.hoary)
-        hoary_productseries = self.factory.makeProductSeries()
-        hoary_sourcepackage.setPackaging(hoary_productseries, self.owner)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
 
         subset = self.potemplateset.getSharingSubset(
                 distribution=self.ubuntu, sourcepackagename=self.packagename)
         templates = self._assertStatements(
             1, subset.getSharingPOTemplates(self.templatename))
 
-        self.assertContentEqual([warty_template], templates)
+        expected_templates = [
+            self.hoary_template,
+            self.trunk_template,
+            warty_template,
+            warty_productseries_template,
+            other_productseries_template,
+            ]
+        self.assertContentEqual(expected_templates, templates)
+
+    def test_getSharingPOTemplates_product_different_packages(self):
+        # A product can be packaged in different packages which may also have
+        # sharing templates in series that are not linked.
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        warty_sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, self.warty)
+        warty_productseries = self.factory.makeProductSeries()
+        warty_productseries_template = self.factory.makePOTemplate(
+            productseries=warty_productseries, name=self.templatename)
+        warty_sourcepackage.setPackaging(warty_productseries, self.owner)
+
+        hoary_sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, self.hoary)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
+
+        subset = self.potemplateset.getSharingSubset(
+                distribution=self.ubuntu, sourcepackagename=self.packagename)
+        templates = self._assertStatements(
+            1, subset.getSharingPOTemplates(self.templatename))
+
+        expected_templates = [
+            self.hoary_template,
+            self.trunk_template,
+            warty_template,
+            warty_productseries_template,
+            ]
+        self.assertContentEqual(expected_templates, templates)
 
     def test_getSharingPOTemplates_product_different_names_same_series(self):
         # A product may be packaged into differently named packages even in
