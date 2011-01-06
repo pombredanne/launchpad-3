@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1784,6 +1784,8 @@ BugMessage""" % sqlvalues(self.id))
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
         """
+        assert user is not None, "User may not be None"
+
         if user.id in self._known_viewers:
             return True
         if not self.private:
@@ -1793,9 +1795,14 @@ BugMessage""" % sqlvalues(self.id))
             # Admins can view all bugs.
             return True
         else:
-            # This is a private bug. Only explicit subscribers may view it.
+            # This is a private bug. Explicit subscribers may view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Assignees to bugtasks can also see the private bug.
+            for bugtask in self.bugtasks:
+                if user.inTeam(bugtask.assignee):
                     self._known_viewers.add(user.id)
                     return True
         return False
