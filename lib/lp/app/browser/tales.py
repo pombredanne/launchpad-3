@@ -1642,22 +1642,6 @@ class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
                 'owner': self._context.owner.displayname}
 
 
-class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for ISourcePackageRecipe objects."""
-
-    _link_summary_template = '%(name)s [%(owner)s/%(archive)s]'
-
-    def _link_summary_values(self):
-        if self._context.recipe is None:
-            name = 'build for deleted recipe'
-        else:
-            branch_name = self._context.recipe.base_branch.unique_name
-            name = '%s recipe build' % branch_name
-        return {'name': name,
-                'owner': self._context.archive.owner.name,
-                'archive': self._context.archive.name}
-
-
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
