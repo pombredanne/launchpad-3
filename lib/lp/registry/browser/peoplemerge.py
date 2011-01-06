@@ -52,56 +52,6 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
-class RequestPeopleMergeView(LaunchpadFormView):
-    """The view for the page where the user asks a merge of two accounts.
-
-    If the dupe account have only one email address we send a message to that
-    address and then redirect the user to other page saying that everything
-    went fine. Otherwise we redirect the user to another page where we list
-    all email addresses owned by the dupe account and the user selects which
-    of those (s)he wants to claim.
-    """
-
-    label = 'Merge Launchpad accounts'
-    page_title = label
-    schema = IRequestPeopleMerge
-
-    @property
-    def cancel_url(self):
-        return canonical_url(getUtility(IPersonSet))
-
-    @action('Continue', name='continue')
-    def continue_action(self, action, data):
-        dupeaccount = data['dupe_person']
-        if dupeaccount == self.user:
-            # Please, don't try to merge you into yourself.
-            return
-
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
-        emails_count = emails.count()
-        if emails_count > 1:
-            # The dupe account have more than one email address. Must redirect
-            # the user to another page to ask which of those emails (s)he
-            # wants to claim.
-            self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
-            return
-
-        assert emails_count == 1
-        email = emails[0]
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        # Need to remove the security proxy because the dupe account may have
-        # hidden email addresses.
-        token = logintokenset.new(
-            self.user, login, removeSecurityProxy(email).email,
-            LoginTokenType.ACCOUNTMERGE)
-
-        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.
-        import canonical.database.sqlbase
-        canonical.database.sqlbase.flush_database_updates()
-        token.sendMergeRequestEmail()
-        self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
 class AdminMergeBaseView(LaunchpadFormView):
@@ -507,3 +457,54 @@ class RequestPeopleMergeMultipleEmailsView:
     def email_hidden(self):
         """Does the duplicate account hide email addresses?"""
         return self.dupe.hide_email_addresses
+    
+class RequestPeopleMergeView(LaunchpadFormView):
+    """The view for the page where the user asks a merge of two accounts.
+
+    If the dupe account have only one email address we send a message to that
+    address and then redirect the user to other page saying that everything
+    went fine. Otherwise we redirect the user to another page where we list
+    all email addresses owned by the dupe account and the user selects which
+    of those (s)he wants to claim.
+    """
+
+    label = 'Merge Launchpad accounts'
+    page_title = label
+    schema = IRequestPeopleMerge
+
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(IPersonSet))
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        dupeaccount = data['dupe_person']
+        if dupeaccount == self.user:
+            # Please, don't try to merge you into yourself.
+            return
+
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails_count = emails.count()
+        if emails_count > 1:
+            # The dupe account have more than one email address. Must redirect
+            # the user to another page to ask which of those emails (s)he
+            # wants to claim.
+            self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
+            return
+
+        assert emails_count == 1
+        email = emails[0]
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        token = logintokenset.new(
+            self.user, login, removeSecurityProxy(email).email,
+            LoginTokenType.ACCOUNTMERGE)
+
+        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
+        #      improves problems with merge people tests.
+        import canonical.database.sqlbase
+        canonical.database.sqlbase.flush_database_updates()
+        token.sendMergeRequestEmail()
+        self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id
