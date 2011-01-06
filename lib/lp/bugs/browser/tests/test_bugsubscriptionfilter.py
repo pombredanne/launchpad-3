@@ -223,10 +223,6 @@ class TestBugSubscriptionFilterView(
         self.view = create_initialized_view(
             self.subscription_filter, "+definition")
 
-    def test_page_title(self):
-        # The page title is static.
-        self.assertEqual(u"Bug filter", self.view.page_title)
-
     def test_description(self):
         # If the description is not set then the empty string is returned.
         self.assertEqual(u"", self.view.description)

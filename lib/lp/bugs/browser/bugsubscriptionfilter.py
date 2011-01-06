@@ -30,14 +30,12 @@ class BugSubscriptionFilterView(LaunchpadView):
     The properties and methods herein are intended to construct a view
     something like:
 
-      Filter: "A filter description"
+      Bug mail filter "A filter description"
         Matches when status is New, Confirmed, or Triaged
         *and* importance is High, Medium, or Low
         *and* the bug is tagged with bar or foo.
 
     """
-
-    page_title = u"Bug filter"
 
     @property
     def description(self):
