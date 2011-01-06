@@ -489,6 +489,27 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             [self.trunk_template, self.hoary_template, warty_template],
             templates)
 
+    def test_getSharingPOTemplates_package_different_products(self):
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        warty_sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, self.warty)
+        warty_productseries = self.factory.makeProductSeries()
+        warty_sourcepackage.setPackaging(warty_productseries, self.owner)
+
+        hoary_sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, self.hoary)
+        hoary_productseries = self.factory.makeProductSeries()
+        hoary_sourcepackage.setPackaging(hoary_productseries, self.owner)
+
+        subset = self.potemplateset.getSharingSubset(
+                distribution=self.ubuntu, sourcepackagename=self.packagename)
+        templates = self._assertStatements(
+            1, subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual([warty_template], templates)
+
     def test_getSharingPOTemplates_product_different_names_same_series(self):
         # A product may be packaged into differently named packages even in
         # the same distroseries. Must use different product series, though.
