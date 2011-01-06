@@ -545,7 +545,8 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
         
-        other_distroseries = self.makeDistroSeries(distribution=self.ubuntu)
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=self.ubuntu)
         other_distroseries_template = self.factory.makePOTemplate(
             distroseries=other_distroseries,
             sourcepackagename=other_sourcepackagename,
