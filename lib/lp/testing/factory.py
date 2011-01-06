@@ -7,6 +7,7 @@
 
 This module should not contain tests (but it should be tested).
 """
+from lp.code.model.recipebuild import RecipeBuildRecord
 
 __metaclass__ = type
 __all__ = [
@@ -36,10 +37,12 @@ from operator import (
     isSequenceType,
     )
 import os
+from pytz import UTC
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
+import transaction
 from types import InstanceType
 import warnings
 
@@ -91,7 +94,6 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -104,7 +106,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
-    SpecificationGoalStatus,
     SpecificationPriority,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -205,11 +206,6 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.poll import (
-    IPollSet,
-    PollAlgorithm,
-    PollSecrecy,
-    )
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -226,6 +222,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
@@ -726,16 +723,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             for member in members:
                 naked_team.addMember(member, owner)
         return team
-
-    def makePoll(self, team, name, title, proposition,
-                 poll_type=PollAlgorithm.SIMPLE):
-        """Create a new poll which starts tomorrow and lasts for a week."""
-        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
-        datecloses = dateopens + timedelta(days=7)
-        return getUtility(IPollSet).new(
-            team, name, title, proposition, dateopens, datecloses,
-            PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=poll_type)
 
     def makeTranslationGroup(self, owner=None, name=None, title=None,
                              summary=None, url=None):
@@ -1284,6 +1271,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranch()
         else:
             source_branch = merge_proposal.source_branch
+
         def make_revision(parent=None):
             sequence = source_branch.revision_history.count() + 1
             if parent is None:
@@ -1316,7 +1304,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if author is None:
             author = self.getUniqueString('author')
         elif IPerson.providedBy(author):
-            author = author.preferredemail.email
+            author = removeSecurityProxy(author).preferredemail.email
         if revision_date is None:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:
@@ -1627,9 +1615,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         mail = SignedMessage()
         if email_address is None:
             person = self.makePerson()
-            email_address = person.preferredemail.email
+            email_address = removeSecurityProxy(person).preferredemail.email
         mail['From'] = email_address
-        mail['To'] = self.makePerson().preferredemail.email
+        mail['To'] = removeSecurityProxy(
+            self.makePerson()).preferredemail.email
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
@@ -2285,6 +2274,96 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         store.add(bq)
         return bq
 
+    def makeRecipeBuildRecords(self, num_recent_records=1,
+                               num_records_outside_epoch=0, epoch_days=30):
+        """Create some recipe build records.
+
+        A RecipeBuildRecord is a named tuple. Some records will be created
+        with archive of type ArchivePurpose.PRIMARY, others with type
+        ArchivePurpose.PPA. Some build records with be created with a build
+        status of fully built and some will be created with the daily build
+        option set to True and False. Only those records with daily build set
+        to True and build status to fully built are returned.
+        :param num_recent_records: the number of records within the specified
+         time window.
+        :param num_records_outside_epoch: the number of records outside the
+         specified time window.
+        :param epoch_days: the time window to use when creating records.
+        """
+
+        distroseries = self.makeDistroRelease()
+        sourcepackagename = self.makeSourcePackageName()
+        sourcepackage = self.makeSourcePackage(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+
+        records = []
+        records_outside_epoch = []
+        for x in range(num_recent_records+num_records_outside_epoch):
+            # Ensure we have both ppa and primary archives
+            if x%2 == 0:
+                purpose = ArchivePurpose.PPA
+            else:
+                purpose = ArchivePurpose.PRIMARY
+            archive = self.makeArchive(
+                purpose=purpose, distribution=distroseries.distribution)
+            # Make some daily and non-daily recipe builds.
+            for daily in (True, False):
+                recipeowner = self.makePerson()
+                recipe = self.makeSourcePackageRecipe(
+                    build_daily=daily,
+                    owner=recipeowner,
+                    name="Recipe_%s_%d" % (sourcepackagename.name, x),
+                    daily_build_archive=archive,
+                    distroseries=distroseries)
+                sprb = self.makeSourcePackageRecipeBuild(
+                    requester=recipeowner,
+                    recipe=recipe,
+                    sourcepackage=sourcepackage,
+                    distroseries=distroseries)
+                spr = self.makeSourcePackageRelease(
+                    source_package_recipe_build=sprb,
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
+
+                # Make some complete and incomplete builds.
+                for build_status in (
+                    BuildStatus.FULLYBUILT,
+                    BuildStatus.NEEDSBUILD,
+                    ):
+                    binary_build = self.makeBinaryPackageBuild(
+                            source_package_release=spr)
+                    naked_build = removeSecurityProxy(binary_build)
+                    naked_build.queueBuild()
+                    naked_build.status = build_status
+
+                    from random import randrange
+                    offset = randrange(0, epoch_days)
+                    now = datetime.now(UTC)
+                    if x >= num_recent_records:
+                        offset = epoch_days + 1 + offset
+                    naked_build.date_finished = (
+                        now - timedelta(days=offset))
+                    naked_build.date_started = (
+                        naked_build.date_finished - timedelta(minutes=5))
+                    rbr = RecipeBuildRecord(
+                        removeSecurityProxy(sourcepackagename),
+                        removeSecurityProxy(recipeowner),
+                        removeSecurityProxy(archive),
+                        removeSecurityProxy(recipe),
+                        naked_build.date_finished.replace(tzinfo=None))
+
+                    # Only return fully completed daily builds.
+                    if daily and build_status == BuildStatus.FULLYBUILT:
+                        if x < num_recent_records:
+                            records.append(rbr)
+                        else:
+                            records_outside_epoch.append(rbr)
+        # We need to explicitly commit because if don't, the records don't
+        # appear in the slave datastore.
+        transaction.commit()
+        return records, records_outside_epoch
+
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.
 
@@ -2317,7 +2396,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             class Changes:
                 architectures = ['source']
-            logger = QuietFakeLogger()
+            logger = BufferLogger()
             policy = BuildDaemonUploadPolicy()
             policy.distroseries = self.makeDistroSeries()
             policy.archive = self.makeArchive()
@@ -2572,10 +2651,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proberecord = mirror.newProbeRecord(library_alias)
         return proberecord
 
-    def makeMirror(self, distribution, displayname, country=None,
+    def makeMirror(self, distribution, displayname=None, country=None,
                    http_url=None, ftp_url=None, rsync_url=None,
                    official_candidate=False):
         """Create a mirror for the distribution."""
+        if displayname is None:
+            displayname = self.getUniqueString("mirror")
         # If no URL is specified create an HTTP URL.
         if http_url is None and ftp_url is None and rsync_url is None:
             http_url = self.getUniqueURL()
@@ -2717,7 +2798,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if dsc_maintainer_rfc822 is None:
             dsc_maintainer_rfc822 = '%s <%s>' % (
                 maintainer.displayname,
-                maintainer.preferredemail.email)
+                removeSecurityProxy(maintainer).preferredemail.email)
 
         if creator is None:
             creator = self.makePerson()
@@ -2785,23 +2866,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive = self.makeArchive()
             else:
                 archive = source_package_release.upload_archive
-        if source_package_release is None:
-            multiverse = self.makeComponent(name='multiverse')
-            source_package_release = self.makeSourcePackageRelease(
-                archive, component=multiverse)
-            self.makeSourcePackagePublishingHistory(
-                distroseries=source_package_release.upload_distroseries,
-                archive=archive, sourcepackagerelease=source_package_release)
         if processor is None:
             processor = self.makeProcessor()
         if distroarchseries is None:
+            if source_package_release is not None:
+                distroseries = source_package_release.upload_distroseries
+            else:
+                distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
-                distroseries=source_package_release.upload_distroseries,
+                distroseries=distroseries,
                 processorfamily=processor.family)
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
+        if source_package_release is None:
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse,
+                distroseries=distroarchseries.distroseries)
+            self.makeSourcePackagePublishingHistory(
+                distroseries=source_package_release.upload_distroseries,
+                archive=archive, sourcepackagerelease=source_package_release,
+                pocket=pocket)
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
@@ -2922,7 +3009,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority = PackagePublishingPriority.OPTIONAL
 
         if binarypackagerelease is None:
+            # Create a new BinaryPackageBuild and BinaryPackageRelease
+            # in the same archive and suite.
+            binarypackagebuild = self.makeBinaryPackageBuild(
+                archive=archive, distroarchseries=distroarchseries,
+                pocket=pocket)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
                 priority=priority)
@@ -3094,7 +3187,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         msg['Message-Id'] = make_msgid('launchpad')
         msg['Date'] = formatdate()
         msg['To'] = to
-        msg['From'] = sender.preferredemail.email
+        msg['From'] = removeSecurityProxy(sender).preferredemail.email
         msg['Subject'] = 'Sample'
 
         if attachments is None:
@@ -3131,7 +3224,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             timezone=0)
         email = None
         if sender is not None:
-            email = sender.preferredemail.email
+            email = removeSecurityProxy(sender).preferredemail.email
         return self.makeSignedMessage(
             body='My body', subject='My subject',
             attachment_contents=''.join(md.to_lines()),
@@ -3259,7 +3352,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePackageDiff(self, from_source=None, to_source=None,
                         requester=None, status=None, date_fulfilled=None,
-                        diff_content=None):
+                        diff_content=None, diff_filename=None):
         """Create a new `PackageDiff`."""
         if from_source is None:
             from_source = self.makeSourcePackageRelease()
@@ -3273,7 +3366,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_fulfilled = UTC_NOW
         if diff_content is None:
             diff_content = self.getUniqueString("packagediff")
-        lfa = self.makeLibraryFileAlias(content=diff_content)
+        lfa = self.makeLibraryFileAlias(
+            filename=diff_filename, content=diff_content)
         return ProxyFactory(
             PackageDiff(
                 requester=requester, from_source=from_source,

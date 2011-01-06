@@ -14,7 +14,7 @@ from lp.blueprints.interfaces.specification import (
     )
 from lp.testing import (
     launchpadlib_for,
-    launchpadlib_for_anonymous,
+    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
@@ -154,6 +154,16 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         self.assertEqual(1, spec_webservice.dependencies.total_size)
         self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
 
+    def test_representation_contains_bug_links(self):
+        spec = self.factory.makeSpecification()
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            spec.linkBug(bug)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.bugs.total_size)
+        self.assertEqual(bug.id, spec_webservice.bugs[0].id)
+
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
@@ -226,7 +236,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # Need to endInteraction() because launchpadlib_for_anonymous() will
         # setup a new one.
         endInteraction()
-        lplib = launchpadlib_for_anonymous('lplib-test', version='devel')
+        lplib = launchpadlib_for('lplib-test', person=None, version='devel')
         ws_product = ws_object(lplib, product)
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"], ws_product.all_specifications)

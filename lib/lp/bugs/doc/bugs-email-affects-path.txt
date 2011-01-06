@@ -1,4 +1,5 @@
-= The 'affects' path in the Bugs e-mail interface =
+The 'affects' path in the Bugs e-mail interface
+===============================================
 
 When choosing which bugtask certain e-mail commands should modify, the
 'affects' command is used. It accepts a single argument, the name of the
@@ -33,10 +34,12 @@ on it, so an exception with an appropriate error message is raised.
     ...
     BugTargetNotFound: gnome is a group of projects. To report a bug,
                        you need to specify which of these projects the
-                       bug applies to: applets, evolution,
-                       gnome-terminal, gnomebaker, netapplet
+                       bug applies to: evolution, gnome-terminal, applets,
+                       netapplet, gnomebaker
 
-== Getting a product ==
+
+Getting a product
+-----------------
 
 Getting a product is done by specifying the name of the product.
 
@@ -59,7 +62,9 @@ Inactive products are treated like non-existant ones.
     BugTargetNotFound: There is no project named 'unassigned'
                        registered in Launchpad.
 
-== Getting a product series ==
+
+Getting a product series
+------------------------
 
 A product series is a part of a product, so both the product and series
 name have to be given, separated with a slash.
@@ -89,7 +94,9 @@ exception with an appropriate error is raised.
     ...
     BugTargetNotFound: Unexpected path components: foo
 
-== Getting a distribution ==
+
+Getting a distribution
+----------------------
 
 Getting a distribution is done by specifying the name of the
 distribution.
@@ -101,14 +108,18 @@ distribution.
     >>> ubuntu.name
     u'ubuntu'
 
-=== Getting a source package in a distribution ===
+
+Getting a source package in a distribution
+..........................................
 
 A distribution source package is a part of a distribution, so both the
 distribution and package name has to be specified when getting such a
 package.
 
-    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
-    >>> ubuntu_evolution = AffectsEmailCommand.getBugTarget('ubuntu/evolution')
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
+    >>> ubuntu_evolution = AffectsEmailCommand.getBugTarget(
+    ...     'ubuntu/evolution')
     >>> IDistributionSourcePackage.providedBy(ubuntu_evolution)
     True
     >>> ubuntu_evolution.name
@@ -133,7 +144,9 @@ exception with an appropriate error is raised.
     ...
     BugTargetNotFound: Unexpected path components: foo
 
-== Getting a distribution series ==
+
+Getting a distribution series
+-----------------------------
 
 A distribution series is a part of a distribution, so both the
 distribution and series has to be specified.
@@ -152,7 +165,8 @@ distribution source package, so the same error handling is used for
 both.
 
 
-== Getting a source package in a distribution series ==
+Getting a source package in a distribution series
+-------------------------------------------------
 
 When getting a source package within a distribution series, the source
 package is given after the distribution series.
@@ -186,7 +200,9 @@ exception with an appropriate error is raised.
     ...
     BugTargetNotFound: Unexpected path components: foo
 
-== Error correction ==
+
+Error correction
+----------------
 
 Previously the affects path was resolved in the same way, except that
 either /distros/ or /products/ was needed in the front. Since people are

@@ -181,7 +181,7 @@ def new_list_for_team(team):
     """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    experts = getUtility(ILaunchpadCelebrities).registry_experts
     reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)

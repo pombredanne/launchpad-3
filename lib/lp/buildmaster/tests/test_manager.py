@@ -33,9 +33,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.scripts.logger import (
-    QuietFakeLogger,
-    )
+from lp.services.log.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
@@ -124,7 +122,7 @@ class TestSlaveScannerScan(TestCase):
         """
         if builder_name is None:
             builder_name = BOB_THE_BUILDER_NAME
-        scanner = SlaveScanner(builder_name, QuietFakeLogger())
+        scanner = SlaveScanner(builder_name, BufferLogger())
         scanner.logger.name = 'slave-scanner'
 
         return scanner

@@ -16,10 +16,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -49,8 +49,8 @@ class TestPublishDistro(TestNativePublishingBase):
         publishdistro.add_options(parser)
         options, args = parser.parse_args(args=args)
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        result = publishdistro.run_publisher(options, self.layer.txn,
-                                             log=QuietFakeLogger())
+        publishdistro.run_publisher(
+            options, self.layer.txn, log=BufferLogger())
         self.layer.switchDbUser('launchpad')
 
     def runPublishDistroScript(self):

@@ -508,6 +508,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     field_names = ['welcome_message']
     label = "Mailing list configuration"
     custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
+    page_title = label
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.
@@ -745,7 +746,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """
         is_moderator = check_permission('launchpad.Moderate', self.context)
         is_mailing_list_manager = check_permission(
-            'launchpad.MailingListManager', self.context)
+            'launchpad.Moderate', self.context)
         if is_moderator or is_mailing_list_manager:
             return self.getListInState(*PURGE_STATES) is not None
         else:

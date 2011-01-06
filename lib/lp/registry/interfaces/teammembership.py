@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
@@ -109,6 +110,9 @@ class TeamMembershipStatus(DBEnumeratedType):
         You have been invited as a member of this team but the invitation has
         been declined.
         """)
+
+
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class ITeamMembership(Interface):

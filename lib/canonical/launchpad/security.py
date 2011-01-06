@@ -43,6 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -113,7 +114,6 @@ from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IProjectGroupMilestone,
@@ -130,11 +130,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.poll import (
-    IPoll,
-    IPollOption,
-    IPollSubset,
-    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -188,6 +183,9 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -508,7 +506,7 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
     usedfor = ISpecificationPublic
 
 
-class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+class EditSpecificationByRelatedPeople(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
     the spec target (distro/product) or goal (distroseries/productseries).
@@ -525,6 +523,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
+                user.isOneOfDrivers(self.obj.target) or
                 user.isOneOf(
                     self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
@@ -744,6 +743,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 # with launchpad.View so that this adapter is used.  For now, though, it's
 # going to be used only on the webservice (which explicitly checks for
 # launchpad.View) so that we don't leak memberships of private teams.
+
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ITeamMembership
@@ -856,26 +856,6 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
-
-
-class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPoll
-
-
-class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollSubset
-
-
-class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOption
-
-    def checkAuthenticated(self, user):
-        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -1275,8 +1255,6 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
             EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753:
-# This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
@@ -1484,9 +1462,6 @@ class AdminBuilder(AdminByBuilddAdmin):
     usedfor = IBuilder
 
 
-# XXX cprov 2006-07-31: As soon as we have external builders, as presumed
-# in the original plan, we should grant some rights to the owners and
-# that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuilder
@@ -1653,8 +1628,13 @@ class AppendQuestion(AdminQuestion):
         """Allow user who can administer the question and answer contacts."""
         if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for answer_contact in self.obj.target.answer_contacts:
-            if user.inTeam(answer_contact):
+        question_target = self.obj.target
+        questions_person = IQuestionsPerson(user.person)
+        for target in questions_person.getDirectAnswerQuestionTargets():
+            if target == question_target:
+                return True
+        for target in questions_person.getTeamAnswerQuestionTargets():
+            if target == question_target:
                 return True
         return False
 
@@ -1677,8 +1657,15 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
         if EditByOwnersOrAdmins.checkAuthenticated(self, user):
             return True
         if IQuestionTarget.providedBy(self.obj):
-            for answer_contact in self.obj.answer_contacts:
-                if user.inTeam(answer_contact):
+            # Adapt QuestionTargets to FAQTargets to ensure the correct
+            # object is being examined; the implementers are not synonymous.
+            faq_target = IFAQTarget(self.obj)
+            questions_person = IQuestionsPerson(user.person)
+            for target in questions_person.getDirectAnswerQuestionTargets():
+                if IFAQTarget(target) == faq_target:
+                    return True
+            for target in questions_person.getTeamAnswerQuestionTargets():
+                if IFAQTarget(target) == faq_target:
                     return True
         return False
 
@@ -1739,6 +1726,24 @@ class ViewLanguage(AnonymousAuthorization):
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
+
+
+class AdminCustomLanguageCode(AuthorizationBase):
+    """Controls administration for a custom language code.
+
+    Whoever can admin a product's or distribution's translations can also
+    admin the custom language codes for it.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = ICustomLanguageCode
+
+    def checkAuthenticated(self, user):
+        if self.obj.product is not None:
+            return AdminProductTranslations(
+                self.obj.product).checkAuthenticated(user)
+        else:
+            return AdminDistributionTranslations(
+                self.obj.distribution).checkAuthenticated(user)
 
 
 class AccessBranch(AuthorizationBase):
@@ -1828,6 +1833,12 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistributionSourcePackageTranslations(
+    AdminDistroSeriesTranslations):
+    """DistributionSourcePackage objects link to a distribution, too."""
+    usedfor = IDistributionSourcePackage
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -2371,49 +2382,14 @@ class ViewSourcePackageRelease(AuthorizationBase):
         return False
 
 
-class MailingListApprovalByExperts(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IMailingListSet
-
-    def checkAuthenticated(self, user):
-        return user.in_mailing_list_experts
-
-
-class ConfigureTeamMailingList(AuthorizationBase):
-    permission = 'launchpad.MailingListManager'
-    usedfor = ITeam
-
-    def checkAuthenticated(self, user):
-        """Check to see if the user can manage a mailing list.
-
-        A team's owner or administrator, the Launchpad administrators, and
-        Launchpad mailing list experts can all manage a team's mailing list
-        through its +mailinglist page.
-
-        :param user: The user whose permission is being checked.
-        :type user: `IPerson`
-        :return: True if the user can manage a mailing list, otherwise False.
-        :rtype: boolean
-        """
-        # The team owner, the Launchpad mailing list experts and the Launchpad
-        # administrators can all view a team's +mailinglist page.
-        team = ITeam(self.obj)
-        is_team_owner = (
-            team is not None and team in user.person.getAdministratedTeams())
-        return is_team_owner or user.in_admin or user.in_mailing_list_experts
-
-
 class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
     def checkUnauthenticated(self):
         """See `AuthorizationBase`."""
-        # Email addresses without an associated Person cannot be seen by
-        # anonymous users.
-        if self.obj.person is None:
-            return False
-        return not self.obj.person.hide_email_addresses
+        # Anonymous users can never see email addresses.
+        return False
 
     def checkAccountAuthenticated(self, account):
         """Can the user see the details of this email address?

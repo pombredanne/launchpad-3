@@ -1,4 +1,5 @@
-= Merging =
+Merging
+=======
 
 For many reasons (i.e. a gina run) we could have duplicated accounts in
 Launchpad. Once a duplicated account is identified, we need to allow the user
@@ -19,7 +20,8 @@ different email address.
     >>> marilize = personset.getByName('marilize')
 
 
-== Sanity checks ==
+Sanity checks
+-------------
 
 We can't merge an account that still has email addresses attached to it
 
@@ -29,7 +31,8 @@ We can't merge an account that still has email addresses attached to it
     AssertionError: ...
 
 
-== Preparing test person for the merge ==
+Preparing test person for the merge
+-----------------------------------
 
 Merging people involves updating the merged person relationships. Let's
 put the person we will merge into some of those.
@@ -57,10 +60,11 @@ Marilize and save it for later comparison.
     marilize
     >>> sampleperson_old_karma = sample.karma
 
-Branches whose owner is being merged are uniquified by appending '-N' where N
-is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by marilize, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
-Person' to test that branch name uniquifying works.
+Branches whose owner is being merged are uniquified by appending '-N'
+where N is a unique integer. We create "peoplemerge" and
+"peoplemerge-1" branches owned by marilize, and a "peoplemerge" and
+"peoplemerge-1" branches owned by 'Sample Person' to test that branch
+name uniquifying works.
 
 Branches with smaller IDs will be processed first, so we create "peoplemerge"
 first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
@@ -81,9 +85,9 @@ to implement, and it be should extremely rare for the case to occur.
     >>> peoplemerge11 = factory.makePersonalBranch(
     ...     name='peoplemerge-1', owner=marilize)
 
-'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while marilize is an active member. After the merge, 'Sample Person' will be an
-active member of that team.
+'Sample Person' is a deactivated member of the 'Ubuntu Translators'
+team, while marilize is an active member. After the merge, 'Sample
+Person' will be an active member of that team.
 
     >>> sample in ubuntu_translators.inactivemembers
     True
@@ -102,7 +106,8 @@ transferred to Sample Person.
     u'Marilize Coetzee'
 
 
-== Do the merge! ==
+Do the merge!
+-------------
 
     # Now we remove the only email address marilize had, so that we can merge
     # it.  First we need to change its status, though, because we can't delete
@@ -119,7 +124,8 @@ transferred to Sample Person.
     >>> personset.merge(marilize, sample)
 
 
-== Merge results ==
+Merge results
+-------------
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
@@ -336,37 +342,30 @@ the winner, and the to_person will be unaffected.
     loser, winner,
 
 
-== Merging teams ==
+Merging teams
+-------------
 
 Merging of teams is also possible and uses the same API used for merging
-people.  Note, though, that when merging teams, its polls will not be
-carried over to the remaining team.  Team memberships, on the other hand,
-are carried over just like when merging people.
+people.  Team memberships are carried over just like when merging people.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
     >>> ignored = launchpad_devs.addMember(
     ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
-    >>> today = datetime.now(pytz.timezone('UTC'))
+    >>> today = datetime.now(pytz.UTC)
     >>> tomorrow = today + timedelta(days=1)
-    >>> poll = IPollSubset(test_team).new(
-    ...     'test-poll', 'Title', 'Proposition', today, tomorrow,
-    ...     PollSecrecy.OPEN, allowspoilt=True)
 
-    # test_team has a superteam, one active member and a poll.
+    # test_team has a superteam and one active member.
     >>> [team.name for team in test_team.super_teams]
     [u'launchpad']
     >>> test_team.teamowner.name
     u'name12'
     >>> [member.name for member in test_team.allmembers]
     [u'name12']
-    >>> list(IPollSubset(test_team).getAll())
-    [<Poll at ...]
 
-    # Landscape-developers has no super teams, two members and no polls.
+    # Landscape-developers has no super teams and two members.
     >>> landscape = personset.getByName('landscape-developers')
     >>> [team.name for team in landscape.super_teams]
     []
@@ -374,8 +373,6 @@ are carried over just like when merging people.
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
-    >>> list(IPollSubset(landscape).getAll())
-    []
 
 Now we try to merge them, but since test_team has active members it can't be
 merged.
@@ -425,16 +422,29 @@ active members of the team so that we can perform the merge.
     >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
     >>> for team in test_team.super_teams:
     ...     test_team.retractTeamMembership(team, test_team.teamowner)
+
+
     >>> personset.merge(test_team, landscape)
 
-    # The resulting Landscape-developers no new super teams, has
-    # no polls and its members are still the same two from before the
-    # merge.
+    # The resulting Landscape-developers no new super teams and its
+    # members are still the same two from before the merge.
     >>> landscape.teamowner.name
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
     >>> [team.name for team in landscape.super_teams]
     []
-    >>> list(IPollSubset(landscape).getAll())
-    []
+
+A person with a PPA can't be merged.
+
+    >>> person_with_ppa = factory.makePerson()
+    >>> other_person = factory.makePerson()
+    >>> archive = person_with_ppa.createPPA()
+    >>> email = IMasterObject(person_with_ppa.preferredemail)
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> email.destroySelf()
+    >>> transaction.commit()
+    >>> personset.merge(person_with_ppa, other_person)
+    Traceback (most recent call last):
+    ...
+    AssertionError: from_person has a ppa in ACTIVE or DELETING status

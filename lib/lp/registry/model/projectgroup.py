@@ -169,7 +169,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def products(self):
-        return Product.selectBy(project=self, active=True, orderBy='name')
+        return Product.selectBy(
+            project=self, active=True, orderBy='displayname')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
@@ -193,7 +194,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.

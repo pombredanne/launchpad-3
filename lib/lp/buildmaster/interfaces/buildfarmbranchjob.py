@@ -8,6 +8,8 @@ __all__ = [
     'IBuildFarmBranchJob'
     ]
 
+from zope.interface import Attribute
+
 from lp.code.interfaces.branchjob import IBranchJob
 
 
@@ -18,3 +20,5 @@ class IBuildFarmBranchJob(IBranchJob):
     have a "build" attribute but do implement `IBranchJob`, so that the
     UI can render appropriate status information.
     """
+
+    build = Attribute("The `IBuildFarmJob` associated with this job.")

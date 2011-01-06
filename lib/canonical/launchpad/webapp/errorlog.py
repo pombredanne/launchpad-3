@@ -29,7 +29,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,

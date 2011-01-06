@@ -639,6 +639,7 @@ Email notifications to teams
 If a team has a contact email address, all notifications we send to the
 team will go to that address.
 
+    >>> login('no-priv@canonical.com')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
@@ -750,11 +751,11 @@ address:
     # First we'll define a utility function to help us displaying
     # the results.
 
-    >>> emailset = getUtility(IEmailAddressSet)
+    >>> naked_emailset = removeSecurityProxy(getUtility(IEmailAddressSet))
     >>> def print_people(results):
     ...     for person in results:
     ...         emails = [email.email
-    ...                   for email in emailset.getByPerson(person)]
+    ...                   for email in naked_emailset.getByPerson(person)]
     ...         print "%s (%s): %s" % (
     ...             person.displayname, person.name, emails)
 

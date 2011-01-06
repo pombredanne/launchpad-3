@@ -7,7 +7,12 @@
 
 __metaclass__ = type
 
+import codecs
 import os
+import re
+import sys
+import xmlrpclib
+from StringIO import StringIO
 
 from bzrlib import errors
 from bzrlib.bzrdir import (
@@ -43,6 +48,8 @@ from testtools.deferredruntest import (
 
 from twisted.internet import defer
 
+from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
@@ -68,6 +75,7 @@ from lp.codehosting.vfs.branchfs import (
     UnknownTransportType,
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.services.job.runner import TimeoutError
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -255,6 +263,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
+
         def check_control_file((transport, path)):
             self.assertEqual(
                 'default_stack_on = /%s\n' % branch.unique_name,
@@ -273,6 +282,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
 
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -289,6 +299,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual('.bzr/README', path)
             self.assertEqual(True, transport.is_readonly())
@@ -300,6 +311,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
         branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
         deferred = self.server.createBranch(branch_url)
         deferred = assert_fails_with(deferred, errors.PermissionDenied)
+
         def check_exception(exception):
             self.assertEqual(branch_url, exception.path)
             self.assertEqual(
@@ -328,6 +340,7 @@ class LaunchpadInternalServerTests:
 
         deferred = self.server.translateVirtualPath(
             '/%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -391,7 +404,6 @@ class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory,
         self.requester = self.factory.makePerson()
         self.server = DirectDatabaseLaunchpadServer(
             'lp-test://', MemoryTransport())
-
 
 
 class TestAsyncVirtualTransport(TestCaseInTempDir):
@@ -607,6 +619,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.readv, '%s/.bzr/hello.txt' % branch.unique_name,
             [(3, 2)])
+
         def get_chunk(generator):
             return generator.next()[1]
         deferred.addCallback(get_chunk)
@@ -622,6 +635,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.put_bytes,
             '%s/.bzr/goodbye.txt' % branch.unique_name, "Goodbye")
+
         def check_bytes_written(ignored):
             self.assertEqual(
                 "Goodbye", backing_transport.get_bytes('goodbye.txt'))
@@ -795,6 +809,7 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TestCase):
     run_tests_with = AsynchronousDeferredRunTest
 
     def _ensureDeferred(self, function, *args, **kwargs):
+
         def call_function_and_check_not_deferred():
             ret = function(*args, **kwargs)
             self.assertFalse(
@@ -1002,6 +1017,105 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         branch = self.make_branch(
             db_branch.unique_name, format=format_registry.get('2a')())
         self.assertFormatStringsPassed(branch)
+
+
+class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
+    """Test handling of errors when branchChange is called."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self._server = None
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.codehosting_api = frontend.getCodehostingEndpoint()
+        self.codehosting_api.branchChanged = self._replacement_branchChanged
+        self.requester = self.factory.makePerson()
+        self.backing_transport = MemoryTransport()
+        self.disable_directory_isolation()
+
+        # Trap stderr.
+        self.addCleanup(setattr, sys, 'stderr', sys.stderr)
+        self._real_stderr = sys.stderr
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
+
+        # To record generated oopsids
+        self.generated_oopsids = []
+
+    def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
+                                   last_revision, *format_strings):
+        """Log an oops and raise an xmlrpc fault."""
+
+        request = errorlog.ScriptRequest([
+                ('source', branch_id),
+                ('error-explanation', "An error occurred")])
+        try:
+            raise TimeoutError()
+        except TimeoutError:
+            f = sys.exc_info()
+            report = errorlog.globalErrorUtility.raising(f, request)
+            # Record the id for checking later.
+            self.generated_oopsids.append(report.id)
+            raise xmlrpclib.Fault(-1, report)
+
+    def get_server(self):
+        if self._server is None:
+            self._server = LaunchpadServer(
+                XMLRPCWrapper(self.codehosting_api), self.requester.id,
+                self.backing_transport)
+            self._server.start_server()
+            self.addCleanup(self._server.stop_server)
+        return self._server
+
+    def test_branchChanged_stderr_text(self):
+        # An unexpected error invoking branchChanged() results in a user
+        # friendly error printed to stderr (and not a traceback).
+
+        # Unlocking a branch calls branchChanged x 2 on the branch filesystem
+        # endpoint. We will then check the error handling.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        branch.lock_write()
+        branch.unlock()
+        stderr_text = sys.stderr.getvalue()
+
+        # The text printed to stderr should be like this:
+        # (we need the prefix text later for extracting the oopsid)
+        expected_fault_text_prefix = """
+        <Fault 380: 'An unexpected error has occurred while updating a
+        Launchpad branch. Please report a Launchpad bug and quote:"""
+        expected_fault_text = expected_fault_text_prefix + " OOPS-.*'>"
+
+        # For our test case, branchChanged() is called twice, hence 2 errors.
+        expected_stderr = ' '.join([expected_fault_text for x in range(2)])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected_stderr, stderr_text)
+
+        # Extract an oops id from the std error text.
+        # There will be 2 oops ids. The 2nd will be the oops for the last
+        # logged error report and the 1st will be in the error text from the
+        # error report.
+        oopsids = []
+        stderr_text = ' '.join(stderr_text.split())
+        expected_fault_text_prefix = ' '.join(
+            expected_fault_text_prefix.split())
+        parts = re.split(expected_fault_text_prefix, stderr_text)
+        for txt in parts:
+            if len(txt) == 0:
+                continue
+            txt = txt.strip()
+            # The oopsid ends with a '.'
+            oopsid = txt[:txt.find('.')]
+            oopsids.append(oopsid)
+
+        # Now check the error report - we just check the last one.
+        self.assertEqual(len(oopsids), 2)
+        error_report = self.oopses[-1]
+        # The error report oopsid should match what's print to stderr.
+        self.assertEqual(error_report.id, oopsids[1])
+        # The error report text should contain the root cause oopsid.
+        self.assertContainsString(
+            error_report.tb_text, self.generated_oopsids[1])
 
 
 class TestLaunchpadTransportReadOnly(BzrTestCase):

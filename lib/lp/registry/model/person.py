@@ -15,6 +15,7 @@ __all__ = [
     'JoinTeamEvent',
     'Owner',
     'Person',
+    'person_sort_key',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
@@ -22,7 +23,8 @@ __all__ = [
     'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
-    'WikiNameSet']
+    'WikiNameSet',
+    ]
 
 from datetime import (
     datetime,
@@ -232,7 +234,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -265,11 +270,15 @@ from lp.services.salesforce.interfaces import (
     VOUCHER_STATUSES,
     )
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -304,7 +313,7 @@ class ValidPersonCache(SQLBase):
     Note that it performs poorly at least some of the time, and if
     EmailAddress and Person are already being queried, its probably better to
     query Account directly. See bug
-    https://bugs.launchpad.net/launchpad-registry/+bug/615237 for some
+    https://bugs.launchpad.net/launchpad/+bug/615237 for some
     corroborating information.
     """
 
@@ -330,6 +339,16 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+_person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
+def person_sort_key(person):
+    """Identical to `person_sort_key` in the database."""
+    # Strip noise out of displayname. We do not have to bother with
+    # name, as we know it is just plain ascii.
+    displayname = _person_sort_re.sub(u'', person.displayname.lower())
+    return "%s, %s" % (displayname.strip(), person.name)
 
 
 class Person(
@@ -1473,7 +1492,6 @@ class Person(
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
-        
 
         # Remove all indirect TeamParticipation entries resulting from this
         # team. If this were just a select, it would be a complicated but
@@ -1499,8 +1517,9 @@ class Person(
                         (SELECT tm1.person from TeamMembership tm1
                             WHERE
                                 tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team);
-            ''', dict(team=self.id))
+                                tm1.team = TeamParticipation.team and
+                                tm1.status IN %(active_states)s);
+            ''', dict(team=self.id, active_states=ACTIVE_STATES))
 
         # Since we've updated the database behind Storm's back yet again,
         # we need to flush its caches, again.
@@ -1669,7 +1688,6 @@ class Person(
         #       The difference between the two is that
         #       getMembersWithPreferredEmails includes self, which is arguably
         #       wrong, but perhaps deliberate.
-        store = Store.of(self)
         origin = [
             Person,
             Join(TeamParticipation, TeamParticipation.person == Person.id),
@@ -1679,99 +1697,12 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        columns = [Person]
-        decorators = []
-        if need_karma:
-            # New people have no karmatotalcache rows.
-            origin.append(
-                LeftJoin(KarmaTotalCache,
-                    KarmaTotalCache.person == Person.id))
-            columns.append(KarmaTotalCache)
-        if need_ubuntu_coc:
-            columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                And(Person._is_ubuntu_coc_signer_condition(),
-                    SignedCodeOfConduct.ownerID == Person.id))),
-                name='is_ubuntu_coc_signer'))
-        if need_location:
-            # New people have no location rows
-            origin.append(
-                LeftJoin(PersonLocation,
-                    PersonLocation.person == Person.id))
-            columns.append(PersonLocation)
-        if need_archive:
-            # Not everyone has PPA's
-            # It would be nice to cleanly expose the soyuz rules for this to
-            # avoid duplicating the relationships.
-            origin.append(
-                LeftJoin(Archive, Archive.owner == Person.id))
-            columns.append(Archive)
-            conditions = And(conditions,
-                Or(Archive.id == None, And(
-                Archive.id == Select(Min(Archive.id),
-                    Archive.owner == Person.id, Archive),
-                Archive.purpose == ArchivePurpose.PPA)))
-        # checking validity requires having a preferred email.
-        if need_preferred_email and not need_validity:
-            # Teams don't have email, so a left join
-            origin.append(
-                LeftJoin(EmailAddress, EmailAddress.person == Person.id))
-            columns.append(EmailAddress)
-            conditions = And(conditions,
-                Or(EmailAddress.status == None,
-                    EmailAddress.status == EmailAddressStatus.PREFERRED))
-        if need_validity:
-            valid_stuff = Person._validity_queries()
-            origin.extend(valid_stuff["joins"])
-            columns.extend(valid_stuff["tables"])
-            decorators.extend(valid_stuff["decorators"])
-        if len(columns) == 1:
-            columns = columns[0]
-            # Return a simple ResultSet
-            return store.using(*origin).find(columns, conditions)
-        # Adapt the result into a cached Person.
-        columns = tuple(columns)
-        raw_result = store.using(*origin).find(columns, conditions)
-
-        def prepopulate_person(row):
-            result = row[0]
-            cache = get_property_cache(result)
-            index = 1
-            #-- karma caching
-            if need_karma:
-                karma = row[index]
-                index += 1
-                if karma is None:
-                    karma_total = 0
-                else:
-                    karma_total = karma.karma_total
-                cache.karma = karma_total
-            #-- ubuntu code of conduct signer status caching.
-            if need_ubuntu_coc:
-                signed = row[index]
-                index += 1
-                cache.is_ubuntu_coc_signer = signed
-            #-- location caching
-            if need_location:
-                location = row[index]
-                index += 1
-                cache.location = location
-            #-- archive caching
-            if need_archive:
-                archive = row[index]
-                index += 1
-                cache.archive = archive
-            #-- preferred email caching
-            if need_preferred_email and not need_validity:
-                email = row[index]
-                index += 1
-                cache.preferredemail = email
-            for decorator in decorators:
-                column = row[index]
-                index += 1
-                decorator(result, column)
-            return result
-        return DecoratedResultSet(raw_result,
-            result_decorator=prepopulate_person)
+        return PersonSet()._getPrecachedPersons(
+            origin, conditions, store=Store.of(self),
+            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location, need_archive=need_archive,
+            need_preferred_email=need_preferred_email,
+            need_validity=need_validity)
 
     def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
@@ -2743,6 +2674,29 @@ class Person(
         """See `IPerson`."""
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    @property
+    def has_existing_ppa(self):
+        """See `IPerson`."""
+        result = Store.of(self).find(
+            Archive,
+            Archive.owner == self.id,
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.status.is_in(
+                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
+        return not result.is_empty()
+
+    @property
+    def has_ppa_with_published_packages(self):
+        """See `IPerson`."""
+        result = Store.of(self).find(
+            Archive,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            Archive.owner == self.id,
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.status.is_in(
+                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
+        return not result.is_empty()
 
     def getPPAByName(self, name):
         """See `IPerson`."""
@@ -3844,6 +3798,10 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
+        if from_person.has_existing_ppa:
+            raise AssertionError(
+                'from_person has a ppa in ACTIVE or DELETING status')
+
         if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(
                 "Only teams without active members can be merged")
@@ -3868,12 +3826,17 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
-            # Polls are not carried over when merging teams.
-            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
+            ('translationrelicensingagreement', 'person'),
+            # Polls are not carried over when merging teams.
+            # XXX: BradCrittenden 2010-12-16 bug=691105:
+            # Even though polls have been removed as a feature and from the
+            # data model, they still exist in the database and must be skipped
+            # here to avoid violating uniqueness constraints.
+            ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
@@ -3882,7 +3845,6 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
-            ('translationrelicensingagreement', 'person'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -4125,6 +4087,137 @@ class PersonSet:
         # Listify, since this is a pure cache.
         list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
              % sqlvalues(aliases), prejoins=["content"]))
+
+    def getPrecachedPersonsFromIDs(
+        self, person_ids, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
+        """See `IPersonSet`."""
+        origin = [Person]
+        conditions = [
+            Person.id.is_in(person_ids)]
+        return self._getPrecachedPersons(
+            origin, conditions,
+            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location, need_archive=need_archive,
+            need_preferred_email=need_preferred_email,
+            need_validity=need_validity)
+
+    def _getPrecachedPersons(
+        self, origin, conditions, store=None,
+        need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False, need_preferred_email=False,
+        need_validity=False):
+        """Lookup all members of the team with optional precaching.
+
+        :param store: Provide ability to specify the store.
+        :param origin: List of storm tables and joins. This list will be
+            appended to. The Person table is required.
+        :param conditions: Storm conditions for tables in origin.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
+        if store is None:
+            store = IStore(Person)
+        columns = [Person]
+        decorators = []
+        if need_karma:
+            # New people have no karmatotalcache rows.
+            origin.append(
+                LeftJoin(KarmaTotalCache,
+                    KarmaTotalCache.person == Person.id))
+            columns.append(KarmaTotalCache)
+        if need_ubuntu_coc:
+            columns.append(Alias(Exists(Select(SignedCodeOfConduct,
+                And(Person._is_ubuntu_coc_signer_condition(),
+                    SignedCodeOfConduct.ownerID == Person.id))),
+                name='is_ubuntu_coc_signer'))
+        if need_location:
+            # New people have no location rows
+            origin.append(
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
+            columns.append(PersonLocation)
+        if need_archive:
+            # Not everyone has PPA's
+            # It would be nice to cleanly expose the soyuz rules for this to
+            # avoid duplicating the relationships.
+            origin.append(
+                LeftJoin(Archive, Archive.owner == Person.id))
+            columns.append(Archive)
+            conditions = And(conditions,
+                Or(Archive.id == None, And(
+                Archive.id == Select(Min(Archive.id),
+                    Archive.owner == Person.id, Archive),
+                Archive.purpose == ArchivePurpose.PPA)))
+        # checking validity requires having a preferred email.
+        if need_preferred_email and not need_validity:
+            # Teams don't have email, so a left join
+            origin.append(
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id))
+            columns.append(EmailAddress)
+            conditions = And(conditions,
+                Or(EmailAddress.status == None,
+                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+        if need_validity:
+            valid_stuff = Person._validity_queries()
+            origin.extend(valid_stuff["joins"])
+            columns.extend(valid_stuff["tables"])
+            decorators.extend(valid_stuff["decorators"])
+        if len(columns) == 1:
+            columns = columns[0]
+            # Return a simple ResultSet
+            return store.using(*origin).find(columns, conditions)
+        # Adapt the result into a cached Person.
+        columns = tuple(columns)
+        raw_result = store.using(*origin).find(columns, conditions)
+
+        def prepopulate_person(row):
+            result = row[0]
+            cache = get_property_cache(result)
+            index = 1
+            #-- karma caching
+            if need_karma:
+                karma = row[index]
+                index += 1
+                if karma is None:
+                    karma_total = 0
+                else:
+                    karma_total = karma.karma_total
+                cache.karma = karma_total
+            #-- ubuntu code of conduct signer status caching.
+            if need_ubuntu_coc:
+                signed = row[index]
+                index += 1
+                cache.is_ubuntu_coc_signer = signed
+            #-- location caching
+            if need_location:
+                location = row[index]
+                index += 1
+                cache.location = location
+            #-- archive caching
+            if need_archive:
+                archive = row[index]
+                index += 1
+                cache.archive = archive
+            #-- preferred email caching
+            if need_preferred_email and not need_validity:
+                email = row[index]
+                index += 1
+                cache.preferredemail = email
+            for decorator in decorators:
+                column = row[index]
+                index += 1
+                decorator(result, column)
+            return result
+        return DecoratedResultSet(raw_result,
+            result_decorator=prepopulate_person)
 
 
 # Provide a storm alias from Person to Owner. This is useful in queries on

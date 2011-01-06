@@ -23,10 +23,6 @@
     tal:content="structure notification/message"
   >A warning notification message</div>
   <div class="informational message"
-    tal:repeat="notification notifications/notice"
-    tal:content="structure notification/message"
-  >A notice notification message</div>
-  <div class="informational message"
     tal:repeat="notification notifications/info"
     tal:content="structure notification/message"
   >An info notification message</div>
@@ -39,7 +35,7 @@
 
 <metal:load-javascript define-macro="load-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
       yui string:${icingroot}/yui;
@@ -607,6 +603,9 @@
             tal:attributes="src string:${lp_js}/code/productseries-setbranch.js">
     </script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/sourcepackagerecipe.new.js">
+    </script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/errors.js"></script>
@@ -672,7 +671,7 @@
 
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot_contrib string:/+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
@@ -716,7 +715,7 @@
 
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
     icingroot string:/+icing/rev${revno}">
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
