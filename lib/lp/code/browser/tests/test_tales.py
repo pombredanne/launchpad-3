@@ -191,7 +191,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             Equals(
                 '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
                 '+build/%s">%s recipe build [eric/ppa]</a>'
-                % (build.id, build.recipe.base_branch.unique_name)))
+                % (build.url_id, build.recipe.base_branch.unique_name)))
 
     def test_link_no_recipe(self):
         eric = self.factory.makePerson(name='eric')
@@ -205,7 +205,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             Equals(
                 '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
                 '+build/%s">build for deleted recipe [eric/ppa]</a>'
-                % (build.id, )))
+                % (build.url_id, )))
 
 
 def test_suite():
