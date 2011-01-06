@@ -221,7 +221,7 @@ class TestBugSubscriptionFilterView(
     def setUp(self):
         super(TestBugSubscriptionFilterView, self).setUp()
         self.view = create_initialized_view(
-            self.subscription_filter, "+index")
+            self.subscription_filter, "+definition")
 
     def test_page_title(self):
         # The page title is static.
