@@ -59,27 +59,19 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         self.assertFalse(self.bug.userCanView(user))
 
     def test_privateBugOwner(self):
-        # A regular (non-privileged) user can not view a private bug.
+        # The bug submitter may view a private bug.
         self.assertTrue(self.bug.userCanView(self.owner))
 
     def test_privateBugSupervisor(self):
         # A member of the bug supervisor team can not see a private bug.
         self.assertFalse(self.bug.userCanView(self.bug_team_member))
 
-    def test_privateBugSupervisorPrivateBugsByDefault(self):
-        # A member of the bug supervisor team can see a private bug if the
-        # product is set to have private bugs by default.
-        self.product = self.factory.makeProduct(
-            name="priv-bugs-product", owner=self.product_owner)
-        with person_logged_in(self.product.owner):
-            self.product.setBugSupervisor(
-                bug_supervisor=self.bug_team,
-                user=self.product.owner)
-        with celebrity_logged_in('admin'):
-            self.product.private_bugs = True
-        self.bug = self.factory.makeBug(
-            owner=self.owner, product=self.product)
-        self.assertTrue(self.bug.userCanView(self.bug_team_member))
+    def test_privateBugSubscriber(self):
+        # A person subscribed to a private bug can see it.
+        user = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bug.subscribe(user, self.owner)
+        self.assertTrue(self.bug.userCanView(user))
 
     def test_privateBugAssignee(self):
         # The bug assignee can see the private bug.
