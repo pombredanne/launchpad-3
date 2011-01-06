@@ -7,14 +7,14 @@
     tal:define="conditions view/conditions"
     tal:omit-tag="">
   <dt tal:define="description view/description">
-    Filter
-    <em tal:condition="description">
-      &#8220;<span tal:content="view/description" />&#8221;</em>,
+    <span tal:condition="description">
+      &#8220;<span tal:content="view/description" />&#8221;
+    </span>
     <span tal:condition="conditions">
-      which allows bug mail through when:
+      allows bug mail through when:
     </span>
     <span tal:condition="not:conditions">
-      which does not allow any bug mail through:
+      does not allow any bug mail through:
     </span>
   </dt>
   <dd tal:condition="conditions">
