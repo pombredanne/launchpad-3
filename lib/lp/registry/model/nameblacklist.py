@@ -13,6 +13,7 @@ __all__ = [
 from storm.base import Storm
 from storm.locals import (
     Int,
+    Reference,
     Unicode,
     )
 from zope.interface import implements
@@ -22,6 +23,7 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
+from lp.registry.model.person import Person
 
 
 class NameBlacklist(Storm):
@@ -34,6 +36,8 @@ class NameBlacklist(Storm):
     id = Int(primary=True)
     regexp = Unicode(name='regexp', allow_none=False)
     comment = Unicode(name='comment', allow_none=True)
+    admin_id = Int(name='admin', allow_none=True)
+    admin = Reference(admin_id, Person.id)
 
 
 class NameBlacklistSet:
@@ -46,11 +50,12 @@ class NameBlacklistSet:
         store = IStore(NameBlacklist)
         return store.find(NameBlacklist).order_by(NameBlacklist.regexp)
 
-    def create(self, regexp, comment=None):
+    def create(self, regexp, comment=None, admin=None):
         """See `INameBlacklistSet`."""
         nameblacklist = NameBlacklist()
         nameblacklist.regexp = regexp
         nameblacklist.comment = comment
+        nameblacklist.admin = admin
         store = IStore(NameBlacklist)
         store.add(nameblacklist)
         return nameblacklist

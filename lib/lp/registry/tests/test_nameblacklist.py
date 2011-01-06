@@ -139,6 +139,15 @@ class TestNameBlacklistSet(TestCaseWithFactory):
         self.assertEqual(u'foo', name_blacklist.regexp)
         self.assertEqual(u'bar', name_blacklist.comment)
 
+    def test_create_with_three_args(self):
+        # Test NameBlacklistSet.create(regexp, comment, admin).
+        team = self.factory.makeTeam()
+        name_blacklist = self.name_blacklist_set.create(u'foo', u'bar', team)
+        self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
+        self.assertEqual(u'foo', name_blacklist.regexp)
+        self.assertEqual(u'bar', name_blacklist.comment)
+        self.assertEqual(team, name_blacklist.admin)
+
     def test_get_int(self):
         # Test NameBlacklistSet.get() with int id.
         name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')

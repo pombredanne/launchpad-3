@@ -13,6 +13,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import (
     Int,
+    Choice,
     Text,
     TextLine,
     )
@@ -26,6 +27,11 @@ class INameBlacklist(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     regexp = TextLine(title=_('Regular expression'), required=True)
     comment = Text(title=_('Comment'), required=False)
+    admin = Choice(
+        title=_('Admin'),
+        description=_(
+            "Person or team that can override the regexp restriction."),
+        vocabulary='ValidPersonOrTeam', required=False)
 
 
 class INameBlacklistSet(Interface):
