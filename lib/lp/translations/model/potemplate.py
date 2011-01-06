@@ -1430,8 +1430,6 @@ class POTemplateSharingSubset(object):
         assert distribution or not sourcepackagename, (
             "Picking a source package only makes sense with a distribution.")
         self.potemplateset = potemplateset
-        self.share_by_name = False
-        self.subset = None
 
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
