@@ -4,14 +4,20 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     xml:lang="en" lang="en" dir="ltr"
-    tal:define="conditions view/conditions">
-  <dt>Filter: <span tal:content="view/description" /></dt>
+    tal:define="conditions view/conditions"
+    tal:omit-tag="">
+  <dt tal:define="description view/description">
+    Bug mail filter
+    <em tal:condition="description">
+      &#8220;<span tal:content="view/description" />&#8221;
+    </em>
+  </dt>
   <dd tal:condition="conditions">
     Matches when
     <tal:conditions repeat="condition conditions">
       <span tal:content="condition" />
       <tal:conjunction condition="not:repeat/condition/end">
-        <br /><strong>and</strong>
+        <br />and
       </tal:conjunction>
     </tal:conditions>
   </dd>

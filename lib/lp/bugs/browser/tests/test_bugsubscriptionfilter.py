@@ -294,7 +294,6 @@ class TestBugSubscriptionFilterView(
 
     def assertRender(self, dt_content=None, dd_content=None):
         root = html.fromstring(self.view.render())
-        self.assertEqual("dl", root.tag)
         if dt_content is not None:
             self.assertEqual(
                 dt_content, normalize_whitespace(
@@ -306,13 +305,14 @@ class TestBugSubscriptionFilterView(
 
     def test_render_with_nothing_set(self):
         # If no conditions are set, the rendered description is very simple.
-        self.assertRender(u"Filter:", u"Matches nothing")
+        self.assertRender(u"Bug mail filter", u"Matches nothing")
 
     def test_render_with_description(self):
-        # If a description is set it appears in the content of the dt tag.
+        # If a description is set it appears in the content of the dt tag,
+        # surrounded by "curly" quotes.
         with person_logged_in(self.owner):
             self.subscription_filter.description = u"The Wait"
-        self.assertRender(u"Filter: The Wait")
+        self.assertRender(u"Bug mail filter \u201cThe Wait\u201d")
 
     def test_render_with_conditions(self):
         # If conditions are set, a human-comprehensible message is composed by
