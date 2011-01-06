@@ -1499,7 +1499,8 @@ class POTemplateSharingSubset(object):
             where=And(
                 Packaging.productseriesID == ProductSeries.id,
                 Packaging.distroseriesID == DistroSeries.id,
-                ProductSeries.productID == self.product.id)
+                ProductSeries.product == self.product),
+            distinct=True
             )
         origin = LeftJoin(
             LeftJoin(
@@ -1529,16 +1530,36 @@ class POTemplateSharingSubset(object):
         name.
         :return: A ResultSet for the query.
         """
+        # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
-        origin = Join(
-            POTemplate, DistroSeries,
-            POTemplate.distroseries == DistroSeries.id)
+        from lp.registry.model.productseries import ProductSeries
+
+        subquery = Select(
+            ProductSeries.productID,
+            tables=(Packaging, ProductSeries, DistroSeries),
+            where=And(
+                Packaging.productseriesID == ProductSeries.id,
+                Packaging.distroseriesID == DistroSeries.id,
+                DistroSeries.distribution == self.distribution,
+                Packaging.sourcepackagename == self.sourcepackagename),
+            distinct=True
+            )
+        origin = LeftJoin(
+            LeftJoin(
+                POTemplate, ProductSeries,
+                POTemplate.productseriesID == ProductSeries.id),
+            DistroSeries,
+            POTemplate.distroseriesID == DistroSeries.id
+            )
         return Store.of(self.distribution).using(origin).find(
             POTemplate,
             And(
-                DistroSeries.distributionID == self.distribution.id,
-                POTemplate.sourcepackagename == self.sourcepackagename,
-                templatename_clause))
+                templatename_clause,
+                Or(
+                  And(
+                    DistroSeries.distribution == self.distribution,
+                    POTemplate.sourcepackagename == self.sourcepackagename),
+                  In(ProductSeries.productID, subquery))))
 
     def _queryByDistribution(self, templatename_clause):
         """Special case when templates are searched across a distribution."""
@@ -1549,7 +1570,7 @@ class POTemplateSharingSubset(object):
         """Select the right query to be used."""
         if self.product is not None:
             return self._queryByProduct(templatename_clause)
-        elif self.share_by_name:
+        elif self.sourcepackagename is not None:
             return self._queryBySourcepackagename(templatename_clause)
         elif self.distribution is not None and self.sourcepackagename is None:
             return self._queryByDistribution(templatename_clause)
