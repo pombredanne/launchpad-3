@@ -100,6 +100,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -137,10 +138,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus,
-    IBinaryPackageBuildSet,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -232,7 +230,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         except ValueError:
             return None
         try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+            build_job = getUtility(IBuildFarmJobSet).getById(build_id)
+            return build_job.getSpecificJob()
         except NotFoundError:
             return None
 
