@@ -292,13 +292,43 @@ class TestBugSubscriptionFilterView(
             [u"the bug is tagged with *, bar, and foo"],
             self.view.conditions)
 
-    def test_render(self):
-        # If no conditions are set, the rendered description is very simple.
+    def assertRender(self, dt_content=None, dd_content=None):
         root = html.fromstring(self.view.render())
         self.assertEqual("dl", root.tag)
-        self.assertEqual(
-            u"Filter:", normalize_whitespace(
-                root.find("dt").text_content()))
-        self.assertEqual(
-            u"Matches nothing", normalize_whitespace(
-                root.find("dd").text_content()))
+        if dt_content is not None:
+            self.assertEqual(
+                dt_content, normalize_whitespace(
+                    root.find("dt").text_content()))
+        if dd_content is not None:
+            self.assertEqual(
+                dd_content, normalize_whitespace(
+                    root.find("dd").text_content()))
+
+    def test_render_with_nothing_set(self):
+        # If no conditions are set, the rendered description is very simple.
+        self.assertRender(u"Filter:", u"Matches nothing")
+
+    def test_render_with_description(self):
+        # If a description is set it appears in the content of the dt tag.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"The Wait"
+        self.assertRender(u"Filter: The Wait")
+
+    def test_render_with_conditions(self):
+        # If conditions are set, a human-comprehensible message is composed by
+        # joining the conditions with "and".
+        with person_logged_in(self.owner):
+            self.subscription_filter.statuses = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.TRIAGED,
+                ]
+            self.subscription_filter.importances = [
+                BugTaskImportance.LOW,
+                BugTaskImportance.MEDIUM,
+                BugTaskImportance.HIGH,
+                ]
+            self.subscription_filter.tags = [u"foo", u"bar"]
+        self.assertRender(
+            dd_content=(
+                u"Matches when " + u" and ".join(self.view.conditions)))
