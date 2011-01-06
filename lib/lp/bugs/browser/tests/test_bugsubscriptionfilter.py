@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     AppServerLayer,
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.bugs.interfaces.bugtask import (
@@ -216,7 +217,7 @@ class TestBugSubscriptionFilterAPIModifications(
 class TestBugSubscriptionFilterView(
     TestBugSubscriptionFilterBase, TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugSubscriptionFilterView, self).setUp()
