@@ -9,19 +9,8 @@ __all__ = [
     ]
 
 
-from functools import wraps
-
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp.publisher import LaunchpadView
-
-
-def listify(func):
-    """Decorator to listify the return value of the wrapped function."""
-
-    @wraps(func)
-    def wrapper(self):
-        return list(func(self))
-    return wrapper
 
 
 class BugSubscriptionFilterView(LaunchpadView):
@@ -48,21 +37,25 @@ class BugSubscriptionFilterView(LaunchpadView):
         return u"" if description is None else description.strip()
 
     @property
-    @listify
     def conditions(self):
         """Descriptions of the bug filter's conditions."""
+        conditions = []
         statuses = self.context.statuses
         if len(statuses) > 0:
-            yield u"the status is %s" % english_list(
-                (status.title for status in sorted(statuses)),
-                conjunction=u"or")
+            conditions.append(
+                u"the status is %s" % english_list(
+                    (status.title for status in sorted(statuses)),
+                    conjunction=u"or"))
         importances = self.context.importances
         if len(importances) > 0:
-            yield u"the importance is %s" % english_list(
-                (importance.title for importance in sorted(importances)),
-                conjunction=u"or")
+            conditions.append(
+                u"the importance is %s" % english_list(
+                    (importance.title for importance in sorted(importances)),
+                    conjunction=u"or"))
         tags = self.context.tags
         if len(tags) > 0:
-            yield u"the bug is tagged with %s" % english_list(
-                sorted(tags), conjunction=(
-                    u"and" if self.context.find_all_tags else u"or"))
+            conditions.append(
+                u"the bug is tagged with %s" % english_list(
+                    sorted(tags), conjunction=(
+                        u"and" if self.context.find_all_tags else u"or")))
+        return conditions
