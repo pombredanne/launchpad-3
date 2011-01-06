@@ -391,4 +391,4 @@ SourcePackageRecipes
 
     >>> build = factory.makeSourcePackageRecipeBuild(recipe=recipe)
     >>> canonical_url(build)
-    u'http://code.launchpad.dev/~person-name.../+recipe/generic-string.../+build/...'
+    u'http://code.launchpad.dev/~person-name.../+archive/generic-string.../+build/...'

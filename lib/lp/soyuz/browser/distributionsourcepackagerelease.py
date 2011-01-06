@@ -50,7 +50,7 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
         except ValueError:
             return None
         try:
-            build_job = getUtility(IBuildFarmJobSet).getById(build_id)
+            build_job = getUtility(IBuildFarmJobSet).getByID(build_id)
             return build_job.getSpecificJob()
         except NotFoundError:
             return None
