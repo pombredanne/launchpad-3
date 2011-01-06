@@ -741,7 +741,7 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer DEFAULT 0)
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer)
 RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
 EXTERNAL SECURITY DEFINER AS
@@ -757,9 +757,13 @@ $$
     compiled = SD["compiled"]
     # Get the list of team ids that the user is a member of because regexps
     # that those teams admin will be skipped.
-    results = plpy.execute(
-        "SELECT team FROM TeamParticipation WHERE person = %d" % user_id)
-    user_teams = [row['team'] for row in results]
+    if user_id:
+        results = plpy.execute(
+            "SELECT team FROM TeamParticipation WHERE person = %s" % user_id)
+        user_teams = [row['team'] for row in results]
+    else:
+        # The user_id is None (NULL) or zero.
+        user_teams = []
     for row in plpy.execute(SD["select_plan"]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
@@ -783,7 +787,7 @@ $$;
 COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer DEFAULT 0)
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
 RETURNS boolean
 LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
 $$
