@@ -228,7 +228,8 @@ publicly visible. If Bug.private is True, only people who are directly
 subscribed to the bug can see it. Launchpad admins can always view and
 modify private bugs.
 
-=== Marking Bugs Private ===
+Marking Bugs Private
+....................
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
@@ -298,7 +299,8 @@ indicator that it modified the bug.
     >>> firefox_crashes.setPrivate(True, current_user())
     False
 
-=== How Privacy Affects Access to a Bug ===
+How Privacy Affects Access to a Bug
+...................................
 
 Once a bug is made private, it can only be accessed by the users that
 are directly subscribed to the bug and Launchpad admins.
@@ -409,20 +411,9 @@ addition to bugs #6 and #14:
     >>> hidden_bugs()
     [2, 6, 14]
 
-IBug.userCanView() offers a quick means by which to verify that a
-given user can see a given bug.
 
-    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
-    >>> bug_6 = getUtility(IBugSet).get(6)
-    >>> bug_6.userCanView(no_priv)
-    False
-
-    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
-    >>> bug_6.userCanView(foobar)
-    True
-
-
-=== Filing Public vs. Private Bugs ===
+Filing Public vs. Private Bugs
+..............................
 
 Let's log back in as Foo Bar to continue our examples:
 
@@ -430,6 +421,7 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
@@ -1122,7 +1114,8 @@ single shot.
 
     >>> chunks = bug_two.getMessageChunks()
     >>> for chunk in sorted(chunks, key=lambda x:x.id):
-    ...    chunk.id, chunk.message.id, chunk.message.owner.id, chunk.content[:30]
+    ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
+    ...     chunk.content[:30])
     (4, 1, 16, u'Problem exists between chair a')
     (7, 5, 12, u'This would be a real killer fe')
     (8, 6, 12, u'Oddly enough the bug system se')
@@ -1131,7 +1124,7 @@ It's done in a way that we only issue two queries to fetch all this
 information, too:
 
 XXX: bug=https://bugs.launchpad.net/storm/+bug/619017 means that this sometimes
-does 3 queries, depending on the precise state of the storm cache. To avoid 
+does 3 queries, depending on the precise state of the storm cache. To avoid
 spurious failures it has been changed to tolerate this additional query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
@@ -1276,7 +1269,8 @@ user, of course.
 If there is another dup of the master bug, filed by someone else, the
 master bug's affected count with dups increases.
 
-    >>> dupe_affected_other_user = factory.makePerson(name='napoleon-bonaparte')
+    >>> dupe_affected_other_user = factory.makePerson(
+    ...     name='napoleon-bonaparte')
     >>> dupe_three = factory.makeBug(owner=dupe_affected_other_user)
     >>> dupe_three.markAsDuplicate(test_bug)
     >>> test_bug.users_affected_count_with_dupes
@@ -1425,6 +1419,7 @@ private and the user wouldn't be able to see it, it won't be returned.
     >>> new_bug_2.setPrivate(True, foobar)
     True
 
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
     ...     bug_tasks, user=no_priv)
 
