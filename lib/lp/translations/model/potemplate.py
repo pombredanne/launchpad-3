@@ -1138,7 +1138,7 @@ class POTemplateSubset:
             # Do not continue, else it would trigger an existingpo assertion.
             return
 
-    def new(self, name, translation_domain, path, owner):
+    def new(self, name, translation_domain, path, owner, copy_pofiles=True):
         """See `IPOTemplateSubset`."""
         header_params = {
             'origin': 'PACKAGE VERSION',
@@ -1154,7 +1154,8 @@ class POTemplateSubset:
                           path=path,
                           owner=owner,
                           header=standardTemplateHeader % header_params)
-        self._copyPOFilesFromSharingTemplates(template)
+        if copy_pofiles:
+            self._copyPOFilesFromSharingTemplates(template)
         return template
 
     def getPOTemplateByName(self, name):
