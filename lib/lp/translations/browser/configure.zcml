@@ -809,12 +809,11 @@
         template="../templates/hastranslationimports-index.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
-        name="+settings"
+        name="+configure-translations"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.product.ProductSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/>
+        template="../templates/configure-translations.pt"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -872,7 +871,7 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.translations.browser.project.ProjectSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
+        template="../templates/configure-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
 
 <!-- Distribution -->
@@ -903,11 +902,11 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+settings"
+        name="+configure-translations"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.distribution.DistributionSettingsView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/set-translators.pt"
+        template="../templates/configure-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -941,7 +940,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
         template="../templates/translations-portlet-not-using-launchpad-extra.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/> 
+        layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
         name="+portlet-configuration"
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -1042,9 +1041,9 @@
     <browser:page
         name="+remove"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
-        permission="launchpad.Admin"
+        permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/customlanguagecode-remove.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
 
 <!-- IHasCustomLanguageCodes -->
@@ -1062,7 +1061,7 @@
         layer="lp.translations.publisher.TranslationsLayer"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
         template="../templates/customlanguagecode-add.pt"
-        permission="launchpad.Admin"/>
+        permission="launchpad.TranslationsAdmin"/>
 
     </facet>
 

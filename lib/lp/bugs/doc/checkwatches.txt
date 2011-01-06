@@ -215,7 +215,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
-    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    WARNING...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
     known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
@@ -254,7 +254,7 @@ monkey-patch the Roundup ExternalBugTrackerClass in order to set its
 batch size. We will also monkey-patch urllib2.urlopen again so that no
 requests are actually made.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs import externalbugtracker
 
     >>> transaction.commit()

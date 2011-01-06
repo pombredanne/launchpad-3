@@ -22,6 +22,7 @@ __all__ = [
 
 
 import datetime
+from itertools import chain
 from operator import attrgetter
 
 from lazr.enum import DBItem
@@ -290,8 +291,9 @@ class BugTaskMixin:
     @property
     def bug_subscribers(self):
         """See `IBugTask`."""
-        indirect_subscribers = self.bug.getIndirectSubscribers()
-        return self.bug.getDirectSubscribers() + indirect_subscribers
+        return tuple(
+            chain(self.bug.getDirectSubscribers(),
+                  self.bug.getIndirectSubscribers()))
 
     @property
     def bugtargetdisplayname(self):
@@ -2483,9 +2485,13 @@ class BugTaskSet:
 
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
-        bug_privacy_filter = get_bug_privacy_filter(user)
-        if bug_privacy_filter != "":
-            bug_privacy_filter = 'AND ' + bug_privacy_filter
+        if user is None:
+            bug_privacy_filter = 'AND Bug.private = FALSE'
+        else:
+            # Since the count won't reveal sensitive information, and
+            # since the get_bug_privacy_filter() check for non-admins is
+            # costly, don't filter those bugs at all.
+            bug_privacy_filter = ''
         cur = cursor()
 
         # The union is actually much faster than a LEFT JOIN with the
