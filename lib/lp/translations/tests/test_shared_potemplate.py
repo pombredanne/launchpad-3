@@ -557,8 +557,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.trunk.setPackaging(
             self.hoary, self.packagename, self.owner)
 
-        subset = self.potemplateset.getSharingSubset(
-                distribution=self.ubuntu, sourcepackagename=self.packagename)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
         templates = self._assertStatements(
             1, subset.getSharingPOTemplates(self.templatename))
 
