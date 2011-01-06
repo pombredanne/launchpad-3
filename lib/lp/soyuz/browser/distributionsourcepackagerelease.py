@@ -24,9 +24,9 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -50,7 +50,8 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+            build_job = getUtility(IBuildFarmJobSet).getById(build_id)
+            return build_job.getSpecificJob()
         except NotFoundError:
             return None
 
