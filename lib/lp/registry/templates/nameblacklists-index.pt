@@ -19,6 +19,7 @@
       <table id="blacklist" class="listing sortable">
         <thead>
           <th>Regular Expression</th>
+          <th>Admin</th>
           <th>Comment</th>
         </thead>
         <tbody>
@@ -28,6 +29,12 @@
               <tal:link replace="
                 structure
                 item/menu:overview/edit_blacklist_expression/fmt:icon"/>
+            </td>
+            <td>
+              <a
+                tal:condition="item/admin"
+                tal:replace="structure item/admin/fmt:link" />
+              <tal:none condition="not: item/admin">&mdash;</tal:none>
             </td>
             <td tal:content="item/comment"/>
           </tr>
