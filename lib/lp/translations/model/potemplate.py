@@ -1465,15 +1465,14 @@ class POTemplateSharingSubset(object):
                 Packaging.productseriesID == ProductSeries.id,
                 Packaging.distroseriesID == DistroSeries.id,
                 ProductSeries.product == self.product),
-            distinct=True
-            )
+            distinct=True)
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
                 POTemplate.productseriesID == ProductSeries.id),
             DistroSeries,
-            POTemplate.distroseriesID == DistroSeries.id
-            )
+            POTemplate.distroseriesID == DistroSeries.id)
+
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
@@ -1483,9 +1482,7 @@ class POTemplateSharingSubset(object):
                   In(
                      SQL("(DistroSeries.distribution, "
                          "POTemplate.sourcepackagename)"),
-                     subquery)
-                  ))
-                )
+                     subquery))))
 
     def _queryBySourcepackagename(self, templatename_clause):
         """Build the query that finds POTemplates by their names.
@@ -1507,15 +1504,14 @@ class POTemplateSharingSubset(object):
                 Packaging.distroseriesID == DistroSeries.id,
                 DistroSeries.distribution == self.distribution,
                 Packaging.sourcepackagename == self.sourcepackagename),
-            distinct=True
-            )
+            distinct=True)
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
                 POTemplate.productseriesID == ProductSeries.id),
             DistroSeries,
-            POTemplate.distroseriesID == DistroSeries.id
-            )
+            POTemplate.distroseriesID == DistroSeries.id)
+
         return Store.of(self.distribution).using(origin).find(
             POTemplate,
             And(

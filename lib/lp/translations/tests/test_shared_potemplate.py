@@ -303,7 +303,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             [self.trunk_template, self.hoary_template], templates)
 
     def test_getSharingPOTemplates_package(self):
-        # Sharing templates for a source package include the same templates 
+        # Sharing templates for a source package include the same templates
         # from a linked product.
         sourcepackage = self.factory.makeSourcePackage(
             self.packagename, self.hoary)
@@ -343,7 +343,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.assertContentEqual(expected_templates, templates)
 
     def test_getSharingPOTemplates_package_multiple_series(self):
-        # Sharing templates for a source package include the same templates 
+        # Sharing templates for a source package include the same templates
         # from a linked product, even with multiple product series.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
@@ -481,7 +481,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         warty_productseries_template = self.factory.makePOTemplate(
             productseries=warty_productseries, name=self.templatename)
         warty_sourcepackage.setPackaging(warty_productseries, self.owner)
-        
+
         other_productseries = self.factory.makeProductSeries(
             product=warty_productseries.product)
         other_productseries_template = self.factory.makePOTemplate(
@@ -520,14 +520,14 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             name=self.templatename)
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
-        
+
         other_distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntu)
         other_distroseries_template = self.factory.makePOTemplate(
             distroseries=other_distroseries,
             sourcepackagename=other_sourcepackagename,
             name=self.templatename)
-        
+
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.packagename, distroseries=self.hoary)
         self.trunk.setPackaging(
@@ -590,7 +590,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             templates)
 
     def test_getSharingPOTemplates_package_only(self):
-        # Sharing templates for a source package only, is done by the 
+        # Sharing templates for a source package only, is done by the
         # sourcepackagename.
         warty_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
