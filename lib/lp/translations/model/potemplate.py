@@ -32,9 +32,12 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    In,
     Join,
     LeftJoin,
     Or,
+    Select,
+    SQL,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -1430,17 +1433,9 @@ class POTemplateSharingSubset(object):
         self.share_by_name = False
         self.subset = None
 
-        if distribution is not None:
-            self.distribution = distribution
-            self.sourcepackagename = sourcepackagename
-            if sourcepackagename is not None:
-                product = self._findUpstreamProduct(
-                    distribution, sourcepackagename)
-                if product is None:
-                    self.share_by_name = self._canShareByName(
-                        distribution, sourcepackagename)
-        if product is not None:
-            self.product = product
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        self.product = product
 
     def _findUpstreamProduct(self, distribution, sourcepackagename):
         """Find the upstream product by looking at the translation focus.
@@ -1495,27 +1490,36 @@ class POTemplateSharingSubset(object):
         :return: A ResultSet for the query.
         """
         # Avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.productseries import ProductSeries
 
-        ProductSeries1 = ClassAlias(ProductSeries)
+        subquery = Select(
+            (DistroSeries.distributionID, Packaging.sourcepackagenameID),
+            tables=(Packaging, ProductSeries, DistroSeries),
+            where=And(
+                Packaging.productseriesID == ProductSeries.id,
+                Packaging.distroseriesID == DistroSeries.id,
+                ProductSeries.productID == self.product.id)
+            )
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
                 POTemplate.productseriesID == ProductSeries.id),
-            Join(
-                Packaging, ProductSeries1,
-                Packaging.productseriesID == ProductSeries1.id),
-            And(
-                Packaging.distroseriesID == POTemplate.distroseriesID,
-                Packaging.sourcepackagenameID == (
-                        POTemplate.sourcepackagenameID)))
+            DistroSeries,
+            POTemplate.distroseriesID == DistroSeries.id
+            )
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
+                templatename_clause,
                 Or(
-                    ProductSeries.productID == self.product.id,
-                    ProductSeries1.productID == self.product.id),
-                templatename_clause))
+                  ProductSeries.product == self.product,
+                  In(
+                     SQL("(DistroSeries.distribution, "
+                         "POTemplate.sourcepackagename)"),
+                     subquery)
+                  ))
+                )
 
     def _queryBySourcepackagename(self, templatename_clause):
         """Build the query that finds POTemplates by their names.
