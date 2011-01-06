@@ -30,6 +30,35 @@ from lp.testing.views import (
     )
 
 
+class TestRequestPeopleMergeView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestRequestPeopleMergeView, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.dupe = self.factory.makePerson(name='dupe')
+        self.target = self.factory.makeTeam(name='target-team')
+
+    def test_cannot_merge_person_with_ppas(self):
+        # A team with a PPA cannot be merged.
+        login_celebrity('admin')
+        archive = self.dupe.createPPA()
+        login_celebrity('registry_experts')
+        form = {
+            'field.dupe_person': self.dupe.name,
+            'field.target_person': self.target.name,
+            'field.actions.continue': 'Continue',
+            }
+        return create_initialized_view(
+            self.person_set, '+requestmerge', form=form)
+        self.assertEqual(
+            [u"dupe-team has a PPA that must be deleted before it can be "
+              "merged. It may take ten minutes to remove the deleted PPA's "
+              "files."],
+            view.errors)
+
+
 class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
     """Test the RequestPeopleMergeMultipleEmailsView rules."""
 

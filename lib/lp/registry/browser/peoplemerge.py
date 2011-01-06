@@ -52,8 +52,6 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
-
-
 class AdminMergeBaseView(LaunchpadFormView):
     """Base view for the pages where admins can merge people/teams."""
 
@@ -458,6 +456,7 @@ class RequestPeopleMergeMultipleEmailsView:
         """Does the duplicate account hide email addresses?"""
         return self.dupe.hide_email_addresses
     
+
 class RequestPeopleMergeView(LaunchpadFormView):
     """The view for the page where the user asks a merge of two accounts.
 
@@ -471,6 +470,25 @@ class RequestPeopleMergeView(LaunchpadFormView):
     label = 'Merge Launchpad accounts'
     page_title = label
     schema = IRequestPeopleMerge
+
+    def validate(self, data):
+        """Check that user is not attempting to merge a person into itself."""
+        dupe_person = data.get('dupe_person')
+        target_person = data.get('target_person')
+        if dupe_person == target_person and dupe_person is not None:
+            self.addError(_("You can't merge ${name} into itself.",
+                  mapping=dict(name=dupe_person.name)))
+        # We cannot merge the teams if there is a PPA with published
+        # packages on the duplicate person, unless that PPA is removed.
+        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            dupe_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING])
+        if dupe_person_ppas is not None:
+            self.addError(_(
+                "${name} has a PPA that must be deleted before it "
+                "can be merged. It may take ten minutes to remove the "
+                "deleted PPA's files.",
+                mapping=dict(name=dupe_person.name)))
 
     @property
     def cancel_url(self):
