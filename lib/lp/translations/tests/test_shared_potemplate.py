@@ -531,20 +531,30 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
 
     def test_getSharingPOTemplates_product_different_packages(self):
         # A product can be packaged in different packages which may also have
-        # sharing templates in series that are not linked.
-        warty_template = self.factory.makePOTemplate(
-            distroseries=self.warty, sourcepackagename=self.packagename,
+        # sharing templates in series that are not linked to this product.
+        other_sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=other_sourcepackagename,
+            distroseries=self.warty)
+        self.stable.setPackaging(
+            self.warty, other_sourcepackagename, self.owner)
+        other_warty_sourcepackage_template = self.factory.makePOTemplate(
+            distroseries=self.warty,
+            sourcepackagename=other_sourcepackagename,
             name=self.templatename)
-        warty_sourcepackage = self.factory.makeSourcePackage(
-                self.packagename, self.warty)
-        warty_productseries = self.factory.makeProductSeries()
-        warty_productseries_template = self.factory.makePOTemplate(
-            productseries=warty_productseries, name=self.templatename)
-        warty_sourcepackage.setPackaging(warty_productseries, self.owner)
-
-        hoary_sourcepackage = self.factory.makeSourcePackage(
-                self.packagename, self.hoary)
-        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
+        stable_template = self.factory.makePOTemplate(
+            productseries=self.stable, name=self.templatename)
+        
+        other_distroseries = self.makeDistroSeries(distribution=self.ubuntu)
+        other_distroseries_template = self.factory.makePOTemplate(
+            distroseries=other_distroseries,
+            sourcepackagename=other_sourcepackagename,
+            name=self.templatename)
+        
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename, distroseries=self.hoary)
+        self.trunk.setPackaging(
+            self.hoary, self.packagename, self.owner)
 
         subset = self.potemplateset.getSharingSubset(
                 distribution=self.ubuntu, sourcepackagename=self.packagename)
@@ -554,8 +564,9 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         expected_templates = [
             self.hoary_template,
             self.trunk_template,
-            warty_template,
-            warty_productseries_template,
+            other_warty_sourcepackage_template,
+            stable_template,
+            other_distroseries_template,
             ]
         self.assertContentEqual(expected_templates, templates)
 
