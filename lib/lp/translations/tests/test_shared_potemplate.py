@@ -617,6 +617,8 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         # Sharing templates for a source package must not include templates
         # from sourcepackages of the same name that are linked to a different
         # product.
+        # TODO: This is left in here as a sanity check. It should fail once
+        # the new behavior is implemented and must then be removed.
         other_productseries = self.factory.makeProductSeries()
         other_sourcepackage = self.factory.makeSourcePackage(
             self.packagename, self.warty)
@@ -670,6 +672,8 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         # Once one a sourcepackage in a distroseries that is neither the
         # translation focus nor the current series is linked to a product,
         # no sharing by name is possible anymore.
+        # TODO: This is left in here as a sanity check. It should fail once
+        # the new behavior is implemented and must then be removed.
         self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
