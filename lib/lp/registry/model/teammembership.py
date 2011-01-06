@@ -501,8 +501,106 @@ class TeamParticipation(SQLBase):
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     #person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    personID = Int(name='person', allow_none=True)
+    personID = Int(name='person', allow_none=False)
     person = Reference(personID, 'Person.id')
+
+def _old_cleanTeamParticipation(person, team):
+    """Remove relevant entries in TeamParticipation for <person> and <team>.
+
+    Remove all tuples "person, team" from TeamParticipation for the given
+    person and team (together with all its superteams), unless this person is
+    an indirect member of the given team. More information on how to use the
+    TeamParticipation table can be found in the TeamParticipationUsage spec or
+    the teammembership.txt system doctest.
+    """
+    query = """
+        SELECT EXISTS(
+            SELECT 1 FROM TeamParticipation
+            WHERE person = %(person_id)s AND team IN (
+                    SELECT person
+                    FROM TeamParticipation JOIN Person ON
+                        (person = Person.id)
+                    WHERE team = %(team_id)s
+                        AND person NOT IN (%(team_id)s, %(person_id)s)
+                        AND teamowner IS NOT NULL
+                 )
+        )
+        """ % dict(team_id=team.id, person_id=person.id)
+    store = Store.of(person)
+    (result, ) = store.execute(query).get_one()
+    if result:
+        # The person is a participant in this team by virtue of a membership
+        # in another one, so don't attempt to remove anything.
+        return
+
+    # First of all, we remove <person> from <team> (and its superteams).
+    _removeParticipantFromTeamAndSuperTeams(person, team)
+    if not person.is_team:
+        # Nothing else to do.
+        return
+
+    store = Store.of(person)
+
+    # Clean the participation of all our participant subteams, that are
+    # not a direct members of the target team.
+    query = """
+        -- All of my participant subteams...
+        SELECT person
+        FROM TeamParticipation JOIN Person ON (person = Person.id)
+        WHERE team = %(person_id)s AND person != %(person_id)s
+            AND teamowner IS NOT NULL
+        EXCEPT
+        -- that aren't a direct member of the team.
+        SELECT person
+        FROM TeamMembership
+        WHERE team = %(team_id)s AND status IN %(active_states)s
+        """ % dict(
+            person_id=person.id, team_id=team.id,
+            active_states=sqlvalues(ACTIVE_STATES)[0])
+
+    # Avoid circular import.
+    from lp.registry.model.person import Person
+    for subteam in store.find(Person, "id IN (%s)" % query):
+        _old_cleanTeamParticipation(subteam, team)
+
+    # Then clean-up all the non-team participants. We can remove those
+    # in a single query when the team graph is up to date.
+    _removeAllIndividualParticipantsFromTeamAndSuperTeams(person, team)
+
+
+def _removeParticipantFromTeamAndSuperTeams(person, team):
+    """Remove participation of person in team.
+
+    If <person> is a participant (that is, has a TeamParticipation entry)
+    of any team that is a subteam of <team>, then <person> should be kept as
+    a participant of <team> and (as a consequence) all its superteams.
+    Otherwise, <person> is removed from <team> and we repeat this process for
+    each superteam of <team>.
+    """
+    # Check if the person is a member of the given team through another team.
+    query = """
+        SELECT EXISTS(
+            SELECT 1
+            FROM TeamParticipation, TeamMembership
+            WHERE
+                TeamMembership.team = %(team_id)s AND
+                TeamMembership.person = TeamParticipation.team AND
+                TeamParticipation.person = %(person_id)s AND
+                TeamMembership.status IN %(active_states)s)
+        """ % dict(team_id=team.id, person_id=person.id,
+                   active_states=sqlvalues(ACTIVE_STATES)[0])
+    store = Store.of(person)
+    (result, ) = store.execute(query).get_one()
+    if result:
+        # The person is a participant by virtue of a membership on another
+        # team, so don't remove.
+        return
+    store.find(TeamParticipation, (
+        (TeamParticipation.team == team) &
+        (TeamParticipation.person == person))).remove()
+
+    for superteam in _getSuperTeamsExcludingDirectMembership(person, team):
+        _removeParticipantFromTeamAndSuperTeams(person, superteam)
 
 _find_descendants_cache = {}
 
@@ -540,12 +638,15 @@ def get_direct_ancestors(target):
     return ancestors
 
 
+USE_OLD = True
 def _cleanTeamParticipation(child, target_team):
     """Remove child from team and clean up child's subteams.
 
     A subteam S of child is removed from target_team's TeamParticipation
     table if the only path from S to team is via child.
     """
+    if USE_OLD:
+        return _old_cleanTeamParticipation(child, target_team)
     store = Store.of(target_team)
     # Find the descendants of child, teams and people.
     child_descendants = set(find_descendants(child))
@@ -568,7 +669,6 @@ def _cleanTeamParticipation(child, target_team):
     store.find(TeamParticipation,
                TeamParticipation.team == target_team,
                TeamParticipation.personID.is_in(unwanted_ids)).remove()
-    import pdb; pdb.set_trace(); # DO NOT COMMIT
     flush_database_updates()
 
     # Unwanted teams and individuals have been deleted from the target team.
@@ -616,7 +716,6 @@ def _cleanTeamParticipation(child, target_team):
     from pprint import pprint
     print
     pprint(to_be_removed)
-    import pdb; pdb.set_trace(); # DO NOT COMMIT
     for team, removable in to_be_removed.items():
         if len(removable) > 0:
             ids = [person.id for person in removable]

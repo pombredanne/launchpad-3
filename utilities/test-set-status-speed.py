@@ -15,7 +15,10 @@ from storm.store import Store
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -53,7 +56,16 @@ def make_hierarchy():
     return child, parent
 
 
+def get_participation():
+    return set(IStore(TeamParticipation).execute('''
+        SELECT team, person
+        FROM TeamParticipation
+        ''').get_all())
+
+
 def test_remove_member(parent, child):
+    parent.addMember(child, parent.teamowner)
+    before_participation = get_participation()
     print 'Starting test_remove_member'
     start = time.time()
     person_set = getUtility(IPersonSet)
@@ -62,6 +74,11 @@ def test_remove_member(parent, child):
     tm = membership_set.getByPersonAndTeam(child, parent)
     tm.setStatus(TeamMembershipStatus.DEACTIVATED, admin)
     print 'Finished test_remove_member: elapsed=%f' % (time.time() - start)
+    after_participation = get_participation()
+    print 'Count of items previously in team participation:'
+    print len(before_participation.difference(after_participation))
+    print 'New in team participation:'
+    print after_participation.difference(before_participation)
 
 
 def main(arguments):
@@ -77,7 +94,6 @@ def main(arguments):
         child = person_set.getByName('child')
         parent = person_set.getByName('parent')
 
-    parent.addMember(child, parent.teamowner)
     print 'child:', child
     print 'parent:', parent
     test_remove_member(parent, child)
