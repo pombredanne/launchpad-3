@@ -62,7 +62,8 @@ He chooses to view the bug about Scofflaw.
     ...     auth='Basic %s:g00dpassword' %
     ...         subscriber.preferredemail.email)
     >>> logout()
-    >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
+    >>> subscriber_browser.open(
+    ...     'http://bugs.launchpad.dev/~webster/+subscriptions')
     >>> unsub_link = subscriber_browser.getLink(
     ...     id='unsubscribe-subscriber-%s' % subscriber.id)
     >>> unsub_link.click()
@@ -84,7 +85,8 @@ He chooses to unsubscribe from the bug about Affluenza.
 
     >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
     ...     % bugB.id).click()
-    >>> subscriber_browser.getControl("Unsubscribe me from this bug").selected = True
+    >>> subscriber_browser.getControl(
+    ...     "Unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
     Subscriptions : Webster
@@ -92,7 +94,8 @@ He chooses to unsubscribe from the bug about Affluenza.
 Webster can see that the bug about Affluenza is no longer listed in his direct
 bug subscriptions.
 
-    >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
+    >>> subscriber_browser.open(
+    ...     'http://bugs.launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'bug_subscriptions'))
     Summary
@@ -114,7 +117,8 @@ member.
 
 Webster chooses to review the subscriptions for his team America.
 
-    >>> subscriber_browser.open('https://bugs.launchpad.dev/~america/+subscriptions')
+    >>> subscriber_browser.open(
+    ...     'https://bugs.launchpad.dev/~america/+subscriptions')
     >>> print subscriber_browser.title
     Subscriptions : “America” team
 
@@ -139,7 +143,8 @@ Webster now chooses to unsubscribe team America from the bug about Scofflaw.
     ...     'Unsubscribe America from this bug').selected = True
     >>> subscriber_browser.getControl('Continue').click()
 
-    >>> subscriber_browser.open('https://launchpad.dev/~america/+subscriptions')
+    >>> subscriber_browser.open(
+    ...     'https://launchpad.dev/~america/+subscriptions')
     >>> page_text = extract_text(
     ...     find_main_content(subscriber_browser.contents))
     >>> "does not have any direct bug subscriptions" in page_text
