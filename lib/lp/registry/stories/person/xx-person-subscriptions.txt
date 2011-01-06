@@ -203,3 +203,37 @@ structural subscriptions.
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, "structural-subscriptions"))
     Webster does not have any structural subscriptions.
+
+
+Subscriptions with Bug Filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If bug mail filters exist for a structural subscription they are
+displayed immediately after the subscription.
+
+    >>> from lp.testing import celebrity_logged_in, person_logged_in
+
+    >>> with celebrity_logged_in("admin"):
+    ...     nigel = factory.makePerson(
+    ...         name="nigel", password="g00dpassword")
+    >>> with person_logged_in(nigel):
+    ...     nigel_subscription = scofflaw.addBugSubscription(nigel, nigel)
+    ...     nigel_bug_filter1 = nigel_subscription.newBugFilter()
+    ...     nigel_bug_filter1.description = u"First"
+    ...     nigel_bug_filter1.tags = [u"foo"]
+    ...     nigel_bug_filter2 = nigel_subscription.newBugFilter()
+    ...     nigel_bug_filter2.description = u"Second"
+    ...     nigel_bug_filter2.tags = [u"bar"]
+    ...     nigel_browser = setupBrowser(
+    ...         auth='Basic %s:g00dpassword' % nigel.preferredemail.email)
+
+    >>> nigel_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> subscriptions = find_tag_by_id(
+    ...     nigel_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     print extract_text(subscription.dl)
+    Bug mail filter &#8220;First&#8221;
+    Matches when the bug is tagged with foo
+    Bug mail filter &#8220;Second&#8221;
+    Matches when the bug is tagged with bar

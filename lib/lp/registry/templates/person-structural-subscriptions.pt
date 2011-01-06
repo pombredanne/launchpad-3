@@ -31,6 +31,11 @@
                                  title string:Modify subscription to ${subscription/target/title};">
                 <img src="/@@/edit" />
               </a>
+              <dl style="padding-left: 2em">
+                <tal:bug-filters
+                    repeat="bug_filter subscription/bug_filters"
+                    content="structure bug_filter/@@+definition" />
+              </dl>
             </li>
           </ul>
 
