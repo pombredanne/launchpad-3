@@ -12,9 +12,7 @@ from datetime import (
 import textwrap
 import unittest
 
-from bzrlib.plugins.builder.recipe import (
-    ForbiddenInstructionError,
-)
+from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from pytz import UTC
 from storm.locals import Store
 import transaction

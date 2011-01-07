@@ -75,7 +75,7 @@
         template="../templates/translations-macros.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
-        for="lp.translations.interfaces.translationgroup.ITranslationPolicy"
+        for="lp.translations.interfaces.translationpolicy.ITranslationPolicy"
         facet="translations"
         permission="zope.Public"
         name="+portlet-translation-groups-and-permission"
