@@ -237,8 +237,25 @@ displayed immediately after the subscription.
     >>> subscriptions = find_tag_by_id(
     ...     nigel_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
-    ...     print extract_text(subscription.dl)
-    Bug mail filter &#8220;First&#8221;
-    Matches when the bug is tagged with foo
-    Bug mail filter &#8220;Second&#8221;
-    Matches when the bug is tagged with bar
+    ...     print extract_text(subscription.div)
+    Bug mail about Scofflaw is filtered; it will be sent only if it
+    matches one or more of the following filters:
+    &#8220;First&#8221; allows mail through when:
+    the bug is tagged with foo
+    &#8220;Second&#8221; allows mail through when:
+    the bug is tagged with bar
+
+Products for which a subscription exists bug for which there are no
+filters are shown with a message stating that there is no filtering.
+
+    >>> with person_logged_in(nigel):
+    ...     nigel_bug_filter1.delete()
+    ...     nigel_bug_filter2.delete()
+
+    >>> nigel_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> subscriptions = find_tag_by_id(
+    ...     nigel_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     print extract_text(subscription.div)
+    Bug mail is not filtered; mail about Scofflaw will always be sent.
