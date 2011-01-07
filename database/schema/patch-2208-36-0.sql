@@ -12,4 +12,4 @@ ALTER TABLE NameBlacklist
         ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 36, 0);
