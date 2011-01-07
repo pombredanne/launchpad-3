@@ -465,6 +465,19 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branches = self.all_branches.targetedBy(registrant)
         self.assertEqual([target_branch], list(branches.getBranches()))
 
+    def test_targetedBy_since(self):
+        # Ignore proposals created before 'since'.
+        all_branches = self.all_branches
+        bmp = self.factory.makeBranchMergeProposal()
+        date_created = self.factory.getUniqueDate()
+        removeSecurityProxy(bmp).date_created = date_created
+        registrant = bmp.registrant
+        branches = all_branches.targetedBy(registrant, since=date_created)
+        self.assertEqual([bmp.target_branch], list(branches.getBranches()))
+        since = self.factory.getUniqueDate()
+        branches = all_branches.targetedBy(registrant, since=since)
+        self.assertEqual([], list(branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
