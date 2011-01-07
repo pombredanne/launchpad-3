@@ -24,11 +24,11 @@
     <tal:conditions repeat="condition conditions">
       <span tal:content="condition" />
       <tal:conjunction condition="not:repeat/condition/end">
-        <em>and</em> <br />
+        <b>and</b> <br />
       </tal:conjunction>
     </tal:conditions>
   </dd>
   <dd tal:condition="not:conditions">
-    <em>There are no filter conditions!</em>
+    There are no filter conditions!
   </dd>
 </dl>
