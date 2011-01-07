@@ -26,11 +26,17 @@ class INameBlacklist(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     regexp = TextLine(title=_('Regular expression'), required=True)
-    comment = Text(title=_('Comment'), required=False)
+    comment = Text(
+        title=_('Comment'),
+        description=_(
+            "Why is the name blacklisted? Does the namespace belong to an "
+            "organization or is the namespace reserved by the application?"),
+        required=False)
     admin = Choice(
         title=_('Admin'),
         description=_(
-            "Person or team that can override the regexp restriction."),
+            "The team that is exempt from this restriction because it "
+            "administers this namespace for an organisation."),
         vocabulary='ValidPersonOrTeam', required=False)
 
 
