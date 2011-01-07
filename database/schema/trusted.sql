@@ -741,36 +741,38 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer)
-RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER AS
+EXTERNAL SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
     user_id = args[1]
-    if not SD.has_key("select_plan"):
-        SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp, admin FROM NameBlacklist ORDER BY id
-            """)
+    if user_id is None:
+        # Ids cannot be NULL. Zero will force every repexp rule to apply.
+        user_id = 0
+
+    # Initialize shared storage, shared between invocations.
+    if not SD.has_key("regexp_select_plan"):
+
+        # All the blacklist regexps except the ones we are an admin
+        # for. These we do not check since they are not blacklisted to us.
+        SD["regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL OR admin NOT IN (
+                SELECT team FROM TeamParticipation
+                WHERE person = $1)
+            ORDER BY id
+            """, ["integer"])
+
+        # Storage for compiled regexps
         SD["compiled"] = {}
+
     compiled = SD["compiled"]
-    # Get the list of team ids that the user is a member of because regexps
-    # that those teams admin will be skipped.
-    if user_id:
-        results = plpy.execute(
-            "SELECT team FROM TeamParticipation WHERE person = %s" % user_id)
-        user_teams = [row['team'] for row in results]
-    else:
-        # The user_id is None (NULL) or zero.
-        user_teams = []
-    for row in plpy.execute(SD["select_plan"]):
+
+    for row in plpy.execute(SD["regexp_select_plan"], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
-        regexp_admin = row["admin"]
-        if regexp_admin in user_teams:
-            # The user is exempt from the blacklisted name restriction.
-            continue
         if (compiled.get(regexp_id) is None
             or compiled[regexp_id][0] != regexp_txt):
             regexp = re.compile(
