@@ -37,7 +37,9 @@
                    tal:define="bug_filters python:list(subscription.bug_filters)"
                    tal:condition="bug_filters">
                 <p>
-                  Bug mail about <span
+                  Bug mail for <span
+                  tal:content="subscription/subscriber/displayname" />
+                  about <span
                   tal:content="subscription/target/displayname" /> is
                   filtered; it will be sent only if it matches one or
                   more of the following filters:
@@ -51,9 +53,11 @@
               <div style="padding: 1em 1em 0em 1em"
                    tal:define="bug_filters python:list(subscription.bug_filters)"
                    tal:condition="not:bug_filters">
-                Bug mail is <b>not</b> filtered; mail about <span
-                tal:content="subscription/target/displayname" /> will
-                always be sent.
+                Bug mail is <b>not</b> filtered; mail for <span
+                tal:content="subscription/subscriber/displayname" />
+                about
+                <span tal:content="subscription/target/displayname" />
+                will always be sent.
               </div>
             </li>
           </ul>

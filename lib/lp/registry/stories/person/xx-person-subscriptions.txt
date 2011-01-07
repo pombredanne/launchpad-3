@@ -220,7 +220,8 @@ filters are shown with a message stating that there is no filtering.
 
     >>> with celebrity_logged_in("admin"):
     ...     nigel = factory.makePerson(
-    ...         name="nigel", password="g00dpassword")
+    ...         name="nigel", displayname="Nigel",
+    ...         password="g00dpassword")
     >>> with person_logged_in(nigel):
     ...     nigel_subscription = scofflaw.addBugSubscription(nigel, nigel)
     ...     nigel_browser = setupBrowser(
@@ -236,7 +237,8 @@ filters are shown with a message stating that there is no filtering.
     ...         print extract_text(subscription.div)
 
     >>> show_nigels_subscriptions()
-    Bug mail is not filtered; mail about Scofflaw will always be sent.
+    Bug mail is not filtered; mail for Nigel about Scofflaw will
+    always be sent.
 
 If bug mail filters exist for a structural subscription they are
 displayed immediately after the subscription.
@@ -250,8 +252,8 @@ displayed immediately after the subscription.
     ...     nigel_bug_filter2.tags = [u"bar"]
 
     >>> show_nigels_subscriptions()
-    Bug mail about Scofflaw is filtered; it will be sent only if it
-    matches one or more of the following filters:
+    Bug mail for Nigel about Scofflaw is filtered; it will be sent
+    only if it matches one or more of the following filters:
     &#8220;First&#8221; allows mail through when:
     the bug is tagged with foo
     &#8220;Second&#8221; allows mail through when:
