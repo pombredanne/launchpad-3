@@ -666,18 +666,11 @@ def _cleanTeamParticipation(child, target_team):
     unwanted = child_descendants - keepers
 
     # Remove all unwanted from team.
-    print
-    print "!" * 72
-    from storm.tracer import debug; debug(True)
     unwanted_ids = [person.id for person in unwanted]
     store.find(TeamParticipation,
                TeamParticipation.team == target_team,
                TeamParticipation.personID.is_in(unwanted_ids)).remove()
     flush_database_updates()
-    debug(False)
-    print
-    print "Removed %s from %s" % (
-        [p.name for p in unwanted], target_team.name)
 
     # Unwanted teams and individuals have been deleted from the target team.
     # To finish up, remove the unwanted from super teams of the target team.
@@ -695,16 +688,13 @@ def _cleanTeamParticipation(child, target_team):
 
         # Look at all ancestors of team and determine which descendants need
         # to be removed.
-        print
         for ancestor in ancestors:
-            print 'Ancestor:', ancestor.name
             if ancestor not in to_be_removed:
                 # Find all direct members.
                 members = set(get_direct_members_except(ancestor, 0))
                 keepers = set()
                 while len(members) > 0:
                     tm = members.pop()
-                    print '  member:', tm.person.name
                     keepers.add(tm.person)
                     if tm.person.is_team:
                         members.update(
@@ -713,19 +703,12 @@ def _cleanTeamParticipation(child, target_team):
                 to_be_removed[ancestor] = removable
 
     # Remove all at once.
-    from pprint import pprint
-    print
-    print 'To be removed:'
     for team, removable in to_be_removed.items():
-        print '  Team', team.name, 'count:', len(removable)
-        for t in removable:
-            print '    remove:', t.name
         if len(removable) > 0:
             ids = [person.id for person in removable]
             store.find(TeamParticipation,
                        TeamParticipation.team == team,
                        TeamParticipation.personID.is_in(ids)).remove()
-    print '^^^^^^^^^^^^^^'
     flush_database_updates()
 
 
