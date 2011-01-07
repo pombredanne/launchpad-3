@@ -10,22 +10,25 @@
     <span tal:condition="description">
       &#8220;<span tal:content="view/description" />&#8221;
     </span>
+    <span tal:condition="not:description">
+      This filter
+    </span>
     <span tal:condition="conditions">
-      allows bug mail through when:
+      allows mail through when:
     </span>
     <span tal:condition="not:conditions">
-      does not allow any bug mail through:
+      does not allow mail through.
     </span>
   </dt>
   <dd tal:condition="conditions">
     <tal:conditions repeat="condition conditions">
       <span tal:content="condition" />
       <tal:conjunction condition="not:repeat/condition/end">
-        <em>and</em><br />
+        <em>and</em> <br />
       </tal:conjunction>
     </tal:conditions>
   </dd>
   <dd tal:condition="not:conditions">
-    <em>No filter conditions specified!</em>
+    <em>There are no filter conditions!</em>
   </dd>
 </dl>

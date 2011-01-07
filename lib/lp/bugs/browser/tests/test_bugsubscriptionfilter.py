@@ -300,20 +300,17 @@ class TestBugSubscriptionFilterView(
                 dd_content, normalize_whitespace(
                     root.find("dd").text_content()))
 
-    def test_render_with_nothing_set(self):
-        # If no conditions are set, the rendered description is very simple.
-        self.assertRender(u"Bug mail filter", u"Matches nothing")
+    def test_render_with_no_description_and_no_conditions(self):
+        # If no description and no conditions are set, the rendered
+        # description is very simple, and there's a short message describing
+        # the absense of conditions.
+        self.assertRender(
+            u"This filter does not allow mail through.",
+            u"There are no filter conditions!")
 
-    def test_render_with_description(self):
-        # If a description is set it appears in the content of the dt tag,
-        # surrounded by "curly" quotes.
-        with person_logged_in(self.owner):
-            self.subscription_filter.description = u"The Wait"
-        self.assertRender(u"Bug mail filter \u201cThe Wait\u201d")
-
-    def test_render_with_conditions(self):
-        # If conditions are set, a human-comprehensible message is composed by
-        # joining the conditions with "and".
+    def test_render_with_no_description_and_conditions(self):
+        # If conditions are set but no description, the rendered description
+        # is very simple, and the conditions are described.
         with person_logged_in(self.owner):
             self.subscription_filter.statuses = [
                 BugTaskStatus.NEW,
@@ -327,5 +324,24 @@ class TestBugSubscriptionFilterView(
                 ]
             self.subscription_filter.tags = [u"foo", u"bar"]
         self.assertRender(
-            dd_content=(
-                u"Matches when " + u" and ".join(self.view.conditions)))
+            u"This filter allows mail through when:",
+            u" and ".join(self.view.conditions))
+
+    def test_render_with_description_and_no_conditions(self):
+        # If a description is set it appears in the content of the dt tag,
+        # surrounded by "curly" quotes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"The Wait"
+        self.assertRender(
+            u"\u201cThe Wait\u201d does not allow mail through.",
+            u"There are no filter conditions!")
+
+    def test_render_with_description_and_conditions(self):
+        # If a description is set it appears in the content of the dt tag,
+        # surrounded by "curly" quotes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"The Wait"
+            self.subscription_filter.tags = [u"foo"]
+        self.assertRender(
+            u"\u201cThe Wait\u201d allows mail through when:",
+            u" and ".join(self.view.conditions))
