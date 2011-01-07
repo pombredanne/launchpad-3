@@ -6,17 +6,27 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCase
-
 import copy
 import gzip
 import os
 import subprocess
+import unittest
 
+try:
+    from lp.testing import TestCase
+except ImportError:
+    # mvo: *cough* poor mans version if no full LP environment is installed
+    class PoorMvosTestCase(unittest.TestCase):
+        def makeTemporaryDirectory(self):
+            import tempfile
+            return tempfile.mkdtemp(prefix="test_cron_germinate_")
+    TestCase = PoorMvosTestCase
 
 class TestCronGerminate(TestCase):
 
+    DISTRO_NAMES = [ "platform", "ubuntu", "kubuntu", "netbook" ]
     DISTS = ["hardy", "lucid", "maverick"]
+    DEVELOPMENT_DIST = "natty"
     COMPONENTS = ["main", "restricted", "universe", "multiverse"]
     ARCHES = ["i386", "amd64", "armel", "powerpc"]
     BASEPATH = os.path.abspath(os.path.dirname(__file__))
@@ -28,14 +38,24 @@ class TestCronGerminate(TestCase):
 
         # Setup a temp archive directory and populate it with the right
         # sub-directories.
+        self.tmpdir = self.makeTemporaryDirectory()
         self.archive_dir = self.setup_mock_archive_environment()
         self.ubuntu_misc_dir = os.path.join(self.archive_dir, "ubuntu-misc")
         self.ubuntu_germinate_dir = os.path.join(
             self.archive_dir, "ubuntu-germinate")
-        # This is what we pretend to be our current development distro, it
-        # needs to be in sync with the mock lp-query-distro.py.
-        self.populate_mock_archive_environment(
-            self.archive_dir, self.COMPONENTS, self.ARCHES, "natty")
+        # create a mock archive environment for all the distros we
+        # support and also include "updates" and "security"
+        for dist in self.DISTS + [self.DEVELOPMENT_DIST]:
+            self.populate_mock_archive_environment(
+                self.archive_dir, self.COMPONENTS, self.ARCHES, dist)
+            for component in ["security", "updates"]:
+                self.populate_mock_archive_environment(
+                    self.archive_dir, self.COMPONENTS, self.ARCHES, 
+                    "%s-%s" % (dist, component))
+        # generate test dummies for maintenance-time.py, if this is
+        # set to "None" instead it will use the network to test against
+        # the real data
+        self.germinate_output_dir = self.setup_mock_germinate_output()
 
     def create_directory_if_missing(self, directory):
         """Create the given directory if it does not exist."""
@@ -63,13 +83,25 @@ class TestCronGerminate(TestCase):
         f.write(content)
         f.close()
 
+    def setup_mock_germinate_output(self):
+        # empty structure files
+        germinate_output_dir = os.path.join(
+            self.tmpdir, "germinate-test-data", "germinate-output")
+        dirs = []
+        for distro_name in self.DISTRO_NAMES:
+            for distro_series in self.DISTS:
+                dirs.append(os.path.join(germinate_output_dir, "%s.%s" % (distro_name, distro_series)))
+        self.create_directory_list_if_missing(dirs)
+        for dir in dirs:
+            self.create_file(os.path.join(dir, "structure"))
+        return germinate_output_dir
+
     def setup_mock_archive_environment(self):
         """Creates a mock archive environment and populate
            it with the subdirectories that germinate will expect.
         """
-        tmpdir = self.makeTemporaryDirectory()
         archive_dir = os.path.join(
-            tmpdir, "germinate-test-data", "ubuntu-archive")
+            self.tmpdir, "germinate-test-data", "ubuntu-archive")
         ubuntu_misc_dir = os.path.join(archive_dir, "ubuntu-misc")
         ubuntu_germinate_dir = os.path.join(archive_dir, "ubuntu-germinate")
         ubuntu_dists_dir = os.path.join(archive_dir, "ubuntu", "dists")
@@ -105,7 +137,8 @@ class TestCronGerminate(TestCase):
                     self.create_gzip_file(os.path.join(
                             targetdir, "Packages.gz"))
 
-    def create_fake_environment(self, basepath, archive_dir):
+    def create_fake_environment(self, basepath, archive_dir, 
+                                germinate_output_dir):
         """Create a fake process envirionment based on os.environ that
            sets TEST_ARCHIVEROOT, TEST_LAUNCHPADROOT and modifies PATH
            to point to the mock lp-bin directory.
@@ -123,6 +156,26 @@ class TestCronGerminate(TestCase):
             os.path.abspath(os.path.join(
                 basepath, "germinate-test-data/mock-bin")),
             os.environ["PATH"])
+        # test dummies for get-support-timeframe.py, they need to be
+        # in URI format
+        if germinate_output_dir:
+            # redirect base url to the mock environment
+            fake_environ["MAINTENANCE_CHECK_BASE_URL"] = "file://%s" % \
+                germinate_output_dir
+            # point to mock archive root
+            archive_root_url = "file://%s" % os.path.abspath(
+                os.path.join(archive_dir, "ubuntu"))
+            fake_environ["MAINTENANCE_CHECK_ARCHIVE_ROOT"] = archive_root_url
+            # maintenance-check.py expects a format string
+            hints_file_url = germinate_output_dir + "/platform.%s/SUPPORTED_HINTS"
+            for distro in self.DISTS:
+                open(hints_file_url % distro, "w")
+            fake_environ["MAINTENANCE_CHECK_HINTS_DIR_URL"] = "file://%s" % \
+                os.path.abspath(hints_file_url)
+            # add hints override to test that feature
+            f=open(hints_file_url % "lucid", "a")
+            f.write("linux-image-2.6.32-25-server 5y\n")
+            f.close()
         return fake_environ
 
     def test_maintenance_update(self):
@@ -137,7 +190,7 @@ class TestCronGerminate(TestCase):
         canary = "abrowser Task mock\n"
         # Build fake environment based on the real one.
         fake_environ = self.create_fake_environment(
-            self.BASEPATH, self.archive_dir)
+            self.BASEPATH, self.archive_dir, self.germinate_output_dir)
         # Create mock override data files that include the canary string
         # so that we can test later if it is still there.
         for dist in self.DISTS:
@@ -157,11 +210,13 @@ class TestCronGerminate(TestCase):
             supported_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main.supported" % dist)
-            self.assertTrue(os.path.exists(supported_override_file))
+            self.assertTrue(os.path.exists(supported_override_file),
+                            "no override file created for '%s'" % dist)
             main_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
-            self.assertIn(canary, open(main_override_file).read())
+            self.assertIn(canary, open(main_override_file).read(),
+                          "canary no longer there for '%s'" % dist)
 
         # Check here if we got the data from maintenance-check.py that
         # we expected. This is a kernel name from lucid-updates and it
@@ -170,3 +225,6 @@ class TestCronGerminate(TestCase):
         lucid_supported_override_file = os.path.join(
             self.ubuntu_misc_dir, "more-extra.override.lucid.main")
         self.assertIn(needle, open(lucid_supported_override_file).read())
+
+if __name__ == "__main__":
+    unittest.main()
