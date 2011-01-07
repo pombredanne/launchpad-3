@@ -640,14 +640,90 @@ def get_direct_ancestors(target):
 
 import os
 USE_OLD = bool(os.getenv('USE_OLD', False))
-def _cleanTeamParticipation(child, target_team):
+
+
+def _cleanTeamParticipation(child, parent):
     """Remove child from team and clean up child's subteams.
 
     A subteam S of child is removed from target_team's TeamParticipation
     table if the only path from S to team is via child.
     """
     if USE_OLD:
-        return _old_cleanTeamParticipation(child, target_team)
+        return _old_cleanTeamParticipation(child, parent)
+
+    store = Store.of(parent)
+    store.execute("""
+        /* Delete participation entries for the child and the child's
+         * direct/indirect members in other ancestor teams, unless those
+         * ancestor teams have another path the the child besides the
+         * membership that has just been deactivated.
+         */
+        DELETE FROM TeamParticipation
+        USING (
+            /* Get all the participation entries that might need to be
+             * deleted.
+             */
+            SELECT person, team
+            FROM TeamParticipation
+            WHERE person IN (
+                    SELECT person
+                    FROM TeamParticipation
+                    WHERE team = %(child)s
+                )
+                AND team IN (
+                    SELECT team
+                    FROM TeamParticipation
+                    WHERE person = %(child)s
+                        AND team != %(child)s
+                )
+
+
+            EXCEPT (
+
+                /* Compute the TeamParticipation entries that we need to
+                 * keep by walking the tree in the TeamMembership table.
+                 */
+                WITH RECURSIVE parent(person, team) AS (
+                    /* Start by getting all the ancestors of the removed
+                     * person from the TeamParticipation table, then get
+                     * those ancestors direct members to recurse through
+                     * the tree from the top.
+                     */
+                    SELECT ancestor.person, ancestor.team
+                    FROM TeamMembership ancestor
+                    WHERE ancestor.status IN %(active_states)s
+                        AND ancestor.team IN (
+                            SELECT team
+                            FROM TeamParticipation
+                            WHERE person = %(child)s
+                        )
+
+                    UNION
+
+                    /* Find the next level of direct members, but hold
+                     * onto the parent.team, since we want the top and
+                     * bottom of the hierarchy to calculate the
+                     * TeamParticipation. The query above makes sure
+                     * that we do this for all the ancestors.
+                     */
+                    SELECT child.person, parent.team
+                    FROM TeamMembership child
+                        JOIN parent ON child.team = parent.person
+                    WHERE child.status IN %(active_states)s
+                )
+                SELECT person, team
+                FROM parent
+            )
+        ) AS keeping
+        WHERE TeamParticipation.person = keeping.person
+            AND TeamParticipation.team = keeping.team
+        """ % sqlvalues(
+            child=child.id,
+            active_states=ACTIVE_STATES))
+    store.invalidate()
+
+
+def _bac_cleanTeamParticipation(child, target_team):
     store = Store.of(target_team)
     # Find the descendants of child, teams and people.
     child_descendants = set(find_descendants(child))

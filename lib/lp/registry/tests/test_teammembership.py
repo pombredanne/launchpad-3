@@ -345,7 +345,7 @@ class TestParticipationCleanup(TeamParticipationTestCase):
         The number of db queries should be constant not O(depth).
         """
         self.assertStatementCount(
-            18,
+            7,
             self.team5.setMembershipData, self.no_priv,
             TeamMembershipStatus.DEACTIVATED, self.team5.teamowner)
 

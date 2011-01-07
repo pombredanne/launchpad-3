@@ -89,10 +89,11 @@ def main(arguments):
 
     if person_set.getByName('child') is None:
         child, parent = make_hierarchy()
-        transaction.commit()
     else:
         child = person_set.getByName('child')
         parent = person_set.getByName('parent')
+    parent.addMember(child, parent.teamowner)
+    transaction.commit()
 
     from lp.registry.model import person
     print "----------- OLD"
