@@ -1795,14 +1795,17 @@ BugMessage""" % sqlvalues(self.id))
             # Admins can view all bugs.
             return True
         else:
-            # This is a private bug. Explicit subscribers may view it.
-            for subscription in self.subscriptions:
-                if user.inTeam(subscription.person):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Assignees to bugtasks can also see the private bug.
+            # At this point we know the bug is private and the user is
+            # unprivileged.
+
+            # Assignees to bugtasks can see the private bug.
             for bugtask in self.bugtasks:
                 if user.inTeam(bugtask.assignee):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Explicit subscribers may also view it.
+            for subscription in self.subscriptions:
+                if user.inTeam(subscription.person):
                     self._known_viewers.add(user.id)
                     return True
         return False
@@ -2194,10 +2197,15 @@ class BugSet:
                     (Bug.private = FALSE OR
                      Bug.id in (
                          SELECT Bug.id
-                         FROM Bug, BugSubscription, TeamParticipation
-                         WHERE Bug.id = BugSubscription.bug AND
+                         FROM Bug, BugSubscription, BugTask, TeamParticipation
+                         WHERE (Bug.id = BugSubscription.bug AND
                              TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team))
+                             BugSubscription.person = TeamParticipation.team)
+                             OR (
+                             BugTask.bug = Bug.id AND
+                             TeamParticipation.person = %(personid)s AND
+                             BugTask.assignee = TeampParticipation.team
+                             ))
                              """ % sqlvalues(personid=user.id))
         else:
             # Anonymous user; filter to include only public bugs in

@@ -2358,9 +2358,16 @@ class BugTaskSet:
         else:
             decorator = simple_decorator
 
+        def cache_assignees(rows):
+            # The decorator must be called to turn the rows of the result into
+            # a list of BugTasks, which can be used for caching the assignees.
+            BugTaskSet._cache_assignees([decorator(row) for row in rows])
+
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        return DecoratedResultSet(result, result_decorator=decorator)
+        return DecoratedResultSet(
+            result, result_decorator=decorator,
+            pre_iter_hook=cache_assignees)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2400,6 +2407,15 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], params).result_set
 
+    @staticmethod
+    def _cache_assignees(rows):
+        assignee_ids = set(
+            bug_task.assigneeID for bug_task in rows)
+        assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        assignee_ids, need_validity=True)
+        # Execute query to load storm cache.
+        list(assignees)
+
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
         params = BugTaskSearchParams(
@@ -2408,16 +2424,8 @@ class BugTaskSet:
             omit_dupes=True, exclude_conjoined_tasks=True)
         non_conjoined_slaves = self.search(params)
 
-        def cache_people(rows):
-            assignee_ids = set(
-                bug_task.assigneeID for bug_task in rows)
-            assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                assignee_ids, need_validity=True)
-            # Execute query to load storm cache.
-            list(assignees)
-
         return DecoratedResultSet(
-            non_conjoined_slaves, pre_iter_hook=cache_people)
+            non_conjoined_slaves, pre_iter_hook=BugTaskSet._cache_assignees)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
