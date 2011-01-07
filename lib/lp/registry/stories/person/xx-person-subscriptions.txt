@@ -240,13 +240,24 @@ filters are shown with a message stating that there is no filtering.
     Bug mail is not filtered; mail for Nigel about Scofflaw will
     always be sent.
 
-If bug mail filters exist for a structural subscription they are
+If a bug mail filter exists for a structural subscription it is
 displayed immediately after the subscription.
 
     >>> with person_logged_in(nigel):
     ...     nigel_bug_filter1 = nigel_subscription.newBugFilter()
     ...     nigel_bug_filter1.description = u"First"
     ...     nigel_bug_filter1.tags = [u"foo"]
+
+    >>> show_nigels_subscriptions()
+    Bug mail for Nigel about Scofflaw is filtered; it will be sent
+    only if it matches the following filter:
+    &#8220;First&#8221; allows mail through when:
+    the bug is tagged with foo
+
+Multiple filters will be shown if they exist, with a slightly modified
+message.
+
+    >>> with person_logged_in(nigel):
     ...     nigel_bug_filter2 = nigel_subscription.newBugFilter()
     ...     nigel_bug_filter2.description = u"Second"
     ...     nigel_bug_filter2.tags = [u"bar"]

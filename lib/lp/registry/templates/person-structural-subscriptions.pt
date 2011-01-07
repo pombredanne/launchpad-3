@@ -43,7 +43,12 @@
                     /> about <span
                     tal:content="subscription/target/displayname" />
                     is filtered; it will be sent only if it matches
-                    one or more of the following filters:
+                    <tal:one-filter condition="python: len(bug_filters) == 1">
+                      the following filter:
+                    </tal:one-filter>
+                    <tal:multiple-filters condition="python: len(bug_filters) > 1">
+                      one or more of the following filters:
+                    </tal:multiple-filters>
                   </p>
                   <dl>
                     <tal:definitions
