@@ -930,12 +930,12 @@ def feature_flags():
 
 
 def get_lsb_information():
-    # XXX: This doesn't seem like a generically-useful testing function.
-    # Perhaps it should go in a sub-module or something? -- jml
     """Returns a dictionary with the LSB host information.
 
     Code stolen form /usr/bin/lsb-release
     """
+    # XXX: This doesn't seem like a generically-useful testing function.
+    # Perhaps it should go in a sub-module or something? -- jml
     distinfo = {}
     if os.path.exists('/etc/lsb-release'):
         for line in open('/etc/lsb-release'):
@@ -1006,14 +1006,14 @@ def normalize_whitespace(string):
 
 
 def map_branch_contents(branch):
-    # XXX: This doesn't seem to be a generically useful testing function.
-    # Perhaps it should go into a sub-module? -- jml
     """Return all files in branch at `branch_url`.
 
     :param branch_url: the URL for an accessible branch.
     :return: a dict mapping file paths to file contents.  Only regular
         files are included.
     """
+    # XXX: This doesn't seem to be a generically useful testing function.
+    # Perhaps it should go into a sub-module? -- jml
     contents = {}
     tree = branch.basis_tree()
     tree.lock_read()
