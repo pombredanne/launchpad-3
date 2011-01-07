@@ -105,6 +105,7 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
+from canonical.database.constants import DEFAULT
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -501,7 +502,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         # Evaluate the log when called, not later, to permit the librarian to
         # be shutdown before the detail is rendered.
         chunks = fixture.logChunks()
-        content = Content(UTF8_TEXT, lambda:chunks)
+        content = Content(UTF8_TEXT, lambda: chunks)
         self.addDetail('librarian-log', content)
 
     def setUp(self):
@@ -711,17 +712,21 @@ class BrowserTestCase(TestCaseWithFactory):
         self.user = self.factory.makePerson(password='test')
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
-                       rootsite=None):
-        login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
-        logout()
+                       rootsite=None, user=DEFAULT):
+        if user is DEFAULT:
+            user = self.user
         if no_login:
+            user = None
+        login(ANONYMOUS)
+        url = canonical_url(context, view_name=view_name, rootsite=rootsite)
+        logout()
+        if user is None:
             from canonical.launchpad.testing.pages import setupBrowser
             browser = setupBrowser()
             browser.open(url)
             return browser
         else:
-            return self.getUserBrowser(url, self.user)
+            return self.getUserBrowser(url, user)
 
     def getMainContent(self, context, view_name=None, rootsite=None,
                        no_login=False):
@@ -924,9 +929,9 @@ def feature_flags():
         features.per_thread.features = old_features
 
 
-# XXX: This doesn't seem like a generically-useful testing function. Perhaps
-# it should go in a sub-module or something? -- jml
 def get_lsb_information():
+    # XXX: This doesn't seem like a generically-useful testing function.
+    # Perhaps it should go in a sub-module or something? -- jml
     """Returns a dictionary with the LSB host information.
 
     Code stolen form /usr/bin/lsb-release
@@ -1000,9 +1005,9 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
-# XXX: This doesn't seem to be a generically useful testing function. Perhaps
-# it should go into a sub-module? -- jml
 def map_branch_contents(branch):
+    # XXX: This doesn't seem to be a generically useful testing function.
+    # Perhaps it should go into a sub-module? -- jml
     """Return all files in branch at `branch_url`.
 
     :param branch_url: the URL for an accessible branch.

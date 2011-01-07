@@ -43,6 +43,7 @@ UNEDITABLE_BUILD_STATES = (
     BuildStatus.SUPERSEDED,
     BuildStatus.FAILEDTOUPLOAD,)
 
+
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
     usedfor = ISourcePackageRecipeBuild
@@ -162,6 +163,13 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
             description=u'The score of the recipe.')
 
     page_title = label = "Rescore build"
+
+    def __call__(self):
+        if self.context.buildqueue_record is not None:
+            return super(SourcePackageRecipeBuildRescoreView, self).__call__()
+        self.request.response.addWarningNotification(
+            'Cannot rescore this build because it is not queued.')
+        self.request.response.redirect(canonical_url(self.context))
 
     @property
     def cancel_url(self):

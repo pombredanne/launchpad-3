@@ -28,6 +28,7 @@ from lp.testing import (
     BrowserTestCase,
     login,
     logout,
+    person_logged_in,
     )
 
 
@@ -207,6 +208,38 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+
+    def test_rescore_build_wrong_state_stale_link(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user has a stale link that they click on.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=experts)
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
+
+    def test_rescore_build_wrong_state_stale_page(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user is on the rescore page and submits.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=experts)
+        with person_logged_in(experts):
+            build.cancelBuild()
+        browser.getLink('Rescore build').click()
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
 
     def test_builder_history(self):
         build = self.makeRecipeBuild()
