@@ -870,8 +870,13 @@ with different verbose_bugnotifications settings.
 
     >>> switch_db_to_launchpad()
     >>> bug = factory.makeBug(
-    ...     product=factory.makeProduct(title='Foo'), title='Foo is broken',
-    ...     description='desc')
+    ...     product=factory.makeProduct(title='Foo'),
+    ...     title='In the beginning, the universe was created. This '
+    ...         'has made a lot of people very angry and has been '
+    ...         'widely regarded as a bad move',
+    ...     description="This is a long description of the bug, which "
+    ...         "will be automatically wrapped by the BugNotification "
+    ...         "machinery. Ain't technology great?")
 
     >>> verbose_person = factory.makePerson(
     ...     displayname='Verbose Person', email='verbose@example.com')
@@ -982,7 +987,7 @@ We can see that Concise Person doesn't receive verbose notifications:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1003,7 +1008,7 @@ he wants concise ones.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1023,13 +1028,15 @@ Whereas Verbose Person does get the description and task status:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     Status in Foo:
       New
     <BLANKLINE>
     Bug description:
-      desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/.../+bug/.../+subscribe
@@ -1052,16 +1059,44 @@ And Concise Team Person does too, even though his team doesn't want them:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     Status in Foo:
       New
     <BLANKLINE>
     Bug description:
-      desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     ----------------------------------------------------------------------
 
+It's important to note that the bug title and description are wrapped
+and indented correctly in verbose notifications.
+
+    >>> message = collated_messages['conciseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     ...
+     'Bug description:',
+     '  This is a long description of the bug, which will be automatically',
+     "  wrapped by the BugNotification machinery. Ain't technology great?",
+    ...
+
+The title is also wrapped and indented in normal notifications.
+
+    >>> message = collated_messages['verboseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     '']
 
 Notification Recipients
 -----------------------
