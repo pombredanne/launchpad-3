@@ -94,8 +94,14 @@ def main(arguments):
         child = person_set.getByName('child')
         parent = person_set.getByName('parent')
 
-    print 'child:', child
-    print 'parent:', parent
+    from lp.registry.model import person
+    print "----------- OLD"
+    person.USE_OLD = True
+    test_remove_member(parent, child)
+    transaction.commit()
+    print
+    print "----------- NEW"
+    person.USE_OLD = False
     test_remove_member(parent, child)
 
     transaction.commit()

@@ -638,7 +638,8 @@ def get_direct_ancestors(target):
     return ancestors
 
 
-USE_OLD = True
+import os
+USE_OLD = bool(os.getenv('USE_OLD', False))
 def _cleanTeamParticipation(child, target_team):
     """Remove child from team and clean up child's subteams.
 
@@ -665,11 +666,18 @@ def _cleanTeamParticipation(child, target_team):
     unwanted = child_descendants - keepers
 
     # Remove all unwanted from team.
+    print
+    print "!" * 72
+    from storm.tracer import debug; debug(True)
     unwanted_ids = [person.id for person in unwanted]
     store.find(TeamParticipation,
                TeamParticipation.team == target_team,
                TeamParticipation.personID.is_in(unwanted_ids)).remove()
     flush_database_updates()
+    debug(False)
+    print
+    print "Removed %s from %s" % (
+        [p.name for p in unwanted], target_team.name)
 
     # Unwanted teams and individuals have been deleted from the target team.
     # To finish up, remove the unwanted from super teams of the target team.
@@ -678,50 +686,46 @@ def _cleanTeamParticipation(child, target_team):
     ##                                                       target_team)
     queue = [target_team]
     processed = set()
-    inherited_keepers = {}
     to_be_removed = {}
     while len(queue) > 0:
         team = queue.pop()
         processed.add(team)
         ancestors = set(get_direct_ancestors(team)) - processed
         queue[0:0] = list(ancestors)
-        keepers = set()
 
         # Look at all ancestors of team and determine which descendants need
         # to be removed.
+        print
         for ancestor in ancestors:
+            print 'Ancestor:', ancestor.name
             if ancestor not in to_be_removed:
-                inherited_keepers.setdefault(ancestor, set())
                 # Find all direct members.
-                direct_members = get_direct_members_except(ancestor, team)
-                keepers = inherited_keepers.get(team, set())
-                for tm in direct_members:
-                    if ancestor in get_direct_ancestors(tm.person):
-                        continue
+                members = set(get_direct_members_except(ancestor, 0))
+                keepers = set()
+                while len(members) > 0:
+                    tm = members.pop()
+                    print '  member:', tm.person.name
                     keepers.add(tm.person)
                     if tm.person.is_team:
-                        keepers.update(find_descendants(tm.person))
-                inherited_keepers[ancestor].update(keepers)
+                        members.update(
+                            get_direct_members_except(tm.person, 0))
                 removable = unwanted - keepers
-            else:
-                # This team has been processed previously.  The removable
-                # items are those previously discovered
-                # (to_be_removed[ancestor]) minus any teams that are inherited
-                # keepers.
-                removable = (to_be_removed[ancestor] -
-                             inherited_keepers[ancestor])
-            to_be_removed[ancestor] = removable
+                to_be_removed[ancestor] = removable
 
     # Remove all at once.
     from pprint import pprint
     print
-    pprint(to_be_removed)
+    print 'To be removed:'
     for team, removable in to_be_removed.items():
+        print '  Team', team.name, 'count:', len(removable)
+        for t in removable:
+            print '    remove:', t.name
         if len(removable) > 0:
             ids = [person.id for person in removable]
             store.find(TeamParticipation,
                        TeamParticipation.team == team,
                        TeamParticipation.personID.is_in(ids)).remove()
+    print '^^^^^^^^^^^^^^'
     flush_database_updates()
 
 

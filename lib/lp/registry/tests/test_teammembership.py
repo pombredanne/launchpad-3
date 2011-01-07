@@ -347,7 +347,7 @@ class TestParticipationCleanup(TeamParticipationTestCase):
         self.assertStatementCount(
             18,
             self.team5.setMembershipData, self.no_priv,
-            TeamMembershipStatus.DEACTIVATED,  self.team5.teamowner)
+            TeamMembershipStatus.DEACTIVATED, self.team5.teamowner)
 
 
 class TestTeamParticipationMesh(TeamParticipationTestCase):
