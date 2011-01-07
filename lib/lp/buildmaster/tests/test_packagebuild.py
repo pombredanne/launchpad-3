@@ -141,6 +141,15 @@ class TestPackageBuild(TestPackageBuildBase):
         self.package_build.storeUploadLog("Some content")
         self.failUnless(self.package_build.upload_log.restricted)
 
+    def test_storeUploadLog_unicode(self):
+        # Unicode upload logs are uploaded as UTF-8.
+        unicode_content = u"Some content \N{SNOWMAN}"
+        self.package_build.storeUploadLog(unicode_content)
+        self.failIfEqual(None, self.package_build.upload_log)
+        self.failUnlessEqual(
+            hashlib.sha1(unicode_content.encode('utf-8')).hexdigest(),
+            self.package_build.upload_log.content.sha1)
+
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
         Store.of(self.package_build).flush()
