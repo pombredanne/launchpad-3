@@ -39,7 +39,7 @@
                 <tal:filtered condition="bug_filters">
                   <p>
                     Bug mail for <span
-                    tal:content="subscription/subscriber/displayname"
+                    tal:content="subscription/subscriber/fmt:displayname"
                     /> about <span
                     tal:content="subscription/target/displayname" />
                     is filtered; it will be sent only if it matches
@@ -53,7 +53,7 @@
                 </tal:filtered>
                 <tal:unfiltered condition="not:bug_filters">
                   Bug mail is <b>not</b> filtered; mail for <span
-                  tal:content="subscription/subscriber/displayname" />
+                  tal:content="subscription/subscriber/fmt:displayname" />
                   about
                   <span tal:content="subscription/target/displayname" />
                   will always be sent.
