@@ -25,9 +25,7 @@
 
           <ul tal:condition="structural_subscriptions">
             <li tal:repeat="subscription structural_subscriptions"
-                style="margin: 1em 0em; padding: 1em; background-color: #eee;
-                       -moz-border-radius: 0em 1em 1em 1em;
-                            border-radius: 0em 1em 1em 1em;">
+                style="margin: 1em 0em; padding: 1em; border: 1px solid #ddd;">
               <span tal:replace="structure subscription/target/fmt:link" />
               <a tal:condition="view/canUnsubscribeFromBugTasks"
                  tal:attributes="href subscription/target/fmt:url/+subscribe;
