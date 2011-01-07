@@ -32,9 +32,12 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    Func,
+    In,
     Join,
     LeftJoin,
     Or,
+    Select,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -1138,7 +1141,7 @@ class POTemplateSubset:
             # Do not continue, else it would trigger an existingpo assertion.
             return
 
-    def new(self, name, translation_domain, path, owner):
+    def new(self, name, translation_domain, path, owner, copy_pofiles=True):
         """See `IPOTemplateSubset`."""
         header_params = {
             'origin': 'PACKAGE VERSION',
@@ -1154,7 +1157,8 @@ class POTemplateSubset:
                           path=path,
                           owner=owner,
                           header=standardTemplateHeader % header_params)
-        self._copyPOFilesFromSharingTemplates(template)
+        if copy_pofiles:
+            self._copyPOFilesFromSharingTemplates(template)
         return template
 
     def getPOTemplateByName(self, name):
@@ -1426,53 +1430,10 @@ class POTemplateSharingSubset(object):
         assert distribution or not sourcepackagename, (
             "Picking a source package only makes sense with a distribution.")
         self.potemplateset = potemplateset
-        self.share_by_name = False
-        self.subset = None
 
-        if distribution is not None:
-            self.distribution = distribution
-            self.sourcepackagename = sourcepackagename
-            if sourcepackagename is not None:
-                product = self._findUpstreamProduct(
-                    distribution, sourcepackagename)
-                if product is None:
-                    self.share_by_name = self._canShareByName(
-                        distribution, sourcepackagename)
-        if product is not None:
-            self.product = product
-
-    def _findUpstreamProduct(self, distribution, sourcepackagename):
-        """Find the upstream product by looking at the translation focus.
-
-        The translation focus is used to pick a distroseries, so a source
-        package instance can be created. If no translation focus is set,
-        the distribution's current series is used."""
-
-        from lp.registry.model.sourcepackage import SourcePackage
-        distroseries = distribution.translation_focus
-        if distroseries is None:
-            distroseries = distribution.currentseries
-        sourcepackage = SourcePackage(sourcepackagename, distroseries)
-        if sourcepackage.productseries is None:
-            return None
-        return sourcepackage.productseries.product
-
-    def _canShareByName(self, distribution, sourcepackagename):
-        """Determine if sharing by sourcepackagename is a wise thing.
-
-        Without a product, the linkage between sharing packages can only be
-        determined by their name. This is only (fairly) safe if none of these
-        is packaged elsewhere.
-        """
-        from lp.registry.model.distroseries import DistroSeries
-        origin = Join(
-            Packaging, DistroSeries,
-            Packaging.distroseries == DistroSeries.id)
-        matches = Store.of(distribution).using(origin).find(
-            Packaging,
-            And(DistroSeries.distribution == distribution.id,
-                Packaging.sourcepackagename == sourcepackagename.id))
-        return not bool(matches.any())
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        self.product = product
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
@@ -1494,27 +1455,36 @@ class POTemplateSharingSubset(object):
         :return: A ResultSet for the query.
         """
         # Avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.productseries import ProductSeries
 
-        ProductSeries1 = ClassAlias(ProductSeries)
+        subquery = Select(
+            (DistroSeries.distributionID, Packaging.sourcepackagenameID),
+            tables=(Packaging, ProductSeries, DistroSeries),
+            where=And(
+                Packaging.productseriesID == ProductSeries.id,
+                Packaging.distroseriesID == DistroSeries.id,
+                ProductSeries.product == self.product),
+            distinct=True)
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
                 POTemplate.productseriesID == ProductSeries.id),
-            Join(
-                Packaging, ProductSeries1,
-                Packaging.productseriesID == ProductSeries1.id),
-            And(
-                Packaging.distroseriesID == POTemplate.distroseriesID,
-                Packaging.sourcepackagenameID == (
-                        POTemplate.sourcepackagenameID)))
+            DistroSeries,
+            POTemplate.distroseriesID == DistroSeries.id)
+
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
+                templatename_clause,
                 Or(
-                    ProductSeries.productID == self.product.id,
-                    ProductSeries1.productID == self.product.id),
-                templatename_clause))
+                  ProductSeries.product == self.product,
+                  In(
+                     Func(
+                         'ROW',
+                         DistroSeries.distributionID,
+                         POTemplate.sourcepackagenameID),
+                     subquery))))
 
     def _queryBySourcepackagename(self, templatename_clause):
         """Build the query that finds POTemplates by their names.
@@ -1524,16 +1494,35 @@ class POTemplateSharingSubset(object):
         name.
         :return: A ResultSet for the query.
         """
+        # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
-        origin = Join(
-            POTemplate, DistroSeries,
-            POTemplate.distroseries == DistroSeries.id)
+        from lp.registry.model.productseries import ProductSeries
+
+        subquery = Select(
+            ProductSeries.productID,
+            tables=(Packaging, ProductSeries, DistroSeries),
+            where=And(
+                Packaging.productseriesID == ProductSeries.id,
+                Packaging.distroseriesID == DistroSeries.id,
+                DistroSeries.distribution == self.distribution,
+                Packaging.sourcepackagename == self.sourcepackagename),
+            distinct=True)
+        origin = LeftJoin(
+            LeftJoin(
+                POTemplate, ProductSeries,
+                POTemplate.productseriesID == ProductSeries.id),
+            DistroSeries,
+            POTemplate.distroseriesID == DistroSeries.id)
+
         return Store.of(self.distribution).using(origin).find(
             POTemplate,
             And(
-                DistroSeries.distributionID == self.distribution.id,
-                POTemplate.sourcepackagename == self.sourcepackagename,
-                templatename_clause))
+                templatename_clause,
+                Or(
+                  And(
+                    DistroSeries.distribution == self.distribution,
+                    POTemplate.sourcepackagename == self.sourcepackagename),
+                  In(ProductSeries.productID, subquery))))
 
     def _queryByDistribution(self, templatename_clause):
         """Special case when templates are searched across a distribution."""
@@ -1544,7 +1533,7 @@ class POTemplateSharingSubset(object):
         """Select the right query to be used."""
         if self.product is not None:
             return self._queryByProduct(templatename_clause)
-        elif self.share_by_name:
+        elif self.sourcepackagename is not None:
             return self._queryBySourcepackagename(templatename_clause)
         elif self.distribution is not None and self.sourcepackagename is None:
             return self._queryByDistribution(templatename_clause)

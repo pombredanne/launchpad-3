@@ -2479,7 +2479,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
-                       translation_domain=None, path=None):
+                       translation_domain=None, path=None,
+                       copy_pofiles=True):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -2506,7 +2507,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if path is None:
             path = 'messages.pot'
 
-        return subset.new(name, translation_domain, path, owner)
+        return subset.new(name, translation_domain, path, owner, copy_pofiles)
 
     def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
         """Create a POTemplate and associated POFiles.
