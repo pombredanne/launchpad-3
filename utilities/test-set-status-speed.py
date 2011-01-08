@@ -95,14 +95,15 @@ def main(arguments):
     parent.addMember(child, parent.teamowner)
     transaction.commit()
 
-    from lp.registry.model import person
+    from lp.registry.model import teammembership
+    assert hasattr(teammembership, 'USE_OLD')
     print "----------- OLD"
-    person.USE_OLD = True
+    teammembership.USE_OLD = True
     test_remove_member(parent, child)
     transaction.commit()
     print
     print "----------- NEW"
-    person.USE_OLD = False
+    teammembership.USE_OLD = False
     test_remove_member(parent, child)
 
     transaction.commit()
