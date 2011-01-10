@@ -2204,7 +2204,7 @@ class BugSet:
                              OR (
                              BugTask.bug = Bug.id AND
                              TeamParticipation.person = %(personid)s AND
-                             BugTask.assignee = TeampParticipation.team
+                             TeamParticipation.team = BugTask.assignee)
                              ))
                              """ % sqlvalues(personid=user.id))
         else:

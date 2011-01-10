@@ -325,6 +325,7 @@ private:
     ...             user=current_user()))
     ...     return sorted(all_bugs - found_bugs)
 
+    >>> login("test@canonical.com")
     >>> hidden_bugs()
     [14]
 
@@ -343,6 +344,16 @@ Likewise Foo Bar, an admin, can access the bug.
 Bug 14, which is private, is returned by the search results for an
 admin as well:
 
+    >>> hidden_bugs()
+    []
+
+If a bug is private, bugtask assignees can see the bug.  Previously
+sample person could not see bug 14.  But after making him the
+assignee it is visible.
+
+    >>> bug14 = bugset.get(14)
+    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
+    >>> login("test@canonical.com")
     >>> hidden_bugs()
     []
 
