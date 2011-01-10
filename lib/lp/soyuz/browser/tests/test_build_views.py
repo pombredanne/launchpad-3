@@ -281,3 +281,14 @@ class TestBuildViews(TestCaseWithFactory):
         job.suspend()
         self.assertEquals(job.status, JobStatus.SUSPENDED)
         self.assertFalse(view.dispatch_time_estimate_available)
+
+    def test_old_url_redirection(self):
+        # When users go to the old build URLs, they are redirected to the 
+        # equivalent new URLs.
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        url = "http://launchpad.dev/+builds/+build/%s" % build.id
+        expected_url = canonical_url(build)
+        browser = self.getUserBrowser(url)
+        self.assertEquals(browser.url, expected_url)
+
