@@ -51,16 +51,26 @@ class BugTagsWidgetBase:
         else:
             return self._missing
 
+    def _tagsToFieldValue(self, tags):
+        """Package up the tags for the field.
+
+        :param tags: `None` if the submitted data was missing, otherwise an
+            iterable of tags.
+        """
+        if tags is None:
+            return []
+        else:
+            return sorted(set(tags))
+
     def _toFieldValue(self, input):
         """Convert a space separated string to a list of strings."""
         input = input.strip()
         if input == self._missing:
-            return []
+            return self._tagsToFieldValue(None)
         else:
-            tags = set(tag.lower()
-                       for tag in re.split(r'[,\s]+', input)
-                       if len(tag) != 0)
-            return sorted(tags)
+            return self._tagsToFieldValue(
+                tag.lower() for tag in re.split(r'[,\s]+', input)
+                if len(tag) != 0)
 
     def getInputValue(self):
         try:
@@ -87,6 +97,7 @@ class BugTagsWidgetBase:
 
     def _getInputValue(self):
         raise NotImplementedError('_getInputValue must be overloaded')
+
 
 class BugTagsWidget(BugTagsWidgetBase, TextWidget):
     """A widget for editing bug tags."""
