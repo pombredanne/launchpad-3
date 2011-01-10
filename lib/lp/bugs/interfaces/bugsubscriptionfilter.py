@@ -64,7 +64,7 @@ class IBugSubscriptionFilterAttributes(Interface):
 
     statuses = exported(
         FrozenSet(
-            title=_("The statuses interested in (empty for all):"),
+            title=_("The statuses interested in (empty for all)"),
             required=True, default=frozenset(),
             value_type=Choice(
                 title=_('Status'), vocabulary=BugTaskStatus)))
