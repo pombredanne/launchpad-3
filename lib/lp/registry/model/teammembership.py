@@ -501,20 +501,23 @@ class TeamParticipation(SQLBase):
 def _cleanTeamParticipation(child, parent):
     """Remove child from team and clean up child's subteams.
 
-    A subteam S of child is removed from target_team's TeamParticipation
-    table if the only path from S to team is via child.
+    A participant of child is removed from parent's TeamParticipation
+    entries if the only path from the participant to parent is via
+    child.
     """
+    # Delete participation entries for the child and the child's
+    # direct/indirect members in other ancestor teams, unless those
+    # ancestor teams have another path the the child besides the
+    # membership that has just been deactivated.
     store = Store.of(parent)
     store.execute("""
-        /* Delete participation entries for the child and the child's
-         * direct/indirect members in other ancestor teams, unless those
-         * ancestor teams have another path the the child besides the
-         * membership that has just been deactivated.
-         */
         DELETE FROM TeamParticipation
         USING (
             /* Get all the participation entries that might need to be
-             * deleted.
+             * deleted, i.e. all the entries where the
+             * TeamParticipation.person is a participant of child, and
+             * where child participated in TeamParticipation.team until
+             * child was removed from parent.
              */
             SELECT person, team
             FROM TeamParticipation
@@ -537,10 +540,10 @@ def _cleanTeamParticipation(child, parent):
                  * keep by walking the tree in the TeamMembership table.
                  */
                 WITH RECURSIVE parent(person, team) AS (
-                    /* Start by getting all the ancestors of the removed
-                     * person from the TeamParticipation table, then get
-                     * those ancestors direct members to recurse through
-                     * the tree from the top.
+                    /* Start by getting all the ancestors of the child
+                     * from the TeamParticipation table, then get those
+                     * ancestors' direct members to recurse through the
+                     * tree from the top.
                      */
                     SELECT ancestor.person, ancestor.team
                     FROM TeamMembership ancestor
