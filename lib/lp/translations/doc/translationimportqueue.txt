@@ -156,11 +156,11 @@ The status change updates date_status_changed as well.
     >>> transaction.commit()
     >>> previous_date_status_changed = entry.date_status_changed
 
-Do the new upload. It will be a published upload.
+Do the new upload. It will be an upload by the maintainer.
 
-    >>> published = True
+    >>> by_maintainer = True
     >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', published, rosetta_experts,
+    ...     u'po/sr.po', 'foo', by_maintainer, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
@@ -223,11 +223,11 @@ We can see that we got the same POFile as before:
     >>> guessed_pofile == pofile
     True
 
-And because it's a published upload, the IPOFile in our database got
+And because it's an upload by the maintainer, the IPOFile in our database got
 its path changed to the one noted by this upload instead of having the
 one we set a couple of lines ago (u'po/sr-old.pot'):
 
-    >>> po_sr_entry.is_published
+    >>> po_sr_entry.by_maintainer
     True
     >>> pofile.path == po_sr_entry.path
     True
@@ -1121,7 +1121,7 @@ We get a sample tarball to be uploaded into the system.
     ...     }
     >>> tarfile_content = LaunchpadWriteTarFile.files_to_string(
     ...     test_tar_content)
-    >>> is_published = True
+    >>> by_maintainer = True
 
 We will need this helper function to print the queue content.
 
@@ -1154,7 +1154,7 @@ Attach the sample tarball to the 'evolution-2.2-test' template in evolution
 product. There will be three new entries from the tarball.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
-    ...     tarfile_content, is_published, rosetta_experts,
+    ...     tarfile_content, by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_test_template)
     (3, [])
@@ -1189,7 +1189,7 @@ It is possible to update the content of an entry in the queue.
     Foo template
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     "foo.pot", "New content", is_published, rosetta_experts,
+    ...     "foo.pot", "New content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_test_template)
     >>> entry = removeSecurityProxy(entry)
@@ -1203,7 +1203,7 @@ Not specifying the potemplate in this situation still selects the same entry
 on a best match basis. The entry is updated.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     "foo.pot", "Even newer content", is_published, rosetta_experts,
+    ...     "foo.pot", "Even newer content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
@@ -1220,7 +1220,7 @@ Same goes for pofile entries.
     Spanish translation
 
     >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
-    ...     "es.po", "New po content", is_published, rosetta_experts,
+    ...     "es.po", "New po content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries))
     >>> transaction.commit()
     >>> entry is existing_entry
@@ -1232,7 +1232,7 @@ Now, attaching the same layout to a different template for the same product,
 we get again three more entries.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
-    ...     tarfile_content, is_published, rosetta_experts,
+    ...     tarfile_content, by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_template)
     (3, [])
@@ -1255,7 +1255,7 @@ Not specifying the potemplate now is ambiguous and so no entry is added or
 updated.
 
     >>> print queue.addOrUpdateEntry(
-    ...     "foo.pot", "Latest content", is_published, rosetta_experts,
+    ...     "foo.pot", "Latest content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     None
 
@@ -1263,11 +1263,11 @@ Ambiguity is also resolved when a file is uploaded to the product first and
 then to a specific template.
 
     >>> existing_entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "Bar content", is_published, rosetta_experts,
+    ...     "bar.pot", "Bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> existing_entry = removeSecurityProxy(existing_entry)
     >>> entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "Bar content", is_published, rosetta_experts,
+    ...     "bar.pot", "Bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_template)
 
@@ -1283,7 +1283,7 @@ These files are put into different entries.
 When uploading to the prouct now, the best matching entry is updated.
 
     >>> entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "New bar content", is_published, rosetta_experts,
+    ...     "bar.pot", "New bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
@@ -1320,7 +1320,7 @@ The template file is ignored, as per the instructions of the path
 filter, so there seem to be only 2 files in the tarball.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
-    ...     tarfile_content, is_published, rosetta_experts,
+    ...     tarfile_content, by_maintainer, rosetta_experts,
     ...     productseries=netapplet_trunk,
     ...     filename_filter=swizzle_filename)
     (2, [])

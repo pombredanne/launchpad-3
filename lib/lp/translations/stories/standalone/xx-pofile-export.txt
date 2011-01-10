@@ -1,4 +1,5 @@
-= Exporting Single PO Files through the Web =
+Exporting Single PO Files through the Web
+=========================================
 
 Not logged in users can't access the +export page.
 
@@ -57,24 +58,11 @@ No Privileges Person.
     ...     print tag.renderContents()
     Your request has been received. Expect to receive an email shortly.
 
-Since no-privileges person isn't a valid translator for Welsh (cy)
-language, the ownership of the newly created pofile is set to Rosetta
-Admins.
+If the POFile first has to be created, the requester becomes its owner.
+This implies no special privileges.
 
-    >>> anon_browser.open(
-    ...     'http://translations.launchpad.dev/evolution'
-    ...     '/trunk/+pots/evolution-2.2/cy/+details')
-    >>> translation_portlet = find_portlet(
-    ...     anon_browser.contents, 'Translation file details')
-    >>> t = extract_text(
-    ...     translation_portlet.firstText('Creator:').findNext('a'))
-    >>> u'Rosetta Administrators' in t
-    True
-
-But if we request an export from a valid translator, he gets the
-ownership. We test using the Swedish (sv) language which doesn't have a
-pofile for evolution yet; it will be created at the moment the export is
-requested.
+We test using the Swedish (sv) language which doesn't have a pofile for
+evolution yet; it will be created at the moment the export is requested.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open(
@@ -115,4 +103,3 @@ https://launchpad.net/rosetta/+bug/1558).
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     tag.renderContents()
     'Your request has been received. Expect to receive an email shortly.'
-

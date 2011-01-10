@@ -22,8 +22,8 @@ from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    reconnect_stores,
     )
-from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -57,7 +57,10 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_as,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -1346,3 +1349,15 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
+class TestSPPHModel(TestCaseWithFactory):
+    """Test parts of the SourcePackagePublishingHistory model."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testAncestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)

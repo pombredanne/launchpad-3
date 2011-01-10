@@ -93,7 +93,10 @@ class StormFeatureRuleSource(FeatureRuleSource):
         store = getFeatureStore()
         rs = (store
                 .find(FeatureFlag)
-                .order_by(FeatureFlag.flag, Desc(FeatureFlag.priority)))
+                .order_by(
+                    FeatureFlag.flag,
+                    FeatureFlag.scope,
+                    Desc(FeatureFlag.priority)))
         for r in rs:
             yield Rule(str(r.flag), str(r.scope), r.priority, r.value)
 

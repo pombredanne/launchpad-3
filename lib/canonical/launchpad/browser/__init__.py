@@ -48,6 +48,7 @@ from lp.registry.browser.karma import *
 from lp.registry.browser.mailinglists import *
 from lp.registry.browser.objectreassignment import *
 from lp.registry.browser.peoplemerge import *
+from lp.registry.browser.poll import *
 from lp.registry.browser.team import *
 from lp.registry.browser.teammembership import *
 # XXX flacoste 2009/03/18 We should use specific imports instead of
@@ -62,3 +63,5 @@ from lp.soyuz.browser.distroseriessourcepackagerelease import *
 from lp.soyuz.browser.publishing import *
 from lp.soyuz.browser.queue import *
 from lp.soyuz.browser.sourcepackagerelease import *
+
+
