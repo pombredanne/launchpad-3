@@ -17,6 +17,7 @@ from unittest import (
 import pytz
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.database.sqlbase import (
     cursor,
     flush_database_caches,
@@ -43,7 +44,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import TeamMembership
+from lp.registry.model.teammembership import (
+    TeamMembership,
+    TeamParticipation,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -181,6 +185,9 @@ class TeamParticipationTestCase(TestCaseWithFactory):
             sorted(participant_names),
             sorted([participant.name for participant in team.allmembers]))
 
+    def getTeamParticipationCount(self):
+        return IStore(TeamParticipation).find(TeamParticipation).count()
+
 
 class TestTeamParticipationHierarchy(TeamParticipationTestCase):
     """Participation management tests using 5 nested teams.
@@ -225,6 +232,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
 
         This is similar to what was experienced in bug 261915.
         """
+        previous_count = self.getTeamParticipationCount()
         self.team2.setMembershipData(
             self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(['name16', 'team2'], self.team1)
@@ -234,11 +242,15 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertEqual(
+            previous_count-8,
+            self.getTeamParticipationCount())
 
     def testRemovingLeafTeam(self):
         """Make sure that participations are updated correctly when removing
         the leaf team.
         """
+        previous_count = self.getTeamParticipationCount()
         self.team4.setMembershipData(
             self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(
@@ -248,6 +260,9 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16', 'team4'], self.team3)
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertEqual(
+            previous_count-8,
+            self.getTeamParticipationCount())
 
 
 class TestTeamParticipationTree(TeamParticipationTestCase):
@@ -293,6 +308,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'no-priv'], self.team5)
 
     def testRemoveTeam3FromTeam2(self):
+        previous_count = self.getTeamParticipationCount()
         self.team2.setMembershipData(
             self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(
@@ -304,8 +320,12 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertEqual(
+            previous_count-4,
+            self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
+        previous_count = self.getTeamParticipationCount()
         self.team4.setMembershipData(
             self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(
@@ -317,6 +337,9 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'team4'], self.team3)
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertEqual(
+            previous_count-4,
+            self.getTeamParticipationCount())
 
 
 class TestParticipationCleanup(TeamParticipationTestCase):
@@ -355,12 +378,15 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
     branches.
 
     Create a team hierarchy looking like this:
-        team1    /--team6
-            team2        \
-             |  team3    |
-             \--- team4-/
-                     team5
-                       no-priv
+        team1     team6
+           \     /  |
+            team2   |
+           /    |   |
+        team3   |   |
+             \  |  /
+              team4
+                 team5
+                    no-priv
     """
     layer = DatabaseFunctionalLayer
 
@@ -399,6 +425,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
             self.team6)
 
     def testRemoveTeam3FromTeam2(self):
+        previous_count = self.getTeamParticipationCount()
         self.team2.setMembershipData(
             self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(
@@ -412,8 +439,12 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
+        self.assertEqual(
+            previous_count-3,
+            self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
+        previous_count = self.getTeamParticipationCount()
         self.team4.setMembershipData(
             self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
         self.assertParticipantsEquals(
@@ -425,6 +456,9 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertParticipantsEquals(
             ['name16', 'team2', 'team3', 'team4'], self.team6)
+        self.assertEqual(
+            previous_count-10,
+            self.getTeamParticipationCount())
 
 
 class TestTeamMembership(TestCaseWithFactory):
