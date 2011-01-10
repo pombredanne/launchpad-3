@@ -748,9 +748,6 @@ $$
     import re
     name = args[0].decode("UTF-8")
     user_id = args[1]
-    if user_id is None:
-        # Ids cannot be NULL. Zero will force every repexp rule to apply.
-        user_id = 0
 
     # Initialize shared storage, shared between invocations.
     if not SD.has_key("regexp_select_plan"):
