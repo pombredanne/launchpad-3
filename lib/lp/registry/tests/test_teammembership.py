@@ -17,7 +17,6 @@ from unittest import (
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.database.sqlbase import (
     cursor,
     flush_database_caches,
@@ -28,6 +27,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,
