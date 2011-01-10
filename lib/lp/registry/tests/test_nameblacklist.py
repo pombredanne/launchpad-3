@@ -9,6 +9,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import (
@@ -79,6 +80,23 @@ class TestNameBlacklist(TestCaseWithFactory):
         user = self.admin_exp.admin.teamowner
         self.assertEqual(
             None, self.name_blacklist_match(u"fnord", user.id))
+
+    def test_name_blacklist_match_launchpad_admin_can_change(self):
+        # A Launchpad admin is exempt from any backlisted name restriction
+        # that has an admin.
+        user = self.factory.makePerson()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admins.addMember(user, user)
+        self.assertEqual(
+            None, self.name_blacklist_match(u"fnord", user.id))
+
+    def test_name_blacklist_match_launchpad_admin_cannot_change(self):
+        # A Launchpad admin cannot override backlisted names without admins.
+        user = self.factory.makePerson()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admins.addMember(user, user)
+        self.assertEqual(
+            self.foo_exp.id, self.name_blacklist_match(u"barfoo", user.id))
 
     def test_name_blacklist_match_cache(self):
         # If the blacklist is changed in the DB, these changes are noticed.

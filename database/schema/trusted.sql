@@ -765,9 +765,37 @@ $$
         # Storage for compiled regexps
         SD["compiled"] = {}
 
+        # admins is a celebrity and its id is immutable.
+        admins_id = plpy.execute(
+            "SELECT id FROM Person WHERE name='admins'")[0]["id"]
+
+        SD["admin_select_plan"] = plpy.prepare("""
+            SELECT TRUE FROM TeamParticipation
+            WHERE
+                TeamParticipation.team = %d
+                AND TeamParticipation.person = $1
+            LIMIT 1
+            """ % admins_id, ["integer"])
+
+        # All the blacklist regexps except those that have an admin because
+        # members of ~admin can use any name that any other admin can use.
+        SD["admin_regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL
+            ORDER BY id
+            """, ["integer"])
+
+
     compiled = SD["compiled"]
 
-    for row in plpy.execute(SD["regexp_select_plan"], [user_id]):
+    # Names are never blacklisted for Lauchpad admins.
+    if user_id is not None and plpy.execute(
+        SD["admin_select_plan"], [user_id]).nrows() > 0:
+        blacklist_plan = "admin_regexp_select_plan"
+    else:
+        blacklist_plan = "regexp_select_plan"
+
+    for row in plpy.execute(SD[blacklist_plan], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
         if (compiled.get(regexp_id) is None
