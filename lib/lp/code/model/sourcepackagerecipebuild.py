@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import logging
 import sys
 
 from psycopg2 import ProgrammingError
@@ -185,11 +186,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        if logger is None:
+            logger = logging.getLogger()
         builds = []
         for recipe in recipes:
-            if logger is not None:
-                logger.debug(
-                    'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            logger.debug(
+                'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
             for distroseries in recipe.distroseries:
                 series_name = distroseries.named_version
                 try:
@@ -197,20 +199,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
-                    if logger is not None:
-                        logger.debug(
-                            'Build already pending for %s', series_name)
+                    logger.debug(
+                        ' - build already pending for %s', series_name)
                     continue
                 except ProgrammingError:
                     raise
                 except:
-                    if logger is not None:
-                        logger.exception('Problem with %s', series_name)
+                    logger.exception(' - problem with %s', series_name)
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
-                    if logger is not None:
-                        logger.debug('Build requested for %s', series_name)
+                    logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
             recipe.is_stale = False
         return builds
