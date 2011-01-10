@@ -20,24 +20,22 @@ A helper method to print out language chart.
     ...         print "No translations."
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     print "%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed")
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
     ...         untranslated = extract_text(cols[2])
     ...         unreviewed = extract_text(cols[3])
-    ...         changed = extract_text(cols[4])
-    ...         print "%-25s %13d %13d %13d" % (
-    ...             language,
-    ...             int(untranslated), int(unreviewed), int(changed))
+    ...         print "%-25s %13d %13d" % (
+    ...             language, int(untranslated), int(unreviewed))
 
 We even have a language chart table.
 
     >>> print_language_stats(anon_browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Portuguese (Brazil)                  25             0             0
-    Spanish                              22             2             0
+    Language                   Untranslated    Unreviewed
+    Portuguese (Brazil)                  25             0
+    Spanish                              22             2
 
 If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
@@ -50,11 +48,12 @@ translation, or link the product to a translatable package.
     ...     find_tag_by_id(
     ...         registrant.contents, 'not-translated-in-launchpad'))
     Launchpad does not know where gnomebaker translates its messages.
-    
+
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         registrant.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch. 
+    Launchpad allows communities to translate projects using imports or a
+    branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
@@ -165,7 +164,7 @@ Also, we will get some translation status for network applet.
     <...
     ...Translation overview...
     >>> print_language_stats(anon_browser)
-    Language                   Untranslated    Unreviewed       Changed
+    Language                   Untranslated    Unreviewed
 
 
 Translation recommendation

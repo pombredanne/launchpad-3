@@ -113,11 +113,11 @@
                   >
                   items with new suggestions
                 </option>
-                <option value="changed_in_launchpad"
+                <option value="changed_in_ubuntu"
                   tal:attributes="selected
-                  request/htmlform:show/selected/changed_in_launchpad"
+                  request/htmlform:show/selected/changed_in_ubuntu"
                   >
-                  items changed in Launchpad
+                  items changed in Ubuntu
                 </option>
               </select>
             </label>

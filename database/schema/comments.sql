@@ -2,7 +2,7 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
@@ -980,10 +980,10 @@ COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
 validated this translation. Being 0 the value that says this row has not been
 validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
-COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
-is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
-is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
+is being used in Ubuntu.';
+COMMENT ON COLUMN TranslationMessage.is_current_upstream IS 'Whether this translation
+is being used upstream.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
 
@@ -1062,9 +1062,6 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 
 -- Distribution
 
-COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.mirror_admin IS 'Person or team with privileges to mark a mirror as official.';
 COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distroseries has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distroseries for backporting, for example, or for the current release management team on the current development focus release.';
@@ -1087,9 +1084,6 @@ COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of ack
 
 -- DistroSeries
 
-COMMENT ON COLUMN DistroSeries.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distro release';
 COMMENT ON COLUMN DistroSeries.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distroseries page, above the distroseries description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroSeries.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
 COMMENT ON COLUMN DistroSeries.hide_all_translations IS 'Whether we should hid
@@ -1788,7 +1782,8 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time a
 COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2046,7 +2041,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.by_maintainer IS 'Notes whether this upload was done by the maintiner of the package or project.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';

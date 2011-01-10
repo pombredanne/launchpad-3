@@ -145,7 +145,8 @@ def launchpadlib_for(
     version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
-    return Launchpad(credentials, service_root, version=version, cache=cache)
+    return Launchpad(credentials, None, None, service_root=service_root,
+                     version=version, cache=cache)
 
 
 class QueryCollector:

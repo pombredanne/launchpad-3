@@ -65,7 +65,7 @@ Teams also have an RDF export, which includes information for each
 member of the team. Let's add a logo to Mark's user so we can see the
 output:
 
-    >>> from canonical.launchpad.ftests import set_branding
+    >>> from lp.testing.branding import set_branding
     >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open('http://launchpad.dev/~mark/+branding')
     >>> set_branding(mark_browser, icon=False)
