@@ -87,7 +87,7 @@ devsetup:
 	# Replicate it
 	make _replicate LPCONFIG=${DEV_CONFIG} \
 	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
-
+	
 	# Replicate it again, so we can test with multiple slaves.
 	-${PGMASSACRE} launchpad_dev_slave2
 	${CREATEDB} launchpad_dev_slave2
