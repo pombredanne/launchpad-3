@@ -187,23 +187,30 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
         builds = []
         for recipe in recipes:
+            if logger is not None:
+                logger.debug(
+                    'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
             for distroseries in recipe.distroseries:
+                series_name = distroseries.named_version
                 try:
                     build = recipe.requestBuild(
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
+                    if logger is not None:
+                        logger.debug(
+                            'Build already pending for %s', series_name)
                     continue
                 except ProgrammingError:
                     raise
                 except:
+                    if logger is not None:
+                        logger.exception('Problem with %s', series_name)
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
                     if logger is not None:
-                        logger.debug(
-                            'Build for %s/%s requested',
-                            recipe.owner.name, recipe.name)
+                        logger.debug('Build requested for %s', series_name)
                     builds.append(build)
             recipe.is_stale = False
         return builds
