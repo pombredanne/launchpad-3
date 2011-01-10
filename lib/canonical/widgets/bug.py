@@ -18,6 +18,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 
 class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""
+
     def _toFormValue(self, value):
         """See zope.app.form.widget.SimpleInputWidget."""
         if value == self.context.missing_value:
@@ -44,12 +45,17 @@ class BugWidget(IntWidget):
 class BugTagsWidgetBase:
     """Base class for bug tags widgets."""
 
-    def _toFormValue(self, value):
-        """Convert a list of strings to a single, space separated, string."""
-        if value:
-            return u' '.join(value)
+    def _tagsFromFieldValue(self, tags):
+        """Package up the tags for display.
+
+        Override this to provide custom ordering for example.
+
+        :return: `None` if there are no tags, else an iterable of tags.
+        """
+        if tags is None or len(tags) == 0:
+            return None
         else:
-            return self._missing
+            return tags
 
     def _tagsToFieldValue(self, tags):
         """Package up the tags for the field.
@@ -61,6 +67,14 @@ class BugTagsWidgetBase:
             return []
         else:
             return sorted(set(tags))
+
+    def _toFormValue(self, value):
+        """Convert a list of strings to a single, space separated, string."""
+        tags = self._tagsFromFieldValue(value)
+        if tags is None:
+            return self._missing
+        else:
+            return u" ".join(tags)
 
     def _toFieldValue(self, input):
         """Convert a space separated string to a list of strings."""
@@ -100,7 +114,7 @@ class BugTagsWidgetBase:
 
 
 class BugTagsWidget(BugTagsWidgetBase, TextWidget):
-    """A widget for editing bug tags."""
+    """A widget for editing bug tags in a `List` field."""
 
     def __init__(self, field, value_type, request):
         # We don't use value_type.
@@ -110,8 +124,29 @@ class BugTagsWidget(BugTagsWidgetBase, TextWidget):
         return TextWidget.getInputValue(self)
 
 
+class BugTagsFrozenSetWidget(BugTagsWidget):
+    """A widget for editing bug tags in a `FrozenSet` field."""
+
+    def _tagsFromFieldValue(self, tags):
+        """Order the tags for display.
+
+        The field value is assumed to be unordered.
+        """
+        if tags is None or len(tags) == 0:
+            return None
+        else:
+            return sorted(tags)
+
+    def _tagsToFieldValue(self, tags):
+        """Return a `frozenset` of tags."""
+        if tags is None:
+            return frozenset()
+        else:
+            return frozenset(tags)
+
+
 class LargeBugTagsWidget(BugTagsWidgetBase, TextAreaWidget):
-    """A large widget for editing bug tags."""
+    """A large widget for editing bug tags in a `List` field."""
 
     def __init__(self, field, value_type, request):
         # We don't use value_type.
