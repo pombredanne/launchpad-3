@@ -13,13 +13,13 @@ from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 
 

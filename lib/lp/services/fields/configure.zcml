@@ -54,7 +54,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IBugField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.bug.BugWidget"
+        factory="lp.bugs.browser.widgets.bug.BugWidget"
         permission="zope.Public"
         />
 
