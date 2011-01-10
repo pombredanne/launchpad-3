@@ -101,6 +101,14 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
+        # Private bugs are included in search results for the assignee.
+        user = self.factory.makePerson()
+        bugtask = self.bugtasks[-1]
+        with person_logged_in(admin):
+            bugtask.transitionToAssignee(user)
+        params = self.getBugTaskSearchParams(user=user)
+        self.assertSearchFinds(params, self.bugtasks)
+
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
         bugtask = self.bugtasks[0]
