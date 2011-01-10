@@ -38,6 +38,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     ITranslationMessageSet,
@@ -324,8 +325,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # more recent than the date of suggestion's date_created),
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
-        current = self.potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate, self.language)
+        current = self.potmsgset.getCurrentTranslation(
+            pofile.potemplate, self.language,
+            pofile.potemplate.translation_side)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
@@ -398,9 +400,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
-        # XXX henninge 2010-12-14 bug=690254: This method still needs some
-        # thought on how it relates to the new model.
-
         if self.potemplate is None:
             # Already converged.
             return
@@ -408,22 +407,24 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # Existing shared direct equivalent to this message, if any.
         shared = self.getSharedEquivalent()
 
-        # Existing shared current translation for this POTMsgSet, if
+        # Existing shared ubuntu translation for this POTMsgSet, if
         # any.
-        current = self.potmsgset.getCurrentTranslationMessage(
-            potemplate=None, language=self.language)
+        ubuntu = self.potmsgset.getCurrentTranslation(
+            potemplate=None, language=self.language,
+            side=TranslationSide.UBUNTU)
 
         # Existing shared upstream translation for this POTMsgSet, if
         # any.
-        upstream = self.potmsgset.getImportedTranslationMessage(
-            potemplate=None, language=self.language)
+        upstream = self.potmsgset.getCurrentTranslation(
+            potemplate=None, language=self.language,
+            side=TranslationSide.UPSTREAM)
 
         if shared is None:
-            clash_with_shared_current = (
-                current is not None and self.is_current_ubuntu)
+            clash_with_shared_ubuntu = (
+                ubuntu is not None and self.is_current_ubuntu)
             clash_with_shared_upstream = (
                 upstream is not None and self.is_current_upstream)
-            if clash_with_shared_current or clash_with_shared_upstream:
+            if clash_with_shared_ubuntu or clash_with_shared_upstream:
                 # Keep this message diverged, so it won't usurp the
                 # ubuntu or upstream message that the templates share.
                 pass
@@ -432,16 +433,16 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 self.potemplate = None
         elif self.is_current_ubuntu or self.is_current_upstream:
             # Bequeathe ubuntu/upstream flags to shared equivalent.
-            if self.is_current_ubuntu and current is None:
+            if self.is_current_ubuntu and ubuntu is None:
                 shared.is_current_ubuntu = True
             if self.is_current_upstream and upstream is None:
                 shared.is_current_upstream = True
 
-            current_diverged = (
+            ubuntu_diverged = (
                 self.is_current_ubuntu and not shared.is_current_ubuntu)
             upstream_diverged = (
                 self.is_current_upstream and not shared.is_current_upstream)
-            if not (current_diverged or upstream_diverged):
+            if not (ubuntu_diverged or upstream_diverged):
                 # This message is now totally redundant.
                 self.destroySelf()
         else:

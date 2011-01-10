@@ -489,7 +489,7 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         """
         direct_subscriptions = [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions()]
+            for subscription in self.context.getDirectSubscriptions().sorted]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:

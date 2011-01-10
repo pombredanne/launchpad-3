@@ -30,7 +30,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationexporter import (
@@ -478,7 +481,8 @@ class FileImporter(object):
             return None
 
         if self.translations_are_msgids:
-            potmsgset.clearCachedSingularText()
+            # Make sure singular_text picks up the new translation.
+            del get_property_cache(potmsgset).singular_text
 
         return message
 

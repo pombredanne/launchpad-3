@@ -62,7 +62,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.layer.txn.commit()
 
         self.assertEquals(UploadStatusEnum.ACCEPTED, result,
-            "Source upload failed\nGot: %s" % "\n".join(self.log.lines))
+            "Source upload failed\nGot: %s" % self.log.getLogBuffer())
 
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertEqual(True, self.build.verifySuccessfulUpload())

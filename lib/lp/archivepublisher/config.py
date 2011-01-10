@@ -6,9 +6,7 @@
 # to managing the archive publisher's configuration as stored in the
 # distribution and distroseries tables
 
-from ConfigParser import ConfigParser
 import os
-from StringIO import StringIO
 
 from canonical.config import config
 from lp.soyuz.enums import ArchivePurpose
@@ -24,11 +22,11 @@ def getPubConfig(archive):
     modified according local context, it basically fixes the archive
     paths to cope with non-primary and PPA archives publication workflow.
     """
-    pubconf = Config(archive.distribution)
+    pubconf = Config()
     ppa_config = config.personalpackagearchive
 
     pubconf.temproot = os.path.join(
-        config.archivepublisher.root, '%s-temp' % pubconf.distroName)
+        config.archivepublisher.root, '%s-temp' % archive.distribution.name)
 
     if archive.is_ppa:
         if archive.private:
@@ -95,49 +93,8 @@ class Config(object):
     how the database stores configuration then the publisher will not
     need to be re-coded to cope"""
 
-    def __init__(self, distribution):
-        """Initialise the configuration"""
-        self.distroName = distribution.name.encode('utf-8')
-        self._distroseries = {}
-        if not distribution.lucilleconfig:
-            raise LucilleConfigError(
-                'No Lucille config section for %s' % distribution.name)
-
-        for dr in distribution:
-            distroseries_name = dr.name.encode('utf-8')
-            config_segment = {}
-
-            if dr.lucilleconfig:
-                strio = StringIO(dr.lucilleconfig.encode('utf-8'))
-                config_segment["config"] = ConfigParser()
-                config_segment["config"].readfp(strio)
-                strio.close()
-
-                self._distroseries[distroseries_name] = config_segment
-
-        strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
-        self._distroconfig = ConfigParser()
-        self._distroconfig.readfp(strio)
-        strio.close()
-
-    def distroSeriesNames(self):
-        # Because dicts iterate for keys only; this works to get dr names
-        return self._distroseries.keys()
-
-    def series(self, dr):
-        try:
-            return self._distroseries[dr]
-        except KeyError:
-            raise LucilleConfigError(
-                'No Lucille config section for %s in %s' %
-                    (dr, self.distroName))
-
     def setupArchiveDirs(self):
-        """Create missing required directories in archive.
-
-        For PPA publication path are overriden after instantiation
-        and empty locations should not be considered for creation.
-        """
+        """Create missing required directories in archive."""
         required_directories = [
             self.distroroot,
             self.poolroot,

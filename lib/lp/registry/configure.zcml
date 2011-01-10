@@ -689,6 +689,109 @@
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
         </securedutility>
     </facet>
+    <facet
+        facet="overview">
+
+        <!-- Poll -->
+
+        <class
+            class="lp.registry.model.poll.Poll">
+            <allow
+                interface="lp.registry.interfaces.poll.IPoll"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.registry.interfaces.poll.IPoll"/>
+        </class>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.registry.interfaces.poll.IPoll"
+            factory="lp.registry.browser.poll.PollBreadcrumb"
+            permission="zope.Public"/>
+
+        <!-- PollOption -->
+
+        <class
+            class="lp.registry.model.poll.PollOption">
+            <allow
+                interface="lp.registry.interfaces.poll.IPollOption"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.registry.interfaces.poll.IPollOption"/>
+        </class>
+
+        <!-- Vote -->
+
+
+        <!-- Can't require launchpad.Edit to set_attributes because in most cases
+                the vote won't be associated with a person, and thus we can't check it
+                against the logged in user. -->
+
+        <class
+            class="lp.registry.model.poll.Vote">
+            <allow
+                interface="lp.registry.interfaces.poll.IVote"/>
+            <require
+                permission="zope.Public"
+                set_attributes="option preference"/>
+        </class>
+
+        <!-- VoteCast -->
+
+        <class
+            class="lp.registry.model.poll.VoteCast">
+            <allow
+                interface="lp.registry.interfaces.poll.IVoteCast"/>
+        </class>
+
+        <!-- PollSet -->
+
+        <class
+            class="lp.registry.model.poll.PollSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IPollSet"/>
+        </class>
+        <securedutility
+            class="lp.registry.model.poll.PollSet"
+            provides="lp.registry.interfaces.poll.IPollSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IPollSet"/>
+        </securedutility>
+
+        <!-- PollSubset -->
+
+        <adapter
+            for="lp.registry.interfaces.person.ITeam"
+            provides="lp.registry.interfaces.poll.IPollSubset"
+            factory="lp.registry.adapters.PollSubset"
+            permission="zope.Public"/>
+
+        <!-- PollOptionSet -->
+
+        <class
+            class="lp.registry.model.poll.PollOptionSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IPollOptionSet"/>
+        </class>
+        <securedutility
+            class="lp.registry.model.poll.PollOptionSet"
+            provides="lp.registry.interfaces.poll.IPollOptionSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IPollOptionSet"/>
+        </securedutility>
+        <securedutility
+            class="lp.registry.model.poll.VoteSet"
+            provides="lp.registry.interfaces.poll.IVoteSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IVoteSet"/>
+        </securedutility>
+        <securedutility
+            class="lp.registry.model.poll.VoteCastSet"
+            provides="lp.registry.interfaces.poll.IVoteCastSet">
+            <allow
+                interface="lp.registry.interfaces.poll.IVoteCastSet"/>
+        </securedutility>
+    </facet>
 
     <!-- Announcement -->
 
@@ -1107,6 +1210,7 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
+                official_rosetta
                 translation_focus
                 translationgroup
                 translationpermission"/>
@@ -1123,13 +1227,6 @@
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
-
-        <!-- Changes to official_rosetta must be available to Launchpad
-                                 Translations admins so we need its own permission. -->
-
-        <require
-            permission="launchpad.TranslationsAdmin"
-            set_attributes="official_rosetta"/>
 
         <!-- IHasAliases -->
 
@@ -1400,7 +1497,6 @@
                 official_answers
                 official_blueprints
                 official_malone
-                official_rosetta
                 owner
                 security_contact
                 summary
@@ -1413,6 +1509,7 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
+                official_rosetta
                 translationgroup
                 translationpermission
                 translation_focus"/>

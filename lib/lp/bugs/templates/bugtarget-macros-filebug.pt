@@ -354,7 +354,8 @@
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
         <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
-        <div tal:content="structure guideline/content/fmt:text-to-html" />
+        <div
+          tal:content="structure guideline/content/fmt:text-to-html-with-target" />
       </tal:guidelines>
     </td>
   </tr>

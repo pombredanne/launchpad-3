@@ -40,7 +40,7 @@ that represents, when the translation was updated, and by whom.
     Afrikaans               22           ...         ...     &mdash; &mdash;
     Japanese                21           ...         ...     ...     Carlos...
     Sotho, Southern         22           ...         ...     &mdash; &mdash;
-    Spanish                 15           1           1       ...     Valentina Commissari
+    Spanish                 15           1           1       ...     Valent...
     Xhosa                   22           ...         ...     ...     &mdash;
     Zulu                    22           ...         ...     &mdash; &mdash;
 
@@ -117,7 +117,8 @@ they are all displayed on the template page.
 A source package with five templates is created.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
 
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -209,9 +210,6 @@ page showing all templates for that product series.
 
 A product series with 7 templates is created.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> from lp.app.enums import ServiceUsage
     >>> login('admin@canonical.com')
     >>> product = factory.makeProduct(name="fusa",
@@ -281,9 +279,9 @@ but not the one for uploading file to this potemplate.
 
     >>> user_browser.getLink('download').click()
     >>> print user_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
-Translation administrators will see both download and upload links. 
+Translation administrators will see both download and upload links.
 Beside administering this template, "Change permissions"
 and "Change details" should be also accessible.
 
@@ -292,34 +290,27 @@ and "Change details" should be also accessible.
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('upload').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('download').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Administer this template').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Change details').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
-
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/'
-    ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
-    >>> admin_browser.getLink('Change permissions').click()
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
 
 

@@ -8,8 +8,8 @@ import subprocess
 import sys
 
 from canonical.config import config
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 
@@ -53,7 +53,7 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
         :param limit: if passed, it will be used as the 'limit' script
            argument.
 
-        :return the initialised script object using `QuietFakeLogger` and
+        :return the initialised script object using `BufferLogger` and
            the given parameters.
         """
         test_args = []
@@ -62,7 +62,7 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
 
         diff_processor = ProcessPendingPackageDiffs(
             name='process-pending-packagediffs', test_args=test_args)
-        diff_processor.logger = QuietFakeLogger()
+        diff_processor.logger = BufferLogger()
         diff_processor.txn = self.layer.txn
         return diff_processor
 

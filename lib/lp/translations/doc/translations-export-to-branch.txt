@@ -54,12 +54,13 @@ files into the branches.  We mock it up here.
     ...     def unlock(self):
     ...         self.logger.info("Unlock.")
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
 
     >>> class MockExportTranslationsToBranch(ExportTranslationsToBranch):
     ...     """Test version of ExportTranslationsToBranch."""
     ...     simulate_race = False
     ...     simulated_latest_commit = None
+    ...     config_name = "translations_export_to_branch"
     ...
     ...     def __init__(self, *args, **kwargs):
     ...         super(MockExportTranslationsToBranch, self).__init__(

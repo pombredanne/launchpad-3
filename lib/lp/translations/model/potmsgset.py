@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.readonly import is_read_only
 from lp.app.errors import UnexpectedFormData
+from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     IPOTMsgSet,
@@ -150,16 +151,7 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    _cached_singular_text = None
-
-    _cached_uses_english_msgids = None
-
     credits_message_ids = credits_message_info.keys()
-
-    def __storm_invalidated__(self):
-        super(POTMsgSet, self).__storm_invalidated__()
-        self._cached_singular_text = None
-        self._cached_uses_english_msgids = None
 
     def _conflictsExistingSourceFileFormats(self, source_file_format=None):
         """Return whether `source_file_format` conflicts with existing ones
@@ -212,9 +204,10 @@ class POTMsgSet(SQLBase):
     @property
     def uses_english_msgids(self):
         """See `IPOTMsgSet`."""
-        # TODO: convert to cachedproperty, it will be simpler.
-        if self._cached_uses_english_msgids is not None:
-            return self._cached_uses_english_msgids
+        # Make explicit use of the property cache.
+        cache = get_property_cache(self)
+        if "uses_english_msgids" in cache:
+            return cache.uses_english_msgids
 
         conflicts, uses_english_msgids = (
             self._conflictsExistingSourceFileFormats())
@@ -231,45 +224,40 @@ class POTMsgSet(SQLBase):
                 # However, we are not caching anything when there's
                 # no value to cache.
                 return True
-            self._cached_uses_english_msgids = uses_english_msgids
-        return self._cached_uses_english_msgids
+            cache.uses_english_msgids = uses_english_msgids
+        return cache.uses_english_msgids
 
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
-        # TODO: convert to cachedproperty, it will be simpler.
-        if self._cached_singular_text is not None:
-            return self._cached_singular_text
+        # Make explicit use of the property cache.
+        cache = get_property_cache(self)
+        if "singular_text"in cache:
+            return cache.singular_text
 
         if self.uses_english_msgids:
-            self._cached_singular_text = self.msgid_singular.msgid
-            return self._cached_singular_text
+            cache.singular_text = self.msgid_singular.msgid
+            return cache.singular_text
 
         # Singular text is stored as an "English translation." Search on
-        # both sides.
-        # XXX henninge 2010-12-14, bug=690196 This may still need some
-        # re-thinking. Maybe even add "getAnyCurrentTranslation".
+        # both sides but prefer upstream translations.
         translation_message = self.getCurrentTranslation(
             None, getUtility(ILaunchpadCelebrities).english,
-            TranslationSide.UBUNTU)
+            TranslationSide.UPSTREAM)
         if translation_message is None:
             translation_message = self.getCurrentTranslation(
                 None, getUtility(ILaunchpadCelebrities).english,
-                TranslationSide.UPSTREAM)
+                TranslationSide.UBUNTU)
         if translation_message is not None:
             msgstr0 = translation_message.msgstr0
             if msgstr0 is not None:
-                self._cached_singular_text = msgstr0.translation
-                return self._cached_singular_text
+                cache.singular_text = msgstr0.translation
+                return cache.singular_text
 
         # There is no "English translation," at least not yet.  Return
         # symbolic msgid, but do not cache--an English text may still be
         # imported.
         return self.msgid_singular.msgid
-
-    def clearCachedSingularText(self):
-        """Clear cached result for `singular_text`, if any."""
-        self._cached_singular_text = None
 
     @property
     def plural_text(self):
@@ -990,7 +978,6 @@ class POTMsgSet(SQLBase):
         if self.is_translation_credit:
             # We don't support suggestions on credits messages.
             return None
-
         potranslations = self._findPOTranslations(new_translations)
 
         existing_message = self._findMatchingTranslationMessage(

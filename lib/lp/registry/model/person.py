@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -15,6 +15,7 @@ __all__ = [
     'JoinTeamEvent',
     'Owner',
     'Person',
+    'person_sort_key',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
@@ -22,7 +23,8 @@ __all__ = [
     'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
-    'WikiNameSet']
+    'WikiNameSet',
+    ]
 
 from datetime import (
     datetime,
@@ -268,7 +270,10 @@ from lp.services.salesforce.interfaces import (
     VOUCHER_STATUSES,
     )
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -333,6 +338,17 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+_person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
+
+def person_sort_key(person):
+    """Identical to `person_sort_key` in the database."""
+    # Strip noise out of displayname. We do not have to bother with
+    # name, as we know it is just plain ascii.
+    displayname = _person_sort_re.sub(u'', person.displayname.lower())
+    return "%s, %s" % (displayname.strip(), person.name)
 
 
 class Person(
@@ -3759,6 +3775,12 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            from_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
+            raise AssertionError(
+                'from_person has a ppa in ACTIVE or DELETING status')
+
         if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(
                 "Only teams without active members can be merged")
@@ -3783,17 +3805,12 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
+            # Polls are not carried over when merging teams.
+            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
-            ('translationrelicensingagreement', 'person'),
-            # Polls are not carried over when merging teams.
-            # XXX: BradCrittenden 2010-12-16 bug=691105:
-            # Even though polls have been removed as a feature and from the
-            # data model, they still exist in the database and must be skipped
-            # here to avoid violating uniqueness constraints.
-            ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
@@ -3802,6 +3819,7 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
