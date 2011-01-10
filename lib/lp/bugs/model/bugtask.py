@@ -2542,13 +2542,13 @@ class BugTaskSet:
             self.TARGET_SELECT[target] for target in targets)
         join_clause = ' OR '.join(
             self.TARGET_JOIN_CLAUSE[target] for target in targets)
+        # We create this rather bizarre looking structure
+        # because we must replicate the behaviour of BugTask since
+        # we are joining to it. So when distroseries is set,
+        # distribution should be NULL. The two pillar columns will
+        # be used in the WHERE clause.
         return """
         JOIN (
-            -- We create this rather bizarre looking structure
-            -- because we must replicate the behaviour of BugTask since
-            -- we are joining to it. So when distroseries is set,
-            -- distribution should be NULL. The two pillar columns will
-            -- be used in the WHERE clause.
             SELECT 0 AS distribution, 0 AS distroseries,
                    0 AS product , 0 AS productseries,
                    0 AS distribution_pillar, 0 AS product_pillar
