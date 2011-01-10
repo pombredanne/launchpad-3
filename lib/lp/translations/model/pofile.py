@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
@@ -73,6 +74,7 @@ from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
     )
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
@@ -388,6 +390,36 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return self.getTranslationMessages()
 
+    def getOtherSidePOFile(self):
+        """See `IPOFile`."""
+        potemplateset = getUtility(IPOTemplateSet)
+        if self.potemplate.translation_side == TranslationSide.UBUNTU:
+            from lp.registry.model.sourcepackage import SourcePackage
+            productseries = SourcePackage(
+                self.potemplate.sourcepackagename,
+                self.potemplate.distroseries).productseries
+            if productseries is None:
+                return None
+            subset = potemplateset.getSubset(productseries=productseries)
+        else:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = ubuntu.translation_focus
+            if distroseries is None:
+                distroseries = ubuntu.currentseries
+            try:
+                sourcepackage = self.potemplate.productseries.getPackage(
+                    distroseries)
+            except NotFoundError:
+                return None
+            subset = potemplateset.getSubset(
+                distroseries=distroseries,
+                sourcepackagename=sourcepackage.sourcepackagename)
+
+        other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
+        if other_potemplate is None:
+            return None
+        return other_potemplate.getPOFileByLang(self.language.code)
+
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""
         applicable_template = Coalesce(
@@ -649,7 +681,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.%s IS NOT TRUE' % flag_name,
-            "(%s)" % msgstr_clause
+            "(%s)" % msgstr_clause,
             ])
 
         diverged_translation_query = (
@@ -699,7 +731,7 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         # A `POTMsgSet` has different translations if both sides have a
         # translation. If one of them is empty, the POTMsgSet is not included
-        # in this list. 
+        # in this list.
 
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         other_side_flag_name = getUtility(
@@ -722,8 +754,8 @@ class POFile(SQLBase, POFileMixIn):
                 dict(
                     flag_name=other_side_flag_name,
                     potemplate=quote(self.potemplate),
-                    language=quote(self.language))
-                    ))
+                    language=quote(self.language),
+                    )))
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
@@ -1299,6 +1331,10 @@ class DummyPOFile(POFileMixIn):
     def translationpermission(self):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
+
+    def getOtherSidePOFile(self):
+        """See `IPOFile`."""
+        return None
 
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""

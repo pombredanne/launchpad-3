@@ -325,8 +325,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # more recent than the date of suggestion's date_created),
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
-        current = self.potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate, self.language)
+        current = self.potmsgset.getCurrentTranslation(
+            pofile.potemplate, self.language,
+            pofile.potemplate.translation_side)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:

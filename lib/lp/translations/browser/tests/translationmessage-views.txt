@@ -161,6 +161,7 @@ We will use this helper function to simplify the test:
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.translations.model.pomsgid import POMsgID
     >>> from sqlobject import SQLObjectNotFound
+    >>> from lp.services.propertycache import get_property_cache
     >>> def changeMsgID(new_msgid):
     ...     potmsgset = removeSecurityProxy(subview.context.potmsgset)
     ...     try:
@@ -168,7 +169,7 @@ We will use this helper function to simplify the test:
     ...     except SQLObjectNotFound:
     ...         msgid = POMsgID(msgid=new_msgid)
     ...     potmsgset.msgid_singular = msgid
-    ...     potmsgset._cached_singular_text = None
+    ...     del get_property_cache(potmsgset).singular_text
     ...     flush_database_updates()
 
 First, text_has_tab() determines whether a message set contains any tabs.

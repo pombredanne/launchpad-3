@@ -130,6 +130,11 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.poll import (
+    IPoll,
+    IPollOption,
+    IPollSubset,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -856,6 +861,26 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
+
+
+class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
+        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPoll
+
+
+class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPollSubset
+
+
+class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPollOption
+
+    def checkAuthenticated(self, user):
+        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -2514,6 +2539,26 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
 
         If a parent is known, users which can edit the parent can also
         edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)
+
+
+class ViewLibraryFileAliasWithParent(AuthorizationBase):
+    """Authorization class for viewing LibraryFileAliass having a parent."""
+
+    permission = 'launchpad.View'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+
+        If a parent is known, users which can view the parent can also
+        view the LibraryFileAlias.
         """
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:

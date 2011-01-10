@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -861,15 +861,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             readonly=True, required=False,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
-
-    has_existing_ppa = Bool(
-        title=_("Does this person have a ppa that is active or not fully "
-                "deleted?"),
-        readonly=True, required=False)
-
-    has_ppa_with_published_packages = Bool(
-        title=_("Does this person have a ppa with published packages?"),
-        readonly=True, required=False)
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -2181,7 +2172,6 @@ class IPersonSet(Interface):
             cached.
         :param need_validity: The is_valid attribute will be cached.
         """
-
 
 
 class IRequestPeopleMerge(Interface):
