@@ -1197,4 +1197,7 @@
           name="+edit" />
     </facet>
 
+    <!-- Widgets -->
+    <include package=".widgets"/>
+
 </configure>
