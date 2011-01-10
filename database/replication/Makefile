@@ -58,7 +58,7 @@ CREATEDB=${CREATEDB_84}
 # Set this to --exit-on-error once our dumps are coming from a PG 8.4
 # source. Currently, the PG 8.3 dumps generate some spurious errors
 # when being restored into a PG 8.4 database.
-EXIT_ON_ERROR=
+EXIT_ON_ERROR=--exit-on-error
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment
