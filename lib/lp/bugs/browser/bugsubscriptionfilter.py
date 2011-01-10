@@ -12,14 +12,17 @@ __all__ = [
 from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
-    LaunchpadFormView,
+    LaunchpadEditFormView,
     )
-from lp.bugs.browser.widgets.bug import BugTagsWidget
+from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 
 
@@ -71,18 +74,8 @@ class BugSubscriptionFilterView(LaunchpadView):
         return conditions
 
 
-class BugSubscriptionFilterEditView(LaunchpadFormView):
-    """View for `IBugSubscriptionFilter`.
-
-    The properties and methods herein are intended to construct a view
-    something like:
-
-      Bug mail filter "A filter description"
-        Matches when status is New, Confirmed, or Triaged
-        *and* importance is High, Medium, or Low
-        *and* the bug is tagged with bar or foo.
-
-    """
+class BugSubscriptionFilterEditView(LaunchpadEditFormView):
+    """Edit view for `IBugSubscriptionFilter`."""
 
     page_title = u"Edit filter"
     schema = IBugSubscriptionFilter
@@ -94,17 +87,20 @@ class BugSubscriptionFilterEditView(LaunchpadFormView):
         "find_all_tags",
         )
 
-    custom_widget("description", TextWidget)
+    custom_widget("description", TextWidget, displayWidth=50)
     custom_widget("statuses", LabeledMultiCheckBoxWidget)
     custom_widget("importances", LabeledMultiCheckBoxWidget)
-    custom_widget("tags", BugTagsWidget)
+    custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
 
-    def setUpWidgets(self, context=None):
-        super(BugSubscriptionFilterEditView, self).setUpWidgets(context)
-        self.widgets["description"].displayWidth = 50
-        self.widgets["tags"].displayWidth = 35
-
-    @action('Update filter', name='update')
+    @action("Update", name="update")
     def update_action(self, action, data):
         """Update the bug filter with the form data."""
         self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        """Return to the user's structural subscriptions page."""
+        return canonical_url(
+            self.user, view_name="+structural-subscriptions")
+
+    cancel_url = next_url
