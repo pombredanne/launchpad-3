@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1345,10 +1345,14 @@ def get_bug_privacy_filter_with_decorator(user):
     return ("""
         (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
-             FROM BugSubscription, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
+             FROM BugSubscription, TeamParticipation, BugTask
+             WHERE (TeamParticipation.person = %(personid)s AND
                    BugSubscription.person = TeamParticipation.team AND
-                   BugSubscription.bug = Bug.id))
+                   BugSubscription.bug = Bug.id) OR
+                   (BugTask.bug = Bug.id AND
+                   TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugTask.assignee)
+                   ))
                      """ % sqlvalues(personid=user.id),
         _make_cache_user_can_view_bug(user))
 
@@ -2293,15 +2297,24 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, params, *args, **kw):
+    def _search(self, resultrow, prejoins, params, *args, **kwargs):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
         :param prejoins: A sequence of Storm SQL row instances which are
             pre-joined.
         :param params: A BugTaskSearchParams instance.
+        :param pre_iter_hook: The pre_iter_hook method to use.  Defaults to
+        'cache_assignees'. May be modified or set to None for testing.
         :param args: optional additional BugTaskSearchParams instances,
         """
+
+        def cache_assignees(rows):
+            # The decorator must be called to turn the rows of the result into
+            # a list of BugTasks, which can be used for caching the assignees.
+            BugTaskSet._cache_assignees([decorator(row) for row in rows])
+
+        pre_iter_hook = kwargs.get('pre_iter_hook', cache_assignees)
         store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
         has_duplicate_results] = self.buildQuery(params)
@@ -2358,16 +2371,11 @@ class BugTaskSet:
         else:
             decorator = simple_decorator
 
-        def cache_assignees(rows):
-            # The decorator must be called to turn the rows of the result into
-            # a list of BugTasks, which can be used for caching the assignees.
-            BugTaskSet._cache_assignees([decorator(row) for row in rows])
-
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
         return DecoratedResultSet(
             result, result_decorator=decorator,
-            pre_iter_hook=cache_assignees)
+            pre_iter_hook=pre_iter_hook)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2382,12 +2390,12 @@ class BugTaskSet:
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
-        _noprejoins = kwargs.get('_noprejoins', False)
+        _noprejoins = kwargs.pop('_noprejoins', False)
         if _noprejoins:
             prejoins = []
             resultrow = BugTask
         else:
-            requested_joins = kwargs.get('prejoins', [])
+            requested_joins = kwargs.pop('prejoins', [])
             prejoins = [
                 (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
                 (Product, LeftJoin(Product, BugTask.product == Product.id)),
@@ -2401,7 +2409,7 @@ class BugTaskSet:
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return self._search(resultrow, prejoins, params, *args)
+        return self._search(resultrow, prejoins, params, *args, **kwargs)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
