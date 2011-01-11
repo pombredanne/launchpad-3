@@ -63,12 +63,12 @@ class TestCanonicalUrlForRecipe(TestCaseWithFactory):
     def test_canonical_url(self):
         owner = self.factory.makePerson(name='recipe-owner')
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=owner, name='recipe-name')
+            owner=owner, name=u'recipe-name')
         self.assertEqual(
             'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
             canonical_url(recipe))
 
-
+        
 class TestCaseForRecipe(BrowserTestCase):
     """Create some sample data for recipe tests."""
 
