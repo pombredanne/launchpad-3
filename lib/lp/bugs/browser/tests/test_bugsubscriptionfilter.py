@@ -25,18 +25,18 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
 from lp.testing import (
+    login_person,
     normalize_whitespace,
     person_logged_in,
-    login_person,
     TestCaseWithFactory,
     ws_object,
     )
 from lp.testing.views import create_initialized_view
-from lp.bugs.publisher import BugsLayer
 
 
 class TestBugSubscriptionFilterBase:

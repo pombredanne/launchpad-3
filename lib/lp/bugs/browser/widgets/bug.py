@@ -12,14 +12,20 @@ __all__ = [
 import re
 
 from zope.app.form.browser.textwidgets import (
-    IntWidget, TextAreaWidget, TextWidget)
-from zope.app.form.interfaces import ConversionError, WidgetInputError
+    IntWidget,
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.app.form.interfaces import (
+    ConversionError,
+    WidgetInputError,
+    )
 from zope.component import getUtility
 from zope.schema.interfaces import ConstraintNotSatisfied
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
-from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class BugWidget(IntWidget):
