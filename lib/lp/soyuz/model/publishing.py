@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -44,9 +44,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias,
-    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -432,6 +430,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person",
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
+    ancestor = ForeignKey(
+        dbName="ancestor", foreignKey="SourcePackagePublishingHistory",
+        default=None)
 
     @property
     def package_creator(self):
@@ -1328,7 +1329,8 @@ class PublishingSet:
         return pub
 
     def newSourcePublication(self, archive, sourcepackagerelease,
-                             distroseries, component, section, pocket):
+                             distroseries, component, section, pocket,
+                             ancestor=None):
         """See `IPublishingSet`."""
         if archive.is_ppa:
             # PPA component must always be 'main', so we override it
@@ -1342,7 +1344,8 @@ class PublishingSet:
             component=component,
             section=section,
             status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW)
+            datecreated=UTC_NOW,
+            ancestor=ancestor)
         # Import here to prevent import loop.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)

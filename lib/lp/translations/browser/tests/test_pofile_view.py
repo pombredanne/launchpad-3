@@ -47,25 +47,29 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         # A translated message.
         self.translated = self.factory.makePOTMsgSet(
             self.potemplate, sequence=2)
-        self.factory.makeTranslationMessage(self.pofile, self.translated)
+        self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.translated)
         # A translated message with a new suggestion.
         self.new_suggestion = self.factory.makePOTMsgSet(
             self.potemplate, sequence=3)
-        self.factory.makeTranslationMessage(
-            self.pofile, self.new_suggestion,
-            date_updated=self.now())
-        self.factory.makeTranslationMessage(
-            self.pofile, self.new_suggestion, suggestion=True,
-            date_updated=self.now())
-        # An imported that was changed in Launchpad.
-        self.changed = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=4)
-        self.factory.makeTranslationMessage(
-            self.pofile, self.changed, is_imported=True,
-            date_updated=self.now())
-        self.factory.makeTranslationMessage(
-            self.pofile, self.changed,
-            date_updated=self.now())
+        now = self.now()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.new_suggestion,
+            date_created=now, date_reviewed=now)
+        now = self.now()
+        self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.new_suggestion,
+            date_created=now)
+        # An upstream that was changed in Ubuntu.
+        self.changed = self.factory.makePOTMsgSet(self.potemplate, sequence=4)
+        now = self.now()
+        ubuntu_translation = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.changed, date_created=now)
+        ubuntu_translation.is_current_ubuntu = True
+        now = self.now()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.changed, date_created=now,
+            date_reviewed=now)
 
         # Update statistics so that shown_count returns correct values.
         self.pofile.updateStatistics()
@@ -108,8 +112,8 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.new_suggestion], view.messages)
 
-    def test_show_changed_in_launchpad(self):
-        form = {'show': 'changed_in_launchpad'}
+    def test_show_changed_in_ubuntu(self):
+        form = {'show': 'changed_in_ubuntu'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
         self.assertEqual(1, view.shown_count)
@@ -197,8 +201,7 @@ class DocumentationScenarioMixin:
     def _useNonnewTranslator(self):
         """Create a user who's done translations, and log in as that user."""
         user = self._makeLoggedInUser()
-        self.factory.makeSharedTranslationMessage(
-            translator=user, suggestion=True)
+        self.factory.makeSuggestion(translator=user)
         return user
 
     def _makeView(self, pofile=None, request=None):

@@ -58,7 +58,7 @@ translation, we get two POFileTranslator records for each of the POFiles.
     ...     'sr', stable_potemplate)
     >>> potmsgset = factory.makePOTMsgSet(devel_potemplate, sequence=1)
     >>> potmsgset.setSequence(stable_potemplate, 1)
-    >>> tm = factory.makeTranslationMessage(
+    >>> tm = factory.makeCurrentTranslationMessage(
     ...     pofile=devel_sr_pofile,
     ...     potmsgset=potmsgset,
     ...     translations=[u"blah"])
