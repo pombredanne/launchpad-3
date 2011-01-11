@@ -99,7 +99,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -234,9 +234,6 @@ class IDistributionPublic(
         description=_("The person or team that has the rights to review and "
                       "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam'))
-    lucilleconfig = TextLine(
-        title=_("Lucille Config"),
-        description=_("The Lucille Config."), required=False)
     archive_mirrors = exported(doNotSnapshot(
         CollectionField(
             description=_("All enabled and official ARCHIVE mirrors "

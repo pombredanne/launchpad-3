@@ -159,6 +159,7 @@ from lp.testing._webservice import (
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
 
 
@@ -351,6 +352,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
+
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""

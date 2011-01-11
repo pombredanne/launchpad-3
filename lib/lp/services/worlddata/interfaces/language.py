@@ -84,6 +84,10 @@ class ILanguage(Interface):
             required=False),
         exported_as='plural_forms')
 
+    guessed_pluralforms = Int(
+        title=u"Number of plural forms, or a reasonable guess",
+        required=False, readonly=True)
+
     pluralexpression = exported(
         TextLine(
             title=u'Plural form expression',

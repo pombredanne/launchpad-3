@@ -33,7 +33,7 @@ The assignKarma() method is the one to be used when assigning karma to a
 person. It must trigger a KarmaAssignedEvent, notifying that karma was
 assigned to a given person.
 
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
     >>> karma_helper.listener.event_type

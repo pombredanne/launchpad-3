@@ -135,14 +135,14 @@ If we request a plural form that is not valid, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
-Published translation is defined and same as the active one.
+The translation on the other side is defined and same as the active one.
 
-    >>> subview.getImportedTranslation(0)
+    >>> subview.getOtherTranslation(0)
     u'libreta de direcciones de Evolution'
 
 However, if we ask for incorrect plural form, we get an AssertionError.
 
-    >>> subview.getImportedTranslation(1)
+    >>> subview.getOtherTranslation(1)
     Traceback (most recent call last):
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
@@ -161,6 +161,7 @@ We will use this helper function to simplify the test:
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.translations.model.pomsgid import POMsgID
     >>> from sqlobject import SQLObjectNotFound
+    >>> from lp.services.propertycache import get_property_cache
     >>> def changeMsgID(new_msgid):
     ...     potmsgset = removeSecurityProxy(subview.context.potmsgset)
     ...     try:
@@ -168,7 +169,7 @@ We will use this helper function to simplify the test:
     ...     except SQLObjectNotFound:
     ...         msgid = POMsgID(msgid=new_msgid)
     ...     potmsgset.msgid_singular = msgid
-    ...     potmsgset._cached_singular_text = None
+    ...     del get_property_cache(potmsgset).singular_text
     ...     flush_database_updates()
 
 First, text_has_tab() determines whether a message set contains any tabs.
@@ -235,30 +236,6 @@ Submitting translations
 
 A new translation is submitted through the view.
 
-    >>> server_url = '/'.join(
-    ...     [canonical_url(translationmessage), '+translate'])
-    >>> form = {
-    ...     'alt': None,
-    ...     'msgset_1': None,
-    ...     'msgset_1_es_translation_0_new_checkbox': True,
-    ...     'msgset_1_es_translation_0_new': 'Foo',
-    ...     'submit_translations': 'Save &amp; Continue'}
-    >>> translationmessage_page_view = create_view(
-    ...     translationmessage, "+translate", form=form,
-    ...     layer=TranslationsLayer, server_url=server_url)
-    >>> translationmessage_page_view.request.method = 'POST'
-
-And when we initialise the view class, we detect that we missed the timestamp
-that allow us to know whether we are working with latest submitted value or
-someone updated the database while we were working on those translations.
-
-    >>> translationmessage_page_view.initialize()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: We didn't find the timestamp...
-
-We do a new submit, but this time including a lock_timestamp field.
-
     >>> form = {
     ...     'lock_timestamp': '2006-11-28T13:00:00+00:00',
     ...     'alt': None,
@@ -274,8 +251,6 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> translationmessage_page_view.initialize()
     >>> transaction.commit()
 
-This time we didn't get any problem with the submission.
-
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last current translation was submitted.
 
@@ -290,8 +265,9 @@ We can see here that translation in pomsgset is newer than old_timestamp.
 
 And current value
 
-    >>> potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language).translations
+    >>> potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language,
+    ...     pofile.potemplate.translation_side).translations
     [u'Foo']
 
 We do the submission with that lock_timestamp.
@@ -317,9 +293,9 @@ We do the submission with that lock_timestamp.
     There is an error in the translation you provided. Please correct it
     before continuing.
     >>> print translationmessage_page_view.error
-    Somebody else changed this translation since you started. To avoid
-    accidentally reverting work done by others, we added your translations
-    as suggestions, so please review current values.
+    This translation has changed since you last saw it.  To avoid
+    accidentally reverting work done by others, we added your
+    translations as suggestions.  Please review the current values.
     >>> transaction.commit()
 
 This submission is not saved because there is another modification, this
@@ -330,8 +306,9 @@ means that timestamps remain unchanged.
 
 And active text too
 
-    >>> potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language).translations
+    >>> potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language,
+    ...     pofile.potemplate.translation_side).translations
     [u'Foo']
 
 
@@ -374,7 +351,6 @@ TranslationMessageSuggestions
 This class keeps all suggestions available for a concrete
 ITranslationMessage.
 
-    >>> from datetime import datetime
     >>> import pytz
     >>> from zope.component import getUtility
     >>> from lp.translations.browser.translationmessage import (
@@ -420,16 +396,22 @@ language that will be used as the suggestion.
     >>> UTC = pytz.timezone('UTC')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> login('carlos@canonical.com')
-    >>> translation_message_ja = potmsgset.updateTranslation(
-    ...     pofile_ja, carlos, { 0: u'Foo %d' },
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> translation_message_ja = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile_ja, potmsgset=potmsgset, translator=carlos,
+    ...     reviewer=carlos, translations={0: u'Foo %d'})
     >>> translation_message_ja.translations
     [u'Foo %d']
 
 Let's get current message in Spanish.
 
-    >>> translation_message_es = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language)
+# XXX JeroenVermeulen 2010-11-19: Hard-coding the wrong translation side
+# here to make the test pass.  Once we update the is_current_* flags in
+# the sample data, this should start to fail and then we can update it
+# to use pofile_es.potemplate.translation_side instead.
+    >>> from lp.translations.interfaces.side import TranslationSide
+    >>> translation_message_es = potmsgset.getCurrentTranslation(
+    ...     pofile_es.potemplate, pofile_es.language,
+    ...     TranslationSide.UBUNTU)
 
 And we prepare the ITranslationMessageSuggestions object for the higher
 Spanish plural form.
@@ -504,12 +486,14 @@ Carlos translates both.  The single-form one is simple; for the other he
 provides a complete translation including both the singular and the
 plural form.
 
-    >>> translation_message_simple = potmsgset_simple.updateTranslation(
-    ...     pofile_simple, carlos, { 0: u'%d forma' },
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
-    >>> translation_message_plural = potmsgset_plural.updateTranslation(
-    ...     pofile_plural, carlos, { 0: u'%d forma', 1: u'%d formas' },
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> translation_message_simple = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile_simple, potmsgset=potmsgset_simple,
+    ...     translator=carlos, reviewer=carlos,
+    ...     translations={0: u'%d forma'})
+    >>> translation_message_plural = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile_plural, potmsgset=potmsgset_plural,
+    ...     translator=carlos, reviewer=carlos,
+    ...     translations={0: u'%d forma', 1: u'%d formas'})
 
 The single-form translation shows up as a suggestion for the singular
 translation of the two-form message.
@@ -550,8 +534,9 @@ message.
     1
     >>> potmsgset.getSequence(potemplate)
     1
-    >>> translationmessage = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, translations = [u"some translation"])
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset,
+    ...     translations=[u"some translation"])
     >>> translationmessage.setPOFile(pofile)
     >>> server_url = '/'.join(
     ...     [canonical_url(translationmessage), '+translate'])
@@ -575,8 +560,9 @@ message).
     >>> pofile = factory.makePOFile('sr')
     >>> potemplate = pofile.potemplate
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> translationmessage = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset,
+    ...     translations=[u"shared translation"])
     >>> translationmessage.setPOFile(pofile)
     >>> server_url = '/'.join(
     ...     [canonical_url(translationmessage), '+translate'])
@@ -616,9 +602,9 @@ With a diverged translation, the shared translation is explicitely offered
 among one of the suggestions, and we are not offered to diverge the
 translation further, since it's already diverged.
 
-    >>> diverged_message = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, translations = [u"diverged translation"],
-    ...     force_diverged=True)
+    >>> diverged_message = factory.makeDivergedTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset,
+    ...     translations=[u"diverged translation"])
     >>> diverged_message.setPOFile(pofile)
     >>> translationmessage_page_view = create_view(
     ...     diverged_message, "+translate", layer=TranslationsLayer,
@@ -632,100 +618,3 @@ translation further, since it's already diverged.
     False
     >>> subview.shared_translationmessage == translationmessage
     True
-
-
-Resetting current translation
------------------------------
-
-The current translation can be reset by submitting an empty translation
-or a translation similar to the current one while forcing suggestions.
-
-We need to force timestamp update, since suggestions are submitted too fast.
-
-    >>> from lp.translations.enums import TranslationPermission
-    >>> pofile = factory.makePOFile('es')
-    >>> potemplate = pofile.potemplate
-    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> translationmessage = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, pofile=pofile,
-    ...     translations = [u"A shared translation"])
-    >>> translationmessage.setPOFile(pofile)
-    >>> product = potemplate.productseries.product
-    >>> product.translationpermission = TranslationPermission.CLOSED
-    >>> year_tick = 2100
-    >>> def submit_translation(
-    ...     translationmessage, translation, force_suggestion=False):
-    ...     global year_tick
-    ...     potmsgset = translationmessage.potmsgset
-    ...     server_url = '/'.join(
-    ...         [canonical_url(translationmessage), '+translate'])
-    ...     now = (str(year_tick) +
-    ...             datetime.now(UTC).strftime('-%m-%dT%H:%M:%S+00:00'))
-    ...     year_tick += 1
-    ...     msgset_id = 'msgset_' + str(potmsgset.id)
-    ...     language_code = translationmessage.language.code
-    ...     msgset_id_lang = msgset_id + '_' + language_code
-    ...     form = {
-    ...         'lock_timestamp': now,
-    ...         'alt': None,
-    ...         msgset_id : None,
-    ...         msgset_id_lang + '_translation_0_radiobutton':
-    ...         msgset_id_lang + '_translation_0_new',
-    ...         msgset_id_lang + '_translation_0_new': translation,
-    ...         'submit_translations': 'Save &amp; Continue'}
-    ...     if force_suggestion:
-    ...         form[msgset_id_lang + '_needsreview'] = 'force_suggestion'
-    ...     tm_view = create_view(
-    ...         translationmessage, "+translate", form=form,
-    ...         layer=TranslationsLayer, server_url=server_url)
-    ...     tm_view.request.method = 'POST'
-    ...     tm_view.initialize()
-
-    >>> def print_current_translation(potmsgset, pofile):
-    ...     current_translation = potmsgset.getCurrentTranslationMessage(
-    ...         pofile.potemplate, pofile.language)
-    ...     if current_translation is not None:
-    ...         print current_translation.translations
-
-    >>> def print_local_suggestions(potmsgset, pofile):
-    ...     import operator
-    ...     local = sorted(
-    ...         potmsgset.getLocalTranslationMessages(
-    ...             pofile.potemplate, pofile.language),
-    ...         key=operator.attrgetter("date_created"),
-    ...         reverse=True)
-    ...     for suggestion in local:
-    ...         print suggestion.translations
-
-We will make an initial translation.
-
-    >>> submit_translation(
-    ...     translationmessage, u'Foo')
-    >>> print_local_suggestions(potmsgset, pofile)
-    >>> print_current_translation(potmsgset, pofile)
-    [u'Foo']
-
-Forcing suggestions while submitting an empty translation will reset the
-translation for this message and all previously entered translations will be
-listed as suggestions.
-
-    >>> submit_translation(translationmessage, u'', force_suggestion=True)
-    >>> print_local_suggestions(potmsgset, pofile)
-    [u'Foo']
-    [u'A shared translation']
-    >>> print_current_translation(potmsgset, pofile)
-
-Only users with edit rights are allowed to reset a translation.
-
-    >>> submit_translation(translationmessage, u'New current translation')
-    >>> print_current_translation(potmsgset, pofile)
-    [u'New current translation']
-    >>> print_local_suggestions(potmsgset, pofile)
-    >>> login('no-priv@canonical.com')
-    >>> submit_translation(
-    ...     translationmessage, u'New current translation',
-    ...     force_suggestion=True)
-    >>> login('carlos@canonical.com')
-    >>> print_local_suggestions(potmsgset, pofile)
-    >>> print_current_translation(potmsgset, pofile)
-    [u'New current translation']

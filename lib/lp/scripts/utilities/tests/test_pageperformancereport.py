@@ -7,8 +7,6 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import TestCase
-
 from lp.scripts.utilities.pageperformancereport import (
     Category,
     OnlineApproximateMedian,
@@ -17,6 +15,7 @@ from lp.scripts.utilities.pageperformancereport import (
     RequestTimes,
     Stats,
     )
+from lp.testing import TestCase
 
 
 class FakeOptions:

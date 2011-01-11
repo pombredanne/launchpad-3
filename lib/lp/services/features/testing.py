@@ -8,9 +8,13 @@ __all__ = ['active_features']
 
 
 from fixtures import Fixture
+
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import Rule, StormFeatureRuleSource
+from lp.services.features.rulesource import (
+    Rule,
+    StormFeatureRuleSource,
+    )
 
 
 class FeatureFixture(Fixture):
