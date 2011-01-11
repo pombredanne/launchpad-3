@@ -26,9 +26,8 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.product import (
     IProduct,
-    IProductSet
+    IProductSet,
     )
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.testing import TestCaseWithFactory
 
@@ -93,7 +92,7 @@ class MilestoneTest(unittest.TestCase):
 
 
 class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
-    """A TestCase for snapshots of specification targets."""
+    """A TestCase for snapshots of pillars with milestones."""
 
     layer = DatabaseFunctionalLayer
 

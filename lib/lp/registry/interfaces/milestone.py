@@ -40,7 +40,6 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Choice,
-    Date,
     Int,
     TextLine,
     )
