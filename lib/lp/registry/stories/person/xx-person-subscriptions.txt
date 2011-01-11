@@ -253,6 +253,7 @@ displayed immediately after the subscription.
     only if it matches the following filter:
     &#8220;First&#8221; allows mail through when:
     the bug is tagged with foo
+    (edit)
 
 Multiple filters will be shown if they exist, with a slightly modified
 message.
@@ -267,5 +268,7 @@ message.
     only if it matches one or more of the following filters:
     &#8220;First&#8221; allows mail through when:
     the bug is tagged with foo
+    (edit)
     &#8220;Second&#8221; allows mail through when:
     the bug is tagged with bar
+    (edit)
