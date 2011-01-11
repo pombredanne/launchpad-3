@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugTaskDelta',
+    'BugTaskResultSet',
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'BugTask',
@@ -422,6 +423,21 @@ class NullBugTask(BugTaskMixin):
         """See `IBugTask`."""
         return 'Bug #%s is not in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
+
+
+class BugTaskResultSet(DecoratedResultSet):
+    """Decorated results with cached assignees."""
+
+    def __iter__(self, *args, **kwargs):
+        """Iter with caching of assignees.
+
+        Assumes none of the decorators will need to access the assignees or
+        there is not benefit.
+        """
+        bugtasks = list(
+            super(BugTaskResultSet, self).__iter__(*args, **kwargs))
+        BugTaskSet._cache_assignees(bugtasks)
+        return iter(bugtasks)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -1345,13 +1361,14 @@ def get_bug_privacy_filter_with_decorator(user):
     return ("""
         (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
-             FROM BugSubscription, TeamParticipation, BugTask
-             WHERE (TeamParticipation.person = %(personid)s AND
-                   BugSubscription.person = TeamParticipation.team AND
-                   BugSubscription.bug = Bug.id) OR
-                   (BugTask.bug = Bug.id AND
-                   TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugTask.assignee)
+             FROM BugSubscription, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugSubscription.person
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugTask.assignee
                    ))
                      """ % sqlvalues(personid=user.id),
         _make_cache_user_can_view_bug(user))
@@ -2297,24 +2314,16 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, params, *args, **kwargs):
+    def _search(self, resultrow, prejoins, params, *args):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
         :param prejoins: A sequence of Storm SQL row instances which are
             pre-joined.
         :param params: A BugTaskSearchParams instance.
-        :param pre_iter_hook: The pre_iter_hook method to use.  Defaults to
-        'cache_assignees'. May be modified or set to None for testing.
         :param args: optional additional BugTaskSearchParams instances,
         """
 
-        def cache_assignees(rows):
-            # The decorator must be called to turn the rows of the result into
-            # a list of BugTasks, which can be used for caching the assignees.
-            BugTaskSet._cache_assignees([decorator(row) for row in rows])
-
-        pre_iter_hook = kwargs.get('pre_iter_hook', cache_assignees)
         store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
         has_duplicate_results] = self.buildQuery(params)
@@ -2373,9 +2382,8 @@ class BugTaskSet:
 
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        return DecoratedResultSet(
-            result, result_decorator=decorator,
-            pre_iter_hook=pre_iter_hook)
+        return BugTaskResultSet(
+            result, result_decorator=decorator)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2390,12 +2398,12 @@ class BugTaskSet:
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
-        _noprejoins = kwargs.pop('_noprejoins', False)
+        _noprejoins = kwargs.get('_noprejoins', False)
         if _noprejoins:
             prejoins = []
             resultrow = BugTask
         else:
-            requested_joins = kwargs.pop('prejoins', [])
+            requested_joins = kwargs.get('prejoins', [])
             prejoins = [
                 (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
                 (Product, LeftJoin(Product, BugTask.product == Product.id)),
@@ -2409,7 +2417,7 @@ class BugTaskSet:
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return self._search(resultrow, prejoins, params, *args, **kwargs)
+        return self._search(resultrow, prejoins, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
@@ -2420,7 +2428,7 @@ class BugTaskSet:
         assignee_ids = set(
             bug_task.assigneeID for bug_task in rows)
         assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-        assignee_ids, need_validity=True)
+            assignee_ids, need_validity=True)
         # Execute query to load storm cache.
         list(assignees)
 

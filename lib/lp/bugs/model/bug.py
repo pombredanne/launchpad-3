@@ -2195,18 +2195,20 @@ class BugSet:
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
-                     Bug.id in (
-                         SELECT Bug.id
-                         FROM Bug, BugSubscription, BugTask, TeamParticipation
-                         WHERE (Bug.id = BugSubscription.bug AND
+                      Bug.id in (
+                         SELECT BugSubscription.bug
+                           FROM BugSubscription, TeamParticipation
+                           WHERE
                              TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team)
-                             OR (
-                             BugTask.bug = Bug.id AND
+                             BugSubscription.person = TeamParticipation.team
+                         UNION
+                         SELECT BugTask.bug
+                           FROM BugTask, TeamParticipation
+                           WHERE
                              TeamParticipation.person = %(personid)s AND
-                             TeamParticipation.team = BugTask.assignee)
-                             ))
-                             """ % sqlvalues(personid=user.id))
+                             TeamParticipation.team = BugTask.assignee
+                      )
+                    )""" % sqlvalues(personid=user.id))
         else:
             # Anonymous user; filter to include only public bugs in
             # the search results.
