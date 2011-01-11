@@ -31,10 +31,12 @@ from lp.registry.browser.structuralsubscription import (
 from lp.testing import (
     normalize_whitespace,
     person_logged_in,
+    login_person,
     TestCaseWithFactory,
     ws_object,
     )
 from lp.testing.views import create_initialized_view
+from lp.bugs.publisher import BugsLayer
 
 
 class TestBugSubscriptionFilterBase:
@@ -306,7 +308,7 @@ class TestBugSubscriptionFilterView(
         # the absense of conditions.
         self.assertRender(
             u"This filter does not allow mail through.",
-            u"There are no filter conditions!")
+            u"There are no filter conditions! (edit)")
 
     def test_render_with_no_description_and_conditions(self):
         # If conditions are set but no description, the rendered description
@@ -325,7 +327,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo", u"bar"]
         self.assertRender(
             u"This filter allows mail through when:",
-            u" and ".join(self.view.conditions))
+            u" and ".join(self.view.conditions) + u" (edit)")
 
     def test_render_with_description_and_no_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -334,7 +336,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.description = u"The Wait"
         self.assertRender(
             u"\u201cThe Wait\u201d does not allow mail through.",
-            u"There are no filter conditions!")
+            u"There are no filter conditions! (edit)")
 
     def test_render_with_description_and_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -344,4 +346,53 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo"]
         self.assertRender(
             u"\u201cThe Wait\u201d allows mail through when:",
-            u" and ".join(self.view.conditions))
+            u" and ".join(self.view.conditions) + u" (edit)")
+
+
+class TestBugSubscriptionFilterEditView(
+    TestBugSubscriptionFilterBase, TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_view_properties(self):
+        # The cancel url and next url will both point to the user's structural
+        # subscription overview page.
+        login_person(self.owner)
+        view = create_initialized_view(
+            self.subscription_filter, name="+edit",
+            layer=BugsLayer, principal=self.owner)
+        self.assertEqual([], view.errors)
+        path = "/~%s/+structural-subscriptions" % self.owner.name
+        self.assertEqual(path, urlparse(view.cancel_url).path)
+        self.assertEqual(path, urlparse(view.next_url).path)
+
+    def test_edit(self):
+        # The filter can be updated by using the update action.
+        form = {
+            "field.description": "New description",
+            "field.statuses": ["NEW", "INCOMPLETE"],
+            "field.importances": ["LOW", "MEDIUM"],
+            "field.tags": u"foo bar",
+            "field.find_all_tags": "on",
+            "field.actions.update": "Update",
+            }
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.subscription_filter, name="+edit",
+                form=form, layer=BugsLayer, principal=self.owner)
+            self.assertEqual([], view.errors)
+        # The subscription filter has been updated.
+        self.assertEqual(
+            u"New description",
+            self.subscription_filter.description)
+        self.assertEqual(
+            frozenset([BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]),
+            self.subscription_filter.statuses)
+        self.assertEqual(
+            frozenset([BugTaskImportance.LOW, BugTaskImportance.MEDIUM]),
+            self.subscription_filter.importances)
+        self.assertEqual(
+            frozenset([u"foo", u"bar"]),
+            self.subscription_filter.tags)
+        self.assertTrue(
+            self.subscription_filter.find_all_tags)
