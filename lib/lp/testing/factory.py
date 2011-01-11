@@ -3102,6 +3102,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
+        IStore(binary_package_build).flush()
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
