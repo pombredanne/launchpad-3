@@ -1195,6 +1195,12 @@
           template="../../app/templates/generic-edit.pt"
           permission="launchpad.Edit"
           name="+edit" />
+      <browser:page
+          for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterCreateView"
+          template="../../app/templates/generic-edit.pt"
+          permission="launchpad.View"
+          name="+new-filter" />
     </facet>
 
     <!-- Widgets -->

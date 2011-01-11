@@ -21,6 +21,7 @@ from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
@@ -104,3 +105,18 @@ class BugSubscriptionFilterEditView(LaunchpadEditFormView):
             self.user, view_name="+structural-subscriptions")
 
     cancel_url = next_url
+
+
+class BugSubscriptionFilterCreateView(BugSubscriptionFilterEditView):
+
+    page_title = u"Create new filter"
+
+    # The context does not correspond to the thing we're creating - which,
+    # somewhat obviously, doesn't exist yet - so don't even try to render it.
+    render_context = False
+
+    @action("Create", name="create")
+    def create_action(self, action, data):
+        """Create a new bug filter with the form data."""
+        bug_filter = self.context.newBugFilter()
+        self.updateContextFromData(data, context=bug_filter)
