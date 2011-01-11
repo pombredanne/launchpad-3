@@ -1265,6 +1265,8 @@ class PublishingSet:
                     build.distro_arch_series.architecturetag]
             except NotFoundError:
                 continue
+            if not target_architecture.enabled:
+                continue
             target_component = override_component or binary.component
             secure_copies.extend(
                 getUtility(IPublishingSet).publishBinary(
@@ -1323,6 +1325,8 @@ class PublishingSet:
                              distroarchseries, component, section, priority,
                              pocket):
         """See `IPublishingSet`."""
+        assert distroarchseries.enabled, (
+            "Will not create new publications in a disabled architecture.")
         if archive.is_ppa:
             # PPA component must always be 'main', so we override it
             # here.
