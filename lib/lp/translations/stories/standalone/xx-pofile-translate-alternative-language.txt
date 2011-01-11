@@ -157,7 +157,7 @@ show only the strings he is interested in.
 
     >>> browser.getControl(name='show', index=1).displayOptions
     ['all items', 'untranslated items', 'translated items',
-     'items with new suggestions', 'items changed in Launchpad']
+     'items with new suggestions', 'items changed in Ubuntu']
 
 Carlos sets the filter to display only the untranslated strings.
 

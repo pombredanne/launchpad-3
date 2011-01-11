@@ -46,7 +46,7 @@ Xowxz is a Khmer reviewer.
     ...     """Let `user` add a suggestion to `pofile`."""
     ...     potmsgset = factory.makePOTMsgSet(
     ...         potemplate=pofile.potemplate, singular='x', sequence=1)
-    ...     factory.makeTranslationMessage(
+    ...     factory.makeCurrentTranslationMessage(
     ...         potmsgset=potmsgset, pofile=pofile, translator=user,
     ...         translations=['y'])
 
