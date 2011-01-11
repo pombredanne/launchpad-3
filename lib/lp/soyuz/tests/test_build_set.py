@@ -61,6 +61,8 @@ class TestBuildSet(TestCaseWithFactory):
             self.builder_one = self.factory.makeBuilder(processor=pf_proc_1)
             self.builder_two = self.factory.makeBuilder(processor=pf_proc_2)
         self.builds = []
+
+    def setUpBuilds(self):
         for i in range(5):
             # Create some test builds
             spph = self.publisher.getPubSource(
@@ -81,6 +83,7 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_get_by_spr(self):
         # Test fetching build records via the SPR
+        self.setUpBuilds()
         spr = self.builds[0].source_package_release.id
         set = getUtility(IBinaryPackageBuildSet).getBuildBySRAndArchtag(
             spr, self.das_one.architecturetag)
@@ -89,10 +92,9 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_get_by_arch_ids(self):
         # Test fetching builds via the arch tag
+        self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             self.distribution, self.arch_ids)
-        for build in set:
-            print build.title
         self.assertEquals(set.count(), 10)
 
     def test_get_by_no_arch_ids(self):
@@ -106,12 +108,14 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_get_by_arch_ids_filter_build_status(self):
         # The result can be filtered based on the build status
+        self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             self.distribution, self.arch_ids, status=BuildStatus.FULLYBUILT)
         self.assertEquals(set.count(), 8)
 
     def test_get_by_arch_ids_filter_name(self):
         # The result can be filtered based on the name
+        self.setUpBuilds()
         spn = self.builds[2].source_package_release.sourcepackagename.name
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             self.distribution, self.arch_ids, name=spn)
@@ -119,6 +123,7 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_get_by_arch_ids_filter_pocket(self):
         # The result can be filtered based on the pocket of the build
+        self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             self.distribution, self.arch_ids,
             pocket=PackagePublishingPocket.RELEASE)
@@ -130,6 +135,7 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_get_status_summary_for_builds(self):
         # We can query for the status summary of a number of builds
+        self.setUpBuilds()
         relevant_builds = [self.builds[0], self.builds[2], self.builds[-2]]
         summary = getUtility(
             IBinaryPackageBuildSet).getStatusSummaryForBuilds(
@@ -141,7 +147,9 @@ class TestBuildSet(TestCaseWithFactory):
         # The BuildSet class allows data to be preloaded
         # Note, it is an internal method, so we have to push past the security
         # proxy
+        self.setUpBuilds()
         build_ids = [self.builds[i] for i in (0, 1, 2, 3)]
         rset = removeSecurityProxy(
             getUtility(IBinaryPackageBuildSet))._prefetchBuildData(build_ids)
         self.assertEquals(len(rset), 4)
+        self.setUpBuilds()
