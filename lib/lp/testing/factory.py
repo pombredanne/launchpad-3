@@ -2312,6 +2312,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if naked_sprb.date_started is None:
                 naked_sprb.date_started = spr_build.date_created
             naked_sprb.date_finished = naked_sprb.date_started + duration
+        IStore(spr_build).flush()
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
