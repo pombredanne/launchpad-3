@@ -51,8 +51,22 @@ from lp.testing import (
     BrowserTestCase,
     login,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+
+
+class TestCanonicalUrlForRecipe(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='recipe-owner')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name='recipe-name')
+        self.assertEqual(
+            'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
+            canonical_url(recipe))
 
 
 class TestCaseForRecipe(BrowserTestCase):
