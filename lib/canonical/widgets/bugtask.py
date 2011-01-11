@@ -4,6 +4,18 @@
 """Widgets related to IBugTask."""
 
 __metaclass__ = type
+__all__ = [
+    "AssigneeDisplayWidget",
+    "BugTaskAlsoAffectsSourcePackageNameWidget",
+    "BugTaskAssigneeWidget",
+    "BugTaskBugWatchWidget",
+    "BugTaskSourcePackageNameWidget",
+    "BugWatchEditForm",
+    "DBItemDisplayWidget",
+    "NewLineToSpacesWidget",
+    "NominationReviewActionWidget",
+    ]
+
 
 from xml.sax.saxutils import escape
 
