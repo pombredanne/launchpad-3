@@ -68,7 +68,7 @@ class TestCanonicalUrlForRecipe(TestCaseWithFactory):
             'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
             canonical_url(recipe))
 
-        
+
 class TestCaseForRecipe(BrowserTestCase):
     """Create some sample data for recipe tests."""
 
@@ -1206,7 +1206,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner Code PPA named build for Owner
+            Owner PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1236,7 +1236,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner Code PPA named build for Owner
+            Owner PPA named build for Owner
             created .*
             Build status
             Successfully built

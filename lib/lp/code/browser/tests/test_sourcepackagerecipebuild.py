@@ -8,6 +8,7 @@ __metaclass__ = type
 
 from mechanize import LinkNotFoundError
 from storm.locals import Store
+from testtools.matchers import StartsWith
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -28,7 +29,22 @@ from lp.testing import (
     BrowserTestCase,
     login,
     logout,
+    TestCaseWithFactory,
     )
+
+
+class TestCanonicalUrlForRecipeBuild(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='ppa-owner')
+        ppa = self.factory.makeArchive(owner=owner, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
+        self.assertThat(
+            canonical_url(build),
+            StartsWith(
+                'http://launchpad.dev/~ppa-owner/+archive/ppa/+buildjob/'))
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
