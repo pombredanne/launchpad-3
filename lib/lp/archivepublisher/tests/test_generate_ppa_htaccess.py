@@ -12,9 +12,9 @@ import os
 import subprocess
 import sys
 import tempfile
-import transaction
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 

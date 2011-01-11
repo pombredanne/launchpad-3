@@ -180,8 +180,10 @@ class IBranchCollection(Interface):
 
         A branch is targeted by a person if that person has registered a merge
         proposal with the branch as the target.
+
+        :param since: If supplied, ignore merge proposals before this date.
         """
 
 
 class IAllBranches(IBranchCollection):
-    """An `IBranchCollection` representing all branches in Launchpad."""
+    """A `IBranchCollection` representing all branches in Launchpad."""

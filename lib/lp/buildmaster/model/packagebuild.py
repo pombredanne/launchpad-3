@@ -226,6 +226,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         if filename is None:
             filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
         file_size = len(content)
         file_content = StringIO(content)
         restricted = self.is_private

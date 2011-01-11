@@ -57,9 +57,9 @@ TranslationFormatSyntaxError
     ... msgid "foo"
     ... msgstr ""
     ... '''
-    >>> published = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -119,9 +119,9 @@ Encoding errors
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)

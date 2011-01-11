@@ -21,9 +21,7 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.initialisedistroseriesjob import (
-    InitialiseDistroSeriesJob,
-    )
+from lp.soyuz.model.initialisedistroseriesjob import InitialiseDistroSeriesJob
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory

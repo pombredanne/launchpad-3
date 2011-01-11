@@ -34,7 +34,7 @@ Functions to create source packages, templates and and translations.
     ...     for language, translation in translations.items():
     ...         pofile = template.getPOFileByLang(language)
     ...         factory.makeSharedTranslationMessage(pofile, msgset,
-    ...             translations=[translation], is_imported=True)
+    ...             translations=[translation], is_current_upstream=True)
     ...     return msgset
 
     >>> package1 = makeSourcePackage('package1')

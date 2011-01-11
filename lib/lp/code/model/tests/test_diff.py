@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
@@ -12,7 +12,11 @@ import logging
 from unittest import TestLoader
 
 from bzrlib import trace
-from bzrlib.patches import InsertLine, parse_patches, RemoveLine
+from bzrlib.patches import (
+    InsertLine,
+    parse_patches,
+    RemoveLine,
+    )
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
