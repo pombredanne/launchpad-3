@@ -9,6 +9,7 @@ from functools import partial
 from urlparse import urlparse
 
 from lazr.restfulclient.errors import BadRequest
+from lxml import html
 from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
@@ -17,6 +18,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     AppServerLayer,
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.bugs.interfaces.bugtask import (
@@ -27,10 +29,12 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
 from lp.testing import (
+    normalize_whitespace,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestBugSubscriptionFilterBase:
@@ -208,3 +212,136 @@ class TestBugSubscriptionFilterAPIModifications(
         self.assertRaises(
             LostObjectError, getattr, self.subscription_filter,
             "find_all_tags")
+
+
+class TestBugSubscriptionFilterView(
+    TestBugSubscriptionFilterBase, TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterView, self).setUp()
+        self.view = create_initialized_view(
+            self.subscription_filter, "+definition")
+
+    def test_description(self):
+        # If the description is not set then the empty string is returned.
+        self.assertEqual(u"", self.view.description)
+        # If the description is just whitespace then the empty string is
+        # returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"  "
+        self.assertEqual(u"", self.view.description)
+        # If the description is set it is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"Foo"
+        self.assertEqual(u"Foo", self.view.description)
+        # Leading and trailing whitespace is trimmed.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"  Foo\t  "
+        self.assertEqual(u"Foo", self.view.description)
+
+    def test_conditions_with_nothing_set(self):
+        # If nothing is set the conditions list is empty.
+        self.assertEqual([], self.view.conditions)
+
+    def test_conditions_for_statuses(self):
+        # If no statuses have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the statuses is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.statuses = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.TRIAGED,
+                ]
+        self.assertEqual(
+            [u"the status is New, Confirmed, or Triaged"],
+            self.view.conditions)
+
+    def test_conditions_for_importances(self):
+        # If no importances have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the importances is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.importances = [
+                BugTaskImportance.LOW,
+                BugTaskImportance.MEDIUM,
+                BugTaskImportance.HIGH,
+                ]
+        self.assertEqual(
+            [u"the importance is High, Medium, or Low"],
+             self.view.conditions)
+
+    def test_conditions_for_tags(self):
+        # If no tags have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the tags is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.tags = [u"foo", u"bar", u"*"]
+        self.assertEqual(
+            [u"the bug is tagged with *, bar, or foo"],
+            self.view.conditions)
+        # If find_all_tags is set, the conjunction changes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.find_all_tags = True
+        self.assertEqual(
+            [u"the bug is tagged with *, bar, and foo"],
+            self.view.conditions)
+
+    def assertRender(self, dt_content=None, dd_content=None):
+        root = html.fromstring(self.view.render())
+        if dt_content is not None:
+            self.assertEqual(
+                dt_content, normalize_whitespace(
+                    root.find("dt").text_content()))
+        if dd_content is not None:
+            self.assertEqual(
+                dd_content, normalize_whitespace(
+                    root.find("dd").text_content()))
+
+    def test_render_with_no_description_and_no_conditions(self):
+        # If no description and no conditions are set, the rendered
+        # description is very simple, and there's a short message describing
+        # the absense of conditions.
+        self.assertRender(
+            u"This filter does not allow mail through.",
+            u"There are no filter conditions!")
+
+    def test_render_with_no_description_and_conditions(self):
+        # If conditions are set but no description, the rendered description
+        # is very simple, and the conditions are described.
+        with person_logged_in(self.owner):
+            self.subscription_filter.statuses = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.TRIAGED,
+                ]
+            self.subscription_filter.importances = [
+                BugTaskImportance.LOW,
+                BugTaskImportance.MEDIUM,
+                BugTaskImportance.HIGH,
+                ]
+            self.subscription_filter.tags = [u"foo", u"bar"]
+        self.assertRender(
+            u"This filter allows mail through when:",
+            u" and ".join(self.view.conditions))
+
+    def test_render_with_description_and_no_conditions(self):
+        # If a description is set it appears in the content of the dt tag,
+        # surrounded by "curly" quotes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"The Wait"
+        self.assertRender(
+            u"\u201cThe Wait\u201d does not allow mail through.",
+            u"There are no filter conditions!")
+
+    def test_render_with_description_and_conditions(self):
+        # If a description is set it appears in the content of the dt tag,
+        # surrounded by "curly" quotes.
+        with person_logged_in(self.owner):
+            self.subscription_filter.description = u"The Wait"
+            self.subscription_filter.tags = [u"foo"]
+        self.assertRender(
+            u"\u201cThe Wait\u201d allows mail through when:",
+            u" and ".join(self.view.conditions))

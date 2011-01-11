@@ -1,0 +1,34 @@
+<dl
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xml:lang="en" lang="en" dir="ltr"
+    tal:define="conditions view/conditions"
+    tal:omit-tag="">
+  <dt tal:define="description view/description">
+    <span tal:condition="description">
+      &#8220;<span tal:content="view/description" />&#8221;
+    </span>
+    <span tal:condition="not:description">
+      This filter
+    </span>
+    <span tal:condition="conditions">
+      allows mail through when:
+    </span>
+    <span tal:condition="not:conditions">
+      does not allow mail through.
+    </span>
+  </dt>
+  <dd tal:condition="conditions">
+    <tal:conditions repeat="condition conditions">
+      <span tal:content="condition" />
+      <tal:conjunction condition="not:repeat/condition/end">
+        <b>and</b> <br />
+      </tal:conjunction>
+    </tal:conditions>
+  </dd>
+  <dd tal:condition="not:conditions">
+    There are no filter conditions!
+  </dd>
+</dl>
