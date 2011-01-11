@@ -152,4 +152,3 @@ class TestBuildSet(TestCaseWithFactory):
         rset = removeSecurityProxy(
             getUtility(IBinaryPackageBuildSet))._prefetchBuildData(build_ids)
         self.assertEquals(len(rset), 4)
-        self.setUpBuilds()
