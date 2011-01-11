@@ -1473,7 +1473,8 @@ class POFileSet:
         return DummyPOFile(potemplate, language)
 
     def getPOFilesByPathAndOrigin(self, path, productseries=None,
-                                  distroseries=None, sourcepackagename=None):
+                                  distroseries=None, sourcepackagename=None,
+                                  ignore_obsolete=False):
         """See `IPOFileSet`."""
         # Avoid circular imports.
         from lp.translations.model.potemplate import POTemplate
@@ -1492,35 +1493,35 @@ class POFileSet:
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
-        general_conditions = And(
+        conditions = [
             POFile.path == path,
-            POFile.potemplate == POTemplate.id)
+            POFile.potemplate == POTemplate.id,
+            ]
+        if ignore_obsolete:
+            conditions.append(POTemplate.iscurrent == True)
 
         if productseries is not None:
-            return store.find(POFile, And(
-                general_conditions,
-                POTemplate.productseries == productseries))
+            conditions.append(POTemplate.productseries == productseries)
         else:
-            distro_conditions = And(
-                general_conditions,
-                POTemplate.distroseries == distroseries)
+            conditions.append(POTemplate.distroseries == distroseries)
 
             # The POFile belongs to a distribution and it could come from
             # another package that its POTemplate is linked to, so we first
             # check to find it at IPOFile.from_sourcepackagename
-            matches = store.find(POFile, And(
-                distro_conditions,
-                POFile.from_sourcepackagename == sourcepackagename))
+            linked_conditions = conditions + [
+                POFile.from_sourcepackagename == sourcepackagename]
 
+            matches = store.find(POFile, *linked_conditions)
             if not matches.is_empty():
                 return matches
 
             # There is no pofile in that 'path' and
             # 'IPOFile.from_sourcepackagename' so we do a search using the
             # usual sourcepackagename.
-            return store.find(POFile, And(
-                distro_conditions,
-                POTemplate.sourcepackagename == sourcepackagename))
+            conditions.append(
+                POTemplate.sourcepackagename == sourcepackagename)
+
+        return store.find(POFile, *conditions)
 
     def getBatch(self, starting_id, batch_size):
         """See `IPOFileSet`."""
