@@ -1011,6 +1011,11 @@ class TestCachingAssignees(TestCaseWithFactory):
             self.bug.setPrivate(True, self.owner)
 
     def _get_bug_tasks(self):
+        """Get the bugtasks for a bug.
+
+        This method is used rather than Bug.bugtasks since the later does
+        prejoining which would spoil the test.
+        """
         store = Store.of(self.bug)
         return store.find(
             BugTask, BugTask.bug == self.bug)
@@ -1021,10 +1026,10 @@ class TestCachingAssignees(TestCaseWithFactory):
         with person_logged_in(self.owner):
             with StormStatementRecorder() as recorder:
                 # Access the assignees to trigger a query.
-                bugtasks = [bugtask.assignee.name for bugtask in bugtasks]
+                names = [bugtask.assignee.name for bugtask in bugtasks]
                 # With no caching, the number of queries is roughly twice the
                 # number of bugtasks.
-                query_count_floor = len(bugtasks) * 2
+                query_count_floor = len(names) * 2
                 self.assertThat(
                     recorder, HasQueryCount(Not(LessThan(query_count_floor))))
 
@@ -1036,7 +1041,7 @@ class TestCachingAssignees(TestCaseWithFactory):
                 bugtasks = BugTaskResultSet(bugtasks)
                 # Access the assignees to trigger a query if not properly
                 # cached.
-                bugtasks = [bugtask.assignee.name for bugtask in bugtasks]
+                names = [bugtask.assignee.name for bugtask in bugtasks]
                 # With caching the number of queries is two, one for the
                 # bugtask and one for all of the assignees at once.
                 self.assertThat(recorder, HasQueryCount(Equals(2)))
