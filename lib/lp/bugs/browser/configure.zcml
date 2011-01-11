@@ -1192,7 +1192,7 @@
       <browser:page
           for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
           class=".bugsubscriptionfilter.BugSubscriptionFilterEditView"
-          template="../templates/bug-subscription-filter-edit.pt"
+          template="../../app/templates/generic-edit.pt"
           permission="launchpad.Edit"
           name="+edit" />
     </facet>
