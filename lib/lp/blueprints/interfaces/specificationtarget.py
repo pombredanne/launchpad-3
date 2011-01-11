@@ -19,7 +19,7 @@ from zope.interface import (
     )
 from zope.schema import TextLine
 
-from lazr.lifecycle import doNotSnapshot
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     exported,
     export_as_webservice_entry,

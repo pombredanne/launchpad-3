@@ -15,7 +15,7 @@ __all__ = [
     'IProjectGroupMilestone',
     ]
 
-from lazr.lifecycle import doNotSnapshot
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
