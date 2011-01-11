@@ -63,7 +63,7 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         pkg1 = self.publisher.getPubSource(
             sourcename=self.factory.getUniqueString(),
             distroseries=self.distroseries)
-        build1 = pkg1.createMissingBuilds()[0]
+        [build1] = pkg1.createMissingBuilds()
         build1.buildqueue_record.lastscore = 1000
         # No user-serviceable parts inside
         removeSecurityProxy(build1.buildqueue_record).estimated_duration = (
@@ -71,18 +71,18 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         pkg2 = self.publisher.getPubSource(
             sourcename=self.factory.getUniqueString(),
             distroseries=self.distroseries)
-        build2 = pkg2.createMissingBuilds()[0]
+        [build2] = pkg2.createMissingBuilds()
         build2.buildqueue_record.lastscore = 100
         now = datetime.now(pytz.UTC)
         # Since build1 is higher priority, it's estimated dispatch time is now
         estimate = self.job_start_estimate(build1)
-        self.assertEquals((estimate - now).seconds, 5)
+        self.assertEquals(5, (estimate - now).seconds)
         # And build2 is next, so must take build1's duration into account
         estimate = self.job_start_estimate(build2)
-        self.assertEquals((estimate - now).seconds, 600)
+        self.assertEquals(600, (estimate - now).seconds)
         # If we disable build1's archive, build2 is next
         with person_logged_in(self.admin):
             build1.archive.disable()
         estimate = self.job_start_estimate(build2)
-        self.assertEquals((estimate - now).seconds, 5)
+        self.assertEquals(5, (estimate - now).seconds)
 

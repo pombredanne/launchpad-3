@@ -290,5 +290,5 @@ class TestBuildViews(TestCaseWithFactory):
         url = "http://launchpad.dev/+builds/+build/%s" % build.id
         expected_url = canonical_url(build)
         browser = self.getUserBrowser(url)
-        self.assertEquals(browser.url, expected_url)
+        self.assertEquals(expected_url, browser.url)
 
