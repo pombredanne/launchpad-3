@@ -25,6 +25,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
@@ -635,7 +636,14 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.status != BuildStatus.FULLYBUILT:
+            # Don't copy builds that aren't yet done, or those without a
+            # corresponding enabled architecture in the new series.
+            try:
+                target_arch = series[build.arch_tag]
+            except NotFoundError:
+                continue
+            if (not target_arch.enabled or
+                build.status != BuildStatus.FULLYBUILT):
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload
