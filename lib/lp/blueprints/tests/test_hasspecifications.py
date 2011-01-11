@@ -5,11 +5,17 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.testing import TestCaseWithFactory
 
 
@@ -178,3 +184,49 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
             ["spec1"], person.valid_specifications)
+
+
+class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of specification targets."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(HasSpecificationsSnapshotTestCase, self).setUp()
+
+    def check_omissions(self, target, providing):
+        """snapshots of objects with IHasSpecification should not snapshot
+        marked attributes.
+
+        wrap an export with 'donotsnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(target, providing=providing)
+        omitted = [
+            'all_specifications',
+            'valid_specifications',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "snapshot should not include %s." % attribute)
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.check_omissions(product, IProduct)
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.check_omissions(distribution, IDistribution)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.check_omissions(productseries, IProductSeries)
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.check_omissions(distroseries, IDistroSeries)
+
+    def test_projectgroup(self):
+        projectgroup = self.factory.makeProject()
+        self.check_omissions(projectgroup, IProjectGroup)

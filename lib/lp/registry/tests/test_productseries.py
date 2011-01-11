@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
@@ -17,7 +18,10 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -299,6 +303,33 @@ class TestProductSeriesReleases(TestCaseWithFactory):
         self.assertEqual(
             second_release,
             self.productseries.getLatestRelease())
+
+
+class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of productseries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProductSeriesSnapshotTestCase, self).setUp()
+
+    def test_productseries(self):
+        """snapshots of objects with IHasSpecification should not snapshot
+        marked attributes.
+
+        wrap an export with 'donotsnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        productseries = self.factory.makeProductSeries()
+        snapshot = Snapshot(productseries, providing=IProductSeries)
+        omitted = [
+            'milestones',
+            'all_milestones',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "snapshot should not include %s." % attribute)
 
 
 def test_suite():
