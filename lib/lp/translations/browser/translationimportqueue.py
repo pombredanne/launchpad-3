@@ -331,8 +331,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 return "This filename is not appropriate for a template."
         else:
             if not importer.isTranslationName(path):
-                    return (
-                        "This filename is not appropriate for a translation.")
+                return "This filename is not appropriate for a translation."
 
         if path == self.context.path:
             # No change, so no objections.
