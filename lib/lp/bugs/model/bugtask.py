@@ -1363,12 +1363,14 @@ def get_bug_privacy_filter_with_decorator(user):
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugSubscription.person
+                   TeamParticipation.team = BugSubscription.person AND
+                   BugSubscription.bug = Bug.id
              UNION
              SELECT BugTask.bug
              FROM BugTask, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugTask.assignee
+                   TeamParticipation.team = BugTask.assignee AND
+                   BugTask.bug = Bug.id
                    ))
                      """ % sqlvalues(personid=user.id),
         _make_cache_user_can_view_bug(user))
@@ -2593,7 +2595,7 @@ class BugTaskSet:
                 bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
-        expirable_bugtasks = BugTask.select("""
+        query = """
             BugTask.bug = Bug.id
             AND BugTask.id IN (
                 SELECT BugTask.id
@@ -2612,13 +2614,13 @@ class BugTaskSet:
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old) +
-            unconfirmed_bug_condition,
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
+        expirable_bugtasks = BugTask.select(
+            query +  unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:
             expirable_bugtasks = expirable_bugtasks.limit(limit)
-
         return expirable_bugtasks
 
     def _getUnconfirmedBugCondition(self):
