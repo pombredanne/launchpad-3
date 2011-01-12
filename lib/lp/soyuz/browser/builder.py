@@ -77,7 +77,7 @@ class BuilderSetNavigation(GetitemNavigation):
         else:
             return self.redirectSubTree(canonical_url(build))
 
-    @stepthrough('buildjob')
+    @stepthrough('+buildjob')
     def traverse_buildjob(self, name):
         try:
             build_id = int(name)
