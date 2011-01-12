@@ -314,23 +314,14 @@ class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
         super(ProductSeriesSnapshotTestCase, self).setUp()
 
     def test_productseries(self):
-        """snapshots of objects with IHasSpecification should not snapshot
-        marked attributes.
-
-        wrap an export with 'donotsnapshot' to force the snapshot to not
-        include that attribute.
-        """
+        """Asserts that fields marked doNotSnapshot are skipped."""
         productseries = self.factory.makeProductSeries()
         snapshot = Snapshot(productseries, providing=IProductSeries)
-        omitted = [
+        skipped = [
             'milestones',
             'all_milestones',
             ]
-        for attribute in omitted:
+        for attribute in skipped:
             self.assertFalse(
                 hasattr(snapshot, attribute),
                 "snapshot should not include %s." % attribute)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

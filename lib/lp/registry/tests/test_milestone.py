@@ -96,47 +96,30 @@ class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(HasMilestonesSnapshotTestCase, self).setUp()
-
-    def check_omissions(self, target, providing):
-        """snapshots of objects with IHasSpecification should not snapshot
-        marked attributes.
-
-        wrap an export with 'donotsnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(target, providing=providing)
-        omitted = [
+    def check_skipped(self, target):
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        snapshot = Snapshot(target, providing=IHasMilestones)
+        skipped = [
             'milestones',
             'all_milestones',
             ]
-        for attribute in omitted:
+        for attribute in skipped:
             self.assertFalse(
                 hasattr(snapshot, attribute),
                 "snapshot should not include %s." % attribute)
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.check_omissions(product, IProduct)
+        self.check_omissions(product)
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.check_omissions(distribution, IDistribution)
+        self.check_omissions(distribution)
 
     def test_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.check_omissions(distroseries, IDistroSeries)
+        self.check_omissions(distroseries)
 
     def test_projectgroup(self):
         projectgroup = self.factory.makeProject()
-        self.check_omissions(projectgroup, IProjectGroup)
-
-
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.check_omissions(projectgroup)

@@ -191,42 +191,34 @@ class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(HasSpecificationsSnapshotTestCase, self).setUp()
-
     def check_omissions(self, target, providing):
-        """snapshots of objects with IHasSpecification should not snapshot
-        marked attributes.
-
-        wrap an export with 'donotsnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(target, providing=providing)
-        omitted = [
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        snapshot = Snapshot(target, IHasSpecifications)
+        skipped = [
             'all_specifications',
             'valid_specifications',
             ]
-        for attribute in omitted:
+        for attribute in skipped:
             self.assertFalse(
                 hasattr(snapshot, attribute),
                 "snapshot should not include %s." % attribute)
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.check_omissions(product, IProduct)
+        self.check_omissions(product)
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.check_omissions(distribution, IDistribution)
+        self.check_omissions(distribution)
 
     def test_productseries(self):
         productseries = self.factory.makeProductSeries()
-        self.check_omissions(productseries, IProductSeries)
+        self.check_omissions(productseries)
 
     def test_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.check_omissions(distroseries, IDistroSeries)
+        self.check_omissions(distroseries)
 
     def test_projectgroup(self):
         projectgroup = self.factory.makeProject()
-        self.check_omissions(projectgroup, IProjectGroup)
+        self.check_omissions(projectgroup)
