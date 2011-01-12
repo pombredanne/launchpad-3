@@ -496,7 +496,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),
+            'recipe_text': self.context.recipe_text,
             }
 
     @property
