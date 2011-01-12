@@ -1292,7 +1292,7 @@ class PublishingSet:
                     status=active_publishing_status, pocket=pocket,
                     distroarchseries=distroarchseries)
 
-                if bool(binary_in_destination):
+                if not bool(binary_in_destination):
                     pub = BinaryPackagePublishingHistory(
                         archive=archive,
                         binarypackagerelease=binarypackagerelease,
