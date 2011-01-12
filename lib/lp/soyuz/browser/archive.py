@@ -100,7 +100,6 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -118,7 +117,10 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications,
     )
-from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
@@ -138,10 +140,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus,
-    IBinaryPackageBuildSet,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -221,35 +220,11 @@ class PPAURL:
         return u"+archive/%s" % self.context.name
 
 
-class ArchiveNavigation(Navigation, FileNavigationMixin):
+class ArchiveNavigation(Navigation, FileNavigationMixin,
+                        BuildNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
-
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build_job = getUtility(IBuildFarmJobSet).getByID(build_id)
-            return build_job.getSpecificJob()
-        except NotFoundError:
-            return None
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
