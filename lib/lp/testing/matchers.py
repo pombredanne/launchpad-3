@@ -280,6 +280,7 @@ class WasSnapshotted(Mismatch):
 
 
 class DoesNotSnapshot(Matcher):
+    """Checks that certain fields are skipped on Snapshots."""
 
     def __init__(self, attr_list, interface, error_msg=None):
         self.attr_list = attr_list
@@ -292,12 +293,12 @@ class DoesNotSnapshot(Matcher):
 
     def match(self, matchee):
         snapshot = Snapshot(matchee, providing=self.interface)
-        mismatches = list()
+        mismatches = []
         for attribute in self.attr_list:
             if hasattr(snapshot, attribute):
                 mismatches.append(WasSnapshotted(matchee, attribute))
 
-        if mismatches == []:
+        if len(mismatches) == 0:
             return None
         else:
             return MismatchesAll(mismatches)
