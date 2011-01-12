@@ -89,7 +89,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import get_property_cache
+from lp.services.propertycache import get_property_cache, cachedproperty
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -414,6 +414,14 @@ class Archive(SQLBase):
                 self.distribution, ArchivePurpose.DEBUG)
         else:
             return self
+
+    @cachedproperty
+    def default_component(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return getUtility(IComponentSet)['main']
+        else:
+            return None
 
     @property
     def archive_url(self):

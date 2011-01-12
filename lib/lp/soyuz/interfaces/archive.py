@@ -334,6 +334,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
 
+    default_component = Attribute(
+        "The default component for this archive. Publications without a "
+        "valid component will be assigned this one.")
+
     archive_url = Attribute("External archive URL.")
 
     is_ppa = Attribute("True if this archive is a PPA.")

@@ -1501,6 +1501,21 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
             [main_comp], list(archive.getComponentsForSeries(self.series)))
 
 
+class TestDefaultComponent(TestCaseWithFactory):
+    """Tests for Archive.default_component."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_forced_component_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(None, archive.default_component)
+
+    def test_forced_component_for_ppas(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(
+            getUtility(IComponentSet)['main'], archive.default_component)
+
+
 class TestGetPockets(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
