@@ -5,9 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
-from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
@@ -23,6 +20,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeriesSet,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -310,18 +308,13 @@ class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(ProductSeriesSnapshotTestCase, self).setUp()
-
     def test_productseries(self):
         """Asserts that fields marked doNotSnapshot are skipped."""
         productseries = self.factory.makeProductSeries()
-        snapshot = Snapshot(productseries, providing=IProductSeries)
         skipped = [
             'milestones',
             'all_milestones',
             ]
-        for attribute in skipped:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "snapshot should not include %s." % attribute)
+        self.assertThat(
+            productseries,
+            DoesNotSnapshot(skipped, IProductSeries))

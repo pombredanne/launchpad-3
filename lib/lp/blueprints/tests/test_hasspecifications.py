@@ -5,18 +5,15 @@
 
 __metaclass__ = type
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.matcher import DoesNotSnapshot
 
 
 class HasSpecificationsTests(TestCaseWithFactory):
@@ -191,34 +188,30 @@ class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def check_omissions(self, target, providing):
+    def check_skipped(self, target, providing):
         """Asserts that fields marked doNotSnapshot are skipped."""
-        snapshot = Snapshot(target, IHasSpecifications)
         skipped = [
             'all_specifications',
             'valid_specifications',
             ]
-        for attribute in skipped:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "snapshot should not include %s." % attribute)
+        self.assertThat(target, DoesNotSnapshot(skipped, IHasSpecifications))
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.check_omissions(product)
+        self.check_skipped(product)
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.check_omissions(distribution)
+        self.check_skipped(distribution)
 
     def test_productseries(self):
         productseries = self.factory.makeProductSeries()
-        self.check_omissions(productseries)
+        self.check_skipped(productseries)
 
     def test_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.check_omissions(distroseries)
+        self.check_skipped(distroseries)
 
     def test_projectgroup(self):
         projectgroup = self.factory.makeProject()
-        self.check_omissions(projectgroup)
+        self.check_skipped(projectgroup)

@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import unittest
 
-from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import (
@@ -21,15 +20,13 @@ from canonical.testing.layers import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.milestone import IMilestoneSet
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestoneSet,
     )
-from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class MilestoneTest(unittest.TestCase):
@@ -98,28 +95,24 @@ class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
 
     def check_skipped(self, target):
         """Asserts that fields marked doNotSnapshot are skipped."""
-        snapshot = Snapshot(target, providing=IHasMilestones)
         skipped = [
             'milestones',
             'all_milestones',
             ]
-        for attribute in skipped:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "snapshot should not include %s." % attribute)
+        self.assertThat(target, DoesNotSnapshot(skipped, IHasMilestones))
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.check_omissions(product)
+        self.check_skipped(product)
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.check_omissions(distribution)
+        self.check_skipped(distribution)
 
     def test_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.check_omissions(distroseries)
+        self.check_skipped(distroseries)
 
     def test_projectgroup(self):
         projectgroup = self.factory.makeProject()
-        self.check_omissions(projectgroup)
+        self.check_skipped(projectgroup)
