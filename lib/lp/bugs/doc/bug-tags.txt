@@ -68,7 +68,7 @@ To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.widgets.bug import BugTagsWidget
+    >>> from lp.bugs.browser.widgets.bug import BugTagsWidget
     >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
@@ -158,6 +158,49 @@ Duplicate tags are converted to a single instance.
     [u'bar', u'foo']
 
 
+=== Bug Tags Widget for Frozen Sets ===
+
+A variant of `BugTagsWidget` exists for when tags are stored in a
+`FrozenSet` field.
+
+    >>> from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+
+Field-manipulation is not going to be examined here, and the widget
+does not care what type the field is otherwise, so the field from
+earlier can be used again.
+
+    >>> tags_frozen_set_widget = BugTagsFrozenSetWidget(
+    ...     bug_tags_field, tag_field, request)
+
+_tagsFromFieldValue() converts tags from the field value to tags for
+display. The absense of tags causes it to return None:
+
+    >>> print tags_frozen_set_widget._tagsFromFieldValue(None)
+    None
+    >>> print tags_frozen_set_widget._tagsFromFieldValue(frozenset())
+    None
+
+Tags are ordered before returning:
+
+    >>> tags_frozen_set_widget._tagsFromFieldValue(
+    ...     frozenset([5, 4, 1, 12]))
+    [1, 4, 5, 12]
+
+_tagsToFieldValue() converts the tags entered in the form into a value
+suitable for the field. In the absense of tags it returns an empty
+frozenset():
+
+    >>> tags_frozen_set_widget._tagsToFieldValue(None)
+    frozenset([])
+    >>> tags_frozen_set_widget._tagsToFieldValue([])
+    frozenset([])
+
+Otherwise it returns a `frozenset` of the tags given:
+
+    >>> tags_frozen_set_widget._tagsToFieldValue([u"foo", u"bar"])
+    frozenset([u'foo', u'bar'])
+
+
 === Large and Small Bug Tags Widget ===
 
 A regular BugTagsWidget is rendered as an <input> tag,
@@ -167,7 +210,7 @@ A regular BugTagsWidget is rendered as an <input> tag,
 
 A LargeBugTagsWidget is rendered as a <textarea>,
 
-    >>> from canonical.widgets.bug import LargeBugTagsWidget
+    >>> from lp.bugs.browser.widgets.bug import LargeBugTagsWidget
     >>> large_text_widget = LargeBugTagsWidget(
     ...     bug_tags_field, tag_field, request)
     >>> print large_text_widget()
