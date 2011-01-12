@@ -1343,3 +1343,45 @@ class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
         self.assertRaises(
             Unauthorized,
             self.getUserBrowser, recipe_url + '/+delete', user=nopriv_person)
+
+
+class TestBrokenExistingRecipes(BrowserTestCase):
+    """Existing recipes broken by builder updates need to be editable.
+
+    This happened with a 0.2 -> 0.3 release where the nest command was no
+    longer allowed to refer the '.'.  There were already existing recipes that
+    had this text that were not viewable or editable.  This test case captures
+    that and makes sure the views stay visible.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBrokenRecipe(self):
+        """Make a valid recipe, then break it."""
+        product = self.factory.makeProduct()
+        b1 = self.factory.makeProductBranch(product=product)
+        b2 = self.factory.makeProductBranch(product=product)
+        recipe_text = dedent("""\
+            # bzr-builder format 0.2 deb-version {debupstream}+{revno}
+            %s
+            nest name %s foo
+            """ % (b1.bzr_identity, b2.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        naked_data = removeSecurityProxy(recipe)._recipe_data
+        nest_instruction = list(naked_data.instructions)[0]
+        nest_instruction.directory = u'.'
+        return recipe
+
+    def test_recipe_is_broken(self):
+        recipe = self.makeBrokenRecipe()
+        self.assertRaises(Exception, str, recipe.builder_recipe)
+
+    def test_recipe_index_renderable(self):
+        recipe = self.makeBrokenRecipe()
+        main_text = self.getMainText(recipe, '+index')
+        self.assertTrue('# bzr-builder format 0.2 deb-version' in main_text)
+
+    def test_recipe_edit_renderable(self):
+        recipe = self.makeBrokenRecipe()
+        main_text = self.getMainText(recipe, '+edit', user=recipe.owner)
+        self.assertTrue('# bzr-builder format 0.2 deb-version' in main_text)

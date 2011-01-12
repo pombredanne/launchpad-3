@@ -723,7 +723,9 @@ class BrowserTestCase(TestCaseWithFactory):
         self.user = self.factory.makePerson(password='test')
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
-                       rootsite=None):
+                       rootsite=None, user=None):
+        if user is None:
+            user = self.user
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
         logout()
@@ -733,22 +735,23 @@ class BrowserTestCase(TestCaseWithFactory):
             browser.open(url)
             return browser
         else:
-            return self.getUserBrowser(url, self.user)
+            return self.getUserBrowser(url, user)
 
     def getMainContent(self, context, view_name=None, rootsite=None,
-                       no_login=False):
+                       no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
         from canonical.launchpad.testing.pages import find_main_content
         browser = self.getViewBrowser(
-            context, view_name, rootsite=rootsite, no_login=no_login)
+            context, view_name, rootsite=rootsite, no_login=no_login,
+            user=user)
         return find_main_content(browser.contents)
 
     def getMainText(self, context, view_name=None, rootsite=None,
-                    no_login=False):
+                    no_login=False, user=None):
         """Return the main text of a context's page."""
         from canonical.launchpad.testing.pages import extract_text
         return extract_text(
-            self.getMainContent(context, view_name, rootsite, no_login))
+            self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
 class WindmillTestCase(TestCaseWithFactory):
