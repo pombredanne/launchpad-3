@@ -102,7 +102,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.addFakeBuildLog()
         self.failUnlessEqual(
             'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
+            'gedit/666/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.package_build.build_farm_job.id),
             self.build.log_url)
 
@@ -115,7 +115,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             owner=ppa_owner, name="myppa")
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
+            '+archive/myppa/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
             self.build.log_url)
 
