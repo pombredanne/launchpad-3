@@ -89,7 +89,7 @@ class InitialiseDistroSeries:
         pending_builds = self.parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-        if bool(pending_builds):
+        if pending_builds.any():
             raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
