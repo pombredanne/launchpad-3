@@ -1771,12 +1771,8 @@ BugMessage""" % sqlvalues(self.id))
 
     @cachedproperty
     def _known_viewers(self):
-        """A set of known persons able to view this bug.
-
-        Seed it by including the list of all owners of bugtasks for the bug.
-        """
-        bugtask_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(bugtask_owners)
+        """A set of known persons able to view this bug."""
+        return set()
 
     def userCanView(self, user):
         """See `IBug`.
@@ -1800,7 +1796,8 @@ BugMessage""" % sqlvalues(self.id))
 
             # Assignees to bugtasks can see the private bug.
             for bugtask in self.bugtasks:
-                if user.inTeam(bugtask.assignee):
+                if (user.inTeam(bugtask.assignee) or
+                    user.inTeam(bugtask.pillar.owner)):
                     self._known_viewers.add(user.id)
                     return True
             # Explicit subscribers may also view it.
