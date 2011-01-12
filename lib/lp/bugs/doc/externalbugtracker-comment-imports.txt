@@ -383,9 +383,9 @@ import process.
 
 We'll create a bug watch and add a listener to check for Karma events.
 
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch('123456')
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 

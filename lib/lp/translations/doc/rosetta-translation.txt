@@ -31,7 +31,7 @@ Get a translation for a particular message and check it has a translation.
     ...     template, spanish)
     >>> translationmessage.translations
     [u'libreta de direcciones de Evolution']
-    >>> translationmessage.is_imported
+    >>> translationmessage.is_current_upstream
     True
 
 Get a person to create a translation with.
@@ -48,7 +48,7 @@ Add a translation.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> message = potmsgset.updateTranslation(
-    ...     pofile, person, translations, is_imported=True,
+    ...     pofile, person, translations, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
@@ -57,16 +57,16 @@ Check that this submission is now the active one for this msgset/pluralform
 
     >>> potmsgset.getCurrentTranslationMessage(template, spanish) == message
     True
-    >>> message.is_current
+    >>> message.is_current_ubuntu
     True
     >>> message.msgstr0.translation == u'foo'
     True
 
-Check that this submission is the published one
+Check that this submission is the upstream one
 
     >>> potmsgset.getImportedTranslationMessage(template, spanish) == message
     True
-    >>> message.is_imported
+    >>> message.is_current_upstream
     True
 
 Test the origin enum column.
@@ -81,7 +81,7 @@ Get a list of the translations again to check the new one has been added.
     >>> message.translations
     [u'foo']
 
-Now we want to test the interaction of the "published" translations with the
+Now we want to test the interaction of the "upstream" translations with the
 "active translations". There are several things we want to be able to test.
 First, let's setup some useful variables.
 
@@ -91,37 +91,37 @@ First, let's setup some useful variables.
 
 Pa, Pb and Pc are three useful Person's.
 
-Let's pretend we've seen a new translation in the published PO files for
+Let's pretend we've seen a new translation in the upstream PO files for
 this project from Pa.
 
     >>> translations = { 0: u'bar' }
-    >>> imported_message = potmsgset.updateTranslation(
-    ...     pofile, Pa, translations, is_imported=True,
+    >>> upstream_message = potmsgset.updateTranslation(
+    ...     pofile, Pa, translations, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
 Make sure that the new submission is in fact from Pa.
 
-    >>> imported_message.submitter == Pa
+    >>> upstream_message.submitter == Pa
     True
 
-Now let's test that this has become both active and published
+This is marked as current in both Ubuntu and upstream.
 
-    >>> imported_message.msgstr0.translation == u'bar'
+    >>> upstream_message.msgstr0.translation == u'bar'
     True
 
     >>> potmsgset.getImportedTranslationMessage(
-    ...     template, spanish) == imported_message
+    ...     template, spanish) == upstream_message
     True
 
-Excellent. This shows that the code to make a new published translation
-active as soon as we see it is working.
+Excellent. This shows that activating a new upstream translation upon
+detection works.
 
 Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
     >>> message = potmsgset.updateTranslation(
-    ...     pofile, Pb, translations, is_imported=False,
+    ...     pofile, Pb, translations, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
     >>> web_submission = potmsgset.getCurrentTranslationMessage(
@@ -132,9 +132,9 @@ Make sure the new submission is from Pb.
     >>> web_submission.submitter == Pb
     True
 
-This submission should now be active, but not published. When we get a new
+This submission should now be active, but not from upstream. When we get a new
 translation through the web, this updates the active selection but not the
-published selection.
+upstream selection.
 
     >>> web_submission.msgstr0.translation == u'baz'
     True
@@ -143,10 +143,10 @@ published selection.
     ...     spanish) == web_submission
     False
 
-In fact, the published submission should still be the original one, from Pa:
+In fact, the upstream submission should still be the original one, from Pa:
 
     >>> potmsgset.getImportedTranslationMessage(
-    ...     template, spanish) == imported_message
+    ...     template, spanish) == upstream_message
     True
 
 And the lasttranslator for this pofile should be the one who submitted the
@@ -157,13 +157,13 @@ current translation.
 
 Now, let's see what happens if Pc submits exactly the same translation that
 Pb just did. We don't want to record this, because we have decided not to
-record a new submission of the EXISTING active or published record. In other
+record a new submission of the EXISTING active or upstream record. In other
 words, if the current active translation is 'baz', and someone else comes
 along and says it's 'baz', we don't record anything new.
 
     >>> translations = { 0: u'baz' }
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile, Pc, translations, is_imported=False,
+    ...     pofile, Pc, translations, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> repeat_submission = potmsgset.getCurrentTranslationMessage(
     ...     template, spanish)
@@ -198,23 +198,24 @@ expecting any.
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
-msgset and plural form as above. First we will try and make it a published
+msgset and plural form as above. First we will try and make it an upstream
 submission, and we expect to get an assertion error because we expect never
-to see a non-editor published submission.
+to see a non-editor upstream submission.
 
     >>> translations = { 0: u'bong' }
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile, Pn, translations, is_imported=True,
+    ...     pofile, Pn, translations, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Traceback (most recent call last):
     ...
-    AssertionError: Only an editor can submit is_imported translations.
+    AssertionError: Only an editor can submit is_current_upstream
+    translations.
 
 Now let's try again, but not as an imported translation.  This is
 accepted.
 
     >>> noneditor_submission = potmsgset.updateTranslation(
-    ...    pofile, Pn, {0: u'bong'}, is_imported=False,
+    ...    pofile, Pn, {0: u'bong'}, is_current_upstream=False,
     ...    lock_timestamp=datetime.datetime.now(UTC))
 
 This submission should come from the new non-editor person:
@@ -253,7 +254,7 @@ This new submission should not be active:
     ...  noneditor_submission)
     False
 
-And it should definitely not be published:
+And it should definitely not be current upstream:
 
     >>> (potmsgset.getImportedTranslationMessage(template, spanish) ==
     ...  noneditor_submission)

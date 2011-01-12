@@ -138,7 +138,10 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -225,6 +228,19 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+build')
     def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+buildjob')
+    def traverse_buildjob(self, name):
         try:
             build_id = int(name)
         except ValueError:

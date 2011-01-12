@@ -54,6 +54,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
@@ -71,6 +72,20 @@ class BuilderSetNavigation(GetitemNavigation):
             return None
         try:
             build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('buildjob')
+    def traverse_buildjob(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build_job = getUtility(IBuildFarmJobSet).getByID(build_id)
+            build = build_job.getSpecificJob()
         except NotFoundError:
             return None
         else:

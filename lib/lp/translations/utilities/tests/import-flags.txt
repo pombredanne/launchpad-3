@@ -49,8 +49,8 @@ And lets define a nice printout function for PO files.
     ...         msgid = potmsgset.singular_text
     ...         current = potmsgset.getCurrentTranslationMessage(
     ...             pofile.potemplate, pofile.language)
-    ...         imported = potmsgset.getImportedTranslationMessage(
-    ...             pofile.potemplate, pofile.language)
+    ...         imported = potmsgset.getOtherTranslation(
+    ...             pofile.language, pofile.potemplate.translation_side)
     ...         imported_translation = translation = None
     ...         if imported is not None:
     ...             imported_translation = imported.msgstr0.translation
@@ -223,7 +223,7 @@ from the "fourth" message, and the "fifth" message is newly translated.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update1,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     by_maintainer=False)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -242,7 +242,7 @@ imported translations). Fuzzy flag is ignored on "fourth" as well.
      6. sixth              None               None               *
 
 We can notice that we have 4 translations (fuzzy messages are not considered
-translated), with "second" imported one now considered 'changed in LP', and
+translated), with "second" imported one now considered 'changed in Ubuntu', and
 two new translations through Launchpad ("d-from-LP" and "e-from-LP"):
 
     >>> print_pofile_stats(firefox_serbian)
@@ -289,7 +289,7 @@ a fuzzy flag is removed from the "fourth" message, and both "fifth" and
 
     >>> entry = import_pofile_or_potemplate(test_translation_imported_update,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=True)
+    ...                                     by_maintainer=True)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -312,7 +312,7 @@ to imported ones.
 With this latest import, we've got five non-fuzzy messages, which are all
 considered 'translated'. Since we are reverting to imported translations
 when there's only a Launchpad-done translation, only a single message is
-marked as 'changed in LP':
+marked as 'changed in Ubuntu':
 
     >>> print_pofile_stats(firefox_serbian)
     total: 6
@@ -361,7 +361,7 @@ a new translation.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update2,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     by_maintainer=False)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -430,7 +430,7 @@ suggestions.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     by_maintainer=False)
     >>> print entry.status.name
     IMPORTED
 
@@ -501,7 +501,7 @@ one except for the plural expression definition.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     by_maintainer=False)
     >>> print entry.status.name
     IMPORTED
 
@@ -528,7 +528,7 @@ be back with next automatic sync from upstream:
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=True)
+    ...                                     by_maintainer=True)
     >>> print entry.status.name
     IMPORTED
 

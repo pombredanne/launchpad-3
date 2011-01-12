@@ -16,6 +16,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
+    canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
@@ -27,6 +28,7 @@ from lp.archivepublisher.debversion import Version
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -45,6 +47,19 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
 
     @stepthrough('+build')
     def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+buildjob')
+    def traverse_buildjob(self, name):
         try:
             build_id = int(name)
         except ValueError:

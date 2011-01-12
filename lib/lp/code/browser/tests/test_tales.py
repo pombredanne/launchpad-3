@@ -10,7 +10,9 @@ import unittest
 
 from storm.store import Store
 from testtools.matchers import Equals
+from zope.component import queryAdapter
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import IPathAdapter
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -186,12 +188,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(owner=eric, name='ppa')
         build = self.factory.makeSourcePackageRecipeBuild(
             archive=ppa)
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
         self.assertThat(
-            test_tales('build/fmt:link', build=build),
+            adapter.link(None),
             Equals(
-                '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
-                '+build/%s">%s recipe build [eric/ppa]</a>'
-                % (build.url_id, build.recipe.base_branch.unique_name)))
+                '<a href="%s">%s recipe build [eric/ppa]</a>'
+                % (canonical_url(build, path_only_if_possible=True),
+                   build.recipe.base_branch.unique_name)))
 
     def test_link_no_recipe(self):
         eric = self.factory.makePerson(name='eric')
@@ -200,12 +203,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             archive=ppa)
         with person_logged_in(build.recipe.owner):
             build.recipe.destroySelf()
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
         self.assertThat(
-            test_tales('build/fmt:link', build=build),
+            adapter.link(None),
             Equals(
-                '<a href="http://code.launchpad.dev/~eric/+archive/ppa/'
-                '+build/%s">build for deleted recipe [eric/ppa]</a>'
-                % (build.url_id, )))
+                '<a href="%s">build for deleted recipe [eric/ppa]</a>'
+                % (canonical_url(build, path_only_if_possible=True), )))
 
 
 def test_suite():

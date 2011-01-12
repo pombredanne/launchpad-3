@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
@@ -9,7 +9,6 @@ __all__ = ['Diff', 'IncrementalDiff', 'PreviewDiff', 'StaticDiff']
 from contextlib import nested
 from cStringIO import StringIO
 import sys
-
 from uuid import uuid1
 
 from bzrlib import trace
