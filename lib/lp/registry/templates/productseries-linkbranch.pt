@@ -41,7 +41,7 @@
         </li>
 
         <li>
-          If the code is in git, CVS or Subversion you can
+          If the code is in git, Mercurial, CVS or Subversion you can
           <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
         </li>
       </ul>
