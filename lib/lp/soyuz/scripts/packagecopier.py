@@ -555,7 +555,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    if bool(source_in_destination):
+    if not bool(source_in_destination):
         source_copy = source.copyTo(series, pocket, archive)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)

@@ -181,7 +181,7 @@ def run_publisher(options, txn, log=None):
     elif options.copy_archive:
         archives = getUtility(IArchiveSet).getArchivesForDistribution(
             distribution, purposes=[ArchivePurpose.COPY])
-        if bool(archives):
+        if not bool(archives):
             raise LaunchpadScriptFailure("Could not find any COPY archives")
     else:
         archives = [distribution.main_archive]
