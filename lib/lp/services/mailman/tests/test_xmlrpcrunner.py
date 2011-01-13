@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 from contextlib import contextmanager
+from datetime import datetime
 
 from Mailman.Logging.Syslog import syslog
 from Mailman.Queue.XMLRPCRunner import XMLRPCRunner
@@ -70,9 +71,24 @@ class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
         mark = self.get_mark()
         self.assertTrue(mark is not None)
 
+    def test_heatbeat_frequency_no_heartbeat(self):
+        # A hartbeat is not recorded when the that last beat less than
+        # the heartbeat_frequency.
+        self.runner._heartbeat()
+        self.reset_log()
+        self.runner._heartbeat()
+        now = datetime.now()
+        last_heartbeat = self.runner.last_heartbeat
+        self.assertTrue(
+            now - last_heartbeat < self.runner.heartbeat_frequency)
+        mark = self.get_mark()
+        self.assertTrue(mark is None)
+
     def test__oneloop_success_heartbeat(self):
         # A heartbeat is recorded when the loop completes successfully.
         self.reset_log()
+        self.runner.last_heartbeat = (
+            self.runner.last_heartbeat - self.runner.heartbeat_frequency)
         self.runner._oneloop()
         mark = self.get_mark()
         self.assertTrue(mark is not None)
@@ -80,6 +96,8 @@ class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
     def test__oneloop_exception_no_heartbeat(self):
         # A heartbeat is not recorded when there is an exception in the loop.
         self.reset_log()
+        self.runner.last_heartbeat = (
+            self.runner.last_heartbeat - self.runner.heartbeat_frequency)
         # Hack runner to raise an oops.
         with one_loop_exception(self.runner):
             self.runner._oneloop()

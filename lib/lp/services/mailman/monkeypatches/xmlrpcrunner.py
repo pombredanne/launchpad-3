@@ -140,8 +140,9 @@ class XMLRPCRunner(Runner):
         now = datetime.now()
         last_heartbeat = self.last_heartbeat
         if (last_heartbeat is None
-            or now - last_heartbeat > self.heartbeat_frequency):
+            or now - last_heartbeat >= self.heartbeat_frequency):
             syslog('xmlrpc', '--MARK--')
+            self.last_heartbeat = now
 
     def _log(self, exc):
         """Log the exception in a log file and as an OOPS."""
