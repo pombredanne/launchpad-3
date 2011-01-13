@@ -154,7 +154,7 @@ class SourcePackageRecipe(Storm):
 
     @property
     def recipe_text(self):
-        return str(self.builder_recipe)
+        return self.builder_recipe.get_recipe_text()
 
     @staticmethod
     def new(registrant, owner, name, recipe, description,
