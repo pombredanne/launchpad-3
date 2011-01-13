@@ -2182,6 +2182,7 @@ translation message.';
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+COMMENT ON COLUMN NameBlacklist.admin IS 'The person who can override the blacklisted name.';
 
 -- ScriptActivity
 COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
