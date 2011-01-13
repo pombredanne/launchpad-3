@@ -25,6 +25,7 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    get_feedback_messages,
     get_radio_button_text_for_field,
     )
 from canonical.launchpad.webapp import canonical_url
@@ -53,6 +54,7 @@ from lp.testing import (
     person_logged_in,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.views import create_initialized_view
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -1112,6 +1114,44 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIn(
             "An identical build is already pending for ubuntu woody.",
             extract_text(find_main_content(browser.contents)))
+
+    def makeRecipeWithUploadIssues(self):
+        """Make a recipe where the owner can't upload to the PPA."""
+        # This occurs when the PPA that the recipe is being built daily into
+        # is owned by a team, and the owner of the recipe isn't in the team
+        # that owns the PPA.
+        registrant = self.factory.makePerson()
+        owner_team = self.factory.makeTeam(members=[registrant], name='team1')
+        ppa_team = self.factory.makeTeam(members=[registrant], name='team2')
+        ppa = self.factory.makeArchive(owner=ppa_team, name='ppa')
+        return self.factory.makeSourcePackageRecipe(
+            registrant=registrant, owner=owner_team, daily_build_archive=ppa,
+            build_daily=True)
+
+    def test_owner_with_no_ppa_upload_permission(self):
+        # Daily build with upload issues are a problem.
+        recipe = self.makeRecipeWithUploadIssues()
+        view = create_initialized_view(recipe, '+index')
+        self.assertTrue(view.dailyBuildWithoutUploadPermission())
+
+    def test_owner_with_no_ppa_upload_permission_non_daily(self):
+        # Non-daily builds with upload issues are not so much of an issue.
+        recipe = self.makeRecipeWithUploadIssues()
+        with person_logged_in(recipe.registrant):
+            recipe.build_daily = False
+        view = create_initialized_view(recipe, '+index')
+        self.assertFalse(view.dailyBuildWithoutUploadPermission())
+
+    def test_owner_with_no_ppa_upload_permission_message(self):
+        # If there is an issue, a message is shown.
+        recipe = self.makeRecipeWithUploadIssues()
+        browser = self.getViewBrowser(recipe, '+index')
+        messages = get_feedback_messages(browser.contents)
+        self.assertEqual(
+            "Daily builds for this recipe will not occur.\n"
+            "The owner of the recipe (Team1) does not have permission to "
+            "upload packages into the daily build PPA (PPA for Team2)",
+            messages[-1])
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
