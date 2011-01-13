@@ -210,7 +210,7 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
