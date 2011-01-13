@@ -49,9 +49,9 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         super(TestBinaryPackageBuild, self).setUp()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
-        gedit_spr = publisher.getPubSource(
-            spr_only=True, sourcename="gedit",
-            status=PackagePublishingStatus.PUBLISHED)
+        gedit_spph = publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        gedit_spr = gedit_spph.sourcepackagerelease
         self.build = gedit_spr.createBuild(
             distro_arch_series=publisher.distroseries['i386'],
             archive=gedit_spr.upload_archive,
