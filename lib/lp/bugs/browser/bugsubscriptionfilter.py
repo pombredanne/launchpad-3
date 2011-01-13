@@ -21,7 +21,6 @@ from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
-    LaunchpadFormView,
     )
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter

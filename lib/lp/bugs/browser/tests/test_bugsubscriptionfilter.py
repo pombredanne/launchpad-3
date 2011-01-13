@@ -352,8 +352,7 @@ class TestBugSubscriptionFilterView(
         root = html.fromstring(view.render())
         return [
             node for node in root.findall("dd//a")
-            if node.get("href").endswith("/+edit")
-            ]
+            if node.get("href").endswith("/+edit")]
 
     def test_edit_link_for_subscriber(self):
         # A link to edit the filter is rendered for the subscriber.
