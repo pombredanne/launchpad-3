@@ -63,7 +63,8 @@
                     will always be sent.
                   </p>
                 </tal:unfiltered>
-                <div style="margin-top: 1em">
+                <div style="margin-top: 1em"
+                     tal:condition="subscription/required:launchpad.Edit">
                   <a class="sprite add new-filter"
                      tal:attributes="href subscription/fmt:url/+new-filter">
                     Create a new filter
