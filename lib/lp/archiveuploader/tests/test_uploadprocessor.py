@@ -1882,6 +1882,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.builder = build.buildqueue_record.builder
 
         build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
@@ -1898,7 +1899,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(builder, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
         self.assertTrue('ERROR Exception while processing upload '
@@ -1971,6 +1971,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
         Store.of(build).flush()
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
@@ -1978,7 +1979,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         self.assertEquals(None, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
@@ -2003,12 +2003,12 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # violations later.
         Store.of(build).flush()
         build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
         self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(None, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         self.assertIsNot(None, build.upload_log)
 
