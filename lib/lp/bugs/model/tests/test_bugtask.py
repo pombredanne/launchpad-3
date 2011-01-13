@@ -201,10 +201,10 @@ class TestBugTaskTagSearchClauses(TestCase):
     def searchClause(self, tag_spec):
         return build_tag_search_clause(tag_spec)
 
-    def assertEqualIgnoringWhitespace(self, expected, observed):
+    def assertEqualIgnoringWhitespace(self, observed, expected):
         return self.assertEqual(
-            normalize_whitespace(expected),
-            normalize_whitespace(observed))
+            normalize_whitespace(observed),
+            normalize_whitespace(expected))
 
     def test_empty(self):
         # Specifying no tags is valid.
