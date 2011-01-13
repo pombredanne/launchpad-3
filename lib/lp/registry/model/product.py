@@ -28,13 +28,17 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import NamedFunc
+from storm.expr import (
+    LeftJoin,
+    NamedFunc,
+    )
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
     Not,
+    Or,
     Select,
     SQL,
     Store,
@@ -74,6 +78,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
@@ -799,6 +804,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
+
+    @property
+    def active_or_packaged_series(self):
+        store = Store.of(self)
+        tables = [
+            ProductSeries,
+            LeftJoin(Packaging, Packaging.productseries == ProductSeries.id),
+            ]
+        result = store.using(*tables).find(
+            ProductSeries,
+            Or(ProductSeries.status != SeriesStatus.OBSOLETE,
+               Packaging.id != None))
+        result = result.order_by(Desc(ProductSeries.name))
+        result.config(distinct=True)
+        return result
 
     @property
     def name_with_project(self):

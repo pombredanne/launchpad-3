@@ -10,18 +10,21 @@
 <body>
 
 <div metal:fill-slot="main">
-  <div class="top-portlet">
-    <h2>Packages by project series</h2>
+  <div class="top-portlet"
+       tal:define="batch_nav view/series_batch">
 
-  <tal:series_dict repeat="series_dict view/series_packages">
+  <tal:multipage tal:condition="batch_nav/has_multiple_pages">
+    <tal:navigation
+        replace="structure batch_nav/@@+navigation-links-upper"/>
+  </tal:multipage>
+  <tal:series_batch repeat="series batch_nav/currentBatch">
   <tal:series_packagings
-    define="series series_dict/series;
-            packagings series_dict/packagings">
-    <h3>
+    define="packagings series/packagings">
+    <h2>
       <a tal:attributes="href series/name">
         <span tal:replace="series/name">main</span> series
       </a>
-    </h3>
+    </h2>
 
     <p tal:condition="not: packagings">
       No packages linked to this series.
@@ -81,7 +84,11 @@
       </ul>
     </div>
   </tal:series_packagings>
-  </tal:series_dict>
+  </tal:series_batch>
+  <tal:multipage condition="batch_nav/has_multiple_pages">
+    <tal:navigation
+        replace="structure batch_nav/@@+navigation-links-lower"/>
+  </tal:multipage>
   </div>
 
   <div class="portlet">

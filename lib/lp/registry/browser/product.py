@@ -1117,7 +1117,7 @@ class ProductPackagesView(LaunchpadView):
     page_title = label
 
     @cachedproperty
-    def series_packages(self):
+    def series_batch(self):
         """A hierarchy of product series, packaging and field data.
 
         A dict of series and packagings. Each packaging is a dict of the
@@ -1129,13 +1129,8 @@ class ProductPackagesView(LaunchpadView):
                 }]
         """
         packaged_series = []
-        for series in self.context.series:
-            packagings = []
-            for packaging in series.packagings:
-                packagings.append(packaging)
-            packaged_series.append(dict(
-                series=series, packagings=packagings))
-        return packaged_series
+        series = DecoratedResultSet(self.context.active_or_packaged_series)
+        return BatchNavigator(series, self.request)
 
     @property
     def distro_packaging(self):
