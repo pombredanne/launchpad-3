@@ -437,6 +437,7 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
+        self.assertIsNot(None, self.build.date_finished)
 
     def testWithoutDependencies(self):
         """Verify that storeBuildInfo clears the build's dependencies."""
@@ -447,12 +448,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.date_finished)
-
-    def test_sets_date_finished(self):
-        # storeBuildInfo should set date_finished on the BuildFarmJob.
-        self.assertIs(None, self.build.date_finished)
-        self.build.storeBuildInfo(self.build, None, {})
         self.assertIsNot(None, self.build.date_finished)
 
 
