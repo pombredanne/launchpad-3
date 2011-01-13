@@ -27,6 +27,7 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1478,6 +1479,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
+        clear_property_cache(self.series)
 
         self.assertEquals(
             set((self.comp1, self.comp2)),

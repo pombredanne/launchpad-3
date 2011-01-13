@@ -270,7 +270,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
-    @property
+    @cachedproperty
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
