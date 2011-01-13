@@ -276,12 +276,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # XXX julian 2007-06-25
         # This is filtering out the partner component for now, until
         # the second stage of the partner repo arrives in 1.1.8.
-        return Component.select("""
+        return list(Component.select("""
             ComponentSelection.distroseries = %s AND
             Component.id = ComponentSelection.component AND
             Component.name != 'partner'
             """ % self.id,
-            clauseTables=["ComponentSelection"])
+            clauseTables=["ComponentSelection"]))
 
     @property
     def answers_usage(self):

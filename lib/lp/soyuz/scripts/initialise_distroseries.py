@@ -121,7 +121,7 @@ class InitialiseDistroSeries:
             raise InitialisationError(error)
         if self.distroseries.architectures.count():
             raise InitialisationError(error)
-        if self.distroseries.components.count():
+        if len(self.distroseries.components):
             raise InitialisationError(error)
         if self.distroseries.sections.count():
             raise InitialisationError(error)

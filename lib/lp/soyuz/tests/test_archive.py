@@ -1475,7 +1475,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         # The primary archive uses the series' defined components.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
-            0, archive.getComponentsForSeries(self.series).count())
+            0, len(archive.getComponentsForSeries(self.series)))
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
