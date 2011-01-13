@@ -89,7 +89,10 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import get_property_cache, cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -852,6 +855,9 @@ class Archive(SQLBase):
         return permission
 
     def getComponentsForSeries(self, distroseries):
+        """See `IArchive`."""
+        # DistroSeries.components and Archive.default_component are
+        # cachedproperties, so this is fairly cheap.
         if self.purpose in FULL_COMPONENT_SUPPORT:
             return distroseries.components
         else:
