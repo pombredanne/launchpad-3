@@ -55,7 +55,7 @@ class TestExportResult(TestCaseWithFactory):
         export_result.setExportFile(export)
         export_result.upload()
 
-        self.assertNotEqual(None, export_result.url)
+        self.assertIsNot(None, export_result.url)
         sha1 = hashlib.sha1(export.content).hexdigest()
         self.assertEqual(sha1, librarian.aliases.values()[0].content.sha1)
         alias = librarian.findBySHA1(sha1)
