@@ -171,7 +171,7 @@ followed by a link to edit the subscription.
     >>> subscriptions = find_tag_by_id(
     ...     admin_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
-    ...     structure_link, modify_link = subscription.findAll("a")
+    ...     structure_link, modify_link = subscription.findAll("a")[:2]
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
     ...     print "--> %s" % modify_link.get("href")
@@ -188,7 +188,7 @@ permission to modify those subscriptions.
     >>> subscriptions = find_tag_by_id(
     ...     subscriber_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
-    ...     [structure_link] = subscription.findAll("a")
+    ...     structure_link = subscription.find("a")
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
     mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
@@ -208,6 +208,27 @@ structural subscriptions.
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, "structural-subscriptions"))
     Webster does not have any structural subscriptions.
+
+
+Creating Bug Filters
+~~~~~~~~~~~~~~~~~~~~
+
+Every structural subscription also has a link to create a new bug
+subscription filter.
+
+    >>> import re
+
+    >>> subscriptions = find_tag_by_id(
+    ...     admin_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     create_link = subscription.find(
+    ...         text=re.compile("Create")).parent
+    ...     print extract_text(create_link)
+    ...     print "-->", create_link.get("href")
+    Create a new filter
+    --> /ubuntu/+source/mozilla-firefox/+subscription/name16/+new-filter
+    Create a new filter
+    --> /ubuntu/+source/pmount/+subscription/name16/+new-filter
 
 
 Subscriptions with Bug Filters
@@ -234,7 +255,9 @@ filters are shown with a message stating that there is no filtering.
     ...     subscriptions = find_tag_by_id(
     ...         nigel_browser.contents, 'structural-subscriptions')
     ...     for subscription in subscriptions.findAll("li"):
-    ...         print extract_text(subscription.div)
+    ...         print extract_text(subscription.p)
+    ...         if subscription.dl is not None:
+    ...             print extract_text(subscription.dl)
 
     >>> show_nigels_subscriptions()
     Bug mail is not filtered; mail for Nigel about Scofflaw will

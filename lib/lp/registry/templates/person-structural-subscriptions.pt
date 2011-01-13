@@ -55,12 +55,20 @@
                   </dl>
                 </tal:filtered>
                 <tal:unfiltered condition="not:bug_filters">
-                  Bug mail is <b>not</b> filtered; mail for <span
-                  tal:content="subscription/subscriber/fmt:displayname" />
-                  about
-                  <span tal:content="subscription/target/displayname" />
-                  will always be sent.
+                  <p>
+                    Bug mail is <b>not</b> filtered; mail for <span
+                    tal:content="subscription/subscriber/fmt:displayname" />
+                    about
+                    <span tal:content="subscription/target/displayname" />
+                    will always be sent.
+                  </p>
                 </tal:unfiltered>
+                <div style="margin-top: 1em">
+                  <a class="sprite add new-filter"
+                     tal:attributes="href subscription/fmt:url/+new-filter">
+                    Create a new filter
+                  </a>
+                </div>
               </div>
             </li>
           </ul>
