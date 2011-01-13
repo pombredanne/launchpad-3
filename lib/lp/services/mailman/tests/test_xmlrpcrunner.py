@@ -20,7 +20,11 @@ from lp.services.mailman.testing import (
 
 @contextmanager
 def one_loop_exception(runner):
+    """Raise an error during th execution of _oneloop.
 
+    This function replaces _check_list_actions() with a function that
+    raises an error. _oneloop() handles the exception.
+    """
     def raise_exception():
         raise Exception('Test exception handling.')
 
@@ -72,7 +76,7 @@ class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
         self.assertTrue(mark is not None)
 
     def test_heatbeat_frequency_no_heartbeat(self):
-        # A hartbeat is not recorded when the that last beat less than
+        # A heartbeat is not recorded when the that last beat less than
         # the heartbeat_frequency.
         self.runner._heartbeat()
         self.reset_log()
