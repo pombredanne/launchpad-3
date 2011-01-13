@@ -25,7 +25,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.publisher import BugsLayer
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
@@ -388,8 +387,7 @@ class TestBugSubscriptionFilterEditView(
         # subscription overview page.
         login_person(self.owner)
         view = create_initialized_view(
-            self.subscription_filter, name="+edit",
-            layer=BugsLayer, principal=self.owner)
+            self.subscription_filter, name="+edit")
         self.assertEqual([], view.errors)
         path = "/~%s/+structural-subscriptions" % self.owner.name
         self.assertEqual(path, urlparse(view.cancel_url).path)
@@ -407,8 +405,7 @@ class TestBugSubscriptionFilterEditView(
             }
         with person_logged_in(self.owner):
             view = create_initialized_view(
-                self.subscription_filter, name="+edit",
-                form=form, layer=BugsLayer, principal=self.owner)
+                self.subscription_filter, name="+edit", form=form)
             self.assertEqual([], view.errors)
         # The subscription filter has been updated.
         self.assertEqual(
@@ -445,8 +442,7 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
         # subscription overview page.
         login_person(self.owner)
         view = create_initialized_view(
-            self.subscription, name="+new-filter",
-            layer=BugsLayer, principal=self.owner)
+            self.subscription, name="+new-filter")
         self.assertEqual([], view.errors)
         path = "/~%s/+structural-subscriptions" % self.owner.name
         self.assertEqual(path, urlparse(view.cancel_url).path)
@@ -465,8 +461,7 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
             }
         with person_logged_in(self.owner):
             view = create_initialized_view(
-                self.subscription, name="+new-filter",
-                form=form, layer=BugsLayer, principal=self.owner)
+                self.subscription, name="+new-filter", form=form)
             self.assertEqual([], view.errors)
         # The subscription filter has been created.
         subscription_filter = self.subscription.bug_filters.one()
