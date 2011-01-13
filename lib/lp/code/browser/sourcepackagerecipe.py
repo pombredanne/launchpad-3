@@ -73,6 +73,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
+from lp.app.browser.tales import format_link
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -194,6 +195,16 @@ class SourcePackageRecipeView(LaunchpadView):
         # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        recipe = self.context
+        if self.dailyBuildWithoutUploadPermission():
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>The owner of the recipe (%s) does not "
+                    "have permission to upload packages into the daily "
+                    "build PPA (%s)" % (
+                        format_link(recipe.owner),
+                        format_link(recipe.daily_build_archive))))
 
     @property
     def page_title(self):
@@ -216,6 +227,18 @@ class SourcePackageRecipeView(LaunchpadView):
             if len(builds) >= 5:
                 break
         return builds
+
+    def dailyBuildWithoutUploadPermission(self):
+        """Returns true if there are upload permissions to the daily archive.
+
+        If the recipe isn't built daily, we don't consider this a problem.
+        """
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if recipe.build_daily:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            return not has_upload
+        return False
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -496,7 +519,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),
+            'recipe_text': self.context.recipe_text,
             }
 
     @property
