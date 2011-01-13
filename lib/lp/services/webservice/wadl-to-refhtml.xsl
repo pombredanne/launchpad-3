@@ -149,7 +149,7 @@
     <!-- Contains the list of top-level parameters that are links to
       collections. Does not contain parameters that are not links to
       collections, such as 'me_link'. -->
-    <xsl:variable name="master_top_level_collections"
+    <xsl:variable name="top_level_collections"
         select="key('id', 'service-root-json')/wadl:param[
                 contains(@name, '_collection_link')]/wadl:link" />
 
@@ -469,7 +469,7 @@
             <h2>Table of Contents</h2>
             <h3>Top-level collections</h3>
             <ul>
-                <xsl:for-each select="$master_top_level_collections">
+                <xsl:for-each select="$top_level_collections">
                     <xsl:sort select="../@name" />
 
                     <xsl:variable name="object_id"
@@ -505,7 +505,7 @@
                     <xsl:sort select="@id" />
                     <xsl:variable name="id" select="./@id"/>
                     <xsl:variable name="in_top_level_collections"
-                        select="$master_top_level_collections/@resource_type[
+                        select="$top_level_collections/@resource_type[
                             substring-after(., '#') = $id]" />
                     <xsl:if test="not($in_top_level_collections)">
                         <li><a href="#{$id}">
@@ -523,7 +523,7 @@
     <xsl:template name="top-level-objects">
         <div id="top-level-objects" title="top-level-objects">
             <h2>Top-level collections</h2>
-            <xsl:for-each select="$master_top_level_collections">
+            <xsl:for-each select="$top_level_collections">
                 <xsl:sort select="../@name" />
                 <xsl:variable name="object_id"
                     select="substring-after(@resource_type, '#')" />
@@ -703,7 +703,7 @@
             <xsl:sort select="@id" />
             <xsl:variable name="id" select="./@id"/>
             <xsl:variable name="in_top_level_collections"
-                select="$master_top_level_collections/@resource_type[
+                select="$top_level_collections/@resource_type[
                     substring-after(., '#') = $id]" />
             <xsl:if test="not($in_top_level_collections)">
                 <xsl:apply-templates select="." mode="entry-types" />
