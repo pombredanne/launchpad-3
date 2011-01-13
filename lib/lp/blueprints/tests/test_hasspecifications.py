@@ -13,7 +13,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.matcher import DoesNotSnapshot
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class HasSpecificationsTests(TestCaseWithFactory):
@@ -188,7 +188,7 @@ class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def check_skipped(self, target, providing):
+    def check_skipped(self, target):
         """Asserts that fields marked doNotSnapshot are skipped."""
         skipped = [
             'all_specifications',
