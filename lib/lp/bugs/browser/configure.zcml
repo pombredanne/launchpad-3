@@ -1189,6 +1189,15 @@
           template="../templates/bug-subscription-filter.pt"
           permission="launchpad.View"
           name="+definition" />
+      <browser:page
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterEditView"
+          template="../templates/bug-subscription-filter-edit.pt"
+          permission="launchpad.Edit"
+          name="+edit" />
     </facet>
+
+    <!-- Widgets -->
+    <include package=".widgets"/>
 
 </configure>

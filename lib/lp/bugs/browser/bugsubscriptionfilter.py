@@ -9,8 +9,21 @@ __all__ = [
     ]
 
 
+from zope.app.form.browser import TextWidget
+
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    )
+from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 
 
 class BugSubscriptionFilterView(LaunchpadView):
@@ -59,3 +72,35 @@ class BugSubscriptionFilterView(LaunchpadView):
                     sorted(tags), conjunction=(
                         u"and" if self.context.find_all_tags else u"or")))
         return conditions
+
+
+class BugSubscriptionFilterEditView(LaunchpadEditFormView):
+    """Edit view for `IBugSubscriptionFilter`."""
+
+    page_title = u"Edit filter"
+    schema = IBugSubscriptionFilter
+    field_names = (
+        "description",
+        "statuses",
+        "importances",
+        "tags",
+        "find_all_tags",
+        )
+
+    custom_widget("description", TextWidget, displayWidth=50)
+    custom_widget("statuses", LabeledMultiCheckBoxWidget)
+    custom_widget("importances", LabeledMultiCheckBoxWidget)
+    custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
+
+    @action("Update", name="update")
+    def update_action(self, action, data):
+        """Update the bug filter with the form data."""
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        """Return to the user's structural subscriptions page."""
+        return canonical_url(
+            self.user, view_name="+structural-subscriptions")
+
+    cancel_url = next_url
