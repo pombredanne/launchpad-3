@@ -1,0 +1,41 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+  tal:define="page_title string:features;">
+
+<body metal:fill-slot="main">
+
+  <h2>Documented flags</h2>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Value domain</th>
+        <th>Default value</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="info view/flag_info">
+        <td tal:content="info/name">flag name here</td>
+        <td tal:content="info/domain">flag domain here</td>
+        <td tal:content="info/default">flag description here</td>
+        <td tal:content="info/description">flag description here</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+  <h2>Undocumented flags</h2>
+  These flags were referenced during this process' lifetime but were not
+  documented:
+  <strong tal:condition="not:view/undocumented_flags">
+    No undocumented feature flags have been used yet.
+  </strong>
+  <strong tal:content="view/undocumented_flags">list of flags</strong>
+</body>
+</html>
