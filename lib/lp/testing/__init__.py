@@ -726,8 +726,10 @@ class BrowserTestCase(TestCaseWithFactory):
                        rootsite=None, user=None):
         if user is None:
             user = self.user
+        # Make sure that there is a user interaction in order to generate the
+        # canonical url for the context object.
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
+        url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
             from canonical.launchpad.testing.pages import setupBrowser
