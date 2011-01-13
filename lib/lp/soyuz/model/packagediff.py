@@ -153,7 +153,6 @@ class PackageDiff(SQLBase):
                 spr.id IN %s
                 AND sprf.SourcePackageRelease = spr.id
                 AND sprf.libraryfile = lfa.id
-                AND lfa.expires IS NOT NULL
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source.id, self.to_source.id))
         result = store.execute(query).get_one()

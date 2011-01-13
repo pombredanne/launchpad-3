@@ -35,20 +35,22 @@ class TestPackageDiffs(TestPackageDiffsBase):
         diff.performDiff()
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
 
-    def expireLFAsForSource(self, source, delete_as_well=True):
+    def expireLFAsForSource(self, source, expire=True, delete=True):
         """Expire the files associated with the given source package in the
         librarian."""
+        assert expire or delete
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             UPDATE LibraryFileAlias lfa
             SET
-                expires = %s
-            """ % sqlvalues(datetime.utcnow())
-        if delete_as_well:
-            # Expire *and* delete files from librarian.
-            query += """
-                , content = NULL
-                """
+            """
+
+        if expire:
+            query += "expires = %s" % sqlvalues(datetime.utcnow())
+        if expire and delete:
+            query += ", "
+        if delete:
+            query += "content = NULL"
         query += """
             FROM
                 SourcePackageRelease spr, SourcePackageReleaseFile sprf
@@ -82,9 +84,22 @@ class TestPackageDiffs(TestPackageDiffsBase):
         [diff] = self.getPendingDiffs()
         # Expire but don't delete the files associated with the 'from_source'
         # package.
-        self.expireLFAsForSource(diff.from_source, delete_as_well=False)
+        self.expireLFAsForSource(diff.from_source, expire=True, delete=False)
         # The helper method now finds no expired files.
         self.assertEqual(0, removeSecurityProxy(diff)._countExpiredLFAs())
         diff.performDiff()
         # The diff succeeds as expected.
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
+
+    def test_packagediff_with_deleted_but_not_expired_lfas(self):
+        # Test the case where files required for the diff have been
+        # deleted explicitly, not through expiry.
+        [diff] = self.getPendingDiffs()
+        # Expire but don't delete the files associated with the 'from_source'
+        # package.
+        self.expireLFAsForSource(diff.from_source, expire=False, delete=True)
+        # The helper method now finds 3 expired files.
+        self.assertEqual(3, removeSecurityProxy(diff)._countExpiredLFAs())
+        diff.performDiff()
+        # The diff fails due to the presence of expired files.
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)
