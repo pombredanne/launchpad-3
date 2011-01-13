@@ -83,7 +83,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackageFilePublishing,
@@ -119,6 +118,21 @@ def makePoolPath(source_name, component_name):
     from lp.archivepublisher.diskpool import poolify
     return os.path.join(
         'pool', poolify(source_name, component_name))
+
+
+def maybe_override_component(archive, distroseries, component):
+    """Override the component to fit in the archive, if possible.
+
+    If the archive has a default component, and it forbids use of the
+    requested component in the requested series, use the default.
+
+    If there is no default, just return the given component.
+    """
+    permitted_components = archive.getComponentsForSeries(distroseries)
+    if (component not in permitted_components and
+        archive.default_component is not None):
+        return archive.default_component
+    return component
 
 
 class FilePublishingBase:
@@ -1245,14 +1259,6 @@ class PublishingSet:
 
     def copyBinariesTo(self, binaries, distroseries, pocket, archive):
         """See `IPublishingSet`."""
-
-        # If the target archive is a ppa then we will need to override
-        # the component for each copy - so lookup the main component
-        # here once.
-        override_component = None
-        if archive.is_ppa:
-            override_component = getUtility(IComponentSet)['main']
-
         secure_copies = []
 
         for binary in binaries:
@@ -1267,16 +1273,11 @@ class PublishingSet:
                 continue
             if not target_architecture.enabled:
                 continue
-            target_component = override_component or binary.component
             secure_copies.extend(
                 getUtility(IPublishingSet).publishBinary(
-                    archive=archive,
-                    binarypackagerelease=binary.binarypackagerelease,
-                    distroarchseries=target_architecture,
-                    component=target_component,
-                    section=binary.section,
-                    priority=binary.priority,
-                    pocket=pocket))
+                    archive, binary.binarypackagerelease, target_architecture,
+                    binary.component, binary.section, binary.priority,
+                    pocket))
 
         return secure_copies
 
@@ -1312,13 +1313,8 @@ class PublishingSet:
             if binaries_in_destination.count() == 0:
                 published_binaries.append(
                     getUtility(IPublishingSet).newBinaryPublication(
-                        archive=archive,
-                        binarypackagerelease=binarypackagerelease,
-                        distroarchseries=arch,
-                        component=component,
-                        section=section,
-                        priority=priority,
-                        pocket=pocket))
+                        archive, binarypackagerelease, arch, component,
+                        section, priority, pocket))
         return published_binaries
 
     def newBinaryPublication(self, archive, binarypackagerelease,
@@ -1327,15 +1323,12 @@ class PublishingSet:
         """See `IPublishingSet`."""
         assert distroarchseries.enabled, (
             "Will not create new publications in a disabled architecture.")
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
         pub = BinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
-            component=component,
+            component=maybe_override_component(
+                archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
             status=PackagePublishingStatus.PENDING,
@@ -1348,16 +1341,13 @@ class PublishingSet:
                              distroseries, component, section, pocket,
                              ancestor=None):
         """See `IPublishingSet`."""
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
             sourcepackagerelease=sourcepackagerelease,
-            component=component,
+            component=maybe_override_component(
+                archive, distroseries, component),
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,

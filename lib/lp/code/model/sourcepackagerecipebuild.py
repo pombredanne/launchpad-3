@@ -93,10 +93,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        # Since recipes only build into PPAs, they should always build
-        # in main. This will need to change once other archives are
-        # supported.
-        return getUtility(IComponentSet)['main']
+        # Only PPAs currently have a sane default component at the
+        # moment, but we only support recipes for PPAs.
+        component = self.archive.default_component
+        assert component is not None
+        return component
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
