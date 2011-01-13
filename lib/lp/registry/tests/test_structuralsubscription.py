@@ -20,48 +20,46 @@ class TestStructuralSubscription(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestStructuralSubscription, self).setUp()
+        self.product = self.factory.makeProduct()
+        with person_logged_in(self.product.owner):
+            self.subscription = self.product.addSubscription(
+                self.product.owner, self.product.owner)
+
     def test_bug_filters_empty(self):
-        # StructuralSubscription.filters returns the BugSubscriptionFilter
-        # records associated with this subscription. It's empty to begin with.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            subscription = product.addSubscription(
-                product.owner, product.owner)
-        self.assertEqual([], list(subscription.bug_filters))
+        # The bug_filters attribute is empty to begin with.
+        self.assertEqual([], list(self.subscription.bug_filters))
 
     def test_bug_filters(self):
-        # StructuralSubscription.filters returns the BugSubscriptionFilter
-        # records associated with this subscription.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            subscription = product.addSubscription(
-                product.owner, product.owner)
-            subscription_filter = BugSubscriptionFilter()
-            subscription_filter.structural_subscription = subscription
-        self.assertEqual([subscription_filter], list(subscription.bug_filters))
+        # The bug_filters attribute returns the BugSubscriptionFilter records
+        # associated with this subscription.
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = self.subscription
+        self.assertEqual(
+            [subscription_filter],
+            list(self.subscription.bug_filters))
 
     def test_newBugFilter(self):
-        # StructuralSubscription.newBugFilter() creates a new subscription
-        # filter linked to the subscription.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            subscription = product.addSubscription(
-                product.owner, product.owner)
-            subscription_filter = subscription.newBugFilter()
+        # newBugFilter() creates a new subscription filter linked to the
+        # subscription.
+        with person_logged_in(self.product.owner):
+            subscription_filter = self.subscription.newBugFilter()
         self.assertEqual(
-            subscription, subscription_filter.structural_subscription)
-        self.assertEqual([subscription_filter], list(subscription.bug_filters))
+            self.subscription,
+            subscription_filter.structural_subscription)
+        self.assertEqual(
+            [subscription_filter],
+            list(self.subscription.bug_filters))
 
-    def test_newBugFilter_only_for_subscriber(self):
-        # StructuralSubscription.newBugFilter() can only be called by the
-        # subscriber.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            subscription = product.addSubscription(
-                product.owner, product.owner)
+    def test_newBugFilter_by_anonymous(self):
+        # newBugFilter() is not available to anonymous users.
         with anonymous_logged_in():
             self.assertRaises(
-                Unauthorized, lambda: subscription.newBugFilter)
+                Unauthorized, lambda: self.subscription.newBugFilter)
+
+    def test_newBugFilter_by_other_user(self):
+        # newBugFilter() is only available to the subscriber.
         with person_logged_in(self.factory.makePerson()):
             self.assertRaises(
-                Unauthorized, lambda: subscription.newBugFilter)
+                Unauthorized, lambda: self.subscription.newBugFilter)
