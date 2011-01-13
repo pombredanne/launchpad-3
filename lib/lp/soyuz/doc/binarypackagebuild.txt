@@ -1,4 +1,3 @@
-<<< test_imported_builds >>>
 == AssertionErrors in IBinaryPackageBuild ==
 
 Build records inserted by gina don't provide calculated_buildstart
@@ -93,7 +92,6 @@ build is retried.
     >>> print failedtoupload_build.upload_log.filename
     upload_22_log.txt
 
-<<< And back into test_build >>>
 
 == Updating build-dependencies line ==
 
@@ -211,7 +209,6 @@ Restore depwait_build previous state.
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-<<< Smells like test_build_set >>>
 === Retrying DEPWAIT builds ===
 
 It depends on the callsite to decide whether or not to 'retry' a
@@ -248,7 +245,7 @@ cronscript/buildd-retry-depwait.py. It can be run in parallel with
 other buildd tasks because the procedure is 'atomic' enough, i.e.,
 after the commit the retried jobs are ready to be dispatched.
 
-<<< test_build, once more with feeling >>>
+
 == Build rescoring ==
 
 Some builds can be rescored, to determine if it's possible check the
@@ -280,7 +277,7 @@ a CannotBeRescored exception is raised.
 
     >>> login(ANONYMOUS)
 
-<<< test_build_privacy >>>
+
 == Build record security ==
 
 IBinaryPackageBuild's content class is wrapped in a Zope security
@@ -482,7 +479,7 @@ the main archive.
     >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
-<<< test_build_set >>>
+
 == IBinaryPackageBuildSet.getBuildsBySourcePackageRelease() ==
 
 getBuildsBySourcePackageRelease() will return all the Build records for
