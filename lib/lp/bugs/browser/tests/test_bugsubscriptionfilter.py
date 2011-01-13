@@ -309,7 +309,7 @@ class TestBugSubscriptionFilterView(
         # the absense of conditions.
         self.assertRender(
             u"This filter does not allow mail through.",
-            u"There are no filter conditions! (edit)")
+            u"There are no filter conditions!")
 
     def test_render_with_no_description_and_conditions(self):
         # If conditions are set but no description, the rendered description
@@ -328,7 +328,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo", u"bar"]
         self.assertRender(
             u"This filter allows mail through when:",
-            u" and ".join(self.view.conditions) + u" (edit)")
+            u" and ".join(self.view.conditions))
 
     def test_render_with_description_and_no_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -337,7 +337,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.description = u"The Wait"
         self.assertRender(
             u"\u201cThe Wait\u201d does not allow mail through.",
-            u"There are no filter conditions! (edit)")
+            u"There are no filter conditions!")
 
     def test_render_with_description_and_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -347,7 +347,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo"]
         self.assertRender(
             u"\u201cThe Wait\u201d allows mail through when:",
-            u" and ".join(self.view.conditions) + u" (edit)")
+            u" and ".join(self.view.conditions))
 
     def findEditLinks(self, view):
         root = html.fromstring(view.render())
