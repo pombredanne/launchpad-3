@@ -44,7 +44,6 @@ class TestPackageDiffs(TestPackageDiffsBase):
             UPDATE LibraryFileAlias lfa
             SET
             """
-
         if expire:
             query += "expires = %s" % sqlvalues(datetime.utcnow())
         if expire and delete:
@@ -95,8 +94,7 @@ class TestPackageDiffs(TestPackageDiffsBase):
         # Test the case where files required for the diff have been
         # deleted explicitly, not through expiry.
         [diff] = self.getPendingDiffs()
-        # Expire but don't delete the files associated with the 'from_source'
-        # package.
+        # Delete the files associated with the 'from_source' package.
         self.expireLFAsForSource(diff.from_source, expire=False, delete=True)
         # The helper method now finds 3 expired files.
         self.assertEqual(3, removeSecurityProxy(diff)._countExpiredLFAs())
