@@ -229,7 +229,7 @@ subscription filter.
     ...             print "* No create link."
     ...         else:
     ...             print "* %s --> %s" % (
-    ...                 extract_text(create_text),
+    ...                 create_text.strip(),
     ...                 create_text.parent.get("href"))
 
     >>> admin_browser.open(
