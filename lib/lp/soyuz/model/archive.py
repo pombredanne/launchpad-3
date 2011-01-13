@@ -112,6 +112,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     default_name_by_purpose,
     DistroSeriesNotFound,
+    FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
@@ -418,7 +419,9 @@ class Archive(SQLBase):
     @cachedproperty
     def default_component(self):
         """See `IArchive`."""
-        if self.is_ppa:
+        if self.is_partner:
+            return getUtility(IComponentSet)['partner']
+        elif self.is_ppa:
             return getUtility(IComponentSet)['main']
         else:
             return None
@@ -849,12 +852,10 @@ class Archive(SQLBase):
         return permission
 
     def getComponentsForSeries(self, distroseries):
-        if self.is_partner:
-            return [getUtility(IComponentSet)['partner']]
-        elif self.is_ppa:
-            return [getUtility(IComponentSet)['main']]
-        else:
+        if self.purpose in FULL_COMPONENT_SUPPORT:
             return distroseries.components
+        else:
+            return [self.default_component]
 
     def updateArchiveCache(self):
         """See `IArchive`."""

@@ -1510,6 +1510,11 @@ class TestDefaultComponent(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertIs(None, archive.default_component)
 
+    def test_forced_component_for_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(
+            getUtility(IComponentSet)['partner'], archive.default_component)
+
     def test_forced_component_for_ppas(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEquals(

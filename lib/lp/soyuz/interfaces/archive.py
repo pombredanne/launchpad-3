@@ -21,6 +21,7 @@ __all__ = [
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
+    'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
     'IArchiveEdit',
@@ -1671,6 +1672,12 @@ MAIN_ARCHIVE_PURPOSES = (
 ALLOW_RELEASE_BUILDS = (
     ArchivePurpose.PARTNER,
     ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
+
+FULL_COMPONENT_SUPPORT = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.DEBUG,
     ArchivePurpose.COPY,
     )
 
