@@ -9,6 +9,10 @@ __all__ = [
     ]
 
 from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import errno
 import os
 from random import shuffle
@@ -104,6 +108,9 @@ class XMLRPCRunner(Runner):
         self._proxy = get_mailing_list_api_proxy()
         # Ensure that the log file exists, mostly for the test suite.
         syslog('xmlrpc', 'XMLRPC runner starting')
+        self.heartbeat_frequency = timedelta(minutes=5)
+        self.last_heartbeat = None
+        self._heartbeat()
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -120,12 +127,21 @@ class XMLRPCRunner(Runner):
             self._check_list_actions()
             self._get_subscriptions()
             self._check_held_messages()
-        # pylint: disable-msg=W0702
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
+        else:
+            self._heartbeat()
         # Snooze for a while.
         return 0
+
+    def _heartbeat(self):
+        """Add a heartbeat to the log for a monitor to watch."""
+        now = datetime.now()
+        last_heartbeat = self.last_heartbeat
+        if (last_heartbeat is None
+            or now - last_heartbeat > self.heartbeat_frequency):
+            syslog('xmlrpc', '--MARK--')
 
     def _log(self, exc):
         """Log the exception in a log file and as an OOPS."""
