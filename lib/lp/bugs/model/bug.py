@@ -1779,6 +1779,10 @@ BugMessage""" % sqlvalues(self.id))
 
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
+
+        If bug privacy rights are changed here, corresponding changes need
+        to be made to the queries which screen for privacy.  See
+        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
         assert user is not None, "User may not be None"
 
@@ -1796,8 +1800,7 @@ BugMessage""" % sqlvalues(self.id))
 
             # Assignees to bugtasks can see the private bug.
             for bugtask in self.bugtasks:
-                if (user.inTeam(bugtask.assignee) or
-                    user.inTeam(bugtask.pillar.owner)):
+                if user.inTeam(bugtask.assignee):
                     self._known_viewers.add(user.id)
                     return True
             # Explicit subscribers may also view it.
@@ -2193,12 +2196,15 @@ class BugSet:
                 where_clauses.append("""
                     (Bug.private = FALSE OR
                       Bug.id in (
+                         -- Users who have a subscription to this bug.
                          SELECT BugSubscription.bug
                            FROM BugSubscription, TeamParticipation
                            WHERE
                              TeamParticipation.person = %(personid)s AND
                              BugSubscription.person = TeamParticipation.team
                          UNION
+                         -- Users who are the assignee for one of the bug's
+                         -- bugtasks.
                          SELECT BugTask.bug
                            FROM BugTask, TeamParticipation
                            WHERE
