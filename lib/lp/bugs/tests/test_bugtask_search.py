@@ -91,14 +91,14 @@ class SearchTestBase:
         # If the user is subscribed to the bug, it is included in the
         # search result.
         user = self.factory.makePerson()
-        with person_logged_in(self.owner):
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        with person_logged_in(admin):
             bug = self.bugtasks[-1].bug
             bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
         # Private bugs are included in search results for admins.
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
