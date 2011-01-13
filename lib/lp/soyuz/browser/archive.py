@@ -849,7 +849,9 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        return bool(self.filtered_sources)
+        # Trying to use bool(self.filtered_sources) here resulted in bug
+        # 702425 :(
+        return self.filtered_sources.count() > 0
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
