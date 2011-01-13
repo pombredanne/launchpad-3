@@ -957,9 +957,10 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the RELEASE pocket.")
             if (component is not None and
-                component.id is not getUtility(IComponentSet)['main'].id):
+                component != dependency.default_component):
                 raise ArchiveDependencyError(
-                    "Non-primary archives only support the 'main' component.")
+                    "Non-primary archives only support the '%s' component." %
+                    dependency.default_component.name)
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
@@ -1095,7 +1096,7 @@ class Archive(SQLBase):
                 # interface will no longer require them because we can
                 # then relax the database constraint on
                 # ArchivePermission.
-                component_or_package = getUtility(IComponentSet)['main']
+                component_or_package = self.default_component
 
         # Flatly refuse uploads to copy archives, at least for now.
         if self.is_copy:
@@ -1243,8 +1244,10 @@ class Archive(SQLBase):
             else:
                 name = None
 
-            if name is None or name != 'main':
-                raise InvalidComponent("Component for PPAs should be 'main'")
+            if name != self.default_component.name:
+                raise InvalidComponent(
+                    "Component for PPAs should be '%s'" %
+                    self.default_component.name)
 
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
