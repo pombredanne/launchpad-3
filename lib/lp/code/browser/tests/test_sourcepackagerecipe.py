@@ -1356,16 +1356,19 @@ class TestBrokenExistingRecipes(BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
+    RECIPE_FIRST_LINE = (
+        "# bzr-builder format 0.2 deb-version {debupstream}+{revno}")
+
     def makeBrokenRecipe(self):
         """Make a valid recipe, then break it."""
         product = self.factory.makeProduct()
         b1 = self.factory.makeProductBranch(product=product)
         b2 = self.factory.makeProductBranch(product=product)
         recipe_text = dedent("""\
-            # bzr-builder format 0.2 deb-version {debupstream}+{revno}
+            %s
             %s
             nest name %s foo
-            """ % (b1.bzr_identity, b2.bzr_identity))
+            """ % (self.RECIPE_FIRST_LINE, b1.bzr_identity, b2.bzr_identity))
         recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
         naked_data = removeSecurityProxy(recipe)._recipe_data
         nest_instruction = list(naked_data.instructions)[0]
@@ -1376,12 +1379,16 @@ class TestBrokenExistingRecipes(BrowserTestCase):
         recipe = self.makeBrokenRecipe()
         self.assertRaises(Exception, str, recipe.builder_recipe)
 
+    def assertRecipeInText(self, text):
+        """If the first line is shown, that's good enough for us."""
+        self.assertTrue(self.RECIPE_FIRST_LINE in text)
+
     def test_recipe_index_renderable(self):
         recipe = self.makeBrokenRecipe()
         main_text = self.getMainText(recipe, '+index')
-        self.assertTrue('# bzr-builder format 0.2 deb-version' in main_text)
+        self.assertRecipeInText(main_text)
 
     def test_recipe_edit_renderable(self):
         recipe = self.makeBrokenRecipe()
         main_text = self.getMainText(recipe, '+edit', user=recipe.owner)
-        self.assertTrue('# bzr-builder format 0.2 deb-version' in main_text)
+        self.assertRecipeInText(main_text)
