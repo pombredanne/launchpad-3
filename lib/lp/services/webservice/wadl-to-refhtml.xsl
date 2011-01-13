@@ -8,7 +8,7 @@
   Based on wadl_documentaion.xsl from Mark Nottingham <mnot@yahoo-inc.com>
   that can be found at http://www.mnot.net/webdesc/
   Copyright (c) 2006-2007 Yahoo! Inc.
-  Copyright (c) 2008 Canonical Ltd.
+  Copyright (c) 2008-2011 Canonical Ltd.
 
   This work is licensed under the Creative Commons Attribution-ShareAlike 2.5
   License. To view a copy of this license, visit
