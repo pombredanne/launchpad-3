@@ -814,10 +814,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ]
         result = store.using(*tables).find(
             ProductSeries,
+            ProductSeries.product == self,
             Or(ProductSeries.status != SeriesStatus.OBSOLETE,
                Packaging.id != None))
         result = result.order_by(Desc(ProductSeries.name))
-        result.config(distinct=True)
+        result = result.config(distinct=True)
         return result
 
     @property
