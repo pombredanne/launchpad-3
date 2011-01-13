@@ -1260,7 +1260,6 @@ class PublishingSet:
     def copyBinariesTo(self, binaries, distroseries, pocket, archive):
         """See `IPublishingSet`."""
         secure_copies = []
-
         for binary in binaries:
             # XXX: wgrant 2011-01-10:
             # This will go wrong if nominatedarchindep gets deleted in a
@@ -1278,7 +1277,6 @@ class PublishingSet:
                     archive, binary.binarypackagerelease, target_architecture,
                     binary.component, binary.section, binary.priority,
                     pocket))
-
         return secure_copies
 
     def publishBinary(self, archive, binarypackagerelease, distroarchseries,
@@ -1309,7 +1307,6 @@ class PublishingSet:
                 version=binarypackagerelease.version,
                 status=active_publishing_status, pocket=pocket,
                 distroarchseries=distroarchseries)
-
             if binaries_in_destination.count() == 0:
                 published_binaries.append(
                     getUtility(IPublishingSet).newBinaryPublication(
@@ -1323,7 +1320,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         assert distroarchseries.enabled, (
             "Will not create new publications in a disabled architecture.")
-        pub = BinaryPackagePublishingHistory(
+        return BinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
@@ -1334,8 +1331,6 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
-
-        return pub
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
