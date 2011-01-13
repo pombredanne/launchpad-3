@@ -1366,7 +1366,8 @@ def build_tag_set_query(joiner, tags):
     """
     joiner = " %s " % joiner
     return joiner.join(
-        "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
+        "SELECT TRUE FROM BugTag WHERE " +
+            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
         for tag in sorted(tags))
 
 
@@ -1413,22 +1414,24 @@ def build_tag_search_clause(tags_spec):
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
         if len(include_clause) == 0 or not find_all:
-            include_clause = "SELECT bug FROM BugTag"
+            include_clause = (
+                "SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id")
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
         if len(exclude_clause) == 0 or find_all:
-            exclude_clause = "SELECT bug FROM BugTag"
+            exclude_clause = (
+                "SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id")
 
     # Combine the include and exclude sets.
     if len(include_clause) > 0 and len(exclude_clause) > 0:
-        return "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
+        return "(EXISTS (%s) %s NOT EXISTS (%s))" % (
             include_clause, combine_with, exclude_clause)
     elif len(include_clause) > 0:
-        return "BugTask.bug IN (%s)" % include_clause
+        return "EXISTS (%s)" % include_clause
     elif len(exclude_clause) > 0:
-        return "BugTask.bug NOT IN (%s)" % exclude_clause
+        return "NOT EXISTS (%s)" % exclude_clause
     else:
         # This means that there were no tags (wildcard or specific) to
         # search for (which is allowed, even if it's a bit weird).
