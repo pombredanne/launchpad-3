@@ -290,7 +290,7 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             """EXISTS
                  (SELECT TRUE FROM BugTag
-                   WHERE BugTag.bug = Bug.id)"""),
+                   WHERE BugTag.bug = Bug.id)""",
             self.searchClause(any(u'fred', u'*')))
 
     def test_multiple_tag_absence_any(self):
