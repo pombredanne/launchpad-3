@@ -30,6 +30,7 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
 from lp.testing import (
+    anonymous_logged_in,
     login_person,
     normalize_whitespace,
     person_logged_in,
@@ -347,6 +348,34 @@ class TestBugSubscriptionFilterView(
         self.assertRender(
             u"\u201cThe Wait\u201d allows mail through when:",
             u" and ".join(self.view.conditions) + u" (edit)")
+
+    def findEditLinks(self, view):
+        root = html.fromstring(view.render())
+        return [
+            node for node in root.findall("dd//a")
+            if node.get("href").endswith("/+edit")
+            ]
+
+    def test_edit_link_for_subscriber(self):
+        # A link to edit the filter is rendered for the subscriber.
+        with person_logged_in(self.subscription.subscriber):
+            subscriber_view = create_initialized_view(
+                self.subscription_filter, "+definition")
+            self.assertNotEqual([], self.findEditLinks(subscriber_view))
+
+    def test_edit_link_for_non_subscriber(self):
+        # A link to edit the filter is *not* rendered for anyone but the
+        # subscriber.
+        with person_logged_in(self.factory.makePerson()):
+            non_subscriber_view = create_initialized_view(
+                self.subscription_filter, "+definition")
+            self.assertEqual([], self.findEditLinks(non_subscriber_view))
+
+    def test_edit_link_for_anonymous(self):
+        # A link to edit the filter is *not* rendered for anyone but the
+        # subscriber.
+        with anonymous_logged_in():
+            self.assertEqual([], self.findEditLinks(self.view))
 
 
 class TestBugSubscriptionFilterEditView(

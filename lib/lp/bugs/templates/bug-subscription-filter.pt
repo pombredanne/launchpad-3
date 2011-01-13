@@ -27,10 +27,14 @@
         <b>and</b> <br />
       </tal:conjunction>
     </tal:conditions>
-    <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    <tal:editable condition="context/required:launchpad.Edit">
+      <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    </tal:editable>
   </dd>
   <dd tal:condition="not:conditions">
     There are no filter conditions!
-    <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    <tal:editable condition="context/required:launchpad.Edit">
+      <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    </tal:editable>
   </dd>
 </dl>
