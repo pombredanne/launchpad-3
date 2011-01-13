@@ -218,17 +218,38 @@ subscription filter.
 
     >>> import re
 
-    >>> subscriptions = find_tag_by_id(
-    ...     admin_browser.contents, 'structural-subscriptions')
-    >>> for subscription in subscriptions.findAll("li"):
-    ...     create_link = subscription.find(
-    ...         text=re.compile("Create")).parent
-    ...     print extract_text(create_link)
-    ...     print "-->", create_link.get("href")
-    Create a new filter
-    --> /ubuntu/+source/mozilla-firefox/+subscription/name16/+new-filter
-    Create a new filter
-    --> /ubuntu/+source/pmount/+subscription/name16/+new-filter
+    >>> def show_create_links(browser):
+    ...     subscriptions = find_tag_by_id(
+    ...         browser.contents, 'structural-subscriptions')
+    ...     for subscription in subscriptions.findAll("li"):
+    ...         structure_link = subscription.find("a")
+    ...         print extract_text(structure_link)
+    ...         create_text = subscription.find(text=re.compile("Create"))
+    ...         if create_text is None:
+    ...             print "* No create link."
+    ...         else:
+    ...             print "* %s --> %s" % (
+    ...                 extract_text(create_text),
+    ...                 create_text.parent.get("href"))
+
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> show_create_links(admin_browser)
+    mozilla-firefox in ubuntu
+    * Create a new filter --> /ubuntu/.../name16/+new-filter
+    pmount in ubuntu
+    * Create a new filter --> /ubuntu/.../name16/+new-filter
+
+If the user does not have the necessary rights to create new bug
+filters the "Create" link is not shown.
+
+    >>> subscriber_browser.open(
+    ...     "http://launchpad.dev/~name16/+structural-subscriptions")
+    >>> show_create_links(subscriber_browser)
+    mozilla-firefox in ubuntu
+    * No create link.
+    pmount in ubuntu
+    * No create link.
 
 
 Subscriptions with Bug Filters
