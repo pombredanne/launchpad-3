@@ -818,7 +818,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Or(ProductSeries.status != SeriesStatus.OBSOLETE,
                Packaging.id != None))
         result = result.order_by(Desc(ProductSeries.name))
-        result = result.config(distinct=True)
+        result.config(distinct=True)
         return result
 
     @property

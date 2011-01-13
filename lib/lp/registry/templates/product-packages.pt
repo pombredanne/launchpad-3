@@ -21,14 +21,14 @@
   <table class="listing">
   <tr tal:repeat="series batch_nav/currentBatch">
   <td tal:define="packagings series/packagings">
-    <table style="width: 100%; margin: 1em 0 0 0">
+    <table style="width: 100%; margin: 0.5em 0 0 0">
     <tr>
     <td style="width: 33%">
-    <strong>
+    <h3>
       <a tal:attributes="href series/name">
         <span tal:replace="series/name">main</span> series
       </a>
-    </strong>
+    </h3>
     </td>
 
     <tal:no-packages condition="not: packagings">

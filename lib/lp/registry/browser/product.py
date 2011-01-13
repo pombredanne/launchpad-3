@@ -1118,19 +1118,9 @@ class ProductPackagesView(LaunchpadView):
 
     @cachedproperty
     def series_batch(self):
-        """A hierarchy of product series, packaging and field data.
-
-        A dict of series and packagings. Each packaging is a dict of the
-        packaging and a hidden HTML field for forms:
-           [{series: <hoary>,
-             packagings: {
-                packaging: <packaging>,
-                field: '<input type=''hidden' ...>},
-                }]
-        """
-        packaged_series = []
-        series = DecoratedResultSet(self.context.active_or_packaged_series)
-        return BatchNavigator(series, self.request)
+        """A batch of series that are active or have packages."""
+        return BatchNavigator(
+            self.context.active_or_packaged_series, self.request)
 
     @property
     def distro_packaging(self):
