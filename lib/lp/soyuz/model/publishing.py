@@ -1299,13 +1299,9 @@ class PublishingSet:
 
                 if binary_in_destination.count() == 0:
                     pub = self.newBinaryPublication(
-                        archive=archive,
-                        binarypackagerelease=binarypackagerelease,
-                        distroarchseries=distroarchseries,
-                        component=binary.component,
-                        section=binary.section,
-                        priority=binary.priority,
-                        pocket=pocket)
+                        archive, binarypackagerelease, distroarchseries,
+                        binary.component, binary.section, binary.priority,
+                        pocket)
                     secure_copies.append(pub)
 
         return secure_copies
