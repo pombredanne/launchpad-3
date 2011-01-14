@@ -73,6 +73,14 @@ class TestScopesFromRequest(TestCase):
         # There is no such key in the config, so this returns False.
         self.assertFalse(scopes.lookup('server.pink'))
 
+    def test_unknown_scope(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        # There is no such key in the config, so this returns False.
+        self.assertRaises(
+            LookupError,
+            scopes.lookup, 'not-a-real-scope')
+
 
 class TestDBScopes(TestCaseWithFactory):
 
