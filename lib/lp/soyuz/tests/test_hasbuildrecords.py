@@ -90,6 +90,8 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
     def setUp(self):
         super(TestDistributionHasBuildRecords, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        # Create two processorfamilys, a distroseries, two DASes, and an
+        # archive
         self.pf_one = self.factory.makeProcessorFamily()
         pf_proc_1 = self.pf_one.addProcessor(
             self.factory.getUniqueString(), '', '')
@@ -108,6 +110,8 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
         self.arch_ids = [arch.id for arch in self.distroseries.architectures]
+        # Set up the publisher, set the nominatedarchindep, upload chroots
+        # and create buildds.
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
@@ -330,9 +334,10 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         self.assertEquals([build2, build1], builds)
 
     def test_copy_archive_without_leak(self):
-        # If source publications are copied to a .COPY archive, the originals
-        # don't leak
+        # If source publications are copied to a .COPY archive, they don't
+        # "leak" into SourcePackage.getBuildRecords()
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        # Set up a distroseries and related bits
         source_name = self.factory.getUniqueString()
         spn = self.factory.makeSourcePackageName(name=source_name)
         pf = self.factory.makeProcessorFamily()
@@ -349,22 +354,18 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             builder = self.factory.makeBuilder(processor=pf_proc)
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn, distroseries=distroseries)
-        del_spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            status=PackagePublishingStatus.DELETED)
         spph.createMissingBuilds()
-        del_spph.createMissingBuilds()
+        # Create a copy archive
         copy = self.factory.makeArchive(
             purpose=ArchivePurpose.COPY,
             distribution=distroseries.distribution)
+        # Copy the publication into it
         copy_spph = spph.copyTo(
             distroseries, PackagePublishingPocket.RELEASE, copy)
-        copy_del_spph = del_spph.copyTo(
-            distroseries, PackagePublishingPocket.RELEASE, copy)
         [copy_build] = copy_spph.createMissingBuilds()
-        [copy_del_build] = copy_del_spph.createMissingBuilds()
         builds = copy.getBuildRecords()
-        self.assertEquals([copy_del_build, copy_build], list(builds))
+        self.assertEquals([copy_build], list(builds))
         source = SourcePackage(spn, spph.distroseries)
+        # SourcePackage.getBuildRecords() doesn't have two build records
         builds = source.getBuildRecords().count()
         self.assertEquals(1, builds)
