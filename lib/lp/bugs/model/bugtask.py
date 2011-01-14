@@ -1354,19 +1354,29 @@ def get_bug_privacy_filter_with_decorator(user):
 
 
 def build_tag_set_query(joiner, tags):
-    """Return an SQL snippet to find bugs matching the given tags.
+    """Return an SQL snippet to find whether a bug matches the given tags.
 
     The tags are sorted so that testing the generated queries is
     easier and more reliable.
+
+    This SQL is designed to be a sub-query where the parent SQL defines
+    Bug.id. It evaluates to TRUE or FALSE, indicating whether the bug
+    with Bug.id matches against the tags passed.
+
+    Returns None if no tags are passed.
 
     :param joiner: The SQL set term used to join the individual tag
         clauses, typically "INTERSECT" or "UNION".
     :param tags: An iterable of valid tag names (not prefixed minus
         signs, not wildcards).
     """
+    if tags == []:
+        return None
+
     joiner = " %s " % joiner
-    return joiner.join(
-        "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
+    return "EXISTS (%s)" % joiner.join(
+        "SELECT TRUE FROM BugTag WHERE " +
+            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
         for tag in sorted(tags))
 
 
@@ -1412,23 +1422,25 @@ def build_tag_search_clause(tags_spec):
     # Search for the *presence* of any tag.
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
-        if len(include_clause) == 0 or not find_all:
-            include_clause = "SELECT bug FROM BugTag"
+        if include_clause == None or not find_all:
+            include_clause = (
+                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
-        if len(exclude_clause) == 0 or find_all:
-            exclude_clause = "SELECT bug FROM BugTag"
+        if exclude_clause == None or find_all:
+            exclude_clause = (
+                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
 
     # Combine the include and exclude sets.
-    if len(include_clause) > 0 and len(exclude_clause) > 0:
-        return "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
+    if include_clause != None and exclude_clause != None:
+        return "(%s %s NOT %s)" % (
             include_clause, combine_with, exclude_clause)
-    elif len(include_clause) > 0:
-        return "BugTask.bug IN (%s)" % include_clause
-    elif len(exclude_clause) > 0:
-        return "BugTask.bug NOT IN (%s)" % exclude_clause
+    elif include_clause != None:
+        return "%s" % include_clause
+    elif exclude_clause != None:
+        return "NOT %s" % exclude_clause
     else:
         # This means that there were no tags (wildcard or specific) to
         # search for (which is allowed, even if it's a bit weird).
@@ -2620,6 +2632,60 @@ class BugTaskSet:
                     AND RelatedBugTask.status IN %s)
             """ % sqlvalues(unexpirable_status_list)
 
+    TARGET_SELECT = {
+        IDistribution: """
+            SELECT Distribution.id, NULL, NULL, NULL,
+                Distribution.id, NULL
+            FROM Distribution
+            WHERE Distribution.enable_bug_expiration IS TRUE""",
+        IDistroSeries: """
+            SELECT NULL, DistroSeries.id, NULL, NULL,
+                Distribution.id, NULL
+            FROM DistroSeries
+                JOIN Distribution
+                    ON DistroSeries.distribution = Distribution.id
+            WHERE Distribution.enable_bug_expiration IS TRUE""",
+        IProduct: """
+            SELECT NULL, NULL, Product.id, NULL,
+                NULL, Product.id
+            FROM Product
+            WHERE Product.enable_bug_expiration IS TRUE""",
+        IProductSeries: """
+            SELECT NULL, NULL, NULL, ProductSeries.id,
+                NULL, Product.id
+            FROM ProductSeries
+                JOIN Product
+                    ON ProductSeries.Product = Product.id
+            WHERE Product.enable_bug_expiration IS TRUE""",
+        }
+
+    TARGET_JOIN_CLAUSE = {
+        IDistribution: "BugTask.distribution = target.distribution",
+        IDistroSeries: "BugTask.distroseries = target.distroseries",
+        IProduct: "BugTask.product = target.product",
+        IProductSeries: "BugTask.productseries = target.productseries",
+        }
+
+    def _getJoinForTargets(self, *targets):
+        """Build the UNION of the sub-query for the given set of targets."""
+        selects = ' UNION '.join(
+            self.TARGET_SELECT[target] for target in targets)
+        join_clause = ' OR '.join(
+            self.TARGET_JOIN_CLAUSE[target] for target in targets)
+        # We create this rather bizarre looking structure
+        # because we must replicate the behaviour of BugTask since
+        # we are joining to it. So when distroseries is set,
+        # distribution should be NULL. The two pillar columns will
+        # be used in the WHERE clause.
+        return """
+        JOIN (
+            SELECT 0 AS distribution, 0 AS distroseries,
+                   0 AS product , 0 AS productseries,
+                   0 AS distribution_pillar, 0 AS product_pillar
+            UNION %s
+            ) target
+            ON (%s)""" % (selects, join_clause)
+
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
 
@@ -2632,54 +2698,23 @@ class BugTaskSet:
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
-        target_join = """
-            JOIN (
-                -- We create this rather bizarre looking structure
-                -- because we must replicate the behaviour of BugTask since
-                -- we are joining to it. So when distroseries is set,
-                -- distribution should be NULL. The two pillar columns will
-                -- be used in the WHERE clause.
-                SELECT 0 AS distribution, 0 AS distroseries,
-                       0 AS product , 0 AS productseries,
-                       0 AS distribution_pillar, 0 AS product_pillar
-                UNION
-                    SELECT Distribution.id, NULL, NULL, NULL,
-                        Distribution.id, NULL
-                    FROM Distribution
-                    WHERE Distribution.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, DistroSeries.id, NULL, NULL,
-                        Distribution.id, NULL
-                    FROM DistroSeries
-                        JOIN Distribution
-                            ON DistroSeries.distribution = Distribution.id
-                    WHERE Distribution.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, NULL, Product.id, NULL,
-                        NULL, Product.id
-                    FROM Product
-                    WHERE Product.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, NULL, NULL, ProductSeries.id,
-                        NULL, Product.id
-                    FROM ProductSeries
-                        JOIN Product
-                            ON ProductSeries.Product = Product.id
-                    WHERE Product.enable_bug_expiration IS TRUE) target
-                ON (BugTask.distribution = target.distribution
-                    OR BugTask.distroseries = target.distroseries
-                    OR BugTask.product = target.product
-                    OR BugTask.productseries = target.productseries)"""
         if target is None:
+            target_join = self._getJoinForTargets(
+                IDistribution, IDistroSeries, IProduct, IProductSeries)
             target_clause = "TRUE IS TRUE"
         elif IDistribution.providedBy(target):
+            target_join = self._getJoinForTargets(
+                IDistribution, IDistroSeries)
             target_clause = "target.distribution_pillar = %s" % sqlvalues(
                 target)
         elif IDistroSeries.providedBy(target):
+            target_join = self._getJoinForTargets(IDistroSeries)
             target_clause = "BugTask.distroseries = %s" % sqlvalues(target)
         elif IProduct.providedBy(target):
+            target_join = self._getJoinForTargets(IProduct, IProductSeries)
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
+            target_join = self._getJoinForTargets(IProductSeries)
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
         elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)

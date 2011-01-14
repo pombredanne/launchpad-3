@@ -295,39 +295,6 @@ class Archive(SQLBase):
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
 
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -1210,7 +1177,7 @@ class Archive(SQLBase):
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
-        return permissions.count() > 0
+        return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
         """See `IArchive`."""

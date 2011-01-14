@@ -15,6 +15,7 @@ __all__ = [
     'IProjectGroupMilestone',
     ]
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -39,7 +40,6 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Choice,
-    Date,
     Int,
     TextLine,
     )
@@ -255,18 +255,18 @@ class IHasMilestones(Interface):
 
     has_milestones = Bool(title=_("Whether the object has any milestones."))
 
-    milestones = exported(
+    milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("The visible and active milestones associated with this "
                     "object, ordered by date expected."),
-            value_type=Reference(schema=IMilestone)),
+            value_type=Reference(schema=IMilestone))),
         exported_as='active_milestones')
 
-    all_milestones = exported(
+    all_milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("All milestones associated with this object, ordered by "
                     "date expected."),
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone))))
 
 
 class ICanGetMilestonesDirectly(Interface):
