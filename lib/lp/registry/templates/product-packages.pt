@@ -19,7 +19,7 @@
         replace="structure batch_nav/@@+navigation-links-upper"/>
   </tal:multipage>
   <table class="listing">
-  <tr tal:repeat="series batch_nav/currentBatch">
+  <tr tal:repeat="series batch_nav/batch">
   <td tal:define="packagings series/packagings">
     <table style="width: 100%; margin: 0.5em 0 0 0">
     <tr>
