@@ -34,6 +34,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PersonChoice
 from lp.translations.interfaces.rosettastats import IRosettaStats
@@ -167,6 +168,10 @@ class IPOTemplate(IRosettaStats):
             "The source package that uses this template."),
         required=False,
         vocabulary="SourcePackageName")
+
+    sourcepackage = Reference(
+        ISourcePackage, title=u"Source package this template is for, if any.",
+        required=False, readonly=True)
 
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
@@ -305,6 +310,9 @@ class IPOTemplate(IRosettaStats):
             Some formats, such as Mozilla's XPI, use symbolic msgids where
             gettext uses the original English strings to identify messages.
             """))
+
+    translation_side = Int(
+        title=_("Translation side"), required=True, readonly=True)
 
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
@@ -508,6 +516,15 @@ class IPOTemplate(IRosettaStats):
     def getTranslationRows():
         """Return the `IVPOTexport` objects for this template."""
 
+    def awardKarma(person, action_name):
+        """Award karma for a translation action on this template."""
+
+    def getTranslationPolicy():
+        """Return the applicable `ITranslationPolicy` object.
+
+        The returned object is either a `Product` or a `Distribution`.
+        """
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
@@ -548,7 +565,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(name, translation_domain, path, owner):
+    def new(name, translation_domain, path, owner, copy_pofiles=True):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
@@ -691,6 +708,29 @@ class IPOTemplateSharingSubset(Interface):
         :param potemplate_name: The name of the template for which to find
             sharing equivalents.
         :return: A list of all potemplates of the same name from all series.
+        """
+
+    def getSharingPOTemplatesByRegex(name_pattern=None):
+        """Find all sharing templates with names matching the given pattern.
+
+        If name_pattern is None, match is performed on the template name.
+        Use with care as it may return all templates in a distribution!
+
+        :param name_pattern: A POSIX regular expression that the template
+           is matched against.
+        :return: A list of all potemplates matching the pattern.
+        """
+
+    def getSharingPOTemplateIDs(potemplate_name):
+        """Find database ids of all sharing templates of the given name.
+
+        For distributions this method requires that sourcepackagename is set.
+        This avoids serialization of full POTemplate objects.
+
+        :param potemplate_name: The name of the template for which to find
+            sharing equivalents.
+        :return: A list of database ids of all potemplates of the same name
+            from all series.
         """
 
     def groupEquivalentPOTemplates(name_pattern=None):

@@ -1,16 +1,19 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import filecmp
 import os
-import pytz
 import tempfile
 
-from datetime import datetime, timedelta
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
@@ -35,7 +38,6 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
-
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {

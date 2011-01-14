@@ -68,7 +68,7 @@ class TranslationMessageImportedFlagUpdater:
             PreviousImported.id,
             tables=[PreviousImported, CurrentTranslation],
             where=And(
-                PreviousImported.is_imported == True,
+                PreviousImported.is_current_upstream == True,
                 (PreviousImported.potmsgsetID ==
                  CurrentTranslation.potmsgsetID),
                 Or(And(PreviousImported.potemplateID == None,
@@ -81,11 +81,11 @@ class TranslationMessageImportedFlagUpdater:
         previous_imported = self.store.find(
             TranslationMessage,
             TranslationMessage.id.is_in(previous_imported_select))
-        previous_imported.set(is_imported=False)
+        previous_imported.set(is_current_upstream=False)
         translations = self.store.find(
             TranslationMessage,
             TranslationMessage.id.is_in(tm_ids))
-        translations.set(is_imported=True)
+        translations.set(is_current_upstream=True)
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`.
@@ -133,8 +133,8 @@ class MigrateCurrentFlagProcess:
         """Get TranslationMessage.ids that need migration for a `product`."""
         return self.store.find(
             TranslationMessage.id,
-            TranslationMessage.is_current == True,
-            TranslationMessage.is_imported == False,
+            TranslationMessage.is_current_ubuntu == True,
+            TranslationMessage.is_current_upstream == False,
             (TranslationMessage.potmsgsetID ==
              TranslationTemplateItem.potmsgsetID),
             TranslationTemplateItem.potemplateID == POTemplate.id,

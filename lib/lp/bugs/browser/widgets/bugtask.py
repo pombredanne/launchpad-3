@@ -4,38 +4,70 @@
 """Widgets related to IBugTask."""
 
 __metaclass__ = type
+__all__ = [
+    "AssigneeDisplayWidget",
+    "BugTaskAlsoAffectsSourcePackageNameWidget",
+    "BugTaskAssigneeWidget",
+    "BugTaskBugWatchWidget",
+    "BugTaskSourcePackageNameWidget",
+    "BugWatchEditForm",
+    "DBItemDisplayWidget",
+    "NewLineToSpacesWidget",
+    "NominationReviewActionWidget",
+    ]
 
 from xml.sax.saxutils import escape
 
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.widget import BrowserWidget, renderElement
-from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
-    ConversionError)
-from zope.schema.interfaces import ValidationError, InvalidValue
-from zope.app.form import Widget, CustomWidgetFactory
-from zope.app.form.utility import setUpWidget
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form import (
+    CustomWidgetFactory,
+    Widget,
+    )
+from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.app.form.browser.widget import (
+    BrowserWidget,
+    renderElement,
+    )
+from zope.app.form.interfaces import (
+    ConversionError,
+    IDisplayWidget,
+    IInputWidget,
+    InputErrors,
+    WidgetInputError,
+    )
+from zope.app.form.utility import setUpWidget
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema.interfaces import (
+    InvalidValue,
+    ValidationError,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import URIField
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.app.browser.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import VocabularyPickerWidget
-from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
-from lp.app.errors import NotFoundError, UnexpectedFormData
+from canonical.widgets.textwidgets import (
+    StrippedTextWidget,
+    URIWidget,
+    )
+from lp.app.browser.tales import TeamFormatterAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.fields import URIField
 
 
 class BugTaskAssigneeWidget(Widget):
@@ -44,7 +76,7 @@ class BugTaskAssigneeWidget(Widget):
     implements(IInputWidget)
 
     __call__ = ViewPageTemplateFile(
-        "../launchpad/templates/bugtask-assignee-widget.pt")
+        "templates/bugtask-assignee-widget.pt")
 
     def __init__(self, context, vocabulary, request):
         Widget.__init__(self, context, request)
