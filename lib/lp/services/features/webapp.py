@@ -16,21 +16,6 @@ from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.propertycache import cachedproperty
 
-#        Currently supports the following scopes:
-#         - default
-#         - server.lpnet etc (thunks through to the config is_lpnet)
-#         - pageid:
-#           This scope works on a namespace model: for a page
-#           with pageid SomeType:+view#subselector
-#           The following page ids scopes will match:
-#             - pageid:   (but use 'default' as it is simpler)
-#             - pageid:SomeType
-#             - pageid:SomeType:+view
-#             - pageid:SomeType:+view#subselector
-#         - team:
-#           This scope looks up a team. For instance
-#             - team:launchpad-beta-users
-
 
 class DefaultScope():
     """A scope handler for the default scope."""
@@ -38,9 +23,13 @@ class DefaultScope():
     def __init__(self, request):
         self.request = request
 
+    def match(self, scope_name):
+        """Is the given scope name the default scope?"""
+        return scope_name == 'default'
+
     def lookup(self, scope_name):
-        """The default scope.  Matches only the string "default"."""
-        return scope_name == 'default' or None
+        """The default scope is always true."""
+        return True
 
 
 class PageScope():
@@ -49,8 +38,12 @@ class PageScope():
     def __init__(self, request):
         self.request = request
 
+    def match(self, scope_name):
+        """Is the given scope name a page scope?"""
+        return scope_name.startswith('pageid:')
+
     def lookup(self, scope_name):
-        """Is the given scope a matching pageid?
+        """Is the given scope match the current pageid?
 
         pageid scopes are written as 'pageid:' + the pageid to match.
         Page ids are treated as a namespace with : and # delimiters.
@@ -60,8 +53,6 @@ class PageScope():
         Foo:Bar
         Foo#quux
         """
-        if not scope_name.startswith('pageid:'):
-            return None
         pageid_scope = scope_name[len('pageid:'):]
         scope_segments = self._pageid_to_namespace(pageid_scope)
         request_segments = self._request_pageid_namespace
@@ -93,6 +84,10 @@ class TeamScope():
     def __init__(self, request):
         self.request = request
 
+    def match(self, scope_name):
+        """Is the given scope name a team scope?"""
+        return scope_name.startswith('team:')
+
     def lookup(self, scope_name):
         """Is the given scope a team membership?
 
@@ -105,8 +100,6 @@ class TeamScope():
         E.g. the scope 'team:launchpad-beta-users' will match members of
         the team 'launchpad-beta-users'.
         """
-        if not scope_name.startswith('team:'):
-            return None
         team_name = scope_name[len('team:'):]
         person = getUtility(ILaunchBag).user
         if person is None:
@@ -120,10 +113,13 @@ class ServerScope():
     def __init__(self, request):
         self.request = request
 
+
+    def match(self, scope_name):
+        """Is the given scope name a server scope?"""
+        return scope_name.startswith('server.')
+
     def lookup(self, scope_name):
         """Match the current server as a scope."""
-        if not scope_name.startswith('server.'):
-            return None
         server_name = scope_name.split('.', 1)[1]
         try:
             return canonical.config.config['launchpad']['is_' + server_name]
@@ -132,14 +128,17 @@ class ServerScope():
         return False
 
 
+# These are the handlers for all of the allowable scopes.  Any new scope will
+# need a scope handler and that scope handler has to be added to this list.
+HANDLERS = [DefaultScope, PageScope, TeamScope, ServerScope]
+
+
 class ScopesFromRequest():
     """Identify feature scopes based on request state."""
 
-    handler_factories = [DefaultScope, PageScope, TeamScope, ServerScope]
-
     def __init__(self, request):
         self.request = request
-        self.handlers = [f(request) for f in self.handler_factories]
+        self.handlers = [f(request) for f in HANDLERS]
 
     def lookup(self, scope_name):
         """Determine if scope_name applies to this request.
@@ -149,12 +148,20 @@ class ScopesFromRequest():
         the current request or the handlers are exhuasted, in which case the
         scope name is not a match.
         """
-        results = [handler.lookup(scope_name) for handler in self.handlers]
-        if True in results:
-            return True
-        if False in results:
-            return False
-        raise LookupError('Unknown scope: %r' % (scope_name,))
+        found_a_handler = False
+        for handler in self.handlers:
+            if handler.match(scope_name):
+                found_a_handler = True
+                if handler.lookup(scope_name):
+                    return True
+
+        # If we didn't find at least one matching handler, then the requested
+        # scope is unknown and we want to alert the caller that they did
+        # something wrong.
+        if not found_a_handler:
+            raise LookupError('Unknown scope: %r.  This can result from a '
+            'typo or perhaps you need to create a new scope handler.'
+            % (scope_name,))
 
 
 def start_request(event):
