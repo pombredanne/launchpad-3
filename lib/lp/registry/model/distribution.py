@@ -19,6 +19,7 @@ from sqlobject import (
     )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
+    And,
     Desc,
     Int,
     Join,
@@ -444,11 +445,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return Store.of(self).find(
             DistributionMirror,
-            distribution=self,
-            content=MirrorContent.ARCHIVE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+            And(
+                DistributionMirror.distribution == self.id,
+                DistributionMirror.content == MirrorContent.ARCHIVE,
+                DistributionMirror.content == True,
+                DistributionMirror.status == MirrorStatus.OFFICIAL,
+                DistributionMirror.official_candidate == True,
+                ))
 
     @property
     def cdimage_mirrors(self):
