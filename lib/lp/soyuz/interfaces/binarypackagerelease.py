@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'IBinaryPackageRelease',
     'IBinaryPackageReleaseDownloadCount',
-    'IBinaryPackageReleaseSet',
     ]
 
 from lazr.restful.declarations import (
@@ -109,18 +108,6 @@ class IBinaryPackageRelease(Interface):
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
         """
-
-
-class IBinaryPackageReleaseSet(Interface):
-    """A set of binary packages"""
-
-    def findByNameInDistroSeries(distroseries, pattern,
-                                  archtag=None, fti=False):
-        """Returns a set of binarypackagereleases that matchs pattern
-        inside a distroseries"""
-
-    def getByNameInDistroSeries(distroseries, name):
-        """Get an BinaryPackageRelease in a DistroSeries by its name"""
 
 
 class IBinaryPackageReleaseDownloadCount(Interface):

@@ -542,7 +542,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                           'SourcePackageRelease'])
 
         estimated_duration = None
-        if completed_builds.count() > 0:
+        if bool(completed_builds):
             # Historic build data exists, use the most recent value -
             # assuming it has valid data.
             most_recent_build = completed_builds[0]
@@ -569,7 +569,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return estimated_duration
 
     def verifySuccessfulUpload(self):
-        return self.binarypackages.count() > 0
+        return bool(self.binarypackages)
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`.

@@ -369,6 +369,7 @@ This is for a team:
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
+>>> check("/~name18/+newpoll", auth=True)
 >>> check("/~name16/+rdf")
 >>> check("/~name18/+rdf")
 
@@ -403,7 +404,6 @@ mark owns many packages, so he's a better test for some pages:
 >>> check("/builders")
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 
 >>> check_redirect("/support/", status=301)
 

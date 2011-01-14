@@ -1,14 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
-    'MessageSharingMerge'
+    'MessageSharingMerge',
     ]
 
 
-import os
-
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -79,7 +78,7 @@ def merge_translationtemplateitems(subordinate, representative,
 
     This adds all of the subordinate's TranslationTemplateItems to the
     representative's set of TranslationTemplateItems.
-    
+
     Any duplicates are deleted, so after this, the subordinate will no
     longer have any TranslationTemplateItems.
     """
@@ -105,8 +104,8 @@ def filter_clashes(clashing_current, clashing_imported, twin):
 
     Takes the three forms of clashes a message can have in a context
     it's being merged into:
-     * Another message that also has the is_current flag.
-     * Another message that also has the is_imported flag.
+     * Another message that also has the is_current_ubuntu flag.
+     * Another message that also has the is_current_upstream flag.
      * Another message with the same translations.
 
     If either of the first two clashes matches the third, that is not a
@@ -128,32 +127,41 @@ def sacrifice_flags(message, incumbents=None):
 
     :param message: a `TranslationMessage` to drop flags on.
     :param incumbents: a sequence of reference messages.  If any of
-        these has either is_current or is_imported set, that same
-        flag will be dropped on message (if set).
+        these has either is_current_ubuntu or is_current_upstream set, that
+        same flag will be dropped on message (if set).
     """
     if incumbents:
         for incumbent in incumbents:
-            if incumbent is not None and incumbent.is_current:
-                message.is_current = False
-            if incumbent is not None and incumbent.is_imported:
-                message.is_imported = False
+            if incumbent is not None and incumbent.is_current_ubuntu:
+                message.is_current_ubuntu = False
+            if incumbent is not None and incumbent.is_current_upstream:
+                message.is_current_upstream = False
 
 
 def bequeathe_flags(source_message, target_message, incumbents=None):
     """Destroy `source_message`, leaving flags to `target_message`.
 
-    If `source_message` holds the is_current flag, and there are no
+    If `source_message` holds the is_current_ubuntu flag, and there are no
     `incumbents` that hold the same flag, then `target_message` inherits
-    it.  Similar for the is_imported flag.
+    it.  Similar for the is_current_upstream flag.
     """
     sacrifice_flags(source_message, incumbents)
 
-    if source_message.is_current and not target_message.is_current:
-        source_message.is_current = False
-        target_message.is_current = True
-    if source_message.is_imported and not target_message.is_imported:
-        source_message.is_imported = False
-        target_message.is_imported = True
+    if (source_message.is_current_ubuntu and
+        not target_message.is_current_ubuntu):
+        # Transfer is_current_ubuntu flag.
+        source_message.is_current_ubuntu = False
+        target_message.is_current_ubuntu = True
+        Store.of(source_message).add_flush_order(
+            source_message, target_message)
+
+    if (source_message.is_current_upstream and
+        not target_message.is_current_upstream):
+        # Transfer is_current_upstream flag.
+        source_message.is_current_upstream = False
+        target_message.is_current_upstream = True
+        Store.of(source_message).add_flush_order(
+            source_message, target_message)
 
     source_message.destroySelf()
 
@@ -450,8 +458,7 @@ class MessageSharingMerge(LaunchpadScript):
         """Get list of ids for `template`'s `POTMsgSet`s."""
         return [
             potmsgset.id
-            for potmsgset in template.getPOTMsgSets(False, prefetch=False)
-            ]
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False)]
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
@@ -497,8 +504,7 @@ class MessageSharingMerge(LaunchpadScript):
         tm = removeSecurityProxy(tm)
         msgstr_ids = tuple([
             getattr(tm, 'msgstr%dID' % form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
-            ])
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
 
         return (tm.potemplateID, tm.languageID) + msgstr_ids
 
@@ -590,14 +596,14 @@ class MessageSharingMerge(LaunchpadScript):
             identical to the one you passed in, if present.
         """
         clashing_current = None
-        if message.is_current:
+        if message.is_current_ubuntu:
             found = target_potmsgset.getCurrentTranslationMessage(
                 potemplate=target_potemplate, language=message.language)
             if found is not None and found.potemplate == target_potemplate:
                 clashing_current = found
 
         clashing_imported = None
-        if message.is_imported:
+        if message.is_current_upstream:
             found = target_potmsgset.getImportedTranslationMessage(
                 potemplate=target_potemplate, language=message.language)
             if found is not None and found.potemplate == target_potemplate:

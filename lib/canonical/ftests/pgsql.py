@@ -7,6 +7,7 @@ Test harness for tests needing a PostgreSQL backend.
 
 __metaclass__ = type
 
+import atexit
 import os
 import random
 import time
@@ -267,6 +268,10 @@ rw_main_slave:  dbname=%s
                         "CREATE DATABASE %s TEMPLATE=%s "
                         "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
+                    # Try to ensure our cleanup gets invoked, even in
+                    # the face of adversity such as the test suite
+                    # aborting badly.
+                    atexit.register(self.dropDb)
                     break
                 except psycopg2.DatabaseError, x:
                     if counter == attempts - 1:

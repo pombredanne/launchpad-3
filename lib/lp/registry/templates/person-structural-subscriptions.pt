@@ -24,13 +24,53 @@
         <div class="portlet" id="structural-subscriptions">
 
           <ul tal:condition="structural_subscriptions">
-            <li tal:repeat="subscription structural_subscriptions">
+            <li tal:repeat="subscription structural_subscriptions"
+                style="margin: 1em 0em; padding: 1em; border: 1px solid #ddd;">
               <span tal:replace="structure subscription/target/fmt:link" />
               <a tal:condition="view/canUnsubscribeFromBugTasks"
                  tal:attributes="href subscription/target/fmt:url/+subscribe;
                                  title string:Modify subscription to ${subscription/target/title};">
                 <img src="/@@/edit" />
               </a>
+              <div style="padding: 1em 1em 0em 1em"
+                   tal:define="bug_filters python:list(subscription.bug_filters)">
+                <tal:filtered condition="bug_filters">
+                  <p>
+                    Bug mail for <span
+                    tal:content="subscription/subscriber/fmt:displayname"
+                    /> about <span
+                    tal:content="subscription/target/displayname" />
+                    is filtered; it will be sent only if it matches
+                    <tal:one-filter condition="python: len(bug_filters) == 1">
+                      the following filter:
+                    </tal:one-filter>
+                    <tal:multiple-filters condition="python: len(bug_filters) > 1">
+                      one or more of the following filters:
+                    </tal:multiple-filters>
+                  </p>
+                  <dl>
+                    <tal:definitions
+                        repeat="bug_filter bug_filters"
+                        content="structure bug_filter/@@+definition" />
+                  </dl>
+                </tal:filtered>
+                <tal:unfiltered condition="not:bug_filters">
+                  <p>
+                    Bug mail is <b>not</b> filtered; mail for <span
+                    tal:content="subscription/subscriber/fmt:displayname" />
+                    about
+                    <span tal:content="subscription/target/displayname" />
+                    will always be sent.
+                  </p>
+                </tal:unfiltered>
+                <div style="margin-top: 1em"
+                     tal:condition="subscription/required:launchpad.Edit">
+                  <a class="sprite add new-filter"
+                     tal:attributes="href subscription/fmt:url/+new-filter">
+                    Create a new filter
+                  </a>
+                </div>
+              </div>
             </li>
           </ul>
 

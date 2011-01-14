@@ -18,7 +18,10 @@
     <form method="get" name="filter" id="filter_form"
           style="padding-bottom: 0.5em"
           tal:attributes="action view/form_action|request/URL">
-      Select the number of recently completed builds to display:
+      Show packages with a successful recipe <a
+        href="https://help.launchpad.net/Packaging/SourceBuilds/GettingStarted"
+        class="sprite maybe"
+        >&nbsp;<span class="invisible-link">Tag help</span></a>build
       <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
       <noscript>
         <input type="submit" value="Filter"/>

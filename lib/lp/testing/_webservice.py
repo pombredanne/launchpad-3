@@ -115,7 +115,7 @@ def launchpadlib_credentials_for(
 
 
 def _clean_up_cache(cache):
-    """"Clean up a temporary launchpadlib cache directory."""
+    """Clean up a temporary launchpadlib cache directory."""
     shutil.rmtree(cache, ignore_errors=True)
 
 
@@ -145,15 +145,16 @@ def launchpadlib_for(
     version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
-    return Launchpad(credentials, service_root, version=version, cache=cache)
+    return Launchpad(credentials, None, None, service_root=service_root,
+                     version=version, cache=cache)
 
 
 class QueryCollector:
     """Collect database calls made in web requests.
 
     These are only retrievable at the end of a request, and for tests it is
-    useful to be able to make aassertions about the calls made during a request
-    : this class provides a tool to gather them in a simple fashion.
+    useful to be able to make aassertions about the calls made during a
+    request: this class provides a tool to gather them in a simple fashion.
 
     :ivar count: The count of db queries the last web request made.
     :ivar queries: The list of queries made. See

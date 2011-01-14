@@ -168,7 +168,7 @@
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
-        <pre tal:content="context/builder_recipe" />
+        <pre tal:content="context/recipe_text" />
       </div>
     </div>
   </div>
