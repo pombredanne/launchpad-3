@@ -143,17 +143,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             yield item
 
 
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
-
-
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
     """Navigation menu for sourcepackage recipes."""
 

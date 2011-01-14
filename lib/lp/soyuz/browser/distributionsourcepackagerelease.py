@@ -12,23 +12,17 @@ __all__ = [
 
 import operator
 
-from zope.component import getUtility
-
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
-    canonical_url,
     LaunchpadView,
     Navigation,
-    stepthrough,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.build import BuildNavigationMixin
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -42,33 +36,9 @@ class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
         return self.context.version
 
 
-class DistributionSourcePackageReleaseNavigation(Navigation):
+class DistributionSourcePackageReleaseNavigation(Navigation,
+                                                 BuildNavigationMixin):
     usedfor = IDistributionSourcePackageRelease
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
-
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build_job = getUtility(IBuildFarmJobSet).getByID(build_id)
-            return build_job.getSpecificJob()
-        except NotFoundError:
-            return None
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):

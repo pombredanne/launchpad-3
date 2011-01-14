@@ -1209,9 +1209,6 @@
         module="lp.code.browser.sourcepackagerecipebuild"/>
 
     <browser:navigation
-        module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation" />
-    <browser:navigation
         module="lp.code.browser.sourcepackagerecipebuild"
         classes="SourcePackageRecipeBuildNavigation" />
 
