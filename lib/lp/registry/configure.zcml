@@ -10,6 +10,7 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
+    <authorizations module=".security" />
     <include
         file="vocabularies.zcml"/>
     <include
@@ -1862,10 +1863,13 @@
     <class
         class="lp.registry.model.structuralsubscription.StructuralSubscription">
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
         <require
-            permission="zope.Public"
-            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
     </class>
 
     <!-- PersonNotification -->

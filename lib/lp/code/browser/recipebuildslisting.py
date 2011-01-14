@@ -31,7 +31,7 @@ class RecipeBuildFilter(EnumeratedType):
     """Choices for how to filter recipe build listings."""
 
     ALL = Item("""
-        all
+        at any time
 
         Show all most recently completed recipe builds.
         """)
@@ -69,7 +69,7 @@ class CompletedDailyBuildsView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return 'Most Recently Completed Daily Recipe Builds'
+        return 'Packages Built Daily With Recipes'
 
     def initialize(self):
         LaunchpadFormView.initialize(self)

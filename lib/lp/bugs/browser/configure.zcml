@@ -1183,6 +1183,27 @@
           path_expression="string:+filter/${id}"
           attribute_to_parent="structural_subscription"
           rootsite="bugs" />
+      <browser:page
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterView"
+          template="../templates/bug-subscription-filter.pt"
+          permission="launchpad.View"
+          name="+definition" />
+      <browser:page
+          for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterEditView"
+          template="../../app/templates/generic-edit.pt"
+          permission="launchpad.Edit"
+          name="+edit" />
+      <browser:page
+          for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterCreateView"
+          template="../../app/templates/generic-edit.pt"
+          permission="launchpad.View"
+          name="+new-filter" />
     </facet>
+
+    <!-- Widgets -->
+    <include package=".widgets"/>
 
 </configure>
