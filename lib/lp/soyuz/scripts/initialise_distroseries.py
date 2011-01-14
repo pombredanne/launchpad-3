@@ -89,7 +89,7 @@ class InitialiseDistroSeries:
         pending_builds = self.parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-        if pending_builds.count():
+        if pending_builds.any():
             raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
@@ -114,16 +114,16 @@ class InitialiseDistroSeries:
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if sources.count():
+        if bool(sources):
             raise InitialisationError(error)
         binaries = self.distroseries.getAllPublishedBinaries()
-        if binaries.count():
+        if bool(binaries):
             raise InitialisationError(error)
-        if self.distroseries.architectures.count():
+        if bool(self.distroseries.architectures):
             raise InitialisationError(error)
-        if len(self.distroseries.components):
+        if bool(self.distroseries.components):
             raise InitialisationError(error)
-        if self.distroseries.sections.count():
+        if bool(self.distroseries.sections):
             raise InitialisationError(error)
 
     def initialise(self):

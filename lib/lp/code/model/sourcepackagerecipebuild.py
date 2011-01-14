@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import logging
 import sys
 
 from psycopg2 import ProgrammingError
@@ -153,7 +154,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % self.recipe.base_branch.unique_name
+        if self.recipe is None:
+            return 'build for deleted recipe'
+        else:
+            branch_name = self.recipe.base_branch.unique_name
+            return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester):
         """Construct a SourcePackageRecipeBuild."""
@@ -186,25 +191,30 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        if logger is None:
+            logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            logger.debug(
+                'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
             for distroseries in recipe.distroseries:
+                series_name = distroseries.named_version
                 try:
                     build = recipe.requestBuild(
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
+                    logger.debug(
+                        ' - build already pending for %s', series_name)
                     continue
                 except ProgrammingError:
                     raise
                 except:
+                    logger.exception(' - problem with %s', series_name)
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
-                    if logger is not None:
-                        logger.debug(
-                            'Build for %s/%s requested',
-                            recipe.owner.name, recipe.name)
+                    logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
             recipe.is_stale = False
         return builds
