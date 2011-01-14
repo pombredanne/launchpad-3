@@ -43,6 +43,7 @@ UNEDITABLE_BUILD_STATES = (
     BuildStatus.SUPERSEDED,
     BuildStatus.FAILEDTOUPLOAD,)
 
+
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
     usedfor = ISourcePackageRecipeBuild

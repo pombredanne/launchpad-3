@@ -52,10 +52,24 @@ from lp.testing import (
     BrowserTestCase,
     login,
     person_logged_in,
+    TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
+
+
+class TestCanonicalUrlForRecipe(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='recipe-owner')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'recipe-name')
+        self.assertEqual(
+            'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
+            canonical_url(recipe))
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -1237,8 +1251,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1268,8 +1281,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Successfully built
