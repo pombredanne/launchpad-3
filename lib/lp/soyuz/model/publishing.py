@@ -1308,7 +1308,7 @@ class PublishingSet:
                 version=binarypackagerelease.version,
                 status=active_publishing_status, pocket=pocket,
                 distroarchseries=distroarchseries)
-            if binaries_in_destination.count() == 0:
+            if not bool(binaries_in_destination):
                 published_binaries.append(
                     getUtility(IPublishingSet).newBinaryPublication(
                         archive, binarypackagerelease, arch, component,
