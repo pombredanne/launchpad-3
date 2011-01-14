@@ -1296,7 +1296,7 @@ class PublishingSet:
                     status=active_publishing_status, pocket=pocket,
                     distroarchseries=distroarchseries)
 
-                if binary_in_destination.count() == 0:
+                if not bool(binary_in_destination):
                     pub = self.newBinaryPublication(
                         archive, binarypackagerelease, distroarchseries,
                         binary.component, binary.section, binary.priority,
@@ -1870,7 +1870,7 @@ class PublishingSet:
                 name=package_name, exact_match=True, pocket=pocket,
                 status=status, distroseries=distroseries)
 
-        if ancestries.count() > 0:
+        try:
             return ancestries[0]
-
-        return None
+        except IndexError:
+            return None

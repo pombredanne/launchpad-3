@@ -360,7 +360,7 @@ class PackageUpload(SQLBase):
     def _giveKarma(self):
         """Assign karma as appropriate for an accepted upload."""
         # Give some karma to the uploader for source uploads only.
-        if self.sources.count() == 0:
+        if not bool(self.sources):
             return
 
         changed_by = self.sources[0].sourcepackagerelease.creator
@@ -473,8 +473,8 @@ class PackageUpload(SQLBase):
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
         return ((self.sources.count() == 1) and
-                (self.builds.count() == 0) and
-                (self.customfiles.count() == 0))
+                (not bool(self.builds)) and
+                (not bool(self.customfiles)))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -591,9 +591,9 @@ class PackageUpload(SQLBase):
         and I am hence introducing this non-cached variant for
         usage inside the content class.
         """
-        if self.sources is not None and self.sources.count() > 0:
+        if self.sources is not None and bool(self.sources):
             return self.sources[0].sourcepackagerelease
-        elif self.builds is not None and self.builds.count() > 0:
+        elif self.builds is not None and bool(self.builds):
             return self.builds[0].build.source_package_release
         else:
             return None
@@ -1387,7 +1387,7 @@ class PackageUpload(SQLBase):
                     section=new_section,
                     priority=new_priority)
 
-        return self.builds.count() > 0
+        return bool(self.builds)
 
 
 class PackageUploadBuild(SQLBase):
@@ -1532,9 +1532,10 @@ class PackageUploadSource(SQLBase):
                 name=self.sourcepackagerelease.name,
                 distroseries=distroseries, pocket=pocket,
                 exact_match=True)
-            if ancestries.count() == 0:
+            try:
+                ancestry = ancestries[0]
+            except IndexError:
                 continue
-            ancestry = ancestries[0]
             break
         return ancestry
 

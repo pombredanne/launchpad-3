@@ -13,16 +13,12 @@ __all__ = [
     ]
 
 
-from canonical.config import config
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     )
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
 
 
 class HasRecipesMenuMixin:
