@@ -257,7 +257,6 @@ class TestPullerMonitorProtocol(ProcessTestsMixin, TestCase):
     def setUp(self):
         self.listener = self.StubPullerListener()
         super(TestPullerMonitorProtocol, self).setUp()
-        TestCase.setUp(self)
 
     def assertProtocolSuccess(self):
         """Assert that the protocol saw no unexpected errors."""

@@ -38,13 +38,7 @@ from canonical.launchpad.database.librarian import (
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.product import (
-    Product,
-    ProductWithLicenses,
-    )
-from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
@@ -112,10 +106,18 @@ class TranslationGroup(SQLBase):
 
     @property
     def products(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+
         return Product.selectBy(translationgroup=self.id, active=True)
 
     @property
     def projects(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         return ProjectGroup.selectBy(translationgroup=self.id, active=True)
 
     # A limit of projects to get for the `top_projects`.
@@ -181,6 +183,12 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import (
+            Product,
+            ProductWithLicenses,
+            )
+
         using = [
             Product,
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
@@ -205,6 +213,9 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         using = [
             ProjectGroup,
             LeftJoin(
@@ -227,6 +238,9 @@ class TranslationGroup(SQLBase):
 
     def fetchDistrosForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
         using = [
             Distribution,
             LeftJoin(

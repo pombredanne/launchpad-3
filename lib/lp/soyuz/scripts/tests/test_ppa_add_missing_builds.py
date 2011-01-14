@@ -12,8 +12,8 @@ from canonical.database.sqlbase import (
     clear_current_connection_cache,
     flush_database_updates,
     )
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -71,7 +71,7 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
     def getScript(self):
         """Return an instance of the script object."""
         script = PPAMissingBuilds("test", test_args=[])
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         return script
 
     def getBuilds(self):

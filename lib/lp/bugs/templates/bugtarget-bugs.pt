@@ -155,7 +155,7 @@
         </table>
         <p id="more-hot-bugs"
            tal:condition="view/hot_bugs_info/has_more_bugs">
-          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">See all hot bugs</a>
+          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">Show all bugs by heat</a>
         </p>
       </div>
 

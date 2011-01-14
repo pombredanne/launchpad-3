@@ -24,7 +24,7 @@ For example, let's say No Privileges Person wants to contact Salgado...
 ...No Priv would start by going to Salgado's +contactuser page.
 
     >>> from canonical.launchpad.ftests import login
-    >>> login(no_priv.preferredemail.email)
+    >>> login_person(no_priv)
     >>> view = create_view(no_priv, salgado)
 
 This contact is allowed.

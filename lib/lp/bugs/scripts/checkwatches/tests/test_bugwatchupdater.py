@@ -25,7 +25,9 @@ from lp.testing import TestCaseWithFactory
 
 
 def make_bug_watch_updater(checkwatches_master, bug_watch,
-                           external_bugtracker, server_time=None):
+                           external_bugtracker, server_time=None,
+                           can_import_comments=False,
+                           can_push_comments=False, can_back_link=False):
     """Helper function to create a BugWatchUpdater instance."""
     if server_time is None:
         server_time = datetime.now()
@@ -33,9 +35,16 @@ def make_bug_watch_updater(checkwatches_master, bug_watch,
     remote_bug_updater = checkwatches_master.remote_bug_updater_factory(
         checkwatches_master, external_bugtracker, bug_watch.remotebug,
         [bug_watch.id], [], server_time)
-    return BugWatchUpdater(
+
+    bug_watch_updater = BugWatchUpdater(
         remote_bug_updater, bug_watch,
         remote_bug_updater.external_bugtracker)
+
+    bug_watch_updater.can_import_comments = can_import_comments
+    bug_watch_updater.can_push_comments = can_push_comments
+    bug_watch_updater.can_back_link = can_back_link
+
+    return bug_watch_updater
 
 
 class BrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
@@ -100,8 +109,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
 
         bug_watch_updater.updateBugWatch(
             'FIXED', BugTaskStatus.FIXRELEASED, 'LOW',
-            BugTaskImportance.LOW, can_import_comments=False,
-            can_push_comments=False, can_back_link=False)
+            BugTaskImportance.LOW)
 
         self.assertEqual('FIXED', self.bug_watch.remotestatus)
         self.assertEqual(BugTaskStatus.FIXRELEASED, self.bug_task.status)
@@ -119,12 +127,12 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
         bug_watch_updater = make_bug_watch_updater(
-            self.checkwatches_master, self.bug_watch, external_bugtracker)
+            self.checkwatches_master, self.bug_watch, external_bugtracker,
+            can_import_comments=True)
 
         bug_watch_updater.updateBugWatch(
             'FIXED', BugTaskStatus.FIXRELEASED, 'LOW',
-            BugTaskImportance.LOW, can_import_comments=True,
-            can_push_comments=False, can_back_link=False)
+            BugTaskImportance.LOW)
 
         self._checkLastErrorAndMessage(
             BugWatchActivityStatus.COMMENT_IMPORT_FAILED,
@@ -136,15 +144,15 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
         bug_watch_updater = make_bug_watch_updater(
-            self.checkwatches_master, self.bug_watch, external_bugtracker)
+            self.checkwatches_master, self.bug_watch, external_bugtracker,
+            can_push_comments=True)
 
         self.factory.makeBugComment(
             bug=self.bug_task.bug, bug_watch=self.bug_watch)
 
         bug_watch_updater.updateBugWatch(
             'FIXED', BugTaskStatus.FIXRELEASED, 'LOW',
-            BugTaskImportance.LOW, can_import_comments=False,
-            can_push_comments=True, can_back_link=False)
+            BugTaskImportance.LOW)
 
         self._checkLastErrorAndMessage(
             BugWatchActivityStatus.COMMENT_PUSH_FAILED,
@@ -156,12 +164,12 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
         bug_watch_updater = make_bug_watch_updater(
-            self.checkwatches_master, self.bug_watch, external_bugtracker)
+            self.checkwatches_master, self.bug_watch, external_bugtracker,
+            can_back_link=True)
 
         bug_watch_updater.updateBugWatch(
             'FIXED', BugTaskStatus.FIXRELEASED, 'LOW',
-            BugTaskImportance.LOW, can_import_comments=False,
-            can_push_comments=False, can_back_link=True)
+            BugTaskImportance.LOW)
 
         self._checkLastErrorAndMessage(
             BugWatchActivityStatus.BACKLINK_FAILED,

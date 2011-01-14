@@ -15,12 +15,12 @@ from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import (
     login,
     )
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     BugzillaRemoteComponentScraper,
     dictFromCSV,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
@@ -125,7 +125,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
                 }
             }
         finder = BugzillaRemoteComponentFinder(
-            logger=QuietFakeLogger())
+            logger=BufferLogger())
         finder.storeRemoteProductsAndComponents(
             bz_bugtracker, lp_bugtracker)
 
@@ -152,7 +152,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
         page_text = read_test_file("bugzilla-fdo-advanced-query.html")
         finder = BugzillaRemoteComponentFinder(
-            logger=QuietFakeLogger(),
+            logger=BufferLogger(),
             static_bugzilla_text=page_text)
         finder.getRemoteProductsAndComponents(bugtracker_name="fdo-example")
 

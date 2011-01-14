@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1210,7 +1210,7 @@ class Archive(SQLBase):
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
-        return permissions.count() > 0
+        return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
         """See `IArchive`."""
@@ -1311,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
@@ -1715,7 +1716,7 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
-    
+
     @classmethod
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1732,13 +1733,17 @@ class Archive(SQLBase):
         except NoSuchPPA:
             return None
         else:
-            return "You already have a PPA named '%s'." % proposed_name
+            text = "You already have a PPA named '%s'." % proposed_name
+            if person.isTeam():
+                text = "%s already has a PPA named '%s'." % (
+                    person.displayname, proposed_name)
+            return text
 
     def getPockets(self):
         """See `IArchive`."""
         if self.is_ppa:
             return [PackagePublishingPocket.RELEASE]
-        
+
         # Cast to a list so we don't trip up with the security proxy not
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
@@ -1930,7 +1935,8 @@ class ArchiveSet:
             return 0
         return int(size)
 
-    def getPPAOwnedByPerson(self, person, name=None):
+    def getPPAOwnedByPerson(self, person, name=None, statuses=None,
+                            has_packages=False):
         """See `IArchiveSet`."""
         # See Person._all_members which also directly queries this.
         store = Store.of(person)
@@ -1939,6 +1945,11 @@ class ArchiveSet:
             Archive.owner == person]
         if name is not None:
             clause.append(Archive.name == name)
+        if statuses is not None:
+            clause.append(Archive.status.is_in(statuses))
+        if has_packages:
+            clause.append(
+                    SourcePackagePublishingHistory.archive == Archive.id)
         result = store.find(Archive, *clause).order_by(Archive.id).first()
         if name is not None and result is None:
             raise NoSuchPPA(name)

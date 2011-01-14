@@ -19,7 +19,6 @@ The user sees a table with four columns with headings, with five POFiles
 listed which Carlos has contributed to.
 
     # Prints a heading and formatted list of POFiles and latest submissions.
-    >>> import re
     >>> def print_activity_list(listing):
     ...     for row in listing.findAll('tr'):
     ...         print extract_text(row)
@@ -42,7 +41,8 @@ listed which Carlos has contributed to.
 Clicking one of the entries takes you to a page listing all of Carlos'
 contributions to the selected translation.
 
-    >>> alsa_utils_link = 'Spanish (es) translation of alsa-utils in alsa-utils trunk'
+    >>> alsa_utils_link = (
+    ...     'Spanish (es) translation of alsa-utils in alsa-utils trunk')
     >>> anon_browser.getLink(alsa_utils_link).click()
     >>> print anon_browser.title
     Translations by ... in...Spanish (es) translation...
@@ -58,7 +58,9 @@ For instance, here's a user called a+b.
 
     >>> login('carlos@canonical.com')
     >>> ab = factory.makePerson(name='a+b')
-    >>> message = factory.makeTranslationMessage(translator=ab)
+    >>> sr_pofile = factory.makePOFile('sr')
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile=sr_pofile, translator=ab)
     >>> person_url = canonical_url(ab, rootsite='translations')
     >>> logout()
 

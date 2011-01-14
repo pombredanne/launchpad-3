@@ -181,7 +181,7 @@ builds list is presented.
     >>> no_priv_browser.getControl("Filter").click()
 
     >>> check_urls(no_priv_browser, builds_links,
-    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
+    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/31')
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
     >>> no_priv_browser.open(
@@ -208,7 +208,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
     i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person : No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
-    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
+    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/31')
     test-bin_1.0_i386.changes:    OK
     buildlog_...txt.gz:           OK
     upload_..._log.txt:           OK
@@ -276,7 +276,7 @@ and 'content-type' to 'gzip' and 'text/plain', respectively.
     >>> buildlog_content = buildlog.read()
     >>> buildlog_size = str(buildlog.content.filesize)
     >>> buildlog_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/p3a/+build/%d/+files/%s' %
+    ...     'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/%d/+files/%s' %
     ...     (build.id, buildlog.filename))
 
     >>> diff_content = package_diff.diff_content.read()
@@ -380,12 +380,12 @@ redirect to the files for the default named PPA.
     Location: http://localhost/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
     ...
 
-The same redirection happens for +archive/+build/blah urls:
+The same redirection happens for +archive/+buildjob/blah urls:
 
     >>> buildlog_lp_url_without_ppa_name = buildlog_lp_url.replace(
     ...     '/p3a', '')
     >>> print buildlog_lp_url_without_ppa_name
-    http://.../~no-priv/+archive/+build/31/+files/...
+    http://.../~no-priv/+archive/+buildjob/31/+files/...
 
     >>> print http(r"""
     ... GET %s HTTP/1.1
@@ -393,7 +393,7 @@ The same redirection happens for +archive/+build/blah urls:
     ...     'http://launchpad.dev', ''))
     HTTP/1.1 301 Moved Permanently
     ...
-    Location: http://.../~no-priv/+archive/ppa/+build/31/+files/...
+    Location: http://.../~no-priv/+archive/ppa/+buildjob/31/+files/...
     ...
 
 
@@ -465,7 +465,7 @@ the page.
     ...
     Include the error ID OOPS-...
     ...
-    DeletedProxiedLibraryFileAlias:
-    Object: u'test-pkg_1.0.dsc', name: &lt;Archive at
+    NotFound:
+    Object: &lt;Archive at ...&gt;, name: u'test-pkg_1.0.dsc'...
     ...
 

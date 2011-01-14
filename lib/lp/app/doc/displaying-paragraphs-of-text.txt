@@ -229,13 +229,13 @@ links:
     <a href="/bugs/123">bug    123</a><br />
     <a href="/bugs/123">bug #123</a><br />
     <a href="/bugs/123">bug number 123</a><br />
-    <a href="/bugs/123">bug number. 123</a><br />
+    bug number. 123<br />
     <a href="/bugs/123">bug num 123</a><br />
     <a href="/bugs/123">bug num. 123</a><br />
     <a href="/bugs/123">bug no 123</a><br />
     <a href="/bugs/123">bug report 123</a><br />
     <a href="/bugs/123">bug no. 123</a><br />
-    <a href="/bugs/123">bug#123</a><br />
+    bug#123<br />
     <a href="/bugs/123">bug-123</a><br />
     <a href="/bugs/123">bug-report-123</a><br />
     <a href="/bugs/123">bug=123</a><br />

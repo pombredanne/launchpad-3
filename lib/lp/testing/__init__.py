@@ -57,6 +57,7 @@ from inspect import (
     isclass,
     ismethod,
     )
+import logging
 import os
 from pprint import pformat
 import re
@@ -71,6 +72,7 @@ from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
+from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -154,10 +156,10 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
-    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
 
 
@@ -350,6 +352,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
+
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -568,6 +581,13 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.direct_database_server = False
         self._use_bzr_branch_called = False
+        # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
+        # messing with global log state (see
+        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # necessarily equal logging.getLogger('bzr'), so we have to explicitly
+        # make it so in order to avoid "No handlers for "bzr" logger'
+        # messages.
+        trace._bzr_logger = logging.getLogger('bzr')
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -702,9 +722,14 @@ class BrowserTestCase(TestCaseWithFactory):
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
 
-    def getViewBrowser(self, context, view_name=None, no_login=False):
+    def getViewBrowser(self, context, view_name=None, no_login=False,
+                       rootsite=None, user=None):
+        if user is None:
+            user = self.user
+        # Make sure that there is a user interaction in order to generate the
+        # canonical url for the context object.
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name)
+        url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
             from canonical.launchpad.testing.pages import setupBrowser
@@ -712,14 +737,23 @@ class BrowserTestCase(TestCaseWithFactory):
             browser.open(url)
             return browser
         else:
-            return self.getUserBrowser(url, self.user)
+            return self.getUserBrowser(url, user)
 
-    def getMainText(self, context, view_name=None):
+    def getMainContent(self, context, view_name=None, rootsite=None,
+                       no_login=False, user=None):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
+        browser = self.getViewBrowser(
+            context, view_name, rootsite=rootsite, no_login=no_login,
+            user=user)
+        return find_main_content(browser.contents)
+
+    def getMainText(self, context, view_name=None, rootsite=None,
+                    no_login=False, user=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
-        return extract_text(find_main_content(browser.contents))
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(
+            self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
 class WindmillTestCase(TestCaseWithFactory):

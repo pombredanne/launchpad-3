@@ -46,10 +46,11 @@ from smtplib import SMTP
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
 from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.helpers import is_ascii_only
 from canonical.lp import isZopeless
 from lp.services.mail.stub import TestMailer
@@ -155,7 +156,8 @@ def format_address(name, address):
 
 def format_address_for_person(person):
     """Helper function to call format_address for a person."""
-    return format_address(person.displayname, person.preferredemail.email)
+    email_address = removeSecurityProxy(person.preferredemail).email
+    return format_address(person.displayname, email_address)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,

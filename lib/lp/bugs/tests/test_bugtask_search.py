@@ -8,11 +8,11 @@ from datetime import (
     timedelta,
     )
 from new import classobj
-import pytz
 import sys
 from testtools.matchers import Equals
 import unittest
 
+import pytz
 from zope.component import getUtility
 
 from storm.expr import Join
@@ -23,10 +23,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     greater_than,
     )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    )
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
@@ -91,7 +88,8 @@ class SearchTestBase:
         # search result.
         user = self.factory.makePerson()
         with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.subscribe(user, self.owner)
+            bug = self.bugtasks[-1].bug
+            bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 

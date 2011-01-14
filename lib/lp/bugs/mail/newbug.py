@@ -61,13 +61,12 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
         }
 
     if new_recipients:
-        if "assignee" in reason:
+        if "assignee" in reason and event_creator is not None:
             contents += (
-                "You have been assigned a bug task for a %(visibility)s bug")
-            if event_creator is not None:
-                contents += " by %(assigner)s"
-                content_substitutions['assigner'] = (
-                    event_creator.unique_displayname)
+                "%(assigner)s has assigned this bug to you for %(target)s")
+            content_substitutions['assigner'] = (
+                event_creator.unique_displayname)
+            content_substitutions['target'] = bugtask.target.displayname
         else:
             contents += "You have been subscribed to a %(visibility)s bug"
         if subscribed_by is not None:

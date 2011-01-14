@@ -11,12 +11,14 @@ __all__ = [
     'BugListingPortletInfoView',
     'BugListingPortletStatsView',
     'BugNominationsView',
+    'BugsBugTaskSearchListingView',
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
+    'bugtask_heat_html',
+    'BugTaskBreadcrumb',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
-    'BugTaskBreadcrumb',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -25,22 +27,20 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
+    'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
-    'BugTasksAndNominationsView',
-    'bugtask_heat_html',
-    'BugsBugTaskSearchListingView',
     'calculate_heat_display',
-    'NominationsReviewTableBatchNavigatorView',
-    'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'get_visible_comments',
+    'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     ]
 
 import cgi
@@ -48,14 +48,15 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import (
+    chain,
+    groupby,
+    )
 from math import (
     floor,
     log,
     )
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import re
 import urllib
 
@@ -75,7 +76,7 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 from lazr.uri import URI
-import pytz
+from pytz import utc
 from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
@@ -163,16 +164,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from canonical.widgets.bug import BugTagsWidget
-from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget,
-    BugTaskAssigneeWidget,
-    BugTaskBugWatchWidget,
-    BugTaskSourcePackageNameWidget,
-    DBItemDisplayWidget,
-    NewLineToSpacesWidget,
-    NominationReviewActionWidget,
-    )
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
@@ -203,7 +194,20 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
-from lp.bugs.browser.bugcomment import build_comments_from_chunks
+from lp.bugs.browser.bugcomment import (
+    build_comments_from_chunks,
+    group_comments_with_activity,
+    )
+from lp.bugs.browser.widgets.bug import BugTagsWidget
+from lp.bugs.browser.widgets.bugtask import (
+    AssigneeDisplayWidget,
+    BugTaskAssigneeWidget,
+    BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget,
+    DBItemDisplayWidget,
+    NewLineToSpacesWidget,
+    NominationReviewActionWidget,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -812,62 +816,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return comments
 
     @cachedproperty
-    def activity_by_date(self):
-        """Return a dict of `BugActivityItem`s for the current bug.
-
-        The `BugActivityItem`s will be keyed by the date on which they
-        occurred.
-        """
-        activity_by_date = {}
+    def interesting_activity(self):
+        """A sequence of interesting bug activity."""
+        bug_change_re = (
+            'affects|description|security vulnerability|'
+            'summary|tags|visibility')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
-        interesting_changes = [
-             'description',
-             'security vulnerability',
-             'summary',
-             'tags',
-             'visibility',
-             'affects',
-             bugtask_change_re,
-             ]
-
-        # Turn the interesting_changes list into a regex so that we can
-        # do complex matches.
-        interesting_changes_expression = "|".join(interesting_changes)
-        interesting_changes_regex = re.compile(
-            "^(%s)$" % interesting_changes_expression)
-
-        for activity in self.context.bug.activity:
-            # If we're not interested in the change, skip it.
-            if interesting_changes_regex.match(activity.whatchanged) is None:
-                continue
-
-            activity = BugActivityItem(activity)
-            if activity.datechanged not in activity_by_date:
-                activity_by_date[activity.datechanged] = {
-                    activity.target: [activity]}
-            else:
-                activity_dict = activity_by_date[activity.datechanged]
-                if activity.target in activity_dict:
-                    activity_dict[activity.target].append(activity)
-                else:
-                    activity_dict[activity.target] = [activity]
-
-        # Sort all the lists to ensure that changes are written out in
-        # alphabetical order.
-        for date, activity_by_target in activity_by_date.items():
-            # We convert each {target: activity_list} mapping into a list
-            # of {target, activity_list} dicts for the sake of making
-            # them usable in templates.
-            activity_by_date[date] = [{
-                'target': target,
-                'activity': sorted(
-                    activity_list, key=attrgetter('attribute')),
-                }
-                for target, activity_list in activity_by_target.items()]
-
-        return activity_by_date
+        interesting_match = re.compile(
+            "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
+        return tuple(
+            BugActivityItem(activity)
+            for activity in self.context.bug.activity
+            if interesting_match(activity.whatchanged) is not None)
 
     @cachedproperty
     def activity_and_comments(self):
@@ -878,66 +840,82 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         then as if owned by the person who posted the first action
         that day.
 
-        If the number of comments exceeds the configured maximum limit,
-        the list will be truncated to just the first and last sets of
-        comments.  The division between the newest and oldest is marked
-        by an entry in the list with the key 'num_hidden' defined.
-        """
-        activity_and_comments = []
-        activity_log = self.activity_by_date
+        If the number of comments exceeds the configured maximum limit, the
+        list will be truncated to just the first and last sets of comments.
 
+        The division between the most recent and oldest is marked by an entry
+        in the list with the key 'num_hidden' defined.
+        """
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
                < config.malone.comments_list_max_length)
 
-        newest_comments = self.visible_newest_comments_for_display
+        recent_comments = self.visible_recent_comments_for_display
         oldest_comments = self.visible_oldest_comments_for_display
 
-        # Oldest comments and activities
-        for comment in oldest_comments:
-            # Move any corresponding activities into the comment
-            comment.activity = activity_log.pop(comment.datecreated, [])
-            comment.activity.sort(key=itemgetter('target'))
+        event_groups = group_comments_with_activity(
+            comments=chain(oldest_comments, recent_comments),
+            activities=self.interesting_activity)
 
-            activity_and_comments.append({
-                'comment': comment,
-                'date': comment.datecreated,
-                })
+        def group_activities_by_target(activities):
+            activities = sorted(
+                activities, key=attrgetter(
+                    "datechanged", "target", "attribute"))
+            return [
+                {"target": target, "activity": list(activity)}
+                for target, activity in groupby(
+                    activities, attrgetter("target"))]
 
-        # Insert blank if we're showing only a subset of the comment list
-        if len(newest_comments) > 0:
-            activity_and_comments.append({
-                'num_hidden': (len(self.visible_comments)
-                               - len(oldest_comments)
-                               - len(newest_comments)),
-                'date': newest_comments[0].datecreated,
-                })
+        def comment_event_dict(comment):
+            actors = set(activity.person for activity in comment.activity)
+            actors.add(comment.owner)
+            assert len(actors) == 1, actors
+            dates = set(activity.datechanged for activity in comment.activity)
+            dates.add(comment.datecreated)
+            comment.activity = group_activities_by_target(comment.activity)
+            return {
+                "comment": comment,
+                "date": min(dates),
+                "person": actors.pop(),
+                }
 
-        # Most recent comments and activities (if showing a subset)
-        for comment in newest_comments:
-            # Move any corresponding activities into the comment
-            comment.activity = activity_log.pop(comment.datecreated, [])
-            comment.activity.sort(key=itemgetter('target'))
+        def activity_event_dict(activities):
+            actors = set(activity.person for activity in activities)
+            assert len(actors) == 1, actors
+            dates = set(activity.datechanged for activity in activities)
+            return {
+                "activity": group_activities_by_target(activities),
+                "date": min(dates),
+                "person": actors.pop(),
+                }
 
-            activity_and_comments.append({
-                'comment': comment,
-                'date': comment.datecreated,
-                })
+        def event_dict(event_group):
+            if isinstance(event_group, list):
+                return activity_event_dict(event_group)
+            else:
+                return comment_event_dict(event_group)
 
-        # Add the remaining activities not associated with any visible
-        # comments to the activity_for_comments list.  For each
-        # activity dict we use the person responsible for the first
-        # activity item as the owner of the list of activities.
-        for date, activity_dict in activity_log.items():
-            activity_and_comments.append({
-                'activity': activity_dict,
-                'date': date,
-                'person': activity_dict[0]['activity'][0].person,
-                })
+        events = map(event_dict, event_groups)
 
-        activity_and_comments.sort(key=itemgetter('date'))
-        return activity_and_comments
+        # Insert blank if we're showing only a subset of the comment list.
+        if len(recent_comments) > 0:
+            # Find the oldest recent comment in the event list.
+            oldest_recent_comment = recent_comments[0]
+            for index, event in enumerate(events):
+                if event.get("comment") is oldest_recent_comment:
+                    num_hidden = (
+                        len(self.visible_comments)
+                        - len(oldest_comments)
+                        - len(recent_comments))
+                    separator = {
+                        'date': oldest_recent_comment.datecreated,
+                        'num_hidden': num_hidden,
+                        }
+                    events.insert(index, separator)
+                    break
+
+        return events
 
     @cachedproperty
     def visible_comments(self):
@@ -965,14 +943,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             return self.visible_comments[:oldest_count]
 
     @cachedproperty
-    def visible_newest_comments_for_display(self):
-        """The list of newest visible comments to be rendered.
+    def visible_recent_comments_for_display(self):
+        """The list of recent visible comments to be rendered.
 
         If the number of comments is beyond the maximum threshold, this
-        returns the newest few comments.  If we're under the threshold,
-        then visible_oldest_comments_for_display will be returning the
-        bugs, so this routine will return an empty set to avoid
-        duplication.
+        returns the most recent few comments. If we're under the threshold,
+        then visible_oldest_comments_for_display will be returning the bugs,
+        so this routine will return an empty set to avoid duplication.
         """
         show_all = (self.request.form_ng.getOne('comments') == 'all')
         max_comments = config.malone.comments_list_max_length
@@ -1010,7 +987,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         expire_after = timedelta(days=config.malone.days_before_expiration)
         expiration_date = self.context.bug.date_last_updated + expire_after
-        remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
+        remaining_time = expiration_date - datetime.now(utc)
         return remaining_time.days
 
     @property
@@ -2040,8 +2017,14 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
+    >>> for status in initial['status']:
+    ...     print status.name
+    NEW
+    INCOMPLETE
+    CONFIRMED
+    TRIAGED
+    INPROGRESS
+    FIXCOMMITTED
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
@@ -3567,6 +3550,20 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         If yes, return True, otherwise return False.
         """
         return self.context.userCanEditMilestone(self.user)
+
+    @property
+    def style_for_add_milestone(self):
+        if self.context.milestone is None:
+            return ''
+        else:
+            return 'display: none'
+
+    @property
+    def style_for_edit_milestone(self):
+        if self.context.milestone is None:
+            return 'display: none'
+        else:
+            return ''
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
