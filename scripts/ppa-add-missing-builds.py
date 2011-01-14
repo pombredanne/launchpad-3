@@ -12,5 +12,5 @@ from canonical.config import config
 
 if __name__ == "__main__":
     script = PPAMissingBuilds(
-        "ppa-add-missing-builds", dbuser=config.builddmaster.dbuser)
+        "ppa-add-missing-builds", dbuser=config.uploader.dbuser)
     script.lock_and_run()

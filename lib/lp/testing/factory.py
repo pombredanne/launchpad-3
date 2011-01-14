@@ -2312,6 +2312,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if naked_sprb.date_started is None:
                 naked_sprb.date_started = spr_build.date_created
             naked_sprb.date_finished = naked_sprb.date_started + duration
+        IStore(spr_build).flush()
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
@@ -3101,6 +3102,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
+        IStore(binary_package_build).flush()
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
