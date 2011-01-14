@@ -307,7 +307,7 @@ class TestBugSubscriptionFilterView(
         # description is very simple, and there's a short message describing
         # the absense of conditions.
         self.assertRender(
-            u"This filter allow all mail through.",
+            u"This filter allows all mail through.",
             u"There are no filter conditions!")
 
     def test_render_with_no_description_and_conditions(self):
