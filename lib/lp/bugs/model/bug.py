@@ -1771,8 +1771,13 @@ BugMessage""" % sqlvalues(self.id))
 
     @cachedproperty
     def _known_viewers(self):
-        """A set of known persons able to view this bug."""
-        return set()
+        """A set of known persons able to view this bug.
+
+        Seed it by including the list of all owners of pillars for bugtasks
+        for the bug.
+        """
+        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
+        return set(pillar_owners)
 
     def userCanView(self, user):
         """See `IBug`.
