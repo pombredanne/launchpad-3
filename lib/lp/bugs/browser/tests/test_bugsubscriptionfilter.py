@@ -307,7 +307,7 @@ class TestBugSubscriptionFilterView(
         # description is very simple, and there's a short message describing
         # the absense of conditions.
         self.assertRender(
-            u"This filter does not allow mail through.",
+            u"This filter allows all mail through.",
             u"There are no filter conditions!")
 
     def test_render_with_no_description_and_conditions(self):
@@ -335,7 +335,7 @@ class TestBugSubscriptionFilterView(
         with person_logged_in(self.owner):
             self.subscription_filter.description = u"The Wait"
         self.assertRender(
-            u"\u201cThe Wait\u201d does not allow mail through.",
+            u"\u201cThe Wait\u201d allows all mail through.",
             u"There are no filter conditions!")
 
     def test_render_with_description_and_conditions(self):
