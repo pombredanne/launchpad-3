@@ -24,6 +24,7 @@ from lp.services.features.scopes import HANDLERS
 Flag = namedtuple('Flag', ('name', 'domain', 'description', 'default'))
 Scope = namedtuple('Scope', ('regex', 'description'))
 
+
 def docstring_dedent(s):
     """Remove leading indentation from a doc string.
 
@@ -57,4 +58,3 @@ class FeatureInfoView(LaunchpadView):
         return [
             Scope._make((handler.pattern, docstring_dedent(handler.__doc__)))
             for handler in HANDLERS]
-

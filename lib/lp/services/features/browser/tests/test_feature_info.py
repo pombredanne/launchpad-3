@@ -63,7 +63,7 @@ class TestFeatureControlPage(BrowserTestCase):
             for item in record:
                 self.assertThat(browser.contents, Contains(item))
 
-    def test_feature_documentation_displayed(self):
+    def test_scope_documentation_displayed(self):
         """The scope documentation is displayed on the page."""
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())

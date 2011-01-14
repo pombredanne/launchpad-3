@@ -76,6 +76,7 @@ class TestScopesFromRequest(TestCase):
     def test_unknown_scope(self):
         # Asking about an unknown scope is an error.
         request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
         self.assertRaises(
             LookupError,
             scopes.lookup, 'not-a-real-scope')
