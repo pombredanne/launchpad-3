@@ -31,7 +31,7 @@ class TestPackageDiffs(TestPackageDiffsBase):
         # Test the case where none of the files required for the diff are
         # expired in the librarian and where everything works as expected.
         [diff] = self.getPendingDiffs()
-        self.assertEqual(0, removeSecurityProxy(diff)._countExpiredLFAs())
+        self.assertEqual(0, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
 
@@ -71,7 +71,7 @@ class TestPackageDiffs(TestPackageDiffsBase):
         # package.
         self.expireLFAsForSource(diff.from_source)
         # The helper method now finds 3 expired files.
-        self.assertEqual(3, removeSecurityProxy(diff)._countExpiredLFAs())
+        self.assertEqual(3, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
         # The diff fails due to the presence of expired files.
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)
@@ -85,7 +85,7 @@ class TestPackageDiffs(TestPackageDiffsBase):
         # package.
         self.expireLFAsForSource(diff.from_source, expire=True, delete=False)
         # The helper method now finds no expired files.
-        self.assertEqual(0, removeSecurityProxy(diff)._countExpiredLFAs())
+        self.assertEqual(0, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
         # The diff succeeds as expected.
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
@@ -97,7 +97,7 @@ class TestPackageDiffs(TestPackageDiffsBase):
         # Delete the files associated with the 'from_source' package.
         self.expireLFAsForSource(diff.from_source, expire=False, delete=True)
         # The helper method now finds 3 expired files.
-        self.assertEqual(3, removeSecurityProxy(diff)._countExpiredLFAs())
+        self.assertEqual(3, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
         # The diff fails due to the presence of expired files.
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)

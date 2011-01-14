@@ -140,9 +140,9 @@ class PackageDiff(SQLBase):
         """See `IPackageDiff`."""
         return self.to_source.upload_archive.private
 
-    def _countExpiredLFAs(self):
-        """How many files associated with either source package were
-        already expired by the librarian?"""
+    def _countDeletedLFAs(self):
+        """How many files associated with either source package have been
+        deleted from the librarian?"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT COUNT(lfa.id)
@@ -167,7 +167,7 @@ class PackageDiff(SQLBase):
         """
         # Make sure the files associated with the two source packages are
         # still available in the librarian.
-        if self._countExpiredLFAs() > 0:
+        if self._countDeletedLFAs() > 0:
             self.status = PackageDiffStatus.FAILED
             return
 
