@@ -17,7 +17,7 @@
       allows mail through when:
     </span>
     <span tal:condition="not:conditions">
-      does not allow mail through.
+      allows all mail through.
     </span>
   </dt>
   <dd tal:condition="conditions">
