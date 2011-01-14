@@ -7,7 +7,6 @@ __all__ = []
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
