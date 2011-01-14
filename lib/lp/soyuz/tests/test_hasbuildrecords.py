@@ -163,7 +163,7 @@ class TestDistroArchSeriesHasBuildRecords(TestDistributionHasBuildRecords):
         super(TestDistroArchSeriesHasBuildRecords, self).setUp()
 
     def test_distroarchseries(self):
-        # Test .getBuildRecords for DASes
+        # We can fetch builds from DASes using .getBuildRecords
         builds = self.das_one.getBuildRecords().count()
         self.assertEquals(5, builds)
         builds = self.das_one.getBuildRecords(
@@ -298,7 +298,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             build.date_finished = build.date_started + timedelta(minutes=5)
 
     def test_get_build_records(self):
-        # Test .getBuildRecords() for SPRs
+        # We can fetch builds from SourcePackages using .getBuildRecords()
         builds = self.context.getBuildRecords(
             build_state=BuildStatus.FULLYBUILT).count()
         self.assertEquals(3, builds)
