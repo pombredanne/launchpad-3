@@ -28,6 +28,7 @@ def process(mlist, msg, msgdata):
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
+    # XXX sinzui 2011-01-13: try/except/oops.
     in_good_standing = proxy.inGoodStanding(sender)
     # If the sender is a member in good standing, that's all we need to know
     # in order to let the message pass.
