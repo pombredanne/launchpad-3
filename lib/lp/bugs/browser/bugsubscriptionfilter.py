@@ -74,10 +74,9 @@ class BugSubscriptionFilterView(LaunchpadView):
         return conditions
 
 
-class BugSubscriptionFilterEditView(LaunchpadEditFormView):
-    """Edit view for `IBugSubscriptionFilter`."""
+class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView):
+    """Base class for edit or create views of `IBugSubscriptionFilter`."""
 
-    page_title = u"Edit filter"
     schema = IBugSubscriptionFilter
     field_names = (
         "description",
@@ -92,6 +91,24 @@ class BugSubscriptionFilterEditView(LaunchpadEditFormView):
     custom_widget("importances", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
 
+    @property
+    def next_url(self):
+        """Return to the user's structural subscriptions page."""
+        return canonical_url(
+            self.user, view_name="+structural-subscriptions")
+
+    cancel_url = next_url
+
+
+class BugSubscriptionFilterEditView(
+    BugSubscriptionFilterEditViewBase):
+    """Edit view for `IBugSubscriptionFilter`.
+
+    :ivar context: A provider of `IBugSubscriptionFilter`.
+    """
+
+    page_title = u"Edit filter"
+
     @action("Update", name="update")
     def update_action(self, action, data):
         """Update the bug filter with the form data."""
@@ -102,16 +119,13 @@ class BugSubscriptionFilterEditView(LaunchpadEditFormView):
         """Delete the bug filter."""
         self.context.delete()
 
-    @property
-    def next_url(self):
-        """Return to the user's structural subscriptions page."""
-        return canonical_url(
-            self.user, view_name="+structural-subscriptions")
 
-    cancel_url = next_url
+class BugSubscriptionFilterCreateView(
+    BugSubscriptionFilterEditViewBase):
+    """View to create a new `IBugSubscriptionFilter`.
 
-
-class BugSubscriptionFilterCreateView(BugSubscriptionFilterEditView):
+    :ivar context: A provider of `IStructuralSubscription`.
+    """
 
     page_title = u"Create new filter"
 
