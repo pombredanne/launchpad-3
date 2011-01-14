@@ -16,7 +16,7 @@ class TestBuildersNavigation(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_buildjob_redirects_for_recipe_build(self):
-        # /builders/buildjob/<job id> redirects to the build page.
+        # /builders/+buildjob/<job id> redirects to the build page.
         build = self.factory.makeSourcePackageRecipeBuild()
         url = 'http://launchpad.dev/builders/+buildjob/%s' % build.url_id
         context, view, request = test_traverse(url)
@@ -27,7 +27,7 @@ class TestBuildersNavigation(TestCaseWithFactory):
             request.response.getHeader('location'))
 
     def test_buildjob_redirects_for_binary_build(self):
-        # /builders/buildjob/<job id> redirects to the build page.
+        # /builders/+buildjob/<job id> redirects to the build page.
         build = self.factory.makeBinaryPackageBuild()
         url = 'http://launchpad.dev/builders/+buildjob/%s' % build.url_id
         context, view, request = test_traverse(url)
