@@ -249,13 +249,13 @@ class SourcePackageRecipe(Storm):
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""
         where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_finished)
+        order_by = Desc(BuildFarmJob.date_finished), BuildFarmJob.id
         return self._getBuilds(where_clause, order_by)
 
     def getPendingBuilds(self):
         """See `ISourcePackageRecipe`."""
         where_clause = BuildFarmJob.status == BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_created)
+        order_by = Desc(BuildFarmJob.date_created), BuildFarmJob.id
         return self._getBuilds(where_clause, order_by)
 
     def _getBuilds(self, where_clause, order_by):
