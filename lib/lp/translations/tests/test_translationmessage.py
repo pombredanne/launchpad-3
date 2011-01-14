@@ -288,7 +288,8 @@ class TestApprove(TestCaseWithFactory):
         ubuntu_tm.approve(upstream_pofile, self.factory.makePerson())
 
         upstream_tm = potmsgset.getCurrentTranslation(
-            template, ubuntu_pofile.language, TranslationSide.UPSTREAM)
+            upstream_pofile.potemplate, upstream_pofile.language,
+            TranslationSide.UPSTREAM)
         self.assertEqual(ubuntu_tm.all_msgstrs, upstream_tm.all_msgstrs)
         self.assertNotEqual(ubuntu_tm, upstream_tm)
 
