@@ -105,7 +105,6 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -160,6 +159,7 @@ from lp.testing._webservice import (
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
 
 
@@ -352,6 +352,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
+
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -712,15 +723,15 @@ class BrowserTestCase(TestCaseWithFactory):
         self.user = self.factory.makePerson(password='test')
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
-                       rootsite=None, user=DEFAULT):
-        if user is DEFAULT:
+                       rootsite=None, user=None):
+        if user is None:
             user = self.user
-        if no_login:
-            user = None
+        # Make sure that there is a user interaction in order to generate the
+        # canonical url for the context object.
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
-        if user is None:
+        if no_login:
             from canonical.launchpad.testing.pages import setupBrowser
             browser = setupBrowser()
             browser.open(url)
@@ -729,19 +740,20 @@ class BrowserTestCase(TestCaseWithFactory):
             return self.getUserBrowser(url, user)
 
     def getMainContent(self, context, view_name=None, rootsite=None,
-                       no_login=False):
+                       no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
         from canonical.launchpad.testing.pages import find_main_content
         browser = self.getViewBrowser(
-            context, view_name, rootsite=rootsite, no_login=no_login)
+            context, view_name, rootsite=rootsite, no_login=no_login,
+            user=user)
         return find_main_content(browser.contents)
 
     def getMainText(self, context, view_name=None, rootsite=None,
-                    no_login=False):
+                    no_login=False, user=None):
         """Return the main text of a context's page."""
         from canonical.launchpad.testing.pages import extract_text
         return extract_text(
-            self.getMainContent(context, view_name, rootsite, no_login))
+            self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
 class WindmillTestCase(TestCaseWithFactory):

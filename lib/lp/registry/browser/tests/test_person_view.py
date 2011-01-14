@@ -663,16 +663,16 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):

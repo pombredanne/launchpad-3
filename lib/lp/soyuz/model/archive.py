@@ -1210,7 +1210,7 @@ class Archive(SQLBase):
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
-        return permissions.count() > 0
+        return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
         """See `IArchive`."""
