@@ -47,30 +47,28 @@ We can see that this is actually the case:
     >>> message.is_complete
     True
 
-    >>> message.is_imported
+    >>> message.is_current_upstream
     True
 
-We change the published one, and thus, the one in Launchpad will be
-changed too at the same time.
+We change the upstream one, and thus, the one in Launchpad will be changed
+too at the same time.
 
     >>> message = potmsgset.updateTranslation(
-    ...     pofile_es, carlos, {0: u'foo '}, is_imported=True,
+    ...     pofile_es, carlos, {0: u'foo '}, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
 
     >>> message.msgstr0.translation
     u'foo '
-
     >>> message.is_complete
     True
-
-    >>> message.is_imported
+    >>> message.is_current_upstream
     True
 
 Even more, if there is no translation at all in Launchpad, we still get
 the update from upstream.
 
     >>> message = potmsgset.updateTranslation(
-    ...     pofile_es, carlos, {}, is_imported=False,
+    ...     pofile_es, carlos, {}, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> message.msgstr0 is None
     True
@@ -81,7 +79,8 @@ the update from upstream.
     >>> flush_database_updates()
     >>> message = potmsgset.updateTranslation(
     ...     pofile_es, carlos, {0: u'foobar '},
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> message.msgstr0.translation
     u'foobar '
@@ -89,7 +88,7 @@ the update from upstream.
     >>> message.is_complete
     True
 
-    >>> message.is_imported
+    >>> message.is_current_upstream
     True
 
 So far, the current translation has been the imported one.  If Carlos
@@ -98,28 +97,27 @@ form, it is marked as current, but the last-imported translation remains
 unaffected.
 
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile_es, carlos, {0: 'boing '}, is_imported=False,
+    ...     pofile_es, carlos, {0: 'boing '}, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> message = potmsgset.getCurrentTranslationMessage(
     ...     upstream_evo, spanish)
     >>> message == dummy
     True
-
     >>> message.msgstr0.translation
     u'boing '
 
     >>> message.is_complete
     True
 
-    >>> message.is_imported
+    >>> message.is_current_upstream
     False
 
-Since published and active translations diverged, if we get a new
+Since upstream and active translations diverged, if we get a new
 upstream translation, the one in Launchpad will be kept untouched.
 
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile_es, carlos, {0: u'bars '}, is_imported=True,
+    ...     pofile_es, carlos, {0: u'bars '}, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> message = potmsgset.getCurrentTranslationMessage(
@@ -141,28 +139,24 @@ upstream translation, the one in Launchpad will be kept untouched.
     >>> message.is_complete
     True
 
-To force adding a new suggestion even if there are enough privileges to
-set it as current, we can use the force_suggestion parameter.
+To force adding a new suggestion even if there are enough
+privileges to set it as current, we can use the force_suggestion
+parameter.
 
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile_es, carlos, {0: u'suggestion! '}, is_imported=False,
+    ...     pofile_es, carlos, {0: u'suggestion! '},
+    ...     is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC), force_suggestion=True)
     >>> flush_database_updates()
     >>> message = potmsgset.getCurrentTranslationMessage(
     ...     upstream_evo, spanish)
     >>> message != dummy
     True
-
     >>> message.translations
     [u'boing ']
-
     >>> message.is_complete
     True
-
     >>> dummy.translations
     [u'suggestion! ']
-
     >>> dummy.is_complete
     True
-
-

@@ -65,10 +65,11 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.app.errors import NotFoundError
 from lp.app.enums import (
+    service_uses_launchpad,
     ServiceUsage,
-    service_uses_launchpad)
+    )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
     SpecificationFilter,
@@ -230,7 +231,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep', foreignKey='DistroArchSeries',

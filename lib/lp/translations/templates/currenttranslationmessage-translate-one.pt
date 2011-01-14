@@ -388,23 +388,23 @@
       </tr>
     </tal:has-submitter>
 
-    <tal:imported_translation
+    <tal:other_translation
       define="
-        section_title string:Packaged:;
-        submission translation_dictionary/imported_translation_message;
-        dismissable view/dismissable_class_packaged;
+        section_title view/other_title;
+        submission translation_dictionary/other_translation_message;
+        dismissable view/dismissable_class_other;
         form_is_writeable view/form_is_writeable;
         user_is_official_translator view/user_is_official_translator;
         ">
       <metal:suggestion
          use-macro="context/@@+translations-macros/render-suggestion" />
-    </tal:imported_translation>
+    </tal:other_translation>
     <tal:shared_translation
       condition="translation_dictionary/shared_translation_message"
       define="
         section_title string:Shared:;
         submission translation_dictionary/shared_translation_message;
-        dismissable view/dismissable_class_packaged;
+        dismissable view/dismissable_class_other;
         form_is_writeable view/form_is_writeable;
         user_is_official_translator view/user_is_official_translator;
         ">
