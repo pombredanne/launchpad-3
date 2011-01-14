@@ -97,6 +97,11 @@ class BugSubscriptionFilterEditView(LaunchpadEditFormView):
         """Update the bug filter with the form data."""
         self.updateContextFromData(data)
 
+    @action("Delete", name="delete")
+    def delete_action(self, action, data):
+        """Delete the bug filter."""
+        self.context.delete()
+
     @property
     def next_url(self):
         """Return to the user's structural subscriptions page."""
