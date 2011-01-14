@@ -182,7 +182,7 @@ class BuildView(LaunchpadView):
         # are always published.
         imported_binaries = (
             self.package_upload is None and
-            self.context.binarypackages.count() > 0)
+            bool(self.context.binarypackages))
         # Binaries uploaded from the buildds are published when the
         # corresponding `PackageUpload` status is DONE.
         uploaded_binaries = (

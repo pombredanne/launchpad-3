@@ -392,9 +392,9 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
                 user, self.context, permission_type, the_item)
-            if result_set.count() > 0:
+            try:
                 return result_set[0]
-            else:
+            except IndexError:
                 return None
         else:
             return None
@@ -570,9 +570,7 @@ class ArchiveViewBase(LaunchpadView):
         the view to determine whether to display "This PPA does not yet
         have any published sources" or "No sources matching 'blah'."
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getPublishedSources().count() > 0
+        return bool(self.context.getPublishedSources())
 
     @cachedproperty
     def repository_usage(self):
@@ -851,8 +849,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
+        # Trying to use bool(self.filtered_sources) here resulted in bug
+        # 702425 :(
         return self.filtered_sources.count() > 0
 
 
@@ -1170,9 +1168,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         to ensure that it only returns true if there are sources
         that can be deleted in this archive.
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getSourcesForDeletion().count() > 0
+        return bool(self.context.getSourcesForDeletion())
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -1626,9 +1622,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.dependencies.count() > 0
+        return bool(self.context.dependencies)
 
     @property
     def messages(self):
@@ -1945,7 +1939,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
-            if self.context.getPublishedSources().count() > 0:
+            if bool(self.context.getPublishedSources()):
                 self.setFieldError(
                     'private',
                     'This archive already has published sources. It is '
