@@ -116,7 +116,7 @@ And then we need a way to process the uploads from the queue
 
   >>> import logging
   >>> from canonical.config import config
-  >>> from lp.testing.logger import MockLogger
+  >>> from lp.services.log.logger import FakeLogger
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
   >>> from canonical.testing.layers import LaunchpadZopelessLayer
@@ -139,7 +139,7 @@ And then we need a way to process the uploads from the queue
   ...     LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
   ...     process = ProcessUpload(
   ...         'process-upload', dbuser='ignored', test_args=args)
-  ...     process.logger = MockLogger()
+  ...     process.logger = FakeLogger()
   ...     if loglevel is not None:
   ...         process.logger.setLevel(loglevel)
   ...     process.txn = LaunchpadZopelessLayer.txn
@@ -280,7 +280,7 @@ overridable binary. This tests the simple overriding of both sources
 and arch-independent binaries.
 
   >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
-  log> Processing upload
+  INFO Processing upload
   ...
   Upload complete.
 
@@ -429,32 +429,32 @@ ubututest/breezy-RELEASE:
   >>> simulate_upload(
   ...     'foo_1.0-1', upload_policy='sync', is_new=True,
   ...     loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
-  log>     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  log>     Body:
-  log> NEW: foo_1.0.orig.tar.gz
-  log> NEW: foo_1.0-1.diff.gz
-  log> NEW: foo_1.0-1.dsc
-  log>
-  log> foo (1.0-1) breezy; urgency=low
-  log>
-  log>   * Initial version
-  log>
-  log>
-  log> Your package contains new components which requires manual editing of
-  log> the override file.  It is ok otherwise, so please be patient.  New
-  log> packages are usually added to the overrides about once a week.
-  log>
-  log> You may have gotten the distroseries wrong.  If so, you may get warnings
-  log> above if files already exist in other distroseries.
-  log>
-  log> --
-  log> You are receiving this email because you are the uploader, maintainer or
-  log> signer of the above package.
-  log> Committing the transaction and any mails associated with this upload.
+  DEBUG Sent a mail:
+  DEBUG     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
+  DEBUG     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Body:
+  DEBUG NEW: foo_1.0.orig.tar.gz
+  DEBUG NEW: foo_1.0-1.diff.gz
+  DEBUG NEW: foo_1.0-1.dsc
+  DEBUG
+  DEBUG foo (1.0-1) breezy; urgency=low
+  DEBUG
+  DEBUG   * Initial version
+  DEBUG
+  DEBUG
+  DEBUG Your package contains new components which requires manual editing of
+  DEBUG the override file.  It is ok otherwise, so please be patient.  New
+  DEBUG packages are usually added to the overrides about once a week.
+  DEBUG
+  DEBUG You may have gotten the distroseries wrong.  If so, you may get warnings
+  DEBUG above if files already exist in other distroseries.
+  DEBUG
+  DEBUG --
+  DEBUG You are receiving this email because you are the uploader, maintainer or
+  DEBUG signer of the above package.
+  INFO  Committing the transaction and any mails associated with this upload.
   ...
   Upload complete.
 
@@ -463,8 +463,8 @@ And its binary:
   >>> simulate_upload(
   ...     'foo_1.0-1_i386_binary', upload_policy='anything', is_new=True,
   ...     loglevel=logging.DEBUG)
-  log> ...
-  log> foo: (binary) NEW
+  DEBUG ...
+  DEBUG foo: (binary) NEW
   ...
   Upload complete.
 
@@ -484,9 +484,9 @@ Upload a newer version of source package "foo" to breezy-backports:
 
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -509,9 +509,9 @@ found in i386/RELEASE, because it's the only one available.
   >>> simulate_upload(
   ...     'foo_2.9-1_binary', upload_policy='anything',
   ...     loglevel=logging.DEBUG)
-  log> ...
-  log> Checking for foo/2.9-1/powerpc binary ancestry
-  log> foo-1.0-1 (binary) exists in i386/RELEASE
+  DEBUG ...
+  DEBUG Checking for foo/2.9-1/powerpc binary ancestry
+  DEBUG foo-1.0-1 (binary) exists in i386/RELEASE
   ...
   Upload complete.
 
@@ -524,9 +524,9 @@ live with this inconsistency.
 
   >>> simulate_upload(
   ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -536,17 +536,17 @@ in PROPOSED:
 
   >>> simulate_upload(
   ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
-  log> Initialising connection.
+  DEBUG Initialising connection.
   ...
-  log> Setting it to ACCEPTED
+  DEBUG Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -556,9 +556,9 @@ published inside the target pocket should be rejected:
 
   >>> simulate_upload(
   ...     'foo_1.0-3', upload_policy='sync', loglevel=logging.INFO)
-  log> ...
-  log> Upload was rejected:
-  log> foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
+  INFO ...
+  INFO Upload was rejected:
+  INFO foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
   ...
   Rejected uploads: ['foo_1.0-3']
 

@@ -164,7 +164,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget,
     BugTaskAssigneeWidget,
@@ -208,6 +207,7 @@ from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
     )
+from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -3544,6 +3544,20 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         If yes, return True, otherwise return False.
         """
         return self.context.userCanEditMilestone(self.user)
+
+    @property
+    def style_for_add_milestone(self):
+        if self.context.milestone is None:
+            return ''
+        else:
+            return 'display: none'
+
+    @property
+    def style_for_edit_milestone(self):
+        if self.context.milestone is None:
+            return 'display: none'
+        else:
+            return ''
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""

@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'QueueBuilder',
     'RetryDepwait',
-    'SlaveScanner',
     ]
 
 from zope.component import getUtility
@@ -18,7 +17,6 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (

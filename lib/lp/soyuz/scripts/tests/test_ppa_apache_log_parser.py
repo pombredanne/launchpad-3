@@ -6,6 +6,7 @@ import subprocess
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -85,8 +86,12 @@ class TestScriptRunning(TestCaseWithFactory):
         # After the script's run, we will check that the results in the
         # database match the sample log files we use for this test:
         # lib/lp/soyuz/scripts/tests/ppa-apache-log-files
+        # In addition to the wanted access log file, there is also an
+        # error log that will be skipped by the configured glob.
         self.assertEqual(
             0, self.store.find(BinaryPackageReleaseDownloadCount).count())
+
+        last_oops = globalErrorUtility.getLastOopsReport()
 
         process = subprocess.Popen(
             'cronscripts/parse-ppa-apache-access-logs.py', shell=True,
@@ -95,6 +100,10 @@ class TestScriptRunning(TestCaseWithFactory):
         (out, err) = process.communicate()
         self.assertEqual(
             process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
+
+        # The error log does not match the glob, so it is not processed,
+        # and no OOPS is generated.
+        self.assertNoNewOops(last_oops)
 
         # Must commit because the changes were done in another transaction.
         import transaction

@@ -323,10 +323,19 @@ are exported but not all messages are equal. Some messages have been
 imported from upstream and then changed, others have been left as they
 are. This pofile has both kind of messages.
 
-    >>> potemplate = factory.makePOTemplate()
+    >>> package = factory.makeSourcePackage()
+    >>> potemplate = factory.makePOTemplate(
+    ...     distroseries=package.distroseries,
+    ...     sourcepackagename=package.sourcepackagename)
     >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
-    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
-    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=True, translations=["esperanto1"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate, singular="english1", sequence=1))
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=False, translations=["esperanto2"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate, singular="english2", sequence=2))
 
 To see what is being exported we need to retrieve the exported file from
 the librarian.
@@ -355,7 +364,7 @@ Exporting this pofile yields both messages in the resulting file.
     <BLANKLINE>
 
 Setting the format to POCHANGED yields only the message that was changed
-after having been imported.
+in Ubuntu compared to upstream.
 
     >>> export_request_set.addRequest(
     ...     carlos, pofiles=[pofile], format=TranslationFileFormat.POCHANGED)

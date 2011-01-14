@@ -8,8 +8,6 @@ __metaclass__ = type
 
 import errno
 import os
-# Don't use cStringIO in case Unicode leaks through.
-from StringIO import StringIO
 from subprocess import (
     PIPE,
     Popen,
@@ -298,11 +296,11 @@ class TestMailingListImports(BaseMailingListImportTest):
             ))
         self.assertEqual(
             self.logger.getLogBuffer(),
-            'INFO: anne.person@example.com (anne) joined and subscribed\n'
-            'INFO: bperson@example.org (bart) joined and subscribed\n'
-            'INFO: cris.person@example.com (cris) joined and subscribed\n'
-            'INFO: dperson@example.org (dave) joined and subscribed\n'
-            'INFO: elly.person@example.com (elly) joined and subscribed\n')
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n')
 
     def test_logging_with_non_persons(self):
         # Test that non-persons that were not imported are logged.
@@ -320,14 +318,14 @@ class TestMailingListImports(BaseMailingListImportTest):
             ))
         self.assertEqual(
             self.logger.getLogBuffer(),
-            'INFO: anne.person@example.com (anne) joined and subscribed\n'
-            'INFO: bperson@example.org (bart) joined and subscribed\n'
-            'INFO: cris.person@example.com (cris) joined and subscribed\n'
-            'INFO: dperson@example.org (dave) joined and subscribed\n'
-            'INFO: elly.person@example.com (elly) joined and subscribed\n'
-            'ERROR: No person for address: fperson@example.org\n'
-            'ERROR: No person for address: gwen.person@example.com\n'
-            'ERROR: No person for address: hperson@example.org\n')
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n'
+            'ERROR No person for address: fperson@example.org\n'
+            'ERROR No person for address: gwen.person@example.com\n'
+            'ERROR No person for address: hperson@example.org\n')
 
     def test_logging_with_invalid_emails(self):
         # Test that invalid emails that were not imported are logged.
@@ -345,11 +343,11 @@ class TestMailingListImports(BaseMailingListImportTest):
             ))
         self.assertEqual(
             self.logger.getLogBuffer(),
-            'ERROR: No valid email for address: anne.x.person@example.net\n'
-            'INFO: bperson@example.org (bart) joined and subscribed\n'
-            'INFO: cris.person@example.com (cris) joined and subscribed\n'
-            'INFO: dperson@example.org (dave) joined and subscribed\n'
-            'INFO: elly.person@example.com (elly) joined and subscribed\n')
+            'ERROR No valid email for address: anne.x.person@example.net\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n')
 
     def test_import_existing_with_nonascii_name(self):
         # Make sure that a person with a non-ascii name, who's already a
@@ -364,11 +362,11 @@ class TestMailingListImports(BaseMailingListImportTest):
             ))
         self.assertEqual(
             self.logger.getLogBuffer(),
-            'ERROR: \xe1\xba\xa2nn\xe1\xba\xbf '
+            'ERROR \xe1\xba\xa2nn\xe1\xba\xbf '
             'P\xe1\xbb\x85rs\xe1\xbb\x91n is already subscribed '
             'to list Aardvarks\n'
-            'INFO: anne.person@example.com (anne) joined and subscribed\n'
-            'INFO: bperson@example.org (bart) joined and subscribed\n')
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n')
 
 
 class TestMailingListImportScript(BaseMailingListImportTest):
