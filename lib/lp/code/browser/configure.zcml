@@ -1198,6 +1198,12 @@
         attribute_to_parent="archive"
         path_expression="string:+buildjob/${url_id}"
         />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"
         module="lp.code.browser.sourcepackagerecipebuild"/>
