@@ -18,7 +18,10 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     TranslationConflict,
@@ -267,6 +270,27 @@ class TestApprove(TestCaseWithFactory):
             TranslationConflict,
             suggestion.approve,
             pofile, self.factory.makePerson(), lock_timestamp=old)
+
+    def test_approve_clones_message_from_other_side_to_diverge(self):
+        package = self.factory.makeSourcePackage()
+        template=self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        potmsgset = self.factory.makePOTMsgSet(potemplate=template)
+        upstream_pofile = self.factory.makePOFile('nl')
+        ubuntu_pofile = self.factory.makePOFile('nl', potemplate=template)
+        diverged_tm = self.factory.makeDivergedTranslationMessage(
+            pofile=upstream_pofile, potmsgset=potmsgset)
+        ubuntu_tm = self.factory.makeSuggestion(
+            pofile=ubuntu_pofile, potmsgset=potmsgset)
+        ubuntu_tm.is_current_ubuntu = True
+
+        ubuntu_tm.approve(upstream_pofile, self.factory.makePerson())
+
+        upstream_tm = potmsgset.getCurrentTranslation(
+            template, ubuntu_pofile.language, TranslationSide.UPSTREAM)
+        self.assertEqual(ubuntu_tm.all_msgstrs, upstream_tm.all_msgstrs)
+        self.assertNotEqual(ubuntu_tm, upstream_tm)
 
 
 class TestApproveAsDiverged(TestCaseWithFactory):
