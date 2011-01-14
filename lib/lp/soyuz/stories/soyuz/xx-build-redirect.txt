@@ -5,6 +5,4 @@ new URLs.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/+build/18")
     >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18'
-
-  
+    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/18'

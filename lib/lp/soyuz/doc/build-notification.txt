@@ -114,7 +114,7 @@ This same basic content applies to all types of notification.
    * Component: main
    * State: Failed to build
    * Duration: three minutes
-   * Build Log: http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9/+files/netapplet-1.0.0.tar.gz
+   * Build Log: http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+buildjob/9/+files/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/builders/bob
    * Source: http://launchpad.dev/ubuntu/+source/pmount/0.1-1
   <BLANKLINE>
@@ -125,7 +125,7 @@ This same basic content applies to all types of notification.
   <BLANKLINE>
   --
   i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
+  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+buildjob/9
   <BLANKLINE>
 
 Notification for a pending (NEEDSBUILD) build record:
@@ -193,7 +193,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
-  http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
+  http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+buildjob/11
   <BLANKLINE>
 
 Notification for a BUILDING build record:
@@ -261,7 +261,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-  http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
+  http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/8
   <BLANKLINE>
 
 Notification for a SUPERSEDED build record:
@@ -329,7 +329,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of at 0.00 in ubuntu warty RELEASE
-  http://launchpad.dev/ubuntu/+source/at/0.00/+build/15
+  http://launchpad.dev/ubuntu/+source/at/0.00/+buildjob/15
   <BLANKLINE>
 
 Check if the 'build_notification' configuration option really suppress
@@ -451,7 +451,7 @@ Checking the message contents:
    * Component: main
    * State: Failed to build
    * Duration: a minute
-   * Build Log: http://launchpad.dev/~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz
+   * Build Log: http://launchpad.dev/~cprov/+archive/ppa/+buildjob/26/+files/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/builders/bob
    * Source: not available
   ...
@@ -614,7 +614,7 @@ the correct links to it the build in files in its context.
    * Component: main
    * State: Failed to build
    * Duration: a minute
-   * Build Log: http://launchpad.dev/~cprov/+archive/testing/+build/26/+files/netapplet-1.0.0.tar.gz
+   * Build Log: http://launchpad.dev/~cprov/+archive/testing/+buildjob/26/+files/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/builders/bob
    * Source: not available
   <BLANKLINE>
@@ -625,5 +625,5 @@ the correct links to it the build in files in its context.
   <BLANKLINE>
   --
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
-  http://launchpad.dev/~cprov/+archive/testing/+build/26
+  http://launchpad.dev/~cprov/+archive/testing/+buildjob/26
   <BLANKLINE>

@@ -117,7 +117,10 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications,
     )
-from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
@@ -137,10 +140,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus,
-    IBinaryPackageBuildSet,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -220,21 +220,11 @@ class PPAURL:
         return u"+archive/%s" % self.context.name
 
 
-class ArchiveNavigation(Navigation, FileNavigationMixin):
+class ArchiveNavigation(Navigation, FileNavigationMixin,
+                        BuildNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
