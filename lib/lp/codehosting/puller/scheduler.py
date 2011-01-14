@@ -233,6 +233,12 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         else:
             return reason
 
+    def makeConnection(self, process):
+        """Called when the process has been created."""
+        ProcessMonitorProtocolWithTimeout.makeConnection(self, process)
+        NetstringReceiver.makeConnection(self, process)
+        self.wire_protocol.makeConnection(process)
+
     def outReceived(self, data):
         self.wire_protocol.dataReceived(data)
 
