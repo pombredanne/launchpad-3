@@ -140,13 +140,15 @@ contributor.  Launchpad guides new users toward the ways where they can begin
 to contribute.
 
 
-Full circle
-===========
+Close the loop
+==============
 
 Something magical happens when a feature or a workflow reaches all the way
-back to where it began.  Another way of thinking about this is that the value
-is in the output, and Launchpad is always concerned with the output of all of
-its features.
+back to where it began.  The feature begins to re-inforce itself, and make
+things possible that weren't possible before.
+
+Another way of thinking about this is that the value is in the output, and
+Launchpad is always concerned with the output of all of its features.
 
 Example
 -------
