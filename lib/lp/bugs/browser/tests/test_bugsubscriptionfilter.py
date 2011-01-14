@@ -422,6 +422,18 @@ class TestBugSubscriptionFilterEditView(
         self.assertTrue(
             self.subscription_filter.find_all_tags)
 
+    def test_delete(self):
+        # The filter can be deleted by using the delete action.
+        form = {
+            "field.actions.delete": "Delete",
+            }
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.subscription_filter, name="+edit", form=form)
+            self.assertEqual([], view.errors)
+        # The subscription filter has been deleted.
+        self.assertEqual([], list(self.subscription.bug_filters))
+
 
 class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
 
