@@ -153,7 +153,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % self.recipe.base_branch.unique_name
+        if self.recipe is None:
+            return 'build for deleted recipe'
+        else:
+            branch_name = self.recipe.base_branch.unique_name
+            return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester):
         """Construct a SourcePackageRecipeBuild."""

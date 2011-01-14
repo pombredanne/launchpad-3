@@ -51,10 +51,10 @@ of properties:
     date_first_dispatched: None
     dependencies: None
     distribution_link: u'http://.../beta/ubuntu'
-    log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
+    log_url: u'http://.../~cprov/+archive/ppa/+buildjob/26/+files/netapplet-1.0.0.tar.gz'
     pocket: u'Release'
     resource_type_link: u'http://api.launchpad.dev/beta/#build'
-    self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+build/26'
+    self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+buildjob/26'
     status: u'Failed to build'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
@@ -67,7 +67,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     >>> pprint_entry(builds_1_0['entries'][0])
     arch_tag: u'i386'
     archive_link: u'http://.../~cprov/+archive/ppa'
-    build_log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
+    build_log_url: u'http://.../~cprov/+archive/ppa/+buildjob/26/+files/netapplet-1.0.0.tar.gz'
     buildstate: u'Failed to build'
     can_be_rescored: False
     can_be_retried: True
@@ -80,7 +80,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     distribution_link: u'http://.../ubuntu'
     pocket: u'Release'
     resource_type_link: u'http://.../#build'
-    self_link: u'http://.../~cprov/+archive/ppa/+build/26'
+    self_link: u'http://.../~cprov/+archive/ppa/+buildjob/26'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
 
@@ -108,10 +108,10 @@ will be proxied by the webapp.
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
 
     >>> print builds['entries'][0]['log_url']
-    http://launchpad.dev/~cprov/+archive/ppa/+build/26/+files/...
+    http://launchpad.dev/~cprov/+archive/ppa/+buildjob/26/+files/...
 
     >>> print builds['entries'][0]['upload_log_url']
-    http://launchpad.dev/~cprov/+archive/ppa/+build/26/+files/...
+    http://launchpad.dev/~cprov/+archive/ppa/+buildjob/26/+files/...
 
 
 Re-trying builds

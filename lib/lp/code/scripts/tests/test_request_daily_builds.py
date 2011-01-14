@@ -28,14 +28,14 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         pack_branch = self.factory.makePackageBranch()
         pack_recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True, branches=[pack_branch])
-        self.assertEqual(0, prod_recipe.getBuilds(True).count())
-        self.assertEqual(0, pack_recipe.getBuilds(True).count())
+        self.assertEqual(0, prod_recipe.getPendingBuilds().count())
+        self.assertEqual(0, pack_recipe.getPendingBuilds().count())
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/request_daily_builds.py', [])
         self.assertIn('Requested 2 daily builds.', stderr)
-        self.assertEqual(1, prod_recipe.getBuilds(True).count())
-        self.assertEqual(1, pack_recipe.getBuilds(True).count())
+        self.assertEqual(1, prod_recipe.getPendingBuilds().count())
+        self.assertEqual(1, pack_recipe.getPendingBuilds().count())
         self.assertFalse(prod_recipe.is_stale)
         self.assertFalse(pack_recipe.is_stale)
 
@@ -47,7 +47,7 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/request_daily_builds.py', [])
-        self.assertEqual(0, recipe.getBuilds(True).count())
+        self.assertEqual(0, recipe.getPendingBuilds().count())
         self.assertIn('Requested 0 daily builds.', stderr)
         utility = ErrorReportingUtility()
         utility.configure('request_daily_builds')

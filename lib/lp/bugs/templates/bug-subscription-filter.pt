@@ -17,7 +17,7 @@
       allows mail through when:
     </span>
     <span tal:condition="not:conditions">
-      does not allow mail through.
+      allows all mail through.
     </span>
   </dt>
   <dd tal:condition="conditions">
@@ -27,10 +27,14 @@
         <b>and</b> <br />
       </tal:conjunction>
     </tal:conditions>
-    <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    <tal:editable condition="context/required:launchpad.Edit">
+      <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    </tal:editable>
   </dd>
   <dd tal:condition="not:conditions">
     There are no filter conditions!
-    <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    <tal:editable condition="context/required:launchpad.Edit">
+      <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
+    </tal:editable>
   </dd>
 </dl>
