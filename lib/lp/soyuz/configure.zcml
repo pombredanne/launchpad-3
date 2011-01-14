@@ -83,22 +83,6 @@
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageRelease"/>
     </class>
 
-    <!-- BinaryPackageReleaseSet -->
-
-    <class
-        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-        <implements
-            interface="zope.app.container.interfaces.IItemContainer"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseSet"
-        provides="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-    </securedutility>
-
     <!-- SourcePackageRelease -->
 
     <class

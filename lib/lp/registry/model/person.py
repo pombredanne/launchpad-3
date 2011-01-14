@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -278,7 +278,6 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -342,6 +341,7 @@ def validate_person_visibility(person, attr, value):
 
 
 _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
 
 def person_sort_key(person):
     """Identical to `person_sort_key` in the database."""
@@ -2675,29 +2675,6 @@ class Person(
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
 
-    @property
-    def has_existing_ppa(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
-    @property
-    def has_ppa_with_published_packages(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            SourcePackagePublishingHistory.archive == Archive.id,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
@@ -3798,7 +3775,9 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
-        if from_person.has_existing_ppa:
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            from_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
 
@@ -3826,17 +3805,12 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
+            # Polls are not carried over when merging teams.
+            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
-            ('translationrelicensingagreement', 'person'),
-            # Polls are not carried over when merging teams.
-            # XXX: BradCrittenden 2010-12-16 bug=691105:
-            # Even though polls have been removed as a feature and from the
-            # data model, they still exist in the database and must be skipped
-            # here to avoid violating uniqueness constraints.
-            ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
@@ -3845,6 +3819,7 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))

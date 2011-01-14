@@ -11,7 +11,12 @@ __all__ = [
 
 
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import utc
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget, InputErrors
 from zope.app.form.utility import setUpWidget
@@ -62,8 +67,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         suggestions = cls._getSuggestions(context)
         terms = [
             term for term in full_vocabulary
-            if term.value in suggestions
-            ]
+            if term.value in suggestions]
         return SimpleVocabulary(terms)
 
     def _shouldRenderSuggestions(self):
@@ -209,7 +213,9 @@ class TargetBranchWidget(SuggestionWidget):
         """
         default_target = branch.target.default_merge_target
         logged_in_user = getUtility(ILaunchBag).user
-        collection = branch.target.collection.targetedBy(logged_in_user)
+        since = datetime.now(utc) - timedelta(days=1)
+        collection = branch.target.collection.targetedBy(logged_in_user,
+            since)
         collection = collection.visibleByUser(logged_in_user)
         branches = collection.getBranches().config(distinct=True)
         target_branches = list(branches.config(limit=5))

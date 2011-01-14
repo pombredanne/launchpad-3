@@ -7,9 +7,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
-import gettextpo
 from pytz import timezone
 import transaction
 from zope.component import getUtility
@@ -19,38 +17,41 @@ from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
+from lp.translations.utilities.validate import GettextValidationError
 
 
-class TestTranslationSuggestions(unittest.TestCase):
+class TestTranslationSuggestions(TestCaseWithFactory):
     """Test discovery of translation suggestions."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up context to test in."""
+        super(TestTranslationSuggestions, self).setUp()
+
         # Pretend we have two products Foo and Bar being translated.
         # Translations used or suggested in the one may show up as
         # suggestions for the other.
-        factory = LaunchpadObjectFactory()
-        self.factory = factory
-        foo_product = factory.makeProduct(
+        foo_product = self.factory.makeProduct(
             translations_usage=ServiceUsage.LAUNCHPAD)
-        bar_product = factory.makeProduct(
+        bar_product = self.factory.makeProduct(
             translations_usage=ServiceUsage.LAUNCHPAD)
-        self.foo_trunk = factory.makeProductSeries(
+        self.foo_trunk = self.factory.makeProductSeries(
             product=foo_product)
-        self.bar_trunk = factory.makeProductSeries(
+        self.bar_trunk = self.factory.makeProductSeries(
             product=bar_product)
-        self.foo_template = factory.makePOTemplate(self.foo_trunk)
-        self.bar_template = factory.makePOTemplate(self.bar_trunk)
+        self.foo_template = self.factory.makePOTemplate(self.foo_trunk)
+        self.bar_template = self.factory.makePOTemplate(self.bar_trunk)
         self.nl = getUtility(ILanguageSet).getLanguageByCode('nl')
-        self.foo_nl = factory.makePOFile('nl', potemplate=self.foo_template)
-        self.bar_nl = factory.makePOFile('nl', potemplate=self.bar_template)
+        self.foo_nl = self.factory.makePOFile(
+            'nl', potemplate=self.foo_template)
+        self.bar_nl = self.factory.makePOFile(
+            'nl', potemplate=self.bar_template)
         self._refreshSuggestiveTemplatesCache()
 
     def _refreshSuggestiveTemplatesCache(self):
@@ -77,9 +78,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
-        translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
-            ["foutmelding 936"], is_imported=False,
-            lock_timestamp=None)
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
         transaction.commit()
 
@@ -101,9 +101,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
-        translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
-            ["foutmelding 936"], is_imported=False,
-            lock_timestamp=None)
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
         transaction.commit()
 
@@ -131,10 +130,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
-        suggestion = barmsg.updateTranslation(self.bar_nl,
-            self.foo_template.owner, ["Noueh hallo dus."],
-            is_imported=False, lock_timestamp=None)
-        suggestion.is_current = False
+        suggestion = barmsg.submitSuggestion(
+            self.bar_nl, self.foo_template.owner, { 0: "Noueh hallo dus." })
 
         transaction.commit()
 
@@ -157,12 +154,13 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
-        suggestion1 = barmsg.updateTranslation(self.bar_nl,
-            self.foo_template.owner, [suggested_dutch],
-            is_imported=False, lock_timestamp=now)
-        suggestion2 = barmsg.updateTranslation(self.bar_nl,
-            self.bar_template.owner, [suggested_dutch],
-            is_imported=False, lock_timestamp=now)
+        suggestion1 = self.factory.makeCurrentTranslationMessage(
+            pofile=self.bar_nl, potmsgset=foomsg,
+            translations={ 0: suggested_dutch })
+        suggestion2 = self.factory.makeCurrentTranslationMessage(
+            pofile=self.bar_nl, potmsgset=barmsg,
+            translations={ 0: suggested_dutch })
+        self.assertNotEqual(suggestion1, suggestion2)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
 
@@ -185,54 +183,24 @@ class TestTranslationSuggestions(unittest.TestCase):
         # When a msgid string is unique and nobody has submitted any
         # translations for it, there are no suggestions for translating
         # it whatsoever.
-        translated_in_launchpad = "Launchpad translation."
+        translated_in_ubuntu = "Ubuntu translation."
         translated_upstream = "Upstream translation."
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
-        suggestion1 = potmsgset.updateTranslation(self.foo_nl,
-            self.foo_template.owner, [translated_in_launchpad],
-            is_imported=False, lock_timestamp=None)
-        suggestion2 = potmsgset.updateTranslation(self.foo_nl,
-            self.foo_template.owner, [translated_upstream],
-            is_imported=True, lock_timestamp=None)
-        current_translation = potmsgset.getCurrentTranslationMessage(
-            self.foo_template, self.foo_nl.language)
-        imported_translation = potmsgset.getImportedTranslationMessage(
-            self.foo_template, self.foo_nl.language)
+        suggestion1 = self.factory.makeCurrentTranslationMessage(
+            pofile=self.foo_nl, potmsgset=potmsgset,
+            translations={ 0 : translated_in_ubuntu },
+            current_other=False)
+        suggestion2 = self.factory.makeCurrentTranslationMessage(
+            pofile=self.foo_nl, potmsgset=potmsgset,
+            translations={ 0 : translated_upstream },
+            current_other=True)
+        ubuntu_translation = potmsgset.getCurrentTranslation(
+            self.foo_template, self.foo_nl.language,
+            side=self.foo_template.translation_side)
+        upstream_translation = potmsgset.getOtherTranslation(
+            self.foo_nl.language, self.foo_template.translation_side)
 
         self.assertEquals(
-            current_translation, imported_translation,
-            "Imported message should become current if there are no "
-            "previous imported messages.")
-
-    def test_TranslationWithErrors(self):
-        # When a msgid string is printf-type string, and translation
-        # doesn't match the msgid specifiers, an error is raised.
-        cformat_msgid = "%d files"
-        translation_with_error = "%s files"
-
-        potmsgset = self.factory.makePOTMsgSet(self.foo_template,
-                                               singular=cformat_msgid)
-        # Set a c-format flag so error is raised
-        naked_potmsgset = removeSecurityProxy(potmsgset)
-        naked_potmsgset.flagscomment = "c-format"
-
-        # An exception is raised if one tries to set the broken translation.
-        self.assertRaises(
-            gettextpo.error,
-            potmsgset.updateTranslation,
-            self.foo_nl, self.foo_template.owner, [translation_with_error],
-            is_imported=True, lock_timestamp=None)
-
-        # However, if ignore_errors=True is passed, then it's saved
-        # and marked as a message with errors.
-        translation = potmsgset.updateTranslation(
-            self.foo_nl, self.foo_template.owner, [translation_with_error],
-            is_imported=True, lock_timestamp=None, ignore_errors=True)
-        self.assertEquals(translation.validation_status,
-                          TranslationValidationStatus.UNKNOWNERROR,
-                          "TranslationMessage with errors is not correctly"
-                          "marked as such in the database.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+            upstream_translation, ubuntu_translation,
+            "Upstream message should become current in Ubuntu if there are "
+            "no previous imported messages.")
