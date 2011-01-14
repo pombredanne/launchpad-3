@@ -20,6 +20,7 @@ from lp.services.features.flags import (
     NullFeatureController,
     undocumented_flags,
     )
+from lp.services.features.scopes import HANDLERS
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -61,6 +62,13 @@ class TestFeatureControlPage(BrowserTestCase):
         for record in flag_info:
             for item in record:
                 self.assertThat(browser.contents, Contains(item))
+
+    def test_feature_documentation_displayed(self):
+        """The scope documentation is displayed on the page."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureInfoUrl())
+        for pattern in [handler.pattern for handler in HANDLERS]:
+            self.assertThat(browser.contents, Contains(pattern))
 
     def test_undocumented_features_displayed(self):
         """The undocumented feature flag names are displayed on the page."""
