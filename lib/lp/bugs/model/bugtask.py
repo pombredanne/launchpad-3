@@ -1363,15 +1363,20 @@ def build_tag_set_query(joiner, tags):
     Bug.id. It evaluates to TRUE or FALSE, indicating whether the bug
     with Bug.id matches against the tags passed.
 
+    Returns None if no tags are passed.
+
     :param joiner: The SQL set term used to join the individual tag
         clauses, typically "INTERSECT" or "UNION".
     :param tags: An iterable of valid tag names (not prefixed minus
         signs, not wildcards).
     """
+    if tags == []:
+        return None
+
     joiner = " %s " % joiner
-    return joiner.join(
-        "EXISTS (SELECT TRUE FROM BugTag WHERE " +
-            "BugTag.bug = Bug.id AND BugTag.tag = %s)" % quote(tag)
+    return "EXISTS (%s)" % joiner.join(
+        "SELECT TRUE FROM BugTag WHERE " +
+            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
         for tag in sorted(tags))
 
 
@@ -1417,24 +1422,24 @@ def build_tag_search_clause(tags_spec):
     # Search for the *presence* of any tag.
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
-        if len(include_clause) == 0 or not find_all:
+        if include_clause == None or not find_all:
             include_clause = (
                 "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
-        if len(exclude_clause) == 0 or find_all:
+        if exclude_clause == None or find_all:
             exclude_clause = (
                 "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
 
     # Combine the include and exclude sets.
-    if len(include_clause) > 0 and len(exclude_clause) > 0:
+    if include_clause != None and exclude_clause != None:
         return "(%s %s NOT %s)" % (
             include_clause, combine_with, exclude_clause)
-    elif len(include_clause) > 0:
+    elif include_clause != None:
         return "%s" % include_clause
-    elif len(exclude_clause) > 0:
+    elif exclude_clause != None:
         return "NOT %s" % exclude_clause
     else:
         # This means that there were no tags (wildcard or specific) to
