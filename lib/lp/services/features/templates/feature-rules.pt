@@ -12,6 +12,10 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_top">
+      For more information about the available feature flags see the <a
+      href="+feature-info">feature flag info page</a>.
+    </div>
   </div>
 </div>
 </body>
