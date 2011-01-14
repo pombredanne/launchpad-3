@@ -1261,9 +1261,10 @@ class PublishingSet:
         """See `IPublishingSet`."""
         secure_copies = []
         for binary in binaries:
-            # XXX: wgrant 2011-01-10:
             # This will go wrong if nominatedarchindep gets deleted in a
-            # future series.
+            # future series -- it will attempt to retrieve i386 from the
+            # new series, fail, and skip the publication instead of
+            # publishing the remaining archs.
             try:
                 build = binary.binarypackagerelease.build
                 target_architecture = distroseries[
