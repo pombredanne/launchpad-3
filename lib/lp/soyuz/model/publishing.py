@@ -92,6 +92,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     PoolFileOverwriteError,
     )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -1258,58 +1259,68 @@ class PublishingSet:
     def copyBinariesTo(self, binaries, distroseries, pocket, archive):
         """See `IPublishingSet`."""
         secure_copies = []
-
         for binary in binaries:
-            binarypackagerelease = binary.binarypackagerelease
-
-            # XXX 2010-09-28 Julian bug=649859
-            # This piece of code duplicates the logic in
-            # PackageUploadBuild.publish(), it needs to be refactored.
-
-            if binarypackagerelease.architecturespecific:
-                # If the binary is architecture specific and the target
-                # distroseries does not include the architecture then we
-                # skip the binary and continue.
-                try:
-                    # For safety, we use the architecture the binary was
-                    # built, and not the one it is published, coping with
-                    # single arch-indep publications for architectures that
-                    # do not exist in the destination series.
-                    # See #387589 for more information.
-                    target_architecture = distroseries[
-                        binarypackagerelease.build.arch_tag]
-                except NotFoundError:
-                    continue
-                destination_architectures = [target_architecture]
-            else:
-                destination_architectures = [
-                    arch for arch in distroseries.architectures
-                    if arch.enabled]
-
-            for distroarchseries in destination_architectures:
-
-                # We only copy the binary if it doesn't already exist
-                # in the destination.
-                binary_in_destination = archive.getAllPublishedBinaries(
-                    name=binarypackagerelease.name, exact_match=True,
-                    version=binarypackagerelease.version,
-                    status=active_publishing_status, pocket=pocket,
-                    distroarchseries=distroarchseries)
-
-                if not bool(binary_in_destination):
-                    pub = self.newBinaryPublication(
-                        archive, binarypackagerelease, distroarchseries,
-                        binary.component, binary.section, binary.priority,
-                        pocket)
-                    secure_copies.append(pub)
-
+            # This will go wrong if nominatedarchindep gets deleted in a
+            # future series -- it will attempt to retrieve i386 from the
+            # new series, fail, and skip the publication instead of
+            # publishing the remaining archs.
+            try:
+                build = binary.binarypackagerelease.build
+                target_architecture = distroseries[
+                    build.distro_arch_series.architecturetag]
+            except NotFoundError:
+                continue
+            if not target_architecture.enabled:
+                continue
+            secure_copies.extend(
+                getUtility(IPublishingSet).publishBinary(
+                    archive, binary.binarypackagerelease, target_architecture,
+                    binary.component, binary.section, binary.priority,
+                    pocket))
         return secure_copies
+
+    def publishBinary(self, archive, binarypackagerelease, distroarchseries,
+                      component, section, priority, pocket):
+        """See `IPublishingSet`."""
+        if not binarypackagerelease.architecturespecific:
+            target_archs = distroarchseries.distroseries.enabled_architectures
+        else:
+            target_archs = [distroarchseries]
+
+        # DDEBs targeted to the PRIMARY archive are published in the
+        # corresponding DEBUG archive.
+        if binarypackagerelease.binpackageformat == BinaryPackageFormat.DDEB:
+            debug_archive = archive.debug_archive
+            if debug_archive is None:
+                raise QueueInconsistentStateError(
+                    "Could not find the corresponding DEBUG archive "
+                    "for %s" % (archive.displayname))
+            archive = debug_archive
+
+        published_binaries = []
+        for arch in target_archs:
+            # We only publish the binary if it doesn't already exist in
+            # the destination. Note that this means we don't support
+            # override changes on their own.
+            binaries_in_destination = archive.getAllPublishedBinaries(
+                name=binarypackagerelease.name, exact_match=True,
+                version=binarypackagerelease.version,
+                status=active_publishing_status, pocket=pocket,
+                distroarchseries=distroarchseries)
+            if not bool(binaries_in_destination):
+                published_binaries.append(
+                    getUtility(IPublishingSet).newBinaryPublication(
+                        archive, binarypackagerelease, arch, component,
+                        section, priority, pocket))
+        return published_binaries
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
                              pocket):
         """See `IPublishingSet`."""
-        pub = BinaryPackagePublishingHistory(
+        assert distroarchseries.enabled, (
+            "Will not create new publications in a disabled architecture.")
+        return BinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
@@ -1320,8 +1331,6 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
-
-        return pub
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
