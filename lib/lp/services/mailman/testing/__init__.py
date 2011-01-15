@@ -18,6 +18,8 @@ from Mailman import (
     mm_cfg,
     )
 from Mailman.Queue import XMLRPCRunner
+from Mailman.Logging.Syslog import syslog
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -107,3 +109,25 @@ class MailmanTestCase(TestCaseWithFactory):
         mm_message = email.message_from_string(
             message.as_string(), Message.Message)
         return mm_message
+
+    def get_log_entry(self, match_text):
+        """Return the first mark line found in the log."""
+        log_path = syslog._logfiles['xmlrpc']._Logger__filename
+        mark = None
+        with open(log_path, 'r') as log_file:
+            for line in log_file.readlines():
+                if match_text in line:
+                    mark = line
+                    break
+        return mark
+
+    def get_mark(self):
+        return self.get_log_entry('--MARK--')
+
+    def reset_log(self):
+        """Truncate the log."""
+        log_path = syslog._logfiles['xmlrpc']._Logger__filename
+        syslog._logfiles['xmlrpc'].close()
+        with open(log_path, 'w') as log_file:
+            log_file.truncate()
+        syslog.write_ex('xmlrpc', 'Reset by test.')

@@ -5,6 +5,7 @@
 
 __all__ = [
     'get_mailing_list_api_proxy',
+    'handle_proxy_error',
     'XMLRPCRunner',
     ]
 
@@ -33,6 +34,7 @@ from Mailman.LockFile import TimeOutError
 from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
+from Mailman.Queue.sbcache import get_switchboard
 
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
@@ -77,6 +79,24 @@ def log_exception(message, *args):
     syslog('xmlrpc', message, *args)
     syslog('error', message, *args)
     syslog('error', traceback_text)
+
+
+def handle_proxy_error(error, msg=None, msgdata=None):
+    """Log the error and enqueue the message if needed.
+
+    :param error: The error to log.
+    :param msg: An optional message to re-enqueue.
+    :param msgdata: The message data to enque with the message.
+    :raise DiscardMessage: When a message is enqueued.
+    """
+    if isinstance(error, (xmlrpclib.ProtocolError, socket.error)):
+        log_exception('Cannot talk to Launchpad:\n%s', error)
+    else:
+        log_exception('Launchpad exception: %s', error)
+    if msg is not None:
+        queue = get_switchboard(mm_cfg.INQUEUE_DIR)
+        queue.enqueue(msg, msgdata)
+        raise Errors.DiscardMessage
 
 
 class XMLRPCRunner(Runner):
