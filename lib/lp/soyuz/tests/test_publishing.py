@@ -1344,7 +1344,8 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         """Publications in other series shouldn't be found."""
         bins = self.getPubBinaries(architecturespecific=False)
         series = self.factory.makeDistroSeries()
-        arch = self.factory.makeDistroArchSeries(distroseries=series)
+        arch = self.factory.makeDistroArchSeries(
+            distroseries=series, architecturetag='i386')
         foreign_bins = bins[0].copyTo(
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
