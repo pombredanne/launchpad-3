@@ -1337,7 +1337,7 @@
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
-        class="lp.registry.browser.milestone.MilestoneView"
+        class="lp.registry.browser.milestone.MilestonesView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>

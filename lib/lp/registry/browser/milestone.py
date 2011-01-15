@@ -516,3 +516,7 @@ class ObjectMilestonesView(LaunchpadView):
     """A view for listing the milestones for any `IHasMilestones` object"""
 
     label = 'Milestones'
+
+    @cachedproperty
+    def milestones(self):
+        return list(self.context.all_milestones)
