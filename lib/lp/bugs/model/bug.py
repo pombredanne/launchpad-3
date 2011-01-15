@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1773,17 +1773,24 @@ BugMessage""" % sqlvalues(self.id))
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
-        Seed it by including the list of all owners of bugtasks for the bug.
+        Seed it by including the list of all owners of pillars for bugtasks
+        for the bug.
         """
-        bugtask_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(bugtask_owners)
+        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
+        return set(pillar_owners)
 
     def userCanView(self, user):
         """See `IBug`.
 
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
+
+        If bug privacy rights are changed here, corresponding changes need
+        to be made to the queries which screen for privacy.  See
+        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
+        assert user is not None, "User may not be None"
+
         if user.id in self._known_viewers:
             return True
         if not self.private:
@@ -1793,7 +1800,15 @@ BugMessage""" % sqlvalues(self.id))
             # Admins can view all bugs.
             return True
         else:
-            # This is a private bug. Only explicit subscribers may view it.
+            # At this point we know the bug is private and the user is
+            # unprivileged.
+
+            # Assignees to bugtasks can see the private bug.
+            for bugtask in self.bugtasks:
+                if user.inTeam(bugtask.assignee):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Explicit subscribers may also view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
                     self._known_viewers.add(user.id)
@@ -2185,13 +2200,23 @@ class BugSet:
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
-                     Bug.id in (
-                         SELECT Bug.id
-                         FROM Bug, BugSubscription, TeamParticipation
-                         WHERE Bug.id = BugSubscription.bug AND
+                      Bug.id in (
+                         -- Users who have a subscription to this bug.
+                         SELECT BugSubscription.bug
+                           FROM BugSubscription, TeamParticipation
+                           WHERE
                              TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team))
-                             """ % sqlvalues(personid=user.id))
+                             BugSubscription.person = TeamParticipation.team
+                         UNION
+                         -- Users who are the assignee for one of the bug's
+                         -- bugtasks.
+                         SELECT BugTask.bug
+                           FROM BugTask, TeamParticipation
+                           WHERE
+                             TeamParticipation.person = %(personid)s AND
+                             TeamParticipation.team = BugTask.assignee
+                      )
+                    )""" % sqlvalues(personid=user.id))
         else:
             # Anonymous user; filter to include only public bugs in
             # the search results.

@@ -832,7 +832,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.component in (
             self.archive.getComponentsForSeries(self.distroseries))
 
-
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
         return [

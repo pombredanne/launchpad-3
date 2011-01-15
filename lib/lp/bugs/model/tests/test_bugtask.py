@@ -1258,14 +1258,16 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
         Four BugTarget types may passed as the target argument:
         Distribution, DistroSeries, Product, ProductSeries.
         """
-        supported_targets = [self.distribution, self.distroseries,
-                             self.product, self.productseries]
-        for target in supported_targets:
+        supported_targets_and_task_count = [
+            (self.distribution, 2), (self.distroseries, 1), (self.product, 2),
+            (self.productseries, 1), (None, 4)]
+        for target, expected_count in supported_targets_and_task_count:
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
                 0, self.user, target=target)
-            self.assertNotEqual(expirable_bugtasks.count(), 0,
-                 "%s has %d expirable bugtasks." %
-                 (self.distroseries, expirable_bugtasks.count()))
+            self.assertEqual(expected_count, expirable_bugtasks.count(),
+                 "%s has %d expirable bugtasks, expected %d." %
+                 (self.distroseries, expirable_bugtasks.count(),
+                  expected_count))
 
     def testUnsupportedBugTargetParam(self):
         """Test that unsupported targets raise errors.

@@ -1540,7 +1540,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             latest_releases = series.getCurrentSourceReleases(
                 packagenames)
             for spph in spphs:
-                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                latest_release = latest_releases.get(spph.meta_sourcepackage)
                 if latest_release is not None and apt_pkg.VersionCompare(
                     latest_release.version, spph.source_package_version) > 0:
                     version = latest_release

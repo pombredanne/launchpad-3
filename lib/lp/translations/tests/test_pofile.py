@@ -1714,6 +1714,25 @@ class TestPOFileSet(TestCaseWithFactory):
 
         self.assertContentEqual([pofile], found)
 
+    def test_getPOFilesByPathAndOrigin_includes_obsolete_templates(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        self.assertContentEqual(
+            [pofile],
+            self.pofileset.getPOFilesByPathAndOrigin(
+                pofile.path, productseries=template.productseries))
+
+    def test_getPOFilesByPathAndOrigin_can_ignore_obsolete_templates(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        self.assertContentEqual(
+            [],
+            self.pofileset.getPOFilesByPathAndOrigin(
+                pofile.path, productseries=template.productseries,
+                ignore_obsolete=True))
+
 
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
