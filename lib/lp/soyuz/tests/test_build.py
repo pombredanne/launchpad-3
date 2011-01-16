@@ -75,7 +75,7 @@ class TestBuild(TestCaseWithFactory):
         [build] = spph.createMissingBuilds()
         self.assertEquals(self.distroseries.main_archive, build.archive)
         self.assertEquals(self.distroseries.distribution, build.distribution)
-        self.assertEquals(self.distroseries, build.distroseries)
+        self.assertEquals(self.distroseries, build.distro_series)
         self.assertEquals(self.das, build.distro_arch_series)
         self.assertEquals(PackagePublishingPocket.RELEASE, build.pocket)
         self.assertEquals(self.das.architecturetag, build.arch_tag)
