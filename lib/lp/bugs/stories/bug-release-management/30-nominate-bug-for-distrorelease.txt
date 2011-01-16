@@ -1,4 +1,5 @@
-= Nominate a bug to a distribution release =
+Nominate a bug to a distribution release
+========================================
 
 A bug can be nominated for a distribution release.
 
@@ -35,7 +36,7 @@ errors, and we'll give an example of one shortly.
     ...     "http://launchpad.dev/poseidon/+source/%s/+bug/%s/+nominate" %
     ...     (dsp.name, bug_task.bug.id))
     >>> nominater_browser.getControl("Aqua").selected = True
-    >>> nominater_browser.getControl("Submit").click()
+    >>> nominater_browser.getControl("Nominate").click()
     >>> for tag in find_tags_by_class(nominater_browser.contents, 'message'):
     ...     print tag
     <div...Added nominations for: Poseidon Aqua...
@@ -45,7 +46,7 @@ accidentally nominates the bug for Aqua a second time, an error is
 raised.
 
     >>> nominater_other_browser.getControl("Aqua").selected = True
-    >>> nominater_other_browser.getControl("Submit").click()
+    >>> nominater_other_browser.getControl("Nominate").click()
 
     >>> for tag in find_tags_by_class(nominater_other_browser.contents,
     ...     'message'):
@@ -61,7 +62,7 @@ approved and targeted to the release.
     ...     (dsp.name, bug_task.bug.id))
 
     >>> admin_browser.getControl("Hydro").selected = True
-    >>> admin_browser.getControl("Submit").click()
+    >>> admin_browser.getControl("Nominate").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag

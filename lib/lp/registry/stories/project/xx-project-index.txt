@@ -29,11 +29,11 @@ its development focus.
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'products'))
     Projects
-    Gnome Applets
     Evolution
     GNOME Terminal
-    gnomebaker
+    Gnome Applets
     NetApplet
+    gnomebaker
     ...
 
 The projects are linked.

@@ -119,11 +119,11 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
     Whiteboard,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -665,7 +665,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def pending_diff(self):
-        return self.context.next_preview_diff_job is not None
+        return (
+            self.context.next_preview_diff_job is not None or
+            self.context.source_branch.pending_writes)
 
     @cachedproperty
     def preview_diff(self):

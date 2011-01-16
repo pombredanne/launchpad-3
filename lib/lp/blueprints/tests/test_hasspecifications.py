@@ -5,12 +5,15 @@
 
 __metaclass__ = type
 
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class HasSpecificationsTests(TestCaseWithFactory):
@@ -178,3 +181,37 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
             ["spec1"], person.valid_specifications)
+
+
+class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of specification targets."""
+
+    layer = DatabaseFunctionalLayer
+
+    def check_skipped(self, target):
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        skipped = [
+            'all_specifications',
+            'valid_specifications',
+            ]
+        self.assertThat(target, DoesNotSnapshot(skipped, IHasSpecifications))
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.check_skipped(product)
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.check_skipped(distribution)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.check_skipped(productseries)
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.check_skipped(distroseries)
+
+    def test_projectgroup(self):
+        projectgroup = self.factory.makeProject()
+        self.check_skipped(projectgroup)

@@ -61,7 +61,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
             ['assignee'], user=self.user))
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 1, 'email not sent')
-        rationale = 'You have been assigned a bug task for a public bug by Sample Person'
+        rationale = (
+            'Sample Person (name12) has assigned this bug to you for Rebirth')
         msg = stub.test_emails[-1][2]
         self.assertTrue(rationale in msg,
                         '%s not in\n%s\n' % (rationale, msg))
@@ -89,7 +90,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
             self.bug_task, self.bug_task_before_modification,
             ['assignee'], user=self.user))
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications([latest_notification])
+        notifications, messages = construct_email_notifications(
+            [latest_notification])
         self.assertEqual(len(notifications), 1,
                          'email notication not created')
         receivers = [message['To'] for message in messages]
@@ -105,8 +107,9 @@ class TestAssignmentNotification(TestCaseWithFactory):
             self.bug_task, self.bug_task_before_modification,
             ['assignee'], user=self.user))
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications([latest_notification])
-        self.assertEqual(len(notifications), 1, 
+        notifications, messages = construct_email_notifications(
+            [latest_notification])
+        self.assertEqual(len(notifications), 1,
                          'email notification not created')
         receivers = [message['To'] for message in messages]
         self.assertFalse(self.team_member_email in receivers,

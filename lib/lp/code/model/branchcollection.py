@@ -364,10 +364,13 @@ class GenericBranchCollection:
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
 
-    def targetedBy(self, person):
+    def targetedBy(self, person, since=None):
         """See `IBranchCollection`."""
+        clauses = [BranchMergeProposal.registrant == person]
+        if since is not None:
+            clauses.append(BranchMergeProposal.date_created >= since)
         return self._filterBy(
-            [BranchMergeProposal.registrant == person],
+            clauses,
             table=BranchMergeProposal,
             join=Join(BranchMergeProposal,
                       BranchMergeProposal.target_branch == Branch.id))

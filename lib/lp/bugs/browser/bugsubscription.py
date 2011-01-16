@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -15,7 +15,6 @@ import cgi
 
 from lazr.delegates import delegates
 from simplejson import dumps
-
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -490,7 +489,7 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         """
         direct_subscriptions = [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions()]
+            for subscription in self.context.getDirectSubscriptions().sorted]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:

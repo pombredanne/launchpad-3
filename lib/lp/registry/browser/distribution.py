@@ -426,11 +426,11 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         summary = 'Enable tracking of feature planning.'
         return Link('+edit', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
-        return Link('+edit', text, summary, icon='edit')
+        return Link('+configure-translations', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -829,13 +829,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

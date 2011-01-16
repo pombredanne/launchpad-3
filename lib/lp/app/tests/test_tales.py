@@ -3,14 +3,16 @@
 
 """tales.py doctests."""
 
-from doctest import DocTestSuite
 import unittest
+
+from doctest import DocTestSuite
+from lxml import html
 
 from zope.component import getAdapter
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import test_tales, TestCase, TestCaseWithFactory
 
 
 def test_requestapi():
@@ -118,6 +120,61 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s</a>' % (
             formatter.url(), person.name)
         self.assertEqual(expected, result)
+
+
+class TestFormattersAPI(TestCase):
+    """Tests for FormattersAPI."""
+
+    layer = DatabaseFunctionalLayer
+
+    test_data = (
+        'http://localhost:8086/bar/baz/foo.html\n'
+        'ftp://localhost:8086/bar/baz/foo.bar.html\n'
+        'sftp://localhost:8086/bar/baz/foo.bar.html.\n'
+        'http://localhost:8086/bar/baz/foo.bar.html;\n'
+        'news://localhost:8086/bar/baz/foo.bar.html:\n'
+        'http://localhost:8086/bar/baz/foo.bar.html?\n'
+        'http://localhost:8086/bar/baz/foo.bar.html,\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>,\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>.\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>;\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>:\n'
+        '<http://localhost:8086/bar/baz/foo.bar.html>?\n'
+        '(http://localhost:8086/bar/baz/foo.bar.html)\n'
+        '(http://localhost:8086/bar/baz/foo.bar.html),\n'
+        '(http://localhost:8086/bar/baz/foo.bar.html).\n'
+        '(http://localhost:8086/bar/baz/foo.bar.html);\n'
+        '(http://localhost:8086/bar/baz/foo.bar.html):\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b=a\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b=a.\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b=a,\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b=a;\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n'
+        'http://localhost/bar/baz/foo.bar.html?a=b&b='
+            'a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p\n'
+        'http://www.searchtools.com/test/urls/(parens).html\n'
+        'http://www.searchtools.com/test/urls/-dash.html\n'
+        'http://www.searchtools.com/test/urls/_underscore.html\n'
+        'http://www.searchtools.com/test/urls/period.x.html\n'
+        'http://www.searchtools.com/test/urls/!exclamation.html\n'
+        'http://www.searchtools.com/test/urls/~tilde.html\n'
+        'http://www.searchtools.com/test/urls/*asterisk.html\n'
+        'irc://irc.freenode.net/launchpad\n'
+        'irc://irc.freenode.net/%23launchpad,isserver\n'
+        'mailto:noreply@launchpad.net\n'
+        'jabber:noreply@launchpad.net\n'
+        'http://localhost/foo?xxx&\n'
+        'http://localhost?testing=[square-brackets-in-query]\n')
+
+    def test_linkification_with_target(self):
+        # The text-to-html-with-target formatter sets the target
+        # attribute of the links it produces to _new.
+        linkified_text = test_tales(
+            'foo/fmt:text-to-html-with-target', foo=self.test_data)
+        tree = html.fromstring(linkified_text)
+        for link in tree.xpath('//a'):
+            self.assertEqual('_new', link.get('target'))
 
 
 def test_suite():

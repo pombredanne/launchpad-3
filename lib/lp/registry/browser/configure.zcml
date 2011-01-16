@@ -1524,13 +1524,6 @@
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureBlueprintsView"/>
     <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
-        name="+configure-translations"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
-    <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
@@ -2306,6 +2299,9 @@
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"
         attribute_to_parent="target"/>
+    <browser:navigation
+        module="lp.registry.browser.structuralsubscription"
+        classes="StructuralSubscriptionNavigation"/>
 
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"

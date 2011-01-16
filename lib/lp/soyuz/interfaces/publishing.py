@@ -471,6 +471,12 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "package that has been published in the main distribution series, "
         "if one exists, or None.")
 
+    ancestor = Reference(
+        Interface, # Really ISourcePackagePublishingHistory
+        title=_('Ancestor'),
+        description=_('The previous release of this source package.'),
+        required=False, readonly=True)
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -872,6 +878,29 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
+    def publishBinary(archive, binarypackagerelease, distroarchseries,
+                      component, section, priority, pocket):
+        """Publish a `BinaryPackageRelease` in an archive.
+
+        Creates one or more `IBinaryPackagePublishingHistory` records,
+        handling architecture-independent and DDEB publications transparently.
+
+        Note that binaries will only be copied if they don't already exist in
+        the target; this method cannot be used to change overrides.
+
+        :param archive: The target `IArchive`.
+        :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
+        :param distroarchseries: An `IDistroArchSeries`. If the binary is
+            architecture-independent, it will be published to all enabled
+            architectures in this series.
+        :param component: The target `IComponent`.
+        :param section: The target `ISection`.
+        :param priority: The target `PackagePublishingPriority`.
+        :param pocket: The target `PackagePublishingPocket`.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
                              component, section, priority, pocket):
         """Create a new `BinaryPackagePublishingHistory`.
@@ -889,7 +918,7 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket):
+                             component, section, pocket, ancestor):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -898,6 +927,8 @@ class IPublishingSet(Interface):
         :param component: An `IComponent`
         :param section: An `ISection`
         :param pocket: A `PackagePublishingPocket`
+        :param ancestor: A `ISourcePackagePublishingHistory` for the previous
+            version of this publishing record
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

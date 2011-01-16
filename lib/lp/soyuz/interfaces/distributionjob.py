@@ -28,14 +28,13 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
     )
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 class IDistributionJob(Interface):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -17,12 +17,12 @@ from difflib import unified_diff
 import unittest
 
 import pytz
+from soupmatchers import HTMLContains, Tag
+from testtools.matchers import Not
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -349,10 +349,10 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+class TestRegisterBranchMergeProposalView(BrowserTestCase):
     """Test the merge proposal registration view."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -522,6 +522,15 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
+
+    def test_register_reviewer_not_hidden(self):
+        branch = self.factory.makeBranch()
+        browser = self.getViewBrowser(branch, '+register-merge')
+        extra = Tag(
+            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
+        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
+        matcher = Not(HTMLContains(reviewer.within(extra)))
+        self.assertThat(browser.contents, matcher)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
@@ -781,6 +790,16 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertFalse(view.conversation.comments[2].from_superseded)
         self.assertTrue(view.conversation.comments[1].from_superseded)
         self.assertTrue(view.conversation.comments[0].from_superseded)
+
+    def test_pending_diff_with_pending_branch(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.fail()
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.pending_diff)
+        with person_logged_in(bmp.source_branch.owner):
+            bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
+        self.assertTrue(view.pending_diff)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

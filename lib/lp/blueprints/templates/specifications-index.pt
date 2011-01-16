@@ -71,6 +71,10 @@
           </tbody>
         </table>
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('field.search_text');
+       // --></script>
+
       <tal:searchresults condition="view/searchrequested"
                          define="specs view/specs" >
         <p tal:condition="specs">

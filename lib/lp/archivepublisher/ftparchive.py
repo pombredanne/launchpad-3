@@ -146,14 +146,6 @@ class FTPArchiveHandler:
         self._config = config
         self._diskpool = diskpool
         self.distro = distro
-        self.distroseries = []
-        for distroseries in self.distro.series:
-            if not distroseries.name in self._config.distroSeriesNames():
-                self.log.warning("Distroseries %s in %s doesn't have "
-                    "a lucille configuration.", distroseries.name,
-                    self.distro.name)
-            else:
-                self.distroseries.append(distroseries)
         self.publisher = publisher
 
         # We need somewhere to note down where the debian-installer
@@ -195,7 +187,7 @@ class FTPArchiveHandler:
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             components = [
                 comp.name for comp in
                 self.publisher.archive.getComponentsForSeries(distroseries)]
@@ -358,7 +350,7 @@ class FTPArchiveHandler:
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -624,7 +616,7 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -750,14 +742,13 @@ class FTPArchiveHandler:
 
         # confixtext now contains a basic header. Add a dists entry for
         # each of the distroseries we've touched
-        for distroseries_name in self._config.distroSeriesNames():
-            distroseries = self.distro[distroseries_name]
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
 
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         self.log.debug("Skipping a-f stanza for %s/%s" %
-                                           (distroseries_name, pocket.name))
+                                           (distroseries.name, pocket.name))
                         continue
                     self.publisher.checkDirtySuiteBeforePublishing(
                         distroseries, pocket)

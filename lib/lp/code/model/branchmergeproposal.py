@@ -74,13 +74,17 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     )
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.branchrevision import IBranchRevision
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
-from lp.code.model.diff import Diff, IncrementalDiff, PreviewDiff
+from lp.code.model.diff import (
+    Diff,
+    IncrementalDiff,
+    PreviewDiff,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     validate_public_person,

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -331,7 +331,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging'
         enabled = (
