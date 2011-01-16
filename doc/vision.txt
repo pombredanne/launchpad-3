@@ -1,0 +1,162 @@
+=====================
+Launchpad: The Vision
+=====================
+
+
+Introduction
+============
+
+This document tries to address *why* we are making Launchpad.  What problems
+are we trying to solve?  What benefits do we hope to gain from solving these
+problems?  How do we go about deciding whether something is in scope or not?
+How do we know if Launchpad is doing well?
+
+This document is not intended to be our strategy for the year or our scope of
+Launchpad development for the next six months.  Rather, it is intended to
+describe what Launchpad is and why we are doing it at a fundamental level.  Of
+course, as we learn more about Launchpad and its place in the world, we should
+amend this document.
+
+
+Strategy -- Why are we doing this?
+==================================
+
+Open source software is bigger than you think.  It is much more than simply
+writing the code.  Code has to be packaged and delivered to users who then can
+give feedback and file bugs.  Distributions made up of thousands of different
+software packages need to be released to meet a deadline.  Translations must
+be made into hundreds of different languages and accumulated from a variety of
+sources.  Everywhere bugs need to be tracked, plans made and kept.
+Distributions have to be made to work on a wide variety of hardware platforms.
+
+The Ubuntu community, together with Canonical, are dedicated to making the
+very best open source operating system possible, one that far excels any
+commercial operating system.  To do this, we need to make the process of
+making Ubuntu as efficient as possible.  Moreover, we need to make the process
+of making open source software as efficient as possible, and then make it
+easy, quick and desirable to get that software into Ubuntu.
+
+Secondarily, Canonical's main business is providing premium services built
+around Ubuntu.  Many of these services are either proprietary or open source
+software, and Canonical must be able to make this software more quickly and at
+less cost than any rival.
+
+
+[[XXX - this doesn't mention quality at all, which I think is unfortunate -
+jml]]
+
+[[XXX - I think the same thoughts could be expressed more clearly - jml]]
+
+[[XXX - mention something about the particular challenges of open source?
+heterogenous technology, volunteer vs paid contributions, distributed
+contributors, relatively small numbers, consensus based decisions - jml]]
+
+
+What is Launchpad?
+==================
+
+Launchpad is a complete system for gathering changes from different types of
+sources and collaboratively organizing them into packaged software for the end
+user, delivered as part of an operating system that can be downloaded or comes
+pre-installed on purchased hardware.
+
+
+Distinctives
+------------
+
+Launchpad is different from other "forges" in a few important ways:
+
+
+Cross-project collaboration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No project lives in isolation.  Each project is part of an ecosystem of
+software.  Projects must be able to interact with each other, share bugs,
+teams, goals and code with each other.
+
+
+Front-end to open source
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Launchpad aims to be a front-end to open source.  Whether or not a project
+chooses to host on Launchpad, opportunistic developers can use Launchpad to
+navigate bugs, get code and send patches.  Likewise, we aim to present a
+uniform interface to the projects we have.
+
+
+Distributions are projects too
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Launchpad hosts Linux distributions in much the same way as it hosts projects,
+allowing for developers to feel at home when interacting with distributions.
+
+
+Gated development
+~~~~~~~~~~~~~~~~~
+
+Sometimes, secrets are necessary.  Launchpad understands that sometimes
+development needs to be done privately, and the results only later shared with
+the world.  Security fixes, OEM development for new hardware, proprietary
+services with open source clients are all examples of these.
+
+
+Hardware matters
+~~~~~~~~~~~~~~~~
+
+Many software developers like to pretend that hardware does not really exist.
+When people distribute software as part of an operating system, they don't
+have the luxury of forgetting. Launchpad understands that developers often
+need to acknoweldge and work around differences thrown up by hardware.
+
+
+We don't care if you use Launchpad, sort of
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many other forges exist to become more successful.  Although we love our users
+and welcome every new users, Launchpad does not judge its success by the
+number of users.  If one project wishes to host its development on another
+platform, Launchpad acts as a front-end to that platform.
+
+
+One project, many communities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Any given project can have many distinct communities interested in it.  These
+communities have different interests and different motivations, but all work
+in the same project space so that they can easily benefit from each others'
+efforts.
+
+
+
+New World
+=========
+
+ * Describe the impact
+ * Example stories
+ * Refer to distinctives
+
+
+Quotes lifted from elsewhere
+============================
+
+By encompassing the entire process, all the way to OS delivery, Launchpad and
+Canonical can provide a unique service: enable each contributor to focus on
+the work they care about, while giving them an ambient awareness of how their
+work fits into a larger picture, and providing a path by which they can
+participate in other parts of that picture when they feel the need.
+
+Launchpad's relationship to them is to increase their surface area: to provide
+a binding surface by which OS-driven improvements can reach upstream code
+faster, and upstream improvements can reach the OS faster.
+
+Two networks are meshed together in Launchpad:
+ 1. Network of people making software
+ 2. The network of dependencies between software.
+
+People who are interested in doing something great will need to coordinate
+their work, describe the things that they aren't doing yet but wish they
+could, and keep track of the defects in the things they have already done.
+
+But open source software is not quite the same as proprietary software or a
+commercial product. In open source software, all users are potential
+contributors.
