@@ -90,8 +90,8 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
     def setUp(self):
         super(TestDistributionHasBuildRecords, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        # Create two processorfamilys, a distroseries, two DASes, and an
-        # archive
+        # Create the machinery we need to create builds, such as
+        # DistroArchSeries and builders.
         self.pf_one = self.factory.makeProcessorFamily()
         pf_proc_1 = self.pf_one.addProcessor(
             self.factory.getUniqueString(), '', '')
@@ -110,8 +110,6 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
         self.arch_ids = [arch.id for arch in self.distroseries.architectures]
-        # Set up the publisher, set the nominatedarchindep, upload chroots
-        # and create buildds.
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
@@ -124,7 +122,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
 
     def createBuilds(self):
         for i in range(5):
-            # Create some test builds
+            # Create some test builds.
             spph = self.publisher.getPubSource(
                 sourcename=self.factory.getUniqueString(),
                 version="%s.%s" % (self.factory.getUniqueInteger(), i),
@@ -141,7 +139,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
             self.builds += builds
 
     def test_get_build_records(self):
-        # A Distribution also implements IHasBuildRecords
+        # A Distribution also implements IHasBuildRecords.
         builds = self.distribution.getBuildRecords().count()
         self.assertEquals(10, builds)
 
@@ -163,7 +161,7 @@ class TestDistroArchSeriesHasBuildRecords(TestDistributionHasBuildRecords):
         super(TestDistroArchSeriesHasBuildRecords, self).setUp()
 
     def test_distroarchseries(self):
-        # We can fetch builds from DASes using .getBuildRecords
+        # We can fetch builds records from a DistroArchSeries.
         builds = self.das_one.getBuildRecords().count()
         self.assertEquals(5, builds)
         builds = self.das_one.getBuildRecords(
@@ -298,7 +296,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             build.date_finished = build.date_started + timedelta(minutes=5)
 
     def test_get_build_records(self):
-        # We can fetch builds from SourcePackages using .getBuildRecords()
+        # We can fetch builds records from a SourcePackage.
         builds = self.context.getBuildRecords(
             build_state=BuildStatus.FULLYBUILT).count()
         self.assertEquals(3, builds)
@@ -310,14 +308,14 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         self.assertEquals(0, builds)
 
     def test_ordering_date(self):
-        # Build records returned are ordered by creation date
+        # Build records returned are ordered by creation date.
         builds = self.context.getBuildRecords(
             build_state=BuildStatus.FULLYBUILT)
         date_created = [build.date_created for build in builds]
         self.assertTrue(date_created[0] > date_created[1] > date_created[2])
 
     def test_ordering_lastscore(self):
-        # PENDING build records returned are ordered by score
+        # PENDING build records returned are ordered by score.
         spph = self.factory.makeSourcePackagePublishingHistory()
         spr = spph.sourcepackagerelease
         source_package = SourcePackage.new(
@@ -335,9 +333,9 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
 
     def test_copy_archive_without_leak(self):
         # If source publications are copied to a .COPY archive, they don't
-        # "leak" into SourcePackage.getBuildRecords()
+        # "leak" into SourcePackage.getBuildRecords().
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        # Set up a distroseries and related bits
+        # Set up a distroseries and related bits, so we can create builds.
         source_name = self.factory.getUniqueString()
         spn = self.factory.makeSourcePackageName(name=source_name)
         pf = self.factory.makeProcessorFamily()
@@ -355,17 +353,17 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn, distroseries=distroseries)
         spph.createMissingBuilds()
-        # Create a copy archive
+        # Create a copy archive.
         copy = self.factory.makeArchive(
             purpose=ArchivePurpose.COPY,
             distribution=distroseries.distribution)
-        # Copy the publication into it
+        # And copy the publication into it.
         copy_spph = spph.copyTo(
             distroseries, PackagePublishingPocket.RELEASE, copy)
         [copy_build] = copy_spph.createMissingBuilds()
         builds = copy.getBuildRecords()
         self.assertEquals([copy_build], list(builds))
         source = SourcePackage(spn, spph.distroseries)
-        # SourcePackage.getBuildRecords() doesn't have two build records
+        # SourcePackage.getBuildRecords() doesn't have two build records.
         builds = source.getBuildRecords().count()
         self.assertEquals(1, builds)
