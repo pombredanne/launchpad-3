@@ -42,8 +42,10 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuildFarmJobType,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
@@ -91,6 +93,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
+
+    @property
+    def url_id(self):
+        return self.build_farm_job_id
 
     # The following two properties are part of the IPackageBuild
     # interface, but need to be provided by derived classes.
@@ -220,6 +226,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         if filename is None:
             filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
         file_size = len(content)
         file_content = StringIO(content)
         restricted = self.is_private
@@ -288,6 +296,12 @@ class PackageBuildDerived:
         d = method(librarian, slave_status, logger)
         return d
 
+    def _release_builder_and_remove_queue_item(self):
+        # Release the builder for another job.
+        d = self.buildqueue_record.builder.cleanSlave()
+        # Remove BuildQueue record.
+        return d.addCallback(lambda x:self.buildqueue_record.destroySelf())
+
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
@@ -300,6 +314,15 @@ class PackageBuildDerived:
         logger.info("Processing successful build %s from builder %s" % (
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
+
+        # If this is a binary package build, discard it if its source is
+        # no longer published.
+        if self.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
+            build = self.buildqueue_record.specific_job.build
+            if not build.current_source_publication:
+                build.status = BuildStatus.SUPERSEDED
+                return self._release_builder_and_remove_queue_item()
+
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -360,21 +383,19 @@ class PackageBuildDerived:
             if not os.path.exists(target_dir):
                 os.mkdir(target_dir)
 
-            # Flush so there are no race conditions with archiveuploader about
+            # Release the builder for another job.
+            d = self._release_builder_and_remove_queue_item()
+
+            # Commit so there are no race conditions with archiveuploader about
             # self.status.
-            Store.of(self).flush()
+            Store.of(self).commit()
 
             # Move the directory used to grab the binaries into
             # the incoming directory so the upload processor never
             # sees half-finished uploads.
             os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-            # Release the builder for another job.
-            d = self.buildqueue_record.builder.cleanSlave()
-
-            # Remove BuildQueue record.
-            return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+            return d
 
         d = slave.getFiles(filenames_to_download)
         # Store build information, build record was already updated during

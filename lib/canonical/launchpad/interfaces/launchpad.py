@@ -121,8 +121,6 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
-    mailing_list_experts = Attribute("The Mailing List Experts team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
     registry_experts = Attribute("The Registry Administrators team.")
@@ -192,9 +190,6 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
-        required=True, readonly=True)
-    in_mailing_list_experts = Bool(
-        title=_("True if this person is a mailing list expert."),
         required=True, readonly=True)
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
@@ -482,7 +477,8 @@ class IAging(Interface):
     def currentApproximateAge():
         """Return a human-readable string of how old this thing is.
 
-        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        Values returned are things like '2 minutes', '3 hours',
+        '1 month', etc.
         """
 
 
@@ -540,6 +536,7 @@ class INotificationRecipientSet(Interface):
     The set maintains the list of `IPerson` that will be contacted as well
     as the email address to use to contact them.
     """
+
     def getEmails():
         """Return all email addresses registered, sorted alphabetically."""
 

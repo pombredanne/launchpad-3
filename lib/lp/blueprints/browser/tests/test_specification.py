@@ -13,7 +13,10 @@ from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -129,7 +132,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             SpecificationImplementationStatus.STARTED, spec.implementation_status)
         self.assertEqual(spec.owner, spec.starter)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Started".', notification.message)
 
@@ -162,7 +165,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             spec.implementation_status)
         self.assertIs(None, spec.starter)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Not started".', notification.message)
 
@@ -182,7 +185,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             spec.implementation_status)
         self.assertEqual(spec.owner, spec.completer)
         [notification] = view.request.notifications
-        self.assertEqual(BrowserNotificationLevel.NOTICE, notification.level)
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
             'Blueprint is now considered "Complete".', notification.message)
 

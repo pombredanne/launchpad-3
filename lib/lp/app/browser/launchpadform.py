@@ -12,6 +12,7 @@ __all__ = [
     'has_structured_doc',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
+    'render_radio_widget_part',
     'ReturnToReferrerMixin',
     'safe_action',
     ]
@@ -543,3 +544,22 @@ class WidgetHasStructuredDoc:
                 "There should be no further path segments after "
                 "query:has-structured-doc")
         return self.widget.context.queryTaggedValue('has_structured_doc')
+
+
+def render_radio_widget_part(widget, term_value, current_value, label=None):
+    """Render a particular term for a radio button widget.
+
+    This may well work for other widgets, but has only been tested with radio
+    button widgets.
+    """
+    term = widget.vocabulary.getTerm(term_value)
+    if term.value == current_value:
+        render = widget.renderSelectedItem
+    else:
+        render = widget.renderItem
+    if label is None:
+        label = term.title
+    value = term.token
+    return render(
+        index=term.value, text=label, value=value, name=widget.name,
+        cssClass='')

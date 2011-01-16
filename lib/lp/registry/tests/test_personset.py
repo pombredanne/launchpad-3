@@ -172,13 +172,13 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             "when purchasing an application via Software Center.")
 
     def test_existing_person(self):
-        person = self.factory.makePerson()
+        email = 'test-email@example.com'
+        person = self.factory.makePerson(email=email)
         openid_ident = removeSecurityProxy(
             person.account).openid_identifiers.any().identifier
         person_set = getUtility(IPersonSet)
 
-        result, db_updated = self.callGetOrCreate(
-            openid_ident, email=person.preferredemail.email)
+        result, db_updated = self.callGetOrCreate(openid_ident, email=email)
 
         self.assertEqual(person, result)
         self.assertFalse(db_updated)

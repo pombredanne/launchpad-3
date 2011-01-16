@@ -1145,7 +1145,7 @@
             template="../templates/team-contactaddress.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.MailingListManager"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.team.TeamMailingListConfigurationView"
             name="+mailinglist"
             template="../templates/team-mailinglist.pt"/>
@@ -1376,15 +1376,6 @@
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        name="+review"/>
-    <browser:page
-        for="lp.registry.interfaces.mailinglist.IMailingListSet"
-        class="canonical.launchpad.browser.MailingListsReviewView"
-        name="+review"
-        template="../templates/mailinglists-review.pt"
-        permission="launchpad.Admin"/>
     <browser:page
         name="+moderation"
         for="lp.registry.interfaces.mailinglist.IMessageApproval"
@@ -1532,13 +1523,6 @@
         name="+configure-blueprints"
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureBlueprintsView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
-        name="+configure-translations"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
@@ -2308,11 +2292,16 @@
         name="+portlet-structural-subscribers"
         facet="bugs"
         permission="zope.Public"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
         template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+
     <browser:url
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"
         attribute_to_parent="target"/>
+    <browser:navigation
+        module="lp.registry.browser.structuralsubscription"
+        classes="StructuralSubscriptionNavigation"/>
 
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"

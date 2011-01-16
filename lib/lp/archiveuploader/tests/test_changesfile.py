@@ -9,7 +9,6 @@ import os
 
 from debian.deb822 import Changes
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
@@ -25,6 +24,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadError,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 
@@ -106,6 +106,13 @@ class ChangesFileTests(TestCase):
             "priority": "optional",
             "name": "dulwich_0.4.1-1.dsc"}]
         return contents
+
+    def test_newline_in_Binary_field(self):
+        # Test that newlines in Binary: fields are accepted
+        contents = self.getBaseChanges()
+        contents["Binary"] = "binary1\n binary2 \n binary3"
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEquals(set(["binary1", "binary2", "binary3"]), changes.binaries)
 
     def test_checkFileName(self):
         # checkFileName() yields an UploadError if the filename is invalid.

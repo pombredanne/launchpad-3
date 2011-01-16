@@ -14,11 +14,19 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.features.browser.edit import FeatureControlView
 from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.testing.matchers import Contains
+
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
+
+
+class FauxForm:
+    """The simplest fake form, used for testing."""
+    context = None
 
 
 class TestFeatureControlPage(BrowserTestCase):
@@ -103,6 +111,51 @@ class TestFeatureControlPage(BrowserTestCase):
                 ('beta_user', 'some_key', 10, 'some value with spaces'),
                 ]))
 
+    def test_change_message(self):
+        """Submitting shows a message that the changes have been applied."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        textarea = browser.getControl(name="field.feature_rules")
+        textarea.value = 'beta_user some_key 10 some value with spaces'
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            browser.contents,
+            Contains('Your changes have been applied'))
+
+    def test_change_diff(self):
+        """Submitting shows a diff of the changes."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        browser.getControl(name="field.feature_rules").value = (
+            'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.actions.change").click()
+        browser.getControl(name="field.feature_rules").value = (
+            'beta_user some_key 10 another value with spaces')
+        browser.getControl(name="field.actions.change").click()
+        # The diff is formatted nicely using CSS.
+        self.assertThat(
+            browser.contents,
+            Contains('<td class="diff-added text">'))
+        # Removed rules are displayed as being removed.
+        self.assertThat(
+            browser.contents.replace('\t', ' '),
+            Contains('-beta_user some_key 10 some value with spaces'))
+        # Added rules are displayed as being added.
+        self.assertThat(
+            browser.contents.replace('\t', ' '),
+            Contains('+beta_user some_key 10 another value with spaces'))
+
+    def test_change_logging_note(self):
+        """When submitting changes the name of the logger is shown."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        browser.getControl(name="field.feature_rules").value = (
+            'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            browser.contents,
+            Contains('logged by the lp.services.features logger'))
+
     def test_feature_page_submit_change_to_empty(self):
         """Correctly handle submitting an empty value."""
         # Zope has the quirk of conflating empty with absent; make sure we
@@ -115,5 +168,14 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
-            Equals([
-                ]))
+            Equals([]))
+
+    def test_feature_page_submit_change_when_unauthorized(self):
+        """Correctly handling attempted value changes when not authorized."""
+        # When a change is submitted but the user is unauthorized, an
+        # exception is raised.
+
+        view = FeatureControlView(None, None)
+        self.assertRaises(
+            Unauthorized,
+            view.change_action.success_handler, FauxForm(), None, None)

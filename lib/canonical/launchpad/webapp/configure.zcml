@@ -331,6 +331,10 @@
     <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sighup.setup_sighup"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
     <subscriber
@@ -431,4 +435,11 @@
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
+    <!-- Registrations to support +haproxy status url. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+haproxy"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.haproxy.HAProxyStatusView"
+        />
 </configure>
