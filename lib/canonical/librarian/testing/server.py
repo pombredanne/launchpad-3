@@ -179,7 +179,7 @@ class LibrarianServerFixture(TacTestSetup):
             download_url: http://launchpad.dev:%s/
             restricted_download_port: %s
             restricted_upload_port: %s
-            restricted_download_url: http://launchpad_dev:%s/
+            restricted_download_url: http://launchpad.dev:%s/
             """) % (
                 self.root,
                 self.download_port,
