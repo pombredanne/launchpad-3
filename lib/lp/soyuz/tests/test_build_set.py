@@ -61,6 +61,7 @@ class TestBuildSet(TestCaseWithFactory):
             self.builder_one = self.factory.makeBuilder(processor=pf_proc_1)
             self.builder_two = self.factory.makeBuilder(processor=pf_proc_2)
         self.builds = []
+        self.spphs = []
 
     def setUpBuilds(self):
         for i in range(5):
@@ -69,6 +70,7 @@ class TestBuildSet(TestCaseWithFactory):
                 sourcename=self.factory.getUniqueString(),
                 version="%s.%s" % (self.factory.getUniqueInteger(), i),
                 distroseries=self.distroseries, architecturehintlist='any')
+            self.spphs.append(spph)
             builds = spph.createMissingBuilds()
             with person_logged_in(self.admin):
                 for b in builds:
@@ -152,3 +154,54 @@ class TestBuildSet(TestCaseWithFactory):
         rset = removeSecurityProxy(
             getUtility(IBinaryPackageBuildSet))._prefetchBuildData(build_ids)
         self.assertEquals(len(rset), 4)
+
+    def test_get_builds_by_source_package_release(self):
+        # We are able to return all of the builds for the source package
+        # release ids passed in.
+        self.setUpBuilds()
+        spphs = self.spphs[:2]
+        ids = [spph.sourcepackagerelease.id for spph in spphs]
+        builds = getUtility(
+            IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(ids)
+        expected_titles = []
+        for spph in spphs:
+            for das in (self.das_one, self.das_two):
+                expected_titles.append(
+                    '%s build of %s %s in %s %s RELEASE' % (
+                        das.architecturetag, spph.source_package_name,
+                        spph.source_package_version,
+                        self.distroseries.distribution.name,
+                        self.distroseries.name))
+        build_titles = [build.title for build in builds]
+        self.assertEquals(sorted(expected_titles), sorted(build_titles))
+
+    def test_get_builds_by_source_package_release_filtering(self):
+        self.setUpBuilds()
+        ids = [self.spphs[-1].sourcepackagerelease.id]
+        builds = getUtility(
+            IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(
+                ids, buildstate=BuildStatus.FAILEDTOBUILD)
+        expected_titles = []
+        for das in (self.das_one, self.das_two):
+            expected_titles.append(
+                '%s build of %s %s in %s %s RELEASE' % (
+                    das.architecturetag, self.spphs[-1].source_package_name,
+                    self.spphs[-1].source_package_version,
+                    self.distroseries.distribution.name,
+                    self.distroseries.name))
+        build_titles = [build.title for build in builds] 
+        self.assertEquals(sorted(expected_titles), sorted(build_titles))
+        builds = getUtility(
+            IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(
+                ids, buildstate=BuildStatus.CHROOTWAIT)
+        self.assertEquals([], list(builds))
+
+    def test_no_get_builds_by_source_package_release(self):
+        # If no ids or None are passed into .getBuildsBySourcePackageRelease,
+        # an empty list is returned.
+        builds = getUtility(
+            IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(None)
+        self.assertEquals([], builds)
+        builds = getUtility(
+            IBinaryPackageBuildSet).getBuildsBySourcePackageRelease([])
+        self.assertEquals([], builds)

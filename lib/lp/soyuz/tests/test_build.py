@@ -8,6 +8,7 @@ from datetime import (
     timedelta,
     )
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,10 +18,13 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import (
+    ArchivePurpose,
     BinaryPackageFormat,
     PackagePublishingPriority,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.binarypackagebuild import CannotBeRescored
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -160,6 +164,29 @@ class TestBuild(TestCaseWithFactory):
         [build] = spph.createMissingBuilds()
         self.assertFalse(build.can_be_retried)
 
+    def test_partner_retry_for_released_series(self):
+        # Builds for PARTNER can be retried -- even if the distroseries is
+        # released.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, processorfamily=self.pf,
+            supports_virtualized=True)
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PARTNER,
+            distribution=distroseries.distribution)
+        with person_logged_in(self.admin):
+            distroseries.nominatedarchindep = das
+            distroseries.status = SeriesStatus.OBSOLETE
+            self.publisher.addFakeChroots(distroseries=distroseries)
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=distroseries, archive=archive)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOBUILD
+        self.assertTrue(build.can_be_retried)
+
     def test_retry(self):
         # A build can be retried
         spph = self.publisher.getPubSource(
@@ -253,3 +280,43 @@ class TestBuild(TestCaseWithFactory):
         # Verify .binarypackages returns sorted by name
         expected_names.sort()
         self.assertEquals(expected_names, bin_names)
+
+    def test_cannot_rescore_non_needsbuilds_builds(self):
+        # If a build record isn't in NEEDSBUILD, it can not be rescored.
+        # We will also need to log into an admin to do the rescore
+        with person_logged_in(self.admin):
+            [bpph] = self.publisher.getPubBinaries(
+                binaryname=self.factory.getUniqueString(),
+                version="%s.1" % self.factory.getUniqueInteger(),
+                distroseries=self.distroseries)
+            build = bpph.binarypackagerelease.build
+            self.assertRaises(CannotBeRescored, build.rescore, 20)
+
+    def test_rescore_builds(self):
+        # If the user has build-admin privileges, they can rescore builds
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEquals(2505, build.buildqueue_record.lastscore)
+        with person_logged_in(self.admin):
+            build.rescore(5000)
+            transaction.commit()
+        self.assertEquals(5000, build.buildqueue_record.lastscore)
+
+    def test_source_publication_override(self):
+        # Components can be overridden in builds.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(spph, build.current_source_publication)
+        universe = getUtility(IComponentSet)['universe']
+        overridden_spph = spph.changeOverride(new_component=universe)
+        # We can now see current source publication points to the overridden
+        # publication.
+        self.assertNotEquals(spph, build.current_source_publication)
+        self.assertEquals(overridden_spph, build.current_source_publication)
