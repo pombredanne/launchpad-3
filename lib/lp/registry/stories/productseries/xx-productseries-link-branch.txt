@@ -7,15 +7,17 @@ bazaar branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> import pdb;pdb.set_trace()
-    >>> find_tag_by_id(sample_browser.contents, 'external-code')
-    RR
-    >>> print extract_text(external_code)
-    Test
     >>> link = sample_browser.getLink('link the branch to this series')
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
     >>> link.click()
+    
+This page allows the user to import code from various source control systems  
+
+    >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')
+    >>> print extract_text(external_code)
+    If the code is in Git, Mercurial, CVS or Subversion you can
+    request that the branch be imported to Bazaar.
 
 This link is only shown to those that have edit permissions on the
 product series.
