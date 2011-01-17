@@ -831,9 +831,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3092,25 +3089,25 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
 
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (15, 6, 21, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (16, NULL, 20, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (17, NULL, 20, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (18, NULL, 21, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (19, NULL, 21, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 10, 1);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 11, 2);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 12, 3);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 20, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 21, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 20, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 21, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 20, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 21, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 20, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 21, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 20, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 21, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 20, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 21, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;
