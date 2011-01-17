@@ -512,7 +512,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Include the logChunks from fixture in the test details."""
         # Evaluate the log when called, not later, to permit the librarian to
         # be shutdown before the detail is rendered.
-        chunks = fixture.logChunks()
+        chunks = fixture.getLogChunks()
         content = Content(UTF8_TEXT, lambda: chunks)
         self.addDetail('librarian-log', content)
 
