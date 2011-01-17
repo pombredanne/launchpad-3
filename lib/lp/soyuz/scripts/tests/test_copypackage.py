@@ -929,14 +929,99 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.assertFalse(checked_copy.delayed)
 
 
-class DoDirectCopyTestCase(TestCaseWithFactory):
+class BaseDoCopyTests:
 
     layer = LaunchpadZopelessLayer
 
+    def createNobby(self, archs):
+        """Create a new 'nobby' series with the given architecture tags.
+
+        The first is used as nominatedarchindep.
+        """
+        nobby = self.factory.makeDistroSeries(
+            distribution=self.test_publisher.ubuntutest, name='nobby')
+        for arch in archs:
+            pf = self.factory.makeProcessorFamily(name='my_%s' % arch)
+            self.factory.makeDistroArchSeries(
+                distroseries=nobby, architecturetag=arch,
+                processorfamily=pf)
+        nobby.nominatedarchindep = nobby[archs[0]]
+        self.test_publisher.addFakeChroots(nobby)
+        return nobby
+
+    def assertCopied(self, copies, series, arch_tags):
+        raise NotImplementedError
+
+    def doCopy(self, source, archive, series, pocket, include_binaries):
+        raise NotImplementedError
+
+    def test_does_not_copy_disabled_arches(self):
+        # When copying binaries to a new series, we must not copy any
+        # into disabled architectures.
+
+        # Make a new architecture-specific source and binary.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='any')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        # Now make a new distroseries with two architectures, one of
+        # which is disabled.
+        nobby = self.createNobby(('i386', 'hppa'))
+        nobby['hppa'].enabled = False
+
+        # Now we can copy the package with binaries.
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+
+        # The binary should not be published for hppa.
+        self.assertCopied(copies, nobby, ('i386',))
+
+    def test_does_not_copy_removed_arches(self):
+        # When copying binaries to a new series, we must not try to copy
+        # any into architectures that no longer exist.
+
+        # Make a new architecture-specific source and binary.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='any')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        # Now make a new distroseries with only i386.
+        nobby = self.createNobby(('i386',))
+
+        # Now we can copy the package with binaries.
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+
+        # The copy succeeds, and no hppa publication is present.
+        self.assertCopied(copies, nobby, ('i386',))
+
+
+class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
+
     def setUp(self):
-        super(DoDirectCopyTestCase, self).setUp()
+        super(TestDoDirectCopy, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
+
+    def assertCopied(self, copies, series, arch_tags):
+        self.assertEquals(
+            [u'foo 666 in %s' % series.name] +
+            [u'foo-bin 666 in %s %s' % (series.name, arch_tag)
+             for arch_tag in arch_tags],
+            [copy.displayname for copy in copies])
+
+    def doCopy(self, source, archive, series, pocket, include_binaries):
+        return _do_direct_copy(source, archive, series, pocket, True)
 
     def testCanCopyArchIndependentBinariesBuiltInAnUnsupportedArch(self):
         # _do_direct_copy() uses the binary candidate build architecture,
@@ -968,14 +1053,11 @@ class DoDirectCopyTestCase(TestCaseWithFactory):
         self.layer.txn.commit()
 
         # Copy succeeds.
-        copies = _do_direct_copy(
-            source, source.archive, hoary_test, source.pocket, True)
-        self.assertEquals(
-            ['foo 666 in hoary-test',
-             'foo-bin 666 in hoary-test amd64',
-             'foo-bin 666 in hoary-test i386',
-             ],
-            [copy.displayname for copy in copies])
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = self.doCopy(
+            source, target_archive, hoary_test, source.pocket, True)
+        self.assertCopied(copies, hoary_test, ('amd64', 'i386'))
 
     def test_copying_arch_indep_binaries_with_disabled_arches(self):
         # When copying an arch-indep binary to a new series, we must not
@@ -991,42 +1073,31 @@ class DoDirectCopyTestCase(TestCaseWithFactory):
 
         # Now make a new distroseries with two architectures, one of
         # which is disabled.
-        nobby = self.factory.makeDistroSeries(
-            distribution=self.test_publisher.ubuntutest, name='nobby')
-        i386_pf = self.factory.makeProcessorFamily(name='my_i386')
-        nobby_i386 = self.factory.makeDistroArchSeries(
-            distroseries=nobby, architecturetag='i386',
-            processorfamily=i386_pf)
-        hppa_pf = self.factory.makeProcessorFamily(name='my_hppa')
-        nobby_hppa = self.factory.makeDistroArchSeries(
-            distroseries=nobby, architecturetag='hppa',
-            processorfamily=hppa_pf)
-        nobby_hppa.enabled = False
-        nobby.nominatedarchindep = nobby_i386
-        self.test_publisher.addFakeChroots(nobby)
+        nobby = self.createNobby(('i386', 'hppa'))
+        nobby['hppa'].enabled = False
 
         # Now we can copy the package with binaries.
-        copies = _do_direct_copy(
-            source, source.archive, nobby, source.pocket, True)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
 
         # The binary should not be published for hppa.
-        self.assertEquals(
-            [u'foo 666 in nobby',
-             u'foo-bin 666 in nobby i386',],
-            [copy.displayname for copy in copies])
+        self.assertCopied(copies, nobby, ('i386',))
 
 
-class DoDelayedCopyTestCase(TestCaseWithFactory):
+class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
-        super(DoDelayedCopyTestCase, self).setUp()
+        super(TestDoDelayedCopy, self).setUp()
+
         self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
 
         # Setup to copy into the main archive security pocket
-        self.test_publisher.prepareBreezyAutotest()
         self.copy_archive = self.test_publisher.ubuntutest.main_archive
         self.copy_series = self.test_publisher.distroseries
         self.copy_pocket = PackagePublishingPocket.SECURITY
@@ -1035,6 +1106,17 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
             SeriesStatus.CURRENT)
+
+    def assertCopied(self, copy, series, arch_tags):
+        self.assertEquals(
+            copy.sources[0].sourcepackagerelease.title,
+            'foo - 666')
+        self.assertEquals(
+            sorted(arch_tags),
+            sorted([pub.build.arch_tag for pub in copy.builds]))
+
+    def doCopy(self, source, archive, series, pocket, include_binaries):
+        return _do_delayed_copy(source, archive, series, pocket, True)
 
     def createDelayedCopyContext(self):
         """Create a context to allow delayed-copies test.
@@ -1558,8 +1640,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: foo 666 in hoary (same version has unpublished binaries '
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'ERROR foo 666 in hoary (same version has unpublished binaries '
             'in the destination archive for Hoary, please wait for them to '
             'be published before copying)')
 
@@ -1571,8 +1653,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'INFO: No packages copied.')
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'INFO No packages copied.')
 
         # Repeating the copy of source only.
         copy_helper = self.getCopier(
@@ -1585,8 +1667,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: foo 666 in hoary (same version already building in '
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'ERROR foo 666 in hoary (same version already building in '
             'the destination archive for Hoary)')
 
     def testCopyAcrossPartner(self):
@@ -1844,7 +1926,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         proposed_source = test_publisher.getPubSource(
             sourcename='probe', version='1.1',
             pocket=PackagePublishingPocket.PROPOSED)
-        proposed_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=proposed_source,
             pocket=PackagePublishingPocket.PROPOSED)
 
@@ -1852,7 +1934,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         cprov = getUtility(IPersonSet).getByName("cprov")
         candidate_source = test_publisher.getPubSource(
             sourcename='probe', version='1.1', archive=cprov.archive)
-        candidate_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=candidate_source, archive=cprov.archive)
 
         # Perform the copy from the 'probe - 1.1' version from Celso's PPA
@@ -1866,8 +1948,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # why it happened.
         self.assertEqual(0, len(copied))
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: probe 1.1 in warty (a different source with the '
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'ERROR probe 1.1 in warty (a different source with the '
             'same version is published in the destination archive)')
 
     def _setupSecurityPropagationContext(self, sourcename):
@@ -2018,8 +2100,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'INFO: No packages copied.')
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'INFO No packages copied.')
 
         # Publishing the hppa binary and re-issuing the full copy procedure
         # will copy only the new binary.
@@ -2045,8 +2127,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'INFO: No packages copied.')
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'INFO No packages copied.')
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
@@ -2108,8 +2190,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: foo 666 in hoary (binaries conflicting with the '
+            copy_helper.logger.getLogBuffer().splitlines()[-1],
+            'ERROR foo 666 in hoary (binaries conflicting with the '
             'existing ones)')
 
     def testSourceLookupFailure(self):
@@ -2245,7 +2327,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher = self.getTestPublisher(hoary)
         ppa_source = test_publisher.getPubSource(
             archive=joe_private_ppa, version='1.0', distroseries=hoary)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary)
         self.layer.txn.commit()
 
@@ -2258,17 +2340,17 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # The private files are copied via a delayed-copy request.
         self.assertEqual(len(copied), 1)
         self.assertEqual(
-            ['INFO: FROM: joe: hoary-RELEASE',
-             'INFO: TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
-             'INFO: Copy candidates:',
-             'INFO: \tfoo 1.0 in hoary',
-             'INFO: \tfoo-bin 1.0 in hoary hppa',
-             'INFO: \tfoo-bin 1.0 in hoary i386',
-             'INFO: Copied:',
-             'INFO: \tDelayed copy of foo - 1.0 (source, i386)',
-             'INFO: 1 package successfully copied.',
+            ['INFO FROM: joe: hoary-RELEASE',
+             'INFO TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
+             'INFO Copy candidates:',
+             'INFO \tfoo 1.0 in hoary',
+             'INFO \tfoo-bin 1.0 in hoary hppa',
+             'INFO \tfoo-bin 1.0 in hoary i386',
+             'INFO Copied:',
+             'INFO \tDelayed copy of foo - 1.0 (source, i386)',
+             'INFO 1 package successfully copied.',
              ],
-            copy_helper.logger.buffer.getvalue().splitlines())
+            copy_helper.logger.getLogBuffer().splitlines())
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""

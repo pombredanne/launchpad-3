@@ -79,7 +79,8 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # exit code to signal success).
         with fake_urllib(GoodUrllib()):
             self.assertEquals(
-                do_smoketest(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian,
+                             output=StringIO()),
                 0)
 
     def test_bad_data(self):
@@ -87,7 +88,8 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # (which will be used as the processes exit code to signal an error).
         with fake_urllib(BadUrllib()):
             self.assertEquals(
-                do_smoketest(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian,
+                             output=StringIO()),
                 1)
 
     def test_exception(self):
@@ -96,7 +98,8 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # code to signal an error).
         with fake_urllib(ErrorUrllib()):
             self.assertEquals(
-                do_smoketest(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian,
+                             output=StringIO()),
                 1)
 
     def test_explosive_errors(self):
@@ -106,4 +109,5 @@ class SmokeTestTestCase(TestCaseWithFactory):
             with fake_urllib(ExplosiveUrllib(exception)):
                 self.assertRaises(
                     exception,
-                    do_smoketest, self.fake_librarian, self.fake_librarian)
+                    do_smoketest, self.fake_librarian, self.fake_librarian,
+                    output=StringIO())

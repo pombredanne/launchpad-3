@@ -65,7 +65,7 @@
 </div>
 
 <div class="portlet"
-     tal:condition="context/required:launchpad.Admin"
+     tal:condition="context/required:launchpad.TranslationsAdmin"
      id="custom-language-codes">
   If necessary, you may
   <a tal:attributes="href context/fmt:url:translations/+custom-language-codes"

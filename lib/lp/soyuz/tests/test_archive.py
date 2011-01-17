@@ -27,6 +27,7 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1474,10 +1475,11 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         # The primary archive uses the series' defined components.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
-            0, archive.getComponentsForSeries(self.series).count())
+            0, len(archive.getComponentsForSeries(self.series)))
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
+        clear_property_cache(self.series)
 
         self.assertEquals(
             set((self.comp1, self.comp2)),
@@ -1499,6 +1501,26 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         main_comp = getUtility(IComponentSet)['main']
         self.assertEquals(
             [main_comp], list(archive.getComponentsForSeries(self.series)))
+
+
+class TestDefaultComponent(TestCaseWithFactory):
+    """Tests for Archive.default_component."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_component_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(None, archive.default_component)
+
+    def test_default_component_for_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(
+            getUtility(IComponentSet)['partner'], archive.default_component)
+
+    def test_default_component_for_ppas(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(
+            getUtility(IComponentSet)['main'], archive.default_component)
 
 
 class TestGetPockets(TestCaseWithFactory):

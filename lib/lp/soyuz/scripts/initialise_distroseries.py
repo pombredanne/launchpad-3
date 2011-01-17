@@ -46,9 +46,9 @@ class InitialiseDistroSeries:
       The distroarchseries set up in the parent series will be copied.
       The publishing structure will be copied from the parent. All
       PUBLISHED and PENDING packages in the parent will be created in
-      this distroseries and its distroarchseriess. The lucille config
-      will be copied in, all component and section selections will be
-      duplicated as will any permission-related structures.
+      this distroseries and its distroarchseriess. All component and section
+      selections will be duplicated, as will any permission-related
+      structures.
 
     Note:
       This method will raise a InitialisationError when the pre-conditions
@@ -89,7 +89,7 @@ class InitialiseDistroSeries:
         pending_builds = self.parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-        if pending_builds.count():
+        if pending_builds.any():
             raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
@@ -114,16 +114,16 @@ class InitialiseDistroSeries:
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if sources.count():
+        if bool(sources):
             raise InitialisationError(error)
         binaries = self.distroseries.getAllPublishedBinaries()
-        if binaries.count():
+        if bool(binaries):
             raise InitialisationError(error)
-        if self.distroseries.architectures.count():
+        if bool(self.distroseries.architectures):
             raise InitialisationError(error)
-        if self.distroseries.components.count():
+        if bool(self.distroseries.components):
             raise InitialisationError(error)
-        if self.distroseries.sections.count():
+        if bool(self.distroseries.sections):
             raise InitialisationError(error)
 
     def initialise(self):
@@ -161,18 +161,7 @@ class InitialiseDistroSeries:
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
-        self._copy_lucille_config()
         self._copy_packaging_links()
-
-    def _copy_lucille_config(self):
-        """Copy all lucille related configuration from our parent series."""
-        self._store.execute('''
-            UPDATE DistroSeries SET lucilleconfig=(
-                SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
-                WHERE pdr.id = %s)
-            WHERE id = %s
-            ''' % sqlvalues(self.parent.id,
-            self.distroseries.id))
 
     def _copy_publishing_records(self, distroarchseries_list):
         """Copy the publishing records from the parent arch series

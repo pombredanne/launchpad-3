@@ -22,8 +22,8 @@ from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    reconnect_stores,
     )
-from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -57,7 +57,10 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_as,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -545,14 +548,10 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        class TestLogger:
-            # Silent logger.
-            def debug(self, msg):
-                pass
         distroseries.updateCompletePackageCache(
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
-            log=TestLogger())
+            log=DevNullLogger())
         transaction.commit()
         reconnect_stores(restore_db_connection)
 
@@ -1345,8 +1344,21 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         """Publications in other series shouldn't be found."""
         bins = self.getPubBinaries(architecturespecific=False)
         series = self.factory.makeDistroSeries()
-        arch = self.factory.makeDistroArchSeries(distroseries=series)
+        arch = self.factory.makeDistroArchSeries(
+            distroseries=series, architecturetag='i386')
         foreign_bins = bins[0].copyTo(
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
+class TestSPPHModel(TestCaseWithFactory):
+    """Test parts of the SourcePackagePublishingHistory model."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testAncestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)

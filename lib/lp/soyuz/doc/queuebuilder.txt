@@ -30,8 +30,8 @@ The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', see
 test_system_documentation.py for more information.
 
-    >>> import logging
-    >>> logger = logging.getLogger()
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> logger = DevNullLogger()
 
 Now that we have satisfied all of the needs for QueueBuilder, let's
 instantiate it.

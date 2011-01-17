@@ -15,6 +15,7 @@ __all__ = [
 
 import cgi
 import re
+from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.component import getUtility
@@ -348,6 +349,19 @@ class FormattersAPI:
         else:
             raise AssertionError("Unknown pattern matched.")
 
+    @staticmethod
+    def _linkify_substitution_with_target(match):
+        """See `_linkify_substitution`().
+
+        The target attribute of the links will be updated to point to
+        "_new", so that links will open in a new window.
+        """
+        linkified_text = FormattersAPI._linkify_substitution(match)
+        element_tree = html.fromstring(linkified_text)
+        for link in element_tree.xpath('//a'):
+            link.set('target', '_new')
+        return html.tostring(element_tree)
+
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
@@ -457,11 +471,13 @@ class FormattersAPI:
          )
       ) |
       (?P<bug>
-        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bbug(?:[\s=-]|<br\s*/>)*
+            (?:(?:(?:\#|report|number|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)+)|
+            (?:(?:\s\#)?(?:[\s=-]|<br\s*/>)*))
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
@@ -481,7 +497,7 @@ class FormattersAPI:
     # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self, linkify_text=True):
+    def text_to_html(self, linkify_text=True, linkify_substitution=None):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -516,10 +532,21 @@ class FormattersAPI:
 
         # Linkify the text, if allowed.
         if linkify_text is True:
-            text = re_substitute(self._re_linkify, self._linkify_substitution,
+            if linkify_substitution is None:
+                linkify_substitution = self._linkify_substitution
+            text = re_substitute(self._re_linkify, linkify_substitution,
                 break_long_words, text)
 
         return text
+
+    def text_to_html_with_target(self):
+        """See `text_to_html`().
+
+        URLs will be linkified with a target="_new" attribute.
+        """
+        return self.text_to_html(
+            linkify_text=True,
+            linkify_substitution=self._linkify_substitution_with_target)
 
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
@@ -865,6 +892,8 @@ class FormattersAPI:
             return self.break_long_words()
         elif name == 'text-to-html':
             return self.text_to_html()
+        elif name == 'text-to-html-with-target':
+            return self.text_to_html_with_target()
         elif name == 'nice_pre':
             return self.nice_pre()
         elif name == 'email-to-html':

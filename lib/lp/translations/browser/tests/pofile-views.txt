@@ -169,16 +169,11 @@ update.
 
 But first, let's see current values.
 
-    >>> pofile_es.updateStatistics()
-    (6, 1, 1, 1)
-    >>> pofile_es.currentCount()
-    6
+    >>> stats = pofile_es.updateStatistics()
     >>> pofile_es.updatesCount()
-    1
+    0
     >>> pofile_es.rosettaCount()
-    1
-    >>> pofile_es.unreviewedCount()
-    1
+    7
 
 Now we do a submission with new translations:
 
@@ -208,8 +203,11 @@ Now we do a submission with new translations:
 
 And check again.
 
-    >>> pofile_es.updateStatistics()
-    (5, 2, 3, 1)
+    >>> stats = pofile_es.updateStatistics()
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    8
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
