@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-import unittest
+from StringIO import StringIO
 
 from zope.interface import implements
 
@@ -17,13 +17,16 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     )
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 
 class BackLinkingExternalBugTracker(ExternalBugTracker):
     implements(ISupportsBackLinking)
 
+
 class CommentImportingExternalBugTracker(ExternalBugTracker):
     implements(ISupportsCommentImport)
+
 
 class CommentPushingExternalBugTracker(ExternalBugTracker):
     implements(ISupportsCommentPushing)
@@ -88,6 +91,55 @@ class TestCheckwatchesConfig(TestCase):
         tracker = DebBugs(self.base_url)
         self.assertFalse(tracker.sync_comments)
 
+    def _makeFakePostForm(self, base_url, page=None):
+        """Create a fake `urllib2.urlopen` result."""
+        fake_form = StringIO(self.factory.getUniqueString())
+        if page is None:
+            page = self.factory.getUniqueString()
+        fake_form.url = base_url + page
+        return fake_form
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def _fakeExternalBugTracker(self, base_url, fake_form):
+        """Create an `ExternalBugTracker` with a fake `_post` method."""
+        bugtracker = ExternalBugTracker(base_url)
+        bugtracker._post = FakeMethod(result=fake_form)
+        return bugtracker
+
+    def test_postPage_returns_response_page(self):
+        # _postPage posts, then returns the page text it gets back from
+        # the server.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        fake_form = self._makeFakePostForm(base_url, page=form)
+        bugtracker = self._fakeExternalBugTracker(base_url, fake_form)
+        self.assertEqual(fake_form.getvalue(), bugtracker._postPage(form, {}))
+
+    def test_postPage_does_not_repost_on_redirect(self):
+        # By default, if the POST redirects, _postPage leaves urllib2 to
+        # handle it in the normal, RFC-compliant way.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        fake_form = self._makeFakePostForm(base_url)
+        bugtracker = self._fakeExternalBugTracker(base_url, fake_form)
+
+        bugtracker._postPage(form, {})
+
+        self.assertEqual(1, bugtracker._post.call_count)
+        args, kwargs = bugtracker._post.calls[0]
+        self.assertEqual((base_url + form, ), args)
+
+    def test_postPage_can_repost_on_redirect(self):
+        # Some pages (that means you, BugZilla bug-search page!) can
+        # redirect on POST, but without honouring the POST.  Standard
+        # urllib2 behaviour is to redirect to a GET, but if the caller
+        # says it's safe, _postPage can re-do the POST at the new URL.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        fake_form = self._makeFakePostForm(base_url)
+        bugtracker = self._fakeExternalBugTracker(base_url, fake_form)
+
+        bugtracker._postPage(form, form={}, repost_on_redirect=True)
+
+        self.assertEqual(2, bugtracker._post.call_count)
+        last_args, last_kwargs = bugtracker._post.calls[-1]
+        self.assertEqual((fake_form.url, ), last_args)
