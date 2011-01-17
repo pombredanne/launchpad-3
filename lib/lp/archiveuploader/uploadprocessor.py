@@ -135,6 +135,130 @@ class PPAUploadPathError(Exception):
     """Exception when parsing a PPA upload path."""
 
 
+class UploadHandler:
+
+    def __init__(self, processor, fsroot, upload):
+        self.processor = processor
+        self.fsroot = fsroot
+        self.upload = upload
+
+    def processUpload(self):
+        """Process an upload's changes files, and move it to a new directory.
+
+        The destination directory depends on the result of the processing
+        of the changes files. If there are no changes files, the result
+        is 'failed', otherwise it is the worst of the results from the
+        individual changes files, in order 'failed', 'rejected', 'accepted'.
+
+        """
+        upload_path = os.path.join(self.fsroot, self.upload)
+        changes_files = self.processor.locateChangesFiles(upload_path)
+
+        # Keep track of the various results
+        some_failed = False
+        some_rejected = False
+        some_accepted = False
+
+        for changes_file in changes_files:
+            self.processor.log.debug(
+                "Considering changefile %s" % changes_file)
+            try:
+                result = self.processor.processChangesFile(
+                    upload_path, changes_file, self.processor.log)
+                if result == UploadStatusEnum.FAILED:
+                    some_failed = True
+                elif result == UploadStatusEnum.REJECTED:
+                    some_rejected = True
+                else:
+                    some_accepted = True
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing upload %s' % upload_path)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.processor.log.error('%s (%s)' % (message, request.oopsid))
+                some_failed = True
+
+        if some_failed:
+            destination = "failed"
+        elif some_rejected:
+            destination = "rejected"
+        elif some_accepted:
+            destination = "accepted"
+        else:
+            # There were no changes files at all. We consider
+            # the upload to be failed in this case.
+            destination = "failed"
+        self.processor.moveProcessedUpload(
+            upload_path, destination, self.processor.log)
+
+
+class BuildUploadHandler(UploadHandler):
+
+    def process(self):
+        """Process an upload that is the result of a build.
+
+        The name of the leaf is the build id of the build.
+        Build uploads always contain a single package per leaf.
+        """
+        upload_path = os.path.join(self.fsroot, self.upload)
+        try:
+            job_id = parse_build_upload_leaf_name(self.upload)
+        except ValueError:
+            self.processor.log.warn(
+                "Unable to extract build id from leaf name %s, skipping." %
+                self.upload)
+            return
+        try:
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+        except NotFoundError:
+            self.processor.log.warn(
+                "Unable to find package build job with id %d. Skipping." %
+                job_id)
+            return
+        logger = BufferLogger()
+        build = buildfarm_job.getSpecificJob()
+        if build.status != BuildStatus.UPLOADING:
+            self.processor.log.warn(
+                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                build.status.name)
+            return
+        self.processor.log.debug("Build %s found" % build.id)
+        try:
+            [changes_file] = self.processor.locateChangesFiles(upload_path)
+            logger.debug("Considering changefile %s" % changes_file)
+            result = self.processor.processChangesFile(
+                upload_path, changes_file, logger, build)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            info = sys.exc_info()
+            message = (
+                'Exception while processing upload %s' % upload_path)
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(info, request)
+            logger.error('%s (%s)' % (message, request.oopsid))
+            result = UploadStatusEnum.FAILED
+        destination = {
+            UploadStatusEnum.FAILED: "failed",
+            UploadStatusEnum.REJECTED: "rejected",
+            UploadStatusEnum.ACCEPTED: "accepted"}[result]
+        if not (result == UploadStatusEnum.ACCEPTED and
+                build.verifySuccessfulUpload() and
+                build.status == BuildStatus.FULLYBUILT):
+            build.status = BuildStatus.FAILEDTOUPLOAD
+            build.notify(extra_info="Uploading build %s failed." % self.upload)
+            build.storeUploadLog(logger.getLogBuffer())
+        self.processor.ztm.commit()
+        self.processor.moveProcessedUpload(upload_path, destination, logger)
+
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
@@ -190,126 +314,16 @@ class UploadProcessor:
                     self.log.debug("Skipping %s -- does not match %s" % (
                         upload, leaf_name))
                     continue
+                handler = UploadHandler(self, fsroot, upload)
                 if self.builds:
                     # Upload directories contain build results,
                     # directories are named after job ids.
-                    self.processBuildUpload(fsroot, upload)
+                    handler.processBuildUpload()
                 else:
-                    self.processUpload(fsroot, upload)
+                    handler.processUpload()
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
-
-    def processBuildUpload(self, fsroot, upload):
-        """Process an upload that is the result of a build.
-
-        The name of the leaf is the build id of the build.
-        Build uploads always contain a single package per leaf.
-        """
-        upload_path = os.path.join(fsroot, upload)
-        try:
-            job_id = parse_build_upload_leaf_name(upload)
-        except ValueError:
-            self.log.warn("Unable to extract build id from leaf name %s,"
-                " skipping." % upload)
-            return
-        try:
-            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-        except NotFoundError:
-            self.log.warn(
-                "Unable to find package build job with id %d. Skipping." %
-                job_id)
-            return
-        logger = BufferLogger()
-        build = buildfarm_job.getSpecificJob()
-        if build.status != BuildStatus.UPLOADING:
-            self.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
-                build.status.name)
-            return
-        self.log.debug("Build %s found" % build.id)
-        try:
-            [changes_file] = self.locateChangesFiles(upload_path)
-            logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(
-                upload_path, changes_file, logger, build)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            info = sys.exc_info()
-            message = (
-                'Exception while processing upload %s' % upload_path)
-            properties = [('error-explanation', message)]
-            request = ScriptRequest(properties)
-            error_utility = ErrorReportingUtility()
-            error_utility.raising(info, request)
-            logger.error('%s (%s)' % (message, request.oopsid))
-            result = UploadStatusEnum.FAILED
-        destination = {
-            UploadStatusEnum.FAILED: "failed",
-            UploadStatusEnum.REJECTED: "rejected",
-            UploadStatusEnum.ACCEPTED: "accepted"}[result]
-        if not (result == UploadStatusEnum.ACCEPTED and
-                build.verifySuccessfulUpload() and
-                build.status == BuildStatus.FULLYBUILT):
-            build.status = BuildStatus.FAILEDTOUPLOAD
-            build.notify(extra_info="Uploading build %s failed." % upload)
-            build.storeUploadLog(logger.getLogBuffer())
-        self.ztm.commit()
-        self.moveProcessedUpload(upload_path, destination, logger)
-
-    def processUpload(self, fsroot, upload):
-        """Process an upload's changes files, and move it to a new directory.
-
-        The destination directory depends on the result of the processing
-        of the changes files. If there are no changes files, the result
-        is 'failed', otherwise it is the worst of the results from the
-        individual changes files, in order 'failed', 'rejected', 'accepted'.
-
-        """
-        upload_path = os.path.join(fsroot, upload)
-        changes_files = self.locateChangesFiles(upload_path)
-
-        # Keep track of the various results
-        some_failed = False
-        some_rejected = False
-        some_accepted = False
-
-        for changes_file in changes_files:
-            self.log.debug("Considering changefile %s" % changes_file)
-            try:
-                result = self.processChangesFile(
-                    upload_path, changes_file, self.log)
-                if result == UploadStatusEnum.FAILED:
-                    some_failed = True
-                elif result == UploadStatusEnum.REJECTED:
-                    some_rejected = True
-                else:
-                    some_accepted = True
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                info = sys.exc_info()
-                message = (
-                    'Exception while processing upload %s' % upload_path)
-                properties = [('error-explanation', message)]
-                request = ScriptRequest(properties)
-                error_utility = ErrorReportingUtility()
-                error_utility.raising(info, request)
-                self.log.error('%s (%s)' % (message, request.oopsid))
-                some_failed = True
-
-        if some_failed:
-            destination = "failed"
-        elif some_rejected:
-            destination = "rejected"
-        elif some_accepted:
-            destination = "accepted"
-        else:
-            # There were no changes files at all. We consider
-            # the upload to be failed in this case.
-            destination = "failed"
-        self.moveProcessedUpload(upload_path, destination, self.log)
 
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.

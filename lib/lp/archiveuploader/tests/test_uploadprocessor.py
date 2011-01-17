@@ -36,7 +36,9 @@ from lp.archiveuploader.uploadpolicy import (
     IArchiveUploadPolicy,
     )
 from lp.archiveuploader.uploadprocessor import (
+    BuildUploadHandler,
     parse_build_upload_leaf_name,
+    UploadHandler,
     UploadProcessor,
     )
 from lp.buildmaster.enums import (
@@ -1844,20 +1846,26 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         super(TestBuildUploadProcessor, self).setUp()
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
+
+
+class TestUploadHandler(TestUploadProcessorBase):
+
     def testInvalidLeafName(self):
         # Directories with invalid leaf names should be skipped,
         # and a warning logged.
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="bar")
-        self.uploadprocessor.processBuildUpload(upload_dir, "bar")
+        BuildUploadHandler(self.uploadprocessor, upload_dir, "bar").process()
         self.assertLogContains('Unable to extract build id from leaf '
                                'name bar, skipping.')
 
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build
         # should be skipped and a warning logged.
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         cookie = "%s-%d" % (BuildFarmJobType.PACKAGEBUILD.name, 42)
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry=cookie)
-        self.uploadprocessor.processBuildUpload(upload_dir, cookie)
+        BuildUploadHandler(self.uploadprocessor, upload_dir, cookie).process()
         self.assertLogContains(
             "Unable to find package build job with id 42. Skipping.")
 
@@ -1866,6 +1874,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # will fail.
 
         # Upload a source package
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
@@ -1893,8 +1902,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.assertEquals(1, len(self.oopses))
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
@@ -1910,6 +1919,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Properly uploaded binaries should result in the
         # build status changing to FULLYBUILT.
         # Upload a source package
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
@@ -1936,8 +1946,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.builds = True
         last_stub_mail_count = len(stub.test_emails)
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
         # No emails are sent on success
         self.assertEquals(len(stub.test_emails), last_stub_mail_count)
@@ -1950,6 +1960,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # build status changing to FULLYBUILT.
 
         # Upload a source package
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
@@ -1973,8 +1984,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.status = BuildStatus.UPLOADING
         build.date_finished = UTC_NOW
         Store.of(build).flush()
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
 
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
@@ -1987,6 +1998,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # A source package recipe build will fail if no files are present.
 
         # Upload a source package
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
@@ -2004,8 +2016,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         Store.of(build).flush()
         build.status = BuildStatus.UPLOADING
         build.date_finished = UTC_NOW
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
         self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(None, build.builder)
@@ -2015,6 +2027,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
     def testBuildWithInvalidStatus(self):
         # Builds with an invalid (non-UPLOADING) status should trigger
         # a warning but be left alone.
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
@@ -2039,8 +2052,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.builds = True
         last_stub_mail_count = len(stub.test_emails)
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
         # The build status is not changed
         self.assertTrue(
