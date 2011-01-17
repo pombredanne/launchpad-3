@@ -7,15 +7,14 @@ bazaar branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> import pdb;pdb.set_trace()
+    >>> find_tag_by_id(sample_browser.contents, 'external-code')
+    RR
+    >>> print extract_text(external_code)
+    Test
     >>> link = sample_browser.getLink('link the branch to this series')
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
-
-Assert that Mercurial is among the proposed version control systems
-bug #513164
-
-    >>> 'Mercurial' in sample_browser.contents
-    True
     >>> link.click()
 
 This link is only shown to those that have edit permissions on the
