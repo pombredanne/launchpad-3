@@ -23,7 +23,6 @@ from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
-from twisted.protocols.policies import TimeoutFactory
 from zope.event import notify
 
 from lp.services.sshserver import (
@@ -128,8 +127,8 @@ class SSHService(service.Service):
 
     def __init__(self, portal, private_key_path, public_key_path,
                  oops_configuration, main_log, access_log,
-                 access_log_path, strport='tcp:22', idle_timeout=3600,
-                 banner=None):
+                 access_log_path, strport='tcp:22', factory_decorator=None,
+                 idle_timeout=3600, banner=None):
         """Construct an SSH service.
 
         :param portal: The `twisted.cred.portal.Portal` that turns
@@ -150,13 +149,13 @@ class SSHService(service.Service):
         :param banner: An announcement printed to users when they connect.
             By default, announce nothing.
         """
-        ssh_factory = TimeoutFactory(
-            Factory(
-                portal,
-                private_key=Key.fromFile(private_key_path),
-                public_key=Key.fromFile(public_key_path),
-                banner=banner),
-            timeoutPeriod=idle_timeout)
+        ssh_factory = Factory(
+            portal,
+            private_key=Key.fromFile(private_key_path),
+            public_key=Key.fromFile(public_key_path),
+            banner=banner)
+        if factory_decorator is not None:
+            ssh_factory = factory_decorator(ssh_factory)
         self.service = strports.service(strport, ssh_factory)
         self._oops_configuration = oops_configuration
         self._main_log = main_log
