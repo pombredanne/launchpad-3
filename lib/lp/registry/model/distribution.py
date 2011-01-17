@@ -156,6 +156,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -440,29 +441,49 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
-    @property
-    def archive_mirrors(self):
-        """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
+    def _getActiveMirrors(self, mirror_content_type, by_country=False):
+        """Builds the query to get the mirror data for various purposes."""
+        origin = [DistributionMirror]
+        if not by_country:
+            find_objects = DistributionMirror
+        else:
+            origin.append(
+                Join(Country, DistributionMirror.country == Country.id))
+            find_objects = (DistributionMirror, Country)
+
+        return Store.of(self).using(*origin).find(
+            find_objects,
             And(
                 DistributionMirror.distribution == self.id,
-                DistributionMirror.content == MirrorContent.ARCHIVE,
-                DistributionMirror.content == True,
+                DistributionMirror.content == mirror_content_type,
+                DistributionMirror.enabled == True,
                 DistributionMirror.status == MirrorStatus.OFFICIAL,
                 DistributionMirror.official_candidate == True,
                 ))
 
     @property
-    def cdimage_mirrors(self):
+    def archive_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            content=MirrorContent.RELEASE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+        return self._getActiveMirrors(MirrorContent.ARCHIVE)
+
+    @property
+    def archive_mirrors_by_country(self):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(
+            MirrorContent.ARCHIVE,
+            by_country=True)
+
+    @property
+    def cdimage_mirrors(self, by_country=False):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(MirrorContent.RELEASE)
+
+    @property
+    def cdimage_mirrors_by_country(self):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(
+            MirrorContent.RELEASE,
+            by_country=True)
 
     @property
     def disabled_mirrors(self):

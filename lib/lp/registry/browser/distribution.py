@@ -962,8 +962,8 @@ class DistributionMirrorsView(LaunchpadView):
         This list is ordered by country name.
         """
         mirrors_by_country = {}
-        for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
+        for mirror, country in self.mirrors:
+            mirrors = mirrors_by_country.setdefault(country.name, [])
             mirrors.append(mirror)
         return [dict(country=country,
                      mirrors=mirrors,
@@ -980,7 +980,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.archive_mirrors
+        return self.context.archive_mirrors_by_country
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -992,7 +992,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.cdimage_mirrors
+        return self.context.cdimage_mirrors_by_country
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

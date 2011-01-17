@@ -239,11 +239,19 @@ class IDistributionPublic(
             description=_("All enabled and official ARCHIVE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    archive_mirrors_by_country = CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))
     cdimage_mirrors = exported(doNotSnapshot(
         CollectionField(
             description=_("All enabled and official RELEASE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    cdimage_mirrors_by_country = CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
