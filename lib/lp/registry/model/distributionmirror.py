@@ -28,11 +28,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
-from storm.expr import (
-    And,
-    Func,
-    )
-from storm.store import Store
+from storm.expr import Func
 from zope.component import getUtility
 from zope.interface import implements
 
