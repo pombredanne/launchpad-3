@@ -6,9 +6,14 @@
 """Module docstring goes here."""
 
 __metaclass__ = type
-__all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
-           'MirrorDistroSeriesSource', 'MirrorProbeRecord',
-           'DistributionMirrorSet', 'MirrorCDImageDistroSeries']
+__all__ = [
+    'DistributionMirror',
+    'MirrorDistroArchSeries',
+    'MirrorDistroSeriesSource',
+    'MirrorProbeRecord',
+    'DistributionMirrorSet',
+    'MirrorCDImageDistroSeries',
+    ]
 
 from datetime import (
     datetime,
@@ -23,7 +28,11 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
-from storm.expr import Func
+from storm.expr import (
+    And,
+    Func,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
