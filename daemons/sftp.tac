@@ -73,9 +73,6 @@ class ShutdownCleanlyService(service.MultiService):
 
 from twisted.web.server import Site
 from twisted.web.resource import Resource
-from twisted.web.static import Data
-
-web_root = Data('Codehosting status: see /status', 'text/plain')
 
 class ServerAvailableResource(Resource):
 
@@ -102,7 +99,8 @@ class ServerAvailableResource(Resource):
 
 from twisted.application import strports
 server_available_resource = ServerAvailableResource(tracked_factories)
-web_root.putChild('status', server_available_resource)
+web_root = Resource()
+web_root.putChild('', server_available_resource)
 web_factory = Site(web_root)
 web_svc = strports.service('tcp:8080', web_factory)
 
