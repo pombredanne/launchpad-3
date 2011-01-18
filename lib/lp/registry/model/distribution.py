@@ -443,23 +443,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _getActiveMirrors(self, mirror_content_type, by_country=False):
         """Builds the query to get the mirror data for various purposes."""
-        origin = [DistributionMirror]
-        if not by_country:
-            find_objects = DistributionMirror
-        else:
-            origin.append(
-                Join(Country, DistributionMirror.country == Country.id))
-            find_objects = (DistributionMirror, Country)
-
-        return Store.of(self).using(*origin).find(
-            find_objects,
+        mirrors = list(Store.of(self).find(
+            DistributionMirror,
             And(
                 DistributionMirror.distribution == self.id,
                 DistributionMirror.content == mirror_content_type,
                 DistributionMirror.enabled == True,
                 DistributionMirror.status == MirrorStatus.OFFICIAL,
-                DistributionMirror.official_candidate == True,
-                ))
+                DistributionMirror.official_candidate == True)))
+        if by_country and mirrors:
+            #Since country data is needed, fetch countries into the cache.
+            countries = list(Store.of(self).find(
+                Country,
+                Country.id.is_in(mirror.countryID for mirror in mirrors)))
+        return mirrors
 
     @property
     def archive_mirrors(self):
