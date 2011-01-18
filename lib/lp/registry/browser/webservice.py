@@ -26,11 +26,13 @@ def person_renderer(context, field, request):
     """Render a recipe owner as a link."""
 
     def render(value):
-        person = getattr(context, field.__name__, None)
-        if person is None:
+        if value is None:
             return ''
         else:
-            return (
-                '<span>%s</span>' %
-                PersonFormatterAPI(person).link(None))
+            link = PersonFormatterAPI(value).link(None)
+            # This span is required for now as it is used in the parsing of
+            # the dt list returned by default as the xhtml representation.  To
+            # remove this, you need to fix the javascript parsing in
+            # lp.app.javascript.picker (we think).
+            return '<span>%s</span>' % link
     return render
