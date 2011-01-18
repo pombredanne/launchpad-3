@@ -66,7 +66,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel,
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
@@ -110,10 +109,6 @@ class StructuralSubscription(SQLBase):
     bug_notification_level = EnumCol(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
-        notNull=True)
-    blueprint_notification_level = EnumCol(
-        enum=BlueprintNotificationLevel,
-        default=BlueprintNotificationLevel.NOTHING,
         notNull=True)
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
@@ -424,15 +419,7 @@ class StructuralSubscriptionTargetMixin:
             raise DeleteSubscriptionError(
                 "%s is not subscribed to %s." % (
                 subscriber.name, self.displayname))
-        else:
-            if (subscription_to_remove.blueprint_notification_level >
-                BlueprintNotificationLevel.NOTHING):
-                # This is a subscription to other application too
-                # so only set the bug notification level
-                subscription_to_remove.bug_notification_level = (
-                    BugNotificationLevel.NOTHING)
-            else:
-                subscription_to_remove.destroySelf()
+        subscription_to_remove.destroySelf()
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
@@ -444,16 +431,12 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptions(self,
                          min_bug_notification_level=
-                         BugNotificationLevel.NOTHING,
-                         min_blueprint_notification_level=
-                         BlueprintNotificationLevel.NOTHING):
+                         BugNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
         clauses = [
             "StructuralSubscription.subscriber = Person.id",
             "StructuralSubscription.bug_notification_level "
             ">= %s" % quote(min_bug_notification_level),
-            "StructuralSubscription.blueprint_notification_level "
-            ">= %s" % quote(min_blueprint_notification_level),
             ]
         for key, value in self._target_args.iteritems():
             if value is None:

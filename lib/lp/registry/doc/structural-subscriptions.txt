@@ -31,8 +31,6 @@ distribution.
     ...     subscriber=sampleperson, subscribed_by=foobar)
     >>> ubuntu_sub.target
     <Distribution 'Ubuntu' (ubuntu)>
-    >>> ubuntu_sub.blueprint_notification_level
-    <DBItem BlueprintNotificationLevel.NOTHING, (10) Nothing>
 
     >>> evolution = getUtility(ISourcePackageNameSet).getOrCreateByName(
     ...    'evolution')
