@@ -16,10 +16,7 @@
   <script type="text/javascript"
           tal:content="string:
     LPS.use('lp.app.picker', function(Y) {
-        Y.log('using stuff');
         Y.on('load', function(e) {
-
-           Y.log('loading stuff');
 
            var config = {
               header: 'Change owner',
@@ -27,17 +24,12 @@
               non_searchable_vocabulary: true
            };
 
-           Y.log('create the picker');
-
            Y.lp.app.picker.addPickerPatcher(
                'UserTeamsParticipationPlusSelf',
                LP.client.cache['context']['self_link'],
                'owner_link',
                'recipe-owner',
                config);
-           //var picker = Y.lp.app.picker.create(
-           //    'UserTeamsParticipationPlusSelfVocabulary', config);
-           Y.log('created the picker');
 
             var logged_in = LP.client.links['me'] !== undefined;
             if (logged_in) {
