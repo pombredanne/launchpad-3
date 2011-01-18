@@ -28,10 +28,12 @@ def person_xhtml_representation(context, field, request):
     """Render a person as a link to the person."""
 
     def render(value):
-        if value is None:
+        # The value is a webservice link to a person.
+        person = getattr(context, field.__name__, None)
+        if person is None:
             return ''
         else:
-            link = PersonFormatterAPI(value).link(None)
+            link = PersonFormatterAPI(person).link(None)
             # This span is required for now as it is used in the parsing of
             # the dt list returned by default as the xhtml representation.  To
             # remove this, you need to fix the javascript parsing in
