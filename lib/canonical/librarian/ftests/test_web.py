@@ -149,18 +149,12 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(aid)
         self.assertEqual(urlopen(url).read(), 'sample')
 
-        old_url = 'http://%s:%d/42/%d/%s' % (
-                config.librarian.download_host,
-                config.librarian.download_port,
-                aid, filename)
+        old_url = url.replace(str(aid), '42/%d' % aid)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
         # If the content id is not an integer, a 404 is raised
-        old_url = 'http://%s:%d/foo/%d/%s' % (
-                config.librarian.download_host,
-                config.librarian.download_port,
-                aid, filename)
-        self.require404(self._makeURL(aid, 'different.txt'))
+        old_url = url.replace(str(aid), 'foo/%d' % aid)
+        self.require404(old_url)
 
     def test_404(self):
         client = LibrarianClient()

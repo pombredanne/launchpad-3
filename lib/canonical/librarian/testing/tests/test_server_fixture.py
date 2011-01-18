@@ -16,6 +16,7 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 
 from canonical.config import config
+from canonical.config.fixture import ConfigFixture
 from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.testing.ftests.test_layers import (
     BaseLayerIsolator,
@@ -34,12 +35,20 @@ class TestLibrarianServerFixture(TestCase):
             self.skip('persistent server running.')
 
     def test_on_init_no_pid(self):
-        fixture = LibrarianServerFixture()
+        fixture = LibrarianServerFixture(BaseLayer.config_fixture)
         self.skip_if_persistent(fixture)
         self.assertEqual(None, fixture.pid)
 
     def test_setUp_allocates_resources(self):
-        fixture = LibrarianServerFixture()
+        # We need a new ConfigFixture, and create a
+        # LibrarianServerFixture using it. We can then confirm that new
+        # resources have been allocated by comparing with the currently
+        # in use ConfigFixture and config.
+        config_fixture = ConfigFixture(
+            'foo', BaseLayer.config_fixture.instance_name)
+        self.addCleanup(config_fixture.cleanUp)
+        config_fixture.setUp()
+        fixture = LibrarianServerFixture(config_fixture)
         self.skip_if_persistent(fixture)
         with fixture:
             try:
@@ -82,7 +91,7 @@ class TestLibrarianServerFixture(TestCase):
                 raise
 
     def test_getLogChunks(self):
-        fixture = LibrarianServerFixture()
+        fixture = LibrarianServerFixture(BaseLayer.config_fixture)
         with fixture:
             chunks = fixture.getLogChunks()
             self.assertIsInstance(chunks, list)
@@ -96,7 +105,7 @@ class TestLibrarianServerFixture(TestCase):
         # Avoid indefinite hangs:
         self.addCleanup(socket.setdefaulttimeout, socket.getdefaulttimeout())
         socket.setdefaulttimeout(1)
-        fixture = LibrarianServerFixture()
+        fixture = LibrarianServerFixture(BaseLayer.config_fixture)
         with fixture:
             librarian_url = "http://%s:%d" % (
                 config.librarian.download_host,
