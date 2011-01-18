@@ -982,6 +982,10 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     def mirrors(self):
         return self.context.archive_mirrors_by_country
 
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
+
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
@@ -994,6 +998,9 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     def mirrors(self):
         return self.context.cdimage_mirrors_by_country
 
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
