@@ -85,7 +85,7 @@ def handle_proxy_error(error, msg=None, msgdata=None):
     """Log the error and enqueue the message if needed.
 
     :param error: The error to log.
-    :param msg: An optional message to re-enqueue.
+    :param msg: An optional Mailman.Message to re-enqueue.
     :param msgdata: The message data to enque with the message.
     :raise DiscardMessage: When a message is enqueued.
     """

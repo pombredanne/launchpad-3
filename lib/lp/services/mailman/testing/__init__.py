@@ -136,9 +136,9 @@ class MailmanTestCase(TestCaseWithFactory):
 
     def assertIsEnqueued(self, msg):
         """Assert the message was appended to the incoming queue."""
-        switchbaord = get_switchboard(mm_cfg.INQUEUE_DIR)
-        file_path = switchbaord.files()[-1]
-        queued_msg, queued_msg_data = switchbaord.dequeue(file_path)
+        switchboard = get_switchboard(mm_cfg.INQUEUE_DIR)
+        file_path = switchboard.files()[-1]
+        queued_msg, queued_msg_data = switchboard.dequeue(file_path)
         self.assertEqual(msg['message-id'], queued_msg['message-id'])
 
     @contextmanager
