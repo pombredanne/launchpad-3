@@ -23,18 +23,11 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IReferenceChoice,
-    IWebServiceClientRequest,
-    )
 from storm.locals import Store
-from zope import component
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     providedBy,
@@ -80,7 +73,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import (
     format_link,
-    PersonFormatterAPI,
     )
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -94,25 +86,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.fields import IPersonChoice
 from lp.soyuz.model.archive import Archive
-
-
-@component.adapter(Interface, IPersonChoice, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def person_renderer(context, field, request):
-    """Render a recipe owner as a link."""
-
-    def render(value):
-        person = getattr(context, field.__name__, None)
-        # person = context.owner
-        if person is None:
-            return ''
-        else:
-            return (
-                '<span>%s</span>' %
-                PersonFormatterAPI(person).link(None))
-    return render
 
 
 RECIPE_BETA_MESSAGE = structured(
