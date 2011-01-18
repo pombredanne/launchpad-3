@@ -93,7 +93,8 @@ class TestCheckwatchesConfig(TestCase):
 
     def _makeFakePostForm(self, base_url, page=None):
         """Create a fake `urllib2.urlopen` result."""
-        fake_form = StringIO(self.factory.getUniqueString())
+        content = "<bugzilla>%s</bugzilla>" % self.factory.getUniqueString()
+        fake_form = StringIO(content)
         if page is None:
             page = self.factory.getUniqueString()
         fake_form.url = base_url + page

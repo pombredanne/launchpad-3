@@ -8,6 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.externalbugtracker.base import UnparseableBugData
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -19,13 +20,15 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
 
     base_url = "http://example.com/"
 
-    def _makeInstrumentedBugzilla(self, page=None):
+    def _makeInstrumentedBugzilla(self, page=None, content=None):
         """Create a `Bugzilla` with a fake urlopen."""
         if page is None:
             page = self.factory.getUniqueString()
         bugzilla = Bugzilla(self.base_url)
-        page_text = "<xml></xml>"
-        fake_page = StringIO(page_text)
+        if content is None:
+            content = "<bugzilla>%s</bugzilla>" % (
+                self.factory.getUniqueString())
+        fake_page = StringIO(content)
         fake_page.url = self.base_url + page
         bugzilla.urlopen = FakeMethod(result=fake_page)
         return bugzilla
@@ -38,3 +41,17 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
     def test_repost_on_redirect_does_not_crash(self):
         bugzilla = self._makeInstrumentedBugzilla()
         bugzilla.getRemoteBugBatch([])
+
+    def test_reports_invalid_search_result(self):
+        # Sometimes bug searches may go wrong, yielding an HTML page
+        # instead.  getRemoteBugBatch rejects and reports search results
+        # of the wrong page type.
+        result_text = """
+            <html>
+                <body>
+                    <h1>This is not actually a search result.</h1>
+                </body>
+            </html>
+            """
+        bugzilla = self._makeInstrumentedBugzilla(content=result_text)
+        self.assertRaises(UnparseableBugData, bugzilla.getRemoteBugBatch, [])

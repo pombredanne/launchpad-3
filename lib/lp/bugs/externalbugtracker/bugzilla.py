@@ -305,6 +305,25 @@ class Bugzilla(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         return (bug_id, self.getRemoteBugBatch([bug_id]))
 
+    def _checkBugSearchResult(self, document):
+        """Does `document` appear to be a bug search result page?
+
+        :param document: An `xml.dom.Document` built from a bug search result
+            on the bugzilla instance.
+        :raise UnparseableBugData: If `document` does not appear to be a bug
+            search result.
+        """
+        root = document.documentElement
+        accepted_tags = [
+            'bugzilla',
+            'issuezilla',
+            'RDF',
+            ]
+        if root.tagName not in accepted_tags:
+            raise UnparseableBugData(
+                "Bug search on %s returned a <%s> instead of an RDF page." % (
+                    self.baseurl, root.tagName))
+
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
         # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
@@ -365,6 +384,7 @@ class Bugzilla(ExternalBugTracker):
         except xml.parsers.expat.ExpatError, e:
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
+        self._checkBugSearchResult(document)
 
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
