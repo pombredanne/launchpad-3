@@ -144,17 +144,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             yield item
 
 
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
-
-
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
     """Navigation menu for sourcepackage recipes."""
 
@@ -221,7 +210,7 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:

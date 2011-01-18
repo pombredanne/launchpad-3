@@ -62,7 +62,6 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -94,10 +93,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        # Since recipes only build into PPAs, they should always build
-        # in main. This will need to change once other archives are
-        # supported.
-        return getUtility(IComponentSet)['main']
+        # Only PPAs currently have a sane default component at the
+        # moment, but we only support recipes for PPAs.
+        component = self.archive.default_component
+        assert component is not None
+        return component
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
@@ -153,7 +153,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % self.recipe.base_branch.unique_name
+        if self.recipe is None:
+            return 'build for deleted recipe'
+        else:
+            branch_name = self.recipe.base_branch.unique_name
+            return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester):
         """Construct a SourcePackageRecipeBuild."""

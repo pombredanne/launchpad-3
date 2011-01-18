@@ -72,7 +72,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
@@ -101,6 +100,7 @@ from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
     )
+from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,

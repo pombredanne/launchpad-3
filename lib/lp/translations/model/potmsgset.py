@@ -344,7 +344,6 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
-        assert side is not None, "Translation side must be specified."
         traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
         flag = removeSecurityProxy(traits.getFlag(TranslationMessage))
 
@@ -1152,7 +1151,7 @@ class POTMsgSet(SQLBase):
             return
 
         translator = suggestion.submitter
-        potranslations = suggestion.all_msgstrs
+        potranslations = dictify_translations(suggestion.all_msgstrs)
         activated_message = self._setTranslation(
             pofile, translator, suggestion.origin, potranslations,
             share_with_other_side=share_with_other_side,
@@ -1250,8 +1249,8 @@ class POTMsgSet(SQLBase):
         :param pofile: The `POFile` to set the translation in.
         :param submitter: The `Person` who produced this translation.
         :param origin: The translation's `RosettaTranslationOrigin`.
-        :param potranslations: List of `POTranslation`s, with a None for
-            each untranslated plural-form.
+        :param potranslations: A dict mapping plural-form numbers to the
+            respective `POTranslation`s for those forms.
         :param identical_message: The already existing message, if any,
             that's either shared or diverged for `pofile.potemplate`,
             whose translations are identical to the ones we're setting.
