@@ -874,6 +874,14 @@ uses the calling user.
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
 
+An individual can subscribe themself at a given BugNotificationLevel.
+
+    >>> new_subscription = webservice.named_post(
+    ...     bug_one['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~cprov')
+    ...     level="Details").jsonBody()
+    >>> pprint_entry(new_subscription)
+
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
 

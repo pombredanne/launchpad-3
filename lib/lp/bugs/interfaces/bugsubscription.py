@@ -48,13 +48,14 @@ class IBugSubscription(Interface):
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
     bugID = Int(title=u"The bug id.", readonly=True)
-    bug_notification_level = Choice(
-        title=_("Bug notification level"), required=True,
-        vocabulary=BugNotificationLevel,
-        default=BugNotificationLevel.COMMENTS,
-        description=_(
-            "The volume and type of bug notifications "
-            "this subscription will generate."))
+    bug_notification_level = exported(
+        Choice(
+            title=_("Bug notification level"), required=True,
+            vocabulary=BugNotificationLevel,
+            default=BugNotificationLevel.COMMENTS,
+            description=_(
+                "The volume and type of bug notifications "
+                "this subscription will generate.")))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
