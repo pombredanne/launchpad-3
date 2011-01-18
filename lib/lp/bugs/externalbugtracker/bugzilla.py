@@ -314,12 +314,7 @@ class Bugzilla(ExternalBugTracker):
             search result.
         """
         root = document.documentElement
-        accepted_tags = [
-            'bugzilla',
-            'issuezilla',
-            'RDF',
-            ]
-        if root.tagName not in accepted_tags:
+        if root.tagName == 'html':
             raise UnparseableBugData(
                 "Bug search on %s returned a <%s> instead of an RDF page." % (
                     self.baseurl, root.tagName))
