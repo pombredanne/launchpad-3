@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from Mailman import Errors
 from Mailman.Handlers import LPStanding
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -57,3 +58,15 @@ class TestLPStandingTestCase(MailmanTestCase):
         silence = LPStanding.process(self.mm_list, message, msg_data)
         self.assertEqual(None, silence)
         self.assertTrue(msg_data['approved'])
+
+    def test_proxy_error_retries_message(self):
+        # When the Launchpad xmlrpc proxy raises an error, the message
+        # is re-enqueed
+        message = self.makeMailmanMessage(
+            self.mm_list, self.lp_user_email, 'subject', 'any content.')
+        msg_data = {}
+        with self.raise_proxy_exception('inGoodStanding'):
+            args = (self.mm_list, message, msg_data)
+            self.assertRaises(
+                Errors.DiscardMessage, LPStanding.process, *args)
+            self.assertIsEnqueued(message)

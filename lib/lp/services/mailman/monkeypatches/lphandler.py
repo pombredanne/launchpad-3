@@ -46,8 +46,10 @@ def process(mlist, msg, msgdata):
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
-    # XXX sinzui 2011-01-13: try/except/oops.
-    is_member = proxy.isRegisteredInLaunchpad(sender)
+    try:
+        is_member = proxy.isRegisteredInLaunchpad(sender)
+    except Exception, error:
+        XMLRPCRunner.handle_proxy_error(error, msg, msgdata)
     # This handler can just return if the sender is a member of Launchpad.
     if is_member:
         return

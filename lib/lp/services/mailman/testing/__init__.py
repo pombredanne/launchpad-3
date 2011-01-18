@@ -19,6 +19,7 @@ from Mailman import (
     )
 from Mailman.Queue import XMLRPCRunner
 from Mailman.Logging.Syslog import syslog
+from Mailman.Queue.sbcache import get_switchboard
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -131,3 +132,24 @@ class MailmanTestCase(TestCaseWithFactory):
         with open(log_path, 'w') as log_file:
             log_file.truncate()
         syslog.write_ex('xmlrpc', 'Reset by test.')
+
+    def assertIsEnqueued(self, msg):
+        switchbaord = get_switchboard(mm_cfg.INQUEUE_DIR)
+        file_path = switchbaord.files()[-1]
+        queued_msg, queued_msg_data = switchbaord.dequeue(file_path)
+        self.assertEqual(msg['message-id'], queued_msg['message-id'])
+
+    @contextmanager
+    def raise_proxy_exception(self, method_name):
+        """Raise an exception when calling the passed proxy method name."""
+
+        def raise_exception(*args):
+            raise Exception('Test exception handling.')
+
+        proxy = XMLRPCRunner.get_mailing_list_api_proxy()
+        original_method = getattr(proxy.__class__, method_name)
+        setattr(proxy.__class__, method_name, raise_exception)
+        try:
+            yield
+        finally:
+            setattr(proxy.__class__, method_name, original_method)

@@ -30,6 +30,7 @@ def one_loop_exception(runner):
     This function replaces _check_list_actions() with a function that
     raises an error. _oneloop() handles the exception.
     """
+
     def raise_exception():
         raise Exception('Test exception handling.')
 
@@ -109,21 +110,26 @@ class TestHandleProxyError(MailmanTestCase):
         self.reset_log()
 
     def test_communication_log_entry(self):
+        # Connection errors are reported in the log.
         error = socket.error('Testing socket error.')
         handle_proxy_error(error)
         mark = self.get_log_entry('Cannot talk to Launchpad:')
         self.assertTrue(mark is not None)
 
     def test_fault_log_entry(self):
+        # Fault errors are reported in the log.
         error = Exception('Testing generic error.')
         handle_proxy_error(error)
         mark = self.get_log_entry('Launchpad exception:')
         self.assertTrue(mark is not None)
 
     def test_message_raises_discard_message_error(self):
+        # When message is passed to the function, DiscardMessage is raised
+        # and the message is re-enqueued in the incoming queue.
         error = Exception('Testing generic error.')
         msg = self.makeMailmanMessage(
             self.mm_list, 'lost@noplace.dom', 'subject', 'any content.')
         msg_data = {}
         self.assertRaises(
             Errors.DiscardMessage, handle_proxy_error, error, msg, msg_data)
+        self.assertIsEnqueued(msg)
