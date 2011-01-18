@@ -23,12 +23,10 @@
 
            var config = {
               header: 'Change owner',
-              step_title: 'Search',
+              step_title: 'Select a new owner',
+              non_searchable_vocabulary: true
            };
 
-           config.save = function(result) {
-               Y.log(result);
-           };
            Y.log('create the picker');
 
            Y.lp.app.picker.addPickerPatcher(
