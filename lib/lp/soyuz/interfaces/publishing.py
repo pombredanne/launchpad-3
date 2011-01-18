@@ -878,6 +878,29 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
+    def publishBinary(archive, binarypackagerelease, distroarchseries,
+                      component, section, priority, pocket):
+        """Publish a `BinaryPackageRelease` in an archive.
+
+        Creates one or more `IBinaryPackagePublishingHistory` records,
+        handling architecture-independent and DDEB publications transparently.
+
+        Note that binaries will only be copied if they don't already exist in
+        the target; this method cannot be used to change overrides.
+
+        :param archive: The target `IArchive`.
+        :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
+        :param distroarchseries: An `IDistroArchSeries`. If the binary is
+            architecture-independent, it will be published to all enabled
+            architectures in this series.
+        :param component: The target `IComponent`.
+        :param section: The target `ISection`.
+        :param priority: The target `PackagePublishingPriority`.
+        :param pocket: The target `PackagePublishingPocket`.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
                              component, section, priority, pocket):
         """Create a new `BinaryPackagePublishingHistory`.

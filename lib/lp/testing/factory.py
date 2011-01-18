@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -2149,7 +2149,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution() for non-PPAs and ubuntu for PPAs.
-        :param owner: Supper IPerson, defaults to a new one made with
+        :param owner: Supply IPerson, defaults to a new one made with
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
