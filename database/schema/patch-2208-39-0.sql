@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE StructuralSubscription
     DROP COLUMN blueprint_notification_level;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 39, 0);
