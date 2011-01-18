@@ -13,6 +13,42 @@
       padding-left: 2em;
     }
   </style>
+  <script type="text/javascript"
+          tal:content="string:
+    LPS.use('lp.app.picker', function(Y) {
+        Y.log('using stuff');
+        Y.on('load', function(e) {
+
+           Y.log('loading stuff');
+
+           var config = {
+              header: 'Change owner',
+              step_title: 'Search',
+           };
+
+           config.save = function(result) {
+               Y.log(result);
+           };
+           Y.log('create the picker');
+
+           Y.lp.app.picker.addPickerPatcher(
+               'UserTeamsParticipationPlusSelf',
+               LP.client.cache['context']['self_link'],
+               'owner_link',
+               'recipe-owner',
+               false,
+               false,
+               config);
+           //var picker = Y.lp.app.picker.create(
+           //    'UserTeamsParticipationPlusSelfVocabulary', config);
+           Y.log('created the picker');
+
+            var logged_in = LP.client.links['me'] !== undefined;
+            if (logged_in) {
+            }
+        }, window);
+    });
+  "/>
 </metal:block>
 
 <body>
@@ -55,7 +91,17 @@
 
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd tal:content="structure context/owner/fmt:link" />
+            <dd>
+              <span id="recipe-owner">
+                <span class="yui3-activator-data-box">
+                  <tal:owner replace="structure context/owner/fmt:link" />
+                </span>
+                <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
+                        tal:condition="context/required:launchpad.Edit">
+                  Edit
+                </button>
+                <div class="yui3-activator-message-box yui3-activator-hidden" />
+              </span>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
