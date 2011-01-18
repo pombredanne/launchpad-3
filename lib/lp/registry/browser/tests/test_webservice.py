@@ -21,7 +21,7 @@ class TestPersonRenderer(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_person_renderer(self):
-        # A person renderer will result in the same text as a tales
+        # A person renderer will result in the same text as a TALES
         # PersonFormatter.
         eric = self.factory.makePerson(name='eric')
         # We need something that has an IPersonChoice, a project will do.
@@ -30,4 +30,5 @@ class TestPersonRenderer(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
+        # The person renderer gives the same result as the TALES formatter.
         self.assertEqual('%s' % format_link(eric), renderer(None))
