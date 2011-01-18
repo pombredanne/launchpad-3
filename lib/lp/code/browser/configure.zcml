@@ -1204,6 +1204,8 @@
         factory="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildFormatterAPI"
         name="fmt"
         />
+    <adapter
+        factory="lp.code.browser.sourcepackagerecipe.person_renderer"/>
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"
         module="lp.code.browser.sourcepackagerecipebuild"/>
