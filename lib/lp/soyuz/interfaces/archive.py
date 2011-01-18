@@ -21,6 +21,7 @@ __all__ = [
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
+    'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
     'IArchiveEdit',
@@ -96,6 +97,7 @@ from lp.services.fields import (
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.processor import IProcessorFamily
 
 
@@ -333,6 +335,12 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
+
+    default_component = Reference(
+        IComponent,
+        title=_(
+            "The default component for this archive. Publications without a "
+            "valid component will be assigned this one."))
 
     archive_url = Attribute("External archive URL.")
 
@@ -1667,6 +1675,12 @@ MAIN_ARCHIVE_PURPOSES = (
 ALLOW_RELEASE_BUILDS = (
     ArchivePurpose.PARTNER,
     ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
+
+FULL_COMPONENT_SUPPORT = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.DEBUG,
     ArchivePurpose.COPY,
     )
 

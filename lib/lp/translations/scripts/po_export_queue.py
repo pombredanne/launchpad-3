@@ -23,6 +23,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
@@ -54,6 +55,7 @@ class ExportResult:
         self.url = None
         self.failure = None
         self.logger = logger
+        self.exported_file = None
 
         self.requested_exports = list(requested_exports)
         export_requested_at = self._getExportRequestOrigin()
@@ -250,6 +252,46 @@ class ExportResult:
             'request_url': self.request_url,
             }
 
+    def setExportFile(self, exported_file):
+        """Attach an exported file to the result, for upload to the Librarian.
+
+        After this is set, `upload` will perform the actual upload.  The two
+        actions are separated so as to isolate write access to the database.
+
+        :param exported_file: An `IExportedTranslationFile` containing the
+            exported data.
+        """
+        self.exported_file = exported_file
+
+    def upload(self, logger=None):
+        """Upload exported file as set with `setExportFile` to the Librarian.
+
+        If no file has been set, do nothing.
+        """
+        if self.exported_file is None:
+            # There's nothing to upload.
+            return
+
+        if self.exported_file.path is None:
+            # The exported path is unknown, use translation domain as its
+            # filename.
+            assert self.exported_file.file_extension, (
+                'File extension must have a value!.')
+            path = 'launchpad-export.%s' % self.exported_file.file_extension
+        else:
+            # Convert the path to a single file name so it's noted in
+            # librarian.
+            path = self.exported_file.path.replace(os.sep, '_')
+
+        alias_set = getUtility(ILibraryFileAliasSet)
+        alias = alias_set.create(
+            name=path, size=self.exported_file.size, file=self.exported_file,
+            contentType=self.exported_file.content_type)
+
+        self.url = alias.http_url
+        if logger is not None:
+            logger.info("Stored file at %s" % self.url)
+
     def notify(self):
         """Send a notification email to the given person about the export.
 
@@ -331,6 +373,9 @@ def process_request(person, objects, format, logger):
     multiple files) and information about files that we failed to export (if
     any).
     """
+    # Keep as much work off the master store as possible, so we avoid
+    # opening unnecessary transactions there.  It could be a while
+    # before we get to the commit.
     translation_exporter = getUtility(ITranslationExporter)
     requested_objects = list(objects)
 
@@ -352,28 +397,9 @@ def process_request(person, objects, format, logger):
         # error, we add the entry to the list of errors.
         result.addFailure()
     else:
-        if exported_file.path is None:
-            # The exported path is unknown, use translation domain as its
-            # filename.
-            assert exported_file.file_extension, (
-                'File extension must have a value!.')
-            exported_path = 'launchpad-export.%s' % (
-                exported_file.file_extension)
-        else:
-            # Convert the path to a single file name so it's noted in
-            # librarian.
-            exported_path = exported_file.path.replace(os.sep, '_')
+        result.setExportFile(exported_file)
 
-        alias_set = getUtility(ILibraryFileAliasSet)
-        alias = alias_set.create(
-            name=exported_path,
-            size=exported_file.size,
-            file=exported_file,
-            contentType=exported_file.content_type)
-        result.url = alias.http_url
-        logger.info("Stored file at %s" % result.url)
-
-    result.notify()
+    return result
 
 
 def process_queue(transaction_manager, logger):
@@ -386,8 +412,19 @@ def process_queue(transaction_manager, logger):
 
     request = request_set.getRequest()
     while request != no_request:
-        person, objects, format, request_ids = request
-        process_request(person, objects, format, logger)
+
+        # This can take a long time.  Make sure we don't open any
+        # transactions on the master store before we really need to.
+        transaction_manager.commit()
+        with SlaveOnlyDatabasePolicy():
+            person, objects, format, request_ids = request
+            result = process_request(person, objects, format, logger)
+
+        # Almost done.  Now we can go back to using the master database
+        # where needed.
+        result.upload(logger=logger)
+        result.notify()
+
         request_set.removeRequest(request_ids)
         transaction_manager.commit()
 

@@ -89,7 +89,10 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import get_property_cache
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -112,6 +115,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     default_name_by_purpose,
     DistroSeriesNotFound,
+    FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
@@ -295,39 +299,6 @@ class Archive(SQLBase):
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
 
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -414,6 +385,16 @@ class Archive(SQLBase):
                 self.distribution, ArchivePurpose.DEBUG)
         else:
             return self
+
+    @cachedproperty
+    def default_component(self):
+        """See `IArchive`."""
+        if self.is_partner:
+            return getUtility(IComponentSet)['partner']
+        elif self.is_ppa:
+            return getUtility(IComponentSet)['main']
+        else:
+            return None
 
     @property
     def archive_url(self):
@@ -841,12 +822,13 @@ class Archive(SQLBase):
         return permission
 
     def getComponentsForSeries(self, distroseries):
-        if self.is_partner:
-            return [getUtility(IComponentSet)['partner']]
-        elif self.is_ppa:
-            return [getUtility(IComponentSet)['main']]
-        else:
+        """See `IArchive`."""
+        # DistroSeries.components and Archive.default_component are
+        # cachedproperties, so this is fairly cheap.
+        if self.purpose in FULL_COMPONENT_SUPPORT:
             return distroseries.components
+        else:
+            return [self.default_component]
 
     def updateArchiveCache(self):
         """See `IArchive`."""
@@ -948,9 +930,10 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the RELEASE pocket.")
             if (component is not None and
-                component.id is not getUtility(IComponentSet)['main'].id):
+                component != dependency.default_component):
                 raise ArchiveDependencyError(
-                    "Non-primary archives only support the 'main' component.")
+                    "Non-primary archives only support the '%s' component." %
+                    dependency.default_component.name)
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
@@ -1086,7 +1069,7 @@ class Archive(SQLBase):
                 # interface will no longer require them because we can
                 # then relax the database constraint on
                 # ArchivePermission.
-                component_or_package = getUtility(IComponentSet)['main']
+                component_or_package = self.default_component
 
         # Flatly refuse uploads to copy archives, at least for now.
         if self.is_copy:
@@ -1234,8 +1217,10 @@ class Archive(SQLBase):
             else:
                 name = None
 
-            if name is None or name != 'main':
-                raise InvalidComponent("Component for PPAs should be 'main'")
+            if name != self.default_component.name:
+                raise InvalidComponent(
+                    "Component for PPAs should be '%s'" %
+                    self.default_component.name)
 
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugTaskDelta',
+    'BugTaskResultSet',
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'BugTask',
@@ -422,6 +423,21 @@ class NullBugTask(BugTaskMixin):
         """See `IBugTask`."""
         return 'Bug #%s is not in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
+
+
+class BugTaskResultSet(DecoratedResultSet):
+    """Decorated results with cached assignees."""
+
+    def __iter__(self, *args, **kwargs):
+        """Iter with caching of assignees.
+
+        Assumes none of the decorators will need to access the assignees or
+        there is not benefit.
+        """
+        bugtasks = list(
+            super(BugTaskResultSet, self).__iter__(*args, **kwargs))
+        BugTaskSet._cache_assignees(bugtasks)
+        return iter(bugtasks)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -1058,12 +1074,20 @@ class BugTask(SQLBase, BugTaskMixin):
             # The assignee is being cleared, so clear the date_assigned
             # value.
             self.date_assigned = None
+            # The bugtask is unassigned, so clear the _known_viewer cached
+            # property for the bug.
+            get_property_cache(self.bug)._known_viewers = set()
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
             self.date_assigned = now
 
         self.assignee = assignee
+        # Invalidate the old visibility cache for this bug and replace it with
+        # the new assignee.
+        if self.assignee is not None:
+            get_property_cache(self.bug)._known_viewers = set(
+                [self.assignee.id])
 
     def transitionToTarget(self, target):
         """See `IBugTask`.
@@ -1347,8 +1371,15 @@ def get_bug_privacy_filter_with_decorator(user):
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   BugSubscription.person = TeamParticipation.team AND
-                   BugSubscription.bug = Bug.id))
+                   TeamParticipation.team = BugSubscription.person AND
+                   BugSubscription.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugTask.assignee AND
+                   BugTask.bug = Bug.id
+                   ))
                      """ % sqlvalues(personid=user.id),
         _make_cache_user_can_view_bug(user))
 
@@ -2305,7 +2336,7 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, params, *args, **kw):
+    def _search(self, resultrow, prejoins, params, *args):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
@@ -2314,6 +2345,7 @@ class BugTaskSet:
         :param params: A BugTaskSearchParams instance.
         :param args: optional additional BugTaskSearchParams instances,
         """
+
         store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
         has_duplicate_results] = self.buildQuery(params)
@@ -2372,7 +2404,8 @@ class BugTaskSet:
 
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        return DecoratedResultSet(result, result_decorator=decorator)
+        return BugTaskResultSet(
+            result, result_decorator=decorator)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2412,6 +2445,15 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], params).result_set
 
+    @staticmethod
+    def _cache_assignees(rows):
+        assignee_ids = set(
+            bug_task.assigneeID for bug_task in rows)
+        assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            assignee_ids, need_validity=True)
+        # Execute query to load storm cache.
+        list(assignees)
+
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
         params = BugTaskSearchParams(
@@ -2420,16 +2462,8 @@ class BugTaskSet:
             omit_dupes=True, exclude_conjoined_tasks=True)
         non_conjoined_slaves = self.search(params)
 
-        def cache_people(rows):
-            assignee_ids = set(
-                bug_task.assigneeID for bug_task in rows)
-            assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                assignee_ids, need_validity=True)
-            # Execute query to load storm cache.
-            list(assignees)
-
         return DecoratedResultSet(
-            non_conjoined_slaves, pre_iter_hook=cache_people)
+            non_conjoined_slaves, pre_iter_hook=BugTaskSet._cache_assignees)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
@@ -2581,7 +2615,7 @@ class BugTaskSet:
                 bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
-        expirable_bugtasks = BugTask.select("""
+        query = """
             BugTask.bug = Bug.id
             AND BugTask.id IN (
                 SELECT BugTask.id
@@ -2600,13 +2634,13 @@ class BugTaskSet:
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old) +
-            unconfirmed_bug_condition,
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
+        expirable_bugtasks = BugTask.select(
+            query +  unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:
             expirable_bugtasks = expirable_bugtasks.limit(limit)
-
         return expirable_bugtasks
 
     def _getUnconfirmedBugCondition(self):
@@ -2632,6 +2666,60 @@ class BugTaskSet:
                     AND RelatedBugTask.status IN %s)
             """ % sqlvalues(unexpirable_status_list)
 
+    TARGET_SELECT = {
+        IDistribution: """
+            SELECT Distribution.id, NULL, NULL, NULL,
+                Distribution.id, NULL
+            FROM Distribution
+            WHERE Distribution.enable_bug_expiration IS TRUE""",
+        IDistroSeries: """
+            SELECT NULL, DistroSeries.id, NULL, NULL,
+                Distribution.id, NULL
+            FROM DistroSeries
+                JOIN Distribution
+                    ON DistroSeries.distribution = Distribution.id
+            WHERE Distribution.enable_bug_expiration IS TRUE""",
+        IProduct: """
+            SELECT NULL, NULL, Product.id, NULL,
+                NULL, Product.id
+            FROM Product
+            WHERE Product.enable_bug_expiration IS TRUE""",
+        IProductSeries: """
+            SELECT NULL, NULL, NULL, ProductSeries.id,
+                NULL, Product.id
+            FROM ProductSeries
+                JOIN Product
+                    ON ProductSeries.Product = Product.id
+            WHERE Product.enable_bug_expiration IS TRUE""",
+        }
+
+    TARGET_JOIN_CLAUSE = {
+        IDistribution: "BugTask.distribution = target.distribution",
+        IDistroSeries: "BugTask.distroseries = target.distroseries",
+        IProduct: "BugTask.product = target.product",
+        IProductSeries: "BugTask.productseries = target.productseries",
+        }
+
+    def _getJoinForTargets(self, *targets):
+        """Build the UNION of the sub-query for the given set of targets."""
+        selects = ' UNION '.join(
+            self.TARGET_SELECT[target] for target in targets)
+        join_clause = ' OR '.join(
+            self.TARGET_JOIN_CLAUSE[target] for target in targets)
+        # We create this rather bizarre looking structure
+        # because we must replicate the behaviour of BugTask since
+        # we are joining to it. So when distroseries is set,
+        # distribution should be NULL. The two pillar columns will
+        # be used in the WHERE clause.
+        return """
+        JOIN (
+            SELECT 0 AS distribution, 0 AS distroseries,
+                   0 AS product , 0 AS productseries,
+                   0 AS distribution_pillar, 0 AS product_pillar
+            UNION %s
+            ) target
+            ON (%s)""" % (selects, join_clause)
+
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
 
@@ -2644,54 +2732,23 @@ class BugTaskSet:
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
-        target_join = """
-            JOIN (
-                -- We create this rather bizarre looking structure
-                -- because we must replicate the behaviour of BugTask since
-                -- we are joining to it. So when distroseries is set,
-                -- distribution should be NULL. The two pillar columns will
-                -- be used in the WHERE clause.
-                SELECT 0 AS distribution, 0 AS distroseries,
-                       0 AS product , 0 AS productseries,
-                       0 AS distribution_pillar, 0 AS product_pillar
-                UNION
-                    SELECT Distribution.id, NULL, NULL, NULL,
-                        Distribution.id, NULL
-                    FROM Distribution
-                    WHERE Distribution.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, DistroSeries.id, NULL, NULL,
-                        Distribution.id, NULL
-                    FROM DistroSeries
-                        JOIN Distribution
-                            ON DistroSeries.distribution = Distribution.id
-                    WHERE Distribution.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, NULL, Product.id, NULL,
-                        NULL, Product.id
-                    FROM Product
-                    WHERE Product.enable_bug_expiration IS TRUE
-                UNION
-                    SELECT NULL, NULL, NULL, ProductSeries.id,
-                        NULL, Product.id
-                    FROM ProductSeries
-                        JOIN Product
-                            ON ProductSeries.Product = Product.id
-                    WHERE Product.enable_bug_expiration IS TRUE) target
-                ON (BugTask.distribution = target.distribution
-                    OR BugTask.distroseries = target.distroseries
-                    OR BugTask.product = target.product
-                    OR BugTask.productseries = target.productseries)"""
         if target is None:
+            target_join = self._getJoinForTargets(
+                IDistribution, IDistroSeries, IProduct, IProductSeries)
             target_clause = "TRUE IS TRUE"
         elif IDistribution.providedBy(target):
+            target_join = self._getJoinForTargets(
+                IDistribution, IDistroSeries)
             target_clause = "target.distribution_pillar = %s" % sqlvalues(
                 target)
         elif IDistroSeries.providedBy(target):
+            target_join = self._getJoinForTargets(IDistroSeries)
             target_clause = "BugTask.distroseries = %s" % sqlvalues(target)
         elif IProduct.providedBy(target):
+            target_join = self._getJoinForTargets(IProduct, IProductSeries)
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
+            target_join = self._getJoinForTargets(IProductSeries)
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
         elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
