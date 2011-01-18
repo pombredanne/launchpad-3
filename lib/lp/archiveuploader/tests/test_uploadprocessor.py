@@ -280,8 +280,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         handler = UploadHandler(processor, '.', upload_dir)
         changes_files = handler.locateChangesFiles()
         for changes_file in changes_files:
-            result = processor.processChangesFile(
-                upload_dir, changes_file, build=build)
+            result = handler.processChangesFile(changes_file, build=build)
             results.append(result)
         return results
 

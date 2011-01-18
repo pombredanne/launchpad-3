@@ -172,6 +172,168 @@ class UploadHandler:
 
         return sorted(fnames, key=sourceFirst)
 
+    def processChangesFile(self, changes_file, logger=None, build=None):
+        """Process a single changes file.
+
+        This is done by obtaining the appropriate upload policy (according
+        to command-line options and the value in the .distro file beside
+        the upload, if present), creating a NascentUpload object and calling
+        its process method.
+
+        We obtain the context for this processing from the relative path,
+        within the upload folder, of this changes file. This influences
+        our creation both of upload policy and the NascentUpload object.
+
+        See nascentupload.py for the gory details.
+
+        Returns a value from UploadStatusEnum, or re-raises an exception
+        from NascentUpload.
+        """
+        if logger is None:
+            logger = self.processor.log
+        # Calculate the distribution from the path within the upload
+        # Reject the upload since we could not process the path,
+        # Store the exception information as a rejection message.
+        relative_path = os.path.dirname(changes_file)
+        upload_path_error = None
+        try:
+            (distribution, suite_name,
+             archive) = parse_upload_path(relative_path)
+        except UploadPathError, e:
+            # pick some defaults to create the NascentUpload() object.
+            # We will be rejecting the upload so it doesn matter much.
+            distribution = getUtility(IDistributionSet)['ubuntu']
+            suite_name = None
+            archive = distribution.main_archive
+            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
+                dict(upload_path=relative_path, path_error=str(e),
+                     extra_info=(
+                         "Please update your dput/dupload configuration "
+                         "and then re-upload.")))
+        except PPAUploadPathError, e:
+            # Again, pick some defaults but leave a hint for the rejection
+            # emailer that it was a PPA failure.
+            distribution = getUtility(IDistributionSet)['ubuntu']
+            suite_name = None
+            # XXX cprov 20071212: using the first available PPA is not exactly
+            # fine because it can confuse the code that sends rejection
+            # messages if it relies only on archive.purpose (which should be
+            # enough). On the other hand if we set an arbitrary owner it
+            # will break nascentupload ACL calculations.
+            archive = distribution.getAllPPAs()[0]
+            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
+                dict(upload_path=relative_path, path_error=str(e),
+                     extra_info=(
+                         "Please check the documentation at "
+                         "https://help.launchpad.net/Packaging/PPA#Uploading "
+                         "and update your configuration.")))
+        logger.debug("Finding fresh policy")
+        policy = self.processor._getPolicyForDistro(distribution, build)
+        policy.archive = archive
+
+        # DistroSeries overriding respect the following precedence:
+        #  1. process-upload.py command-line option (-r),
+        #  2. upload path,
+        #  3. changesfile 'Distribution' field.
+        if suite_name is not None:
+            policy.setDistroSeriesAndPocket(suite_name)
+
+        # The path we want for NascentUpload is the path to the folder
+        # containing the changes file (and the other files referenced by it).
+        changesfile_path = os.path.join(self.upload_path, changes_file)
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, self.processor.log)
+
+        # Reject source upload to buildd upload paths.
+        first_path = relative_path.split(os.path.sep)[0]
+        if (first_path.isdigit() and
+            policy.name != BuildDaemonUploadPolicy.name):
+            error_message = (
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
+            upload.reject(error_message)
+            logger.error(error_message)
+
+        # Reject upload with path processing errors.
+        if upload_path_error is not None:
+            upload.reject(upload_path_error)
+
+        # Store processed NascentUpload instance, mostly used for tests.
+        self.processor.last_processed_upload = upload
+
+        try:
+            logger.info("Processing upload %s" % upload.changes.filename)
+            result = UploadStatusEnum.ACCEPTED
+
+            try:
+                upload.process(build)
+            except UploadPolicyError, e:
+                upload.reject("UploadPolicyError escaped upload.process: "
+                              "%s " % e)
+                logger.debug(
+                    "UploadPolicyError escaped upload.process", exc_info=True)
+            except FatalUploadError, e:
+                upload.reject("UploadError escaped upload.process: %s" % e)
+                logger.debug(
+                    "UploadError escaped upload.process", exc_info=True)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except EarlyReturnUploadError:
+                # An error occurred that prevented further error collection,
+                # add this fact to the list of errors.
+                upload.reject(
+                    "Further error processing not possible because of "
+                    "a critical previous error.")
+            except Exception, e:
+                # In case of unexpected unhandled exception, we'll
+                # *try* to reject the upload. This may fail and cause
+                # a further exception, depending on the state of the
+                # nascentupload objects. In that case, we've lost nothing,
+                # the new exception will be handled by the caller just like
+                # the one we caught would have been, by failing the upload
+                # with no email.
+                logger.exception("Unhandled exception processing upload")
+                upload.reject("Unhandled exception processing upload: %s" % e)
+
+            # XXX julian 2007-05-25 bug=29744:
+            # When bug #29744 is fixed (zopeless mails should only be sent
+            # when transaction is committed) this will cause any emails sent
+            # sent by do_reject to be lost.
+            notify = True
+            if self.processor.dry_run or self.processor.no_mails:
+                notify = False
+            if upload.is_rejected:
+                result = UploadStatusEnum.REJECTED
+                upload.do_reject(notify)
+                self.processor.ztm.abort()
+            else:
+                successful = upload.do_accept(
+                    notify=notify, build=build)
+                if not successful:
+                    result = UploadStatusEnum.REJECTED
+                    logger.info(
+                        "Rejection during accept. Aborting partial accept.")
+                    self.processor.ztm.abort()
+
+            if upload.is_rejected:
+                logger.info("Upload was rejected:")
+                for msg in upload.rejections:
+                    logger.info("\t%s" % msg)
+
+            if self.processor.dry_run:
+                logger.info("Dry run, aborting transaction.")
+                self.processor.ztm.abort()
+            else:
+                logger.info(
+                    "Committing the transaction and any mails associated "
+                    "with this upload.")
+                self.processor.ztm.commit()
+        except:
+            self.processor.ztm.abort()
+            raise
+
+        return result
+
 
 class UserUploadHandler(UploadHandler):
 
@@ -195,8 +357,8 @@ class UserUploadHandler(UploadHandler):
             self.processor.log.debug(
                 "Considering changefile %s" % changes_file)
             try:
-                result = self.processor.processChangesFile(
-                    self.upload_path, changes_file, self.processor.log)
+                result = self.processChangesFile(
+                    changes_file, self.processor.log)
                 if result == UploadStatusEnum.FAILED:
                     some_failed = True
                 elif result == UploadStatusEnum.REJECTED:
@@ -263,8 +425,7 @@ class BuildUploadHandler(UploadHandler):
         try:
             [changes_file] = self.locateChangesFiles()
             logger.debug("Considering changefile %s" % changes_file)
-            result = self.processor.processChangesFile(
-                self.upload_path, changes_file, logger, build)
+            result = self.processChangesFile(changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -399,169 +560,6 @@ class UploadProcessor:
             if os.path.isdir(os.path.join(fsroot, dir_name)))
 
         return sorted_dir_names
-
-    def processChangesFile(self, upload_path, changes_file, logger=None,
-                           build=None):
-        """Process a single changes file.
-
-        This is done by obtaining the appropriate upload policy (according
-        to command-line options and the value in the .distro file beside
-        the upload, if present), creating a NascentUpload object and calling
-        its process method.
-
-        We obtain the context for this processing from the relative path,
-        within the upload folder, of this changes file. This influences
-        our creation both of upload policy and the NascentUpload object.
-
-        See nascentupload.py for the gory details.
-
-        Returns a value from UploadStatusEnum, or re-raises an exception
-        from NascentUpload.
-        """
-        if logger is None:
-            logger = self.log
-        # Calculate the distribution from the path within the upload
-        # Reject the upload since we could not process the path,
-        # Store the exception information as a rejection message.
-        relative_path = os.path.dirname(changes_file)
-        upload_path_error = None
-        try:
-            (distribution, suite_name,
-             archive) = parse_upload_path(relative_path)
-        except UploadPathError, e:
-            # pick some defaults to create the NascentUpload() object.
-            # We will be rejecting the upload so it doesn matter much.
-            distribution = getUtility(IDistributionSet)['ubuntu']
-            suite_name = None
-            archive = distribution.main_archive
-            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
-                dict(upload_path=relative_path, path_error=str(e),
-                     extra_info=(
-                         "Please update your dput/dupload configuration "
-                         "and then re-upload.")))
-        except PPAUploadPathError, e:
-            # Again, pick some defaults but leave a hint for the rejection
-            # emailer that it was a PPA failure.
-            distribution = getUtility(IDistributionSet)['ubuntu']
-            suite_name = None
-            # XXX cprov 20071212: using the first available PPA is not exactly
-            # fine because it can confuse the code that sends rejection
-            # messages if it relies only on archive.purpose (which should be
-            # enough). On the other hand if we set an arbitrary owner it
-            # will break nascentupload ACL calculations.
-            archive = distribution.getAllPPAs()[0]
-            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
-                dict(upload_path=relative_path, path_error=str(e),
-                     extra_info=(
-                         "Please check the documentation at "
-                         "https://help.launchpad.net/Packaging/PPA#Uploading "
-                         "and update your configuration.")))
-        logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution, build)
-        policy.archive = archive
-
-        # DistroSeries overriding respect the following precedence:
-        #  1. process-upload.py command-line option (-r),
-        #  2. upload path,
-        #  3. changesfile 'Distribution' field.
-        if suite_name is not None:
-            policy.setDistroSeriesAndPocket(suite_name)
-
-        # The path we want for NascentUpload is the path to the folder
-        # containing the changes file (and the other files referenced by it).
-        changesfile_path = os.path.join(upload_path, changes_file)
-        upload = NascentUpload.from_changesfile_path(
-            changesfile_path, policy, self.log)
-
-        # Reject source upload to buildd upload paths.
-        first_path = relative_path.split(os.path.sep)[0]
-        if (first_path.isdigit() and
-            policy.name != BuildDaemonUploadPolicy.name):
-            error_message = (
-                "Invalid upload path (%s) for this policy (%s)" %
-                (relative_path, policy.name))
-            upload.reject(error_message)
-            logger.error(error_message)
-
-        # Reject upload with path processing errors.
-        if upload_path_error is not None:
-            upload.reject(upload_path_error)
-
-        # Store processed NascentUpload instance, mostly used for tests.
-        self.last_processed_upload = upload
-
-        try:
-            logger.info("Processing upload %s" % upload.changes.filename)
-            result = UploadStatusEnum.ACCEPTED
-
-            try:
-                upload.process(build)
-            except UploadPolicyError, e:
-                upload.reject("UploadPolicyError escaped upload.process: "
-                              "%s " % e)
-                logger.debug(
-                    "UploadPolicyError escaped upload.process", exc_info=True)
-            except FatalUploadError, e:
-                upload.reject("UploadError escaped upload.process: %s" % e)
-                logger.debug(
-                    "UploadError escaped upload.process", exc_info=True)
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except EarlyReturnUploadError:
-                # An error occurred that prevented further error collection,
-                # add this fact to the list of errors.
-                upload.reject(
-                    "Further error processing not possible because of "
-                    "a critical previous error.")
-            except Exception, e:
-                # In case of unexpected unhandled exception, we'll
-                # *try* to reject the upload. This may fail and cause
-                # a further exception, depending on the state of the
-                # nascentupload objects. In that case, we've lost nothing,
-                # the new exception will be handled by the caller just like
-                # the one we caught would have been, by failing the upload
-                # with no email.
-                logger.exception("Unhandled exception processing upload")
-                upload.reject("Unhandled exception processing upload: %s" % e)
-
-            # XXX julian 2007-05-25 bug=29744:
-            # When bug #29744 is fixed (zopeless mails should only be sent
-            # when transaction is committed) this will cause any emails sent
-            # sent by do_reject to be lost.
-            notify = True
-            if self.dry_run or self.no_mails:
-                notify = False
-            if upload.is_rejected:
-                result = UploadStatusEnum.REJECTED
-                upload.do_reject(notify)
-                self.ztm.abort()
-            else:
-                successful = upload.do_accept(
-                    notify=notify, build=build)
-                if not successful:
-                    result = UploadStatusEnum.REJECTED
-                    logger.info(
-                        "Rejection during accept. Aborting partial accept.")
-                    self.ztm.abort()
-
-            if upload.is_rejected:
-                logger.info("Upload was rejected:")
-                for msg in upload.rejections:
-                    logger.info("\t%s" % msg)
-
-            if self.dry_run:
-                logger.info("Dry run, aborting transaction.")
-                self.ztm.abort()
-            else:
-                logger.info(
-                    "Committing the transaction and any mails associated "
-                    "with this upload.")
-                self.ztm.commit()
-        except:
-            self.ztm.abort()
-            raise
-
-        return result
 
     def removeUpload(self, upload, logger):
         """Remove an upload that has succesfully been processed.
