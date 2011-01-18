@@ -22,6 +22,7 @@ __all__ = [
     'ILocationField',
     'INoneableTextLine',
     'IPasswordField',
+    'IPersonChoice',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -817,13 +818,17 @@ class PrivateMembershipTeamNotAllowed(ConstraintNotSatisfied):
     __doc__ = _("A private-membership team is not allowed.")
 
 
+class IPersonChoice(IReferenceChoice):
+    """A marker for people choices."""
+
+
 class PersonChoice(Choice):
     """A person or team.
 
     This is useful as a superclass and provides a clearer error message than
     "Constraint not satisfied".
     """
-    implements(IReferenceChoice)
+    implements(IPersonChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
 
