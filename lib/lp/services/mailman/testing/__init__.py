@@ -112,7 +112,7 @@ class MailmanTestCase(TestCaseWithFactory):
         return mm_message
 
     def get_log_entry(self, match_text):
-        """Return the first mark line found in the log."""
+        """Return the first matched text line found in the log."""
         log_path = syslog._logfiles['xmlrpc']._Logger__filename
         mark = None
         with open(log_path, 'r') as log_file:
@@ -123,6 +123,7 @@ class MailmanTestCase(TestCaseWithFactory):
         return mark
 
     def get_mark(self):
+        """Return the --MARK-- entry from the log or None."""
         return self.get_log_entry('--MARK--')
 
     def reset_log(self):
@@ -134,6 +135,7 @@ class MailmanTestCase(TestCaseWithFactory):
         syslog.write_ex('xmlrpc', 'Reset by test.')
 
     def assertIsEnqueued(self, msg):
+        """Assert the message was appended to the incoming queue."""
         switchbaord = get_switchboard(mm_cfg.INQUEUE_DIR)
         file_path = switchbaord.files()[-1]
         queued_msg, queued_msg_data = switchbaord.dequeue(file_path)
