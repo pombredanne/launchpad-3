@@ -277,7 +277,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         so that we can debug failing tests effectively.
         """
         results = []
-        changes_files = processor.locateChangesFiles(upload_dir)
+        handler = UploadHandler(processor, '.', upload_dir)
+        changes_files = handler.locateChangesFiles()
         for changes_file in changes_files:
             result = processor.processChangesFile(
                 upload_dir, changes_file, build=build)
@@ -404,24 +405,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
-    def testLocateChangesFiles(self):
-        """locateChangesFiles should return the .changes files in a folder.
-
-        'source' changesfiles come first. Files that are not named as
-        changesfiles are ignored.
-        """
-        testdir = tempfile.mkdtemp()
-        try:
-            open("%s/1.changes" % testdir, "w").close()
-            open("%s/2_source.changes" % testdir, "w").close()
-            open("%s/3.not_changes" % testdir, "w").close()
-
-            up = self.getUploadProcessor(None)
-            located_files = up.locateChangesFiles(testdir)
-            self.assertEqual(
-                located_files, ["2_source.changes", "1.changes"])
-        finally:
-            shutil.rmtree(testdir)
 
     def _makeUpload(self, testdir):
         """Create a dummy upload for testing the move/remove methods."""
@@ -521,13 +504,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
-
-    def testOrderFilenames(self):
-        """orderFilenames sorts _source.changes ahead of other files."""
-        up = self.getUploadProcessor(None)
-
-        self.assertEqual(["d_source.changes", "a", "b", "c"],
-            up.orderFilenames(["b", "a", "d_source.changes", "c"]))
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -2062,6 +2038,31 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertLogContains(
             "Expected build status to be 'UPLOADING', was BUILDING. "
             "Ignoring.")
+
+    def testOrderFilenames(self):
+        """orderFilenames sorts _source.changes ahead of other files."""
+        self.assertEqual(["d_source.changes", "a", "b", "c"],
+            UploadHandler.orderFilenames(["b", "a", "d_source.changes", "c"]))
+
+    def testLocateChangesFiles(self):
+        """locateChangesFiles should return the .changes files in a folder.
+
+        'source' changesfiles come first. Files that are not named as
+        changesfiles are ignored.
+        """
+        testdir = tempfile.mkdtemp()
+        try:
+            open("%s/1.changes" % testdir, "w").close()
+            open("%s/2_source.changes" % testdir, "w").close()
+            open("%s/3.not_changes" % testdir, "w").close()
+
+            up = self.getUploadProcessor(None)
+            handler = UploadHandler(up, '.', testdir)
+            located_files = handler.locateChangesFiles()
+            self.assertEqual(
+                located_files, ["2_source.changes", "1.changes"])
+        finally:
+            shutil.rmtree(testdir)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):

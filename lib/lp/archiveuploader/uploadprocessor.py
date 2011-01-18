@@ -143,6 +143,35 @@ class UploadHandler:
         self.upload = upload
         self.upload_path = os.path.join(self.fsroot, self.upload)
 
+    def locateChangesFiles(self):
+        """Locate .changes files in the given upload directory.
+
+        Return .changes files sorted with *_source.changes first. This
+        is important to us, as in an upload containing several changes files,
+        it's possible the binary ones will depend on the source ones, so
+        the source ones should always be considered first.
+        """
+        changes_files = []
+
+        for dirpath, dirnames, filenames in os.walk(self.upload_path):
+            relative_path = dirpath[len(self.upload_path) + 1:]
+            for filename in filenames:
+                if filename.endswith(".changes"):
+                    changes_files.append(
+                        os.path.join(relative_path, filename))
+        return self.orderFilenames(changes_files)
+
+    @staticmethod
+    def orderFilenames(fnames):
+        """Order filenames, sorting *_source.changes before others.
+
+        Aside from that, a standard string sort.
+        """
+        def sourceFirst(filename):
+            return (not filename.endswith("_source.changes"), filename)
+
+        return sorted(fnames, key=sourceFirst)
+
 
 class UserUploadHandler(UploadHandler):
 
@@ -155,7 +184,7 @@ class UserUploadHandler(UploadHandler):
         individual changes files, in order 'failed', 'rejected', 'accepted'.
 
         """
-        changes_files = self.processor.locateChangesFiles(self.upload_path)
+        changes_files = self.locateChangesFiles()
 
         # Keep track of the various results
         some_failed = False
@@ -232,7 +261,7 @@ class BuildUploadHandler(UploadHandler):
             return
         self.processor.log.debug("Build %s found" % build.id)
         try:
-            [changes_file] = self.processor.locateChangesFiles(self.upload_path)
+            [changes_file] = self.locateChangesFiles()
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processor.processChangesFile(
                 self.upload_path, changes_file, logger, build)
@@ -370,24 +399,6 @@ class UploadProcessor:
             if os.path.isdir(os.path.join(fsroot, dir_name)))
 
         return sorted_dir_names
-
-    def locateChangesFiles(self, upload_path):
-        """Locate .changes files in the given upload directory.
-
-        Return .changes files sorted with *_source.changes first. This
-        is important to us, as in an upload containing several changes files,
-        it's possible the binary ones will depend on the source ones, so
-        the source ones should always be considered first.
-        """
-        changes_files = []
-
-        for dirpath, dirnames, filenames in os.walk(upload_path):
-            relative_path = dirpath[len(upload_path) + 1:]
-            for filename in filenames:
-                if filename.endswith(".changes"):
-                    changes_files.append(
-                        os.path.join(relative_path, filename))
-        return self.orderFilenames(changes_files)
 
     def processChangesFile(self, upload_path, changes_file, logger=None,
                            build=None):
@@ -603,16 +614,6 @@ class UploadProcessor:
             logger.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             shutil.move(distro_filename, target_path)
-
-    def orderFilenames(self, fnames):
-        """Order filenames, sorting *_source.changes before others.
-
-        Aside from that, a standard string sort.
-        """
-        def sourceFirst(filename):
-            return (not filename.endswith("_source.changes"), filename)
-
-        return sorted(fnames, key=sourceFirst)
 
 
 def _getDistributionAndSuite(parts, exc_type):
