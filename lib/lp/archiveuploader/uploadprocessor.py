@@ -142,7 +142,10 @@ class UploadHandler:
         self.fsroot = fsroot
         self.upload = upload
 
-    def processUpload(self):
+
+class UserUploadHandler(UploadHandler):
+
+    def process(self):
         """Process an upload's changes files, and move it to a new directory.
 
         The destination directory depends on the result of the processing
@@ -259,6 +262,7 @@ class BuildUploadHandler(UploadHandler):
         self.processor.ztm.commit()
         self.processor.moveProcessedUpload(upload_path, destination, logger)
 
+
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
@@ -314,13 +318,13 @@ class UploadProcessor:
                     self.log.debug("Skipping %s -- does not match %s" % (
                         upload, leaf_name))
                     continue
-                handler = UploadHandler(self, fsroot, upload)
                 if self.builds:
                     # Upload directories contain build results,
                     # directories are named after job ids.
-                    handler.processBuildUpload()
+                    handler = BuildUploadHandler(self, fsroot, upload)
                 else:
-                    handler.processUpload()
+                    handler = UserUploadHandler(self, fsroot, upload)
+                handler.process()
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
