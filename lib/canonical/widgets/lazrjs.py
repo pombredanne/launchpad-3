@@ -287,6 +287,11 @@ class InlineEditPickerWidget:
         else:
             self.id = id
 
+        self.header = header
+        self.step_title = step_title
+        self.remove_button_text = remove_button_text
+        self.null_display_value = null_display_value
+
         # JSON encoded attributes.
         self.json_id = simplejson.dumps(self.id)
         self.json_attribute = simplejson.dumps(self.attribute_name + '_link')
@@ -295,10 +300,14 @@ class InlineEditPickerWidget:
         self.show_remove_button = simplejson.dumps(
             not self.interface_attribute.required)
 
-        self.config = simplejson.dumps(
-            dict(header=header, step_title=step_title,
-                 remove_button_text=remove_button_text,
-                 null_display_value=null_display_value))
+    @property
+    def config(self):
+        return simplejson.dumps(
+            dict(header=self.header, step_title=self.step_title,
+                 remove_button_text=self.remove_button_text,
+                 null_display_value=self.null_display_value,
+                 show_remove_button=self.show_remove_button,
+                 show_assign_me_button=self.assign_me_button))
 
     @property
     def show_assign_me_button(self):

@@ -36,8 +36,6 @@
                LP.client.cache['context']['self_link'],
                'owner_link',
                'recipe-owner',
-               false,
-               false,
                config);
            //var picker = Y.lp.app.picker.create(
            //    'UserTeamsParticipationPlusSelfVocabulary', config);

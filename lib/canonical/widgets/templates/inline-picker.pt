@@ -19,8 +19,6 @@ LPS.use('lp.app.picker', function(Y) {
         ${view/resource_uri},
         ${view/json_attribute},
         ${view/json_id},
-        ${view/show_remove_button},
-        ${view/show_assign_me_button},
         ${view/config});
 });
 "/>
