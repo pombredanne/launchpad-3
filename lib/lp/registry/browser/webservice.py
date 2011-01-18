@@ -23,16 +23,12 @@ from lp.services.fields import IPersonChoice
 @component.adapter(Interface, IPersonChoice, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def person_renderer(context, field, request):
-    """Render a recipe owner as a link."""
+    """Render a person as a link to the person."""
 
     def render(value):
+        value = getattr(context, field.__name__)
         if value is None:
             return ''
         else:
-            link = PersonFormatterAPI(value).link(None)
-            # This span is required for now as it is used in the parsing of
-            # the dt list returned by default as the xhtml representation.  To
-            # remove this, you need to fix the javascript parsing in
-            # lp.app.javascript.picker (we think).
-            return '<span>%s</span>' % link
+            return PersonFormatterAPI(value).link(None)
     return render

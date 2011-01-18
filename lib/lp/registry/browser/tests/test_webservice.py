@@ -30,5 +30,4 @@ class TestPersonRenderer(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        self.assertEqual(
-            '<span>%s</span>' % format_link(eric), renderer(eric))
+        self.assertEqual('%s' % format_link(eric), renderer(None))
