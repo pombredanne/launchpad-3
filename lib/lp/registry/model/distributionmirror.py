@@ -28,7 +28,13 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
-from storm.expr import Func
+from storm.store import Store
+from storm.expr import (
+    And,
+    Asc,
+    Desc,
+    Func,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -90,6 +96,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.worlddata.model.country import Country
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     PackagePublishingStatus,
@@ -186,6 +193,26 @@ class DistributionMirror(SQLBase):
         return (self.ftp_base_url is not None
                 or self.rsync_base_url is not None)
 
+    @cachedproperty
+    def most_stale_arch_mirror(self):
+        store = Store.of(self)
+        return store.find(
+            MirrorDistroArchSeries,
+            And(
+                MirrorDistroArchSeries.distribution_mirror == self,
+                MirrorDistroArchSeries.freshness != MirrorFreshness.UNKNOWN)
+            ).order_by(Desc(MirrorDistroArchSeries.freshness)).first()
+
+    @cachedproperty
+    def most_stale_source_mirror(self):
+        store = Store.of(self)
+        return store.find(
+            MirrorDistroSeriesSource,
+            And(
+                MirrorDistroSeriesSource.distribution_mirror == self,
+                MirrorDistroSeriesSource.freshness != MirrorFreshness.UNKNOWN)
+            ).order_by(Desc(MirrorDistroSeriesSource.freshness)).first()
+
     def destroySelf(self):
         """Delete this mirror from the database.
 
@@ -266,15 +293,12 @@ class DistributionMirror(SQLBase):
                 return MirrorFreshness.UP
             else:
                 return MirrorFreshness.UNKNOWN
+
         elif self.content == MirrorContent.ARCHIVE:
             # Return the worst (i.e. highest valued) mirror freshness out of
             # all mirrors (binary and source) for this distribution mirror.
-            query = ("distribution_mirror = %s AND freshness != %s"
-                     % sqlvalues(self, MirrorFreshness.UNKNOWN))
-            arch_mirror = MirrorDistroArchSeries.selectFirst(
-                query, orderBy='-freshness')
-            source_mirror = MirrorDistroSeriesSource.selectFirst(
-                query, orderBy='-freshness')
+            arch_mirror = self.most_stale_arch_mirror
+            source_mirror = self.most_stale_source_mirror
             if arch_mirror is None and source_mirror is None:
                 # No content.
                 return MirrorFreshness.UNKNOWN

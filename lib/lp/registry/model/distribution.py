@@ -136,7 +136,11 @@ from lp.registry.interfaces.pocket import suffixpocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
-from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import (
+    DistributionMirror,
+    MirrorDistroArchSeries,
+    MirrorDistroSeriesSource,
+    )
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
@@ -441,7 +445,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
-    def _getActiveMirrors(self, mirror_content_type, by_country=False):
+    def _getActiveMirrors(self, mirror_content_type, by_country=False, fresh=False):
         """Builds the query to get the mirror data for various purposes."""
         mirrors = list(Store.of(self).find(
             DistributionMirror,
@@ -452,10 +456,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 DistributionMirror.status == MirrorStatus.OFFICIAL,
                 DistributionMirror.official_candidate == True)))
         if by_country and mirrors:
-            #Since country data is needed, fetch countries into the cache.
+            # Since country data is needed, fetch countries into the cache.
             countries = list(Store.of(self).find(
                 Country,
                 Country.id.is_in(mirror.countryID for mirror in mirrors)))
+        if fresh and mirrors:
+            # Since we're going to need mirror freshness, fetch the mirror
+            # into the cache.
+            arch_mirrors = list(Store.of(self).find(
+                MirrorDistroArchSeries,
+                MirrorDistroArchSeries.distribution_mirrorID.is_in(
+                    [mirror.id for mirror in mirrors])))
+            source_mirrors = list(Store.of(self).find(
+                MirrorDistroSeriesSource,
+                MirrorDistroSeriesSource.distribution_mirrorID.is_in(
+                    [mirror.id for mirror in mirrors])))
         return mirrors
 
     @property
@@ -468,7 +483,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return self._getActiveMirrors(
             MirrorContent.ARCHIVE,
-            by_country=True)
+            by_country=True,
+            fresh=True)
 
     @property
     def cdimage_mirrors(self, by_country=False):
