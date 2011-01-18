@@ -15,7 +15,7 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
-    'MilestonesView',
+    'MilestoneWithoutCountsView',
     'MilestoneView',
     'ObjectMilestonesView',
     ]
@@ -368,7 +368,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
-class MilestonesView(MilestoneView):
+class MilestoneWithoutCountsView(MilestoneView):
     """Show a milestone in a list of milestones."""
     show_series_context = True
 
