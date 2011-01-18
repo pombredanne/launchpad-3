@@ -785,9 +785,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 
