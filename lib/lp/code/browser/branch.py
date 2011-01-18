@@ -120,6 +120,7 @@ from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
     BranchLifecycleStatus,
+    BranchMergeProposalStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -138,6 +139,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -603,15 +605,52 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
 
-    @cachedproperty
-    def linked_bugs(self):
+    def linked_bugs_for(self, branch):
         """Return a list of DecoratedBugs linked to the branch."""
-        bugs = self.context.linked_bugs
-        if self.context.is_series_branch:
+        bugs = branch.linked_bugs
+        if branch.is_series_branch:
             bugs = [
                 bug for bug in bugs
                 if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
         return bugs
+
+    @cachedproperty
+    def linked_bugs(self):
+        return self.linked_bugs_for(self.context)
+
+    @cachedproperty
+    def revision_info(self):
+        """Return information about the latest revisions on a branch.
+
+        For each revision in latest revisions, see if the revision resulted
+        from merging in a merge proposal, and if so package up the merge
+        proposal and any linked bugs on the merge proposal's linked branch.
+        """
+
+        def make_rev_info(branch_revision, merge_proposal_revs):
+            rev_info = {
+                'revision': branch_revision,
+                'linked_bugs': None,
+                'merge_proposal': None,
+                }
+            merge_proposal = merge_proposal_revs.get(branch_revision.id)
+            rev_info['merge_proposal'] = merge_proposal
+            if merge_proposal is not None:
+                rev_info['linked_bugs'] = (
+                    self.linked_bugs_for(
+                        DecoratedBranch(merge_proposal.source_branch)))
+            return rev_info
+
+        rev_nos = [revision.id for revision in self.context.latest_revisions]
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        merge_proposals = collection.getMergeProposals(
+                target_branch=self.context.branch, merged_revnos=rev_nos,
+                statuses=[BranchMergeProposalStatus.MERGED])
+        merge_proposal_revs = dict(
+                [(mp.merged_revno, mp) for mp in merge_proposals])
+        return [make_rev_info(
+                rev, merge_proposal_revs)
+                for rev in self.context.latest_revisions]
 
     @cachedproperty
     def latest_code_import_results(self):
