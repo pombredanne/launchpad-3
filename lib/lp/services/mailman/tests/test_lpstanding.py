@@ -61,7 +61,7 @@ class TestLPStandingTestCase(MailmanTestCase):
 
     def test_proxy_error_retries_message(self):
         # When the Launchpad xmlrpc proxy raises an error, the message
-        # is re-enqueed
+        # is re-enqueed.
         message = self.makeMailmanMessage(
             self.mm_list, self.lp_user_email, 'subject', 'any content.')
         msg_data = {}
