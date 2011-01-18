@@ -23,7 +23,7 @@ from lp.services.fields import IPersonChoice
 @component.adapter(Interface, IPersonChoice, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def person_renderer(context, field, request):
-    """Render a recipe owner as a link."""
+    """Render a person as a link to the person."""
 
     def render(value):
         if value is None:
