@@ -334,6 +334,58 @@ class UploadHandler:
 
         return result
 
+    def moveProcessedUpload(self, destination, logger):
+        """Move or remove the upload depending on the status of the upload.
+        """
+        if destination == "accepted":
+            self.removeUpload(logger)
+        else:
+            self.moveUpload(destination, logger)
+
+    def removeUpload(self, logger):
+        """Remove an upload that has succesfully been processed.
+
+        This includes moving the given upload directory and moving the
+        matching .distro file, if it exists.
+        """
+        if self.processor.keep or self.processor.dry_run:
+            logger.debug("Keeping contents untouched")
+            return
+
+        logger.debug("Removing upload directory %s", self.upload_path)
+        shutil.rmtree(self.upload_path)
+
+        distro_filename = self.upload_path + ".distro"
+        if os.path.isfile(distro_filename):
+            logger.debug("Removing distro file %s", distro_filename)
+            os.remove(distro_filename)
+
+    def moveUpload(self, subdir_name, logger):
+        """Move the upload to the named subdir of the root, eg 'accepted'.
+
+        This includes moving the given upload directory and moving the
+        matching .distro file, if it exists.
+        """
+        if self.processor.keep or self.processor.dry_run:
+            logger.debug("Keeping contents untouched")
+            return
+
+        pathname = os.path.basename(self.upload_path)
+
+        target_path = os.path.join(
+            self.processor.base_fsroot, subdir_name, pathname)
+        logger.debug("Moving upload directory %s to %s" %
+            (self.upload_path, target_path))
+        shutil.move(self.upload_path, target_path)
+
+        distro_filename = self.upload_path + ".distro"
+        if os.path.isfile(distro_filename):
+            target_path = os.path.join(self.processor.base_fsroot, subdir_name,
+                                       os.path.basename(distro_filename))
+            logger.debug("Moving distro file %s to %s" % (distro_filename,
+                                                            target_path))
+            shutil.move(distro_filename, target_path)
+
 
 class UserUploadHandler(UploadHandler):
 
@@ -388,8 +440,7 @@ class UserUploadHandler(UploadHandler):
             # There were no changes files at all. We consider
             # the upload to be failed in this case.
             destination = "failed"
-        self.processor.moveProcessedUpload(
-            self.upload_path, destination, self.processor.log)
+        self.moveProcessedUpload(destination, self.processor.log)
 
 
 class BuildUploadHandler(UploadHandler):
@@ -449,7 +500,7 @@ class BuildUploadHandler(UploadHandler):
             build.notify(extra_info="Uploading build %s failed." % self.upload)
             build.storeUploadLog(logger.getLogBuffer())
         self.processor.ztm.commit()
-        self.processor.moveProcessedUpload(self.upload_path, destination, logger)
+        self.moveProcessedUpload(destination, logger)
 
 
 class UploadProcessor:
@@ -561,57 +612,6 @@ class UploadProcessor:
 
         return sorted_dir_names
 
-    def removeUpload(self, upload, logger):
-        """Remove an upload that has succesfully been processed.
-
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-        """
-        if self.keep or self.dry_run:
-            logger.debug("Keeping contents untouched")
-            return
-
-        logger.debug("Removing upload directory %s", upload)
-        shutil.rmtree(upload)
-
-        distro_filename = upload + ".distro"
-        if os.path.isfile(distro_filename):
-            logger.debug("Removing distro file %s", distro_filename)
-            os.remove(distro_filename)
-
-    def moveProcessedUpload(self, upload_path, destination, logger):
-        """Move or remove the upload depending on the status of the upload.
-        """
-        if destination == "accepted":
-            self.removeUpload(upload_path, logger)
-        else:
-            self.moveUpload(upload_path, destination, logger)
-
-    def moveUpload(self, upload, subdir_name, logger):
-        """Move the upload to the named subdir of the root, eg 'accepted'.
-
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-        """
-        if self.keep or self.dry_run:
-            logger.debug("Keeping contents untouched")
-            return
-
-        pathname = os.path.basename(upload)
-
-        target_path = os.path.join(
-            self.base_fsroot, subdir_name, pathname)
-        logger.debug("Moving upload directory %s to %s" %
-            (upload, target_path))
-        shutil.move(upload, target_path)
-
-        distro_filename = upload + ".distro"
-        if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.base_fsroot, subdir_name,
-                                       os.path.basename(distro_filename))
-            logger.debug("Moving distro file %s to %s" % (distro_filename,
-                                                            target_path))
-            shutil.move(distro_filename, target_path)
 
 
 def _getDistributionAndSuite(parts, exc_type):

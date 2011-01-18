@@ -427,7 +427,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveUpload(upload, target_name, self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveUpload(target_name, self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
@@ -448,7 +449,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "accepted", self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveProcessedUpload("accepted", self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -471,7 +473,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "rejected", self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveProcessedUpload("rejected", self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(testdir,
@@ -494,7 +497,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.removeUpload(upload, self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.removeUpload(self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
