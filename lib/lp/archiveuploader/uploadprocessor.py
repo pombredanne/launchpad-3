@@ -141,6 +141,7 @@ class UploadHandler:
         self.processor = processor
         self.fsroot = fsroot
         self.upload = upload
+        self.upload_path = os.path.join(self.fsroot, self.upload)
 
 
 class UserUploadHandler(UploadHandler):
@@ -154,8 +155,7 @@ class UserUploadHandler(UploadHandler):
         individual changes files, in order 'failed', 'rejected', 'accepted'.
 
         """
-        upload_path = os.path.join(self.fsroot, self.upload)
-        changes_files = self.processor.locateChangesFiles(upload_path)
+        changes_files = self.processor.locateChangesFiles(self.upload_path)
 
         # Keep track of the various results
         some_failed = False
@@ -167,7 +167,7 @@ class UserUploadHandler(UploadHandler):
                 "Considering changefile %s" % changes_file)
             try:
                 result = self.processor.processChangesFile(
-                    upload_path, changes_file, self.processor.log)
+                    self.upload_path, changes_file, self.processor.log)
                 if result == UploadStatusEnum.FAILED:
                     some_failed = True
                 elif result == UploadStatusEnum.REJECTED:
@@ -179,7 +179,7 @@ class UserUploadHandler(UploadHandler):
             except:
                 info = sys.exc_info()
                 message = (
-                    'Exception while processing upload %s' % upload_path)
+                    'Exception while processing upload %s' % self.upload_path)
                 properties = [('error-explanation', message)]
                 request = ScriptRequest(properties)
                 error_utility = ErrorReportingUtility()
@@ -198,7 +198,7 @@ class UserUploadHandler(UploadHandler):
             # the upload to be failed in this case.
             destination = "failed"
         self.processor.moveProcessedUpload(
-            upload_path, destination, self.processor.log)
+            self.upload_path, destination, self.processor.log)
 
 
 class BuildUploadHandler(UploadHandler):
@@ -209,7 +209,6 @@ class BuildUploadHandler(UploadHandler):
         The name of the leaf is the build id of the build.
         Build uploads always contain a single package per leaf.
         """
-        upload_path = os.path.join(self.fsroot, self.upload)
         try:
             job_id = parse_build_upload_leaf_name(self.upload)
         except ValueError:
@@ -233,16 +232,16 @@ class BuildUploadHandler(UploadHandler):
             return
         self.processor.log.debug("Build %s found" % build.id)
         try:
-            [changes_file] = self.processor.locateChangesFiles(upload_path)
+            [changes_file] = self.processor.locateChangesFiles(self.upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processor.processChangesFile(
-                upload_path, changes_file, logger, build)
+                self.upload_path, changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
             info = sys.exc_info()
             message = (
-                'Exception while processing upload %s' % upload_path)
+                'Exception while processing upload %s' % self.upload_path)
             properties = [('error-explanation', message)]
             request = ScriptRequest(properties)
             error_utility = ErrorReportingUtility()
@@ -260,7 +259,7 @@ class BuildUploadHandler(UploadHandler):
             build.notify(extra_info="Uploading build %s failed." % self.upload)
             build.storeUploadLog(logger.getLogBuffer())
         self.processor.ztm.commit()
-        self.processor.moveProcessedUpload(upload_path, destination, logger)
+        self.processor.moveProcessedUpload(self.upload_path, destination, logger)
 
 
 class UploadProcessor:
