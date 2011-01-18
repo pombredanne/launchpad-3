@@ -83,7 +83,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackageFilePublishing,
@@ -93,6 +92,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     PoolFileOverwriteError,
     )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -118,6 +118,21 @@ def makePoolPath(source_name, component_name):
     from lp.archivepublisher.diskpool import poolify
     return os.path.join(
         'pool', poolify(source_name, component_name))
+
+
+def maybe_override_component(archive, distroseries, component):
+    """Override the component to fit in the archive, if possible.
+
+    If the archive has a default component, and it forbids use of the
+    requested component in the requested series, use the default.
+
+    If there is no default, just return the given component.
+    """
+    permitted_components = archive.getComponentsForSeries(distroseries)
+    if (component not in permitted_components and
+        archive.default_component is not None):
+        return archive.default_component
+    return component
 
 
 class FilePublishingBase:
@@ -817,7 +832,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.component in (
             self.archive.getComponentsForSeries(self.distroseries))
 
-
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
         return [
@@ -1244,104 +1258,91 @@ class PublishingSet:
 
     def copyBinariesTo(self, binaries, distroseries, pocket, archive):
         """See `IPublishingSet`."""
-
-        # If the target archive is a ppa then we will need to override
-        # the component for each copy - so lookup the main component
-        # here once.
-        override_component = None
-        if archive.is_ppa:
-            override_component = getUtility(IComponentSet)['main']
-
         secure_copies = []
-
         for binary in binaries:
-            binarypackagerelease = binary.binarypackagerelease
-            target_component = override_component or binary.component
-
-            # XXX 2010-09-28 Julian bug=649859
-            # This piece of code duplicates the logic in
-            # PackageUploadBuild.publish(), it needs to be refactored.
-
-            if binarypackagerelease.architecturespecific:
-                # If the binary is architecture specific and the target
-                # distroseries does not include the architecture then we
-                # skip the binary and continue.
-                try:
-                    # For safety, we use the architecture the binary was
-                    # built, and not the one it is published, coping with
-                    # single arch-indep publications for architectures that
-                    # do not exist in the destination series.
-                    # See #387589 for more information.
-                    target_architecture = distroseries[
-                        binarypackagerelease.build.arch_tag]
-                except NotFoundError:
-                    continue
-                destination_architectures = [target_architecture]
-            else:
-                destination_architectures = [
-                    arch for arch in distroseries.architectures
-                    if arch.enabled]
-
-            for distroarchseries in destination_architectures:
-
-                # We only copy the binary if it doesn't already exist
-                # in the destination.
-                binary_in_destination = archive.getAllPublishedBinaries(
-                    name=binarypackagerelease.name, exact_match=True,
-                    version=binarypackagerelease.version,
-                    status=active_publishing_status, pocket=pocket,
-                    distroarchseries=distroarchseries)
-
-                if binary_in_destination.count() == 0:
-                    pub = BinaryPackagePublishingHistory(
-                        archive=archive,
-                        binarypackagerelease=binarypackagerelease,
-                        distroarchseries=distroarchseries,
-                        component=target_component,
-                        section=binary.section,
-                        priority=binary.priority,
-                        status=PackagePublishingStatus.PENDING,
-                        datecreated=UTC_NOW,
-                        pocket=pocket)
-                    secure_copies.append(pub)
-
+            # This will go wrong if nominatedarchindep gets deleted in a
+            # future series -- it will attempt to retrieve i386 from the
+            # new series, fail, and skip the publication instead of
+            # publishing the remaining archs.
+            try:
+                build = binary.binarypackagerelease.build
+                target_architecture = distroseries[
+                    build.distro_arch_series.architecturetag]
+            except NotFoundError:
+                continue
+            if not target_architecture.enabled:
+                continue
+            secure_copies.extend(
+                getUtility(IPublishingSet).publishBinary(
+                    archive, binary.binarypackagerelease, target_architecture,
+                    binary.component, binary.section, binary.priority,
+                    pocket))
         return secure_copies
+
+    def publishBinary(self, archive, binarypackagerelease, distroarchseries,
+                      component, section, priority, pocket):
+        """See `IPublishingSet`."""
+        if not binarypackagerelease.architecturespecific:
+            target_archs = distroarchseries.distroseries.enabled_architectures
+        else:
+            target_archs = [distroarchseries]
+
+        # DDEBs targeted to the PRIMARY archive are published in the
+        # corresponding DEBUG archive.
+        if binarypackagerelease.binpackageformat == BinaryPackageFormat.DDEB:
+            debug_archive = archive.debug_archive
+            if debug_archive is None:
+                raise QueueInconsistentStateError(
+                    "Could not find the corresponding DEBUG archive "
+                    "for %s" % (archive.displayname))
+            archive = debug_archive
+
+        published_binaries = []
+        for arch in target_archs:
+            # We only publish the binary if it doesn't already exist in
+            # the destination. Note that this means we don't support
+            # override changes on their own.
+            binaries_in_destination = archive.getAllPublishedBinaries(
+                name=binarypackagerelease.name, exact_match=True,
+                version=binarypackagerelease.version,
+                status=active_publishing_status, pocket=pocket,
+                distroarchseries=distroarchseries)
+            if not bool(binaries_in_destination):
+                published_binaries.append(
+                    getUtility(IPublishingSet).newBinaryPublication(
+                        archive, binarypackagerelease, arch, component,
+                        section, priority, pocket))
+        return published_binaries
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
                              pocket):
         """See `IPublishingSet`."""
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
-        pub = BinaryPackagePublishingHistory(
+        assert distroarchseries.enabled, (
+            "Will not create new publications in a disabled architecture.")
+        return BinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
-            component=component,
+            component=maybe_override_component(
+                archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
 
-        return pub
-
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None):
         """See `IPublishingSet`."""
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
             sourcepackagerelease=sourcepackagerelease,
-            component=component,
+            component=maybe_override_component(
+                archive, distroseries, component),
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
@@ -1878,7 +1879,7 @@ class PublishingSet:
                 name=package_name, exact_match=True, pocket=pocket,
                 status=status, distroseries=distroseries)
 
-        if ancestries.count() > 0:
+        try:
             return ancestries[0]
-
-        return None
+        except IndexError:
+            return None
