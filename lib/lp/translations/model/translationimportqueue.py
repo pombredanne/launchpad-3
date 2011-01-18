@@ -293,7 +293,8 @@ class TranslationImportQueueEntry(SQLBase):
         return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename).one()
+            sourcepackagename=self.sourcepackagename,
+            ignore_obsolete=True).one()
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
