@@ -242,15 +242,15 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual(expected_members, retrieved_members)
 
     def test_inTeam_person_no_archive(self):
-        # If a person has an archive marked incorrectly that person should
-        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        # If a person has no archive that person should still be retrieved by
+        # 'all_members_prepopulated'.
         expected_members = sorted([self.user, self.a_team.teamowner])
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
 
     def test_inTeam_person_ppa_archive(self):
-        # If a person has an archive marked incorrectly that person should
-        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        # If a person has a PPA that person should still be retrieved by
+        # 'all_members_prepopulated'.
         self.factory.makeArchive(
             owner=self.user, purpose=ArchivePurpose.PPA)
         expected_members = sorted([self.user, self.a_team.teamowner])
