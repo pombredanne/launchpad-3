@@ -22,8 +22,6 @@ class BranchRevision(Storm):
     """See `IBranchRevision`."""
     __storm_table__ = 'BranchRevision'
 
-    id = Int(primary=True)
-
     implements(IBranchRevision)
 
     branch_id = Int(name='branch', allow_none=False)
