@@ -224,17 +224,17 @@ class Bugzilla(ExternalBugTracker):
         return tuple(int(number) for number in version_numbers)
 
     _importance_lookup = {
-        'blocker':     BugTaskImportance.CRITICAL,
-        'critical':    BugTaskImportance.CRITICAL,
-        'immediate':   BugTaskImportance.CRITICAL,
-        'urgent':      BugTaskImportance.CRITICAL,
-        'major':       BugTaskImportance.HIGH,
-        'high':        BugTaskImportance.HIGH,
-        'normal':      BugTaskImportance.MEDIUM,
-        'medium':      BugTaskImportance.MEDIUM,
-        'minor':       BugTaskImportance.LOW,
-        'low':         BugTaskImportance.LOW,
-        'trivial':     BugTaskImportance.LOW,
+        'blocker': BugTaskImportance.CRITICAL,
+        'critical': BugTaskImportance.CRITICAL,
+        'immediate': BugTaskImportance.CRITICAL,
+        'urgent': BugTaskImportance.CRITICAL,
+        'major': BugTaskImportance.HIGH,
+        'high': BugTaskImportance.HIGH,
+        'normal': BugTaskImportance.MEDIUM,
+        'medium': BugTaskImportance.MEDIUM,
+        'minor': BugTaskImportance.LOW,
+        'low': BugTaskImportance.LOW,
+        'trivial': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
         }
 
@@ -316,12 +316,13 @@ class Bugzilla(ExternalBugTracker):
         # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
-            data = {'download_type' : 'browser',
-                    'output_configured' : 'true',
-                    'include_attachments' : 'false',
-                    'include_dtd' : 'true',
-                    'id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'download_type': 'browser',
+                'output_configured': 'true',
+                'include_attachments': 'false',
+                'include_dtd': 'true',
+                'id': ','.join(bug_ids),
+                }
             bug_tag = 'issue'
             id_tag = 'issue_id'
             status_tag = 'issue_status'
@@ -339,15 +340,16 @@ class Bugzilla(ExternalBugTracker):
             severity_tag = 'bug_severity'
         else:
             buglist_page = 'buglist.cgi'
-            data = {'form_name'   : 'buglist.cgi',
-                    'bug_id_type' : 'include',
-                    'columnlist'  : 'id,product,bug_status,resolution',
-                    'bug_id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'form_name': 'buglist.cgi',
+                'bug_id_type': 'include',
+                'columnlist': 'id,product,bug_status,resolution',
+                'bug_id': ','.join(bug_ids),
+                }
             if self.version < (2, 17, 1):
-                data.update({'format' : 'rdf'})
+                data.update({'format': 'rdf'})
             else:
-                data.update({'ctype'  : 'rdf'})
+                data.update({'ctype': 'rdf'})
             bug_tag = 'bz:bug'
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
@@ -355,7 +357,9 @@ class Bugzilla(ExternalBugTracker):
             priority_tag = 'bz:priority'
             severity_tag = 'bz:bug_severity'
 
-        buglist_xml = self._postPage(buglist_page, data)
+        buglist_xml = self._postPage(
+            buglist_page, data, repost_on_redirect=True)
+
         try:
             document = self._parseDOMString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
