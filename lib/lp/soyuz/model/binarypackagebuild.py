@@ -366,6 +366,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         self.buildqueue_record.manualScore(score)
 
+    @property
+    def _api_score(self):
+        """See `IBinaryPackageBuild`."""
+        # Score of the related buildqueue record (if any)
+        if self.buildqueue_record is None:
+            return None
+        else:
+            return self.buildqueue_record.lastscore
+
     def makeJob(self):
         """See `IBuildFarmJob`."""
         store = Store.of(self)
