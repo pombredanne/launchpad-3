@@ -276,9 +276,6 @@
             provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
-            factory="lp.bugs.browser.bugtask.assignee_renderer"
-            name="assignee"/>
-        <adapter
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
         <adapter
@@ -788,9 +785,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 

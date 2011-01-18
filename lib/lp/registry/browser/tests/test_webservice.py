@@ -16,19 +16,28 @@ from lp.registry.interfaces.product import IProduct
 from lp.testing import TestCaseWithFactory
 
 
-class TestPersonRenderer(TestCaseWithFactory):
+class TestXHTMLRepresentations(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_person_renderer(self):
-        # A person renderer will result in the same text as a TALES
-        # PersonFormatter.
-        eric = self.factory.makePerson(name='eric')
+    def test_person(self):
+        # Test the XHTML representation of a person.
+        eric = self.factory.makePerson()
+        # The representation of a person is the same as a tales PersonFormatter.
+        self.assertEqual(
+            '<span>%s</span>' % format_link(eric), renderer(eric))
+
+    def test_text(self):
+        # Test the XHTML representation of a text field.
+        text = u'\N{SNOWMAN} snowman@example.com'
         # We need something that has an IPersonChoice, a project will do.
-        product = self.factory.makeProduct(owner=eric)
-        field = IProduct['owner']
+        product = self.factory.makeProduct()
+        field = IProduct['description']
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The person renderer gives the same result as the TALES formatter.
-        self.assertEqual('%s' % format_link(eric), renderer(None))
+        # The representation is UTF-8 encoded with hidden email.
+        self.assertEqual(
+            '<p>\xe2\x98\x83 &lt;email address hidden&gt;</p>',
+            renderer(text))
+
