@@ -819,7 +819,7 @@ class PrivateMembershipTeamNotAllowed(ConstraintNotSatisfied):
 
 
 class IPersonChoice(IReferenceChoice):
-    """A marker for people choices."""
+    """A marker for a choice among people."""
 
 
 class PersonChoice(Choice):
