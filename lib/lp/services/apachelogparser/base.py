@@ -6,7 +6,10 @@ import gzip
 import os
 
 from contrib import apachelog
-from lazr.uri import InvalidURIError, URI
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 import pytz
 from zope.component import getUtility
 
@@ -223,7 +226,7 @@ def get_method_and_path(request):
             path = uri.path
         except InvalidURIError:
             # The URL is not valid, so we can't extract a path. Let it
-            # pass through, where it will probably be skipped as
-            # unparsable.
+            # pass through, where it will probably be skipped when no
+            # download key can be determined.
             pass
     return method, path
