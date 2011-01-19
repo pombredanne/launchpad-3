@@ -1003,6 +1003,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     def mirror_count(self):
         return len(self.mirrors)
 
+
 class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
 
