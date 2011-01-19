@@ -101,6 +101,16 @@ class TestLineParsing(TestCase):
             path,
             r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b Z%7B...')
 
+    def test_parsing_invalid_url(self):
+        # An invalid URL should just be treated as a path, not cause an
+        # exception.
+        request = r'GET http://blah/1234/fewfwfw GET http://blah HTTP/1.0'
+        method, path = get_method_and_path(request)
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
+            path,
+            r'http://blah/1234/fewfwfw GET http://blah')
+
 
 class Test_get_fd_and_file_size(TestCase):
 
