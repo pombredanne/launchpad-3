@@ -1697,10 +1697,15 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        return PersonSet()._getPrecachedPersons(
+        # Use a PersonSet object that is not security proxied to allow
+        # manipulation of the object.
+        person_set = PersonSet()
+        return person_set._getPrecachedPersons(
             origin, conditions, store=Store.of(self),
-            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location, need_archive=need_archive,
+            need_karma=need_karma,
+            need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location,
+            need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity)
 
@@ -2614,8 +2619,7 @@ class Person(
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
-        # TODO: Using exists would be faster than count().
-        return bool(store.find(SignedCodeOfConduct, query).count())
+        return not store.find(SignedCodeOfConduct, query).is_empty()
 
     @staticmethod
     def _is_ubuntu_coc_signer_condition():
@@ -4125,18 +4129,24 @@ class PersonSet:
                     PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
-            # Not everyone has PPA's
+            # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
             # avoid duplicating the relationships.
+            archive_conditions = Or(
+                Archive.id == None,
+                And(
+                    Archive.owner == Person.id,
+                    Archive.id == Select(
+                        tables=Archive,
+                        columns=Min(Archive.id),
+                        where=And(
+                            Archive.purpose == ArchivePurpose.PPA,
+                            Archive.owner == Person.id))))
             origin.append(
-                LeftJoin(Archive, Archive.owner == Person.id))
+                LeftJoin(Archive, archive_conditions))
             columns.append(Archive)
-            conditions = And(conditions,
-                Or(Archive.id == None, And(
-                Archive.id == Select(Min(Archive.id),
-                    Archive.owner == Person.id, Archive),
-                Archive.purpose == ArchivePurpose.PPA)))
-        # checking validity requires having a preferred email.
+
+        # Checking validity requires having a preferred email.
         if need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
@@ -4144,16 +4154,16 @@ class PersonSet:
             columns.append(EmailAddress)
             conditions = And(conditions,
                 Or(EmailAddress.status == None,
-                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+                   EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
             decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
-            columns = columns[0]
+            column = columns[0]
             # Return a simple ResultSet
-            return store.using(*origin).find(columns, conditions)
+            return store.using(*origin).find(column, conditions)
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)
