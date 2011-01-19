@@ -193,24 +193,32 @@ class DistributionMirror(SQLBase):
                 or self.rsync_base_url is not None)
 
     @cachedproperty
-    def most_stale_arch_mirror(self):
+    def arch_mirror_freshness(self):
         store = Store.of(self)
-        return store.find(
+        mirror = store.find(
             MirrorDistroArchSeries,
             And(
                 MirrorDistroArchSeries.distribution_mirror == self,
                 MirrorDistroArchSeries.freshness != MirrorFreshness.UNKNOWN)
                 ).order_by(Desc(MirrorDistroArchSeries.freshness)).first()
+        if not mirror:
+            return None
+        else:
+            return mirror.freshness
 
     @cachedproperty
-    def most_stale_source_mirror(self):
+    def source_mirror_freshness(self):
         store = Store.of(self)
-        return store.find(
+        mirror = store.find(
             MirrorDistroSeriesSource,
             And(
                 MirrorDistroSeriesSource.distribution_mirror == self,
                 MirrorDistroSeriesSource.freshness != MirrorFreshness.UNKNOWN)
                 ).order_by(Desc(MirrorDistroSeriesSource.freshness)).first()
+        if not mirror:
+            return None
+        else:
+            return mirror.freshness
 
     def destroySelf(self):
         """Delete this mirror from the database.
@@ -296,21 +304,24 @@ class DistributionMirror(SQLBase):
         elif self.content == MirrorContent.ARCHIVE:
             # Return the worst (i.e. highest valued) mirror freshness out of
             # all mirrors (binary and source) for this distribution mirror.
-            arch_mirror = self.most_stale_arch_mirror
-            source_mirror = self.most_stale_source_mirror
-            if arch_mirror is None and source_mirror is None:
+            arch_mirror_freshness = self.arch_mirror_freshness
+            source_mirror_freshness = self.source_mirror_freshness
+            if (arch_mirror_freshness is None and
+                source_mirror_freshness is None):
                 # No content.
                 return MirrorFreshness.UNKNOWN
-            elif arch_mirror is not None and source_mirror is None:
-                return arch_mirror.freshness
-            elif source_mirror is not None and arch_mirror is None:
-                return source_mirror.freshness
+            elif (arch_mirror_freshness is not None and
+                  source_mirror_freshness is None):
+                return arch_mirror_freshness
+            elif (source_mirror_freshness is not None and
+                  arch_mirror_freshness is None):
+                return source_mirror_freshness
             else:
                 # Arch and Source mirror
-                if source_mirror.freshness > arch_mirror.freshness:
-                    return source_mirror.freshness
+                if source_mirror_freshness > arch_mirror_freshness:
+                    return source_mirror_freshness
                 else:
-                    return arch_mirror.freshness
+                    return arch_mirror_freshness
         else:
             raise AssertionError(
                 'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'

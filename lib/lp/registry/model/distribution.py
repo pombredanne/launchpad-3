@@ -23,6 +23,7 @@ from storm.locals import (
     Desc,
     Int,
     Join,
+    Max,
     Or,
     SQL,
     )
@@ -124,6 +125,7 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror,
     MirrorContent,
+    MirrorFreshness,
     MirrorStatus,
     )
 from lp.registry.interfaces.packaging import PackagingType
@@ -446,7 +448,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return [archive.id]
 
     def _getActiveMirrors(self, mirror_content_type,
-            by_country=False, fresh=False):
+            by_country=False, needs_fresh=False):
         """Builds the query to get the mirror data for various purposes."""
         mirrors = list(Store.of(self).find(
             DistributionMirror,
@@ -456,22 +458,39 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 DistributionMirror.enabled == True,
                 DistributionMirror.status == MirrorStatus.OFFICIAL,
                 DistributionMirror.official_candidate == True)))
+
         if by_country and mirrors:
             # Since country data is needed, fetch countries into the cache.
             countries = list(Store.of(self).find(
                 Country,
                 Country.id.is_in(mirror.countryID for mirror in mirrors)))
-        if fresh and mirrors:
-            # Since we're going to need mirror freshness, fetch the mirror
-            # into the cache.
+
+        if needs_fresh and mirrors:
+            # Preload the distribution_mirrors' cache for mirror freshness.
             arch_mirrors = list(Store.of(self).find(
-                MirrorDistroArchSeries,
+                (MirrorDistroArchSeries.distribution_mirrorID,
+                 Max(MirrorDistroArchSeries.freshness)),
                 MirrorDistroArchSeries.distribution_mirrorID.is_in(
-                    [mirror.id for mirror in mirrors])))
+                    [mirror.id for mirror in mirrors])).group_by(
+                        MirrorDistroArchSeries.distribution_mirrorID))
+            arch_mirror_freshness = {}
+            arch_mirror_freshness.update(
+                [(a[0], MirrorFreshness.items[a[1]]) for a in arch_mirrors])
+
             source_mirrors = list(Store.of(self).find(
-                MirrorDistroSeriesSource,
+                (MirrorDistroSeriesSource.distribution_mirrorID,
+                 Max(MirrorDistroSeriesSource.freshness)), 
                 MirrorDistroSeriesSource.distribution_mirrorID.is_in(
-                    [mirror.id for mirror in mirrors])))
+                    [mirror.id for mirror in mirrors])).group_by(
+                        MirrorDistroSeriesSource.distribution_mirrorID))
+            source_mirror_freshness = {}
+            source_mirror_freshness.update(
+                [(s[0], MirrorFreshness.items[s[1]]) for s in source_mirrors])
+
+            for mirror in mirrors:
+                cache = get_property_cache(mirror)
+                cache.arch_mirror_freshness = arch_mirror_freshness.get(mirror.id, None)
+                cache.source_mirror_freshness = source_mirror_freshness.get(mirror.id, None)
         return mirrors
 
     @property
@@ -485,7 +504,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._getActiveMirrors(
             MirrorContent.ARCHIVE,
             by_country=True,
-            fresh=True)
+            needs_fresh=True)
 
     @property
     def cdimage_mirrors(self, by_country=False):
