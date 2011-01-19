@@ -218,7 +218,7 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         parsed_url = urlparse(response.getHeader('location'))
         self.assertEqual('https', parsed_url.scheme)
         mo = re.search(
-            r'^i\d+\.restricted\.launchpad\.dev:\d+$', parsed_url.netloc)
+            r'^i\d+\.restricted\..+:\d+$', parsed_url.netloc)
         self.assertIsNot(None, mo, parsed_url.netloc)
         mo = re.search(r'^/\d+/foo\.txt$', parsed_url.path)
         self.assertIsNot(None, mo)
