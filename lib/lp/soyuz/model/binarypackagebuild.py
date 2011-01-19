@@ -89,6 +89,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
@@ -298,6 +299,29 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
+
+    def getBinaryPackagesForDisplay(self):
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageName),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackageName.id == BinaryPackageRelease.nameID)
+        result.order_by([BinaryPackageName.name, BinaryPackageRelease.id])
+        return result
+
+    def getBinaryFilesForDisplay(self):
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageFile, LibraryFileAlias,
+             LibraryFileContent),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.id ==
+                BinaryPackageFile.binarypackagereleaseID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileContent.id == LibraryFileAlias.contentID)
+        result.order_by([BinaryPackageName.name, BinaryPackageRelease.id])
+        return result
 
     @property
     def binarypackages(self):
