@@ -80,9 +80,10 @@ class ServerAvailableResource(resource.Resource):
         tracked_connections = set()
         for tracked in self.tracked_factories:
             tracked_connections.update(tracked.protocols)
-        return'%d connections: \n\n%s\n' % (len(tracked_connections),
-                '\n'.join([str(c.transport.getPeer()) for c in
-                    tracked_connections]))
+        return'%s\n\n%d connections: \n\n%s\n' % (
+            state, len(tracked_connections),
+            '\n'.join(
+                [str(c.transport.getPeer()) for c in tracked_connections]))
 
 
 class OrderedMultiService(service.MultiService):
