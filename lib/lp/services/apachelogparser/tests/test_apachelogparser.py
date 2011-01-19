@@ -69,8 +69,9 @@ class TestLineParsing(TestCase):
             request, 'GET /10133748/cramfsswap_1.4.1.tar.gz HTTP/1.0')
 
     def test_parsing_line_with_spaces_in_username(self):
-        # Some lines have quotes as part of the referrer and/or user agent,
-        # and they are parsed just fine too.
+        # Some lines have spaces in the username, left unquoted by
+        # Apache. They can still be parsed OK, since no other fields
+        # have similar issues.
         line = (r'1.1.1.1 - Some User [25/Jan/2009:15:48:07 +0000] "GET '
                 r'/10133748/cramfsswap_1.4.1.tar.gz HTTP/1.0" 200 12341 '
                 r'"http://foo.bar/?baz=\"bang\"" '
