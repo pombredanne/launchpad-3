@@ -445,7 +445,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
-    def _getActiveMirrors(self, mirror_content_type, by_country=False, fresh=False):
+    def _getActiveMirrors(self, mirror_content_type,
+            by_country=False, fresh=False):
         """Builds the query to get the mirror data for various purposes."""
         mirrors = list(Store.of(self).find(
             DistributionMirror,
