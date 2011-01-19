@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -18,8 +18,8 @@ __all__ = [
     'UnknownBugTrackerTypeError',
     'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
-    'UnparseableBugData',
-    'UnparseableBugTrackerVersion',
+    'UnparsableBugData',
+    'UnparsableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
     ]
 
@@ -71,11 +71,11 @@ class UnsupportedBugTrackerVersion(BugWatchUpdateError):
     """The bug tracker version is not supported."""
 
 
-class UnparseableBugTrackerVersion(BugWatchUpdateError):
+class UnparsableBugTrackerVersion(BugWatchUpdateError):
     """The bug tracker version could not be parsed."""
 
 
-class UnparseableBugData(BugWatchUpdateError):
+class UnparsableBugData(BugWatchUpdateError):
     """The bug tracker provided bug data that could not be parsed."""
 
 
@@ -215,7 +215,7 @@ class ExternalBugTracker:
 
         Raise BugNotFound if the bug can't be found.
         Raise InvalidBugId if the bug id has an unexpected format.
-        Raise UnparseableBugData if the bug data cannot be parsed.
+        Raise UnparsableBugData if the bug data cannot be parsed.
         """
         # This method should be overridden by subclasses, so we raise a
         # NotImplementedError if this version of it gets called for some
