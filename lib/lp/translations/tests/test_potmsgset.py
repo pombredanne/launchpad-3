@@ -1906,13 +1906,6 @@ class BaseTestGetCurrentTranslation(object):
             pofile.potemplate, pofile.language, self.this_side)
         self.assertEqual(message, current)
 
-    def test_requires_side(self):
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        self.assertRaises(
-            AssertionError,
-            potmsgset.getCurrentTranslation,
-            pofile.potemplate, pofile.language, None)
-
     def test_other_languages_ignored(self):
         # getCurrentTranslation never returns a translation for another
         # language.

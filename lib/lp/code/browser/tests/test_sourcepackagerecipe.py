@@ -52,9 +52,24 @@ from lp.testing import (
     BrowserTestCase,
     login,
     person_logged_in,
+    TestCaseWithFactory,
+    time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
+
+
+class TestCanonicalUrlForRecipe(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='recipe-owner')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'recipe-name')
+        self.assertEqual(
+            'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
+            canonical_url(recipe))
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -947,10 +962,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
-    def makeBuildJob(self, recipe):
+    def makeBuildJob(self, recipe, date_created=None):
         """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa,
+            date_created=date_created)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
@@ -973,32 +989,35 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""
         recipe = self.makeRecipe()
-        build1 = self.makeBuildJob(recipe=recipe)
-        build2 = self.makeBuildJob(recipe=recipe)
-        build3 = self.makeBuildJob(recipe=recipe)
-        build4 = self.makeBuildJob(recipe=recipe)
-        build5 = self.makeBuildJob(recipe=recipe)
-        build6 = self.makeBuildJob(recipe=recipe)
+        date_gen = time_counter(
+            datetime(2010, 03, 16, tzinfo=utc), timedelta(days=-1))
+        build1 = self.makeBuildJob(recipe, date_gen.next())
+        build2 = self.makeBuildJob(recipe, date_gen.next())
+        build3 = self.makeBuildJob(recipe, date_gen.next())
+        build4 = self.makeBuildJob(recipe, date_gen.next())
+        build5 = self.makeBuildJob(recipe, date_gen.next())
+        build6 = self.makeBuildJob(recipe, date_gen.next())
         view = SourcePackageRecipeView(recipe, None)
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
 
-        def set_day(build, day):
+        def set_status(build, status):
             naked_build = removeSecurityProxy(build)
-            naked_build.date_started = datetime(2010, 03, day, tzinfo=utc)
-            naked_build.date_finished = datetime(2010, 03, day, tzinfo=utc)
-        set_day(build1, 16)
-        set_day(build2, 15)
+            naked_build.status = status
+            naked_build.date_started = naked_build.date_created
+            naked_build.date_completed = naked_build.date_created
+        set_status(build1, BuildStatus.FULLYBUILT)
+        set_status(build2, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
-            set([build1, build3, build4, build5, build6]),
+            set([build3, build4, build5, build6, build1]),
             set(view.builds))
-        set_day(build3, 14)
-        set_day(build4, 13)
-        set_day(build5, 12)
-        set_day(build6, 11)
+        set_status(build3, BuildStatus.FULLYBUILT)
+        set_status(build4, BuildStatus.FULLYBUILT)
+        set_status(build5, BuildStatus.FULLYBUILT)
+        set_status(build6, BuildStatus.FULLYBUILT)
         self.assertEqual(
             [build1, build2, build3, build4, build5], view.builds)
 
@@ -1038,7 +1057,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser.getControl('Request builds').click()
 
         login(ANONYMOUS)
-        builds = recipe.getBuilds(True)
+        builds = recipe.getPendingBuilds()
         build_distros = [
             build.distroseries.displayname for build in builds]
         build_distros.sort()
@@ -1232,8 +1251,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1263,8 +1281,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Successfully built

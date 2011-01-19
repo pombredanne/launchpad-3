@@ -256,17 +256,31 @@ class ExternalBugTracker:
                                   headers={'User-agent': LP_USER_AGENT})
         return self._fetchPage(request).read()
 
-    def _postPage(self, page, form):
-        """POST to the specified page.
+    def _post(self, url, data):
+        """Post to a given URL."""
+        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
+        return self.urlopen(request, data=data)
 
-        :form: is a dict of form variables being POSTed.
+    def _postPage(self, page, form, repost_on_redirect=False):
+        """POST to the specified page and form.
+
+        :param form: is a dict of form variables being POSTed.
+        :param repost_on_redirect: override RFC-compliant redirect handling.
+            By default, if the POST receives a redirect response, the
+            request to the redirection's target URL will be a GET.  If
+            `repost_on_redirect` is True, this method will do a second POST
+            instead.  Do this only if you are sure that repeated POST to
+            this page is safe, as is usually the case with search forms.
         """
         url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
-        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        url = self.urlopen(request, data=post_data)
-        page_contents = url.read()
-        return page_contents
+
+        response = self._post(url, data=post_data)
+
+        if repost_on_redirect and response.url != url:
+            response = self._post(response.url, data=post_data)
+
+        return response.read()
 
 
 class LookupBranch(treelookup.LookupBranch):

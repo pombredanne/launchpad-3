@@ -300,7 +300,7 @@ rescored.
     >>> view.request.response.getStatus()
     302
     >>> print view.request.response.getHeader('Location')
-    http://launchpad.dev/~cprov/+archive/ppa/+build/26
+    http://launchpad.dev/~cprov/+archive/ppa/+buildjob/26
 
 Canceled 'Rescore' form redirects users back to the Build page.
 
@@ -312,7 +312,7 @@ Canceled 'Rescore' form redirects users back to the Build page.
     ...    pending_build, name="+rescore")
 
     >>> print view.cancel_url
-    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
+    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+buildjob/11
 
 The 'priority' field only accepts long integer values.
 
@@ -351,7 +351,7 @@ users to the build page with an appropriate notification.
     >>> view.request.response.getStatus()
     302
     >>> print view.request.response.getHeader('Location')
-    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
+    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+buildjob/11
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message

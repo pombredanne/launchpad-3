@@ -50,11 +50,8 @@ class TestConfigFixture(TestCase):
             confpath = 'configs/testtestconfig/launchpad-lazr.conf'
             lazr_config = open(confpath, 'rb').read()
             self.assertEqual(
-                dedent("""\
-                [meta]
-                extends: ../testrunner/launchpad-lazr.conf
-
-                """),
-                lazr_config)
+                "[meta]\n"
+                "extends: ../testrunner/launchpad-lazr.conf",
+                lazr_config.strip())
         finally:
             fixture.cleanUp()

@@ -6,7 +6,10 @@ __metaclass__ = type
 import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 from zope.component import getUtility
 
 from canonical.config import config
@@ -663,16 +666,16 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):
@@ -858,7 +861,7 @@ class BugTaskViewsTestBase:
             prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
             bugtasks = view.searchUnbatched(prejoins=prejoins)
             [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
     def test_getMilestoneWidgetValues(self):
         view = create_initialized_view(self.person, self.view_name)
@@ -876,7 +879,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
 
 class TestPersonRelatedBugTaskSearchListingView(

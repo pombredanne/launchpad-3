@@ -53,9 +53,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     LaunchpadView,
     Link,
-    Navigation,
     NavigationMenu,
-    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -73,7 +71,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import format_link
+from lp.app.browser.tales import (
+    format_link,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -84,9 +84,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    )
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.archive import Archive
@@ -142,17 +139,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
 
         for item in traversed:
             yield item
-
-
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
@@ -221,7 +207,7 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
