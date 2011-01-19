@@ -215,8 +215,7 @@ class BuildView(LaunchpadView):
         return [
             binarypackagerelease.title
             for binarypackagerelease, binarypackagename
-                in self.context.getBinaryPackageNamesForDisplay()
-                ]
+                in self.context.getBinaryPackageNamesForDisplay()]
 
     @cachedproperty
     def has_published_binaries(self):
@@ -267,9 +266,8 @@ class BuildView(LaunchpadView):
         return [
             ProxiedLibraryFileAlias(alias, self.context)
             for bpr, bpf, alias, content
-                in self.context.getBinaryPackagesForDisplay()
-                if not alias.deleted
-            ]
+                in self.context.getBinaryFilesForDisplay()
+                if not alias.deleted]
 
     @property
     def dispatch_time_estimate_available(self):
@@ -380,6 +378,7 @@ class BuildRescoringView(LaunchpadFormView):
 class CompleteBuild:
     """Super object to store related IBinaryPackageBuild & IBuildQueue."""
     delegates(IBinaryPackageBuild)
+
     def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
@@ -582,8 +581,7 @@ class BuildRecordsView(LaunchpadView):
                 selected = None
 
             self.available_states.append(
-                dict(name=name, value=tag, selected=selected)
-                )
+                dict(name=name, value=tag, selected=selected))
 
     @property
     def default_build_state(self):

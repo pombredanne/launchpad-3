@@ -300,17 +300,19 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
 
-    def getBinaryPackagesForDisplay(self):
+    def getBinaryPackageNamesForDisplay(self):
+        """See `IBuildView`."""
         store = Store.of(self)
         result = store.find(
             (BinaryPackageRelease, BinaryPackageName),
             BinaryPackageRelease.build == self,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
-            BinaryPackageName.id == BinaryPackageRelease.nameID)
-        result.order_by([BinaryPackageName.name, BinaryPackageRelease.id])
-        return result
+            BinaryPackageName.id == BinaryPackageRelease.binarypackagenameID)
+        return result.order_by(
+            [BinaryPackageName.name, BinaryPackageRelease.id])
 
     def getBinaryFilesForDisplay(self):
+        """See `IBuildView`."""
         store = Store.of(self)
         result = store.find(
             (BinaryPackageRelease, BinaryPackageFile, LibraryFileAlias,
@@ -320,8 +322,9 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 BinaryPackageFile.binarypackagereleaseID,
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             LibraryFileContent.id == LibraryFileAlias.contentID)
-        result.order_by([BinaryPackageName.name, BinaryPackageRelease.id])
-        return result
+        return result.order_by(
+            [LibraryFileAlias.filename, BinaryPackageRelease.id]).config(
+            distinct=True)
 
     @property
     def binarypackages(self):
