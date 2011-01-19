@@ -279,8 +279,9 @@ their sequence is 0.
 
 And we can see that we didn't get errors.
 
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile_es.potemplate, pofile_es.language,
+    ...     pofile_es.potemplate.translation_side)
     >>> translationmessage.translations
     [u'Foo']
     >>> pofile_view.errors
