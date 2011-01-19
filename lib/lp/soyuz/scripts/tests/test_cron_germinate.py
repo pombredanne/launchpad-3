@@ -10,17 +10,9 @@ import copy
 import gzip
 import os
 import subprocess
-import unittest
 
-try:
-    from lp.testing import TestCase
-except ImportError:
-    # mvo: *cough* poor mans version if no full LP environment is installed
-    class PoorMvosTestCase(unittest.TestCase):
-        def makeTemporaryDirectory(self):
-            import tempfile
-            return tempfile.mkdtemp(prefix="test_cron_germinate_")
-    TestCase = PoorMvosTestCase
+from lp.testing import TestCase
+
 
 class TestCronGerminate(TestCase):
 
@@ -50,7 +42,7 @@ class TestCronGerminate(TestCase):
                 self.archive_dir, self.COMPONENTS, self.ARCHES, dist)
             for component in ["security", "updates"]:
                 self.populate_mock_archive_environment(
-                    self.archive_dir, self.COMPONENTS, self.ARCHES, 
+                    self.archive_dir, self.COMPONENTS, self.ARCHES,
                     "%s-%s" % (dist, component))
         # generate test dummies for maintenance-time.py, if this is
         # set to "None" instead it will use the network to test against
@@ -137,7 +129,7 @@ class TestCronGerminate(TestCase):
                     self.create_gzip_file(os.path.join(
                             targetdir, "Packages.gz"))
 
-    def create_fake_environment(self, basepath, archive_dir, 
+    def create_fake_environment(self, basepath, archive_dir,
                                 germinate_output_dir):
         """Create a fake process envirionment based on os.environ that
            sets TEST_ARCHIVEROOT, TEST_LAUNCHPADROOT and modifies PATH
@@ -215,8 +207,7 @@ class TestCronGerminate(TestCase):
             main_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
-            self.assertIn(canary, open(main_override_file).read(),
-                          "canary no longer there for '%s'" % dist)
+            self.assertIn(canary, open(main_override_file).read())
 
         # Check here if we got the data from maintenance-check.py that
         # we expected. This is a kernel name from lucid-updates and it
@@ -225,6 +216,3 @@ class TestCronGerminate(TestCase):
         lucid_supported_override_file = os.path.join(
             self.ubuntu_misc_dir, "more-extra.override.lucid.main")
         self.assertIn(needle, open(lucid_supported_override_file).read())
-
-if __name__ == "__main__":
-    unittest.main()
