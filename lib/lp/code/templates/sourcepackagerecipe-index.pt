@@ -31,9 +31,6 @@
                'recipe-owner',
                config);
 
-            var logged_in = LP.client.links['me'] !== undefined;
-            if (logged_in) {
-            }
         }, window);
     });
   "/>
