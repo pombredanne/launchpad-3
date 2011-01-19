@@ -55,9 +55,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugtask import BugTaskListingItem
-from lp.bugs.interfaces.bugtask import (
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,

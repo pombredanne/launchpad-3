@@ -20,8 +20,8 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    SQL,
     Join,
+    SQL,
     )
 from storm.locals import Int
 from storm.store import Store
@@ -91,6 +91,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSet,
     )
 from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
@@ -100,7 +101,6 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )

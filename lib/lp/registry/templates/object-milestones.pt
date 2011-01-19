@@ -14,7 +14,7 @@
       Milestones belong to a series and can be created from the series page
       by a project owner or series release manager.
     </p>
-    
+
     <ul class="horizontal"
       tal:condition="context/project|nothing">
       <li>
