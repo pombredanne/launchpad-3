@@ -16,6 +16,12 @@
         />
     <browser:page
         for="*"
+        name="+widgets"
+        template="../templates/widgets.pt"
+        permission="zope.Public"
+        />
+    <browser:page
+        for="*"
         name="+main-template-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"

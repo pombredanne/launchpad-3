@@ -77,16 +77,12 @@
           <dl id="owner">
             <dt>Owner:</dt>
             <dd>
-              <span id="recipe-owner">
-                <span class="yui3-activator-data-box">
-                  <tal:owner replace="structure context/owner/fmt:link" />
-                </span>
-                <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
-                        tal:condition="context/required:launchpad.Edit">
-                  Edit
-                </button>
-                <div class="yui3-activator-message-box yui3-activator-hidden" />
-              </span>
+              <tal:owner-widget
+                  define="outer_span_id string:recipe-owner;
+                          picker_context context/owner;
+                          allow_edit context/required:launchpad.Edit">
+                <div metal:use-macro="context/@@+widgets/add-picker-widget" />
+              </tal:owner-widget>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
