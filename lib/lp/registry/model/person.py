@@ -2716,7 +2716,7 @@ class Person(
         return IStore(self).find(
             StructuralSubscription,
             StructuralSubscription.subscriberID==self.id).order_by(
-                '-date_created')
+                Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""

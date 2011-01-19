@@ -447,6 +447,8 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
+        if person is None:
+            return None
         all_subscriptions = self.getSubscriptions(subscriber=person)
         # XXX Danilo 20110118: Data model actually allows more than one,
         # and we'll need to use .any() if we still care about this method
@@ -474,7 +476,7 @@ class StructuralSubscriptionTargetMixin:
 
         if subscriber is not None:
             clauses.append(
-                StructuralSubscription.subscriber==subscriber)
+                StructuralSubscription.subscriberID==subscriber.id)
 
         store = Store.of(self.__helper.pillar)
         return store.find(
