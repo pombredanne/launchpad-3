@@ -211,7 +211,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def should_show_bugs_and_blueprints(self):
         """Display the summary of bugs/blueprints for this milestone?"""
-        return (not self.show_series_context) and self.milestone.active
+        return self.milestone.active
 
     @property
     def page_title(self):
@@ -368,7 +368,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
 class MilestoneWithoutCountsView(MilestoneView):
     """Show a milestone in a list of milestones."""
+
     show_series_context = True
+    should_show_bugs_and_blueprints = False
 
 
 class MilestoneAddView(LaunchpadFormView):
