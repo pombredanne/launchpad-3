@@ -18,22 +18,23 @@ from zope.interface import (
 from zope.schema.interfaces import IText
 
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import PersonFormatterAPI
-from lp.services.fields import IPersonChoice
+from lp.app.browser.tales import format_link
 
 
-@component.adapter(Interface, IPersonChoice, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def person_xhtml_representation(context, field, request):
-    """Render a person as a link to the person."""
+# Registered through the ZCML as IReferenceChoice doesn't inherit from IReference.
+def reference_xhtml_representation(context, field, request):
+    """Render an object as a link to the object."""
 
     def render(value):
-        # The value is a webservice link to a person.
-        person = getattr(context, field.__name__, None)
-        if person is None:
+        # The value is a webservice link to an archive.
+        obj = getattr(context, field.__name__, None)
+        if obj is None:
             return ''
         else:
-            return PersonFormatterAPI(person).link(None)
+            try:
+                return format_link(obj)
+            except NotImplementedError:
+                return value
     return render
 
 
