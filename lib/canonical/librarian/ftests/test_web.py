@@ -273,7 +273,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         connection.request("GET", path, headers={'Host': good_host})
         response = connection.getresponse()
         response.read()
-        self.assertEqual(200, response.status)
+        self.assertEqual(200, response.status, response)
         # A subdomain based URL trying to put fileAlias into the restricted
         # domain of fileAlias2 must not work.
         hostile_host = template_host % fileAlias2
