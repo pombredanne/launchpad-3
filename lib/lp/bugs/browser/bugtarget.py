@@ -58,20 +58,12 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    ILaunchpadCelebrities,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
-    safe_action,
     urlappend,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -80,17 +72,19 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from lp.app.browser.tales import BugTrackerFormatterAPI
-from canonical.widgets.bug import (
-    BugTagsWidget,
-    LargeBugTagsWidget,
-    )
-from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -102,6 +96,11 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.widgets.bug import (
+    BugTagsWidget,
+    LargeBugTagsWidget,
+    )
+from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -162,6 +161,8 @@ class IProductBugConfiguration(Interface):
         IBugTarget['bug_reporting_guidelines'])
     bug_reported_acknowledgement = copy_field(
         IBugTarget['bug_reported_acknowledgement'])
+    enable_bugfiling_duplicate_search = copy_field(
+        IBugTarget['enable_bugfiling_duplicate_search'])
 
 
 def product_to_productbugconfiguration(product):
@@ -186,12 +187,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
     def field_names(self):
         """Return the list of field names to display."""
         field_names = [
-                "bugtracker",
-                "enable_bug_expiration",
-                "remote_product",
-                "bug_reporting_guidelines",
-                "bug_reported_acknowledgement",
-                ]
+            "bugtracker",
+            "enable_bug_expiration",
+            "remote_product",
+            "bug_reporting_guidelines",
+            "bug_reported_acknowledgement",
+            "enable_bugfiling_duplicate_search",
+            ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
 
@@ -1273,18 +1275,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
-
-    @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
-
-        :returns: `IBugTracker` or None
-        """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
 
     @property
     def bugtracker(self):

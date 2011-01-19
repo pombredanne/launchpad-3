@@ -31,6 +31,26 @@
     </tal:disabled>
   </ul>
 
+  <tal:pseudo-editor condition="not: context/required:launchpad.Edit">
+    <tal:comment condition="nothing">
+      The bug supervisor can view the "Configure bug tracker" link, but
+      it would be confusing to display the configuration progress
+      information.
+    </tal:comment>
+    <table
+      tal:condition="context/required:launchpad.BugSupervisor"
+      style="width: 100%; margin-top: 1em"
+      id="configuration_links">
+      <tal:item repeat="link_status view/configuration_links">
+        <tr>
+          <td>
+            <a tal:replace="structure link_status/link/fmt:link" />
+          </td>
+        </tr>
+      </tal:item>
+    </table>
+  </tal:pseudo-editor>
+
   <tal:editor condition="context/required:launchpad.Edit"
               define="registration view/registration_completeness">
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -14,12 +14,22 @@ __all__ = [
     'INewSpecificationTarget',
     'INewSpecificationProjectTarget',
     'ISpecification',
+    'ISpecificationPublic',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
 
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+    exported,
+    export_as_webservice_entry,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -44,9 +54,14 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     )
-from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
@@ -119,48 +134,69 @@ class SpecURLField(TextLine):
 class INewSpecification(Interface):
     """A schema for a new specification."""
 
-    name = SpecNameField(
-        title=_('Name'), required=True, readonly=False,
-        description=_(
-            "May contain lower-case letters, numbers, and dashes. "
-            "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial."))
-    title = Title(
-        title=_('Title'), required=True, description=_(
-            "Describe the feature as clearly as possible in up to 70 "
-            "characters. This title is displayed in every feature "
-            "list or report."))
-    specurl = SpecURLField(
-        title=_('Specification URL'), required=False,
-        description=_(
-            "The URL of the specification. This is usually a wiki page."),
-        constraint=valid_webref)
-    summary = Summary(
-        title=_('Summary'), required=True, description=_(
-            "A single-paragraph description of the feature. "
-            "This will also be displayed in most feature listings."))
-    definition_status = Choice(
-        title=_('Definition Status'),
-        vocabulary=SpecificationDefinitionStatus,
-        default=SpecificationDefinitionStatus.NEW,
-        description=_(
-            "The current status of the process to define the "
-            "feature and get approval for the implementation plan."))
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False,
-        description=_("The person responsible for implementing the feature."),
-        vocabulary='ValidPersonOrTeam')
-    drafter = PublicPersonChoice(
-        title=_('Drafter'), required=False,
-        description=_(
-                "The person responsible for drafting the specification."),
-        vocabulary='ValidPersonOrTeam')
-    approver = PublicPersonChoice(
-        title=_('Approver'), required=False,
-        description=_(
-            "The person responsible for approving the specification, "
-            "and for reviewing the code when it's ready to be landed."),
-        vocabulary='ValidPersonOrTeam')
+    name = exported(
+        SpecNameField(
+            title=_('Name'), required=True, readonly=False,
+            description=_(
+                "May contain lower-case letters, numbers, and dashes. "
+                "It will be used in the specification url. "
+                "Examples: mozilla-type-ahead-find, postgres-smart-serial.")),
+        ('devel', dict(exported=True)), exported=False)
+    title = exported(
+        Title(
+            title=_('Title'), required=True, description=_(
+                "Describe the feature as clearly as possible in up to 70 "
+                "characters. This title is displayed in every feature "
+                "list or report.")),
+        ('devel', dict(exported=True)), exported=False)
+    specurl = exported(
+        SpecURLField(
+            title=_('Specification URL'), required=False,
+            description=_(
+                "The URL of the specification. This is usually a wiki page."),
+            constraint=valid_webref),
+        ('devel', dict(exported=True, exported_as='specification_url')),
+        exported=False)
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=True, description=_(
+                "A single-paragraph description of the feature. "
+                "This will also be displayed in most feature listings.")),
+        ('devel', dict(exported=True)), exported=False)
+    # XXX: salgado, 2010-11-25, bug=680880: We need a method for changing the
+    # definition_status because when that happens we may need to call
+    # updateLifecycleStatus().
+    definition_status = exported(
+        Choice(
+            title=_('Definition Status'),
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
+            description=_(
+                "The current status of the process to define the "
+                "feature and get approval for the implementation plan.")),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
+    assignee = exported(
+        PublicPersonChoice(
+            title=_('Assignee'), required=False,
+            description=_(
+                "The person responsible for implementing the feature."),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+    drafter = exported(
+        PublicPersonChoice(
+            title=_('Drafter'), required=False,
+            description=_(
+                    "The person responsible for drafting the specification."),
+                vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+    approver = exported(
+        PublicPersonChoice(
+            title=_('Approver'), required=False,
+            description=_(
+                "The person responsible for approving the specification, "
+                "and for reviewing the code when it's ready to be landed."),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
 
 
 class INewSpecificationProjectTarget(Interface):
@@ -201,17 +237,38 @@ class INewSpecificationTarget(Interface):
 
     Requires the user to specify a distribution or a product as a target.
     """
-    target = Choice(title=_("For"),
-                    description=_("The project for which this proposal is "
-                                  "being made."),
-                    required=True, vocabulary='DistributionOrProduct')
+    # Exported as readonly for simplicity, but could be exported as read-write
+    # using setTarget() as the mutator.
+    target = exported(
+        ReferenceChoice(
+            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            description=_(
+                "The project for which this proposal is being made."),
+            schema=ISpecificationTarget),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
 
-class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
-    IHasLinkedBranches):
-    """A Specification."""
+class ISpecificationEditRestricted(Interface):
+    """Specification's attributes and methods protected with launchpad.Edit.
+    """
 
-    export_as_webservice_entry()
+    def setTarget(target):
+        """Set this specification's target.
+
+        :param target: an IProduct or IDistribution.
+        """
+
+    def retarget(target):
+        """Move the spec to the given target.
+
+        The new target must be an IProduct or IDistribution.
+        """
+
+
+class ISpecificationPublic(
+        INewSpecification, INewSpecificationTarget, IHasOwner,
+        IHasLinkedBranches):
+    """Specification's public attributes and methods."""
 
     # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied
@@ -219,40 +276,54 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
-    priority = Choice(
-        title=_('Priority'), vocabulary=SpecificationPriority,
-        default=SpecificationPriority.UNDEFINED, required=True)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    # target
-    product = Choice(title=_('Project'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
+    priority = exported(
+        Choice(
+            title=_('Priority'), vocabulary=SpecificationPriority,
+            default=SpecificationPriority.UNDEFINED, required=True),
+        ('devel', dict(exported=True)), exported=False)
+    datecreated = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True),
+        ('devel', dict(exported=True, exported_as='date_created')),
+        exported=False)
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
 
-    # series
-    productseries = Choice(title=_('Series Goal'), required=False,
+    product = Choice(title=_('Project'), required=False,
+                     vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+                          vocabulary='Distribution')
+
+    productseries = Choice(
+        title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
-    distroseries = Choice(title=_('Series Goal'), required=False,
+             "Choose a series in which you would like to deliver "
+             "this feature. Selecting '(no value)' will clear the goal."))
+    distroseries = Choice(
+        title=_('Series Goal'), required=False,
         vocabulary='FilteredDistroSeries',
         description=_(
             "Choose a series in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
 
     # milestone
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_(
-            "The milestone in which we would like this feature to be "
-            "delivered."))
+    milestone = exported(
+        ReferenceChoice(
+            title=_('Milestone'), required=False, vocabulary='Milestone',
+            description=_(
+                "The milestone in which we would like this feature to be "
+                "delivered."),
+            schema=IMilestone),
+        ('devel', dict(exported=True)), exported=False)
 
     # nomination to a series for release management
+    # XXX: It'd be nice to export goal as read-only, but it's tricky because
+    # users will need to be aware of goalstatus as what's returned by .goal
+    # may not be the accepted goal.
     goal = Attribute("The series for which this feature is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
@@ -267,10 +338,12 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_(
-            "Any notes on the status of this spec you would like to make. "
-            "Your changes will override the current text."))
+    whiteboard = exported(
+        Text(title=_('Status Whiteboard'), required=False,
+             description=_(
+                "Any notes on the status of this spec you would like to "
+                "make. Your changes will override the current text.")),
+        ('devel', dict(exported=True)), exported=False)
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
@@ -281,11 +354,15 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    implementation_status = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationImplementationStatus.UNKNOWN,
-        vocabulary=SpecificationImplementationStatus, description=_(
-        "The state of progress being made on the actual implementation or "
-        "delivery of this feature."))
+    implementation_status = exported(
+        Choice(
+            title=_("Implementation Status"), required=True,
+            default=SpecificationImplementationStatus.UNKNOWN,
+            vocabulary=SpecificationImplementationStatus,
+            description=_(
+                "The state of progress being made on the actual "
+                "implementation or delivery of this feature.")),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -311,7 +388,12 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    dependencies = Attribute('Specs on which this spec depends.')
+    dependencies = exported(
+        CollectionField(
+            title=_('Specs on which this one depends.'),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
         "All the dependencies, including dependencies of dependencies.")
@@ -344,10 +426,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         default=SpecificationLifecycleStatus.NOTSTARTED,
         readonly=True)
 
-    def retarget(product=None, distribution=None):
-        """Retarget the spec to a new product or distribution. One of
-        product or distribution must be None (but not both).
-        """
+    def validateMove(target):
+        """Check that the specification can be moved to the target."""
 
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
@@ -448,6 +528,13 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
+
+
+class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
+                     IBugLinkTarget):
+    """A Specification."""
+
+    export_as_webservice_entry()
 
 
 class ISpecificationSet(IHasSpecifications):

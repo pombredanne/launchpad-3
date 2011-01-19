@@ -62,12 +62,8 @@ from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -95,6 +91,12 @@ from canonical.widgets.lazrjs import (
     TextLineEditorWidget,
     )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -115,7 +117,10 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications,
     )
-from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
@@ -135,10 +140,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus,
-    IBinaryPackageBuildSet,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -218,21 +220,11 @@ class PPAURL:
         return u"+archive/%s" % self.context.name
 
 
-class ArchiveNavigation(Navigation, FileNavigationMixin):
+class ArchiveNavigation(Navigation, FileNavigationMixin,
+                        BuildNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
@@ -390,9 +382,9 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
                 user, self.context, permission_type, the_item)
-            if result_set.count() > 0:
+            try:
                 return result_set[0]
-            else:
+            except IndexError:
                 return None
         else:
             return None
@@ -476,10 +468,13 @@ class ArchiveMenuMixin:
     def packages(self):
         text = 'View package details'
         link = Link('+packages', text, icon='info')
-        # Disable the link for P3As if they don't have upload rights.
+        # Disable the link for P3As if they don't have upload rights,
+        # except if the user is a commercial admin.
         if self.context.private:
             if not check_permission('launchpad.Append', self.context):
-                link.enabled = False
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -565,9 +560,7 @@ class ArchiveViewBase(LaunchpadView):
         the view to determine whether to display "This PPA does not yet
         have any published sources" or "No sources matching 'blah'."
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getPublishedSources().count() > 0
+        return bool(self.context.getPublishedSources())
 
     @cachedproperty
     def repository_usage(self):
@@ -846,8 +839,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
+        # Trying to use bool(self.filtered_sources) here resulted in bug
+        # 702425 :(
         return self.filtered_sources.count() > 0
 
 
@@ -911,8 +904,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         else:
             description = ''
 
-        if not (self.context.owner.is_probationary and self.context.is_ppa):
-            description = formatter(description).text_to_html()
+        if self.context.is_ppa:
+            description = formatter(description).text_to_html(
+                linkify_text=(not self.context.owner.is_probationary))
 
         return TextAreaEditorWidget(
             self.context,
@@ -1021,8 +1015,12 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def initialize(self):
         super(ArchivePackagesView, self).initialize()
         if self.context.private:
+            # To see the +packages page, you must be an uploader, or a
+            # commercial admin.
             if not check_permission('launchpad.Append', self.context):
-                raise Unauthorized
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    raise Unauthorized
 
     @property
     def page_title(self):
@@ -1160,9 +1158,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         to ensure that it only returns true if there are sources
         that can be deleted in this archive.
         """
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getSourcesForDeletion().count() > 0
+        return bool(self.context.getSourcesForDeletion())
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -1616,9 +1612,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.dependencies.count() > 0
+        return bool(self.context.dependencies)
 
     @property
     def messages(self):
@@ -1935,7 +1929,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
-            if self.context.getPublishedSources().count() > 0:
+            if bool(self.context.getPublishedSources()):
                 self.setFieldError(
                     'private',
                     'This archive already has published sources. It is '

@@ -26,7 +26,7 @@
 
     <div class="portlet">
       <ul class="horizontal">
-        <li tal:condition="context/required:launchpad.Admin">
+        <li tal:condition="context/required:launchpad.TranslationsAdmin">
           <a class="remove sprite"
              tal:attributes="href context/fmt:url:translations/+remove">
             remove custom language code

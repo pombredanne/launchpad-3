@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUpstreamTracking',
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
@@ -21,7 +22,15 @@ from cgi import escape
 import string
 import urllib
 
-from apt_pkg import ParseSrcDepends
+from apt_pkg import (
+    ParseSrcDepends,
+    upstream_version,
+    VersionCompare,
+    )
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
@@ -71,16 +80,16 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.utils import smartquote
+from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
-from canonical.widgets import LaunchpadRadioWidget
 from lp.app.enums import ServiceUsage
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
@@ -106,6 +115,11 @@ def get_register_upstream_url(source_package):
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
+    current_release = source_package.currentrelease
+    if current_release is not None and current_release.homepage is not None:
+        homepage = current_release.homepage
+    else:
+        homepage = ''
     params = {
         '_return_url': canonical_url(source_package),
         'field.source_package_name': source_package.sourcepackagename.name,
@@ -113,6 +127,7 @@ def get_register_upstream_url(source_package):
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
+        'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
         }
@@ -594,6 +609,37 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         self.next_url = self.request.getURL()
 
 
+class PackageUpstreamTracking(EnumeratedType):
+    """The state of the package's tracking of the upstream version."""
+
+    NONE = Item("""
+        None
+
+        There is not enough information to compare the current package version
+        to the upstream version.
+        """)
+
+    CURRENT = Item("""
+        Current version
+
+        The package version is the current upstream version.
+        """)
+
+    OLDER = Item("""
+        Older upstream version
+
+        The upstream version is older than the package version. Launchpad
+        Launchpad is missing upstream data.
+        """)
+
+    NEWER = Item("""
+        Newer upstream version
+
+        The upstream version is newer than the package version. The package
+        can be updated to the upstream version.
+        """)
+
+
 class SourcePackageUpstreamConnectionsView(LaunchpadView):
     """A shared view with upstream connection info."""
 
@@ -612,3 +658,24 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if bugtracker is None:
             return False
         return True
+
+    @property
+    def current_release_tracking(self):
+        """The PackageUpstreamTracking state for the current release."""
+        upstream_release = self.context.productseries.getLatestRelease()
+        current_release = self.context.currentrelease
+        if upstream_release is None or current_release is None:
+            # Launchpad is missing data. There is not enough information to
+            # track releases.
+            return PackageUpstreamTracking.NONE
+        # Compare the base version contained in the full debian version
+        # to upstream release's version.
+        base_version = upstream_version(current_release.version)
+        age = VersionCompare(upstream_release.version, base_version)
+        if age > 0:
+            return PackageUpstreamTracking.NEWER
+        elif age < 0:
+            return PackageUpstreamTracking.OLDER
+        else:
+            # age == 0:
+            return PackageUpstreamTracking.CURRENT

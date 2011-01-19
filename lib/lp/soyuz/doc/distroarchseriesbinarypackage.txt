@@ -201,19 +201,18 @@ First, update the cache tables for Celso's PPA:
   >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
-  >>> class TestLog:
-  ...     def debug(self, msg):
-  ...         print 'DEBUG: %s' % msg
-
+  >>> from lp.services.log.logger import FakeLogger
   >>> ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn, log=TestLog())
-  DEBUG: ...
-  DEBUG: Considering source 'pmount'
+  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
+  ...    log=FakeLogger())
+  DEBUG ...
+  DEBUG Considering source 'pmount'
   ...
 
   >>> warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn, log=TestLog())
-  DEBUG: Considering binary 'mozilla-firefox'
+  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
+  ...    log=FakeLogger())
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> cprov.archive.updateArchiveCache()
@@ -225,9 +224,11 @@ Then, supersede all pmount publications in warty for pmount (this sets
 us up to demonstrate bug 208233).
 
   >>> LaunchpadZopelessLayer.switchDbUser('lucille')
-  >>> from canonical.launchpad.database import (
-  ...   DistroArchSeries, DistroArchSeriesBinaryPackage,
-  ...   BinaryPackageName, BinaryPackagePublishingHistory)
+  >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
+  >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
+  >>> from lp.soyuz.model.distroarchseriesbinarypackage import (
+  ...     DistroArchSeriesBinaryPackage)
+  >>> from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
   >>> warty_i386 = DistroArchSeries.get(1)
   >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
   >>> pmount_warty_i386 = DistroArchSeriesBinaryPackage(warty_i386,

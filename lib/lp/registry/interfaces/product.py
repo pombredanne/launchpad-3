@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -136,7 +136,7 @@ from lp.services.fields import (
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 # This is based on the definition of <label> in RFC 1035, section
 # 2.3.1, which is what SourceForge project names are based on.
@@ -679,11 +679,11 @@ class IProductPublic(
 
     translation_focus = exported(
         ReferenceChoice(
-            title=_("Translation Focus"), required=False,
+            title=_("Translation focus"), required=False,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_(
-                'The ProductSeries where translations are focused.')))
+                'Project series that translators should focus on.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -705,10 +705,6 @@ class IProductPublic(
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
         "and potentially one from the project, too.")
-
-    aggregatetranslationpermission = Attribute("The translation permission "
-        "that applies to translations in this product, based on the "
-        "permissions that apply to the product as well as its project.")
 
     commercial_subscription = exported(
         Reference(
@@ -736,14 +732,16 @@ class IProductPublic(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
 
-    def getVersionSortedSeries(filter_obsolete=False):
+    def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
         The development focus field is an exception. It will always
         be sorted first.
 
-        :param filter_obsolete: If true, do not include any series with
-                                SeriesStatus.OBSOLETE in the results.
+        :param statuses: If statuses is not None, only include series
+                         which are in the given statuses.
+        :param filter_statuses: Filter out any series with statuses listed in
+                                filter_statuses.
         """
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
@@ -1094,3 +1092,5 @@ class InvalidProductName(LaunchpadValidationError):
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
+
+ICommercialSubscription['product'].schema = IProduct

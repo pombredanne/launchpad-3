@@ -66,9 +66,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadFormView,
     Link,
     )
 from canonical.launchpad.webapp.authorization import (
@@ -83,6 +81,10 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import MenuAPI
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
@@ -94,6 +96,7 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
@@ -849,18 +852,19 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews']
+             'active_reviews', 'mergequeues']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
         'registered_branch_count',
         'show_summary',
         'subscribed_branch_count',
+        'mergequeue_count',
         ]
 
     def _getCountCollection(self):

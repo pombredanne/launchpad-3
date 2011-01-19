@@ -34,7 +34,7 @@ from canonical.launchpad.webapp import (
     Link,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.launchpadform import (
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )

@@ -1,7 +1,4 @@
-from canonical.launchpad import (
-    _,
-    versioninfo,
-    )
+from canonical.launchpad import _
 # From browser/configure.zcml.
 from canonical.launchpad.browser import MaintenanceMessage
 # From browser/configure.zcml.
@@ -49,7 +46,8 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown as sd_tearDown,
     )
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.versioninfo import revno
+from lp.app import versioninfo
+from lp.app.versioninfo import revno
 from canonical.launchpad.webapp import (
     canonical_url,
     Navigation,
@@ -68,12 +66,6 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource,
     IStoreSelector,
     UnexpectedFormData,
-    )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     )
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession,
@@ -97,6 +89,12 @@ from canonical.launchpad.webapp.tests.test_login import (
     SRegResponse_fromSuccessResponse_stubbed,
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

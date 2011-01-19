@@ -4,8 +4,13 @@
 __metaclass__ = type
 
 import transaction
+from storm.expr import LeftJoin
+from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.ftests import (
@@ -25,6 +30,7 @@ from canonical.testing.layers import (
     )
 
 from lp.app.errors import NotFoundError
+from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
@@ -43,15 +49,20 @@ from lp.registry.interfaces.teammembership import (
     )
 
 from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.milestone import milestone_sort_key
 from lp.soyuz.enums import (
     ArchiveStatus,
     PackagePublishingStatus,
     )
+from lp.registry.model.person import Person
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login_person,
+    person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -655,16 +666,16 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
+                self.build.url_id) in html)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):
@@ -809,3 +820,132 @@ class TestSubscriptionsView(TestCaseWithFactory):
         login_person(self.person)
         view = create_initialized_view(self.team, '+subscriptions')
         self.assertTrue(view.canUnsubscribeFromBugTasks())
+
+
+class BugTaskViewsTestBase:
+    """A base class for bugtask search related tests."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(BugTaskViewsTestBase, self).setUp()
+        self.person = self.factory.makePerson()
+        with person_logged_in(self.person):
+            self.subscribed_bug = self.factory.makeBug()
+            self.subscribed_bug.subscribe(
+                self.person, subscribed_by=self.person)
+            self.assigned_bug = self.factory.makeBug()
+            self.assigned_bug.default_bugtask.transitionToAssignee(
+                self.person)
+            self.owned_bug = self.factory.makeBug(owner=self.person)
+            self.commented_bug = self.factory.makeBug()
+            self.commented_bug.newMessage(owner=self.person)
+
+        for bug in (self.subscribed_bug, self.assigned_bug, self.owned_bug,
+                    self.commented_bug):
+            with person_logged_in(bug.default_bugtask.product.owner):
+                milestone = self.factory.makeMilestone(
+                    product=bug.default_bugtask.product)
+                bug.default_bugtask.transitionToMilestone(
+                    milestone, bug.default_bugtask.product.owner)
+
+    def test_searchUnbatched(self):
+        view = create_initialized_view(self.person, self.view_name)
+        self.assertEqual(
+            self.expected_for_search_unbatched, list(view.searchUnbatched()))
+
+    def test_searchUnbatched_with_prejoins(self):
+        view = create_initialized_view(self.person, self.view_name)
+        Store.of(self.subscribed_bug).invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            bugtasks = view.searchUnbatched(prejoins=prejoins)
+            [bugtask.owner for bugtask in bugtasks]
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
+    def test_getMilestoneWidgetValues(self):
+        view = create_initialized_view(self.person, self.view_name)
+        milestones = [
+            bugtask.milestone
+            for bugtask in self.expected_for_search_unbatched]
+        milestones = sorted(milestones, key=milestone_sort_key, reverse=True)
+        expected = [
+            {
+                'title': milestone.title,
+                'value': milestone.id,
+                'checked': False,
+                }
+            for milestone in milestones]
+        Store.of(milestones[0]).invalidate()
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(expected, view.getMilestoneWidgetValues())
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
+
+class TestPersonRelatedBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonRelatedBugTaskSearchListingView."""
+
+    view_name = '+bugs'
+
+    def setUp(self):
+        super(TestPersonRelatedBugTaskSearchListingView, self).setUp()
+        self.expected_for_search_unbatched = [
+            self.subscribed_bug.default_bugtask,
+            self.assigned_bug.default_bugtask,
+            self.owned_bug.default_bugtask,
+            self.commented_bug.default_bugtask,
+            ]
+
+
+class TestPersonAssignedBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAssignedBugTaskSearchListingView."""
+
+    view_name = '+assignedbugs'
+
+    def setUp(self):
+        super(TestPersonAssignedBugTaskSearchListingView, self).setUp()
+        self.expected_for_search_unbatched = [
+            self.assigned_bug.default_bugtask,
+            ]
+
+
+class TestPersonCommentedBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAssignedBugTaskSearchListingView."""
+
+    view_name = '+commentedbugs'
+
+    def setUp(self):
+        super(TestPersonCommentedBugTaskSearchListingView, self).setUp()
+        self.expected_for_search_unbatched = [
+            self.commented_bug.default_bugtask,
+            ]
+
+
+class TestPersonReportedBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAssignedBugTaskSearchListingView."""
+
+    view_name = '+reportedbugs'
+
+    def setUp(self):
+        super(TestPersonReportedBugTaskSearchListingView, self).setUp()
+        self.expected_for_search_unbatched = [
+            self.owned_bug.default_bugtask,
+            ]
+
+
+class TestPersonSubscribedBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAssignedBugTaskSearchListingView."""
+
+    view_name = '+subscribedbugs'
+
+    def setUp(self):
+        super(TestPersonSubscribedBugTaskSearchListingView, self).setUp()
+        self.expected_for_search_unbatched = [
+            self.subscribed_bug.default_bugtask,
+            self.owned_bug.default_bugtask,
+            ]

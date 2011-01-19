@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -117,14 +116,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    ReturnToReferrerMixin,
-    safe_action,
-    )
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -143,6 +134,14 @@ from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    safe_action,
     )
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
@@ -525,7 +524,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
@@ -810,13 +809,14 @@ class DecoratedSeries:
 
     @property
     def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if self.is_development_focus:
-            return 'highlighted'
+            return 'highlight'
         elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class SeriesWithReleases(DecoratedSeries):
@@ -1068,14 +1068,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [product for product in self.context.project.products
-                        if product.id != self.context.id]
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
@@ -1437,13 +1429,6 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 
     label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):

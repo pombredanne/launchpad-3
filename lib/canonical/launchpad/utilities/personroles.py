@@ -12,7 +12,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpad import (
     IHasDrivers,
     ILaunchpadCelebrities,
     IPersonRoles,

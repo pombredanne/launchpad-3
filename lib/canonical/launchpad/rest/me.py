@@ -16,7 +16,7 @@ from lazr.restful.interfaces import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
+from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -15,7 +15,6 @@ import cgi
 
 from lazr.delegates import delegates
 from simplejson import dumps
-
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -27,14 +26,16 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
@@ -133,6 +134,10 @@ class AdvancedSubscriptionMixin:
 
     def _setUpBugNotificationLevelField(self):
         """Set up the bug_notification_level field."""
+        if not self._use_advanced_features:
+            # If advanced features are disabled, do nothing.
+            return
+
         self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(
             self._bug_notification_level_field)
@@ -225,10 +230,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self_subscribed = False
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                if self._use_advanced_features:
+                if (self._use_advanced_features and
+                    self.user_is_subscribed_directly):
                     subscription_terms.append(self._update_subscription_term)
-                subscription_terms.append(
-                    SimpleTerm(
+                subscription_terms.insert(
+                    0, SimpleTerm(
                         person, person.name,
                         'Unsubscribe me from this bug'))
                 self_subscribed = True
@@ -244,7 +250,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        if self.user_is_subscribed and self._use_advanced_features:
+        if (self._use_advanced_features and
+            self.user_is_subscribed_directly):
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -261,11 +268,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self.user is None:
             return
 
-        if self._use_advanced_features:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
-            self._setUpBugNotificationLevelField()
-        else:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
+        self.form_fields += formlib.form.Fields(self._subscription_field)
+        self._setUpBugNotificationLevelField()
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
@@ -284,12 +288,36 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 # subscribe theirself or unsubscribe their team.
                 self.widgets['subscription'].visible = True
 
+            if (self.user_is_subscribed and
+                self.user_is_subscribed_to_dupes_only):
+                # If the user is subscribed via a duplicate but is not
+                # directly subscribed, we hide the
+                # bug_notification_level field, since it's not used.
+                self.widgets['bug_notification_level'].visible = False
+
     @cachedproperty
+    def user_is_subscribed_directly(self):
+        """Is the user subscribed directly to this bug?"""
+        return self.context.bug.isSubscribed(self.user)
+
+    @cachedproperty
+    def user_is_subscribed_to_dupes(self):
+        """Is the user subscribed to dupes of this bug?"""
+        return self.context.bug.isSubscribedToDupes(self.user)
+
+    @property
     def user_is_subscribed(self):
         """Is the user subscribed to this bug?"""
         return (
-            self.context.bug.isSubscribed(self.user) or
-            self.context.bug.isSubscribedToDupes(self.user))
+            self.user_is_subscribed_directly or
+            self.user_is_subscribed_to_dupes)
+
+    @property
+    def user_is_subscribed_to_dupes_only(self):
+        """Is the user subscribed to this bug only via a dupe?"""
+        return (
+            self.user_is_subscribed_to_dupes and
+            not self.user_is_subscribed_directly)
 
     def shouldShowUnsubscribeFromDupesWarning(self):
         """Should we warn the user about unsubscribing and duplicates?
@@ -461,7 +489,7 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         """
         direct_subscriptions = [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions()]
+            for subscription in self.context.getDirectSubscriptions().sorted]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -500,6 +528,7 @@ class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
 
     def render(self):
         """Override the default render() to return only JSON."""
+        self.request.response.setHeader('content-type', 'application/json')
         return self.subscriber_ids_js
 
 

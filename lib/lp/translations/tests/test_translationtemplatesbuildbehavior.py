@@ -6,18 +6,22 @@
 import logging
 import os
 
-from twisted.trial.unittest import TestCase as TrialTestCase
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
 
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.internet import defer
+
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import copy_and_close
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
-    TwistedLaunchpadZopelessLayer,
     )
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
@@ -28,12 +32,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
@@ -100,19 +100,15 @@ class MakeBehaviorMixin(object):
 
 
 class TestTranslationTemplatesBuildBehavior(
-        TrialTestCase, MakeBehaviorMixin):
+    TestCaseWithFactory, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        super(TestTranslationTemplatesBuildBehavior, self)
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
+        super(TestTranslationTemplatesBuildBehavior, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""
@@ -173,9 +169,17 @@ class TestTranslationTemplatesBuildBehavior(
         path = behavior.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
         behavior._builder.slave.valid_file_hashes.append(path)
-        self.assertEqual(
-            "This is a %s" % path,
-            behavior._readTarball(buildqueue, {path: path}, logging))
+        def got_tarball(filename):
+            tarball = open(filename, 'r')
+            try:
+                self.assertEqual(
+                    "This is a %s" % path, tarball.read())
+            finally:
+                tarball.close()
+                os.remove(filename)
+
+        d = behavior._readTarball(buildqueue, {path: path}, logging)
+        return d.addCallback(got_tarball)
 
     def test_updateBuild_WAITING_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
@@ -197,8 +201,10 @@ class TestTranslationTemplatesBuildBehavior(
         def got_status(status):
             slave_call_log = behavior._builder.slave.call_log
             slave_status = {
-                'builder_status': status[0], 'build_status': status[1]}
-            behavior.updateSlaveStatus(status, slave_status)
+                'builder_status': status[0],
+                'build_status': status[1],
+                'filemap': {'translation-templates.tar.gz': 'foo'},
+                }
             return behavior.updateBuild_WAITING(
                 queue_item, slave_status, None, logging), slave_call_log
 
@@ -206,7 +212,7 @@ class TestTranslationTemplatesBuildBehavior(
             slave_call_log = behavior._builder.slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave_call_log)
-            self.assertEqual(0, behavior._uploadTarball.call_count)
+            self.assertEqual(1, behavior._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
         d.addCallback(got_status)
@@ -299,12 +305,15 @@ class TestTranslationTemplatesBuildBehavior(
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch((status, info)):
+        def fake_getFile(sum, file):
             dummy_tar = os.path.join(
                 os.path.dirname(__file__), 'dummy_templates.tar.gz')
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            builder.slave.getFile = lambda sum: open(dummy_tar)
+            tar_file = open(dummy_tar)
+            copy_and_close(tar_file, file)
+            return defer.succeed(None)
+
+        def got_dispatch((status, info)):
+            builder.slave.getFile = fake_getFile
             builder.slave.filemap = {
                 'translation-templates.tar.gz': 'foo'}
             return builder.slave.status()

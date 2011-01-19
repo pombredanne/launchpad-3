@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # <james.troup@canonical.com>
@@ -14,12 +14,7 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
-import _pythonpath
-
-import apt_pkg
 import commands
-from debian.deb822 import Dsc
-
 import errno
 import optparse
 import os
@@ -30,19 +25,17 @@ import string
 import tempfile
 import urllib
 
-import dak_utils
+import _pythonpath
 from _syncorigins import origins
-
-from zope.component import getUtility
+import apt_pkg
 from contrib.glock import GlobalLock
+import dak_utils
+from debian.deb822 import Dsc
+from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
-    )
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    IPersonSet,
     )
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts,
@@ -55,6 +48,8 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import (

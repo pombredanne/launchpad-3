@@ -30,6 +30,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -235,16 +236,28 @@ class IPublishingView(Interface):
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
 
-    @call_with(removed_by=REQUEST_USER)
-    @operation_parameters(
-        removal_comment=TextLine(title=_("Removal comment"), required=False))
-    @export_write_operation()
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
         """
+
+    @call_with(removed_by=REQUEST_USER)
+    @operation_parameters(
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_operation_as("requestDeletion")
+    @export_write_operation()
+    def api_requestDeletion(removed_by, removal_comment=None):
+        """Delete this source and its binaries.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+        """
+        # This is a special API method that allows a different code path
+        # to the regular requestDeletion().  In the case of sources
+        # getting deleted, it ensures source and binaries are both
+        # deleted in tandem.
 
 
 class IFilePublishing(Interface):
@@ -458,6 +471,12 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "package that has been published in the main distribution series, "
         "if one exists, or None.")
 
+    ancestor = Reference(
+        Interface, # Really ISourcePackagePublishingHistory
+        title=_('Ancestor'),
+        description=_('The previous release of this source package.'),
+        required=False, readonly=True)
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -561,7 +580,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -788,7 +808,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -857,6 +878,29 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
+    def publishBinary(archive, binarypackagerelease, distroarchseries,
+                      component, section, priority, pocket):
+        """Publish a `BinaryPackageRelease` in an archive.
+
+        Creates one or more `IBinaryPackagePublishingHistory` records,
+        handling architecture-independent and DDEB publications transparently.
+
+        Note that binaries will only be copied if they don't already exist in
+        the target; this method cannot be used to change overrides.
+
+        :param archive: The target `IArchive`.
+        :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
+        :param distroarchseries: An `IDistroArchSeries`. If the binary is
+            architecture-independent, it will be published to all enabled
+            architectures in this series.
+        :param component: The target `IComponent`.
+        :param section: The target `ISection`.
+        :param priority: The target `PackagePublishingPriority`.
+        :param pocket: The target `PackagePublishingPocket`.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
                              component, section, priority, pocket):
         """Create a new `BinaryPackagePublishingHistory`.
@@ -874,7 +918,7 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket):
+                             component, section, pocket, ancestor):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -883,6 +927,8 @@ class IPublishingSet(Interface):
         :param component: An `IComponent`
         :param section: An `ISection`
         :param pocket: A `PackagePublishingPocket`
+        :param ancestor: A `ISourcePackagePublishingHistory` for the previous
+            version of this publishing record
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
@@ -896,7 +942,8 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None,
+                              need_build_farm_job=False):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -917,13 +964,17 @@ class IPublishingSet(Interface):
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :param archive: An optional archive with which to filter the source
-                        ids.
+            ids.
         :type archive: `IArchive`
         :param build_states: optional list of build states to which the
             result will be limited. Defaults to all states if ommitted.
         :type build_states: ``list`` or None
+        :param need_build_farm_job: whether to include the `PackageBuild`
+            and `BuildFarmJob` in the result.
+        :type need_build_farm_job: bool
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`,
+             [`PackageBuild`, `BuildFarmJob` if need_build_farm_job])
         :rtype: `storm.store.ResultSet`.
         """
 
@@ -1079,8 +1130,7 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive,
-        get_builds=None):
+    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive):
         """Return a summary of the build statuses for source publishing ids.
 
         This method collects all the builds for the provided source package
@@ -1095,9 +1145,6 @@ class IPublishingSet(Interface):
         :param archive: The archive which will be used to filter the source
                         ids.
         :type archive: `IArchive`
-        :param get_builds: Optional override to replace database querying for
-            build records. This is used in the ArchivePublication adapter code
-            path and should be avoided where possible.
         :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive. For example:
                 {
@@ -1108,8 +1155,7 @@ class IPublishingSet(Interface):
         :rtype: ``dict``.
         """
 
-    def getBuildStatusSummaryForSourcePublication(source_publication,
-        get_builds=None):
+    def getBuildStatusSummaryForSourcePublication(source_publication):
         """Return a summary of the build statuses for this source
         publication.
 
@@ -1117,13 +1163,6 @@ class IPublishingSet(Interface):
         for details. The call is just proxied here so that it can also be
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
-
-        :param get_builds: An optional callback to replace the database lookup
-            builds. This is used by some adapters as part of a preloading
-            strategy - but the preferred form is to have
-            getBuildStatusSummariesForSourceIdsAndArchive (which this call
-            delegates to) perform the initial and only loading of the build
-            records.
         """
 
     def getNearestAncestor(

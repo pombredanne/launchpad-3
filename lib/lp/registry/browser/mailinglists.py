@@ -6,115 +6,25 @@
 __metaclass__ = type
 __all__ = [
     'HeldMessageView',
-    'MailingListsReviewView',
     'enabled_with_active_mailing_list',
     ]
 
 
 from cgi import escape
-from operator import itemgetter
 from textwrap import TextWrapper
 from urllib import quote
 
 from zope.component import getUtility
-from zope.interface import Interface
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.tales import PersonFormatterAPI
-from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
-    MailingListStatus,
     )
 from lp.registry.interfaces.person import ITeam
-from lp.services.propertycache import cachedproperty
-
-
-class ReviewForm(Interface):
-    """An empty marker schema for the review form."""
-
-
-class MailingListsReviewView(LaunchpadFormView):
-    """Present review page for mailing list creation requests."""
-
-    schema = ReviewForm
-    page_title = 'Pending mailing lists requests'
-
-    @cachedproperty
-    def registered_lists(self):
-        """Return a list of mailing list information dictionaries.
-
-        The view needs a sorted list of dictionaries of information pertaining
-        to each mailing list pending approval.  The dictionaries have three
-        keys:
-
-        * the mailing list's team
-        * the mailing list's team's name
-        * the registrant of the mailing list request
-
-        The dictionaries are sorted by team name.
-
-        :return: Information about all the pending mailing list requests.
-        :rtype: list of dictionaries
-        """
-        list_info = []
-        for mailing_list in self.context.registered_lists:
-            naked_team = removeSecurityProxy(mailing_list.team)
-            list_info.append(dict(
-                # Use PersonFormatterAPI so that private team names aren't
-                # redacted, which doesn't help a mailing list expert much.
-                # This just ensures that the team name is not redacted, even
-                # though the MLE may (still) not have permission to visit the
-                # team page via the link.  That's a different issue and not
-                # one important enough to fix for now.
-                team_link=PersonFormatterAPI(naked_team).link(None),
-                name=naked_team.name,
-                registrant=mailing_list.registrant,
-                ))
-        return sorted(list_info, key=itemgetter('name'))
-
-    @action(_('Submit'), name='submit')
-    def submit_action(self, action, data):
-        """Process the mailing list review form."""
-        for mailing_list in self.context.registered_lists:
-            naked_team = removeSecurityProxy(mailing_list.team)
-            # Find out which disposition the administrator chose for this
-            # mailing list.  If there is no data in the form for this mailing
-            # list, just treat it as having been deferred.
-            action = self.request.form_ng.getOne('field.%s' % naked_team.name)
-            # This essentially acts like a switch statement or if/elifs.  It
-            # looks the action up in a map of allowed actions, watching out
-            # for bogus input.
-            try:
-                status = dict(
-                    approve=MailingListStatus.APPROVED,
-                    decline=MailingListStatus.DECLINED,
-                    hold=None,
-                    )[action]
-            except KeyError:
-                raise UnexpectedFormData(
-                    'Invalid review action for mailing list %s: %s' %
-                    (naked_team.displayname, action))
-            if status is not None:
-                mailing_list.review(self.user, status)
-                self.request.response.addInfoNotification(
-                    structured(
-                        '<a href="%s">%s</a> mailing list was %s',
-                            canonical_url(naked_team),
-                            naked_team.displayname,
-                            status.title.lower()))
-        # Redirect to prevent double posts (and not require
-        # flush_database_updates() :)
-        self.next_url = canonical_url(self.context)
 
 
 class HeldMessageView(LaunchpadView):

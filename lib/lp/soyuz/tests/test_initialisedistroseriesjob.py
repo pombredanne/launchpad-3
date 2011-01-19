@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
 import os
 import subprocess
 import sys
@@ -12,14 +14,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.initialisedistroseriesjob import (
-    InitialiseDistroSeriesJob,
-    )
+from lp.soyuz.model.initialisedistroseriesjob import InitialiseDistroSeriesJob
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -98,7 +100,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
 
-    def test_job(self):
+    def _create_child(self):
         pf = self.factory.makeProcessorFamily()
         pf.addProcessor('x86', '', '')
         parent = self.factory.makeDistroSeries()
@@ -128,6 +130,10 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
+        return parent, child
+
+    def test_job(self):
+        parent, child = self._create_child()
         job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
         self.layer.switchDbUser('initialisedistroseries')
 
@@ -135,6 +141,22 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         child.updatePackageCount()
         self.assertEqual(parent.sourcecount, child.sourcecount)
         self.assertEqual(parent.binarycount, child.binarycount)
+
+    def test_job_with_arguments(self):
+        parent, child = self._create_child()
+        arch = parent.nominatedarchindep.architecturetag
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+            child, packagesets=('test1',), arches=(arch,), rebuild=True)
+        self.layer.switchDbUser('initialisedistroseries')
+
+        job.run()
+        child.updatePackageCount()
+        builds = child.getBuildRecords(
+            build_state=BuildStatus.NEEDSBUILD,
+            pocket=PackagePublishingPocket.RELEASE)
+        self.assertEqual(child.sourcecount, 1)
+        self.assertEqual(child.binarycount, 0)
+        self.assertEqual(builds.count(), 1)
 
     def test_cronscript(self):
         script = os.path.join(

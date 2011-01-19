@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -34,6 +34,10 @@ from lp.services.worlddata.interfaces.language import (
     TextDirection,
     )
 
+# XXX: JonathanLange 2010-11-10 bug=673796: It turns out this module is
+# unusable without spokenin being imported first. So, import spokenin.
+from lp.services.worlddata.model.spokenin import SpokenIn
+SpokenIn
 
 class Language(SQLBase):
     implements(ILanguage)
@@ -82,6 +86,16 @@ class Language(SQLBase):
     def __repr__(self):
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, self.englishname, self.code)
+
+    @property
+    def guessed_pluralforms(self):
+        """See `ILanguage`."""
+        forms = self.pluralforms
+        if forms is None:
+            # Just take a plausible guess.  The caller needs a number.
+            return 2
+        else:
+            return forms
 
     @property
     def alt_suggestion_language(self):

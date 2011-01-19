@@ -57,14 +57,14 @@ from canonical.database.sqlbase import (
     session_store,
     SQLBase,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias,
     ILibraryFileAliasSet,
     ILibraryFileAliasWithParent,
     ILibraryFileContent,
     ILibraryFileDownloadCount,
-    IMasterStore,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.librarian.interfaces import (
     DownloadFailed,
     ILibrarianClient,
@@ -156,8 +156,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
             raise DownloadFailed(
-                    "Unable to retrieve LibraryFileAlias %d" % self.id
-                    )
+                "Unable to retrieve LibraryFileAlias %d" % self.id)
 
     def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
@@ -254,6 +253,10 @@ class LibraryFileAliasWithParent:
     def __init__(self, libraryfile, parent):
         self.context = libraryfile
         self.__parent__ = parent
+
+    def createToken(self):
+        """See `ILibraryFileAliasWithParent`."""
+        return TimeLimitedToken.allocate(self.private_url)
 
 
 class LibraryFileAliasSet(object):

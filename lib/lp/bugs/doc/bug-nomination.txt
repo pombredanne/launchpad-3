@@ -361,7 +361,7 @@ component, or all packages in a packageset.
 
     >>> from lp.soyuz.interfaces.archivepermission import (
     ...     IArchivePermissionSet)
-    >>> from canonical.launchpad.database import Component
+    >>> from lp.soyuz.model.component import Component
     >>> permission_set = getUtility(IArchivePermissionSet)
     >>> main = Component.byName('main')
     >>> main_uploader = factory.makePerson()

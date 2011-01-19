@@ -83,9 +83,8 @@ class BlueprintNotificationLevel(DBEnumeratedType):
         """)
 
 
-class IStructuralSubscription(Interface):
-    """A subscription to a Launchpad structure."""
-    export_as_webservice_entry()
+class IStructuralSubscriptionPublic(Interface):
+    """The public parts of a subscription to a Launchpad structure."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
     product = Int(title=_('Product'), required=False, readonly=True)
@@ -129,13 +128,25 @@ class IStructuralSubscription(Interface):
         required=True, readonly=True,
         title=_("The structure to which this subscription belongs.")))
 
-    bug_filters = CollectionField(
+    bug_filters = exported(CollectionField(
         title=_('List of bug filters that narrow this subscription.'),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))
+        value_type=Reference(schema=Interface)))
 
+
+class IStructuralSubscriptionRestricted(Interface):
+    """The restricted parts of a subscription to a Launchpad structure."""
+
+    @export_factory_operation(Interface, [])
     def newBugFilter():
         """Returns a new `BugSubscriptionFilter` for this subscription."""
+
+
+class IStructuralSubscription(
+    IStructuralSubscriptionPublic, IStructuralSubscriptionRestricted):
+    """A subscription to a Launchpad structure."""
+
+    export_as_webservice_entry()
 
 
 class IStructuralSubscriptionTargetRead(Interface):
@@ -217,7 +228,8 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
-    def addBugSubscription(subscriber, subscribed_by):
+    def addBugSubscription(subscriber, subscribed_by,
+                           bug_notification_level=None):
         """Add a bug subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
@@ -227,6 +239,9 @@ class IStructuralSubscriptionTargetWrite(Interface):
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
+        :bug_notification_level: The BugNotificationLevel for the
+            subscription. If omitted, BugNotificationLevel.COMMENTS will be
+            used.
         :return: The new bug subscription.
         """
 

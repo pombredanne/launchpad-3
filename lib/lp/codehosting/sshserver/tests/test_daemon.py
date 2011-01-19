@@ -5,14 +5,10 @@
 
 __metaclass__ = type
 
-import unittest
-
 from twisted.conch.ssh.common import NS
 from twisted.conch.ssh.keys import Key
 from twisted.test.proto_helpers import StringTransport
-from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.testing.layers import TwistedLayer
 from lp.codehosting.sshserver.daemon import (
     get_key_path,
     get_portal,
@@ -21,6 +17,7 @@ from lp.codehosting.sshserver.daemon import (
     )
 from lp.services.sshserver.auth import SSHUserAuthServer
 from lp.services.sshserver.service import Factory
+from lp.testing import TestCase
 
 
 class StringTransportWith_setTcpKeepAlive(StringTransport):
@@ -32,10 +29,8 @@ class StringTransportWith_setTcpKeepAlive(StringTransport):
         self._keepAlive = flag
 
 
-class TestFactory(TrialTestCase):
+class TestFactory(TestCase):
     """Tests for our SSH factory."""
-
-    layer = TwistedLayer
 
     def makeFactory(self):
         """Create and start the factory that our SSH server uses."""
@@ -89,8 +84,4 @@ class TestFactory(TrialTestCase):
         mind1 = server_transport1.service.getMind()
         mind2 = server_transport2.service.getMind()
 
-        self.assertNotIdentical(mind1.cache, mind2.cache)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertIsNot(mind1.cache, mind2.cache)

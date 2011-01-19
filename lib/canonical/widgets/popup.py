@@ -37,7 +37,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     style = ''
     cssClass = ''
 
-    step_title = 'Search'
+    step_title = None
     # Defaults to self.vocabulary.displayname.
     header = None
 
@@ -79,19 +79,20 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken' : cgi.escape(self.formToken, quote=True),
+            'formToken': cgi.escape(self.formToken, quote=True),
             'name': self.name,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
             'onKeyPress': self.onKeyPress,
             'style': self.style,
-            'cssClass': self.cssClass
-        }
+            'cssClass': self.cssClass,
+            }
         return """<input type="text" value="%(formToken)s" id="%(name)s"
                          name="%(name)s" size="%(displayWidth)s"
                          maxlength="%(displayMaxWidth)s"
                          onKeyPress="%(onKeyPress)s" style="%(style)s"
                          class="%(cssClass)s" />""" % d
+
     @property
     def suffix(self):
         return self.name.replace('.', '-')
@@ -126,23 +127,31 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                 % (choice.context, choice.__name__))
         return choice.vocabularyName
 
-    def chooseLink(self):
-        js_file = os.path.join(os.path.dirname(__file__),
-                               'templates/vocabulary-picker.js.template')
-        js_template = open(js_file).read()
-
+    def js_template_args(self):
+        """return a dict of args to configure the picker javascript."""
         if self.header is None:
             header = self.vocabulary.displayname
         else:
             header = self.header
 
-        args = dict(
+        if self.step_title is None:
+            step_title = self.vocabulary.step_title
+        else:
+            step_title = self.step_title
+
+        return dict(
             vocabulary=self.vocabulary_name,
             header=header,
-            step_title=self.step_title,
+            step_title=step_title,
             show_widget_id=self.show_widget_id,
             input_id=self.name,
             extra_no_results_message=self.extra_no_results_message)
+
+    def chooseLink(self):
+        js_file = os.path.join(os.path.dirname(__file__),
+                               'templates/vocabulary-picker.js.template')
+        js_template = open(js_file).read()
+        args = self.js_template_args()
         js = js_template % simplejson.dumps(args)
         # If the YUI widget or javascript is not supported in the browser,
         # it will degrade to being this "Find..." link instead of the
@@ -154,8 +163,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             css = ''
         return ('<span class="%s">(<a id="%s" href="/people/">'
                 'Find&hellip;</a>)</span>'
-                '\n<script>\n%s\n</script>'
-               ) % (css, self.show_widget_id, js)
+                '\n<script>\n%s\n</script>') % (css, self.show_widget_id, js)
 
     @property
     def nonajax_uri(self):

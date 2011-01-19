@@ -222,8 +222,8 @@ def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IEmailAddressSet
+    from canonical.launchpad.webapp.publisher import canonical_url
+    from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 
     _validate_email(email)
     _check_email_availability(email)
@@ -239,8 +239,8 @@ def validate_new_person_email(email):
     user that the profile he's trying to create already exists, so there's no
     need to create another one.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IPersonSet
+    from canonical.launchpad.webapp.publisher import canonical_url
+    from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
     if owner is not None:

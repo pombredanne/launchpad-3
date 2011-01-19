@@ -72,6 +72,11 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         with celebrity_logged_in('commercial_admin'):
             self.archive.commercial = True
 
+        # Logging in as a celebrity team causes an email to be sent
+        # because a person is added as a member of the team, so this
+        # needs to be cleared out before calling newSubscription().
+        pop_notifications()
+
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)
 

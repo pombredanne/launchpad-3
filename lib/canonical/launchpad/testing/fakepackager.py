@@ -21,13 +21,11 @@ import time
 from zope.component import getUtility
 
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    IGPGHandler,
-    )
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.uploadpolicy import findPolicyByName
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import PackageUploadStatus
 
 
@@ -398,7 +396,7 @@ class FakePackager:
         policy = findPolicyByName(policy)
 
         if logger is None:
-            logger = QuietFakeLogger()
+            logger = BufferLogger()
 
         upload = self._doUpload(
             'source', version, policy, archive, distribution_name, suite,

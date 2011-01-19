@@ -25,7 +25,7 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
@@ -268,29 +268,6 @@ def obfuscateEmail(emailaddr, idx=None):
     if idx is None:
         idx = random.randint(0, len(replacements) - 1)
     return text_replaced(emailaddr, replacements[idx])
-
-
-def validate_translation(original, translation, flags):
-    """Check with gettext if a translation is correct or not.
-
-    If the translation has a problem, raise gettextpo.error.
-    """
-    msg = gettextpo.PoMessage()
-    msg.set_msgid(original[0])
-
-    if len(original) > 1:
-        # It has plural forms.
-        msg.set_msgid_plural(original[1])
-        for form in range(len(translation)):
-            msg.set_msgstr_plural(form, translation[form])
-    elif len(translation):
-        msg.set_msgstr(translation[0])
-
-    for flag in flags:
-        msg.set_format(flag, True)
-
-    # Check the msg.
-    msg.check_format()
 
 
 class ShortListTooBigError(Exception):

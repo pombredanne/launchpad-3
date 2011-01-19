@@ -65,10 +65,11 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.app.errors import NotFoundError
 from lp.app.enums import (
+    service_uses_launchpad,
     ServiceUsage,
-    service_uses_launchpad)
+    )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
     SpecificationFilter,
@@ -230,7 +231,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep', foreignKey='DistroArchSeries',
@@ -270,18 +270,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
-    @property
+    @cachedproperty
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
         # This is filtering out the partner component for now, until
         # the second stage of the partner repo arrives in 1.1.8.
-        return Component.select("""
+        return list(Component.select("""
             ComponentSelection.distroseries = %s AND
             Component.id = ComponentSelection.component AND
             Component.name != 'partner'
             """ % self.id,
-            clauseTables=["ComponentSelection"])
+            clauseTables=["ComponentSelection"]))
 
     @property
     def answers_usage(self):
@@ -983,26 +983,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         source_package_ids = [
             package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
+        # Construct a table of just current releases for the desired SPNs.
+        origin = SQL("""
+            SourcePackageRelease
+            JOIN (
+                SELECT
+                    spr.id as sourcepackagerelease, MAX(spph.id)
                 FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
+                    SourcePackageRelease spr
                 WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
+                    spr.sourcepackagename IN %s AND
                     spph.sourcepackagerelease = spr.id AND
                     spph.archive IN %s AND
                     spph.status IN %s AND
-                    spph.distroseries = %s)
+                    spph.distroseries = %s
+                GROUP BY spr.id)
+                AS spph ON SourcePackageRelease.id = spph.sourcepackagerelease
             """ % sqlvalues(
                 source_package_ids, self.distribution.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
+                active_publishing_status, self))
+        releases = IStore(self).using(origin).find(SourcePackageRelease)
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
@@ -1540,7 +1540,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             latest_releases = series.getCurrentSourceReleases(
                 packagenames)
             for spph in spphs:
-                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                latest_release = latest_releases.get(spph.meta_sourcepackage)
                 if latest_release is not None and apt_pkg.VersionCompare(
                     latest_release.version, spph.source_package_version) > 0:
                     version = latest_release

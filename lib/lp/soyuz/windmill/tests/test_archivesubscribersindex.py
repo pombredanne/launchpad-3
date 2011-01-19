@@ -25,11 +25,11 @@ from lp.testing import WindmillTestCase
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'
 CHOOSE_SUBSCRIBER_LINK = u'//a[@id="show-widget-field-subscriber"]'
 SUBSCRIBER_SEARCH_FIELD = (
-    u'//div[@id="yui-pretty-overlay-modal"]//input[@name="search"]')
-SUBSCRIBER_SEARCH_BUTTON = u'//div[@id="yui-pretty-overlay-modal"]//button'
+    u'//div[@id="yui3-pretty-overlay-modal"]//input[@name="search"]')
+SUBSCRIBER_SEARCH_BUTTON = u'//div[@id="yui3-pretty-overlay-modal"]//button'
 FIRST_SUBSCRIBER_RESULT = (
-    u'//div[@id="yui-pretty-overlay-modal"]'
-     '//span[@class="yui-picker-result-title"]')
+    u'//div[@id="yui3-pretty-overlay-modal"]'
+     '//span[@class="yui3-picker-result-title"]')
 MESSAGE_WINDOW = u'//div[@class="informational message"]'
 
 

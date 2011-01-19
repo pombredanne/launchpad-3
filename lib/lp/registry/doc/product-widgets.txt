@@ -478,7 +478,7 @@ Launchpad form macros do not generate table rows for the GhostWidget.
 
     >>> from canonical.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
-    >>> from canonical.launchpad.webapp.launchpadform import (
+    >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
 
     >>> class GhostWidgetView(LaunchpadFormView):

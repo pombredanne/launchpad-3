@@ -573,7 +573,7 @@ case is that one of the uploads made on 2005-06-20 contains an .udeb
 package instead of a .deb, and we don't check .udeb files on the mirror,
 so we need to skip that upload.
 
-    >>> from canonical.launchpad.database import BinaryPackageFile
+    >>> from lp.soyuz.model.files import BinaryPackageFile
 
     >>> warty_i386_mirror = foo_mirror.ensureMirrorDistroArchSeries(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,

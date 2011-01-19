@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+
+from canonical.config import config
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
 from lp.services.features import webapp
 from lp.testing import (
@@ -12,10 +16,11 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 class TestScopesFromRequest(TestCase):
+
+    layer = layers.BaseLayer
 
     def test_pageid_scope_normal(self):
         request = LaunchpadTestRequest()
@@ -43,6 +48,30 @@ class TestScopesFromRequest(TestCase):
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
         self.assertFalse(scopes.lookup('pageid:foo:bar'))
+
+    def test_default(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.assertTrue(scopes.lookup('default'))
+
+    def test_server(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.assertFalse(scopes.lookup('server.lpnet'))
+        config.push('ensure_lpnet', dedent("""\
+            [launchpad]
+            is_lpnet: True
+            """))
+        try:
+            self.assertTrue(scopes.lookup('server.lpnet'))
+        finally:
+            config.pop('ensure_lpnet')
+
+    def test_server_missing_key(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        # There is no such key in the config, so this returns False.
+        self.assertFalse(scopes.lookup('server.pink'))
 
 
 class TestDBScopes(TestCaseWithFactory):

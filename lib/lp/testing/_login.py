@@ -23,7 +23,6 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-import random
 
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -39,9 +38,11 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.services.utils import decorate_with
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 _logged_in = False
+
 
 def is_logged_in():
     global _logged_in
@@ -93,24 +94,15 @@ def login_person(person, participation=None):
     setupInteractionForPerson(person, participation)
 
 
-def _get_arbitrary_team_member(team):
-    """Get an arbitrary member of 'team'.
-
-    :param team: An `ITeam`.
-    """
-    # Set up the interaction.
-    login(ANONYMOUS)
-    return random.choice(list(team.allmembers))
-
-
 def login_team(team, participation=None):
     """Login as a member of 'team'."""
-    # This check isn't strictly necessary (it depends on the implementation of
-    # _get_arbitrary_team_member), but this gives us a nice error message,
-    # which can save time when debugging.
+    # Prevent import loop.
+    from lp.testing.factory import LaunchpadObjectFactory
     if not team.is_team:
         raise ValueError("Got person, expected team: %r" % (team,))
-    person = _get_arbitrary_team_member(team)
+    login(ADMIN_EMAIL)
+    person = LaunchpadObjectFactory().makePerson()
+    team.addMember(person, person)
     login_person(person, participation=participation)
     return person
 

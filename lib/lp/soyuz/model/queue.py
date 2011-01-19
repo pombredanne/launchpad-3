@@ -360,7 +360,7 @@ class PackageUpload(SQLBase):
     def _giveKarma(self):
         """Assign karma as appropriate for an accepted upload."""
         # Give some karma to the uploader for source uploads only.
-        if self.sources.count() == 0:
+        if not bool(self.sources):
             return
 
         changed_by = self.sources[0].sourcepackagerelease.creator
@@ -473,8 +473,8 @@ class PackageUpload(SQLBase):
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
         return ((self.sources.count() == 1) and
-                (self.builds.count() == 0) and
-                (self.customfiles.count() == 0))
+                (not bool(self.builds)) and
+                (not bool(self.customfiles)))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -591,9 +591,9 @@ class PackageUpload(SQLBase):
         and I am hence introducing this non-cached variant for
         usage inside the content class.
         """
-        if self.sources is not None and self.sources.count() > 0:
+        if self.sources is not None and bool(self.sources):
             return self.sources[0].sourcepackagerelease
-        elif self.builds is not None and self.builds.count() > 0:
+        elif self.builds is not None and bool(self.builds):
             return self.builds[0].build.source_package_release
         else:
             return None
@@ -1387,7 +1387,7 @@ class PackageUpload(SQLBase):
                     section=new_section,
                     priority=new_priority)
 
-        return self.builds.count() > 0
+        return bool(self.builds)
 
 
 class PackageUploadBuild(SQLBase):
@@ -1448,54 +1448,24 @@ class PackageUploadBuild(SQLBase):
             target_das.distroseries.name,
             build_archtag))
 
-        # Get the other enabled distroarchseries for this
-        # distroseries.  If the binary is architecture independent then
-        # we need to publish it in all of those too.
-
-        # XXX Julian 2010-09-28 bug=649859
-        # This logic is duplicated in
-        # PackagePublishingSet.copyBinariesTo() and should be
-        # refactored.
-        other_das = set(
-            arch for arch in self.packageupload.distroseries.architectures
-            if arch.enabled)
-        other_das = other_das - set([target_das])
         # First up, publish everything in this build into that dar.
         published_binaries = []
         for binary in self.build.binarypackages:
-            target_dars = set([target_das])
-            if not binary.architecturespecific:
-                target_dars = target_dars.union(other_das)
-                debug(logger, "... %s/%s (Arch Independent)" % (
-                    binary.binarypackagename.name,
-                    binary.version))
-            else:
-                debug(logger, "... %s/%s (Arch Specific)" % (
-                    binary.binarypackagename.name,
-                    binary.version))
-
-
-            archive = self.packageupload.archive
-            # DDEBs targeted to the PRIMARY archive are published in the
-            # corresponding DEBUG archive.
-            if binary.binpackageformat == BinaryPackageFormat.DDEB:
-                debug_archive = archive.debug_archive
-                if debug_archive is None:
-                    raise QueueInconsistentStateError(
-                        "Could not find the corresponding DEBUG archive "
-                        "for %s" % (archive.displayname))
-                archive = debug_archive
-
-            for each_target_dar in target_dars:
-                bpph = getUtility(IPublishingSet).newBinaryPublication(
-                    archive=archive,
+            debug(
+                logger, "... %s/%s (Arch %s)" % (
+                binary.binarypackagename.name,
+                binary.version,
+                'Specific' if binary.architecturespecific else 'Independent',
+                ))
+            published_binaries.extend(
+                getUtility(IPublishingSet).publishBinary(
+                    archive=self.packageupload.archive,
                     binarypackagerelease=binary,
-                    distroarchseries=each_target_dar,
+                    distroarchseries=target_das,
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    pocket=self.packageupload.pocket)
-                published_binaries.append(bpph)
+                    pocket=self.packageupload.pocket))
         return published_binaries
 
 
@@ -1532,9 +1502,10 @@ class PackageUploadSource(SQLBase):
                 name=self.sourcepackagerelease.name,
                 distroseries=distroseries, pocket=pocket,
                 exact_match=True)
-            if ancestries.count() == 0:
+            try:
+                ancestry = ancestries[0]
+            except IndexError:
                 continue
-            ancestry = ancestries[0]
             break
         return ancestry
 

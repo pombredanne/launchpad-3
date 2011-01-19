@@ -31,16 +31,6 @@ No other versions are available.
     ...
 
 
-Resources not exposed on the web service
-========================================
-
-Soyuz build set (exposed on the web at /builders) are not available on the
-web service:
-
-    >>> print webservice.get("/builders")
-    HTTP/1.1 404 Not Found
-    ...
-
 Anonymous requests
 ==================
 

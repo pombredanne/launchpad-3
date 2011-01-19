@@ -235,7 +235,7 @@ class ImportQueueEntryTest(WindmillTestCase):
 
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1
-OPEN_CHOICELIST = u"//div[contains(@class, 'yui-ichoicelist-content')]"
+OPEN_CHOICELIST = u"//div[contains(@class, 'yui3-ichoicelist-content')]"
 
 
 class ImportQueueStatusTest(WindmillTestCase):

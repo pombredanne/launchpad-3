@@ -27,10 +27,7 @@ from zope.interface import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     Link,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -38,6 +35,11 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translationlinksaggregator import (
@@ -65,6 +67,9 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
         """See `TranslationLinksAggregator.describe`."""
         strings_count = sum(
             [self.countStrings(pofile) for pofile in covered_files])
+        languages = set(
+            [pofile.language.englishname for pofile in covered_files])
+        languages_list = ", ".join(sorted(languages))
 
         if strings_count == 1:
             strings_wording = "%d string"
@@ -77,6 +82,7 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
             'count_wording': strings_wording % strings_count,
             'is_product': not ISourcePackage.providedBy(target),
             'link': link,
+            'languages': languages_list,
         }
 
 

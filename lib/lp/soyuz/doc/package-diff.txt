@@ -116,7 +116,7 @@ chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> hoary = ubuntu.getSeries('hoary')

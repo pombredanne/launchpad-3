@@ -7,7 +7,7 @@ The validation interface contains different kinds of validation functions.
 The validate_distrotask() function is used to guarantee that distribution
 bugtasks are unique per bug.
 
-    >>> from canonical.launchpad.interfaces import validate_distrotask
+    >>> from canonical.launchpad.interfaces.validation import validate_distrotask
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet

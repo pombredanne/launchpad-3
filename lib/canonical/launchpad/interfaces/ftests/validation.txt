@@ -17,7 +17,8 @@
 This validator is used to check if the bug in the launchbag can be
 nominated for the given series.
 
-    >>> from canonical.launchpad.interfaces import can_be_nominated_for_series
+    >>> from canonical.launchpad.interfaces.validation import (
+    ...     can_be_nominated_for_series)
 
 If we create a new bug, all the target's series can be nominated.
 

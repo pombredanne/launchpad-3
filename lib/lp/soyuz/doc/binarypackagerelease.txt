@@ -3,12 +3,11 @@
 BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
-   >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.webapp.testing import verifyObject
    >>> from lp.soyuz.interfaces.binarypackagerelease import (
    ...     IBinaryPackageRelease,
-   ...     IBinaryPackageReleaseSet,
    ...     )
+   >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
    >>> firefox_bin_release = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)
@@ -133,79 +132,6 @@ Abort transaction to avoid error propagation of the new attributes:
 
    >>> import transaction
    >>> transaction.abort()
-
-
-BinaryPackageReleaseSet utility:
-
-   >>> binset = getUtility(IBinaryPackageReleaseSet)
-   >>> verifyObject(IBinaryPackageReleaseSet, binset)
-   True
-
-   >>> ret = binset.findByNameInDistroSeries(warty, 'cdr')
-   >>> for item in ret:
-   ...     print item.name
-   cdrkit
-
-Note that two pmounts are returned because they are published in
-different architectures:
-
-   >>> ret = binset.getByNameInDistroSeries(hoary, 'pmount')
-   >>> for item in ret:
-   ...     print item.name
-   pmount
-   pmount
-
-   >>> result = binset.findByNameInDistroSeries(warty, 'moz')
-   >>> print len(list(result))
-   5
-   >>> result = binset.findByNameInDistroSeries(warty, 'nosuchpackage')
-   >>> print len(list(result))
-   0
-   >>> result = binset.findByNameInDistroSeries(
-   ...      warty, 'Web Browser', fti=True)
-   >>> print len(list(result))
-   2
-   >>> result = binset.findByNameInDistroSeries(
-   ...     warty, 'X50keBLvzk', fti=True)
-   >>> print len(list(result))
-   0
-   >>> result = binset.findByNameInDistroSeries(
-   ...     warty, 'moz', archtag="nosucharch")
-   >>> print len(list(result))
-   0
-
-
-getByNameInDistroSeries
-------------------------
-
-   >>> result = binset.getByNameInDistroSeries(warty)
-   >>> print len(list(result))
-   9
-   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox')
-   >>> print len(list(result))
-   3
-   >>> result = binset.getByNameInDistroSeries(warty, 'nosuchpackage')
-   >>> print len(list(result))
-   0
-   >>> result = binset.getByNameInDistroSeries(
-   ...     warty, 'mozilla-firefox', version='0.9')
-   >>> print len(list(result))
-   2
-   >>> result = binset.getByNameInDistroSeries(
-   ...     warty, 'mozilla-firefox', version='nosuchversion')
-   >>> print len(list(result))
-   0
-   >>> result = binset.getByNameInDistroSeries(
-   ...     warty, 'mozilla-firefox', archtag='i386')
-   >>> print len(list(result))
-   2
-   >>> result = binset.getByNameInDistroSeries(
-   ...     warty, 'mozilla-firefox', archtag='nosucharch')
-   >>> print len(list(result))
-   0
-
-XXX: bug 5947, still lacking tests for getByNameVersion, getByArchTag,
-     getDistroSeriesPackages and getBySourceName -- kiko, 2006-02-22
 
 
 == Binary file association ==

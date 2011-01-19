@@ -18,9 +18,9 @@ from lp.testing import WindmillTestCase
 
 MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/div'
 FORM_NOT_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") == -1')
 CHANGE_BUTTON = (
     u'//div[@id="duplicate-form-container"]'
     '//button[@name="field.actions.change"]')
@@ -78,7 +78,8 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
             xpath=u"//span[@id='mark-duplicate-text']/"
-                  u"a[contains(., 'Mark as duplicate')]")
+                  u"a[contains(., 'Mark as duplicate')]",
+            timeout=constants.FOR_ELEMENT)
 
         # The warning about commenting on a diplucate bug is now gone.
         client.asserts.assertNotNode(id='warning-comment-on-duplicate')
@@ -87,15 +88,19 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(id=u'mark-duplicate-text')
         client.type(text=u'123', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         error_xpath = (
             MAIN_FORM_ELEMENT +
-            "//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
-        client.waits.forElement(xpath=error_xpath)
+            "//div[contains(@class, 'yui3-lazr-formoverlay-errors')]/ul/li")
+        client.waits.forElement(
+            xpath=error_xpath, timeout=constants.FOR_ELEMENT)
 
         # Clicking change again brings back the error dialog again
         # (regression test for bug 347258)
         client.click(xpath=CHANGE_BUTTON)
-        client.waits.forElement(xpath=error_xpath)
+        client.waits.sleep(milliseconds=constants.SLEEP)
+        client.waits.forElement(
+            xpath=error_xpath, timeout=constants.FOR_ELEMENT)
 
         # But entering a correct bug and submitting
         # gets us back to a normal state
@@ -103,19 +108,26 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
             xpath=u"//span[@id='mark-duplicate-text']"
-                  u"/a[contains(., 'bug #1')]")
+                  u"/a[contains(., 'bug #1')]",
+            timeout=constants.FOR_ELEMENT)
 
         # Finally, clicking on the link to the bug takes you to the master.
         client.click(link=u'bug #1')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.asserts.assertText(
-            xpath=u"//h1[@id='bug-title']/span[1]",
-            validator=u'Firefox does not support SVG')
+        client.waits.forElement(
+            id=u'bug-title', timeout=constants.FOR_ELEMENT)
+
+        # Make sure all js loads are complete before trying the next test.
+        client.waits.forElement(
+            xpath="//a[contains(@class, 'js-action') and "
+            "contains(@class, 'menu-link-mark-dupe')]",
+            timeout=constants.FOR_ELEMENT)
 
         # If someone wants to set the master to dupe another bug, there
         # is a warning in the dupe widget about this bug having its own
         # duplicates.
         client.click(classname='menu-link-mark-dupe')
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertTextIn(
             classname='large-warning', validator=u'This bug has duplicates',
             timeout=constants.FOR_ELEMENT)

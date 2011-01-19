@@ -34,6 +34,7 @@ from storm.locals import (
     Desc,
     Int,
     Join,
+    Not,
     Select,
     SQL,
     Store,
@@ -47,6 +48,9 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -70,7 +74,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -137,7 +141,6 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -153,11 +156,11 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -174,6 +177,7 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -284,13 +288,13 @@ class UnDeactivateable(Exception):
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasSpecificationsMixin, HasSprintsMixin,
+              HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin):
+              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
@@ -449,6 +453,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
+    enable_bugfiling_duplicate_search = BoolCol(notNull=True, default=True)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):
@@ -980,7 +985,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
 
-    def getVersionSortedSeries(self, filter_obsolete=False):
+    def getVersionSortedSeries(self, statuses=None, filter_statuses=None):
         """See `IProduct`."""
         store = Store.of(self)
         dev_focus = store.find(
@@ -990,9 +995,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductSeries.product == self,
             ProductSeries.id != self.development_focus.id,
             ]
-        if filter_obsolete is True:
+        if statuses is not None:
             other_series_conditions.append(
-                ProductSeries.status != SeriesStatus.OBSOLETE)
+                ProductSeries.status.is_in(statuses))
+        if filter_statuses is not None:
+            other_series_conditions.append(
+                Not(ProductSeries.status.is_in(filter_statuses)))
         other_series = store.find(ProductSeries, other_series_conditions)
         # The query will be much slower if the version_sort_key is not
         # the first thing that is sorted, since it won't be able to use
@@ -1045,26 +1053,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def translationgroups(self):
-        tg = []
-        if self.translationgroup:
-            tg.append(self.translationgroup)
-        if self.project:
-            if self.project.translationgroup:
-                if self.project.translationgroup not in tg:
-                    tg.append(self.project.translationgroup)
+        return reversed(self.getTranslationGroups())
 
-    @property
-    def aggregatetranslationpermission(self):
-        perms = [self.translationpermission]
-        if self.project:
-            perms.append(self.project.translationpermission)
-        # XXX Carlos Perello Marin 2005-06-02:
-        # Reviewer please describe a better way to explicitly order
-        # the enums. The spec describes the order, and the values make
-        # it work, and there is space left for new values so we can
-        # ensure a consistent sort order in future, but there should be
-        # a better way.
-        return max(perms)
+    def isTranslationsOwner(self, person):
+        """See `ITranslationPolicy`."""
+        # A Product owner gets special translation privileges.
+        return person.inTeam(self.owner)
+
+    def getInheritedTranslationPolicy(self):
+        """See `ITranslationPolicy`."""
+        # A Product inherits parts of it its effective translation
+        # policy from its ProjectGroup, if any.
+        return self.project
+
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, "Got a SourcePackage for a Product!"
+        # Product translations are considered upstream.  They are
+        # automatically shared.
+        return True
 
     @property
     def has_any_specifications(self):
@@ -1260,17 +1269,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        series_list = sorted_version_numbers(self.series,
-                                             key=operator.attrgetter('name'))
-        if self.development_focus in series_list:
-            series_list.remove(self.development_focus)
-        series_list.insert(0, self.development_focus)
-        series_list.reverse()
-        return [
-            series.getTimeline(include_inactive=include_inactive)
-            for series in series_list
-            if include_inactive or series.active or
-               series == self.development_focus]
+
+        def decorate(series):
+            return series.getTimeline(include_inactive=include_inactive)
+        if include_inactive is True:
+            statuses = None
+        else:
+            statuses = ACTIVE_STATUSES
+        return DecoratedResultSet(
+            self.getVersionSortedSeries(statuses=statuses), decorate)
 
     def getRecipes(self):
         """See `IHasRecipes`."""
@@ -1565,18 +1572,23 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product.official_rosetta == True,
-            Person.id == Product._ownerID,
-            ).config(distinct=True).order_by(Product.title)
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Person.id == Product._ownerID).config(
+                distinct=True).order_by(Product.title)
+
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return prejoin(results)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
@@ -1590,12 +1602,12 @@ class ProductSet:
                         ProductSeries.Product = Product.id
                     JOIN POTemplate ON
                         POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.official_rosetta
+                    WHERE Product.active AND Product.translations_usage = %s
                     ORDER BY place
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(maximumproducts),
+            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

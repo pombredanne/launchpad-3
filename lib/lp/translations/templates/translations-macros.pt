@@ -9,7 +9,7 @@
     <tr tal:attributes="class string:secondary ${dismissable} ${submission/translation_html_id};
                         id submission/row_html_id">
       <th colspan="3" tal:content="section_title">
-        Packaged:
+        In Upstream:
       </th>
       <td class="icon left right">
         <tal:form-writeable condition="form_is_writeable">

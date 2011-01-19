@@ -24,13 +24,11 @@ from lp.testing.matchers import (
     DoesNotContain,
     DoesNotCorrectlyProvide,
     DoesNotProvide,
-    DoesNotStartWith,
     HasQueryCount,
     IsNotProxied,
     IsProxied,
     Provides,
     ProvidesAndIsProxied,
-    StartsWith,
     )
 
 
@@ -226,39 +224,6 @@ class TestQueryMatching(TestCase):
         self.assertEqual(
             "queries do not match: %s" % (LessThan(2).match(2).describe(),),
             mismatch.describe())
-
-
-class DoesNotStartWithTests(TestCase):
-
-    def test_describe(self):
-        mismatch = DoesNotStartWith("foo", "bar")
-        self.assertEqual(
-            "'foo' does not start with 'bar'.", mismatch.describe())
-
-
-class StartsWithTests(TestCase):
-
-    def test_str(self):
-        matcher = StartsWith("bar")
-        self.assertEqual("Starts with 'bar'.", str(matcher))
-
-    def test_match(self):
-        matcher = StartsWith("bar")
-        self.assertIs(None, matcher.match("barf"))
-
-    def test_mismatch_returns_does_not_start_with(self):
-        matcher = StartsWith("bar")
-        self.assertIsInstance(matcher.match("foo"), DoesNotStartWith)
-
-    def test_mismatch_sets_matchee(self):
-        matcher = StartsWith("bar")
-        mismatch = matcher.match("foo")
-        self.assertEqual("foo", mismatch.matchee)
-
-    def test_mismatch_sets_expected(self):
-        matcher = StartsWith("bar")
-        mismatch = matcher.match("foo")
-        self.assertEqual("bar", mismatch.expected)
 
 
 class DoesNotContainTests(TestCase):

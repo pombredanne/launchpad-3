@@ -116,7 +116,7 @@ The id for this message set is the one we expected.
 
 And as it's the first entry, its sequence number is also the right one.
 
-    >>> potmsgset.getSequence(potmsgset.potemplate)
+    >>> potmsgset.getSequence(pofile_es.potemplate)
     1
 
 Test that the associated text to translate is the one we want. We initialize
@@ -169,16 +169,11 @@ update.
 
 But first, let's see current values.
 
-    >>> pofile_es.updateStatistics()
-    (6, 1, 1, 1)
-    >>> pofile_es.currentCount()
-    6
+    >>> stats = pofile_es.updateStatistics()
     >>> pofile_es.updatesCount()
-    1
+    0
     >>> pofile_es.rosettaCount()
-    1
-    >>> pofile_es.unreviewedCount()
-    1
+    7
 
 Now we do a submission with new translations:
 
@@ -208,14 +203,17 @@ Now we do a submission with new translations:
 
 And check again.
 
-    >>> pofile_es.updateStatistics()
-    (5, 2, 3, 1)
+    >>> stats = pofile_es.updateStatistics()
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    8
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     print potmsgset.getSequence(potmsgset.potemplate)
+    ...     print potmsgset.getSequence(pofile_es.potemplate)
     1
     2
     3

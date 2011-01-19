@@ -12,12 +12,12 @@ from datetime import (
     datetime,
     timedelta,
     )
-import simplejson
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
+import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 import transaction
@@ -66,7 +66,6 @@ from lp.code.errors import (
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
     )
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
@@ -2757,7 +2756,8 @@ class TestMergeQueue(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         config = simplejson.dumps({
             'path': '/',
-            'test': 'make test',})
+            'test': 'make test',
+            })
 
         with person_logged_in(branch.owner):
             branch.setMergeQueueConfig(config)
@@ -2814,6 +2814,19 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
+        mp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for('test', mp.registrant,
+            service_root="http://api.launchpad.dev:8085")
+        with person_logged_in(mp.registrant):
+            mp.markAsMerged(merged_revno=123)
+            transaction.commit()
+            target = ws_object(launchpad, mp.target_branch)
+            mp = ws_object(launchpad, mp)
+        self.assertEqual([mp], list(target.getMergeProposals(
+            status=['Merged'], merged_revnos=[123])))
 
 
 def test_suite():

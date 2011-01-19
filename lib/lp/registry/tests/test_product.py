@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,19 +10,17 @@ import unittest
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
-from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    syncUpdate,
-    )
+from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
     setupBrowser,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -34,13 +32,17 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -80,16 +82,6 @@ class TestProduct(TestCaseWithFactory):
             milestone=milestone_0_1)
         release_2 = self.factory.makeProductRelease(
             product=product,
-            milestone=milestone_0_2)
-        release_file1 = self.factory.makeProductReleaseFile(
-            product=product,
-            release=release_1,
-            productseries=series,
-            milestone=milestone_0_1)
-        release_file2 = self.factory.makeProductReleaseFile(
-            product=product,
-            release=release_2,
-            productseries=series,
             milestone=milestone_0_2)
         expected = [(milestone_0_2, release_2), (milestone_0_1, release_1)]
         self.assertEqual(
@@ -135,7 +127,7 @@ class TestProduct(TestCaseWithFactory):
         [series] = product.getTimeline()
         timeline_milestones = [
             landmark['uri']
-            for landmark in series['landmarks']]
+            for landmark in series.landmarks]
         self.assertEqual(
             expected_milestones,
             timeline_milestones)
@@ -152,16 +144,36 @@ class TestProduct(TestCaseWithFactory):
             [u'trunk', u'3b', u'3a', u'3', u'2', u'1', u'beta', u'alpha'],
             [series.name for series in product.getVersionSortedSeries()])
 
-    def test_getVersionSortedSeries_filter_obsolete(self):
+    def test_getVersionSortedSeries_with_specific_statuses(self):
+        # The obsolete series should be included in the results if
+        # statuses=[SeriesStatus.OBSOLETE]. The development focus will
+        # also be included since it does not get filtered.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.factory.makeProductSeries(
+            product=product, name='frozen-series')
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='obsolete-series')
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        active_series = product.getVersionSortedSeries(
+            statuses=[SeriesStatus.OBSOLETE])
+        self.assertEqual(
+            [u'trunk', u'obsolete-series'],
+            [series.name for series in active_series])
+
+    def test_getVersionSortedSeries_without_specific_statuses(self):
         # The obsolete series should not be included in the results if
-        # the filter_obsolete argument is set to True.
+        # filter_statuses=[SeriesStatus.OBSOLETE]. The development focus will
+        # always be included since it does not get filtered.
         login('admin@canonical.com')
         product = self.factory.makeProduct()
         self.factory.makeProductSeries(product=product, name='active-series')
         obsolete_series = self.factory.makeProductSeries(
             product=product, name='obsolete-series')
         obsolete_series.status = SeriesStatus.OBSOLETE
-        active_series = product.getVersionSortedSeries(filter_obsolete=True)
+        product.development_focus.status = SeriesStatus.OBSOLETE
+        active_series = product.getVersionSortedSeries(
+            filter_statuses=[SeriesStatus.OBSOLETE])
         self.assertEqual(
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
@@ -224,7 +236,7 @@ class TestProductFiles(unittest.TestCase):
 class ProductAttributeCacheTestCase(unittest.TestCase):
     """Cached attributes must be cleared at the end of a transaction."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         self.product = Product.selectOneBy(name='tomcat')
@@ -294,7 +306,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """A TestCase for product snapshots."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
@@ -320,20 +332,19 @@ class ProductSnapshotTestCase(TestCaseWithFactory):
 class BugSupervisorTestCase(TestCaseWithFactory):
     """A TestCase for bug supervisor management."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(BugSupervisorTestCase, self).setUp()
         self.person = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.person)
-        login(self.person.preferredemail.email)
+        login_person(self.person)
 
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.
         # This is a regression test for bug 438985.
-        user = getUtility(IPersonSet).getByName(self.person.name)
         self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=user)
+            bug_supervisor=self.person, user=self.person)
 
         self.assertEqual(
             self.product.bug_supervisor, self.person,

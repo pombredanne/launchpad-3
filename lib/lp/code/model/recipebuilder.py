@@ -12,6 +12,7 @@ import traceback
 
 from zope.component import adapts
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -72,7 +73,11 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             args["author_email"] = config.canonical.noreply_from_address
         else:
             args["author_name"] = requester.displayname
-            args["author_email"] = requester.preferredemail.email
+            # We have to remove the security proxy here b/c there's not a
+            # logged in entity, and anonymous email lookups aren't allowed.
+            # Don't keep the naked requester around though.
+            args["author_email"] = removeSecurityProxy(
+                requester).preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
@@ -122,6 +127,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if chroot is None:
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
+        logger.info(
+            "Sending chroot file for recipe build to %s" % self._builder.name)
         d = self._builder.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
@@ -131,7 +138,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1
-            logger.debug(
+            logger.info(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
             return self._builder.slave.build(

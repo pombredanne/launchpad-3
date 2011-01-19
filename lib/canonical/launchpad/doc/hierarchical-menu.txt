@@ -90,6 +90,7 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     # have to create fake views and other stuff to test breadcrumbs here. The
     # functionality provided by that method is tested in
     # webapp/tests/test_breadcrumbs.py.
+    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbForRequestedPage
     >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
@@ -269,3 +270,8 @@ considered to be on the home page if there are no breadcrumbs.
 
     >>> homepage_hierarchy.render().strip()
     u''
+
+
+Put the monkey patched method back.
+
+    >>> Hierarchy.makeBreadcrumbForRequestedPage = make_breadcrumb_func

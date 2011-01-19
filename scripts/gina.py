@@ -21,12 +21,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-# Yes we do need to import this here to stop circular imports from the
-# abomination piece of crap that is
-# canonical.launchpad.interfaces.__init__.py that imports the world.
-import canonical.launchpad.interfaces
-
-
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
 
@@ -85,7 +79,7 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = lp.dbname
+    LPDB = lp.get_dbname()
     LPDB_HOST = lp.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname

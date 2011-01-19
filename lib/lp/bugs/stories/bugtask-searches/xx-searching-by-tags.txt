@@ -46,7 +46,7 @@ Both bugs are returned.
     Summary        Importance  Status   Heat
     16 test bug a  Undecided   New
     17 test bug b  Undecided   New
-    
+
 Same works for user related bugs:
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')

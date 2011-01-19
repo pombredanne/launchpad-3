@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -27,7 +27,6 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
-    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -61,7 +60,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -116,7 +114,10 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.errors import (
+    PrivatePersonLinkageError,
+    TeamSubscriptionPolicyError,
+    )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -148,6 +149,7 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.soyuz.enums import ArchiveStatus
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -483,6 +485,80 @@ class PersonNameField(BlacklistableContentNameField):
 
         # Perform the normal validation, including the real blacklist checks.
         super(PersonNameField, self)._validate(input)
+
+
+def team_subscription_policy_can_transition(team, policy):
+    """Can the team can change its subscription policy
+
+    Returns True when the policy can change. or raises an error. OPEN teams
+    cannot be members of MODERATED or RESTRICTED teams. OPEN teams
+    cannot have PPAs. Changes from between OPEN and the two closed states
+    can be blocked by team membership and team artifacts.
+
+    :param team: The team to change.
+    :param policy: The TeamSubsciptionPolicy to change to.
+    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
+        or a team artifact prevents the policy from being set.
+    """
+    if team is None or policy == team.subscriptionpolicy:
+        # The team is being initialized or the policy is not changing.
+        return True
+    elif policy == TeamSubscriptionPolicy.OPEN:
+        # The team can be open if its super teams are open.
+        for team in team.super_teams:
+            if team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its super teams are not open." % policy)
+        # The team can be open if it has PPAs.
+        for ppa in team.ppas:
+            if ppa.status != ArchiveStatus.DELETED:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because it "
+                    "has one or more active PPAs." % policy)
+    elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+        # The team can become MODERATED or RESTRICTED if its member teams
+        # are not OPEN.
+        for member in team.activemembers:
+            if member.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its member teams are Open." % policy)
+    else:
+        # The policy change is between MODERATED and RESTRICTED.
+        pass
+    return True
+
+
+class TeamSubsciptionPolicyChoice(Choice):
+    """A valid team subscription policy."""
+
+    def _getTeam(self):
+        """Return the context if it is a team or None."""
+        if IPerson.providedBy(self.context):
+            return self.context
+        else:
+            return None
+
+    def constraint(self, value):
+        """See `IField`."""
+        team = self._getTeam()
+        policy = value
+        try:
+            return team_subscription_policy_can_transition(team, policy)
+        except TeamSubscriptionPolicyError:
+            return False
+
+    def _validate(self, value):
+        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
+
+        Returns True if the team can change its subscription policy to the
+        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
+        """
+        team = self._getTeam()
+        policy = value
+        team_subscription_policy_can_transition(team, policy)
+        super(TeamSubsciptionPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
@@ -1077,10 +1153,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         since it inherits from `IPerson`) is a member of himself
         (i.e. `person1.inTeam(person1)`).
 
-        :param team: One of an object providing `IPerson`, the string name of a
-            team or `None`. If a string was supplied the team is looked up.
+        :param team: Either an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
         :return: A bool with the result of the membership lookup. When looking
-            up the team from a string finds nothing or team was `None` then 
+            up the team from a string finds nothing or team was `None` then
             `False` is returned.
         """
 
@@ -1553,6 +1629,11 @@ class IPersonEditRestricted(Interface):
         to INVITATION_DECLINED.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text(required=False))
+    @export_write_operation()
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
@@ -1685,7 +1766,7 @@ class ITeamPublic(Interface):
         exported_as='team_description')
 
     subscriptionpolicy = exported(
-        Choice(title=_('Subscription policy'),
+        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
@@ -2070,6 +2151,23 @@ class IPersonSet(Interface):
     def cacheBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
 
+    def getPrecachedPersonsFromIDs(
+        person_ids, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
+        """Lookup person objects from ids with optional precaching.
+
+        :param person_ids: List of person ids.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -2210,11 +2308,6 @@ class NoSuchPerson(NameLookupFailed):
     _message_prefix = "No such person"
 
 
-class PPACreationError(Exception):
-    """Raised when there is an issue creating a new PPA."""
-
-    webservice_error(400) # Bad Request
-
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [
     'all_members_prepopulated',
@@ -2245,6 +2338,7 @@ params_to_fix = [
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
     (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['retractTeamMembership'], 'team'),
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(

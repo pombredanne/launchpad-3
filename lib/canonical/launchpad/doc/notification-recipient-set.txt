@@ -123,6 +123,7 @@ Adding a team with a preferred email address works like adding any
 other person:
 
     >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> login_person(ubuntu_team.teamowner)
     >>> print ubuntu_team.preferredemail.email
     support@ubuntu.com
     >>> recipients.add(ubuntu_team, 'You are notified for fun.', 'Fun')

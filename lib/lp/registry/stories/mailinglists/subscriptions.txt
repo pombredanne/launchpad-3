@@ -186,7 +186,8 @@ First, we need to make sure that Jdub is a member of the Beta Testers
 team.  (Otherwise, the mailing list subscription checkbox won't show at
 all.)
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
@@ -400,19 +401,8 @@ rosetta admins team has such a list and carlos is the owner.
     rosetta-admins@lists.launchpad.dev
     Policy: You must be a team member to subscribe to the team mailing list.
     Subscribe to mailing list
-    View archive
+    View public archive
     View subscribers...
-
-Non-members are not shown links to subscribe or unsubscribe.
-
-    >>> user_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> print extract_text(
-    ...     find_portlet(user_browser.contents, 'Mailing list'))
-    Mailing list
-    rosetta-admins@lists.launchpad.dev
-    Policy: You must be a team member to subscribe to the team mailing list.
-    View archive
-    View subscribers
 
 The mailing list for Rosetta Admins has no subscribers.
 (Jeff Waugh has asked to subscribe but he's not considered a subscriber

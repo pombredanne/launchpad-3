@@ -10,17 +10,23 @@ import transaction
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
+from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.ftests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.mail import (
+    helpers,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.incoming import (
+    authenticateEmail,
     handleMail,
     MailErrorUtility,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.testing import TestCaseWithFactory
+from lp.testing.factory import GPGSigningContext
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -80,6 +86,23 @@ class TestIncoming(TestCaseWithFactory):
             self.assertIs(None, current_oops)
         else:
             self.assertEqual(old_oops.id, current_oops.id)
+
+    def test_bad_signature_timestamp(self):
+        """If the signature is nontrivial future-dated, it's not trusted."""
+
+        signing_context = GPGSigningContext(
+            import_secret_test_key().fingerprint, password='test')
+        msg = self.factory.makeSignedMessage(signing_context=signing_context)
+        # It's not trivial to make a gpg signature with a bogus timestamp, so
+        # let's just treat everything as invalid, and trust that the regular
+        # implementation of extraction and checking of timestamps is correct,
+        # or at least tested.
+        def fail_all_timestamps(timestamp, context):
+            raise helpers.IncomingEmailError("fail!")
+        self.assertRaises(
+            helpers.IncomingEmailError,
+            authenticateEmail,
+            msg, fail_all_timestamps)
 
 
 def setUp(test):

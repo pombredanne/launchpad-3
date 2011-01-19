@@ -13,6 +13,7 @@ __all__ = [
     'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
+    'make_publisher',
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
@@ -22,6 +23,7 @@ __all__ = [
 
 import fixtures
 import os
+import types
 
 from StringIO import StringIO
 import xmlrpclib
@@ -46,7 +48,16 @@ from lp.buildmaster.model.builder import (
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
+from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
+
+fix_bug_2518()
+
+def make_publisher():
+    """Make a Soyuz test publisher."""
+    # Avoid circular imports.
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class MockBuilder:
@@ -151,6 +162,12 @@ class OkSlave:
         return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
+    def getFiles(self, filemap):
+        dl = defer.gatherResults([
+            self.getFile(builder_file, filemap[builder_file])
+            for builder_file in filemap])
+        return dl
+
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
@@ -165,13 +182,14 @@ class BuildingSlave(OkSlave):
         return defer.succeed(
             ('BuilderStatus.BUILDING', self.build_id, buildlog))
 
-    def getFile(self, sum):
-        # XXX: This needs to be updated to return a Deferred.
+    def getFile(self, sum, file_to_write):
         self.call_log.append('getFile')
         if sum == "buildlog":
-            s = StringIO("This is a build log")
-            s.headers = {'content-length': 19}
-            return s
+            if isinstance(file_to_write, types.StringTypes):
+                file_to_write = open(file_to_write, 'wb')
+            file_to_write.write("This is a build log")
+            file_to_write.close()
+        return defer.succeed(None)
 
 
 class WaitingSlave(OkSlave):
@@ -198,14 +216,15 @@ class WaitingSlave(OkSlave):
             'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
             self.dependencies))
 
-    def getFile(self, hash):
-        # XXX: This needs to be updated to return a Deferred.
+    def getFile(self, hash, file_to_write):
         self.call_log.append('getFile')
         if hash in self.valid_file_hashes:
             content = "This is a %s" % hash
-            s = StringIO(content)
-            s.headers = {'content-length': len(content)}
-            return s
+            if isinstance(file_to_write, types.StringTypes):
+                file_to_write = open(file_to_write, 'wb')
+            file_to_write.write(content)
+            file_to_write.close()
+        return defer.succeed(None)
 
 
 class AbortingSlave(OkSlave):
@@ -290,17 +309,12 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         :return: A `BuilddSlaveTestSetup` object.
         """
-        tachandler = BuilddSlaveTestSetup()
-        tachandler.setUp()
-        # Basically impossible to do this w/ TrialTestCase. But it would be
-        # really nice to keep it.
-        #
-        # def addLogFile(exc_info):
-        #     self.addDetail(
-        #         'xmlrpc-log-file',
-        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        # self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
+        tachandler = self.useFixture(BuilddSlaveTestSetup())
+        self.addDetail(
+            'xmlrpc-log-file',
+            Content(
+                UTF8_TEXT,
+                lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
     def getClientSlave(self, reactor=None, proxy=None):
@@ -308,22 +322,8 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        # Twisted has a bug!  We need to monkey patch
-        # QueryProtocol.handleResponse() so that it terminates the
-        # connection properly, otherwise the Trial test can leave the
-        # reactor dirty which fails the test.
-        # See http://twistedmatrix.com/trac/ticket/2518
-        saved_handleResponse = xmlrpc.QueryProtocol.handleResponse
-        def _handleResponse(self, contents):
-            self.factory.parseResponse(contents)
-            self.transport.loseConnection()
-        xmlrpc.QueryProtocol.handleResponse = _handleResponse
-        def restore_handleResponse():
-            xmlrpc.QueryProtocol.handleResponse = saved_handleResponse
-        self.addCleanup(restore_handleResponse)
-
         return BuilderSlave.makeBuilderSlave(
-            self.TEST_URL, 'vmhost', reactor, proxy)
+            self.BASE_URL, 'vmhost', reactor, proxy)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.

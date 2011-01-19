@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
@@ -151,7 +152,7 @@
   <!-- Specification -->
 
   <class class="lp.blueprints.model.specification.Specification">
-    <allow interface="lp.blueprints.interfaces.specification.ISpecification"/>
+    <allow interface="lp.blueprints.interfaces.specification.ISpecificationPublic"/>
     <!-- We allow any authenticated person to update the whiteboard -->
     <require
         permission="launchpad.AnyPerson"
@@ -161,6 +162,7 @@
          methods -->
     <require
         permission="launchpad.Edit"
+        interface="lp.blueprints.interfaces.specification.ISpecificationEditRestricted"
         set_attributes="name title summary definition_status specurl
                         superseded_by milestone product distribution
                         approver assignee drafter man_days
@@ -237,5 +239,7 @@
       provides="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet">
     <allow interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet"/>
   </securedutility>
+
+  <webservice:register module="lp.blueprints.interfaces.webservice" />
 
 </configure>

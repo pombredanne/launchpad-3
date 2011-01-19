@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import operator
 import simplejson
 
 from bzrlib import urlutils
@@ -58,6 +59,9 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -129,7 +133,6 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -283,7 +286,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Revision.id == BranchRevision.revision_id,
             BranchRevision.sequence != None)
         result = result.order_by(Desc(BranchRevision.sequence))
-        return prejoin(result, return_slice=slice(0, 1))
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -360,8 +363,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IHasMergeProposals`."""
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """See `IBranch`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
@@ -369,7 +373,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status, target_branch=self)
+        return collection.getMergeProposals(
+            status, target_branch=self, merged_revnos=merged_revnos)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -591,7 +596,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Revision.revision_date > timestamp)
         result = result.order_by(Desc(BranchRevision.sequence))
         # Return BranchRevision but prejoin Revision as well.
-        return prejoin(result, slice(0, 1))
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     def canBeDeleted(self):
         """See `IBranch`."""

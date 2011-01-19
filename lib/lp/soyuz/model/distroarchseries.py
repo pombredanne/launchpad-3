@@ -47,7 +47,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries,
@@ -177,12 +176,6 @@ class DistroArchSeries(SQLBase):
 
         return pocket_chroot
 
-    def findPackagesByName(self, pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
-        binset = getUtility(IBinaryPackageReleaseSet)
-        return binset.findByNameInDistroSeries(
-            self.distroseries, pattern, self.architecturetag, fti)
-
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
@@ -225,7 +218,7 @@ class DistroArchSeries(SQLBase):
         result = result.order_by("rank DESC, BinaryPackageName.name")
 
         # import here to avoid circular import problems
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting

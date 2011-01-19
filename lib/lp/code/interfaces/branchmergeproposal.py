@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -47,6 +47,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from zope.event import notify
 from zope.interface import (
@@ -64,6 +65,7 @@ from zope.schema import (
     TextLine,
     )
 
+from canonical.database.constants import DEFAULT
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -114,25 +116,26 @@ class IBranchMergeProposal(IPrivacy):
             description=_('The person who registered the landing target.')))
 
     source_branch = exported(
-        Reference(
-            title=_('Source Branch'), schema=IBranch,
+        ReferenceChoice(
+            title=_('Source Branch'), schema=IBranch, vocabulary='Branch',
             required=True, readonly=True,
             description=_("The branch that has code to land.")))
 
     target_branch = exported(
-        Reference(
+        ReferenceChoice(
             title=_('Target Branch'),
-            schema=IBranch, required=True, readonly=True,
+            schema=IBranch, vocabulary='Branch', required=True, readonly=True,
             description=_(
                 "The branch that the source branch will be merged into.")))
 
     prerequisite_branch = exported(
-        Reference(
-            title=_('Dependent Branch'),
-            schema=IBranch, required=False, readonly=True,
-            description=_("The branch that the source branch branched from. "
-                          "If this is the same as the target branch, then "
-                          "leave this field blank.")))
+        ReferenceChoice(
+            title=_('Prerequisite Branch'),
+            schema=IBranch, vocabulary='Branch', required=False,
+            readonly=True, description=_(
+                "The branch that the source branch branched from. "
+                "If this branch is the same as the target branch, then "
+                "leave this field blank.")))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is determined by the involved branches.
@@ -432,13 +435,24 @@ class IBranchMergeProposal(IPrivacy):
         :type merge_reporter: ``Person``
         """
 
-    def resubmit(registrant):
+    def resubmit(registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
         user-entered data like the whiteboard.  All the current proposal's
         reviewers, including those who have only been nominated, are requested
         to review the new proposal.
+
+        :param registrant: The person registering the new proposal.
+        :param source_branch: The source_branch for the new proposal (defaults
+            to the current source_branch).
+        :param target_branch: The target_branch for the new proposal (defaults
+            to the current target_branch).
+        :param prerequisite_branch: The prerequisite_branch for the new
+            proposal (defaults to the current prerequisite_branch).
+        :param description: The description for the new proposal (defaults to
+            the current description).
         """
 
     def isMergable():

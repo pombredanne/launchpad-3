@@ -30,14 +30,10 @@ from zope.lifecycleevent import ObjectCreatedEvent
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -47,29 +43,31 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from canonical.widgets import HiddenUserWidget
-from lp.app.errors import NotFoundError
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 
 
-class BuilderSetNavigation(GetitemNavigation):
+class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
+    @stepthrough('+buildjob')
+    def traverse_buildjob(self, name):
+        build = super(BuilderSetNavigation, self).traverse_buildjob(name)
+        if build is None:
             return None
         else:
             return self.redirectSubTree(canonical_url(build))

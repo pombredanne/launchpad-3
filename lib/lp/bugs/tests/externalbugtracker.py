@@ -38,7 +38,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -300,7 +300,7 @@ class TestBugzilla(Bugzilla):
         else:
             raise AssertionError('Unknown page: %s' % page)
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page.
 
         :form: is a dict of form variables being POSTed.
@@ -1119,7 +1119,7 @@ class TestMantis(Mantis):
         else:
             return ''
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         if self.trace_calls:
             print "CALLED _postPage(%r, ...)" % (page)
         return ''

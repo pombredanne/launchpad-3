@@ -4,7 +4,7 @@ SourcePackagePublishingHistory
 
 This class provides public access to publishing records via a SQL view.
 
-    >>> from canonical.launchpad.database import (
+    >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
     ...     SourcePackagePublishingHistory,
     ...     )
@@ -1712,17 +1712,6 @@ getStatusSummaryForBuilds() method.
     >>> print_build_status_summary(
     ...     decorated_pub.getStatusSummaryForBuilds())
     FULLYBUILT
-    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
-
-We can verify that this decorated version is in fact using the cached
-builds by explicitly modifying the cached builds on the delegate. We'll
-modify the cached builds by appending the same build to the cached builds.
-
-    >>> decorated_pub._builds += decorated_pub.getBuilds()
-    >>> print_build_status_summary(
-    ...     decorated_pub.getStatusSummaryForBuilds())
-    FULLYBUILT
-    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
     i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
 
 

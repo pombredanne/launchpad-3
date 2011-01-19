@@ -5,6 +5,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
     <include file="vocabularies.zcml"/>
 
@@ -57,4 +58,5 @@
 
     <include package=".browser"/>
 
+   <webservice:register module="lp.services.worlddata.interfaces.webservice" />
 </configure>

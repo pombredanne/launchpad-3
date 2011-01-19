@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['BranchMergeQueue']
 
 import simplejson
-
 from storm.locals import (
     Int,
     Reference,
@@ -68,7 +67,7 @@ class BranchMergeQueue(Storm):
 
     @classmethod
     def new(cls, name, owner, registrant, description=None,
-            configuration=None):
+            configuration=None, branches=None):
         """See `IBranchMergeQueueSource`."""
         store = IMasterStore(BranchMergeQueue)
 
@@ -81,6 +80,9 @@ class BranchMergeQueue(Storm):
         queue.registrant = registrant
         queue.description = description
         queue.configuration = configuration
+        if branches is not None:
+            for branch in branches:
+                branch.addToQueue(queue)
 
         store.add(queue)
         return queue

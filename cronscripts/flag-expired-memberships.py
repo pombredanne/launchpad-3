@@ -15,9 +15,11 @@ from datetime import datetime, timedelta
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembershipSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.teammembership import (
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembershipSet,
+    )
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 

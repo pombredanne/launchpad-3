@@ -14,7 +14,7 @@ enabling faster searches, faster readings and model constraints.
 
 Let's get one from the database:
 
-   >>> from canonical.launchpad.database import SourcePackageRelease
+   >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
    >>> spr = SourcePackageRelease.get(14)
    >>> spr.name
    u'mozilla-firefox'

@@ -26,7 +26,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -85,11 +85,11 @@ class MixedFileAliasView(LaunchpadView):
 
     If the file is public, it will redirect to the files http url.
 
-    Otherwise if the feature flag publicrestrictedlibrarian is set to 'on' this
-    will allocate a token and redirect to the aliases private url.
+    Otherwise if the feature flag publicrestrictedlibrarian is set to 'on'
+    this will allocate a token and redirect to the aliases private url.
 
     Otherwise it will proxy the file in the appserver.
-    
+
     Once we no longer have any proxy code at all it should be possible to
     consolidate this with LibraryFileAliasView.
 
@@ -98,7 +98,7 @@ class MixedFileAliasView(LaunchpadView):
     we have to take special care about their origin.
     SafeStreamOrRedirectLibraryFileAliasView is used when we do not trust the
     content, otherwise StreamOrRedirectLibraryFileAliasView. We are working
-    to remove both of these views entirely, but some transition will be 
+    to remove both of these views entirely, but some transition will be
     needed.
 
     The context provides a file-like interface - it can be opened and closed
@@ -161,7 +161,7 @@ class MixedFileAliasView(LaunchpadView):
 
     def browserDefault(self, request):
         """Decides how to deliver the file.
-        
+
         The options are:
          - redirect to the contexts http url
          - redirect to a time limited secure url
@@ -182,7 +182,7 @@ class MixedFileAliasView(LaunchpadView):
             # Public file, just point the client at the right place.
             return RedirectionView(self.context.http_url, self.request), ()
         if getFeatureFlag(u'publicrestrictedlibrarian') != 'on':
-            # Restricted file and we have not enabled the public 
+            # Restricted file and we have not enabled the public
             # restricted librarian yet :- deliver inline.
             self._when_streaming()
             return self, ()
@@ -203,12 +203,12 @@ class MixedFileAliasView(LaunchpadView):
         """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
 
 
-
 class SafeStreamOrRedirectLibraryFileAliasView(MixedFileAliasView):
     """A view for Librarian files that sets the content disposition header."""
 
     def _when_streaming(self):
-        super(SafeStreamOrRedirectLibraryFileAliasView, self)._when_streaming()
+        super(
+            SafeStreamOrRedirectLibraryFileAliasView, self)._when_streaming()
         self.request.response.setHeader(
             'Content-Disposition', 'attachment')
 
@@ -257,18 +257,17 @@ class FileNavigationMixin:
 class ProxiedLibraryFileAlias:
     """A `LibraryFileAlias` decorator for use in URL generation.
 
-    The URL's output by this decorator will always point at the webapp. This is
-    useful when:
-     - we are proxying files via the webapp (as we do at the moment)
-     - when the webapp has to be contacted to get access to a file (the case
-       for restricted files in the future)
+    The URL's output by this decorator will always point at the webapp. This
+    is useful when:
+     - the webapp has to be contacted to get access to a file (required for
+       restricted files).
      - files might change from public to private and thus not work even if the
        user has access to the once its private, unless they go via the webapp.
 
     This should be used anywhere we are outputting URL's to LibraryFileAliases
     other than directly in rendered pages. For rendered pages, using a
     LibraryFileAlias directly is OK as at that point the status of the file
-    is know.
+    is known.
 
     Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
     even when called from the webservice domain.

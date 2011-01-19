@@ -36,28 +36,44 @@ from zope.schema import (
     Choice,
     List,
     Text,
+    TextLine,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
     )
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
-    Navigation,
     NavigationMenu,
-    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.suggestion import RecipeOwnerWidget
+from canonical.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    has_structured_doc,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    render_radio_widget_part,
+    )
+from lp.app.browser.tales import (
+    format_link,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -69,17 +85,15 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     )
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.model.archive import Archive
 
 
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
     'We would love for you to try them out, and if you have '
     'any issues, please '
-    '<a href="http://bugs.launchpad.net/launchpad-code">'
+    '<a href="http://bugs.launchpad.net/launchpad">'
     'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
@@ -127,17 +141,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             yield item
 
 
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
-
-
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
     """Navigation menu for sourcepackage recipes."""
 
@@ -178,6 +181,16 @@ class SourcePackageRecipeView(LaunchpadView):
         # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        recipe = self.context
+        if self.dailyBuildWithoutUploadPermission():
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>The owner of the recipe (%s) does not "
+                    "have permission to upload packages into the daily "
+                    "build PPA (%s)" % (
+                        format_link(recipe.owner),
+                        format_link(recipe.daily_build_archive))))
 
     @property
     def page_title(self):
@@ -194,12 +207,24 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
                 break
         return builds
+
+    def dailyBuildWithoutUploadPermission(self):
+        """Returns true if there are upload permissions to the daily archive.
+
+        If the recipe isn't built daily, we don't consider this a problem.
+        """
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if recipe.build_daily:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            return not has_upload
+        return False
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -264,7 +289,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         self.next_url = self.cancel_url
 
 
-class ISourcePackageAddEditSchema(Interface):
+class ISourcePackageEditSchema(Interface):
     """Schema for adding or editing a recipe."""
 
     use_template(ISourcePackageRecipe, include=[
@@ -284,9 +309,48 @@ class ISourcePackageAddEditSchema(Interface):
         description=(
             u'If built daily, these are the distribution versions that '
             u'the recipe will be built for.'))
-    recipe_text = Text(
-        title=u'Recipe text', required=True,
-        description=u'The text of the recipe.')
+    recipe_text = has_structured_doc(
+        Text(
+            title=u'Recipe text', required=True,
+            description=u"""The text of the recipe.
+                <a href="/+help/recipe-syntax.html" target="help"
+                  >Syntax help&nbsp;
+                  <span class="sprite maybe">
+                    <span class="invisible-link">Help</span>
+                  </span></a>
+               """))
+
+
+EXISTING_PPA = 'existing-ppa'
+CREATE_NEW = 'create-new'
+
+
+USE_ARCHIVE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(EXISTING_PPA, EXISTING_PPA, _("Use an existing PPA")),
+    SimpleTerm(
+        CREATE_NEW, CREATE_NEW, _("Create a new PPA for this recipe")),
+    ))
+
+
+class ISourcePackageAddSchema(ISourcePackageEditSchema):
+
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive', required=False,
+        description=(
+            u'If built daily, this is the archive where the package '
+            u'will be uploaded.'))
+
+    use_ppa = Choice(
+        title=_('Which PPA'),
+        vocabulary=USE_ARCHIVE_VOCABULARY,
+        description=_("Which PPA to use..."),
+        required=True)
+
+    ppa_name = TextLine(
+            title=_("New PPA name"), required=False,
+            constraint=name_validator,
+            description=_("A new PPA with this name will be created for "
+                          "the owner of the recipe ."))
 
 
 class RecipeTextValidatorMixin:
@@ -302,10 +366,7 @@ class RecipeTextValidatorMixin:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
         except RecipeParseError, error:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.  '
-                '%(error)s' % {'error': error.problem})
+            self.setFieldError('recipe_text', str(error))
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
@@ -313,21 +374,39 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     title = label = 'Create a new source package recipe'
 
-    schema = ISourcePackageAddEditSchema
+    schema = ISourcePackageAddSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('owner', RecipeOwnerWidget)
+    custom_widget('use_ppa', LaunchpadRadioWidget)
 
     def initialize(self):
+        super(SourcePackageRecipeAddView, self).initialize()
         # XXX: rockstar: This should be removed when source package recipes
         # are put into production. spec=sourcepackagerecipes
-        super(SourcePackageRecipeAddView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        widget = self.widgets['use_ppa']
+        current_value = widget._getFormValue()
+        self.use_ppa_existing = render_radio_widget_part(
+            widget, EXISTING_PPA, current_value)
+        self.use_ppa_new = render_radio_widget_part(
+            widget, CREATE_NEW, current_value)
+        archive_widget = self.widgets['daily_build_archive']
+        self.show_ppa_chooser = len(archive_widget.vocabulary) > 0
+        if not self.show_ppa_chooser:
+            self.widgets['ppa_name'].setRenderedValue('ppa')
+        # Force there to be no '(no value)' item in the select.  We do this as
+        # the input isn't listed as 'required' otherwise the validator gets
+        # all confused when we want to create a new PPA.
+        archive_widget._displayItemForMissingValue = False
 
     @property
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'build_daily': False}
+            'build_daily': False,
+            'use_ppa': EXISTING_PPA,
+            }
 
     @property
     def cancel_url(self):
@@ -336,11 +415,17 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
         try:
+            owner = data['owner']
+            if data['use_ppa'] == CREATE_NEW:
+                ppa_name = data.get('ppa_name', None)
+                ppa = owner.createPPA(ppa_name)
+            else:
+                ppa = data['daily_build_archive']
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, data['owner'], data['name'],
+                    self.user, owner, data['name'],
                     data['recipe_text'], data['description'], data['distros'],
-                    data['daily_build_archive'], data['build_daily'])
+                    ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
         except TooNewRecipeFormat:
             self.setFieldError(
@@ -374,6 +459,15 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                     'name',
                     'There is already a recipe owned by %s with this name.' %
                         owner.displayname)
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            if ppa_name is None:
+                self.setFieldError(
+                    'ppa_name', 'You need to specify a name for the PPA.')
+            else:
+                error = Archive.validatePPA(owner, ppa_name)
+                if error is not None:
+                    self.setFieldError('ppa_name', error)
 
 
 class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
@@ -385,7 +479,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         return 'Edit %s source package recipe' % self.context.name
     label = title
 
-    schema = ISourcePackageAddEditSchema
+    schema = ISourcePackageEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -407,12 +501,11 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
 
-
     @property
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),
+            'recipe_text': self.context.recipe_text,
             }
 
     @property
@@ -473,7 +566,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     @property
     def adapters(self):
         """See `LaunchpadEditFormView`"""
-        return {ISourcePackageAddEditSchema: self.context}
+        return {ISourcePackageEditSchema: self.context}
 
     def validate(self, data):
         super(SourcePackageRecipeEditView, self).validate(data)

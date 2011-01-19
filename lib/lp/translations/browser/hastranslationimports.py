@@ -26,16 +26,16 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     safe_action,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet

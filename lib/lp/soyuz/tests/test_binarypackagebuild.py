@@ -13,6 +13,8 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -100,7 +102,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.addFakeBuildLog()
         self.failUnlessEqual(
             'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
+            'gedit/666/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.package_build.build_farm_job.id),
             self.build.log_url)
 
@@ -113,7 +115,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             owner=ppa_owner, name="myppa")
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
+            '+archive/myppa/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
             self.build.log_url)
 
@@ -435,7 +437,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
-        self.assertIsNot(None, self.build.date_finished)
 
     def testWithoutDependencies(self):
         """Verify that storeBuildInfo clears the build's dependencies."""
@@ -446,6 +447,12 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
+        self.assertIsNot(None, self.build.date_finished)
+
+    def test_sets_date_finished(self):
+        # storeBuildInfo should set date_finished on the BuildFarmJob.
+        self.assertIs(None, self.build.date_finished)
+        self.build.storeBuildInfo(self.build, None, {})
         self.assertIsNot(None, self.build.date_finished)
 
 
@@ -466,5 +473,5 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 
 
 class TestHandleStatusForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""
