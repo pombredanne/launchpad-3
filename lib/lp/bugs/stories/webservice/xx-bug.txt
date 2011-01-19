@@ -825,6 +825,7 @@ We can get the collection of subscriptions to a bug.
   ...     pprint_entry(entry)
   ...     print
   bug_link: u'http://.../bugs/1'
+  bug_notification_level: u'Discussion'
   date_created: u'2006-10-16T18:31:43.156104+00:00'
   person_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_subscription'
@@ -844,6 +845,7 @@ Each subscription can be accessed individually.
   ...     subscription_entries[1]['self_link']).jsonBody()
   >>> pprint_entry(subscription)
   bug_link: u'http://.../bugs/1'
+  bug_notification_level: u'Discussion'
   date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
@@ -878,9 +880,16 @@ An individual can subscribe themself at a given BugNotificationLevel.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     person=webservice.getAbsoluteUrl('/~cprov')
-    ...     level="Details").jsonBody()
+    ...     person=webservice.getAbsoluteUrl('/~cprov'),
+    ...     level=u"Details").jsonBody()
     >>> pprint_entry(new_subscription)
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Discussion'
+    date_created: u'...'
+    person_link: u'...'
+    resource_type_link: u'...'
+    self_link: u'...'
+    subscribed_by_link: u'...'
 
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
