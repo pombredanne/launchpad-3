@@ -47,7 +47,6 @@ def text_xhtml_representation(context, field, request):
         if value is None:
             return ''
         nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
+        return formatter(nomail).text_to_html()
 
     return renderer
