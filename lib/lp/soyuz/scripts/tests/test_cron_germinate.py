@@ -16,7 +16,7 @@ from lp.testing import TestCase
 
 class TestCronGerminate(TestCase):
 
-    DISTRO_NAMES = [ "platform", "ubuntu", "kubuntu", "netbook" ]
+    DISTRO_NAMES = ["platform", "ubuntu", "kubuntu", "netbook"]
     DISTS = ["hardy", "lucid", "maverick"]
     DEVELOPMENT_DIST = "natty"
     COMPONENTS = ["main", "restricted", "universe", "multiverse"]
@@ -35,8 +35,8 @@ class TestCronGerminate(TestCase):
         self.ubuntu_misc_dir = os.path.join(self.archive_dir, "ubuntu-misc")
         self.ubuntu_germinate_dir = os.path.join(
             self.archive_dir, "ubuntu-germinate")
-        # create a mock archive environment for all the distros we
-        # support and also include "updates" and "security"
+        # Create a mock archive environment for all the distros we support and
+        # also include "updates" and "security".
         for dist in self.DISTS + [self.DEVELOPMENT_DIST]:
             self.populate_mock_archive_environment(
                 self.archive_dir, self.COMPONENTS, self.ARCHES, dist)
@@ -44,9 +44,9 @@ class TestCronGerminate(TestCase):
                 self.populate_mock_archive_environment(
                     self.archive_dir, self.COMPONENTS, self.ARCHES,
                     "%s-%s" % (dist, component))
-        # generate test dummies for maintenance-time.py, if this is
-        # set to "None" instead it will use the network to test against
-        # the real data
+        # Generate test dummies for maintenance-time.py, if this is set to
+        # "None" instead it will use the network to test against the real
+        # data.
         self.germinate_output_dir = self.setup_mock_germinate_output()
 
     def create_directory_if_missing(self, directory):
@@ -61,7 +61,8 @@ class TestCronGerminate(TestCase):
 
     def create_gzip_file(self, filepath, content=""):
         """Create a gziped file in the given path with the given content.
-           If not content is given a empty file is created.
+
+        If no content is given a empty file is created.
         """
         gz = gzip.GzipFile(filepath, "w")
         gz.write(content)
@@ -69,7 +70,8 @@ class TestCronGerminate(TestCase):
 
     def create_file(self, filepath, content=""):
         """Create a file in the given path with the given content.
-           If not content is given a empty file is created.
+
+        If no content is given a empty file is created.
         """
         f = open(filepath, "w")
         f.write(content)
@@ -82,15 +84,19 @@ class TestCronGerminate(TestCase):
         dirs = []
         for distro_name in self.DISTRO_NAMES:
             for distro_series in self.DISTS:
-                dirs.append(os.path.join(germinate_output_dir, "%s.%s" % (distro_name, distro_series)))
+                dirs.append(
+                    os.path.join(
+                        germinate_output_dir,
+                        "%s.%s" % (distro_name, distro_series)))
         self.create_directory_list_if_missing(dirs)
         for dir in dirs:
             self.create_file(os.path.join(dir, "structure"))
         return germinate_output_dir
 
     def setup_mock_archive_environment(self):
-        """Creates a mock archive environment and populate
-           it with the subdirectories that germinate will expect.
+        """
+        Creates a mock archive environment and populate it with the
+        subdirectories that germinate will expect.
         """
         archive_dir = os.path.join(
             self.tmpdir, "germinate-test-data", "ubuntu-archive")
@@ -106,8 +112,9 @@ class TestCronGerminate(TestCase):
 
     def populate_mock_archive_environment(self, archive_dir, components_list,
                                           arches_list, current_devel_distro):
-        """Populates a mock archive environment with empty source packages
-           and empty binary packages.
+        """
+        Populates a mock archive environment with empty source packages and
+        empty binary packages.
         """
         for component in components_list:
             # Create the environment for the source packages.
@@ -131,9 +138,10 @@ class TestCronGerminate(TestCase):
 
     def create_fake_environment(self, basepath, archive_dir,
                                 germinate_output_dir):
-        """Create a fake process envirionment based on os.environ that
-           sets TEST_ARCHIVEROOT, TEST_LAUNCHPADROOT and modifies PATH
-           to point to the mock lp-bin directory.
+        """
+        Create a fake process envirionment based on os.environ that sets
+        TEST_ARCHIVEROOT, TEST_LAUNCHPADROOT and modifies PATH to point to the
+        mock lp-bin directory.
         """
         fake_environ = copy.copy(os.environ)
         fake_environ["TEST_ARCHIVEROOT"] = os.path.abspath(
@@ -159,7 +167,8 @@ class TestCronGerminate(TestCase):
                 os.path.join(archive_dir, "ubuntu"))
             fake_environ["MAINTENANCE_CHECK_ARCHIVE_ROOT"] = archive_root_url
             # maintenance-check.py expects a format string
-            hints_file_url = germinate_output_dir + "/platform.%s/SUPPORTED_HINTS"
+            hints_file_url = (
+                germinate_output_dir + "/platform.%s/SUPPORTED_HINTS")
             for distro in self.DISTS:
                 open(hints_file_url % distro, "w")
             fake_environ["MAINTENANCE_CHECK_HINTS_DIR_URL"] = "file://%s" % \
@@ -171,11 +180,12 @@ class TestCronGerminate(TestCase):
         return fake_environ
 
     def test_maintenance_update(self):
-        """Test the maintenance-check.py porition of the soyuz cron.germinate
-           shell script by running it inside a fake environment and ensure
-           that it did update the "Support" override information for
-           apt-ftparchive without destroying/modifying the information
-           that the "germinate" script added to it earlier.
+        """
+        Test the maintenance-check.py porition of the soyuz cron.germinate
+        shell script by running it inside a fake environment and ensure that
+        it did update the "Support" override information for apt-ftparchive
+        without destroying/modifying the information that the "germinate"
+        script added to it earlier.
         """
         # Write into more-extras.overrides to ensure it is alive after we
         # mucked around.
