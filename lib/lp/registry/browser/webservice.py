@@ -33,12 +33,7 @@ def person_xhtml_representation(context, field, request):
         if person is None:
             return ''
         else:
-            link = PersonFormatterAPI(person).link(None)
-            # This span is required for now as it is used in the parsing of
-            # the dt list returned by default as the xhtml representation.  To
-            # remove this, you need to fix the javascript parsing in
-            # lp.app.javascript.picker (we think).
-            return '<span>%s</span>' % link
+            return PersonFormatterAPI(person).link(None)
     return render
 
 
