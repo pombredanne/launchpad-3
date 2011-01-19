@@ -31,7 +31,6 @@ from sqlobject.sqlbuilder import AND
 from storm.store import Store
 from storm.expr import (
     And,
-    Asc,
     Desc,
     Func,
     )
@@ -201,7 +200,7 @@ class DistributionMirror(SQLBase):
             And(
                 MirrorDistroArchSeries.distribution_mirror == self,
                 MirrorDistroArchSeries.freshness != MirrorFreshness.UNKNOWN)
-            ).order_by(Desc(MirrorDistroArchSeries.freshness)).first()
+                ).order_by(Desc(MirrorDistroArchSeries.freshness)).first()
 
     @cachedproperty
     def most_stale_source_mirror(self):
@@ -211,7 +210,7 @@ class DistributionMirror(SQLBase):
             And(
                 MirrorDistroSeriesSource.distribution_mirror == self,
                 MirrorDistroSeriesSource.freshness != MirrorFreshness.UNKNOWN)
-            ).order_by(Desc(MirrorDistroSeriesSource.freshness)).first()
+                ).order_by(Desc(MirrorDistroSeriesSource.freshness)).first()
 
     def destroySelf(self):
         """Delete this mirror from the database.
