@@ -37,7 +37,7 @@ def factory_decorator(factory):
 
 from twisted.application import strports
 from twisted.web.resource import Resource
-from twisted.web.site import Site
+from twisted.web.server import Site
 server_available_resource = ServerAvailableResource(tracked_factories)
 web_root = Resource()
 web_root.putChild('', server_available_resource)
