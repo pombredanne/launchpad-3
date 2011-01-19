@@ -147,6 +147,7 @@ Here are some examples of the three types of indirect subscribers:
     >>> subscription_no_priv = linux_source.addBugSubscription(
     ...     mr_no_privs, mr_no_privs)
 
+    >>> transaction.commit()
     >>> print_displayname(
     ...     sub.subscriber for sub in linux_source.bug_subscriptions)
     No Privileges Person

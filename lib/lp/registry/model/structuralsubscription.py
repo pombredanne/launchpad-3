@@ -427,13 +427,9 @@ class StructuralSubscriptionTargetMixin:
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.name, subscriber.name))
 
-        subscription_to_remove = None
-        for subscription in self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA):
-            # Only search for bug subscriptions
-            if subscription.subscriber == subscriber:
-                subscription_to_remove = subscription
-                break
+        subscription_to_remove = self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA,
+            subscriber=subscriber).one()
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
@@ -451,35 +447,38 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
-        all_subscriptions = self.getSubscriptions()
-        for subscription in all_subscriptions:
-            if subscription.subscriber == person:
-                return subscription
-        return None
+        all_subscriptions = self.getSubscriptions(subscriber=person)
+        # XXX Danilo 20110118: Data model actually allows more than one,
+        # and we'll need to use .any() if we still care about this method
+        # when we start to deal with that.
+        return all_subscriptions.one()
 
     def getSubscriptions(self,
                          min_bug_notification_level=
                          BugNotificationLevel.NOTHING,
                          min_blueprint_notification_level=
-                         BlueprintNotificationLevel.NOTHING):
+                         BlueprintNotificationLevel.NOTHING,
+                         subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
+        from lp.registry.model.person import Person
         clauses = [
-            "StructuralSubscription.subscriber = Person.id",
-            "StructuralSubscription.bug_notification_level "
-            ">= %s" % quote(min_bug_notification_level),
-            "StructuralSubscription.blueprint_notification_level "
-            ">= %s" % quote(min_blueprint_notification_level),
+            StructuralSubscription.subscriberID==Person.id,
+            (StructuralSubscription.bug_notification_level >=
+             min_bug_notification_level),
+            (StructuralSubscription.blueprint_notification_level >=
+             min_blueprint_notification_level),
             ]
         for key, value in self._target_args.iteritems():
-            if value is None:
-                clauses.append(
-                    "StructuralSubscription.%s IS NULL" % (key,))
-            else:
-                clauses.append(
-                    "StructuralSubscription.%s = %s" % (key, quote(value)))
-        query = " AND ".join(clauses)
-        return StructuralSubscription.select(
-            query, orderBy='Person.displayname', clauseTables=['Person'])
+            clauses.append(
+                getattr(StructuralSubscription, key)==value)
+
+        if subscriber is not None:
+            clauses.append(
+                StructuralSubscription.subscriber==subscriber)
+
+        store = Store.of(self.__helper.pillar)
+        return store.find(
+            StructuralSubscription, *clauses).order_by('Person.displayname')
 
     @property
     def bug_subscriptions(self):
