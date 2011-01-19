@@ -434,6 +434,15 @@ An UploadFailed will be raised if you try to create a file with no content
         [...]
     UploadFailed: Invalid length: 0
 
+If you really want a zero length file you can do it:
+
+    >>> aid = client.addFile('test.txt', 0, StringIO(''), 'text/plain',
+    ...     allow_zero_length=True)
+    >>> transaction.commit()
+    >>> f = client.getFileByAlias(aid)
+    >>> f.read()
+    ''
+
 An AssertionError will be raised if the number of bytes that could be read
 from the file don't match the declared size.
 
