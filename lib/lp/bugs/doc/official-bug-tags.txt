@@ -213,7 +213,8 @@ Project group gets the union of all the tags available for its products.
     >>> thunderbird.official_bug_tags = [u'baz']
     >>> logout()
     >>> login('no-priv@canonical.com')
-    >>> getUtility(IProjectGroupSet).getByName('mozilla').official_bug_tags
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
+    >>> list(mozilla.official_bug_tags)
     [u'bar', u'baz', u'foo']
     >>> logout()
 
