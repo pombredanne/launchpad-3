@@ -67,7 +67,7 @@ class ServerAvailableResource(resource.Resource):
         resource.Resource.__init__(self)
         self.tracked_factories = tracked_factories
 
-    def render_GET(self, request):
+    def _render_common(self, request):
         state = 'available'
         for tracked in self.tracked_factories:
             if not tracked.isAvailable():
@@ -77,6 +77,9 @@ class ServerAvailableResource(resource.Resource):
         else:
             request.setResponseCode(503)
         request.setHeader('Content-Type', 'text/plain')
+
+    def render_GET(self, request):
+        state = self._render_common(request)
         tracked_connections = set()
         for tracked in self.tracked_factories:
             tracked_connections.update(tracked.protocols)
@@ -84,6 +87,10 @@ class ServerAvailableResource(resource.Resource):
             state, len(tracked_connections),
             '\n'.join(
                 [str(c.transport.getPeer()) for c in tracked_connections]))
+
+    def render_HEAD(self, request):
+        self._render_common(request)
+        return ''
 
 
 class OrderedMultiService(service.MultiService):
