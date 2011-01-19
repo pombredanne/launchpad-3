@@ -30,8 +30,7 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
         # The representation of a person is the same as a tales PersonFormatter.
-        self.assertEqual(
-            '<span>%s</span>' % format_link(eric), renderer(eric))
+        self.assertEqual(format_link(eric), renderer(eric))
 
     def test_text(self):
         # Test the XHTML representation of a text field.

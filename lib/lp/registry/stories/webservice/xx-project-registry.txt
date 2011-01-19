@@ -1112,7 +1112,7 @@ The actual file redirects to the librarian when accessed.
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../firefox_0.9.2.orig.tar.gz
+    Location: http://.../firefox_0.9.2.orig.tar.gz
     ...
 
 The signature file will redirect too, if found.  In this case there is
@@ -1207,7 +1207,7 @@ The file redirects to the librarian when accessed.
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../filename.txt
+    Location: http://.../filename.txt
     ...
 
 Project release files can be deleted using the 'delete' method.  The
