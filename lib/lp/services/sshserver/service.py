@@ -128,7 +128,7 @@ class SSHService(service.Service):
     def __init__(self, portal, private_key_path, public_key_path,
                  oops_configuration, main_log, access_log,
                  access_log_path, strport='tcp:22', factory_decorator=None,
-                 idle_timeout=3600, banner=None):
+                 banner=None):
         """Construct an SSH service.
 
         :param portal: The `twisted.cred.portal.Portal` that turns
@@ -144,8 +144,6 @@ class SSHService(service.Service):
         :param access_log_path: The path to the access log file.
         :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
-        :param idle_timeout: The number of seconds to wait before killing a
-            connection that isn't doing anything. Defaults to 3600.
         :param banner: An announcement printed to users when they connect.
             By default, announce nothing.
         """
