@@ -805,7 +805,7 @@ package.
 So, if the Ubuntu team is added as a bug contact to evolution:
 
     >>> evolution.addBugSubscription(ubuntu_team, ubuntu_team)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
 The team will be implicitly subscribed to the previous bug we
 created. (Remember that Sample Person is also implicitly subscribed

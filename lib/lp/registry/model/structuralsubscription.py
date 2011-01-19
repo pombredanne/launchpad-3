@@ -15,6 +15,7 @@ from storm.locals import (
     Reference,
     )
 
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -39,10 +40,7 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    )
+from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
@@ -80,12 +78,10 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.services.propertycache import cachedproperty
 
 
-class StructuralSubscription(SQLBase):
+class StructuralSubscription(Storm):
     """A subscription to a Launchpad structure."""
 
     implements(IStructuralSubscription)
-
-    _table = 'StructuralSubscription'
 
     __storm_table__ = 'StructuralSubscription'
 
@@ -134,6 +130,12 @@ class StructuralSubscription(SQLBase):
     date_last_updated = DateTime(
         "date_last_updated", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
+
+    def __init__(self, subscriber, subscribed_by, **kwargs):
+        self.subscriber = subscriber
+        self.subscribed_by = subscribed_by
+        for arg, value in kwargs.iteritems():
+            setattr(self, arg, value)
 
     @property
     def target(self):
@@ -443,7 +445,8 @@ class StructuralSubscriptionTargetMixin:
                 subscription_to_remove.bug_notification_level = (
                     BugNotificationLevel.NOTHING)
             else:
-                subscription_to_remove.destroySelf()
+                store = Store.of(subscription_to_remove)
+                store.remove(subscription_to_remove)
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
