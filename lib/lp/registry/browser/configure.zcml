@@ -2328,4 +2328,9 @@
         rootsite="api"
         attribute_to_parent="owner" />
 
+    <adapter
+        factory="lp.registry.browser.webservice.person_xhtml_representation"/>
+    <adapter
+        factory="lp.registry.browser.webservice.text_xhtml_representation"/>
+
 </configure>
