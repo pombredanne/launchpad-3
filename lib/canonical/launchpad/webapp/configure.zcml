@@ -55,7 +55,7 @@
         />
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
-        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        provides="lazr.restful.interfaces.IWebBrowserOriginatingRequest"
         factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
 
