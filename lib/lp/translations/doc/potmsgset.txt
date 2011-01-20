@@ -211,248 +211,6 @@ use '\r\n' like when we get a form submission.
     u'\nTranslation\nto test\n'
 
 
-POTMsgSet.updateTranslation
----------------------------
-
-This method is the core piece of Translations infrastructure: it
-updates a single language translation for a POTMsgSet, and modifies a
-lot of metadata depending on many different conditions.  It is used
-from both web UI and from import code.
-
-We are going to work with Evolution.
-
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> evolution_trunk = evolution.getSeries('trunk')
-    >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
-
-Carlos is a privileged translator that will do the updates.
-
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> login('carlos@canonical.com')
-
-We will be working with Catalan (ca) translations, with the new PO file.
-
-    >>> upstream_pofile = evolution_potemplate.newPOFile('ca')
-    >>> catalan = upstream_pofile.language
-
-And, any changes we'd do will be in 'evolution addressbook' message.
-
-    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'evolution addressbook')
-
-At this time, there is no current or imported translation and no suggestions.
-
-    >>> print upstream_potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, catalan)
-    None
-    >>> print upstream_potmsgset.getOtherTranslation(
-    ...     catalan, evolution_potemplate.translation_side)
-    None
-    >>> list(upstream_potmsgset.getLocalTranslationMessages(
-    ...          evolution_potemplate, catalan))
-    []
-
-To add a suggestion, we set the force_suggestion parameter.
-
-    >>> new_translation = upstream_potmsgset.updateTranslation(
-    ...     upstream_pofile, carlos, {0: u'foo'}, is_current_upstream=False,
-    ...     force_suggestion=True, lock_timestamp=datetime.now(pytz.UTC))
-
-Since this message is just a suggestion, it doesn't have a reviewer, but
-it does note a person which last changed it.
-
-    >>> print new_translation.reviewer
-    None
-    >>> print new_translation.date_reviewed
-    None
-    >>> new_translation.submitter.displayname
-    u'Carlos Perell\xf3 Mar\xedn'
-    >>> new_translation.date_created is None
-    False
-
-Since this is a suggestion, it is not counted as a translation.
-The updateStatistics method returns four values:
- - The number of translations 'imported' that are being used.
- - The number of translations 'imported' that were updated in Launchpad.
- - The number of new translations added in Launchpad.
- - The number of messages that have suggestions to be reviewed.
-
-    >>> upstream_pofile.updateStatistics()
-    (0, 0, 0, 1)
-
-We are adding a translation from the import.
-
-    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact', u'%d contacts')
-
-At this time, there is no current or imported translation and no suggestions.
-
-    >>> print upstream_potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, catalan)
-    None
-    >>> print upstream_potmsgset.getOtherTranslation(
-    ...     catalan, evolution_potemplate.translation_side)
-    None
-    >>> list(upstream_potmsgset.getLocalTranslationMessages(
-    ...     evolution_potemplate, catalan))
-    []
-
-To add an imported translation, we need to set is_current_upstream parameter.
-
-    >>> new_translation = upstream_potmsgset.updateTranslation(
-    ...     upstream_pofile, carlos, {0: u'foo %d', 1: u'foos %d'},
-    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
-
-The new translation is reflected in the POFile statistics.
-
-    >>> upstream_pofile.updateStatistics()
-    (1, 0, 0, 1)
-
-Since this message came from the import, it doesn't have a reviewer, but
-it does note a person which last changed it.
-
-    >>> current = upstream_potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, catalan)
-    >>> print current.reviewer
-    None
-    >>> print current.date_reviewed
-    None
-    >>> current.submitter.displayname
-    u'Carlos Perell\xf3 Mar\xedn'
-    >>> current.date_created is None
-    False
-
-Unsetting a translation from the import
-.......................................
-
-A translation can be removed from the import by being set to an empty string.
-
-    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'have ')
-    >>> new_translation = upstream_potmsgset.updateTranslation(
-    ...     upstream_pofile, carlos, {0: u''},
-    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
-
-Current translation is now unset, as is imported.
-
-    >>> current = upstream_potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, catalan)
-    >>> print current
-    None
-    >>> imported = upstream_potmsgset.getOtherTranslation(
-    ...     catalan, evolution_potemplate.translation_side)
-    >>> print imported
-    None
-
-Given that we unset an imported translation, statistics remain unchanged.
-
-    >>> upstream_pofile.updateStatistics()
-    (1, 0, 0, 1)
-
-To unset an imported plural translation, we can add an empty translation.
-
-    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact', u'%d contacts')
-    >>> new_translation = upstream_potmsgset.updateTranslation(
-    ...     upstream_pofile, carlos, {0: u'', 1: u''},
-    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
-
-The statistics change to reflect that the message is not available
-in upstream anymore, so it's now noted as newly translated in Launchpad.
-
-    >>> upstream_pofile.updateStatistics()
-    (0, 0, 0, 2)
-
-Activating an existing suggestion
-.................................
-
-Foo Bar is a privileged translator who can do reviews and submit translations
-directly, while No Privileges user can only submit suggestions.
-
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-
-We'll be working with Spanish PO file for Evolution, again handling
-'evolution addressbook' message.
-
-    >>> pofile_es = evolution_potemplate.getPOFileByLang('es')
-    >>> spanish = pofile_es.language
-    >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'evolution addressbook')
-
-At the moment, there are no suggestions for this message.
-
-    >>> suggested = potmsgset.getLocalTranslationMessages(
-    ...     evolution_potemplate, spanish)
-    >>> len(list(suggested))
-    0
-
-A No Privileges user updates a translation.
-
-    >>> new_message = potmsgset.updateTranslation(
-    ...     pofile_es, no_priv, {0: u'test string'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
-
-This message is not made current or marked as imported.
-
-    >>> new_message.is_current_ubuntu
-    False
-    >>> new_message.is_current_upstream
-    False
-
-Now, we should have one extra suggestion.
-
-    >>> suggested = potmsgset.getLocalTranslationMessages(
-    ...     evolution_potemplate, spanish)
-    >>> len(list(suggested))
-    1
-
-That is the one that no_priv submitted.
-
-    >>> suggested[0].translations
-    [u'test string']
-
-And the active translation is not the one we suggested.
-
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, spanish)
-    >>> current.translations
-    [u'libreta de direcciones de Evolution']
-
-And the reviewer for that message was Carlos:
-
-    >>> current.reviewer.name
-    u'carlos'
-
-Now, Foo Bar, a translator with permissions, is going to approve that
-new suggestion.
-
-    >>> new_message = potmsgset.updateTranslation(
-    ...     pofile_es, foobar, {0: u'test string'},
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
-
-We don't have any suggestion newer than the new active translation
-
-    >>> suggested = potmsgset.getLocalTranslationMessages(
-    ...     evolution_potemplate, spanish)
-    >>> len(list(suggested))
-    0
-
-And the active translation is now the one from no-priv user.
-
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, spanish)
-    >>> current.submitter.name
-    u'no-priv'
-    >>> current.translations
-    [u'test string']
-
-Also, we should have Foo Bar as the reviewer of that translation.
-
-    >>> current.reviewer.displayname
-    u'Foo Bar'
-
-
 Plural forms
 ------------
 
@@ -461,6 +219,9 @@ Let's focus on handling of messages with plural forms.
 An empty translation does not need to exist in the database.  If not,
 a DummyPOFile is used instead.
 
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
     >>> language_pt_BR = getUtility(
     ...     ILanguageSet).getLanguageByCode('pt_BR')
     >>> pt_BR_dummypofile = evolution_potemplate.getDummyPOFile(
@@ -538,10 +299,12 @@ target language.
 We call such a message incomplete, and undesirable as it is, it is still
 gracefully accepted.
 
+    >>> pofile_es = evolution_potemplate.getPOFileByLang('es')
     >>> plural_potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'%d contact', u'%d contacts')
     >>> pofile_es.plural_forms
     2
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> message = factory.makeCurrentTranslationMessage(
     ...     pofile_es, plural_potmsgset, foobar,
     ...     translations={0: u'foo %d', 1: None})
@@ -598,6 +361,10 @@ Based on the latest research, it is now decided that Zapotec has three
 plural forms.  This time, uploading a three-form translation produces a
 new translation message.
 
+Carlos is a privileged translator that will do the updates.
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> login('carlos@canonical.com')
     >>> zap.pluralforms = 3
     >>> zap.pluralexpression = 'n % 3'
 
@@ -732,6 +499,7 @@ The "suggestive templates" cache is up to date.
 We have the same message in both templates but with different
 translations in Spanish:
 
+    >>> spanish = pofile_es.language
     >>> evo_product_message = evo_product_template.getPOTMsgSetByMsgIDText(
     ...     ' cards')
     >>> evo_product_translation = (
