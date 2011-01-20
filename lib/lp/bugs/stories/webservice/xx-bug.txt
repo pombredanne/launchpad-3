@@ -1278,7 +1278,7 @@ we must follow to download the data.
   HTTP/1.1 303 See Other...
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://localhost:58000/.../numbers.txt
+  Location: http://.../numbers.txt
   ...
 
   >>> from urllib2 import urlopen

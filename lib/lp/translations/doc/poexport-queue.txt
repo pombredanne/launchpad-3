@@ -304,7 +304,7 @@ The confirmation email shows no errors at all.
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../po_evolution-2.2.pot
+      http://.../.../po_evolution-2.2.pot
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
