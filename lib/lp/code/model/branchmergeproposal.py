@@ -650,14 +650,15 @@ class BranchMergeProposal(SQLBase):
         TargetRevision = ClassAlias(BranchRevision)
         target_join = LeftJoin(
             TargetRevision, And(
-                TargetRevision.revision_id == SourceRevision.revision_id,
-                TargetRevision.branch_id == self.target_branch.id))
+                SourceRevision.branch_id == self.target_branch.id,
+                TargetRevision.branch_id == self.target_branch.id,
+                TargetRevision.revision_id == SourceRevision.revision_id))
         origin = [SourceRevision, target_join]
         result = store.using(*origin).find(
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,
-            TargetRevision.id == None)
+            TargetRevision.branch_id == None)
         return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
