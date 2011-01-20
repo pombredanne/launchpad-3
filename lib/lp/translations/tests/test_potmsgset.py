@@ -21,7 +21,6 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.app.enums import ServiceUsage
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.propertycache import get_property_cache
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
