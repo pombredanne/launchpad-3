@@ -55,7 +55,8 @@ class IBugSubscription(Interface):
             default=BugNotificationLevel.COMMENTS,
             description=_(
                 "The volume and type of bug notifications "
-                "this subscription will generate.")))
+                "this subscription will generate.")),
+        readonly=True)
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
