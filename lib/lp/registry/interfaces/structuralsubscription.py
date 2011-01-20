@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BlueprintNotificationLevel',
     'BugNotificationLevel',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
@@ -56,33 +55,6 @@ from lp.services.fields import (
     )
 
 
-class BlueprintNotificationLevel(DBEnumeratedType):
-    """Bug Notification Level.
-
-    The type and volume of blueprint notification email sent to subscribers.
-    """
-
-    NOTHING = DBItem(10, """
-        Nothing
-
-        Don't send any notifications about blueprints.
-        """)
-
-    LIFECYCLE = DBItem(20, """
-        Lifecycle
-
-        Only send a low volume of notifications about new blueprints
-        registered, blueprints accepted or blueprint targetting.
-        """)
-
-    METADATA = DBItem(30, """
-        Details
-
-        Send blueprint lifecycle notifications, as well as notifications about
-        changes to the blueprints's details like status and description.
-        """)
-
-
 class IStructuralSubscriptionPublic(Interface):
     """The public parts of a subscription to a Launchpad structure."""
 
@@ -109,12 +81,6 @@ class IStructuralSubscriptionPublic(Interface):
         vocabulary=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
         description=_("The volume and type of bug notifications "
-                      "this subscription will generate."))
-    blueprint_notification_level = Choice(
-        title=_("Blueprint notification level"), required=True,
-        vocabulary=BlueprintNotificationLevel,
-        default=BlueprintNotificationLevel.NOTHING,
-        description=_("The volume and type of blueprint notifications "
                       "this subscription will generate."))
     date_created = exported(Datetime(
         title=_("The date on which this subscription was created."),
@@ -158,19 +124,14 @@ class IStructuralSubscriptionTargetRead(Interface):
     # We don't really want to expose the level details yet. Only
     # BugNotificationLevel.COMMENTS is used at this time.
     @call_with(
-        min_bug_notification_level=BugNotificationLevel.COMMENTS,
-        min_blueprint_notification_level=BlueprintNotificationLevel.NOTHING)
+        min_bug_notification_level=BugNotificationLevel.COMMENTS)
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
-    def getSubscriptions(min_bug_notification_level,
-                         min_blueprint_notification_level):
+    def getSubscriptions(min_bug_notification_level):
         """Return all the subscriptions with the specified levels.
 
         :min_bug_notification_level: The lowest bug notification level
           for which subscriptions should be returned.
-        :min_blueprint_notification_level: The lowest bleuprint
-          notification level for which subscriptions should
-          be returned.
         :return: A sequence of `IStructuralSubscription`.
         """
 
