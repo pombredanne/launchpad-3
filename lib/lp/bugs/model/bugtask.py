@@ -1401,6 +1401,7 @@ def build_tag_set_query(joiner, tags):
     :param tags: An iterable of valid tag names (not prefixed minus
         signs, not wildcards).
     """
+    tags = list(tags)
     if tags == []:
         return None
 
@@ -1409,6 +1410,20 @@ def build_tag_set_query(joiner, tags):
         "SELECT TRUE FROM BugTag WHERE " +
             "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
         for tag in sorted(tags))
+
+
+def _build_tag_set_query_any(tags):
+    """Return a query fragment for bugs matching any tag.
+
+    :param tags: An iterable of valid tags without - or + and not wildcards.
+    :return: A string SQL query fragment or None if no tags were provided.
+    """
+    tags = list(tags)
+    if tags == []:
+        return None
+    return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
+        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
+        % sqlvalues(sorted(tags)))
 
 
 def build_tag_search_clause(tags_spec):
@@ -1438,14 +1453,14 @@ def build_tag_search_clause(tags_spec):
         include_clause = build_tag_set_query("INTERSECT", include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
-        exclude_clause = build_tag_set_query("UNION", exclude)
+        exclude_clause = _build_tag_set_query_any(exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = 'OR'
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
-        include_clause = build_tag_set_query("UNION", include)
+        include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
         exclude_clause = build_tag_set_query("INTERSECT", exclude)
