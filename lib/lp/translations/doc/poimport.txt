@@ -327,8 +327,9 @@ Fuzzy translations are ignored.
 
     >>> def get_pofile_translation_message(pofile, msgid):
     ...     potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    ...     return potmsgset.getCurrentTranslationMessage(
-    ...         pofile.potemplate, pofile.language)
+    ...     return potmsgset.getCurrentTranslation(
+    ...         pofile.potemplate, pofile.language,
+    ...         pofile.potemplate.translation_side)
     >>> message = get_pofile_translation_message(pofile, u'bar')
     >>> print message
     None
@@ -675,8 +676,8 @@ specified):
 
     >>> potmsgset_plural = potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
-    >>> current = potmsgset_plural.getCurrentTranslationMessage(
-    ...     potemplate, language)
+    >>> current = potmsgset_plural.getCurrentTranslation(
+    ...     potemplate, language, potemplate.translation_side)
     >>> current.translations
     [u'First form %d', u'Second form %d']
 

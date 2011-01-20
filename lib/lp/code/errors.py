@@ -182,7 +182,7 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
 
-    By 'bad', we mean that the name is unparseable. It might be too short, too
+    By 'bad', we mean that the name is unparsable. It might be too short, too
     long or malformed in some other way.
     """
 
