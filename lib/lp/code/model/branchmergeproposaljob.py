@@ -110,7 +110,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):

@@ -70,7 +70,7 @@ from canonical.librarian.interfaces import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class LibraryFileContent(SQLBase):

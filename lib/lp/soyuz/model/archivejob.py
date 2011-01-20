@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
     IArchiveJob,

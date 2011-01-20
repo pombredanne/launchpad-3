@@ -13,7 +13,7 @@ from storm.locals import (
 
 from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class BugSubscriptionFilterStatus(StormBase):

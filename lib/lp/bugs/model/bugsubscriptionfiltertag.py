@@ -13,7 +13,7 @@ from storm.locals import (
     Unicode,
     )
 
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 class BugSubscriptionFilterTag(StormBase):
     """Tags to filter."""

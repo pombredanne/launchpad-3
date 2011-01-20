@@ -21,7 +21,7 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class NameBlacklist(StormBase):

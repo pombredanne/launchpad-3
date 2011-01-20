@@ -78,7 +78,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 BUG_TRACKER_URL_FORMATS = {

@@ -85,7 +85,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 def normalise_leading_slashes(rest):

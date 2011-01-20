@@ -28,7 +28,7 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class DistributionJob(StormBase):

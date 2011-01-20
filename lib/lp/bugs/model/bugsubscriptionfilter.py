@@ -27,7 +27,7 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class BugSubscriptionFilter(StormBase):

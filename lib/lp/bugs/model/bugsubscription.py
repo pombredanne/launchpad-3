@@ -19,7 +19,7 @@ from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class BugSubscription(StormBase):

@@ -53,7 +53,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.stormbase import StormBase
+from lp.services.database.stormbase import StormBase
 
 
 class PersonTransferJob(StormBase):
