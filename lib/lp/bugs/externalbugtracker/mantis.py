@@ -23,7 +23,6 @@ from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
     BugWatchUpdateError,
-    BugWatchUpdateWarning,
     ExternalBugTracker,
     InvalidBugId,
     LookupTree,
