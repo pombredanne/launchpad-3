@@ -1130,7 +1130,6 @@ class ProductPackagesView(LaunchpadView):
 
     @property
     def distro_packaging(self):
-      try:
         """This method returns a representation of the product packagings
         for this product, in a special structure used for the
         product-distros.pt page template.
@@ -1156,9 +1155,6 @@ class ProductPackagesView(LaunchpadView):
         distro_names.sort(cmp=_cmp_distros)
         results = [distros[name] for name in distro_names]
         return results
-      except AttributeError, e:
-          import traceback; traceback.print_exc()
-          raise ValueError(e)
 
 
 class ProductPackagesPortletView(LaunchpadFormView):
