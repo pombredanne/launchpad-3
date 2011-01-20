@@ -564,16 +564,6 @@
       />
 
   <adapter
-      for="zope.interface.Interface
-           lazr.restful.interfaces.IReference
-           lazr.restful.interfaces.IWebServiceClientRequest"
-      provides="lazr.restful.interfaces.IFieldHTMLRenderer"
-      factory="lp.app.browser.webservice.reference_xhtml_representation"/>
-  <adapter
-      for="zope.interface.Interface
-           lazr.restful.interfaces.IReferenceChoice
-           lazr.restful.interfaces.IWebServiceClientRequest"
-      provides="lazr.restful.interfaces.IFieldHTMLRenderer"
       factory="lp.app.browser.webservice.reference_xhtml_representation"/>
   <adapter
       factory="lp.app.browser.webservice.text_xhtml_representation"/>

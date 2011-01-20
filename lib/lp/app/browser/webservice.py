@@ -8,6 +8,7 @@ __all__ = []
 
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IReference,
     IWebServiceClientRequest,
     )
 from zope import component
@@ -21,7 +22,8 @@ from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import format_link
 
 
-# Registered through the ZCML as IReferenceChoice doesn't inherit from IReference.
+@component.adapter(Interface, IReference, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
 def reference_xhtml_representation(context, field, request):
     """Render an object as a link to the object."""
 
