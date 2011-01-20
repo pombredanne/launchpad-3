@@ -153,7 +153,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built daily
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
@@ -604,7 +604,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
@@ -664,7 +664,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
@@ -804,7 +804,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
@@ -855,7 +855,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
