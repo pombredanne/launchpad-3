@@ -11,20 +11,18 @@ from zope.schema import Choice
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.widgets.lazrjs import InlineEditPickerWidget
 from lp.testing import (
-    ANONYMOUS,
-    login,
-    TestCase,
+    login_person,
+    TestCaseWithFactory,
     )
 
 
-class TestInlineEditPickerWidget(TestCase):
+class TestInlineEditPickerWidget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def getWidget(self, **kwargs):
         class ITest(Interface):
             test_field = Choice(**kwargs)
-        login(ANONYMOUS)
         return InlineEditPickerWidget(None, None, ITest['test_field'], None)
 
     def test_huge_vocabulary_is_searchable(self):
@@ -47,3 +45,13 @@ class TestInlineEditPickerWidget(TestCase):
         widget = self.getWidget(
             vocabulary='ValidPersonOrTeam', required=False)
         self.assertTrue(widget.show_remove_button)
+
+    def test_assign_me_exists_if_user_in_vocabulary(self):
+        widget = self.getWidget(vocabulary='ValidPersonOrTeam', required=True)
+        login_person(self.factory.makePerson())
+        self.assertTrue(widget.show_assign_me_button)
+
+    def test_assign_me_not_shown_if_user_not_in_vocabulary(self):
+        widget = self.getWidget(vocabulary='TargetPPAs', required=True)
+        login_person(self.factory.makePerson())
+        self.assertFalse(widget.show_assign_me_button)
