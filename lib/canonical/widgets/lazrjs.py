@@ -307,7 +307,7 @@ class InlineEditPickerWidget:
                  remove_button_text=self.remove_button_text,
                  null_display_value=self.null_display_value,
                  show_remove_button=self.show_remove_button,
-                 show_assign_me_button=self.assign_me_button))
+                 show_assign_me_button=self.show_assign_me_button))
 
     @property
     def show_assign_me_button(self):
