@@ -519,7 +519,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 branchrevision = IMasterStore(branch).find(
                     BranchRevision,
                     BranchRevision.branch_id == branch.id,
-                    BranchRevision.revision_id == revision.revision_id)
+                    BranchRevision.revision_id == revision.id)
                 branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 
