@@ -810,20 +810,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         tables = [
             ProductSeries,
             LeftJoin(Packaging, Packaging.productseries == ProductSeries.id),
-            LeftJoin(DistroSeries, Packaging.distroseries == DistroSeries.id),
             ]
         result = store.using(*tables).find(
-            (ProductSeries, DistroSeries),
+            ProductSeries,
             ProductSeries.product == self,
             Or(ProductSeries.status.is_in(ACTIVE_STATUSES),
                Packaging.id != None))
         result = result.order_by(Desc(ProductSeries.name))
         result.config(distinct=True)
-
-        def decorator(row):
-            productseries, distroseries = row
-            return productseries
-        return DecoratedResultSet(result, decorator)
+        return result
 
     @property
     def packagings(self):
