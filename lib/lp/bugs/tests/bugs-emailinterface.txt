@@ -1679,7 +1679,7 @@ The user is a package bug supervisor
     >>> helge = getUtility(IPersonSet).getByName('kreutzm')
     >>> mozilla_package = ubuntu.getSourcePackage(mozilla_name)
     >>> mozilla_package.addBugSubscription(helge, helge)
-    <StructuralSubscription ...>
+    <... StructuralSubscription ...>
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
