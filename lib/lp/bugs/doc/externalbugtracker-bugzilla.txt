@@ -22,14 +22,14 @@ The class that implements ExternalBugTracker is called Bugzilla.
 
 The Bugzilla ExternalBugTracker works differently depending on which
 version of Bugzilla it is talking to. If it's a version we can't parse,
-UnparseableBugTrackerVersion is raised:
+UnparsableBugTrackerVersion is raised:
 
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
       ...
-    UnparseableBugTrackerVersion:
+    UnparsableBugTrackerVersion:
     Failed to parse version 'A.B' for http://...
 
 The version parsing is carried out by the Bugzilla._parseVersion()
@@ -669,7 +669,7 @@ bug tracker, an error is logged.
     ...     external_bugzilla, [bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
-    UnparseableBugData:
+    UnparsableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
 The error is also recorded in each bug watch's last_error_type field so that
