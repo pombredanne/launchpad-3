@@ -92,7 +92,7 @@
             <dt>Owner:</dt>
             <dd tal:define="outer_span_id string:recipe-owner;
                             picker_context context/owner;
-                          allow_edit context/required:launchpad.Edit">
+                            allow_edit context/required:launchpad.Edit">
               <div metal:use-macro="context/@@+widgets/add-picker-widget" />
             </dd>
           </dl>

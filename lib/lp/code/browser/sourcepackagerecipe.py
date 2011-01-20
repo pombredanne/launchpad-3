@@ -182,7 +182,12 @@ class SourcePackageRecipeView(LaunchpadView):
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
-        if self.dailyBuildWithoutUploadPermission():
+        if recipe.build_daily and recipe.daily_build_archive is None:
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>There is no PPA."))
+        elif self.dailyBuildWithoutUploadPermission():
             self.request.response.addWarningNotification(
                 structured(
                     "Daily builds for this recipe will <strong>not</strong> "
