@@ -34,7 +34,6 @@ class TestPathParsing(TestCase):
         # distribution and file names.
         archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4_i386.deb')
-
         self.assertEqual(archive_owner, 'cprov')
         self.assertEqual(archive_name, 'ppa')
         self.assertEqual(distro_name, 'ubuntu')
@@ -52,6 +51,22 @@ class TestPathParsing(TestCase):
         # None to indicate that it should be ignored.
         self.assertIs(None, get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4.dsc'))
+
+    def test_get_ppa_file_key_unquotes_path(self):
+        archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
+            '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3%7E4_i386.deb')
+        self.assertEqual(archive_owner, 'cprov')
+        self.assertEqual(archive_name, 'ppa')
+        self.assertEqual(distro_name, 'ubuntu')
+        self.assertEqual(filename, 'foo_1.2.3~4_i386.deb')
+
+    def test_get_ppa_file_key_normalises_path(self):
+        archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
+            '/cprov/ppa/ubuntu/pool//main/f///foo/foo_1.2.3-4_i386.deb')
+        self.assertEqual(archive_owner, 'cprov')
+        self.assertEqual(archive_name, 'ppa')
+        self.assertEqual(distro_name, 'ubuntu')
+        self.assertEqual(filename, 'foo_1.2.3-4_i386.deb')
 
 
 class TestScriptRunning(TestCaseWithFactory):
