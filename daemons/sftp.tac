@@ -16,8 +16,8 @@ from lp.codehosting.sshserver.daemon import (
     PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
 from lp.services.sshserver.service import SSHService
 from lp.services.twistedsupport.gracefulshutdown import (
-    ConnTrackingFactoryWrapper, ServerAvailableResource, ShutdownCleanlyService,
-    OrderedMultiService)
+    ConnTrackingFactoryWrapper, ShutdownCleanlyService, OrderedMultiService,
+    make_web_status_service)
 
 
 # Construct an Application that has the codehosting SSH server.
@@ -28,27 +28,18 @@ ordered_services.setServiceParent(application)
 
 tracked_factories = set()
 
-def factory_decorator(factory):
+web_svc = make_web_status_service(
+    config.codehosting.web_status_port, tracked_factories)
+web_svc.setServiceParent(ordered_services)
+
+shutdown_cleanly_svc = ShutdownCleanlyService(tracked_factories)
+shutdown_cleanly_svc.setServiceParent(ordered_services)
+
+def ssh_factory_decorator(factory):
     f = TimeoutFactory(factory, timeoutPeriod=config.codehosting.idle_timeout)
     f = ConnTrackingFactoryWrapper(f)
     tracked_factories.add(f)
     return f
-
-
-from twisted.application import strports
-from twisted.web.resource import Resource
-from twisted.web.server import Site
-server_available_resource = ServerAvailableResource(tracked_factories)
-web_root = Resource()
-web_root.putChild('', server_available_resource)
-web_factory = Site(web_root)
-web_svc = strports.service(config.codehosting.web_status_port, web_factory)
-web_svc.setServiceParent(ordered_services)
-
-shutdown_cleanly_svc = ShutdownCleanlyService(
-    tracked_factories, server_available_resource)
-shutdown_cleanly_svc.setServiceParent(ordered_services)
-
 
 svc = SSHService(
     portal=make_portal(),
@@ -59,7 +50,7 @@ svc = SSHService(
     access_log=ACCESS_LOG_NAME,
     access_log_path=config.codehosting.access_log,
     strport=config.codehosting.port,
-    factory_decorator=factory_decorator,
+    factory_decorator=ssh_factory_decorator,
     banner=config.codehosting.banner)
 svc.setServiceParent(shutdown_cleanly_svc)
 

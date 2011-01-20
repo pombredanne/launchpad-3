@@ -12,11 +12,11 @@ __all__ = [
     ]
 
 
-from twisted.application import service
+from twisted.application import service, strports
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import (
     Deferred, gatherResults, maybeDeferred, inlineCallbacks)
-from twisted.web import resource
+from twisted.web import resource, server
 from zope.interface import implements
 
 
@@ -47,20 +47,11 @@ class ConnTrackingFactoryWrapper(WrappingFactory):
 
 class ShutdownCleanlyService(service.MultiService):
 
-    def __init__(self, factories, server_available_resource):
+    def __init__(self, factories):
         self.factories = factories
-        self.server_available_resource = server_available_resource
         service.MultiService.__init__(self)
 
-    def startService(self):
-        d = maybeDeferred(service.MultiService.startService, self)
-        def _cbStarted(ignored):
-            self.server_available_resource.state = 'available'
-        d.addCallback(_cbStarted)
-        return d
-
     def stopService(self):
-        self.server_available_resource.state = 'unavailable'
         d = maybeDeferred(service.MultiService.stopService, self)
         return d.addCallback(self._cbServicesStopped)
 
@@ -116,3 +107,10 @@ class OrderedMultiService(service.MultiService):
             svc = self.services.pop()
             yield maybeDeferred(svc.stopService)
 
+
+def make_web_status_service(strport, tracking_factories):
+    server_available_resource = ServerAvailableResource(tracking_factories)
+    web_root = resource.Resource()
+    web_root.putChild('', server_available_resource)
+    web_factory = server.Site(web_root)
+    return strports.service(strport, web_factory)
