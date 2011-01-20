@@ -212,6 +212,10 @@ class BuildView(LaunchpadView):
 
     @property
     def binarypackagetitles(self):
+        """List the titles of this build's `BinaryPackageRelease`s.
+
+        :return: A list of title strings.
+        """
         return [
             binarypackagerelease.title
             for binarypackagerelease, binarypackagename
