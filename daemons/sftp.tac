@@ -42,7 +42,7 @@ server_available_resource = ServerAvailableResource(tracked_factories)
 web_root = Resource()
 web_root.putChild('', server_available_resource)
 web_factory = Site(web_root)
-web_svc = strports.service('tcp:8768', web_factory)
+web_svc = strports.service(config.codehosting.web_status_port, web_factory)
 web_svc.setServiceParent(ordered_services)
 
 shutdown_cleanly_svc = ShutdownCleanlyService(
