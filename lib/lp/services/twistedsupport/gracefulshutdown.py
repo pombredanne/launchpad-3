@@ -87,10 +87,11 @@ class ServerAvailableResource(resource.Resource):
 
     def render_GET(self, request):
         state = self._render_common(request)
+        # Generate a bit of text for humans' benefit.
         tracked_connections = set()
         for tracked in self.tracked_factories:
             tracked_connections.update(tracked.protocols)
-        return'%s\n\n%d connections: \n\n%s\n' % (
+        return '%s\n\n%d connections: \n\n%s\n' % (
             state, len(tracked_connections),
             '\n'.join(
                 [str(c.transport.getPeer()) for c in tracked_connections]))
