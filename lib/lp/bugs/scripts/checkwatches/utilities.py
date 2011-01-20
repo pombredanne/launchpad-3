@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utility functions for checkwatches."""
@@ -17,8 +17,8 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     PrivateRemoteBug,
     UnknownBugTrackerTypeError,
-    UnparseableBugData,
-    UnparseableBugTrackerVersion,
+    UnparsableBugData,
+    UnparsableBugTrackerVersion,
     UnsupportedBugTrackerVersion,
     )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
@@ -27,8 +27,8 @@ from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
-   (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion,
+   (UnparsableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
+   (UnparsableBugTrackerVersion,
     BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion,
     BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
@@ -62,5 +62,5 @@ def get_remote_system_oops_properties(remote_system):
         ('batch_query_threshold', remote_system.batch_query_threshold),
         ('sync_comments', remote_system.sync_comments),
         ('externalbugtracker', remote_system.__class__.__name__),
-        ('baseurl', remote_system.baseurl)
+        ('baseurl', remote_system.baseurl),
         ]

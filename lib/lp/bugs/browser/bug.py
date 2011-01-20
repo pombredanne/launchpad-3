@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -38,20 +37,12 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IWebServiceClientRequest,
-    )
 import pytz
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     providedBy,
@@ -60,7 +51,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -94,7 +84,6 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
@@ -1052,20 +1041,3 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
-
-
-# XXX mars 2009-05-12 bug=372847
-# This will likely have to change or be removed when the bug description
-# changes from IText to IDescription.
-@adapter(IBug, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def bug_description_xhtml_representation(context, field, request):
-    """Render `IBug.description` as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
-
-    return renderer
