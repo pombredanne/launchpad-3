@@ -34,10 +34,10 @@ class TestPathParsing(TestCase):
         # distribution and file names.
         archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4_i386.deb')
-        self.assertEqual(archive_owner, 'cprov')
-        self.assertEqual(archive_name, 'ppa')
-        self.assertEqual(distro_name, 'ubuntu')
-        self.assertEqual(filename, 'foo_1.2.3-4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3-4_i386.deb', filename)
 
     def test_get_ppa_file_key_ignores_bad_paths(self):
         # A path with extra path segments returns None, to indicate that
@@ -55,18 +55,18 @@ class TestPathParsing(TestCase):
     def test_get_ppa_file_key_unquotes_path(self):
         archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3%7E4_i386.deb')
-        self.assertEqual(archive_owner, 'cprov')
-        self.assertEqual(archive_name, 'ppa')
-        self.assertEqual(distro_name, 'ubuntu')
-        self.assertEqual(filename, 'foo_1.2.3~4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3~4_i386.deb', filename)
 
     def test_get_ppa_file_key_normalises_path(self):
         archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool//main/f///foo/foo_1.2.3-4_i386.deb')
-        self.assertEqual(archive_owner, 'cprov')
-        self.assertEqual(archive_name, 'ppa')
-        self.assertEqual(distro_name, 'ubuntu')
-        self.assertEqual(filename, 'foo_1.2.3-4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3-4_i386.deb', filename)
 
 
 class TestScriptRunning(TestCaseWithFactory):
