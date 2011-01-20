@@ -891,6 +891,13 @@ An individual can subscribe themself at a given BugNotificationLevel.
     self_link: u'...'
     subscribed_by_link: u'...'
 
+They can also update the subscription's bug_notification_level directly.
+
+    >>> patch = {u'bug_notification_level': u'Nothing'}
+    >>> print webservice.patch(
+    ...     new_subscription['self_link'], 'application/json',
+    ...     dumps(patch))
+
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
 

@@ -14,6 +14,7 @@ from storm.locals import (
     Reference,
     )
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
@@ -82,3 +83,11 @@ class BugSubscription(Storm):
         if self.person.is_team:
             return user.inTeam(self.person)
         return user == self.person
+
+    def transitionToBugNotificationLevel(self, new_level, user):
+        """See `IBugSubscription`."""
+        if not user == self.person:
+            raise Unauthorized(
+                "Only the owner of a subscription can change its "
+                "notification level.")
+        self.bug_notification_level = new_level
