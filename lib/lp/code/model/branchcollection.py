@@ -8,7 +8,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from _collections import defaultdict
+from collections import defaultdict
 
 from storm.expr import (
     And,
