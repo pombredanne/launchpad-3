@@ -194,6 +194,7 @@ class DistributionMirror(SQLBase):
 
     @cachedproperty
     def arch_mirror_freshness(self):
+        """See IDistributionMirror"""
         store = Store.of(self)
         mirror = store.find(
             MirrorDistroArchSeries,
@@ -208,6 +209,7 @@ class DistributionMirror(SQLBase):
 
     @cachedproperty
     def source_mirror_freshness(self):
+        """See IDistributionMirror"""
         store = Store.of(self)
         mirror = store.find(
             MirrorDistroSeriesSource,
