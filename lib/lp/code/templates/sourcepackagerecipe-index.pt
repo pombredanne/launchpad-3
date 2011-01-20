@@ -13,41 +13,6 @@
       padding-left: 2em;
     }
   </style>
-  <script type="text/javascript"
-          tal:content="string:
-    LPS.use('lp.app.picker', function(Y) {
-        Y.on('load', function(e) {
-
-           var owner_config = {
-              header: 'Change owner',
-              step_title: 'Select a new owner',
-              non_searchable_vocabulary: true
-           };
-
-           Y.lp.app.picker.addPickerPatcher(
-               'UserTeamsParticipationPlusSelf',
-               LP.client.cache['context']['self_link'],
-               'owner_link',
-               'recipe-owner',
-               owner_config);
-
-           var daily_archive_config = {
-              header: 'Change daily build archive',
-              step_title: 'Select a PPA',
-              non_searchable_vocabulary: true,
-              show_remove_button: true,
-           };
-
-           Y.lp.app.picker.addPickerPatcher(
-               'TargetPPAs',
-               LP.client.cache['context']['self_link'],
-               'daily_build_archive_link',
-               'daily-archive',
-               daily_archive_config);
-
-        }, window);
-    });
-  "/>
 </metal:block>
 
 <body>
@@ -90,11 +55,7 @@
 
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd tal:define="outer_span_id string:recipe-owner;
-                            picker_context context/owner;
-                            allow_edit context/required:launchpad.Edit">
-              <div metal:use-macro="context/@@+widgets/add-picker-widget" />
-            </dd>
+            <dd tal:content="structure view/person_picker"/>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
@@ -106,13 +67,7 @@
           </dl>
           <dl id="daily_build_archive">
             <dt>Daily build archive:</dt>
-            <dd tal:define="outer_span_id string:daily-archive;
-                            picker_context context/daily_build_archive;
-                            allow_edit context/required:launchpad.Edit">
-              <div metal:use-macro="context/@@+widgets/add-picker-widget" />
-            </dd>
-
-            <dd tal:condition="not: context/daily_build_archive">None</dd>
+            <dd tal:content="structure view/archive_picker"/>
           </dl>
 
           <dl id="distros">
