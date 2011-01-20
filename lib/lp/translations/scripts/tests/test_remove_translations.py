@@ -18,6 +18,7 @@ from unittest import TestLoader
 from pytz import timezone
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -265,10 +266,9 @@ class TestRemoveTranslations(TestCase):
         """Set translation for potmsgset in pofile to text."""
         if submitter is None:
             submitter = self.potemplate.owner
-        return potmsgset.updateTranslation(
-            pofile, submitter, {0: text},
-            is_current_upstream=is_current_upstream,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        return self.factory.makeCurrentTranslationMessage(
+            pofile, potmsgset, translator=submitter,
+            translations={0: text}, current_other=is_current_upstream)
 
     def _makeMessages(self, template_text, nl_text, de_text,
                       submitter=None, is_current_upstream=False):
@@ -429,23 +429,23 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "translate", "vertalen", "uebersetzen")
-        self.nl_message.is_current_ubuntu = False
+        self.nl_message.is_current_upstream = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current_ubuntu=True)
+        self._removeMessages(ids=ids, is_current_upstream=True)
 
-        self.nl_message.is_current_ubuntu = True
+        self.nl_message.is_current_upstream = True
         self._checkInvariant()
 
     def test_RemoveNotCurrent(self):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "write", "schrijven", "schreiben")
-        new_nl_message.is_current_ubuntu = False
-        new_de_message.is_current_ubuntu = False
+        new_nl_message.is_current_upstream = False
+        new_de_message.is_current_upstream = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current_ubuntu=False)
+        self._removeMessages(ids=ids, is_current_upstream=False)
 
         self._checkInvariant()
 
@@ -453,11 +453,11 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "book", "boek", "Buch")
-        new_nl_message.is_current_upstream = True
-        new_de_message.is_current_upstream = True
+        new_nl_message.is_current_ubuntu = True
+        new_de_message.is_current_ubuntu = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current_upstream=True)
+        self._removeMessages(ids=ids, is_current_ubuntu=True)
 
         self._checkInvariant()
 
@@ -465,12 +465,12 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "helicopter", "helikopter", "Hubschauber")
-        self.nl_message.is_current_upstream = True
+        self.nl_message.is_current_ubuntu = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current_upstream=False)
+        self._removeMessages(ids=ids, is_current_ubuntu=False)
 
-        self.nl_message.is_current_upstream = False
+        self.nl_message.is_current_ubuntu = False
         self._checkInvariant()
 
     def test_RemoveMsgId(self):
@@ -488,8 +488,10 @@ class TestRemoveTranslations(TestCase):
             self.nl_message.origin, RosettaTranslationOrigin.ROSETTAWEB)
         (new_nl_message, new_de_message) = self._makeMessages(
             "new", "nieuw", "neu", is_current_upstream=True)
-        self.assertEqual(new_nl_message.origin, RosettaTranslationOrigin.SCM)
-        self.assertEqual(new_de_message.origin, RosettaTranslationOrigin.SCM)
+        removeSecurityProxy(new_nl_message).origin = (
+            RosettaTranslationOrigin.SCM)
+        removeSecurityProxy(new_de_message).origin = (
+            RosettaTranslationOrigin.SCM)
 
         self._removeMessages(
             potemplate=self.potemplate, origin=RosettaTranslationOrigin.SCM)
