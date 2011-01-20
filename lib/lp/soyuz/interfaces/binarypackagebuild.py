@@ -130,7 +130,7 @@ class IBinaryPackageBuildView(IPackageBuild):
         "of the binaries resulted from this build. It's 'None' if it is "
         "a build imported by Gina.")
 
-    _api_score = exported(
+    api_score = exported(
         Int(
             title=_("Score of the related job (if any)"),
             readonly=True,
