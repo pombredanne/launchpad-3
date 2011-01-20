@@ -224,20 +224,19 @@ The +packages named view displays the packages links to the product's series.
     >>> print view.label
     Linked packages
 
-The view provides the series_packages property that returns a list of
-dicts. Each dict as a series and a list of packages.
+The view provides the series_batch property.
 
     >>> def print_packages(view):
-    ...     for series_dict in view.series_packages:
-    ...         print series_dict['series'].name
-    ...         for package in series_dict['packagings']:
-    ...             print package.distroseries.name
+    ...     for series in view.series_batch.batch:
+    ...         print series.name
+    ...         for package in series.packagings:
+    ...             print '  Package:', package.distroseries.name
     >>> print_packages(view)
-    cold
-    hotter
-      grumpy
-      hoary
     trunk
+    hotter
+      Package: grumpy
+      Package: hoary
+    cold
 
 The view provides the distro_packaging property that is a list of
 dictionaries for the distributions and their packaging.  The list is
@@ -255,11 +254,11 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> view = create_initialized_view(
     ...     product, name='+packages', principal=a_user)
     >>> print_packages(view)
-    cold
-    hotter
-      grumpy
-      hoary
     trunk
+    hotter
+      Package: grumpy
+      Package: hoary
+    cold
 
     # There are links to the +remove-packaging page.
     >>> table = find_tag_by_id(view.render(), 'packages-hotter')
@@ -270,8 +269,8 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
 
     >>> [hoary_package] = [
-    ...     package for series_dict in view.series_packages
-    ...     for package in series_dict['packagings']
+    ...     package for series in view.series_batch.batch
+    ...     for package in series.packagings
     ...     if package.distroseries.name == 'hoary']
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> unlink_view = create_initialized_view(
@@ -279,13 +278,13 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> unlink_view.errors
     []
 
-    # The view has to be reloaded since view.series_packages is cached.
+    # The view has to be reloaded since view.series_batch is cached.
     >>> view = create_initialized_view(product, name='+packages')
     >>> print_packages(view)
-    cold
-    hotter
-      grumpy
     trunk
+    hotter
+      Package: grumpy
+    cold
 
 
 Distro series +packaging view
