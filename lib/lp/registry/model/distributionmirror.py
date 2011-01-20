@@ -308,22 +308,28 @@ class DistributionMirror(SQLBase):
             # all mirrors (binary and source) for this distribution mirror.
             arch_mirror_freshness = self.arch_mirror_freshness
             source_mirror_freshness = self.source_mirror_freshness
+        
+            # Return unknown if no content
             if (arch_mirror_freshness is None and
                 source_mirror_freshness is None):
-                # No content.
                 return MirrorFreshness.UNKNOWN
-            elif (arch_mirror_freshness is not None and
+
+            
+            # Return arch_mirror freshness if we have no source mirror.
+            if  (arch_mirror_freshness is not None and
                   source_mirror_freshness is None):
                 return arch_mirror_freshness
-            elif (source_mirror_freshness is not None and
-                  arch_mirror_freshness is None):
+            
+            # Return source_mirror freshness if we have no arch mirror.
+            if (arch_mirror_freshness is None and
+                source_mirror_freshness is not None):
+                return source_mirror_freshness
+
+            # Return the freshest data if we have data for both.
+            if source_mirror_freshness > arch_mirror_freshness:
                 return source_mirror_freshness
             else:
-                # Arch and Source mirror
-                if source_mirror_freshness > arch_mirror_freshness:
-                    return source_mirror_freshness
-                else:
-                    return arch_mirror_freshness
+                return arch_mirror_freshness
         else:
             raise AssertionError(
                 'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
