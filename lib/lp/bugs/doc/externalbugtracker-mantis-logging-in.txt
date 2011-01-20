@@ -47,8 +47,9 @@ the "return" parameter.
     ...     'http://mantis.example.com/login_page.php')
     Traceback (most recent call last):
       ...
-    BugWatchUpdateWarning: Mantis redirected us to the login page but
-    did not set a return path.
+    BugTrackerConnectError: http://mantis.example.com/login_page.php:
+    Mantis redirected us to the login page but did not set a return
+    path.
 
 In all likelihood, this warning will be followed in the log by an
 error.

@@ -73,9 +73,9 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                raise BugWatchUpdateWarning(
-                    "Mantis redirected us to the login page "
-                    "but did not set a return path.")
+                raise BugTrackerConnectError(
+                    url, ("Mantis redirected us to the login page "
+                          "but did not set a return path."))
 
             query = urllib.urlencode(query, True)
             url = urlunparse(
