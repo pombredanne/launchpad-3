@@ -101,7 +101,7 @@ class FileUploadClient:
         self._sendLine('%s: %s' % (name, value))
 
     def addFile(self, name, size, file, contentType, expires=None,
-                debugID=None):
+                debugID=None, allow_zero_length=False):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -113,13 +113,18 @@ class FileUploadClient:
         :param debugID: Optional.  If set, causes extra logging for this
             request on the server, which will be marked with the value
             given.
+        :param allow_zero_length: If True permit zero length files.
         :returns: aliasID as an integer
         :raises UploadFailed: If the server rejects the upload for some
-            reason, is 0.
+            reason.
         """
         if file is None:
             raise TypeError('Bad File Descriptor: %s' % repr(file))
-        if size <= 0:
+        if allow_zero_length:
+            min_size = -1
+        else:
+            min_size = 0
+        if size <= min_size:
             raise UploadFailed('Invalid length: %d' % size)
 
         if isinstance(name, unicode):
