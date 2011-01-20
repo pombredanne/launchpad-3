@@ -877,9 +877,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         Update the start_offset when the filtered batch has mutated.
         """
         if self.show == 'untranslated':
-            translationmessage = potmsgset.getCurrentTranslation(
-                self.pofile.potemplate, self.pofile.language,
-                self.pofile.potemplate.translation_side)
+            translationmessage = potmsgset.getCurrentTranslationMessage(
+                self.pofile.potemplate, self.pofile.language)
             if translationmessage is not None:
                 self.start_offset += 1
         elif self.show == 'new_suggestions':

@@ -306,7 +306,7 @@ class IPOTMsgSet(Interface):
         :param potemplate: An `IPOTemplate` to look up a translation for.
             If it's None, ignore diverged translations.
         :param language: translation should be to this `ILanguage`.
-        :param side: translation side to look at.  (A `TranslationSide` value)
+        :param side: translation side to look at.
         """
 
     def setCurrentTranslation(pofile, submitter, translations, origin,
