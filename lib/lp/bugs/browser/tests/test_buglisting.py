@@ -160,12 +160,13 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
 
-    def _makeBugTargetProduct(self, bug_tracker=None, packaging=False):
+    def _makeBugTargetProduct(self, bug_tracker=None, packaging=False, 
+                              product_name=None):
         """Return a product that may use Launchpad or an external bug tracker.
 
         bug_tracker may be None, 'launchpad', or 'external'.
         """
-        product = self.factory.makeProduct()
+        product = self.factory.makeProduct(name=product_name)
         if bug_tracker is not None:
             with person_logged_in(product.owner):
                 if bug_tracker == 'launchpad':
@@ -225,6 +226,12 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
             bug_target.ubuntu_packages[0], force_local_path=True)
         self.assertEqual(link, content.a['href'])
 
+    def test_product_index_title(self):
+        bug_target = self._makeBugTargetProduct(bug_tracker='launchpad',
+            product_name="testproduct")
+        view = create_initialized_view(
+                    bug_target, '+bugs')
+        self.assertEqual(view.page_title, u'Bugs : Testproduct')
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
 

@@ -6,6 +6,3 @@ for the ProjectGroup.
     >>> anon_browser.open('http://bugs.launchpad.dev/gnome')
     >>> print anon_browser.title
     Bugs : GNOME
-    >>> anon_browser.open('http://bugs.launchpad.dev/applets')
-    >>> print anon_browser.title
-    Bugs : Gnome Applets
