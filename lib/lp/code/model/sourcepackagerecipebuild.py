@@ -194,8 +194,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            recipe.is_stale = False
             logger.debug(
                 'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            if recipe.daily_build_archive is None:
+                logger.debug(' - No daily build archive specified.')
+                continue
             for distroseries in recipe.distroseries:
                 series_name = distroseries.named_version
                 try:
@@ -215,7 +219,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
-            recipe.is_stale = False
         return builds
 
     def _unqueueBuild(self):
