@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Bugzilla BugTracker."""
@@ -8,7 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.externalbugtracker.base import UnparseableBugData
+from lp.bugs.externalbugtracker.base import UnparsableBugData
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -54,4 +54,4 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
             </html>
             """
         bugzilla = self._makeInstrumentedBugzilla(content=result_text)
-        self.assertRaises(UnparseableBugData, bugzilla.getRemoteBugBatch, [])
+        self.assertRaises(UnparsableBugData, bugzilla.getRemoteBugBatch, [])
