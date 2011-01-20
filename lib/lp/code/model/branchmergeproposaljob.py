@@ -42,7 +42,6 @@ from lazr.enum import (
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import (
     And,
     Desc,
@@ -111,6 +110,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.stormbase import StormBase
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -155,7 +155,7 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         This job generates an incremental diff for a merge proposal.""")
 
 
-class BranchMergeProposalJob(Storm):
+class BranchMergeProposalJob(StormBase):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)

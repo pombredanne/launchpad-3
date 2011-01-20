@@ -12,7 +12,6 @@ __all__ = [
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
 from storm.locals import (
     Int,
@@ -54,9 +53,10 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.stormbase import StormBase
 
 
-class PersonTransferJob(Storm):
+class PersonTransferJob(StormBase):
     """Base class for team membership and person merge jobs."""
 
     implements(IPersonTransferJob)

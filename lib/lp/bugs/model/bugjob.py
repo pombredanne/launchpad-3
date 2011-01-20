@@ -12,7 +12,6 @@ __all__ = [
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
 from storm.locals import (
     Int,
@@ -41,9 +40,10 @@ from lp.bugs.interfaces.bugjob import (
 from lp.bugs.model.bug import Bug
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.stormbase import StormBase
 
 
-class BugJob(Storm):
+class BugJob(StormBase):
     """Base class for jobs related to Bugs."""
 
     implements(IBugJob)

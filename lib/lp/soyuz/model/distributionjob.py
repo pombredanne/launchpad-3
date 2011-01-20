@@ -10,7 +10,6 @@ __all__ = [
 
 import simplejson
 
-from storm.base import Storm
 from storm.locals import And, Int, Reference, Unicode
 
 from zope.interface import implements
@@ -29,9 +28,10 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.stormbase import StormBase
 
 
-class DistributionJob(Storm):
+class DistributionJob(StormBase):
     """Base class for jobs related to Distributions."""
 
     implements(IDistributionJob)
