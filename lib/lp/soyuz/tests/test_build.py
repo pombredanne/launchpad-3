@@ -216,7 +216,7 @@ class TestBuild(TestCaseWithFactory):
                 spph.source_package_version, build.id))
         expected_url = '%s/%s' % (url_start, expected_filename)
         self.assertEquals(expected_url, build.upload_log_url)
-        
+
     def test_retry_does_not_modify_first_dispatch(self):
         # Retrying a build does not modify the first dispatch time of the
         # build
@@ -283,7 +283,7 @@ class TestBuild(TestCaseWithFactory):
 
     def test_cannot_rescore_non_needsbuilds_builds(self):
         # If a build record isn't in NEEDSBUILD, it can not be rescored.
-        # We will also need to log into an admin to do the rescore
+        # We will also need to log into an admin to do the rescore.
         with person_logged_in(self.admin):
             [bpph] = self.publisher.getPubBinaries(
                 binaryname=self.factory.getUniqueString(),

@@ -28,6 +28,7 @@ from lp.testing import (
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
+
 class TestBuildSet(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -189,7 +190,7 @@ class TestBuildSet(TestCaseWithFactory):
                     self.spphs[-1].source_package_version,
                     self.distroseries.distribution.name,
                     self.distroseries.name))
-        build_titles = [build.title for build in builds] 
+        build_titles = [build.title for build in builds]
         self.assertEquals(sorted(expected_titles), sorted(build_titles))
         builds = getUtility(
             IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(

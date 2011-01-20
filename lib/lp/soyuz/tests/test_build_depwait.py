@@ -22,6 +22,7 @@ from lp.testing import (
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
+
 class TestBuildDepWait(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -48,8 +49,8 @@ class TestBuildDepWait(TestCaseWithFactory):
             self.builder = self.factory.makeBuilder(processor=pf_proc)
 
     def test_update_dependancies(self):
-        # Calling .updateDependencies() on a build will update will remove
-        # those which are reachable.
+        # Calling .updateDependencies() on a build will remove those which
+        # are reachable.
         spph = self.publisher.getPubSource(
             sourcename=self.factory.getUniqueString(),
             version="%s.1" % self.factory.getUniqueInteger(),
@@ -68,7 +69,7 @@ class TestBuildDepWait(TestCaseWithFactory):
             transaction.commit()
         build.updateDependencies()
         self.assertEquals(u'', build.dependencies)
-        
+
     def test_update_dependancies_respects_component(self):
         # Since main can only utilise packages that are published in main,
         # dependencies are not satisfied if they are not in main.
@@ -85,7 +86,8 @@ class TestBuildDepWait(TestCaseWithFactory):
             [bpph] = self.publisher.getPubBinaries(
                 binaryname=spn, distroseries=self.distroseries,
                 version=version, builder=self.builder, archive=self.archive,
-                status=PackagePublishingStatus.PUBLISHED, component='universe')
+                status=PackagePublishingStatus.PUBLISHED,
+                component='universe')
             # Commit to make sure stuff hits the database.
             transaction.commit()
         build.updateDependencies()
