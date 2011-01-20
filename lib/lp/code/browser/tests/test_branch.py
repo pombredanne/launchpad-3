@@ -427,6 +427,7 @@ class TestBranchView(BrowserTestCase):
         text = extract_text(revision_content)
         expected_text = """
             Recent revisions
+            .*
             2. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
             .*
             Testing the email address in revisions\n
@@ -435,7 +436,6 @@ class TestBranchView(BrowserTestCase):
             .*
             Testing the email address in revisions\n
             email Bob \(bob@example.com\) for details.
-            .*
             Merged branch %s
             """ % branch_display_name
 
@@ -479,6 +479,7 @@ class TestBranchView(BrowserTestCase):
         text = extract_text(revision_content)
         expected_text = """
             Recent revisions
+            .*
             2. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
             .*
             Testing the email address in revisions\n
@@ -487,7 +488,6 @@ class TestBranchView(BrowserTestCase):
             .*
             Testing the email address in revisions\n
             email Bob \(bob@example.com\) for details.
-            .*
             Merged branch %s with linked bugs
             %s
             """ % (branch_display_name, linked_bug_rendered_text)

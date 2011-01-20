@@ -183,7 +183,11 @@
                           merge_proposal, linked_bugs) to list.
 
   </tal:comment>
-
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
   <dl class="revision">
     <!-- Display the extended revision listing -->
     <tal:revision repeat="rev_info revision_info"
@@ -246,7 +250,7 @@
         tal:content="rev_no/revision/revision_date/fmt:displaydate"
         >2005-10-05 14:34:22 WST</span>
   </dt>
-  <dd class="revision-comment">
+  <dd class="subordinate revision-comment">
     <tal:commit-message
         replace="structure rev_no/revision/log_body/fmt:obfuscate-email/fmt:text-to-html">
       The revision commit message.
@@ -256,11 +260,6 @@
   <div tal:condition="rev_info | nothing">
     <div tal:define="merge_proposal python:rev_info['merge_proposal']"
          tal:condition="merge_proposal">
-      <style type="text/css">
-        .subordinate {
-          margin-left: 1em;
-        }
-      </style>
       <dd class="subordinate revision-comment">
         Merged branch <a tal:attributes="href merge_proposal/fmt:url"
                     tal:content="merge_proposal/source_branch/displayname">source branch</a>
