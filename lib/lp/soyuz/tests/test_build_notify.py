@@ -10,7 +10,9 @@ from datetime import (
 import pytz
 from textwrap import dedent
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.browser.tales import DurationFormatterAPI
@@ -43,16 +45,22 @@ class TestBuildNotify(TestCaseWithFactory):
             distroseries=self.distroseries, processorfamily=self.pf,
             supports_virtualized=True)
         self.creator = self.factory.makePerson(email='test@example.com')
+        self.gpgkey = self.factory.makeGPGKey(owner=self.creator)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
         self.ppa = self.factory.makeArchive()
+        buildd_admins = getUtility(IPersonSet).getByName(
+            'launchpad-buildd-admins')
+        self.buildd_admins_email = []
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
             self.builder = self.factory.makeBuilder(processor=pf_proc)
+            for member in buildd_admins.activemembers:
+                self.buildd_admins_email.append(member.preferredemail.email)
         self.builds = []
 
     def create_builds(self, archive):
@@ -63,6 +71,7 @@ class TestBuildNotify(TestCaseWithFactory):
                     self.factory.getUniqueInteger(), status.value),
                 distroseries=self.distroseries, architecturehintlist='any',
                 creator=self.creator, archive=archive)
+            spph.sourcepackagerelease.dscsigningkey = self.gpgkey
             [build] = spph.createMissingBuilds()
             with person_logged_in(self.admin):
                 build.status = status
@@ -77,12 +86,16 @@ class TestBuildNotify(TestCaseWithFactory):
             self.builds.append(build)
 
     def _assert_mail_is_correct(self, build, notification, ppa=False):
+        # Assert that the mail sent (which is in notification), matches
+        # the data from the build
         self.assertEquals('test@example.com',
             notification['X-Creator-Recipient'])
         self.assertEquals(
             self.das.architecturetag, notification['X-Launchpad-Build-Arch'])
         self.assertEquals(
             'main', notification['X-Launchpad-Build-Component'])
+        self.assertEquals(
+            build.status.name, notification['X-Launchpad-Build-State'])
         if ppa is True:
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
@@ -143,9 +156,10 @@ class TestBuildNotify(TestCaseWithFactory):
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         build.notify()
+        expected_emails = self.buildd_admins_email + ['test@example.com']
         notifications = pop_notifications()
-        # There are 2 buildd-admins in the sample data, as well as the creator
-        self.assertEquals(3, len(notifications))
+        actual_emails = [n['To'] for n in notifications]
+        self.assertEquals(expected_emails, actual_emails)
 
     def test_ppa_does_not_notify_buildd_admins(self):
         # A build for a PPA does not notify the buildd admins.
@@ -302,3 +316,54 @@ class TestBuildNotify(TestCaseWithFactory):
         ppa_build.notify()
         notifications = pop_notifications()
         self.assertEquals(1, len(notifications))
+
+    def test_notify_owner_supresses_mail(self):
+        # When the 'notify_owner' config option is False, we don't send mail
+        # to the owner of the SPR.
+        self.create_builds(self.archive)
+        build = self.builds[BuildStatus.FULLYBUILT.value]
+        notify_owner = dedent("""
+            [builddmaster]
+            send_build_notification: True
+            notify_owner: False
+            """)
+        config.push('notify_owner', notify_owner)
+        build.notify()
+        notifications = pop_notifications()
+        actual_emails = [n['To'] for n in notifications]
+        self.assertEquals(self.buildd_admins_email, actual_emails)
+        # And undo what we just did.
+        config_data = config.pop('notify_owner')
+
+    def test_build_notification_supresses_mail(self):
+        # When the 'build_notification' config option is False, we don't
+        # send any mail at all.
+        self.create_builds(self.archive)
+        build = self.builds[BuildStatus.FULLYBUILT.value]
+        send_build_notification = dedent("""
+            [builddmaster]
+            send_build_notification: False
+            """)
+        config.push('send_build_notification', send_build_notification)
+        build.notify()
+        notifications = pop_notifications()
+        self.assertEquals(0, len(notifications))
+        # And undo what we just did.
+        config_data = config.pop('send_build_notification')
+
+    def test_sponsored_upload_notification(self):
+        # If the signing key is different to the creator, they are both
+        # notified.
+        sponsor = self.factory.makePerson('sponsor@example.com')
+        key = self.factory.makeGPGKey(owner=sponsor)
+        self.create_builds(self.archive)
+        build = self.builds[BuildStatus.FULLYBUILT.value]
+        spr = build.current_source_publication.sourcepackagerelease
+        # Push past the security proxy
+        removeSecurityProxy(spr).dscsigningkey = key
+        build.notify()
+        notifications = pop_notifications()
+        expected_emails = self.buildd_admins_email + [
+            'sponsor@example.com', 'test@example.com'] 
+        actual_emails = [n['To'] for n in notifications]
+        self.assertEquals(expected_emails, actual_emails)
