@@ -62,5 +62,14 @@
     </tbody>
   </table>
 
+  <p>
+  <h2>Undocumented scopes</h2>
+  These scopes were referenced during this process' lifetime but are not
+  documented:
+  <strong tal:condition="not:view/undocumented_scopes">
+    No undocumented scopes have been used yet.
+  </strong>
+  <strong tal:content="view/undocumented_scopes">list of scopes</strong>
+
 </body>
 </html>

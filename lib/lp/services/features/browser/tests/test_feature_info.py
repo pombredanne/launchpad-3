@@ -20,7 +20,10 @@ from lp.services.features.flags import (
     NullFeatureController,
     undocumented_flags,
     )
-from lp.services.features.scopes import HANDLERS
+from lp.services.features.scopes import (
+    HANDLERS,
+    undocumented_scopes,
+    )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -82,6 +85,21 @@ class TestFeatureControlPage(BrowserTestCase):
         undocumented_flags.clear()
         undocumented_flags.update(saved_undocumented)
         # Are the (injected) undocumented flags shown in the page?
+        self.assertThat(browser.contents, Contains('first'))
+        self.assertThat(browser.contents, Contains('second'))
+
+    def test_undocumented_scope_displayed(self):
+        """The undocumented scope names are displayed on the page."""
+        browser = self.getUserBrowserAsAdmin()
+        # Stash away any already encountered undocumented scopes.
+        saved_undocumented = undocumented_scopes.copy()
+        undocumented_scopes.clear()
+        undocumented_scopes.update(['first', 'second'])
+        browser.open(self.getFeatureInfoUrl())
+        # Put the saved undocumented scopes back.
+        undocumented_scopes.clear()
+        undocumented_scopes.update(saved_undocumented)
+        # Are the (injected) undocumented scopes shown in the page?
         self.assertThat(browser.contents, Contains('first'))
         self.assertThat(browser.contents, Contains('second'))
 

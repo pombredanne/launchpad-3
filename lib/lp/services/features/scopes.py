@@ -6,6 +6,7 @@
 __all__ = [
     'HANDLERS',
     'ScopesFromRequest',
+    'undocumented_scopes',
     ]
 
 __metaclass__ = type
@@ -17,6 +18,9 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.propertycache import cachedproperty
 import canonical.config
+
+
+undocumented_scopes = set()
 
 
 class BaseScope():
@@ -176,9 +180,7 @@ class ScopesFromRequest():
                     return True
 
         # If we didn't find at least one matching handler, then the requested
-        # scope is unknown and we want to alert the caller that they did
-        # something wrong.
+        # scope is unknown and we want to record the scope for the +flag-info page to display.
         if not found_a_handler:
-            raise LookupError('Unknown scope: %r.  This can result from a '
-            'typo or perhaps you need to create a new scope handler.'
-            % (scope_name,))
+            undocumented_scopes.add(scope_name)
+

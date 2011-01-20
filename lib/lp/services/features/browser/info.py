@@ -17,7 +17,10 @@ from lp.services.features.flags import (
     flag_info,
     undocumented_flags,
     )
-from lp.services.features.scopes import HANDLERS
+from lp.services.features.scopes import (
+    HANDLERS,
+    undocumented_scopes,
+    )
 
 
 # Named tuples to use when passing flag and scope data to the template.
@@ -51,6 +54,12 @@ class FeatureInfoView(LaunchpadView):
         """Flag names referenced during process lifetime but not documented.
         """
         return ', '.join(undocumented_flags)
+
+    @property
+    def undocumented_scopes(self):
+        """Scope names referenced during process lifetime but not documented.
+        """
+        return ', '.join(undocumented_scopes)
 
     @property
     def scope_info(self):

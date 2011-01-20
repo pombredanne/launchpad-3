@@ -74,12 +74,10 @@ class TestScopesFromRequest(TestCase):
         self.assertFalse(scopes.lookup('server.pink'))
 
     def test_unknown_scope(self):
-        # Asking about an unknown scope is an error.
+        # Asking about an unknown scope is not an error.
         request = LaunchpadTestRequest()
         scopes = webapp.ScopesFromRequest(request)
-        self.assertRaises(
-            LookupError,
-            scopes.lookup, 'not-a-real-scope')
+        scopes.lookup('not-a-real-scope')
 
 
 class TestDBScopes(TestCaseWithFactory):
