@@ -311,7 +311,7 @@ class InlineEditPickerWidget:
                  null_display_value=self.null_display_value,
                  show_remove_button=self.show_remove_button,
                  show_assign_me_button=self.show_assign_me_button,
-                 non_searchable_vocabulary=self.non_searchable_vocabulary))
+                 show_search_box=self.show_search_box))
 
     @cachedproperty
     def vocabulary(self):
@@ -320,8 +320,8 @@ class InlineEditPickerWidget:
             IVocabulary, self.interface_attribute.vocabularyName)
 
     @property
-    def non_searchable_vocabulary(self):
-        return not IHugeVocabulary.providedBy(self.vocabulary)
+    def show_search_box(self):
+        return IHugeVocabulary.providedBy(self.vocabulary)
 
     @property
     def show_assign_me_button(self):
