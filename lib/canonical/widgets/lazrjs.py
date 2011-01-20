@@ -262,23 +262,22 @@ class InlineEditPickerWidget:
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
     def __init__(self, context, request, interface_attribute, default_html,
-                 content_box_id=None, header='Select an item', step_title='Search',
-                 remove_button_text='Remove', null_display_value='None'):
+                 content_box_id=None, header='Select an item',
+                 step_title='Search', remove_button_text='Remove',
+                 null_display_value='None'):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
         :param request: The request object.
-        :param interface_attribute: The attribute being edited.
+        :param interface_attribute: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
         :param content_box_id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param header: The large text at the top of the picker.
         :param step_title: Smaller line of text below the header.
-        :param show_remove_button: Show remove button below search box.
-        :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
-        :param searchable_vocabulary: Huge vocabularies are searchable,
-            non-huge vocabularies are not searchable.
+        :param null_display_value: This will be shown for a missing value
         """
         self.context = context
         self.request = request

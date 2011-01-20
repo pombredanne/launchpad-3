@@ -28,7 +28,7 @@ def reference_xhtml_representation(context, field, request):
     """Render an object as a link to the object."""
 
     def render(value):
-        # The value is a webservice link to an archive.
+        # The value is a webservice link to the object, we want field value.
         obj = getattr(context, field.__name__, None)
         if obj is None:
             return ''
