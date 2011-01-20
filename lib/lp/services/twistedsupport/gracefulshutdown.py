@@ -22,27 +22,22 @@ from zope.interface import implements
 
 class ConnTrackingFactoryWrapper(WrappingFactory):
 
-    deferred = None
+    allConnectionsGone = None
 
     def isAvailable(self):
-        return self.deferred is None
+        return self.allConnectionsGone is None
 
-    def allConnectionsDone(self):
-        """Tell this factory that we are shutting down.  Returns a Deferred
-        that fires when all connections have closed.
-        """
-        if self.deferred is not None:
-            raise AssertionError('allConnectionsDone can only be called once')
-        self.deferred = Deferred()
+    def stopFactory(self):
+        WrappingFactory.stopFactory(self)
+        self.allConnectionsGone = Deferred()
         if len(self.protocols) == 0:
-            self.deferred.callback(None)
-        return self.deferred
+            self.allConnectionsGone.callback(None)
 
     def unregisterProtocol(self, p):
         WrappingFactory.unregisterProtocol(self, p)
         if len(self.protocols) == 0:
-            if self.deferred is not None:
-                self.deferred.callback(None)
+            if self.allConnectionsGone is not None:
+                self.allConnectionsGone.callback(None)
 
 
 class ShutdownCleanlyService(service.MultiService):
@@ -56,7 +51,7 @@ class ShutdownCleanlyService(service.MultiService):
         return d.addCallback(self._cbServicesStopped)
 
     def _cbServicesStopped(self, ignored):
-        return gatherResults([f.allConnectionsDone() for f in self.factories])
+        return gatherResults([f.allConnectionsGone for f in self.factories])
 
 
 class ServerAvailableResource(resource.Resource):
