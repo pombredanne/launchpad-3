@@ -25,12 +25,15 @@ Get a Spanish PO file for this PO template
 
 Get a translation for a particular message and check it has a translation.
 
-    >>> potmsgset = template.getPOTMsgSetByMsgIDText(u'evolution addressbook')
+    >>> potmsgset = factory.makePOTMsgSet(template)
     >>> spanish = pofile.language
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     template, spanish)
-    >>> translationmessage.translations
-    [u'libreta de direcciones de Evolution']
+    >>> translations = factory.makeTranslationsDict()
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile, potmsgset, translations=translations)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side)
+    >>> len(translationmessage.translations)
+    1
     >>> translationmessage.is_current_upstream
     True
 
@@ -43,28 +46,33 @@ Get a person to create a translation with.
 
 Add a translation.
 
-    >>> translations = { 0: u'foo' }
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
-    >>> message = potmsgset.updateTranslation(
-    ...     pofile, person, translations, is_current_upstream=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile, potmsgset, translations=translations, current_other=True)
+    >>> message.is_current_ubuntu
+    True
+    >>> message.is_current_upstream
+    True
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 Check that this submission is now the active one for this msgset/pluralform
 
-    >>> potmsgset.getCurrentTranslationMessage(template, spanish) == message
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side)
+    >>> current == message
     True
-    >>> message.is_current_ubuntu
+    >>> message.is_current_upstream
     True
-    >>> message.msgstr0.translation == u'foo'
+    >>> message.msgstr0.translation == translations[0]
     True
 
 Check that this submission is the upstream one
 
-    >>> potmsgset.getImportedTranslationMessage(template, spanish) == message
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == message
     True
     >>> message.is_current_upstream
     True
@@ -73,13 +81,13 @@ Test the origin enum column.
 
     >>> from lp.translations.interfaces.translationmessage import (
     ...     RosettaTranslationOrigin)
-    >>> message.origin == RosettaTranslationOrigin.SCM
+    >>> message.origin == RosettaTranslationOrigin.ROSETTAWEB
     True
 
 Get a list of the translations again to check the new one has been added.
 
-    >>> message.translations
-    [u'foo']
+    >>> message.translations[0] == translations[0]
+    True
 
 Now we want to test the interaction of the "upstream" translations with the
 "active translations". There are several things we want to be able to test.
@@ -120,12 +128,11 @@ detection works.
 Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
-    >>> message = potmsgset.updateTranslation(
-    ...     pofile, Pb, translations, is_current_upstream=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile, potmsgset, translator=Pb, translations=translations)
     >>> flush_database_caches()
-    >>> web_submission = potmsgset.getCurrentTranslationMessage(
-    ...     template, spanish)
+    >>> web_submission = potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side)
 
 Make sure the new submission is from Pb.
 
@@ -139,14 +146,14 @@ upstream selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(template,
-    ...     spanish) == web_submission
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == web_submission
     False
 
 In fact, the upstream submission should still be the original one, from Pa:
 
-    >>> potmsgset.getImportedTranslationMessage(
-    ...     template, spanish) == upstream_message
+    >>> potmsgset.getOtherTranslation(
+    ...     spanish, template.translation_side) == upstream_message
     True
 
 And the lasttranslator for this pofile should be the one who submitted the
@@ -165,8 +172,8 @@ along and says it's 'baz', we don't record anything new.
     >>> dummy = potmsgset.updateTranslation(
     ...     pofile, Pc, translations, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> repeat_submission = potmsgset.getCurrentTranslationMessage(
-    ...     template, spanish)
+    >>> repeat_submission = potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side)
 
 Since that is exactly what Pb already said, let's see that the submission we
 got back was the one from Pb not a new one for Pc:
@@ -244,14 +251,15 @@ seconds.
 Let's make sure:
 
     >>> (noneditor_submission.date_created >
-    ...  potmsgset.getCurrentTranslationMessage(
-    ...      template, spanish).date_created)
+    ...  potmsgset.getCurrentTranslation(
+    ...      template, spanish, template.translation_side).date_created)
     True
 
 This new submission should not be active:
 
-    >>> (potmsgset.getCurrentTranslationMessage(template, spanish) ==
-    ...  noneditor_submission)
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side)
+    >>> current == noneditor_submission
     False
 
 And it should definitely not be current upstream:

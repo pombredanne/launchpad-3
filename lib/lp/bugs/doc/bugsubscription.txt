@@ -863,10 +863,13 @@ subscriptions themselves, rather than the subscribers.
     >>> ff_bug = firefox.createBug(params)
     >>> ff_bug.subscribe(lifeless, mark)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
-    >>> for subscription in ff_bug.getDirectSubscriptions():
-    ...     print '%s (%s)' % (
+    >>> subscriptions = [
+    ...     "%s (%s)" % (
     ...         subscription.person.displayname,
     ...         subscription.display_subscribed_by)
+    ...     for subscription in ff_bug.getDirectSubscriptions()]
+    >>> for subscription in sorted(subscriptions):
+    ...     print subscription
     Mark Shuttleworth (Self-subscribed)
     Robert Collins (Subscribed by Mark Shuttleworth)
     >>> params = CreateBugParams(
