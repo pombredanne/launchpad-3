@@ -7,9 +7,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+from exceptions import AssertionError
 import pytz
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -53,6 +55,11 @@ class TestBuild(TestCaseWithFactory):
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
             self.builder = self.factory.makeBuilder(processor=pf_proc)
+        self.now = datetime.now(pytz.UTC)
+        self.properties = {
+            'log': 1, 'date_started': self.now, 'date_finished': self.now,
+            'builder': self.builder, 'status': BuildStatus.FAILEDTOUPLOAD,
+            'dependencies': u'whatever', 'upload_log': 1}
 
     def test_title(self):
         # A build has a title which describes the context source version and
@@ -225,16 +232,15 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        now = datetime.now(pytz.UTC)
         with person_logged_in(self.admin):
             build.status = BuildStatus.FAILEDTOBUILD
             # The build can't be queued if we're going to retry it
             build.buildqueue_record.destroySelf()
-        removeSecurityProxy(build).date_first_dispatched = now
+        removeSecurityProxy(build).date_first_dispatched = self.now
         with person_logged_in(self.admin):
             build.retry()
         self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
-        self.assertEquals(now, build.date_first_dispatched)
+        self.assertEquals(self.now, build.date_first_dispatched)
         self.assertEquals(None, build.log)
         self.assertEquals(None, build.upload_log)
 
@@ -268,7 +274,7 @@ class TestBuild(TestCaseWithFactory):
             bpn_name = '%s-%s' % (spn, i)
             bpn = self.factory.makeBinaryPackageName(bpn_name)
             expected_names.append(bpn_name)
-            binary = build.createBinaryPackageRelease(
+            build.createBinaryPackageRelease(
                 binarypackagename=bpn, version=str(i), summary='',
                 description='', binpackageformat=BinaryPackageFormat.DEB,
                 component=spph.sourcepackagerelease.component.id,
@@ -320,3 +326,72 @@ class TestBuild(TestCaseWithFactory):
         # publication.
         self.assertNotEquals(spph, build.current_source_publication)
         self.assertEquals(overridden_spph, build.current_source_publication)
+
+    def test_security_anonymous(self):
+        # Certain attributes of a build cannot be set by anonymous users.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        for key in self.properties.keys():
+            self.assertRaises(
+                Unauthorized, setattr, build, key, self.properties[key])
+
+    def test_security_admin(self):
+        # Certain attributes of a build can be set by an admin.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            props = self.properties.keys()
+            props.reverse()
+            for key in props:
+                setattr(build, key, self.properties[key])
+                actual = getattr(build, key)
+                if key.endswith('log'):
+                    self.assertEquals(1, actual.id)
+                elif key.startswith('date'):
+                    self.assertEquals(self.now, actual)
+                else:
+                    self.assertEquals(self.properties[key], actual)
+
+    def test_estimated_duration(self):
+        # Builds will have an estimated duration that is set to a
+        # previous build of the same sources duration.
+        spn = self.factory.getUniqueString()
+        spph = self.publisher.getPubSource(
+            sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
+        [build] = spph.createMissingBuilds()
+        # Duration is based on package size if there is no previous build.
+        self.assertEquals(
+            timedelta(0, 60), build.buildqueue_record.estimated_duration)
+        # Set the build as done, and its duration.
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FULLYBUILT
+            build.date_started = self.now - timedelta(minutes=72)
+            build.date_finished = self.now
+            build.buildqueue_record.destroySelf()
+            transaction.commit()
+        new_spph = self.publisher.getPubSource(
+            sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
+        [new_build] = new_spph.createMissingBuilds()
+        # The duration for this build is now 72 minutes.
+        self.assertEquals(
+            timedelta(0, 72 * 60),
+            new_build.buildqueue_record.estimated_duration)
+        
+    def test_store_uploadlog_refuses_to_overwrite(self):
+        # Storing an upload log for a build will fail if the build already
+        # has an upload log.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOUPLOAD
+            build.storeUploadLog('foo')
+        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')   
