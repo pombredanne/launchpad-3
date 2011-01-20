@@ -227,11 +227,10 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
         self.assertEqual(link, content.a['href'])
 
     def test_product_index_title(self):
-        bug_target = self._makeBugTargetProduct(bug_tracker='launchpad',
-            product_name="testproduct")
-        view = create_initialized_view(
-                    bug_target, '+bugs')
-        self.assertEqual(view.page_title, u'Bugs : Testproduct')
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', product_name="testproduct")
+        view = create_initialized_view(bug_target, '+bugs')
+        self.assertEqual(u'Bugs : Testproduct', view.page_title)
 
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
