@@ -13,27 +13,6 @@
       padding-left: 2em;
     }
   </style>
-  <script type="text/javascript"
-          tal:content="string:
-    LPS.use('lp.app.picker', function(Y) {
-        Y.on('load', function(e) {
-
-           var config = {
-              header: 'Change owner',
-              step_title: 'Select a new owner',
-              non_searchable_vocabulary: true
-           };
-
-           Y.lp.app.picker.addPickerPatcher(
-               'UserTeamsParticipationPlusSelf',
-               LP.client.cache['context']['self_link'],
-               'owner_link',
-               'recipe-owner',
-               config);
-
-        }, window);
-    });
-  "/>
 </metal:block>
 
 <body>
@@ -76,17 +55,7 @@
 
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd>
-              <span id="recipe-owner">
-                <span class="yui3-activator-data-box">
-                  <tal:owner replace="structure context/owner/fmt:link" />
-                </span>
-                <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
-                        tal:condition="context/required:launchpad.Edit">
-                  Edit
-                </button>
-                <div class="yui3-activator-message-box yui3-activator-hidden" />
-              </span>
+            <dd tal:content="structure view/person_picker"/>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>

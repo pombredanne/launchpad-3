@@ -58,11 +58,12 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
+from canonical.widgets.lazrjs import InlineEditPickerWidget
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -225,6 +226,15 @@ class SourcePackageRecipeView(LaunchpadView):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             return not has_upload
         return False
+
+    @property
+    def person_picker(self):
+        return InlineEditPickerWidget(
+            self.context, self.request, ISourcePackageRecipe['owner'],
+            format_link(self.context.owner),
+            content_box_id='recipe-owner',
+            header='Change owner',
+            step_title='Select a new owner')
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
