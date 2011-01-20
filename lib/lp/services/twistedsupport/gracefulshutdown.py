@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'ConnTrackingFactory',
+    'ConnTrackingFactoryWrapper',
     'ShutdownCleanlyService',
     'ServerAvailableResource',
     'OrderedMultiService',
@@ -19,7 +19,8 @@ from twisted.internet.defer import (
 from twisted.web import resource
 from zope.interface import implements
 
-class ConnTrackingFactory(WrappingFactory):
+
+class ConnTrackingFactoryWrapper(WrappingFactory):
 
     deferred = None
 
@@ -27,8 +28,14 @@ class ConnTrackingFactory(WrappingFactory):
         return self.deferred is None
 
     def allConnectionsDone(self):
-        assert self.deferred is None
+        """Tell this factory that we are shutting down.  Returns a Deferred
+        that fires when all connections have closed.
+        """
+        if self.deferred is not None:
+            raise AssertionError('allConnectionsDone can only be called once')
         self.deferred = Deferred()
+        if len(self.protocols) == 0:
+            self.deferred.callback(None)
         return self.deferred
 
     def unregisterProtocol(self, p):

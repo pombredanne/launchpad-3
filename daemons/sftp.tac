@@ -16,7 +16,7 @@ from lp.codehosting.sshserver.daemon import (
     PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
 from lp.services.sshserver.service import SSHService
 from lp.services.twistedsupport.gracefulshutdown import (
-    ConnTrackingFactory, ServerAvailableResource, ShutdownCleanlyService,
+    ConnTrackingFactoryWrapper, ServerAvailableResource, ShutdownCleanlyService,
     OrderedMultiService)
 
 
@@ -30,7 +30,7 @@ tracked_factories = set()
 
 def factory_decorator(factory):
     f = TimeoutFactory(factory, timeoutPeriod=config.codehosting.idle_timeout)
-    f = ConnTrackingFactory(f)
+    f = ConnTrackingFactoryWrapper(f)
     tracked_factories.add(f)
     return f
 
