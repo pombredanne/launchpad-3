@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of Branch and BranchSet."""
@@ -377,7 +377,3 @@ class TestComposePublicURL(TestCaseWithFactory):
         # not work for private branches.
         branch = self.factory.makeAnyBranch()
         self.assertRaises(AssertionError, branch.composePublicURL, 'https')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
