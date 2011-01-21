@@ -11,7 +11,7 @@ Let's subscribe ubuntu-team.
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
     >>> target.addBugSubscription(ubuntu_team, foobar)
-    <StructuralSubscription ...>
+    <...StructuralSubscription ...>
 
 Trying to remove a bug subscription when notification levels for other
 applications are set, doesn't remove the subscription. Instead the
@@ -35,7 +35,7 @@ To get a user's subscription to the target, use
 IStructuralSubscriptionTarget.getSubscription.
 
     >>> target.getSubscription(ubuntu_team)
-    <StructuralSubscription ...>
+    <...StructuralSubscription ...>
     >>> print target.getSubscription(no_priv)
     None
 
