@@ -37,6 +37,7 @@ from lp.archiveuploader.uploadpolicy import (
     )
 from lp.archiveuploader.uploadprocessor import (
     BuildUploadHandler,
+    CannotGetBuild,
     parse_build_upload_leaf_name,
     UploadHandler,
     UploadProcessor,
@@ -1834,9 +1835,11 @@ class TestUploadHandler(TestUploadProcessorBase):
         # and a warning logged.
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="bar")
-        BuildUploadHandler(self.uploadprocessor, upload_dir, "bar").process()
-        self.assertLogContains('Unable to extract build id from leaf '
-                               'name bar, skipping.')
+        e = self.assertRaises(
+            CannotGetBuild, BuildUploadHandler, self.uploadprocessor,
+            upload_dir, "bar")
+        self.assertIn(
+            'Unable to extract build id from leaf name bar, skipping.', str(e))
 
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build
@@ -1844,9 +1847,11 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         cookie = "%s-%d" % (BuildFarmJobType.PACKAGEBUILD.name, 42)
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry=cookie)
-        BuildUploadHandler(self.uploadprocessor, upload_dir, cookie).process()
-        self.assertLogContains(
-            "Unable to find package build job with id 42. Skipping.")
+        e = self.assertRaises(
+            CannotGetBuild,
+            BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
+        self.assertIn(
+            "Unable to find package build job with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload

@@ -450,7 +450,11 @@ class CannotGetBuild(Exception):
 
 class BuildUploadHandler(UploadHandler):
 
-    def getBuild(self):
+    def __init__(self, processor, fsroot, upload):
+        super(BuildUploadHandler, self).__init__(processor, fsroot, upload)
+        self.build = self._getBuild()
+
+    def _getBuild(self):
         try:
             job_id = parse_build_upload_leaf_name(self.upload)
         except ValueError:
@@ -473,21 +477,16 @@ class BuildUploadHandler(UploadHandler):
         Build uploads always contain a single package per leaf.
         """
         logger = BufferLogger()
-        try:
-            build = self.getBuild()
-        except CannotGetBuild, e:
-            self.processor.log.warn(e)
-            return
-        if build.status != BuildStatus.UPLOADING:
+        if self.build.status != BuildStatus.UPLOADING:
             self.processor.log.warn(
                 "Expected build status to be 'UPLOADING', was %s. Ignoring." %
-                build.status.name)
+                self.build.status.name)
             return
-        self.processor.log.debug("Build %s found" % build.id)
+        self.processor.log.debug("Build %s found" % self.build.id)
         try:
             [changes_file] = self.locateChangesFiles()
             logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(changes_file, logger, build)
+            result = self.processChangesFile(changes_file, logger, self.build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -505,11 +504,12 @@ class BuildUploadHandler(UploadHandler):
             UploadStatusEnum.REJECTED: "rejected",
             UploadStatusEnum.ACCEPTED: "accepted"}[result]
         if not (result == UploadStatusEnum.ACCEPTED and
-                build.verifySuccessfulUpload() and
-                build.status == BuildStatus.FULLYBUILT):
-            build.status = BuildStatus.FAILEDTOUPLOAD
-            build.notify(extra_info="Uploading build %s failed." % self.upload)
-            build.storeUploadLog(logger.getLogBuffer())
+                self.build.verifySuccessfulUpload() and
+                self.build.status == BuildStatus.FULLYBUILT):
+            self.build.status = BuildStatus.FAILEDTOUPLOAD
+            self.build.notify(extra_info="Uploading build %s failed." %
+                              self.upload)
+            self.build.storeUploadLog(logger.getLogBuffer())
         self.processor.ztm.commit()
         self.moveProcessedUpload(destination, logger)
 
@@ -569,13 +569,17 @@ class UploadProcessor:
                     self.log.debug("Skipping %s -- does not match %s" % (
                         upload, leaf_name))
                     continue
-                if self.builds:
-                    # Upload directories contain build results,
-                    # directories are named after job ids.
-                    handler = BuildUploadHandler(self, fsroot, upload)
+                try:
+                    if self.builds:
+                        # Upload directories contain build results,
+                        # directories are named after job ids.
+                        handler = BuildUploadHandler(self, fsroot, upload)
+                    else:
+                        handler = UserUploadHandler(self, fsroot, upload)
+                except CannotGetBuild, e:
+                    self.log.warn(e)
                 else:
-                    handler = UserUploadHandler(self, fsroot, upload)
-                handler.process()
+                    handler.process()
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
