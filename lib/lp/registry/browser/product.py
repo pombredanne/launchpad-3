@@ -818,6 +818,11 @@ class DecoratedSeries:
             # This is normal presentation.
             return ''
 
+    @cachedproperty
+    def packagings(self):
+        """Convert packagings to list to prevent multiple evaluations."""
+        return list(self.series.packagings)
+
 
 class SeriesWithReleases(DecoratedSeries):
     """A decorated series that includes releases.
@@ -1119,8 +1124,9 @@ class ProductPackagesView(LaunchpadView):
     @cachedproperty
     def series_batch(self):
         """A batch of series that are active or have packages."""
-        return BatchNavigator(
-            self.context.active_or_packaged_series, self.request)
+        decorated_series = DecoratedResultSet(
+            self.context.active_or_packaged_series, DecoratedSeries)
+        return BatchNavigator(decorated_series, self.request)
 
     @property
     def distro_packaging(self):
@@ -1132,18 +1138,8 @@ class ProductPackagesView(LaunchpadView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        # First get a list of all relevant packagings.
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # We sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order.
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-
         distros = {}
-        for packaging in all_packagings:
+        for packaging in self.context.packagings:
             distribution = packaging.distroseries.distribution
             if distribution.name in distros:
                 distro = distros[distribution.name]
