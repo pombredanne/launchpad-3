@@ -375,6 +375,7 @@ class TestBranchView(BrowserTestCase):
         text = extract_text(tag)
         expected_text = """
             Recent revisions
+            .*
             1. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
             .*
             Testing the email address in revisions\n
@@ -397,6 +398,7 @@ class TestBranchView(BrowserTestCase):
         text = extract_text(tag)
         expected_text = """
             Recent revisions
+            .*
             1. By Eric the Viking &lt;email address hidden&gt;
             .*
             Testing the email address in revisions\n
