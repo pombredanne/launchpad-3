@@ -387,7 +387,7 @@ There we can see the respective 'changelog' content for this version:
 With the possibility to download the entire changesfile (if available):
 
     >>> print browser.getLink('View changes file').url
-    http://localhost:58000/65/commercialpackage_1.0-1_source.changes
+    http://.../65/commercialpackage_1.0-1_source.changes
 
 And also download the files contained in this source, like '.orig',
 '.diff' and the DSC:
