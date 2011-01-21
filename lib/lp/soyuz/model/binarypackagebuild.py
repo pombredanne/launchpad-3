@@ -89,6 +89,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
@@ -299,6 +300,32 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
 
+    def getBinaryPackageNamesForDisplay(self):
+        """See `IBuildView`."""
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageName),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackageName.id == BinaryPackageRelease.binarypackagenameID)
+        return result.order_by(
+            [BinaryPackageName.name, BinaryPackageRelease.id])
+
+    def getBinaryFilesForDisplay(self):
+        """See `IBuildView`."""
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageFile, LibraryFileAlias,
+             LibraryFileContent),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.id ==
+                BinaryPackageFile.binarypackagereleaseID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileContent.id == LibraryFileAlias.contentID)
+        return result.order_by(
+            [LibraryFileAlias.filename, BinaryPackageRelease.id]).config(
+            distinct=True)
+
     @property
     def binarypackages(self):
         """See `IBuild`."""
@@ -365,6 +392,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             raise CannotBeRescored("Build cannot be rescored.")
 
         self.buildqueue_record.manualScore(score)
+
+    @property
+    def api_score(self):
+        """See `IBinaryPackageBuild`."""
+        # Score of the related buildqueue record (if any)
+        if self.buildqueue_record is None:
+            return None
+        else:
+            return self.buildqueue_record.lastscore
 
     def makeJob(self):
         """See `IBuildFarmJob`."""

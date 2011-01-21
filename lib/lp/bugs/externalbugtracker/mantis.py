@@ -23,7 +23,6 @@ from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
     BugWatchUpdateError,
-    BugWatchUpdateWarning,
     ExternalBugTracker,
     InvalidBugId,
     LookupTree,
@@ -50,10 +49,13 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
            https://bugtrack.alsa-project.org/alsa-bug/view.php?id=3301
 
       2. Mantis redirects us to:
-           .../alsa-bug/login_page.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301
+           .../alsa-bug/login_page.php?
+                 return=%2Falsa-bug%2Fview.php%3Fid%3D3301
 
       3. We notice this, rewrite the query, and skip to login.php:
-           .../alsa-bug/login.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301&username=guest&password=guest
+           .../alsa-bug/login.php?
+                 return=%2Falsa-bug%2Fview.php%3Fid%3D3301&
+                 username=guest&password=guest
 
       4. Mantis accepts our credentials then redirects us to the bug
          view page via a cookie test page (login_cookie_test.php)
@@ -73,9 +75,9 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                raise BugWatchUpdateWarning(
-                    "Mantis redirected us to the login page "
-                    "but did not set a return path.")
+                raise BugTrackerConnectError(
+                    url, ("Mantis redirected us to the login page "
+                          "but did not set a return path."))
 
             query = urllib.urlencode(query, True)
             url = urlunparse(
