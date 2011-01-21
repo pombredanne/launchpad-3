@@ -210,6 +210,17 @@ class BuildView(LaunchpadView):
         """Return the corresponding package upload for this build."""
         return self.context.package_upload
 
+    @property
+    def binarypackagetitles(self):
+        """List the titles of this build's `BinaryPackageRelease`s.
+
+        :return: A list of title strings.
+        """
+        return [
+            binarypackagerelease.title
+            for binarypackagerelease, binarypackagename
+                in self.context.getBinaryPackageNamesForDisplay()]
+
     @cachedproperty
     def has_published_binaries(self):
         """Whether or not binaries were already published for this build."""
@@ -256,15 +267,11 @@ class BuildView(LaunchpadView):
         if not self.context.was_built:
             return None
 
-        files = []
-        for package in self.context.binarypackages:
-            for file in package.files:
-                if file.libraryfile.deleted is False:
-                    alias = ProxiedLibraryFileAlias(
-                        file.libraryfile, self.context)
-                    files.append(alias)
-
-        return files
+        return [
+            ProxiedLibraryFileAlias(alias, self.context)
+            for bpr, bpf, alias, content
+                in self.context.getBinaryFilesForDisplay()
+                if not alias.deleted]
 
     @property
     def dispatch_time_estimate_available(self):
@@ -375,6 +382,7 @@ class BuildRescoringView(LaunchpadFormView):
 class CompleteBuild:
     """Super object to store related IBinaryPackageBuild & IBuildQueue."""
     delegates(IBinaryPackageBuild)
+
     def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
@@ -577,8 +585,7 @@ class BuildRecordsView(LaunchpadView):
                 selected = None
 
             self.available_states.append(
-                dict(name=name, value=tag, selected=selected)
-                )
+                dict(name=name, value=tag, selected=selected))
 
     @property
     def default_build_state(self):

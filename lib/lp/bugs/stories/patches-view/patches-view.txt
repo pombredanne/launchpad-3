@@ -420,7 +420,7 @@ subscription will be tested.
     ...     name="project-subscriber", displayname="Project Subscriber")
     >>> add_bug_sub = lambda *args: patchy_product.addBugSubscription(*args)
     >>> with_anybody(add_bug_sub)(project_subscriber, project_subscriber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> from zope.security.proxy import removeSecurityProxy
     >>> subscriber_name = removeSecurityProxy(project_subscriber).name
     >>> anon_browser.open(

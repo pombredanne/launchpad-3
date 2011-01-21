@@ -248,9 +248,8 @@ class XpiTestCase(unittest.TestCase):
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
             u'foozilla.name', context='main/test1.dtd')
-        translation = potmsgset.getCurrentTranslation(
-            self.firefox_template, self.spanish_firefox.language,
-            self.firefox_template.translation_side)
+        translation = potmsgset.getCurrentTranslationMessage(
+            self.firefox_template, self.spanish_firefox.language)
 
         # It's a normal message that lacks any comment.
         self.assertEquals(potmsgset.singular_text, u'FooZilla!')
