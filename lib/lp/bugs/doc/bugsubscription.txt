@@ -287,7 +287,7 @@ parameter values of level.
 If No Privileges Person sets his notification level to LIFECYCLE, he will
 not be included, if the parameter `level` is METADATA or COMMENTS.
 
-    >>> subscription_no_priv.bug_notification_level(
+    >>> subscription_no_priv.bug_notification_level = (
     ...     BugNotificationLevel.LIFECYCLE)
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(

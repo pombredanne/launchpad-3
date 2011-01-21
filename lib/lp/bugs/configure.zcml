@@ -604,11 +604,6 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_attributes="
-                person
-            "/>
-        <require
             permission="launchpad.Edit"
             set_attributes="bug_notification_level" />
     </class>
