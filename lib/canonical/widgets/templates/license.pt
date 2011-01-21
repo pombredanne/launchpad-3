@@ -21,6 +21,8 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
+// Don't use the global LPS object in this one
+// case because we need fetchCSS true for this to work.
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
