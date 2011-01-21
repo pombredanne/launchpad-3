@@ -79,18 +79,3 @@ class IBugSubscription(Interface):
     @export_read_operation()
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
-
-#    @mutator_for(bug_notification_level)
-#    @operation_parameters(new_level=copy_field(bug_notification_level))
-#    @call_with(user=REQUEST_USER)
-#    @export_write_operation()
-#    def transitionToBugNotificationLevel(new_level, user):
-#        """Transition the subscription to `new_level`.
-#
-#        This method exists to ensure that BugNotificationLevel changes
-#        don't get caught by the BugActivity machinery, where they cause
-#        problems.
-#
-#        :param new_level: The new `BugNotificationLevel` for this
-#                          subscription.
-#        """
