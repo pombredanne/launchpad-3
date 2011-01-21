@@ -11,7 +11,7 @@ distribution.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-    >>> from lp.registry.model.structuralsubscription import (
+    >>> from lp.bugs.model.structuralsubscription import (
     ...    StructuralSubscription)
 
     >>> person_set = getUtility(IPersonSet)
