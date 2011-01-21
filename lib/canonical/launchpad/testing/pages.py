@@ -319,6 +319,27 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
             print sep.join(row_content)
 
 
+def get_radio_button_text_for_field(soup, name):
+    """Find the input called field.name, and return an iterable of strings.
+
+    The resulting output will look something like:
+    ['(*) A checked option', '( ) An unchecked option']
+    """
+    buttons = soup.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                soup.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        yield "%s %s" % (radio, label)
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -327,19 +348,8 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons = main.findAll(
-        'input', {'name': 'field.%s' % name})
-    for button in buttons:
-        if button.parent.name == 'label':
-            label = extract_text(button.parent)
-        else:
-            label = extract_text(
-                main.find('label', attrs={'for': button['id']}))
-        if button.get('checked', None):
-            radio = '(*)'
-        else:
-            radio = '( )'
-        print radio, label
+    for field in get_radio_button_text_for_field(main, name):
+        print field
 
 
 def strip_label(label):

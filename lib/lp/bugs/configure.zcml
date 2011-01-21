@@ -26,6 +26,11 @@
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
 
+    <class class="lp.bugs.model.bugtask.BugTaskResultSet">
+        <allow interface="storm.zope.interfaces.IResultSet" />
+        <allow attributes="__getslice__" />
+    </class>
+
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
         <allow
@@ -271,9 +276,6 @@
             provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
-            factory="lp.bugs.browser.bugtask.assignee_renderer"
-            name="assignee"/>
-        <adapter
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
         <adapter
@@ -363,7 +365,6 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
-                    component_groups
                     contactdetails
                     getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
@@ -389,10 +390,10 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
-                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -471,12 +472,15 @@
                     name
                     is_visible
                     is_custom
+                    distro_source_package
+                    component_group
                     "/>
             <require
                 permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
@@ -781,9 +785,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 

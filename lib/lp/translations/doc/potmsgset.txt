@@ -245,8 +245,8 @@ At this time, there is no current or imported translation and no suggestions.
     >>> print upstream_potmsgset.getCurrentTranslationMessage(
     ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> print upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     None
     >>> list(upstream_potmsgset.getLocalTranslationMessages(
     ...          evolution_potemplate, catalan))
@@ -255,9 +255,8 @@ At this time, there is no current or imported translation and no suggestions.
 To add a suggestion, we set the force_suggestion parameter.
 
     >>> new_translation = upstream_potmsgset.updateTranslation(
-    ...     upstream_pofile,
-    ...     carlos, {0: u'foo'}, is_imported=False, force_suggestion=True,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    ...     upstream_pofile, carlos, {0: u'foo'}, is_current_upstream=False,
+    ...     force_suggestion=True, lock_timestamp=datetime.now(pytz.UTC))
 
 Since this message is just a suggestion, it doesn't have a reviewer, but
 it does note a person which last changed it.
@@ -291,18 +290,18 @@ At this time, there is no current or imported translation and no suggestions.
     >>> print upstream_potmsgset.getCurrentTranslationMessage(
     ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> print upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     None
     >>> list(upstream_potmsgset.getLocalTranslationMessages(
     ...     evolution_potemplate, catalan))
     []
 
-To add an imported translation, we need to set is_imported parameter.
+To add an imported translation, we need to set is_current_upstream parameter.
 
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'foo %d', 1: u'foos %d'},
-    ...     is_imported=True, lock_timestamp=datetime.now(pytz.UTC))
+    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
 
 The new translation is reflected in the POFile statistics.
 
@@ -332,7 +331,7 @@ A translation can be removed from the import by being set to an empty string.
     ...     u'have ')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u''},
-    ...     is_imported=True, lock_timestamp=datetime.now(pytz.UTC))
+    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
 
 Current translation is now unset, as is imported.
 
@@ -340,8 +339,8 @@ Current translation is now unset, as is imported.
     ...     evolution_potemplate, catalan)
     >>> print current
     None
-    >>> imported = upstream_potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, catalan)
+    >>> imported = upstream_potmsgset.getOtherTranslation(
+    ...     catalan, evolution_potemplate.translation_side)
     >>> print imported
     None
 
@@ -356,7 +355,7 @@ To unset an imported plural translation, we can add an empty translation.
     ...     u'%d contact', u'%d contacts')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'', 1: u''},
-    ...     is_imported=True, lock_timestamp=datetime.now(pytz.UTC))
+    ...     is_current_upstream=True, lock_timestamp=datetime.now(pytz.UTC))
 
 The statistics change to reflect that the message is not available
 in upstream anymore, so it's now noted as newly translated in Launchpad.
@@ -392,13 +391,13 @@ A No Privileges user updates a translation.
 
     >>> new_message = potmsgset.updateTranslation(
     ...     pofile_es, no_priv, {0: u'test string'},
-    ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
 
 This message is not made current or marked as imported.
 
-    >>> new_message.is_current
+    >>> new_message.is_current_ubuntu
     False
-    >>> new_message.is_imported
+    >>> new_message.is_current_upstream
     False
 
 Now, we should have one extra suggestion.
@@ -416,7 +415,7 @@ That is the one that no_priv submitted.
 And the active translation is not the one we suggested.
 
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     potmsgset.potemplate, spanish)
+    ...     evolution_potemplate, spanish)
     >>> current.translations
     [u'libreta de direcciones de Evolution']
 
@@ -430,7 +429,7 @@ new suggestion.
 
     >>> new_message = potmsgset.updateTranslation(
     ...     pofile_es, foobar, {0: u'test string'},
-    ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
 
 We don't have any suggestion newer than the new active translation
 
@@ -484,8 +483,6 @@ We get a POTMsgSet and verify it's a singular form:
     1
     >>> pt_BR_dummy_current.translations
     [None]
-    >>> pt_BR_dummy_current.is_imported
-    False
 
 A TranslationMessage knows what language it is in.
 
@@ -545,14 +542,14 @@ gracefully accepted.
     ...     u'%d contact', u'%d contacts')
     >>> pofile_es.plural_forms
     2
-    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
-    ...     {0: u'foo %d', 1: None}, is_imported=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, plural_potmsgset, foobar,
+    ...     translations={0: u'foo %d', 1: None})
     >>> message.is_complete
     False
-    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
-    ...     {0: None}, is_imported=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, plural_potmsgset, foobar,
+    ...     translations={0: None})
     >>> message.is_complete
     False
 
@@ -583,18 +580,17 @@ so for now, the system guesses that it has two.
 
 The message we're looking at is translated to two plural forms.
 
-    >>> message_with_two_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner, ['%d fu', '%d fuitl'],
-    ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_two_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl'])
 
 When an otherwise identical translation with three comes along, the
 third form is ignored because it falls outside the current 2 forms.
 The "new" translation message is the same one we already had.
 
-    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner,
-    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_imported=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_three_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl', '%d fuitlx'])
     >>> message_with_three_forms == message_with_two_forms
     True
 
@@ -605,10 +601,9 @@ new translation message.
     >>> zap.pluralforms = 3
     >>> zap.pluralexpression = 'n % 3'
 
-    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner,
-    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_imported=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_three_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl', '%d fuitlx'])
     >>> message_with_three_forms == message_with_two_forms
     False
 
@@ -621,9 +616,9 @@ When a new translation is submitted, again identical in the first form,
 no new message is created.  Instead, the closest existing match (the
 one with two forms) is updated.
 
-    >>> message_with_one_form = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner, ['%d fu'],
-    ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_one_form = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu'])
 
     >>> message_with_one_form == message_with_two_forms
     True
@@ -673,9 +668,9 @@ We will use this helper function to print all suggestions found:
     ...     lines = []
     ...     for suggestion in suggestions:
     ...         usage = []
-    ...         if suggestion.is_current:
+    ...         if suggestion.is_current_ubuntu:
     ...             usage.append('Launchpad')
-    ...         if suggestion.is_imported:
+    ...         if suggestion.is_current_upstream:
     ...             usage.append('Upstream')
     ...         if not usage:
     ...             usage.append('None')
@@ -876,8 +871,8 @@ submission already for it.
     ...     pmount_man_template, pofile.language)
     >>> print current
     None
-    >>> imported = potmsgset_untranslated.getImportedTranslationMessage(
-    ...     pmount_man_template, pofile.language)
+    >>> imported = potmsgset_untranslated.getOtherTranslation(
+    ...     pofile.language, pmount_man_template.translation_side)
     >>> print imported
     None
 
@@ -897,7 +892,7 @@ active) as it's another context.
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
-    >>> potmsgset_translated.potemplate.iscurrent = False
+    >>> evo_man_template.iscurrent = False
     >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
@@ -912,7 +907,7 @@ Launchpad for translations.
 
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
-    >>> potmsgset_translated.potemplate.iscurrent = True
+    >>> evo_man_template.iscurrent = True
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
@@ -942,12 +937,12 @@ To put 'external' suggestions in database, let's translate the
     >>> spanish_pofile = alsa_potemplate.getPOFileByLang('es')
     >>> spanish = spanish_pofile.language
 
-    >>> new_translation = translator_credits.updateTranslation(spanish_pofile,
-    ...     carlos, {0: u'Some Translator'}, is_imported=True,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> new_translation = factory.makeCurrentTranslationMessage(
+    ...     spanish_pofile, translator_credits, carlos,
+    ...     translations={0: u'Some Translator'})
 
-    >>> current = translator_credits.getCurrentTranslationMessage(
-    ...     alsa_potemplate, spanish)
+    >>> current = translator_credits.getCurrentTranslation(
+    ...     alsa_potemplate, spanish, alsa_potemplate.translation_side)
     >>> current.translations
     [u'Some Translator']
 

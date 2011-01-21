@@ -22,10 +22,6 @@ from zope.interface import implements
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -36,6 +32,10 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     Navigation,
+    )
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
     )
 from lp.registry.browser import RegistryEditFormView
 from lp.registry.interfaces.nameblacklist import (
@@ -162,14 +162,3 @@ class NameBlacklistSetBreadcrumb(Breadcrumb):
     implements(IBreadcrumb)
 
     text = "Name Blacklist"
-
-
-@adapter(INameBlacklist)
-class NameBlacklistBreadcrumb(Breadcrumb):
-    """Return a breadcrumb for an `INameBlackList`."""
-
-    implements(IBreadcrumb)
-
-    @property
-    def text(self):
-        return self.context.regexp

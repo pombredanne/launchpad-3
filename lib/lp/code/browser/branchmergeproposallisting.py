@@ -31,13 +31,13 @@ from zope.schema import Choice
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    custom_widget,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,

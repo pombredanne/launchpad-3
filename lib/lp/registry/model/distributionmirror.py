@@ -6,9 +6,14 @@
 """Module docstring goes here."""
 
 __metaclass__ = type
-__all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
-           'MirrorDistroSeriesSource', 'MirrorProbeRecord',
-           'DistributionMirrorSet', 'MirrorCDImageDistroSeries']
+__all__ = [
+    'DistributionMirror',
+    'MirrorDistroArchSeries',
+    'MirrorDistroSeriesSource',
+    'MirrorProbeRecord',
+    'DistributionMirrorSet',
+    'MirrorCDImageDistroSeries',
+    ]
 
 from datetime import (
     datetime,

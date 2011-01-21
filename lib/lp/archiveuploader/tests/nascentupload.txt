@@ -23,8 +23,7 @@ represent what may turn out to be an acceptable upload to a launchpad
 managed archive.
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> buildd_policy = getPolicy(
   ...     name='buildd', distro='ubuntu', distroseries='hoary')
@@ -45,8 +44,9 @@ specified exists and tries to build a ChangesFile (see
 doc/nascentuploadfile.txt) object based on that. If anything goes
 wrong during this process FatalUploadError is raised:
 
+  >>> from lp.services.log.logger import DevNullLogger, FakeLogger
   >>> NascentUpload.from_changesfile_path(
-  ...     datadir("DOES-NOT-EXIST"), buildd_policy, mock_logger)
+  ...     datadir("DOES-NOT-EXIST"), buildd_policy, FakeLogger())
   Traceback (most recent call last):
   ...
   FatalUploadError:...
@@ -55,7 +55,7 @@ Otherwise a ChangesFile object is ready to use.
 
   >>> quodlibet = NascentUpload.from_changesfile_path(
   ...     datadir("quodlibet_0.13.1-1_i386.changes"),
-  ...     anything_policy, mock_logger_quiet)
+  ...     anything_policy, DevNullLogger())
 
   >>> quodlibet.changes
   <lp.archiveuploader.changesfile.ChangesFile ...>
@@ -113,7 +113,7 @@ is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
 
   >>> ed_source_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
 
   >>> ed_source_upload.process()
   >>> for f in ed_source_upload.changes.files:
@@ -170,7 +170,7 @@ Let's try a simple binary upload:
 
   >>> ed_binary_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.binary-only-unsigned"),
-  ...     buildd_policy, mock_logger_quiet)
+  ...     buildd_policy, DevNullLogger())
 
   >>> ed_binary_upload.process()
   >>> for f in ed_binary_upload.changes.files:
@@ -220,7 +220,7 @@ should match the files target architectures:
 
   >>> ed_mismatched_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
-  ...     modified_buildd_policy, mock_logger_quiet)
+  ...     modified_buildd_policy, DevNullLogger())
 
   >>> ed_mismatched_upload.process()
 
@@ -254,7 +254,7 @@ archive already.
 
   >>> ed_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed-0.2-21/ed_0.2-21_source.changes"),
-  ...     insecure_policy_changed, mock_logger_quiet)
+  ...     insecure_policy_changed, DevNullLogger())
 
   >>> ed_upload.process()
   >>> ed_upload.is_rejected
@@ -303,7 +303,7 @@ First up, construct an upload of just the ed source...
 
   >>> ed_src = NascentUpload.from_changesfile_path(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -393,7 +393,7 @@ SourcePackageRelease.copyright content. See bug #134567.
 
   >>> nocopyright_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/nocopyright_1.0-1/nocopyright_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> nocopyright_src.process()
 
   >>> nocopyright_src.is_rejected
@@ -435,9 +435,12 @@ However there is another candidate, submitted before and not yet
 published in the archive, which provides the same source package name
 and source package version for the distroseries in question.
 
+  >>> import logging
+  >>> logger = FakeLogger()
+  >>> logger.setLevel(logging.INFO)
   >>> ed_src_dup = NascentUpload.from_changesfile_path(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, logger)
   >>> ed_src_dup.process()
   >>> ed_src_dup.is_rejected
   False
@@ -455,7 +458,7 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
-  ERROR: Exception while accepting:
+  INFO Exception while accepting:
   The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
   cannot upload the same version within the same distribution. You
   have to modify the source version and re-upload.
@@ -513,7 +516,7 @@ Upload new source 'multibar', step 1:
 
   >>> multibar_src_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> multibar_src_upload.process()
   >>> success = multibar_src_upload.do_accept()
   >>> multibar_src_queue = multibar_src_upload.queue_root
@@ -570,7 +573,7 @@ with the 'buildd' upload policy and processes all files in that directory.
 
   >>> multibar_bin_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_i386.changes'),
-  ...     buildd_policy, mock_logger_quiet)
+  ...     buildd_policy, DevNullLogger())
   >>> multibar_bin_upload.process(build=multibar_build)
   >>> success = multibar_bin_upload.do_accept()
 
@@ -639,7 +642,7 @@ overridden by the changesfile:
 
   >>> ed_src = NascentUpload.from_changesfile_path(
   ...     datadir('updates-upload-test/ed_0.2-20_source.changes'),
-  ...     norelease_sync_policy, mock_logger_quiet)
+  ...     norelease_sync_policy, DevNullLogger())
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -668,7 +671,7 @@ Check the uploader behaviour against a missing orig.tar.gz file,
 
   >>> ed21_src = NascentUpload.from_changesfile_path(
   ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> ed21_src.process()
   >>> ed21_src.is_rejected
   True
@@ -686,7 +689,7 @@ information.
 
   >>> inst_src = NascentUpload.from_changesfile_path(
   ...     datadir('test75874_0.1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  ...     sync_policy, DevNullLogger())
   >>> inst_src.process()
 
   >>> inst_src.is_rejected
@@ -734,7 +737,7 @@ sigining key reference as an IGPGKey:
 
   >>> bar_ok = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> bar_ok.process()
   >>> bar_ok.is_rejected
   False
@@ -783,7 +786,7 @@ This time the upload will fail because the ACLs don't let
 
   >>> bar_failed = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
 
   >>> bar_failed.process()
   >>> bar_failed.is_rejected
@@ -829,7 +832,7 @@ Now try the "bar" upload:
 
     >>> bar2 = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-    ...     insecure_policy, mock_logger_quiet)
+    ...     insecure_policy, DevNullLogger())
     >>> bar2.process()
     >>> bar2.is_rejected
     False
@@ -855,7 +858,7 @@ Make this upload policy pertain to the copy archive.
     >>> copy_archive_policy.archive = copy_archive
     >>> quodlibet = NascentUpload.from_changesfile_path(
     ...     datadir("quodlibet_0.13.1-1_i386.changes"),
-    ...     copy_archive_policy, mock_logger_quiet)
+    ...     copy_archive_policy, DevNullLogger())
 
 Now process the upload.
 

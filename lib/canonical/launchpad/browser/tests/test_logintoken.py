@@ -4,6 +4,7 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.logintoken import (
     ClaimTeamView,
@@ -29,7 +30,7 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.person = self.factory.makePerson(name='test-user')
-        self.email = self.person.preferredemail.email
+        self.email = removeSecurityProxy(self.person).preferredemail.email
         self.expected_next_url = 'http://127.0.0.1/~test-user'
 
     def test_ClaimTeamView(self):

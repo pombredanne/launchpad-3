@@ -113,6 +113,7 @@ class LanguageCelebrityDescriptor(CelebrityDescriptor):
 
     Unlike most other celebrities, languages are retrieved by code.
     """
+
     def _getCelebrityByName(self, utility):
         """See `CelebrityDescriptor`."""
         return utility.getLanguageByCode(self.name)
@@ -145,8 +146,6 @@ class LaunchpadCelebrities:
     launchpad_beta_testers = PersonCelebrityDescriptor(
         'launchpad-beta-testers')
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
-    lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    mailing_list_experts = PersonCelebrityDescriptor('mailing-list-experts')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
     registry_experts = PersonCelebrityDescriptor('registry')

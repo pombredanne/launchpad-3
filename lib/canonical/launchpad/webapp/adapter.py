@@ -60,6 +60,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
+    ReadOnlyModeDisallowedStore,
     ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
@@ -67,6 +68,7 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
+from lp.services.log.loglevels import DEBUG2
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -129,6 +131,7 @@ _local = threading.local()
 
 
 class CommitLogger:
+
     def __init__(self, txn):
         self.txn = txn
 
@@ -261,15 +264,16 @@ def get_request_duration(now=None):
 def set_permit_timeout_from_features(enabled):
     """Control request timeouts being obtained from the 'hard_timeout' flag.
 
-    Until we've fully setup a page to render - routed the request to the right
-    object, setup a participation etc, feature flags cannot be completely used;
-    and because doing feature flag lookups will trigger DB access, attempting
-    to do a DB lookup will cause a nested DB lookup (the one being done, and
-    the flags lookup). To resolve all of this, timeouts start as a config file
-    only setting, and are then overridden once the request is ready to execute.
+    Until we've fully setup a page to render - routed the request to the
+    right object, setup a participation etc, feature flags cannot be
+    completely used; and because doing feature flag lookups will trigger
+    DB access, attempting to do a DB lookup will cause a nested DB
+    lookup (the one being done, and the flags lookup). To resolve all of
+    this, timeouts start as a config file only setting, and are then
+    overridden once the request is ready to execute.
 
-    :param enabled: If True permit looking up request timeouts in feature
-        flags.
+    :param enabled: If True permit looking up request timeouts in
+        feature flags.
     """
     _local._permit_feature_timeout = enabled
 
@@ -350,6 +354,7 @@ class StormAccessFromMainThread(Exception):
 
 _main_thread_id = None
 
+
 def break_main_thread_db_access(*ignored):
     """Ensure that Storm connections are not made in the main thread.
 
@@ -390,6 +395,7 @@ isolation_level_map = {
 
 class ReadOnlyModeConnection(PostgresConnection):
     """storm.database.Connection for read-only mode Launchpad."""
+
     def execute(self, statement, params=None, noresult=False):
         """See storm.database.Connection."""
         try:
@@ -482,6 +488,11 @@ class LaunchpadDatabase(Postgres):
                 'DB connection URL %s does not meet naming convention.')
 
         _reset_dirty_commit_flags(*flags)
+
+        logging.log(
+            DEBUG2,
+            "Connected to %s backend %d, as user %s, at isolation level %s.",
+            flavor, raw_connection.get_backend_pid(), dbuser, self._isolation)
         return raw_connection
 
     @property
@@ -550,13 +561,14 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             # XXX: This code does not belong here - see bug=636804.
             # Robert Collins 20100913.
             OpStats.stats['timeouts'] += 1
-            # XXX bug=636801 Robert Colins 20100914 This is duplicated from the
-            # statement tracer, because the tracers are not arranged in a stack
-            # rather a queue: the done-code in the statement tracer never runs.
+            # XXX bug=636801 Robert Colins 20100914 This is duplicated
+            # from the statement tracer, because the tracers are not
+            # arranged in a stack rather a queue: the done-code in the
+            # statement tracer never runs.
             action = getattr(connection, '_lp_statement_action', None)
             if action is not None:
-                # action may be None if the tracer was installed after the
-                # statement was submitted.
+                # action may be None if the tracer was installed after
+                # the statement was submitted.
                 action.finish()
             info = sys.exc_info()
             transaction.doom()
@@ -666,6 +678,20 @@ class StoreSelector:
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
+        if is_read_only():
+            # If we are in read-only mode, override the default to the
+            # slave no matter what the existing policy says (it might
+            # work), and raise an exception if the master was explicitly
+            # requested. Most of the time, this doesn't matter as when
+            # we are in read-only mode we have a suitable database
+            # policy installed. However, code can override the policy so
+            # we still need to catch disallowed requests here.
+            if flavor == DEFAULT_FLAVOR:
+                flavor = SLAVE_FLAVOR
+            elif flavor == MASTER_FLAVOR:
+                raise ReadOnlyModeDisallowedStore(name, flavor)
+            else:
+                pass
         db_policy = StoreSelector.get_current()
         if db_policy is None:
             db_policy = MasterDatabasePolicy(None)

@@ -932,7 +932,8 @@ class TestBugChanges(unittest.TestCase):
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
-        source_package_bug = self.factory.makeBug(owner=self.user)
+        source_package_bug = self.factory.makeBug(
+            owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
@@ -956,8 +957,8 @@ class TestBugChanges(unittest.TestCase):
         expected_recipients = [self.user, metadata_subscriber]
         expected_recipients.extend(
             bug_task.pillar.owner
-            for bug_task in source_package_bug.bugtasks)
-
+            for bug_task in source_package_bug.bugtasks
+            if bug_task.pillar.official_malone)
         expected_notification = {
             'text': u"** Package changed: %s => %s" % (
                 bug_task_before_modification.bugtargetname,

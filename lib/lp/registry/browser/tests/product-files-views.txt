@@ -21,7 +21,7 @@ Test for the product/+download page.
 
     >>> def print_series_release(sr):
     ...     print "%s from the %s series" % (sr.release.name_with_codename,
-    ...                                      sr.series.series.name)
+    ...                                      sr.series.name)
 
     >>> for sr in batch:
     ...     print_series_release(sr)
@@ -35,7 +35,8 @@ Test for the product/+download page.
     ...         milestone = factory.makeMilestone(productseries=productseries,
     ...                                           name="%d.%d"%(i,j))
     ...         release_file = factory.makeProductReleaseFile(
-    ...             product=product, productseries=productseries, milestone=milestone)
+    ...             product=product, productseries=productseries,
+    ...             milestone=milestone)
     >>> view = create_initialized_view(product, '+download')
     >>> batch = view.series_and_releases_batch.currentBatch()
     >>> print len(batch)

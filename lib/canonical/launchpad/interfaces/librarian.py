@@ -40,6 +40,7 @@ from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
 # should never be removed from the Librarian.
 NEVER_EXPIRES = datetime(2038, 1, 1, 0, 0, 0, tzinfo=utc)
 
+
 class ILibraryFileAlias(Interface):
     id = Int(
             title=_('Library File Alias ID'), required=True, readonly=True,
@@ -133,6 +134,9 @@ class ILibraryFileAlias(Interface):
 class ILibraryFileAliasWithParent(ILibraryFileAlias):
     """A ILibraryFileAlias that knows about its parent."""
 
+    def createToken(self):
+        """Create a token allowing time-limited access to this file."""
+
 
 class ILibraryFileContent(Interface):
     """Actual data in the Librarian.
@@ -143,20 +147,14 @@ class ILibraryFileContent(Interface):
             title=_('Library File Content ID'), required=True, readonly=True,
             )
     datecreated = Datetime(
-            title=_('Date created'), required=True, readonly=True
-            )
-    filesize = Int(
-            title=_('File size'), required=True, readonly=True
-            )
-    sha1 = TextLine(
-            title=_('SHA-1 hash'), required=True, readonly=True
-            )
-    md5 = TextLine(
-            title=_('MD5 hash'), required=True, readonly=True
-            )
+        title=_('Date created'), required=True, readonly=True)
+    filesize = Int(title=_('File size'), required=True, readonly=True)
+    sha1 = TextLine(title=_('SHA-1 hash'), required=True, readonly=True)
+    md5 = TextLine(title=_('MD5 hash'), required=True, readonly=True)
 
 
 class ILibraryFileAliasSet(Interface):
+
     def create(name, size, file, contentType, expires=None, debugID=None,
                restricted=False):
         """Create a file in the Librarian, returning the new alias.

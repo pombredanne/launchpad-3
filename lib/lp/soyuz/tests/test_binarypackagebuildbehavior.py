@@ -11,16 +11,20 @@ import shutil
 import tempfile
 import transaction
 
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
+
+from storm.store import Store
+
 from twisted.internet import defer
-from twisted.trial import unittest as trialtest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 from lp.buildmaster.enums import (
     BuildStatus,
@@ -38,22 +42,17 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
-    PackagePublishingStatus,
     )
-from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
-    )
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 
 
-class TestBinaryBuildPackageBehavior(trialtest.TestCase):
+class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.
 
     In particular, these tests are about how the BinaryPackageBuildBehavior
@@ -63,13 +62,11 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
     interesting parameters.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         super(TestBinaryBuildPackageBehavior, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
@@ -129,13 +126,17 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build_log = [
             ('build', build_id, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        return upload_logs + build_log
+        if builder.virtualized:
+            result = [('echo', 'ping')] + upload_logs + build_log
+        else:
+            result = upload_logs + build_log
+        return result
 
     def startBuild(self, builder, candidate):
         builder = removeSecurityProxy(builder)
         candidate = removeSecurityProxy(candidate)
         return defer.maybeDeferred(
-            builder.startBuild, candidate, QuietFakeLogger())
+            builder.startBuild, candidate, BufferLogger())
 
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
@@ -220,7 +221,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         expected_message = (
             "%s (%s) can not be built for pocket %s: invalid pocket due "
             "to the series status of %s." % (
@@ -241,7 +242,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
             'Soyuz is not yet capable of building SECURITY uploads.',
             str(e))
@@ -260,13 +261,13 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         behavior = candidate.required_build_behavior
         behavior.setBuilder(builder)
         e = self.assertRaises(
-            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+            AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))
 
 
-class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
+class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.
 
     Using various mock slaves, we check how updateBuild() behaves in
@@ -280,7 +281,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     # examine that behaviour separately somehow, but the old tests gave
     # NO clue as to what, exactly, they were testing.
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _cleanup(self):
         if os.path.exists(config.builddmaster.root):
@@ -288,9 +290,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
         self.builder = self.factory.makeBuilder()
@@ -310,10 +309,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
         are set."""
-        self.assertNotIdentical(None, build.builder)
-        self.assertNotIdentical(None, build.date_finished)
-        self.assertNotIdentical(None, build.duration)
-        self.assertNotIdentical(None, build.log)
+        self.assertIsNot(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
+        self.assertIsNot(None, build.log)
 
     def test_packagefail_collection(self):
         # When a package fails to build, make sure the builder notes are
@@ -363,7 +362,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(
                 "Builder returned BUILDERFAIL when asked for its status",
                 self.builder.failnotes)
-            self.assertIdentical(None, self.candidate.builder)
+            self.assertIs(None, self.candidate.builder)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
@@ -374,7 +373,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     def test_building_collection(self):
         # The builder is still building the package.
         self.builder.setSlaveForTesting(BuildingSlave())
-        
+
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
             self.assertEqual("This is a build log", self.candidate.logtail)
@@ -404,6 +403,22 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
+    def test_collection_for_deleted_source(self):
+        # If we collected a build for a superseded/deleted source then
+        # the build should get marked superseded as the build results
+        # get discarded.
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        spr = removeSecurityProxy(self.build.source_package_release)
+        pub = self.build.current_source_publication
+        pub.requestDeletion(spr.creator)
+
+        def got_update(ignored):
+            self.assertEqual(
+                BuildStatus.SUPERSEDED, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
@@ -412,7 +427,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(self.build.status, BuildStatus.UPLOADING)
             # We do not store any upload log information when the binary
             # upload processing succeeded.
-            self.assertIdentical(None, self.build.upload_log)
+            self.assertIs(None, self.build.upload_log)
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
@@ -422,9 +437,9 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.builder.setSlaveForTesting(waiting_slave)
         score = self.candidate.lastscore
 
-        def got_update(ignored):       
-            self.assertIdentical(None, self.candidate.builder)
-            self.assertIdentical(None, self.candidate.date_started)
+        def got_update(ignored):
+            self.assertIs(None, self.candidate.builder)
+            self.assertIs(None, self.candidate.date_started)
             self.assertEqual(score, self.candidate.lastscore)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             job = self.candidate.specific_job.job
@@ -438,50 +453,59 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.build.status = BuildStatus.FULLYBUILT
         old_tmps = sorted(os.listdir('/tmp'))
 
-        # Grabbing logs should not leave new files in /tmp (bug #172798)
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        logfile_lfa_id = self.build.getLogFromSlave(self.build)
-        logfile_lfa = getUtility(ILibraryFileAliasSet)[logfile_lfa_id]
-        new_tmps = sorted(os.listdir('/tmp'))
-        self.assertEqual(old_tmps, new_tmps)
+        def got_log(logfile_lfa_id):
+            # Grabbing logs should not leave new files in /tmp (bug #172798)
+            logfile_lfa = getUtility(ILibraryFileAliasSet)[logfile_lfa_id]
+            new_tmps = sorted(os.listdir('/tmp'))
+            self.assertEqual(old_tmps, new_tmps)
 
-        # The new librarian file is stored compressed with a .gz
-        # extension and text/plain file type for easy viewing in
-        # browsers, as it decompresses and displays the file inline.
-        self.assertTrue(logfile_lfa.filename).endswith('_FULLYBUILT.txt.gz')
-        self.assertEqual('text/plain', logfile_lfa.mimetype)
-        self.layer.txn.commit()
+            # The new librarian file is stored compressed with a .gz
+            # extension and text/plain file type for easy viewing in
+            # browsers, as it decompresses and displays the file inline.
+            self.assertTrue(
+                logfile_lfa.filename.endswith('_FULLYBUILT.txt.gz'))
+            self.assertEqual('text/plain', logfile_lfa.mimetype)
+            self.layer.txn.commit()
 
-        # LibrarianFileAlias does not implement tell() or seek(), which
-        # are required by gzip.open(), so we need to read the file out
-        # of the librarian first.
-        fd, fname = tempfile.mkstemp()
-        self.addCleanup(os.remove, fname)
-        tmp = os.fdopen(fd, 'wb')
-        tmp.write(logfile_lfa.read())
-        tmp.close()
-        uncompressed_file = gzip.open(fname).read()
+            # LibrarianFileAlias does not implement tell() or seek(), which
+            # are required by gzip.open(), so we need to read the file out
+            # of the librarian first.
+            fd, fname = tempfile.mkstemp()
+            self.addCleanup(os.remove, fname)
+            tmp = os.fdopen(fd, 'wb')
+            tmp.write(logfile_lfa.read())
+            tmp.close()
+            uncompressed_file = gzip.open(fname).read()
 
-        # XXX: 2010-10-18 bug=662631
-        # When the mock slave is changed to return a Deferred,
-        # update this test too.
-        orig_file = removeSecurityProxy(self.builder.slave).getFile(
-            'buildlog').read()
-        self.assertEqual(orig_file, uncompressed_file)
+            # Now make a temp filename that getFile() can write to.
+            fd, tmp_orig_file_name = tempfile.mkstemp()
+            self.addCleanup(os.remove, tmp_orig_file_name)
+
+            # Check that the original file from the slave matches the
+            # uncompressed file in the librarian.
+            def got_orig_log(ignored):
+                orig_file_content = open(tmp_orig_file_name).read()
+                self.assertEqual(orig_file_content, uncompressed_file)
+
+            d = removeSecurityProxy(self.builder.slave).getFile(
+                'buildlog', tmp_orig_file_name)
+            return d.addCallback(got_orig_log)
+
+        d = self.build.getLogFromSlave(self.build)
+        return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
         # Builds in private archives should have their log uploaded to
         # the restricted librarian.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
-        # Un-publish the source so we don't trip the 'private' field
-        # validator.
-        from storm.store import Store
-        for source in self.build.archive.getPublishedSources():
-            Store.of(source).remove(source)
-        self.build.archive.private = True
-        self.build.archive.buildd_secret = "foo"
+        # Go behind Storm's back since the field validator on
+        # Archive.private prevents us from setting it to True with
+        # existing published sources.
+        Store.of(self.build).execute("""
+            UPDATE archive SET private=True,buildd_secret='foo'
+            WHERE archive.id = %s""" % self.build.archive.id)
+        Store.of(self.build).invalidate()
 
         def got_update(ignored):
             # Librarian needs a commit.  :(
@@ -490,4 +514,3 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
-

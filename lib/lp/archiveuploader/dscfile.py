@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -430,11 +430,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             archives = [self.policy.archive]
 
+        archives = [archive for archive in archives if archive is not None]
+
         library_file = None
         for archive in archives:
             try:
-                library_file = self.policy.distro.getFileByName(
-                    filename, source=True, binary=False, archive=archive)
+                library_file = archive.getFileByName(filename)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive

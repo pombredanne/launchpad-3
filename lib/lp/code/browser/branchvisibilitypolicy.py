@@ -25,22 +25,22 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidgetWithDescription,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.code.enums import (
     BranchVisibilityRule,
     TeamBranchVisibilityRule,
     )
-from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )

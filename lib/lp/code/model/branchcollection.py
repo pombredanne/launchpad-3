@@ -145,7 +145,7 @@ class GenericBranchCollection:
         return self.store.using(*tables).find(Branch, *expressions)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
-                          target_branch=None):
+                          target_branch=None, merged_revnos=None):
         """See `IBranchCollection`."""
         expressions = [
             BranchMergeProposal.source_branchID.is_in(
@@ -158,6 +158,9 @@ class GenericBranchCollection:
         if target_branch is not None:
             expressions.append(
                 BranchMergeProposal.target_branch == target_branch)
+        if merged_revnos is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revno.is_in(merged_revnos))
         expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(
@@ -361,10 +364,13 @@ class GenericBranchCollection:
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
 
-    def targetedBy(self, person):
+    def targetedBy(self, person, since=None):
         """See `IBranchCollection`."""
+        clauses = [BranchMergeProposal.registrant == person]
+        if since is not None:
+            clauses.append(BranchMergeProposal.date_created >= since)
         return self._filterBy(
-            [BranchMergeProposal.registrant == person],
+            clauses,
             table=BranchMergeProposal,
             join=Join(BranchMergeProposal,
                       BranchMergeProposal.target_branch == Branch.id))

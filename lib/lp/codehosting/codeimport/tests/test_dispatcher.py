@@ -14,9 +14,9 @@ import tempfile
 from unittest import TestLoader
 
 from canonical.launchpad import scripts
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 
@@ -53,7 +53,7 @@ class TestCodeImportDispatcherUnit(TestCase):
     def makeDispatcher(self, worker_limit=10, _sleep=lambda delay: None):
         """Make a `CodeImportDispatcher`."""
         return CodeImportDispatcher(
-            QuietFakeLogger(), worker_limit, _sleep=_sleep)
+            BufferLogger(), worker_limit, _sleep=_sleep)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()

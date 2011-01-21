@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -133,9 +133,7 @@ def read_dsc(package, version, component, archive_root):
     fullpath = os.path.join(source_dir, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
-        clfile = open(fullpath)
-        changelog = parse_changelog(clfile)
-        clfile.close()
+        changelog = open(fullpath).read().strip()
     else:
         log.warn("No changelog file found for %s in %s" %
                  (package, source_dir))
@@ -401,11 +399,15 @@ class SourcePackageData(AbstractPackageData):
 
         self.dsc = encoding.guess(dsc)
         self.copyright = encoding.guess(copyright)
+        parsed_changelog = None
+        if changelog:
+            parsed_changelog = parse_changelog(changelog.split('\n'))
 
         self.urgency = None
         self.changelog = None
-        if changelog and changelog[0]:
-            cldata = changelog[0]
+        self.changelog_entry = None
+        if parsed_changelog and parsed_changelog[0]:
+            cldata = parsed_changelog[0]
             if 'changes' in cldata:
                 if cldata["package"] != self.package:
                     log.warn("Changelog package %s differs from %s" %
@@ -413,7 +415,8 @@ class SourcePackageData(AbstractPackageData):
                 if cldata["version"] != self.version:
                     log.warn("Changelog version %s differs from %s" %
                              (cldata["version"], self.version))
-                self.changelog = encoding.guess(cldata["changes"])
+                self.changelog_entry = encoding.guess(cldata["changes"])
+                self.changelog = changelog
                 self.urgency = cldata["urgency"]
             else:
                 log.warn("Changelog empty for source %s (%s)" %

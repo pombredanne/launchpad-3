@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -18,7 +18,6 @@ import time
 from psycopg2 import IntegrityError
 import pytz
 from storm.locals import (
-    In,
     Max,
     Min,
     Select,
@@ -203,7 +202,8 @@ class RevisionCachePruner(TunableLoop):
 class CodeImportEventPruner(TunableLoop):
     """Prune `CodeImportEvent`s that are more than a month old.
 
-    Events that happened more than 30 days ago are really of no interest to us.
+    Events that happened more than 30 days ago are really of no
+    interest to us.
     """
 
     maximum_chunk_size = 10000
@@ -547,7 +547,7 @@ class BugNotificationPruner(TunableLoop):
         ids_to_remove = list(self._to_remove()[:chunk_size])
         num_removed = IMasterStore(BugNotification).find(
             BugNotification,
-            In(BugNotification.id, ids_to_remove)).remove()
+            BugNotification.id.is_in(ids_to_remove)).remove()
         transaction.commit()
         self.log.debug("Removed %d rows" % num_removed)
 
@@ -579,7 +579,7 @@ class BranchJobPruner(TunableLoop):
             # constraint is ON DELETE CASCADE.
             IMasterStore(Job).find(
                 Job,
-                In(Job.id, ids_to_remove)).remove()
+                Job.id.is_in(ids_to_remove)).remove()
         else:
             self._is_done = True
         transaction.commit()
@@ -719,7 +719,7 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._to_remove()[:chunk_size])
         self.store.find(
-            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
+            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
         transaction.commit()
 
 

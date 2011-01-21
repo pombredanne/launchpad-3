@@ -99,7 +99,7 @@ def create_list(team_name):
         word.capitalize() for word in team_name.split('-'))
     browser = Browser('no-priv@canonical.com:test')
     # Create the team.
-    browser.open('http://launchpad.dev:8085/people/+newteam')
+    browser.open('%s/people/+newteam' % MailmanLayer.appserver_root_url())
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
     browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -243,7 +243,7 @@ def apply_for_list(browser, team_name):
     """Like mailinglists_helper.apply_for_list() but with the right rooturl.
     """
     mailinglists_helper.apply_for_list(
-        browser, team_name, 'http://launchpad.dev:8085/')
+        browser, team_name, MailmanLayer.appserver_root_url(ensureSlash=True))
 
 
 def _membership_test(team_name, people, predicate):

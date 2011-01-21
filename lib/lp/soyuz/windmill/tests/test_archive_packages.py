@@ -15,7 +15,8 @@ class TestArchivePackagesSourcesExtra(WindmillTestCase):
         """A successful request for the extra info updates the display."""
 
         self.client.open(
-            url='http://launchpad.dev:8085/~cprov/+archive/ppa/+packages')
+            url='%s/~cprov/+archive/ppa/+packages'
+                % SoyuzWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         self.client.click(id="pub29-expander")

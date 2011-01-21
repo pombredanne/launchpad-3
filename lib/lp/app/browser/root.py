@@ -33,18 +33,18 @@ from canonical.launchpad.interfaces.searchservice import (
     ISearchService,
     )
 from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp import (
-    action,
-    LaunchpadFormView,
-    LaunchpadView,
-    safe_action,
-    )
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.timeout import urlfetch
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
 from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet

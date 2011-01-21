@@ -1,7 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
+
+from __future__ import with_statement
 
 """Unit tests for BranchMergeProposals."""
 
@@ -15,6 +17,8 @@ from difflib import unified_diff
 import unittest
 
 import pytz
+from soupmatchers import HTMLContains, Tag
+from testtools.matchers import Not
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
@@ -55,7 +59,9 @@ from lp.code.tests.helpers import (
     )
 from lp.testing import (
     BrowserTestCase,
+    feature_flags,
     login_person,
+    set_feature_flag,
     person_logged_in,
     TestCaseWithFactory,
     time_counter,
@@ -343,10 +349,10 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+class TestRegisterBranchMergeProposalView(BrowserTestCase):
     """Test the merge proposal registration view."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -516,6 +522,15 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
+
+    def test_register_reviewer_not_hidden(self):
+        branch = self.factory.makeBranch()
+        browser = self.getViewBrowser(branch, '+register-merge')
+        extra = Tag(
+            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
+        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
+        matcher = Not(HTMLContains(reviewer.within(extra)))
+        self.assertThat(browser.contents, matcher)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
@@ -713,6 +728,40 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
+    def makeRevisionGroups(self):
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date)
+        first_commit = datetime(2009, 9, 9, tzinfo=pytz.UTC)
+        add_revision_to_branch(
+            self.factory, bmp.source_branch, first_commit)
+        login_person(bmp.registrant)
+        bmp.requestReview(review_date)
+        revision_date = review_date + timedelta(days=1)
+        revisions = []
+        for date in range(2):
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revision_date += timedelta(days=1)
+        return bmp, revisions
+
+    def test_getRevisionsIncludesIncrementalDiffs(self):
+        bmp, revisions = self.makeRevisionGroups()
+        diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[1].revision.getLefthandParent(),
+                new_revision=revisions[3].revision)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        view = create_initialized_view(bmp, '+index')
+        comments = view.conversation.comments
+        self.assertEqual(
+            [diff],
+            [comment.diff for comment in comments])
+
     def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
         # The browser helper class implements its interface.
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
@@ -741,6 +790,16 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertFalse(view.conversation.comments[2].from_superseded)
         self.assertTrue(view.conversation.comments[1].from_superseded)
         self.assertTrue(view.conversation.comments[0].from_superseded)
+
+    def test_pending_diff_with_pending_branch(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.fail()
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.pending_diff)
+        with person_logged_in(bmp.source_branch.owner):
+            bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
+        self.assertTrue(view.pending_diff)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
@@ -915,6 +974,27 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+
+class TestBranchMergeProposal(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_conversation(self):
+        source_branch = self.factory.makeBranch()
+        parent = add_revision_to_branch(self.factory, source_branch,
+            self.factory.getUniqueDate()).revision
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate(),
+            source_branch=source_branch)
+        revision = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        diff = self.factory.makeDiff()
+        bmp.generateIncrementalDiff(parent, revision, diff)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        browser = self.getViewBrowser(bmp)
+        assert 'unf_pbasyvpgf' in browser.contents
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

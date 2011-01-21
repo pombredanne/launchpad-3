@@ -9,6 +9,8 @@ __all__ = [
     'TranslationGroupSet',
     ]
 
+import operator
+
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -26,6 +28,9 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -33,15 +38,8 @@ from canonical.launchpad.database.librarian import (
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.product import (
-    Product,
-    ProductWithLicenses,
-    )
-from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
-from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup,
@@ -108,10 +106,18 @@ class TranslationGroup(SQLBase):
 
     @property
     def products(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+
         return Product.selectBy(translationgroup=self.id, active=True)
 
     @property
     def projects(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         return ProjectGroup.selectBy(translationgroup=self.id, active=True)
 
     # A limit of projects to get for the `top_projects`.
@@ -171,13 +177,18 @@ class TranslationGroup(SQLBase):
             Translator.translationgroup == self,
             Language.id == Translator.languageID,
             Person.id == Translator.translatorID)
-
-        return prejoin(
-            translator_data.order_by(Language.englishname),
-            slice(0, 3))
+        translator_data = translator_data.order_by(Language.englishname)
+        mapper = lambda row:row[slice(0,3)]
+        return DecoratedResultSet(translator_data, mapper)
 
     def fetchProjectsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import (
+            Product,
+            ProductWithLicenses,
+            )
+
         using = [
             Product,
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
@@ -202,6 +213,9 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         using = [
             ProjectGroup,
             LeftJoin(
@@ -218,13 +232,15 @@ class TranslationGroup(SQLBase):
         project_data = ISlaveStore(ProjectGroup).using(*using).find(
             tables,
             ProjectGroup.translationgroupID == self.id,
-            ProjectGroup.active == True)
+            ProjectGroup.active == True).order_by(ProjectGroup.displayname)
 
-        return prejoin(
-            project_data.order_by(ProjectGroup.displayname), slice(0, 1))
+        return DecoratedResultSet(project_data, operator.itemgetter(0))
 
     def fetchDistrosForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
         using = [
             Distribution,
             LeftJoin(
@@ -239,10 +255,10 @@ class TranslationGroup(SQLBase):
             LibraryFileContent,
             )
         distro_data = ISlaveStore(Distribution).using(*using).find(
-            tables, Distribution.translationgroupID == self.id)
+            tables, Distribution.translationgroupID == self.id).order_by(
+            Distribution.displayname)
 
-        return prejoin(
-            distro_data.order_by(Distribution.displayname), slice(0, 1))
+        return DecoratedResultSet(distro_data, operator.itemgetter(0))
 
 
 class TranslationGroupSet:

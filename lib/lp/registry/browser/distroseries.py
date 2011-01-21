@@ -47,10 +47,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -65,6 +61,10 @@ from canonical.launchpad.webapp.publisher import (
     )
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,

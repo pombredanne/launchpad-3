@@ -17,7 +17,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
-    In,
     Select,
     SQL,
     Store,
@@ -380,12 +379,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename ==
                     self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
+                SourcePackagePublishingHistory.archiveID.is_in(
                     self.distribution.all_distro_archive_ids)))
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)).order_by(Desc(
+            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
                 SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
@@ -476,6 +475,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def bug_reported_acknowledgement(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return (
+            self.distribution_sourcepackage.enable_bugfiling_duplicate_search)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""

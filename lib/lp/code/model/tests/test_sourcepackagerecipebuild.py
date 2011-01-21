@@ -14,6 +14,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
@@ -24,6 +26,8 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
@@ -39,6 +43,7 @@ from lp.code.mail.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
@@ -130,6 +135,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # its series.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(spb.distroseries.distribution, spb.distribution)
+
+    def test_current_component(self):
+        # Since recipes build only into PPAs, they always build in main.
+        # PPAs lack indices for other components.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual('main', spb.current_component.name)
 
     def test_is_private(self):
         # A source package recipe build is currently always public.
@@ -231,6 +242,19 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
+    def test_makeDailyBuilds_logs_builds(self):
+        # If a logger is passed into the makeDailyBuilds method, each recipe
+        # that a build is requested for gets logged.
+        owner = self.factory.makePerson(name='eric')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True)
+        logger = BufferLogger()
+        SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - build requested for Warty (4.10)\n',
+            logger.getLogBuffer())
+
     def test_makeDailyBuilds_clears_is_stale(self):
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
@@ -299,6 +323,23 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build.destroySelf()
         self.assertIs(None, release.source_package_recipe_build)
         transaction.commit()
+
+    def test_destroySelf_destroys_referenced(self):
+        # Destroying a sourcepackagerecipebuild also destroys the
+        # PackageBuild and BuildFarmJob it references.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        store = Store.of(build)
+        naked_build = removeSecurityProxy(build)
+        # Ensure database ids are set.
+        store.flush()
+        package_build_id = naked_build.package_build_id
+        build_farm_job_id = naked_build.package_build.build_farm_job_id
+        build.destroySelf()
+        result = store.find(PackageBuild, PackageBuild.id == package_build_id)
+        self.assertIs(None, result.one())
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
@@ -405,7 +446,7 @@ class TestGetUploadMethodsForSPRecipeBuild(
 
 
 class TestHandleStatusForSPRBuild(
-    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with SPRecipe builds."""
 
 

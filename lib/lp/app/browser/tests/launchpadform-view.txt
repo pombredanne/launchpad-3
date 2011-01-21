@@ -11,7 +11,7 @@ can be used for subordinate field indentation, for example.
     >>> from zope.schema import TextLine
     >>> from canonical.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
-    >>> from canonical.launchpad.webapp.launchpadform import (
+    >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
     >>> from canonical.launchpad.testing.pages import find_tags_by_class
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest

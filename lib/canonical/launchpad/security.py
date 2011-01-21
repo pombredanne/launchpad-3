@@ -43,8 +43,12 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationPublic,
+    )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -67,6 +71,7 @@ from lp.code.interfaces.branch import (
     user_has_special_branch_access,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -109,7 +114,6 @@ from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IProjectGroupMilestone,
@@ -139,7 +143,10 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFile,
     )
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
@@ -181,6 +188,9 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -423,6 +433,11 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
+class ViewTimelineProductSeries(AnonymousAuthorization):
+    """Anyone can view an ITimelineProductSeries."""
+    usedfor = ITimelineProductSeries
+
+
 class ViewProductReleaseFile(AnonymousAuthorization):
     """Anyone can view an IProductReleaseFile."""
     usedfor = IProductReleaseFile
@@ -485,7 +500,18 @@ class ViewSpecificationBranch(EditSpecificationBranch):
         return True
 
 
-class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
+    """Anonymous users have launchpad.View on ISpecificationPublic.
+
+    This is only needed because lazr.restful is hard-coded to check that
+    permission before returning things in a collection.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ISpecificationPublic
+
+
+class EditSpecificationByRelatedPeople(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
     the spec target (distro/product) or goal (distroseries/productseries).
@@ -502,6 +528,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
+                user.isOneOfDrivers(self.obj.target) or
                 user.isOneOf(
                     self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
@@ -721,6 +748,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 # with launchpad.View so that this adapter is used.  For now, though, it's
 # going to be used only on the webservice (which explicitly checks for
 # launchpad.View) so that we don't leak memberships of private teams.
+
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ITeamMembership
@@ -997,9 +1025,7 @@ class SeriesDrivers(AuthorizationBase):
     usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
-        return (user.isOneOfDrivers(self.obj) or
-                user.isOwner(self.obj) or
-                user.in_admin)
+        return self.obj.personHasDriverRights(user)
 
 
 class ViewProductSeries(AnonymousAuthorization):
@@ -1166,6 +1192,18 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
         return user.in_bazaar_experts or user.in_buildd_admin
 
 
+class EditBranchMergeQueue(AuthorizationBase):
+    """Control who can edit a BranchMergeQueue.
+
+    Access is granted only to the owner of the queue.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeQueue
+
+    def checkAuthenticated(self, user):
+        return user.isOwner(self.obj)
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -1242,8 +1280,6 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
             EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753:
-# This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
@@ -1254,16 +1290,13 @@ class ViewPOFile(AnonymousAuthorization):
     usedfor = IPOFile
 
 
-class EditPOFileDetails(EditByOwnersOrAdmins):
+class EditPOFile(AuthorizationBase):
+    permission = 'launchpad.Edit'
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """Allow anyone that can edit translations, owner, experts and admis.
-        """
-
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
-                self.obj.canEditTranslations(user.person) or
-                user.in_rosetta_experts)
+        """The `POFile` itself keeps track of this permission."""
+        return self.obj.canEditTranslations(user.person)
 
 
 class AdminTranslator(OnlyRosettaExpertsAndAdmins):
@@ -1451,9 +1484,6 @@ class AdminBuilder(AdminByBuilddAdmin):
     usedfor = IBuilder
 
 
-# XXX cprov 2006-07-31: As soon as we have external builders, as presumed
-# in the original plan, we should grant some rights to the owners and
-# that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuilder
@@ -1620,8 +1650,13 @@ class AppendQuestion(AdminQuestion):
         """Allow user who can administer the question and answer contacts."""
         if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for answer_contact in self.obj.target.answer_contacts:
-            if user.inTeam(answer_contact):
+        question_target = self.obj.target
+        questions_person = IQuestionsPerson(user.person)
+        for target in questions_person.getDirectAnswerQuestionTargets():
+            if target == question_target:
+                return True
+        for target in questions_person.getTeamAnswerQuestionTargets():
+            if target == question_target:
                 return True
         return False
 
@@ -1644,8 +1679,15 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
         if EditByOwnersOrAdmins.checkAuthenticated(self, user):
             return True
         if IQuestionTarget.providedBy(self.obj):
-            for answer_contact in self.obj.answer_contacts:
-                if user.inTeam(answer_contact):
+            # Adapt QuestionTargets to FAQTargets to ensure the correct
+            # object is being examined; the implementers are not synonymous.
+            faq_target = IFAQTarget(self.obj)
+            questions_person = IQuestionsPerson(user.person)
+            for target in questions_person.getDirectAnswerQuestionTargets():
+                if IFAQTarget(target) == faq_target:
+                    return True
+            for target in questions_person.getTeamAnswerQuestionTargets():
+                if IFAQTarget(target) == faq_target:
                     return True
         return False
 
@@ -1706,6 +1748,24 @@ class ViewLanguage(AnonymousAuthorization):
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
+
+
+class AdminCustomLanguageCode(AuthorizationBase):
+    """Controls administration for a custom language code.
+
+    Whoever can admin a product's or distribution's translations can also
+    admin the custom language codes for it.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = ICustomLanguageCode
+
+    def checkAuthenticated(self, user):
+        if self.obj.product is not None:
+            return AdminProductTranslations(
+                self.obj.product).checkAuthenticated(user)
+        else:
+            return AdminDistributionTranslations(
+                self.obj.distribution).checkAuthenticated(user)
 
 
 class AccessBranch(AuthorizationBase):
@@ -1795,6 +1855,12 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistributionSourcePackageTranslations(
+    AdminDistroSeriesTranslations):
+    """DistributionSourcePackage objects link to a distribution, too."""
+    usedfor = IDistributionSourcePackage
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -2271,7 +2337,8 @@ class ViewSourcePackageRecipeBuild(DerivedAuthorization):
     usedfor = ISourcePackageRecipeBuild
 
     def iter_objects(self):
-        yield self.obj.recipe
+        if self.obj.recipe is not None:
+            yield self.obj.recipe
         yield self.obj.archive
 
 
@@ -2337,49 +2404,14 @@ class ViewSourcePackageRelease(AuthorizationBase):
         return False
 
 
-class MailingListApprovalByExperts(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IMailingListSet
-
-    def checkAuthenticated(self, user):
-        return user.in_mailing_list_experts
-
-
-class ConfigureTeamMailingList(AuthorizationBase):
-    permission = 'launchpad.MailingListManager'
-    usedfor = ITeam
-
-    def checkAuthenticated(self, user):
-        """Check to see if the user can manage a mailing list.
-
-        A team's owner or administrator, the Launchpad administrators, and
-        Launchpad mailing list experts can all manage a team's mailing list
-        through its +mailinglist page.
-
-        :param user: The user whose permission is being checked.
-        :type user: `IPerson`
-        :return: True if the user can manage a mailing list, otherwise False.
-        :rtype: boolean
-        """
-        # The team owner, the Launchpad mailing list experts and the Launchpad
-        # administrators can all view a team's +mailinglist page.
-        team = ITeam(self.obj)
-        is_team_owner = (
-            team is not None and team in user.person.getAdministratedTeams())
-        return is_team_owner or user.in_admin or user.in_mailing_list_experts
-
-
 class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
     def checkUnauthenticated(self):
         """See `AuthorizationBase`."""
-        # Email addresses without an associated Person cannot be seen by
-        # anonymous users.
-        if self.obj.person is None:
-            return False
-        return not self.obj.person.hide_email_addresses
+        # Anonymous users can never see email addresses.
+        return False
 
     def checkAccountAuthenticated(self, account):
         """Can the user see the details of this email address?
@@ -2507,6 +2539,26 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
 
         If a parent is known, users which can edit the parent can also
         edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)
+
+
+class ViewLibraryFileAliasWithParent(AuthorizationBase):
+    """Authorization class for viewing LibraryFileAliass having a parent."""
+
+    permission = 'launchpad.View'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+
+        If a parent is known, users which can view the parent can also
+        view the LibraryFileAlias.
         """
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:

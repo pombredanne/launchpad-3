@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
+    'TimelineProductSeries',
     ]
 
 import datetime
@@ -73,6 +74,7 @@ from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
+    ITimelineProductSeries,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.milestone import (
@@ -266,6 +268,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bug_reported_acknowledgement(self):
         """See `IBugTarget`."""
         return self.product.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return self.product.enable_bugfiling_duplicate_search
 
     @property
     def sourcepackages(self):
@@ -637,12 +644,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
         landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
         landmarks.reverse()
-        return dict(
+        return TimelineProductSeries(
             name=self.name,
             is_development_focus=self.is_development_focus,
-            status=self.status.title,
+            status=self.status,
             uri=canonical_url(self, path_only_if_possible=True),
-            landmarks=landmarks)
+            landmarks=landmarks,
+            product=self.product)
+
+
+class TimelineProductSeries:
+    """See `ITimelineProductSeries`."""
+    implements(ITimelineProductSeries)
+
+    def __init__(self, name, status, is_development_focus, uri, landmarks,
+                 product):
+        self.name = name
+        self.status = status
+        self.is_development_focus = is_development_focus
+        self.uri = uri
+        self.landmarks = landmarks
+        self.product = product
 
 
 class ProductSeriesSet:

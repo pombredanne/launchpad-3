@@ -29,7 +29,7 @@ from zope.tales.interfaces import ITALESExpression
 
 from canonical.base import base
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -15,7 +15,6 @@ import cgi
 
 from lazr.delegates import delegates
 from simplejson import dumps
-
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -27,14 +26,16 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
@@ -133,6 +134,10 @@ class AdvancedSubscriptionMixin:
 
     def _setUpBugNotificationLevelField(self):
         """Set up the bug_notification_level field."""
+        if not self._use_advanced_features:
+            # If advanced features are disabled, do nothing.
+            return
+
         self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(
             self._bug_notification_level_field)
@@ -263,11 +268,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self.user is None:
             return
 
-        if self._use_advanced_features:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
-            self._setUpBugNotificationLevelField()
-        else:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
+        self.form_fields += formlib.form.Fields(self._subscription_field)
+        self._setUpBugNotificationLevelField()
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
@@ -487,7 +489,7 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         """
         direct_subscriptions = [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions()]
+            for subscription in self.context.getDirectSubscriptions().sorted]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:

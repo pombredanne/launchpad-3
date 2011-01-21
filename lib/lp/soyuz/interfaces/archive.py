@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -21,6 +21,7 @@ __all__ = [
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
+    'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
     'IArchiveEdit',
@@ -96,6 +97,7 @@ from lp.services.fields import (
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.processor import IProcessorFamily
 
 
@@ -333,6 +335,12 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
+
+    default_component = Reference(
+        IComponent,
+        title=_(
+            "The default component for this archive. Publications without a "
+            "valid component will be assigned this one."))
 
     archive_url = Attribute("External archive URL.")
 
@@ -904,6 +912,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param person: A Person identifying the requestor.
         :param proposed_name: A String identifying the proposed PPA name.
         """
+
+    def getPockets():
+        """Return iterable containing valid pocket names for this archive."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -1533,13 +1545,17 @@ class IArchiveSet(Interface):
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
 
-    def getPPAOwnedByPerson(person, name=None):
+    def getPPAOwnedByPerson(person, name=None, statuses=None,
+                            has_packages=False):
         """Return the named PPA owned by person.
 
-        :param person: An `IPerson`
-        :param name: The PPA name required.
+        :param person: An `IPerson`.  Required.
+        :param name: The PPA name.  Optional.
+        :param statuses: A list of statuses the PPAs must match.  Optional.
+        :param has_packages: If True will only select PPAs that have published
+            source packages.
 
-        If the person is not supplied it will default to the
+        If the name is not supplied it will default to the
         first PPA that the person created.
 
         :raises NoSuchPPA: if the named PPA does not exist.
@@ -1659,6 +1675,12 @@ MAIN_ARCHIVE_PURPOSES = (
 ALLOW_RELEASE_BUILDS = (
     ArchivePurpose.PARTNER,
     ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
+
+FULL_COMPONENT_SUPPORT = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.DEBUG,
     ArchivePurpose.COPY,
     )
 

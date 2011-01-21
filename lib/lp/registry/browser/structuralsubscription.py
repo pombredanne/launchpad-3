@@ -7,6 +7,7 @@ __all__ = [
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
+    'StructuralSubscribersPortletView',
     ]
 
 from operator import attrgetter
@@ -22,16 +23,20 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import (
-    action,
-    canonical_url,
-    custom_widget,
-    LaunchpadFormView,
-    stepthrough,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -40,14 +45,29 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
 from lp.services.propertycache import cachedproperty
 
 
+class StructuralSubscriptionNavigation(Navigation):
+
+    usedfor = IStructuralSubscription
+
+    @stepthrough("+filter")
+    def bug_filter(self, filter_id):
+        bug_filter_id = int(filter_id)
+        for bug_filter in self.context.bug_filters:
+            if bug_filter.id == bug_filter_id:
+                return bug_filter
+        return None
+
+
 class StructuralSubscriptionView(LaunchpadFormView,
                                  AdvancedSubscriptionMixin):
+
     """View class for structural subscriptions."""
 
     schema = IStructuralSubscriptionForm
@@ -79,6 +99,10 @@ class StructuralSubscriptionView(LaunchpadFormView,
     @property
     def label(self):
         return self.page_title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """See LaunchpadFormView."""
@@ -205,7 +229,6 @@ class StructuralSubscriptionView(LaunchpadFormView,
         self._handleUserSubscription(data)
         self._handleTeamSubscriptions(data)
         self._handleDriverChanges(data)
-        self.next_url = canonical_url(self.context) + '/+subscribe'
 
     def _handleUserSubscription(self, data):
         """Process the subscription for the user."""
@@ -361,3 +384,21 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+
+class StructuralSubscribersPortletView(LaunchpadView):
+    """A simple view for displaying the subscribers portlet."""
+
+    @property
+    def target_label(self):
+        """Return the target label for the portlet."""
+        if IDistributionSourcePackage.providedBy(self.context):
+            return "To all bugs in %s" % self.context.displayname
+        else:
+            return "To all %s bugs" % self.context.title
+
+    @property
+    def parent_target_label(self):
+        """Return the target label for the portlet."""
+        return (
+            "To all %s bugs" % self.context.parent_subscription_target.title)

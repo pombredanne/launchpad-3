@@ -215,6 +215,21 @@ Check if the changelog message was stored correcly:
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
+Check that the changelog was uploaded to the librarian correctly:
+
+    >>> print x11p.changelog.read()
+    x11proto-damage (6.8.99.7-2) breezy; urgency=low
+    <BLANKLINE>
+      * Add dependency on x11proto-fixes-dev.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+    <BLANKLINE>
+    x11proto-damage (6.8.99.7-1) breezy; urgency=low
+    <BLANKLINE>
+      * First x11proto-damage release.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 16 May 2005 22:10:17 +1000
+
 Same for the copyright:
 
     >>> print x11p.copyright
@@ -439,7 +454,7 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
 2 being uploaded by mdz and 2 by doko).
 
     >>> from sqlobject import LIKE
-    >>> p = Person.selectOne(LIKE(Person.q.name, "cjwatson%"))
+    >>> p = Person.selectOne(LIKE(Person.q.name, u"cjwatson%"))
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count

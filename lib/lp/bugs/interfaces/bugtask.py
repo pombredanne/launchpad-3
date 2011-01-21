@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -667,10 +667,11 @@ class IBugTask(IHasDateCreated, IHasBug):
         underlying bug for this bugtask.
 
         This method was documented as being required here so that
-        MentorshipOffers could happen on IBugTask. If that was the sole reason
-        then this method should be deletable.  When we move to context-less bug
-        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
-        eliminate this if it is no longer useful.
+        MentorshipOffers could happen on IBugTask. If that was the sole
+        reason then this method should be deletable.  When we move to
+        context-less bug presentation (where the bug is at
+        /bugs/n?task=ubuntu) then we can eliminate this if it is no
+        longer useful.
         """
 
     @mutator_for(milestone)
@@ -1144,7 +1145,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None):
+                 modified_since=None, created_since=None,
+                 exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1190,6 +1192,7 @@ class BugTaskSearchParams:
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
+        self.exclude_conjoined_tasks = exclude_conjoined_tasks
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1387,15 +1390,18 @@ class IBugTaskSet(Interface):
         Only BugTasks that the user has access to will be returned.
         """
 
-    def search(params, *args):
+    def search(params, *args, **kwargs):
         """Search IBugTasks with the given search parameters.
 
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
 
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
+        :param search_params: a BugTaskSearchParams object
+        :param args: any number of BugTaskSearchParams objects
+        :param prejoins: (keyword) A sequence of tuples
+            (table, table_join) which should be pre-joined in addition
+            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
@@ -1408,13 +1414,6 @@ class IBugTaskSet(Interface):
         This is a variation on IBugTaskSet.search that returns only bug ids.
 
         :param params: the BugTaskSearchParams to search on.
-        """
-
-    def getAssignedMilestonesFromSearch(search_results):
-        """Returns distinct milestones for the given tasks.
-
-        :param search_results: A result set yielding BugTask objects,
-            typically the result of calling `BugTaskSet.search()`.
         """
 
     def getStatusCountsForProductSeries(user, product_series):
@@ -1531,6 +1530,12 @@ class IBugTaskSet(Interface):
         """Return `IPerson`s subscribed to the given bug tasks.
 
         This takes into account bug subscription filters.
+        """
+
+    def getPrecachedNonConjoinedBugTasks(user, milestone):
+        """List of non-conjoined bugtasks targeted to the milestone.
+
+        The assignee and the assignee's validity are precached.
         """
 
 

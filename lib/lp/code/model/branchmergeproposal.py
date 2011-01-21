@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from itertools import groupby
+
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -50,6 +50,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -73,12 +74,17 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     )
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
-from lp.code.model.diff import PreviewDiff
+from lp.code.model.diff import (
+    Diff,
+    IncrementalDiff,
+    PreviewDiff,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     validate_public_person,
@@ -795,6 +801,51 @@ class BranchMergeProposal(SQLBase):
         Store.of(self).flush()
         return self.preview_diff
 
+    def getIncrementalDiffRanges(self):
+        groups = self.getRevisionsSinceReviewStart()
+        return [
+            (group[0].revision.getLefthandParent(), group[-1].revision)
+            for group in groups]
+
+    def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
+        if diff is None:
+            source_branch = self.source_branch.getBzrBranch()
+            ignore_branches = [self.target_branch.getBzrBranch()]
+            if self.prerequisite_branch is not None:
+                ignore_branches.append(
+                    self.prerequisite_branch.getBzrBranch())
+            diff = Diff.generateIncrementalDiff(
+                old_revision, new_revision, source_branch, ignore_branches)
+        incremental_diff = IncrementalDiff()
+        incremental_diff.diff = diff
+        incremental_diff.branch_merge_proposal = self
+        incremental_diff.old_revision = old_revision
+        incremental_diff.new_revision = new_revision
+        IMasterStore(IncrementalDiff).add(incremental_diff)
+        return incremental_diff
+
+    def getIncrementalDiffs(self, revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
+        """
+        diffs = Store.of(self).find(IncrementalDiff,
+            IncrementalDiff.branch_merge_proposal_id == self.id)
+        diff_dict = dict(
+            ((diff.old_revision, diff.new_revision), diff)
+            for diff in diffs)
+        return [diff_dict.get(revisions) for revisions in revision_list]
+
     @property
     def revision_end_date(self):
         """The cutoff date for showing revisions.
@@ -821,13 +872,30 @@ class BranchMergeProposal(SQLBase):
 
     def getRevisionsSinceReviewStart(self):
         """Get the grouped revisions since the review started."""
-        resultset = self._getNewerRevisions()
-        # Work out the start of the review.
-        branch_revisions = (
-            branch_revision for branch_revision, revision, revision_author
-            in resultset)
-        # Now group by date created.
-        return groupby(branch_revisions, lambda r: r.revision.date_created)
+        entries = [
+            ((comment.date_created, -1), comment) for comment
+            in self.all_comments]
+        revisions = self._getNewerRevisions()
+        entries.extend(
+            ((revision.date_created, branch_revision.sequence),
+                branch_revision)
+            for branch_revision, revision, revision_author in revisions)
+        entries.sort()
+        current_group = []
+        for date, entry in entries:
+            if IBranchRevision.providedBy(entry):
+                current_group.append(entry)
+            else:
+                if current_group != []:
+                    yield current_group
+                    current_group = []
+        if current_group != []:
+            yield current_group
+
+    def getMissingIncrementalDiffs(self):
+        ranges = self.getIncrementalDiffRanges()
+        diffs = self.getIncrementalDiffs(ranges)
+        return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
 
 class BranchMergeProposalGetter:

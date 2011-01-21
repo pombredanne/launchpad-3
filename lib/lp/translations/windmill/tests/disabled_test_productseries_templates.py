@@ -48,8 +48,8 @@ class EnableActionLinksTest(WindmillTestCase):
           * verifies that the action links of the row are deactivated;
         """
         client = self.client
-        url = ('http://translations.launchpad.dev:8085/evolution/trunk/'
-               '+templates')
+        url = ('%s/evolution/trunk/+templates'
+               % TranslationsWindmillLayer.base_url)
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to templates page logged in as translations admin.
         client.open(url=url)

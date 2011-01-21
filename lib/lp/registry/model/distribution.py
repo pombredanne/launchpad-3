@@ -19,8 +19,8 @@ from sqlobject import (
     )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
+    And,
     Desc,
-    In,
     Int,
     Join,
     Or,
@@ -51,7 +51,10 @@ from canonical.launchpad.components.storm_operators import (
     Match,
     RANK,
     )
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -144,6 +147,7 @@ from lp.registry.model.milestone import (
     Milestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -152,6 +156,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -192,6 +197,7 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -199,7 +205,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
-                   HasBugHeatMixin):
+                   HasBugHeatMixin, HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
@@ -251,8 +257,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(
-        dbName='lucilleconfig', notNull=False, default=None)
     active = True # Required by IPillar interface.
     max_bug_heat = Int()
 
@@ -437,27 +441,46 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
+    def _getActiveMirrors(self, mirror_content_type, by_country=False):
+        """Builds the query to get the mirror data for various purposes."""
+        mirrors = list(Store.of(self).find(
+            DistributionMirror,
+            And(
+                DistributionMirror.distribution == self.id,
+                DistributionMirror.content == mirror_content_type,
+                DistributionMirror.enabled == True,
+                DistributionMirror.status == MirrorStatus.OFFICIAL,
+                DistributionMirror.official_candidate == True)))
+        if by_country and mirrors:
+            #Since country data is needed, fetch countries into the cache.
+            countries = list(Store.of(self).find(
+                Country,
+                Country.id.is_in(mirror.countryID for mirror in mirrors)))
+        return mirrors
+
     @property
     def archive_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            content=MirrorContent.ARCHIVE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+        return self._getActiveMirrors(MirrorContent.ARCHIVE)
 
     @property
-    def cdimage_mirrors(self):
+    def archive_mirrors_by_country(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            content=MirrorContent.RELEASE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+        return self._getActiveMirrors(
+            MirrorContent.ARCHIVE,
+            by_country=True)
+
+    @property
+    def cdimage_mirrors(self, by_country=False):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(MirrorContent.RELEASE)
+
+    @property
+    def cdimage_mirrors_by_country(self):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(
+            MirrorContent.RELEASE,
+            by_country=True)
 
     @property
     def disabled_mirrors(self):
@@ -1222,8 +1245,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
-            In(
-                DistributionSourcePackageCache.archiveID,
+            DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
@@ -1234,7 +1256,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if exact_match:
             find_spec = self._binaryPackageSearchClause + (
-                BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+                BinaryPackageRelease.binarypackagename
+                    == BinaryPackageName.id,
                 )
             match_clause = (BinaryPackageName.name == package_name,)
         else:
@@ -1243,8 +1266,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # DistributionSourcePackageCache records.
             find_spec = (
                 DistributionSourcePackageCache.distribution == self,
-                In(
-                    DistributionSourcePackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID.is_in(
                     self.all_distro_archive_ids))
             match_clause = (
                 DistributionSourcePackageCache.binpkgnames.like(
@@ -1258,7 +1280,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
         search_vector_column = DistroSeriesPackageCache.fti
-        query_function = FTQ(package_name)
+        query_function = FTQ(ensure_unicode(package_name))
         rank = RANK(search_vector_column, query_function)
 
         extra_clauses = (
@@ -1753,6 +1775,32 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Storm is not very useful for bool checking on the results,
         # see: https://bugs.launchpad.net/soyuz/+bug/246200
         return results.any() != None
+
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is not None, (
+            "Translations sharing policy requires a SourcePackage.")
+
+        sharing_productseries = sourcepackage.productseries
+        if sharing_productseries is None:
+            # There is no known upstream series.  Take the uploader's
+            # word for whether these are upstream translations (in which
+            # case they're shared) or not.
+            # What are the consequences if that value is incorrect?  In
+            # the case where translations from upstream are purportedly
+            # from Ubuntu, we miss a chance at sharing when the package
+            # is eventually matched up with a productseries.  An import
+            # or sharing-script run will fix that.  In the case where
+            # Ubuntu translations are purportedly from upstream, an
+            # import can fix it once a productseries is selected; or a
+            # merge done by a script will give precedence to the Product
+            # translations for upstream.
+            return purportedly_upstream
+
+        upstream_product = sharing_productseries.product
+        return upstream_product.invitesTranslationEdits(person, language)
 
 
 class DistributionSet:

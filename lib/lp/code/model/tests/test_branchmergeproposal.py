@@ -1,15 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
+
+from __future__ import with_statement
 
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from difflib import unified_diff
-import transaction
 from unittest import (
     TestCase,
     TestLoader,
@@ -19,6 +23,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -561,83 +566,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         proposal = self._createMergeProposal(needs_review=True)
         proposal.setAsWorkInProgress()
         self.assertIsNot(None, proposal.date_review_requested)
-
-
-class TestBranchMergeProposalQueueing(TestCase):
-    """Test the enqueueing and dequeueing of merge proposals."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        owner = factory.makePerson()
-        self.target_branch = factory.makeProductBranch(owner=owner)
-        login(self.target_branch.owner.preferredemail.email)
-        self.proposals = [
-            factory.makeBranchMergeProposal(self.target_branch)
-            for x in range(4)]
-
-    def test_empty_target_queue(self):
-        """If there are no proposals targeted to the branch, the queue has
-        nothing in it."""
-        queued_proposals = list(self.target_branch.getMergeQueue())
-        self.assertEqual(0, len(queued_proposals),
-                         "The initial merge queue should be empty.")
-
-    def test_single_item_in_queue(self):
-        """Enqueing a proposal makes it visible in the target branch queue."""
-        proposal = self.proposals[0]
-        proposal.enqueue(self.target_branch.owner, 'some-revision-id')
-        queued_proposals = list(self.target_branch.getMergeQueue())
-        self.assertEqual(1, len(queued_proposals),
-                         "Should have one entry in the queue, got %s."
-                         % len(queued_proposals))
-
-    def test_queue_ordering(self):
-        """Assert that the queue positions are based on the order the
-        proposals were enqueued."""
-        enqueued_order = []
-        for proposal in self.proposals[:-1]:
-            enqueued_order.append(proposal.source_branch.unique_name)
-            proposal.enqueue(self.target_branch.owner, 'some-revision')
-        queued_proposals = list(self.target_branch.getMergeQueue())
-        queue_order = [proposal.source_branch.unique_name
-                       for proposal in queued_proposals]
-        self.assertEqual(
-            enqueued_order, queue_order,
-            "The queue should be in the order they were added. "
-            "Expected %s, got %s" % (enqueued_order, queue_order))
-
-        # Move the last one to the front.
-        proposal = queued_proposals[-1]
-        proposal.moveToFrontOfQueue()
-
-        new_queue_order = enqueued_order[-1:] + enqueued_order[:-1]
-
-        queued_proposals = list(self.target_branch.getMergeQueue())
-        queue_order = [proposal.source_branch.unique_name
-                       for proposal in queued_proposals]
-        self.assertEqual(
-            new_queue_order, queue_order,
-            "The last should now be at the front. "
-            "Expected %s, got %s" % (new_queue_order, queue_order))
-
-        # Remove the proposal from the middle of the queue.
-        proposal = queued_proposals[1]
-        proposal.dequeue()
-        syncUpdate(proposal)
-
-        del new_queue_order[1]
-
-        queued_proposals = list(self.target_branch.getMergeQueue())
-        queue_order = [proposal.source_branch.unique_name
-                       for proposal in queued_proposals]
-        self.assertEqual(
-            new_queue_order, queue_order,
-            "There should be only two queued items now. "
-            "Expected %s, got %s" % (new_queue_order, queue_order))
 
 
 class TestCreateCommentNotifications(TestCaseWithFactory):
@@ -1910,8 +1838,7 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
 
     def assertRevisionGroups(self, bmp, expected_groups):
         """Get the groups for the merge proposal and check them."""
-        groups = bmp.getRevisionsSinceReviewStart()
-        revision_groups = [list(revisions) for date, revisions in groups]
+        revision_groups = list(bmp.getRevisionsSinceReviewStart())
         self.assertEqual(expected_groups, revision_groups)
 
     def test_getRevisionsSinceReviewStart_no_revisions(self):
@@ -1926,8 +1853,8 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
         review_date = datetime(2009, 9, 10, tzinfo=UTC)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
-        login_person(bmp.registrant)
-        bmp.requestReview(review_date)
+        with person_logged_in(bmp.registrant):
+            bmp.requestReview(review_date)
         revision_date = review_date + timedelta(days=1)
         revisions = []
         for date in range(2):
@@ -1939,9 +1866,76 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
                     self.factory, bmp.source_branch, revision_date))
             revision_date += timedelta(days=1)
         expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
+            [revisions[0], revisions[1], revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
+
+    def test_getRevisionsSinceReviewStart_groups_with_comments(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=self.factory.getUniqueDate())
+        revisions = []
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+        with person_logged_in(self.factory.makePerson()):
+            self.factory.makeCodeReviewComment(
+                merge_proposal=bmp,
+                date_created=self.factory.getUniqueDate())
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+
+        expected_groups = [
+            [revisions[0], revisions[1]], [revisions[2]]]
+        self.assertRevisionGroups(bmp, expected_groups)
+
+
+class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getIncrementalDiffs(self):
+        """getIncrementalDiffs returns the requested values or None.
+
+        None is returned if there is no IncrementalDiff for the requested
+        revision pair and branch_merge_proposal.
+        """
+        bmp = self.factory.makeBranchMergeProposal()
+        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff3 = self.factory.makeIncrementalDiff()
+        result = bmp.getIncrementalDiffs([
+            (diff1.old_revision, diff1.new_revision),
+            (diff2.old_revision, diff2.new_revision),
+            # Wrong merge proposal
+            (diff3.old_revision, diff3.new_revision),
+            # Mismatched revisions
+            (diff1.old_revision, diff2.new_revision),
+        ])
+        self.assertEqual([diff1, diff2, None, None], result)
+
+    def test_getIncrementalDiffs_respects_input_order(self):
+        """The order of the output follows the input order."""
+        bmp = self.factory.makeBranchMergeProposal()
+        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        result = bmp.getIncrementalDiffs([
+            (diff1.old_revision, diff1.new_revision),
+            (diff2.old_revision, diff2.new_revision),
+        ])
+        self.assertEqual([diff1, diff2], result)
+        result = bmp.getIncrementalDiffs([
+            (diff2.old_revision, diff2.new_revision),
+            (diff1.old_revision, diff1.new_revision),
+        ])
+        self.assertEqual([diff2, diff1], result)
 
 
 def test_suite():

@@ -23,8 +23,10 @@ Because the mailing list is active, there is no archived backup file.
 
 The team administrator can deactivate the list through the web.
 
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
 

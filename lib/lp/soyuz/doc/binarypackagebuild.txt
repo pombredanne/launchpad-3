@@ -85,13 +85,13 @@ about its process such as the time it was started and finished and its
     buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
     >>> print firefox_build.log_url
-    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+buildjob/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
     >>> print firefox_build.upload_changesfile.filename
     firefox_0.9_i386.changes
 
     >>> print firefox_build.changesfile_url
-    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/firefox_0.9_i386.changes
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+buildjob/.../+files/firefox_0.9_i386.changes
 
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
@@ -202,7 +202,7 @@ build-failedtoupload-workflow.txt for further information.
     upload_9_log.txt
 
     >>> print active_build.upload_log_url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9/+files/upload_9_log.txt
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+buildjob/9/+files/upload_9_log.txt
 
 Once the transaction is committed, the file is available in the
 librarian, and we can retrieve its contents.

@@ -25,6 +25,22 @@ country.
     Germany: 1 mirror(s)
     United Kingdom: 1 mirror(s)
 
+Lists of archive mirrors
+------------------------
+
+    >>> ubuntu_archivemirrors = create_view(ubuntu, name="+archivemirrors")
+    >>> country_and_mirrors = (
+    ...     ubuntu_archivemirrors.getMirrorsGroupedByCountry())
+    >>> for country_and_mirror in country_and_mirrors:
+    ...     country = country_and_mirror['country']
+    ...     mirrors = country_and_mirror['mirrors']
+    ...     for mirror in mirrors:
+    ...         assert mirror.country.name == country
+    ...     print "%s: %d mirror(s)" % (country, len(mirrors))
+    Antarctica: 1 mirror(s)
+    France: 2 mirror(s)
+    United Kingdom: 1 mirror(s)
+
 
 Distribution modification views
 ===============================
@@ -51,8 +67,8 @@ The view accepts the basic fields to register a distribution.
 
     >>> view.field_names
     ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
-     'members', 'official_malone', 'official_blueprints', 'official_rosetta',
-     'official_answers']
+     'members', 'official_malone', 'blueprints_usage', 'official_rosetta',
+     'answers_usage']
 
     >>> login("admin@canonical.com")
     >>> form = {
@@ -113,7 +129,7 @@ The view accepts most of the distribution fields.
     ['displayname', 'title', 'summary', 'description',
      'bug_reporting_guidelines', 'bug_reported_acknowledgement', 'icon',
      'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
-     'official_blueprints', 'official_rosetta', 'official_answers',
+     'blueprints_usage', 'official_rosetta', 'answers_usage',
      'translation_focus']
 
     >>> del form['field.name']
@@ -306,10 +322,10 @@ the series and the CSS class to present them wth.
 
     >>> for styled_series in view.styled_series:
     ...     print styled_series['series'].name, styled_series['css_class']
-    breezy-autotest unhighlighted
-    grumpy unhighlighted
-    hoary highlighted
-    warty unhighlighted
+    breezy-autotest
+    grumpy
+    hoary highlight
+    warty
 
 
 Distribution +ppas

@@ -886,19 +886,19 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 15]
+        plain_sources_md5_line = release_contents[md5_header_index + 16]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 17]
+        release_md5_line = release_contents[md5_header_index + 15]
         self.assertEqual(
             release_md5_line,
             (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
             '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        bz2_sources_md5_line = release_contents[md5_header_index + 16]
+        bz2_sources_md5_line = release_contents[md5_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
         gz_sources_md5_line = release_contents[md5_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
@@ -907,18 +907,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 15]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 17]
+        release_sha1_line = release_contents[sha1_header_index + 15]
         self.assertEqual(
             release_sha1_line,
             (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
              '130 main/source/Release'))
         # See above.
-        bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
+        bz2_sources_sha1_line = release_contents[sha1_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
         gz_sources_sha1_line = release_contents[sha1_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
@@ -927,18 +927,18 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 15]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 17]
+        release_sha256_line = release_contents[sha256_header_index + 15]
         self.assertEqual(
             release_sha256_line,
             (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
              '1e2c505aa              130 main/source/Release'))
         # See above.
-        bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
+        bz2_sources_sha256_line = release_contents[sha256_header_index + 17]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
@@ -1142,7 +1142,7 @@ class TestArchiveIndices(TestPublisherBase):
         self.ubuntutest.getSeries('breezy-autotest').status = (
             SeriesStatus.FROZEN)
 
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -1163,7 +1163,7 @@ class TestArchiveIndices(TestPublisherBase):
 
         ds = self.ubuntutest.getSeries('breezy-autotest')
         ds.getDistroArchSeries('i386').enabled = False
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
 
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,

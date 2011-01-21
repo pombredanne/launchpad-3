@@ -579,6 +579,19 @@
             <allow
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
         </securedutility>
+
+        <!-- TranslationSideTraits -->
+        <class class="lp.translations.model.side.TranslationSideTraits">
+          <allow interface="lp.translations.interfaces.side.ITranslationSideTraits"/>
+        </class>
+
+        <!-- TranslationSideTraitsSet -->
+        <securedutility
+            class="lp.translations.model.side.TranslationSideTraitsSet"
+            provides="lp.translations.interfaces.side.ITranslationSideTraitsSet">
+            <allow
+              interface="lp.translations.interfaces.side.ITranslationSideTraitsSet"/>
+        </securedutility>
     </facet>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -601,7 +614,7 @@
     <class
         class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
         <allow
-            interface="lp.code.interfaces.branchjob.IBranchJob"/>
+            interface="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"/>
         <allow
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
     </class>

@@ -72,8 +72,6 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
     canonical_name,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -97,6 +95,10 @@ from canonical.lazr import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
@@ -701,7 +703,7 @@ class LaunchpadRootNavigation(Navigation):
             bug_set = getUtility(IBugSet)
             try:
                 bug = bug_set.get(bug_number)
-            except NotFoundError, e:
+            except NotFoundError:
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
                 raise Unauthorized("Bug %s is private" % bug_number)

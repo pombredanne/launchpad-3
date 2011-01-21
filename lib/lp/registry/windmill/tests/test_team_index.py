@@ -24,7 +24,7 @@ class TestTeamIndex(WindmillTestCase):
 
     def test_addmember(self):
         self.client.open(
-            url=u'http://launchpad.dev:8085/~testing-spanish-team')
+            url=u'%s/~testing-spanish-team' % RegistryWindmillLayer.base_url)
 
         lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
 
@@ -64,6 +64,13 @@ class TestTeamIndex(WindmillTestCase):
         self.client.asserts.assertText(
             xpath=invited_count_xpath,
             validator="1")
+
+        # Verify that there is now a relative link to
+        # "+members#invited", which is equivalent to
+        # "~testing-spanish-team/+members#invited".
+        self.client.asserts.assertNode(
+            xpath='//*[@id="membership-counts"]'
+                  '//a[@href="+members#invited"]')
 
 
 def test_suite():

@@ -26,6 +26,7 @@ __all__ = [
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
+    'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -181,7 +182,7 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
 
-    By 'bad', we mean that the name is unparseable. It might be too short, too
+    By 'bad', we mean that the name is unparsable. It might be too short, too
     long or malformed in some other way.
     """
 
@@ -308,3 +309,13 @@ class BuildNotAllowedForDistro(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
+
+
+class InvalidMergeQueueConfig(Exception):
+    """The config specified is not a valid JSON string."""
+
+    webservice_error(400)
+
+    def __init__(self):
+        message = ('The configuration specified is not a valid JSON string.')
+        Exception.__init__(self, message)

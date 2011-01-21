@@ -48,12 +48,8 @@ from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -64,6 +60,12 @@ from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from lp.registry.interfaces.person import (
     IPersonSet,

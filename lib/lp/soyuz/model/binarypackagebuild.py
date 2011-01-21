@@ -14,7 +14,6 @@ import apt_pkg
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
-    In,
     Join,
     LeftJoin,
     )
@@ -543,7 +542,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                           'SourcePackageRelease'])
 
         estimated_duration = None
-        if completed_builds.count() > 0:
+        if bool(completed_builds):
             # Historic build data exists, use the most recent value -
             # assuming it has valid data.
             most_recent_build = completed_builds[0]
@@ -570,7 +569,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return estimated_duration
 
     def verifySuccessfulUpload(self):
-        return self.binarypackages.count() > 0
+        return bool(self.binarypackages)
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`.
@@ -821,7 +820,7 @@ class BinaryPackageBuildSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             BinaryPackageBuild,
-            In(BinaryPackageBuild.distro_arch_series_id, archseries_ids),
+            BinaryPackageBuild.distro_arch_series_id.is_in(archseries_ids),
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.status == BuildStatus.NEEDSBUILD)
@@ -1177,7 +1176,7 @@ class BinaryPackageBuildSet:
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
              LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
-            In(BinaryPackageBuild.id, build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         # Force query execution so that the ancillary data gets fetched
         # and added to StupidCache.

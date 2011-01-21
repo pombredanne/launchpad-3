@@ -435,10 +435,11 @@ We can change our mind, and decline the goal now.
     'Declined'
 
 And finally, if we propose a new goal, then the decision status is
-invalidated.
+invalidated. (Notice that we propose the goal as jdub as goals proposed by one
+of their drivers [e.g. mark] would be automatically accepted)
 
     >>> trunk = upstream_firefox.getSeries('trunk')
-    >>> e4x.proposeGoal(trunk, mark)
+    >>> e4x.proposeGoal(trunk, jdub)
     >>> e4x.goalstatus.title
     'Proposed'
 

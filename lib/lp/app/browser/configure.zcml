@@ -457,12 +457,6 @@
       name="fmt"
       />
   <adapter
-      for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.SourcePackageRecipeBuildFormatterAPI"
-      name="fmt"
-      />
-  <adapter
       for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationFormatterAPI"
@@ -549,6 +543,14 @@
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.stringformatter.FormattersAPI"
       name="fmt"
+      />
+
+  <!-- TALES query: namespace -->
+  <adapter
+      for="zope.app.form.interfaces.IWidget"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.launchpadform.WidgetHasStructuredDoc"
+      name="query"
       />
 
   <adapter

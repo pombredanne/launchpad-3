@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -34,6 +34,10 @@ from canonical.launchpad.interfaces.message import (
     )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -46,7 +50,11 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugtracker import (
+    IBugTracker,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
@@ -165,6 +173,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -267,6 +277,9 @@ patch_reference_property(
     IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
     ISourcePackagePublishingHistory, 'archive', IArchive)
+patch_reference_property(
+    ISourcePackagePublishingHistory, 'ancestor',
+    ISourcePackagePublishingHistory)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -410,6 +423,8 @@ patch_reference_property(IPackageUpload, 'archive', IArchive)
 # IStructuralSubscription
 patch_collection_property(
     IStructuralSubscription, 'bug_filters', IBugSubscriptionFilter)
+patch_entry_return_type(
+    IStructuralSubscription, "newBugFilter", IBugSubscriptionFilter)
 patch_reference_property(
     IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
 
@@ -477,6 +492,17 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_collection_return_type(
+    IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+
+## IBugTrackerComponent
+patch_reference_property(
+    IBugTrackerComponent, "distro_source_package",
+    IDistributionSourcePackage)
 
 # IHasTranslationTemplates
 patch_collection_return_type(
@@ -495,7 +521,20 @@ patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IPerson
 patch_collection_return_type(
-        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
+    IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# ISpecification
+patch_collection_property(ISpecification, 'dependencies', ISpecification)
+
+# ISpecificationTarget
+patch_entry_return_type(
+    ISpecificationTarget, 'getSpecification', ISpecification)
+
+# IHasSpecifications
+patch_collection_property(
+    IHasSpecifications, 'all_specifications', ISpecification)
+patch_collection_property(
+    IHasSpecifications, 'valid_specifications', ISpecification)

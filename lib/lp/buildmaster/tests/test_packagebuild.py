@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 import hashlib
 import os
+import shutil
 
 from storm.store import Store
 from zope.component import getUtility
@@ -32,6 +33,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
@@ -42,6 +44,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -97,8 +100,6 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertRaises(
             NotImplementedError, self.package_build.verifySuccessfulUpload)
         self.assertRaises(NotImplementedError, self.package_build.notify)
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
         self.assertRaises(
             NotImplementedError, self.package_build.handleStatus,
             None, None, None)
@@ -139,6 +140,15 @@ class TestPackageBuild(TestPackageBuildBase):
         self.failUnless(self.package_build.is_private)
         self.package_build.storeUploadLog("Some content")
         self.failUnless(self.package_build.upload_log.restricted)
+
+    def test_storeUploadLog_unicode(self):
+        # Unicode upload logs are uploaded as UTF-8.
+        unicode_content = u"Some content \N{SNOWMAN}"
+        self.package_build.storeUploadLog(unicode_content)
+        self.failIfEqual(None, self.package_build.upload_log)
+        self.failUnlessEqual(
+            hashlib.sha1(unicode_content.encode('utf-8')).hexdigest(),
+            self.package_build.upload_log.content.sha1)
 
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
@@ -201,6 +211,19 @@ class TestPackageBuild(TestPackageBuildBase):
         expected_cookie = "%d-PACKAGEBUILD-%d" % (
             self.package_build.id, self.package_build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
 
 class TestPackageBuildSet(TestPackageBuildBase):
@@ -269,6 +292,7 @@ class TestGetUploadMethodsMixin:
 class TestHandleStatusMixin:
     """Tests for `IPackageBuild`s handleStatus method.
 
+    This should be run with a Trial TestCase.
     """
 
     layer = LaunchpadZopelessLayer
@@ -279,6 +303,7 @@ class TestHandleStatusMixin:
 
     def setUp(self):
         super(TestHandleStatusMixin, self).setUp()
+        self.factory = LaunchpadObjectFactory()
         self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
@@ -290,7 +315,10 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        self.upload_root = self.makeTemporaryDirectory()
+        tempdir = self.mktemp()
+        os.mkdir(tempdir)
+        self.addCleanup(shutil.rmtree, tempdir)
+        self.upload_root = tempdir
         tmp_builddmaster_root = """
         [builddmaster]
         root: %s
@@ -311,56 +339,58 @@ class TestHandleStatusMixin:
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+            self.assertResultCount(1, "incoming")
+
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-
-        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-        self.assertResultCount(1, "incoming")
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+            self.assertResultCount(0, "failed")
+            self.assertIdentical(None, self.build.buildqueue_record)
+
+        d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertResultCount(0, "failed")
-        self.assertIs(None, self.build.buildqueue_record)
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        self.build.handleStatus('OK', None, {
+        def got_status(ignored):
+            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+            self.assertResultCount(0, "failed")
+
+        d = self.build.handleStatus('OK', None, {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertResultCount(0, "failed")
+        return d.addCallback(got_status)
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        self.build.handleStatus('OK', None, {
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        self.assertNotEqual(None, self.build.log)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.log)
+        return d.addCallback(got_status)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        self.build.handleStatus('OK', None, {
+        d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        self.assertNotEqual(None, self.build.date_finished)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.date_finished)
+        return d.addCallback(got_status)

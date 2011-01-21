@@ -43,7 +43,7 @@ class TestBranchBugLinks(WindmillTestCase):
         lpuser.FOO_BAR.ensure_login(client)
 
         start_url = (
-            windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1')
+            windmill.settings['TEST_URL'] + '~mark/firefox/release--0.9.1')
         client.open(url=start_url)
         client.waits.forElement(id=u'linkbug', timeout=u'10000')
 

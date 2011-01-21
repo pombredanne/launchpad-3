@@ -61,7 +61,6 @@ from lp.soyuz.adapters.packagelocation import (
     PackageLocationError,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
@@ -89,10 +88,7 @@ class ArchiveCruftChecker:
     """
 
     # XXX cprov 2006-05-15: the default archive path should come
-    # from the IDistroSeries.lucilleconfig. But since it's still
-    # not optimal and we have real plans to migrate it from DB
-    # text field to default XML config or a more suitable/reliable
-    # method it's better to not add more obsolete code to handle it.
+    # from the config.
     def __init__(self, logger, distribution_name='ubuntu', suite=None,
                  archive_path='/srv/launchpad.net/ubuntu-archive'):
         """Store passed arguments.
@@ -332,9 +328,7 @@ class ArchiveCruftChecker:
 
         Ensure the package is still published in the suite before add.
         """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
+        result = self.distroseries.getBinaryPackagePublishing(name=package)
 
         if len(list(result)) == 0:
             return
@@ -1443,8 +1437,6 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     # XXX cprov 2007-07-03:
     # Changed-By can be extracted from most-recent changelog footer,
     # but do we care?
-    # XXX James Troup 2006-01-30:
-    # 'Closes' but could be gotten from changelog, but we don't use them?
 
     changes = Changes()
     changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])

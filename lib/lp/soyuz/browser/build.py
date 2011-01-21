@@ -9,6 +9,7 @@ __all__ = [
     'BuildBreadcrumb',
     'BuildContextMenu',
     'BuildNavigation',
+    'BuildNavigationMixin',
     'BuildRecordsView',
     'BuildRescoringView',
     'BuildUrl',
@@ -25,23 +26,30 @@ from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     StandardLaunchpadFacets,
+    stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
-from lp.app.errors import UnexpectedFormData
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -82,11 +90,40 @@ class BuildUrl:
 
     @property
     def path(self):
-        return u"+build/%d" % self.context.id
+        return u"+buildjob/%d" % self.context.url_id
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IBinaryPackageBuild
+
+
+class BuildNavigationMixin:
+    """Provide a simple way to traverse to builds."""
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+buildjob')
+    def traverse_buildjob(self, name):
+        try:
+            job_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+            return build_job.getSpecificJob()
+        except NotFoundError:
+            return None
 
 
 class BuildFacets(StandardLaunchpadFacets):
@@ -180,7 +217,7 @@ class BuildView(LaunchpadView):
         # are always published.
         imported_binaries = (
             self.package_upload is None and
-            self.context.binarypackages.count() > 0)
+            bool(self.context.binarypackages))
         # Binaries uploaded from the buildds are published when the
         # corresponding `PackageUpload` status is DONE.
         uploaded_binaries = (
@@ -240,6 +277,39 @@ class BuildView(LaunchpadView):
             self.context.status == BuildStatus.NEEDSBUILD and
             self.context.buildqueue_record.job.status == JobStatus.WAITING)
 
+    @cachedproperty
+    def eta(self):
+        """The datetime when the build job is estimated to complete.
+
+        This is the BuildQueue.estimated_duration plus the
+        Job.date_started or BuildQueue.getEstimatedJobStartTime.
+        """
+        if self.context.buildqueue_record is None:
+            return None
+        queue_record = self.context.buildqueue_record
+        if queue_record.job.status == JobStatus.WAITING:
+            start_time = queue_record.getEstimatedJobStartTime()
+            if start_time is None:
+                return None
+        else:
+            start_time = queue_record.job.date_started
+        duration = queue_record.estimated_duration
+        return start_time + duration
+
+    @cachedproperty
+    def date(self):
+        """The date when the build completed or is estimated to complete."""
+        if self.estimate:
+            return self.eta
+        return self.context.date_finished
+
+    @cachedproperty
+    def estimate(self):
+        """If true, the date value is an estimate."""
+        if self.context.date_finished is not None:
+            return False
+        return self.eta is not None
+
 
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
@@ -261,7 +331,7 @@ class BuildRetryView(BuildView):
 
             # Invoke context method to retry the build record.
             self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
+            self.request.response.addInfoNotification('Build retried')
 
         self.request.response.redirect(canonical_url(self.context))
 

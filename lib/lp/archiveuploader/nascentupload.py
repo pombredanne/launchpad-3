@@ -42,6 +42,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -860,16 +861,26 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
+        except QueueInconsistentStateError, e:
+            # A QueueInconsistentStateError is expected if the rejection
+            # is a routine rejection due to a bad package upload.
+            # Log at info level so LaunchpadCronScript doesn't generate an
+            # OOPS.
+            func = self.logger.info
+            return self._reject_with_logging(e, notify, func)
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
-            self.reject("%s" % e)
-            # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error(
-                'Exception while accepting:\n %s' % e, exc_info=True)
-            self.do_reject(notify)
-            return False
+            func = self.logger.error
+            return self._reject_with_logging(e, notify, func)
+
+    def _reject_with_logging(self, error, notify, log_func):
+        """Helper to reject an upload and log it using the logger function."""
+        self.reject("%s" % error)
+        log_func('Exception while accepting:\n %s' % error, exc_info=True)
+        self.do_reject(notify)
+        return False
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""

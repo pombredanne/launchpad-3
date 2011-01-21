@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -84,13 +84,9 @@ from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -102,9 +98,15 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.suggestion import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
@@ -297,7 +299,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     links = [
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
+        'create_queue']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -328,7 +331,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging'
         enabled = (
@@ -388,6 +390,10 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_queue(self):
+        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -481,6 +487,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
             self.context.repository_format or
             self.context.control_format or
             self.context.stacked_on)
+
+    @property
+    def is_empty_directory(self):
+        """True if the branch is an empty directory without even a '.bzr'."""
+        return self.context.control_format is None
 
     @property
     def codebrowse_url(self):

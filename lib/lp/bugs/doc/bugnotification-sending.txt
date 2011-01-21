@@ -85,10 +85,12 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
@@ -99,9 +101,11 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug assignee.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -112,10 +116,12 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -126,10 +132,12 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a direct subscriber
     of the bug.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -197,11 +205,12 @@ subject, though, which is often the case when someone replies via email.
     a new comment.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -239,10 +248,12 @@ Let's add a few changes and see how it looks like:
     ** Visibility changed to: Private.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -293,10 +304,12 @@ in the order they were added:
     ** Visibility changed to: Public.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -323,10 +336,12 @@ a trailing space.
     [...,
      '',
      '-- ',
-     'Firefox does not support SVG',
-     'http://bugs.launchpad.dev/bugs/1',
      'You received this bug notification because you are a direct subscriber',
-     'of the bug.']
+     'of the bug.',
+     'http://bugs.launchpad.dev/bugs/1',
+     '',
+     'Title:',
+     '  Firefox does not support SVG']
 
     >>> flush_notifications()
 
@@ -430,10 +445,12 @@ top of the email:
     a comment.
     <BLANKLINE>
     --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
+    http://bugs.launchpad.dev/bugs/16
+    <BLANKLINE>
+    Title:
+      new bug
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -447,10 +464,12 @@ top of the email:
     a comment.
     <BLANKLINE>
     --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a direct subscriber
     of the bug.
+    http://bugs.launchpad.dev/bugs/16
+    <BLANKLINE>
+    Title:
+      new bug
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -574,8 +593,6 @@ makes it write out the emails it sends.
     0
     >>> print err
     DEBUG   ...
-    INFO    Notifying mark@example.com about bug 2.
-    ...
     INFO    Notifying support@ubuntu.com about bug 2.
     ...
     INFO    Notifying test@canonical.com about bug 2.
@@ -626,11 +643,12 @@ makes it write out the emails it sends.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
+    http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     INFO    Notifying marilize@hbd.com about bug 1.
     ...
     INFO    Notifying mark@example.com about bug 1.
@@ -718,15 +736,12 @@ X-Launchpad-Bug-Tags header.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'layout-test']
-    [u'layout-test']
 
 If we add a tag to bug three that will also be included in the header.
 The tags will be space-separated to allow the list to be wrapped if it
 gets over-long.
 
     >>> switch_db_to_launchpad()
-
-    >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
 
     >>> switch_db_to_bugnotification()
@@ -747,6 +762,9 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
+    >>> switch_db_to_launchpad()
+    >>> #bug_three.unsubscribe(sample_person, sample_person)
+
 
 The X-Launchpad-Bug-Private header
 ----------------------------------
@@ -760,7 +778,7 @@ private. It can have the value "yes" or "no".
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 Predictably, private bugs are sent with a slightly different header:
 
@@ -771,7 +789,7 @@ Predictably, private bugs are sent with a slightly different header:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
 The X-Launchpad-Bug-Security-Vulnerability header
@@ -787,7 +805,7 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
@@ -800,7 +818,7 @@ simple "yes":
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
 The X-Launchpad-Bug-Commenters header
@@ -863,8 +881,13 @@ with different verbose_bugnotifications settings.
 
     >>> switch_db_to_launchpad()
     >>> bug = factory.makeBug(
-    ...     product=factory.makeProduct(title='Foo'), title='Foo is broken',
-    ...     description='desc')
+    ...     product=factory.makeProduct(title='Foo'),
+    ...     title='In the beginning, the universe was created. This '
+    ...         'has made a lot of people very angry and has been '
+    ...         'widely regarded as a bad move',
+    ...     description="This is a long description of the bug, which "
+    ...         "will be automatically wrapped by the BugNotification "
+    ...         "machinery. Ain't technology great?")
 
     >>> verbose_person = factory.makePerson(
     ...     displayname='Verbose Person', email='verbose@example.com')
@@ -970,10 +993,12 @@ We can see that Concise Person doesn't receive verbose notifications:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
+    http://bugs.launchpad.dev/bugs/...
+    <BLANKLINE>
+    Title:
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -989,10 +1014,12 @@ he wants concise ones.
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Verbose
     Team, which is a direct subscriber.
+    http://bugs.launchpad.dev/bugs/...
+    <BLANKLINE>
+    Title:
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1007,15 +1034,20 @@ Whereas Verbose Person does get the description and task status:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
+    http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
-    Status in Foo: New
+    Title:
+      In the beginning...
+    <BLANKLINE>
+    Status in Foo:
+      New
     <BLANKLINE>
     Bug description:
-    desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/.../+bug/.../+subscribe
@@ -1033,18 +1065,49 @@ And Concise Team Person does too, even though his team doesn't want them:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Concise
     Team, which is a direct subscriber.
+    http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
-    Status in Foo: New
+    Title:
+      In the beginning...
+    <BLANKLINE>
+    Status in Foo:
+      New
     <BLANKLINE>
     Bug description:
-    desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     ----------------------------------------------------------------------
 
+It's important to note that the bug title and description are wrapped
+and indented correctly in verbose notifications.
+
+    >>> message = collated_messages['conciseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     ...
+     'Bug description:',
+     '  This is a long description of the bug, which will be automatically',
+     "  wrapped by the BugNotification machinery. Ain't technology great?",
+    ...
+
+The title is also wrapped and indented in normal notifications.
+
+    >>> message = collated_messages['verboseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     '']
 
 Notification Recipients
 -----------------------
@@ -1086,18 +1149,18 @@ these notifications.
     ...
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     ...
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
@@ -1107,23 +1170,21 @@ these notifications.
     another comment.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
     of the bug.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
 
 If Sample Person's notification level is set to METADATA, he receives
@@ -1149,7 +1210,7 @@ no comment notifications.
     ...
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <...@bugs.launchpad.net>
@@ -1159,28 +1220,26 @@ no comment notifications.
     no comment for no-priv.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
     of the bug.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
 
 The notifications generated by addChangeNotification() are sent only to
@@ -1200,18 +1259,19 @@ receives these notifications.
     ...
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
-    <BLANKLINE>
+    http://bugs.launchpad.dev/bugs/1
+    ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     ...
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
@@ -1223,23 +1283,21 @@ receives these notifications.
     ** Summary changed to: whatever.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
     of the bug.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
 
 If Sample Person sets his notification level to LIFECYCLE, he receives
@@ -1263,6 +1321,7 @@ no notifications created by addChangeNotification().
     ...
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
+    ...
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
@@ -1273,26 +1332,28 @@ no notifications created by addChangeNotification().
     ** Summary changed to: something.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber.
+    http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    Title:
+      Firefox does not support SVG
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
     of the bug.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------

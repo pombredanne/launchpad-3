@@ -25,11 +25,11 @@ from lp.testing import WindmillTestCase
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'
 CHOOSE_SUBSCRIBER_LINK = u'//a[@id="show-widget-field-subscriber"]'
 SUBSCRIBER_SEARCH_FIELD = (
-    u'//div[@id="yui-pretty-overlay-modal"]//input[@name="search"]')
-SUBSCRIBER_SEARCH_BUTTON = u'//div[@id="yui-pretty-overlay-modal"]//button'
+    u'//div[@id="yui3-pretty-overlay-modal"]//input[@name="search"]')
+SUBSCRIBER_SEARCH_BUTTON = u'//div[@id="yui3-pretty-overlay-modal"]//button'
 FIRST_SUBSCRIBER_RESULT = (
-    u'//div[@id="yui-pretty-overlay-modal"]'
-     '//span[@class="yui-picker-result-title"]')
+    u'//div[@id="yui3-pretty-overlay-modal"]'
+     '//span[@class="yui3-picker-result-title"]')
 MESSAGE_WINDOW = u'//div[@class="informational message"]'
 
 
@@ -64,8 +64,9 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
 
         self.lpuser.ensure_login(client)
 
-        client.open(url='http://launchpad.dev:8085/~joe-bloggs/'
-                        '+archive/myppa/+subscriptions')
+        client.open(url='%s/~joe-bloggs/'
+                        '+archive/myppa/+subscriptions'
+                        % SoyuzWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on the JS add access action.

@@ -101,14 +101,16 @@
   <table style="margin: 0px 0px .5em 0px;">
     <tr>
       <td style="padding: 0px 1em 1em 0px;"
-          tal:define="link context/menu:overview/add_member"
+          tal:define="link context/menu:overview/add_member;
+                      step_title view/add_member_step_title;"
           tal:condition="link/enabled">
         <script type="text/javascript"
                 tal:content="string:
-          YUI().use('lp.registry.team', function(Y) {
+          LPS.use('lp.registry.team', function(Y) {
               Y.on('load',
                   function(e) {
-                      Y.lp.registry.team.setup_add_member_handler();
+                      Y.lp.registry.team.setup_add_member_handler(
+                          '${step_title}');
                   },
                   window);
           });

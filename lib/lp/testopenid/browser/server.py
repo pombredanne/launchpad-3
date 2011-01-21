@@ -38,8 +38,6 @@ from canonical.launchpad.interfaces.account import (
     IAccountSet,
     )
 from canonical.launchpad.webapp import (
-    action,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -54,6 +52,10 @@ from canonical.launchpad.webapp.login import (
 from canonical.launchpad.webapp.publisher import (
     Navigation,
     stepthrough,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.person import IPerson

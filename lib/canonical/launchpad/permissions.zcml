@@ -76,11 +76,6 @@
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
-  <permission
-    id="launchpad.MailingListManager"
-    title="The role of someone who can manage and configure a mailing list."
-    access_level="write" />
-
   <!-- This permission only exists to please apidoc.launchpad.dev and
        shouldn't be used anywhere else. -->
   <permission
