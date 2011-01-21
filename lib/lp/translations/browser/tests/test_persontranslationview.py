@@ -68,7 +68,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
                     sequence = 1
                 potmsgset = self.factory.makePOTMsgSet(
                     potemplate=pofile.potemplate, sequence=sequence)
-                self.factory.makeCurrentTranslationMessage(
+                self.factory.makeTranslationMessage(
                     potmsgset=potmsgset, pofile=pofile,
                     translator=self.view.context)
 

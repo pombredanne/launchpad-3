@@ -403,9 +403,8 @@ class FileImporterTestCase(TestCaseWithFactory):
                 "should be none.")
             potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
                                                         unicode(TEST_MSGID))
-            message = potmsgset.getCurrentTranslation(
-                po_importer.potemplate, po_importer.pofile.language,
-                po_importer.potemplate.translation_side)
+            message = potmsgset.getCurrentTranslationMessage(
+                po_importer.potemplate, po_importer.pofile.language)
             self.failUnless(message is not None,
                 "POFileImporter.importFile did not create an "
                 "ITranslationMessage object in the database.")

@@ -2592,7 +2592,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
-    def makeTranslationsDict(self, translations=None):
+    def _makeTranslationsDict(self, translations=None):
         """Make sure translations are stored in a dict, e.g. {0: "foo"}.
 
         If translations is already dict, it is returned unchanged.
@@ -2616,7 +2616,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
-        translations = self.makeTranslationsDict(translations)
+        translations = self._makeTranslationsDict(translations)
         translation_message = potmsgset.submitSuggestion(
             pofile, translator, translations)
         assert translation_message is not None, (
