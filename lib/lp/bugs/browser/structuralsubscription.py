@@ -38,17 +38,17 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionForm,
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    IStructuralSubscriptionForm,
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.propertycache import cachedproperty
 
 

@@ -73,6 +73,9 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.karma import IKarmaContext
@@ -82,9 +85,6 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     Description,
     IconImageUpload,

@@ -119,6 +119,9 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
@@ -158,9 +161,6 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1572,7 +1572,7 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.

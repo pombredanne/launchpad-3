@@ -42,6 +42,7 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -64,7 +65,6 @@ from lp.registry.model.karma import (
     KarmaTotalCache,
     )
 from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.testing import (
     celebrity_logged_in,

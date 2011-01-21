@@ -55,6 +55,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
@@ -63,10 +67,6 @@ from lp.registry.browser import (
     RegistryDeleteViewMixin,
     )
 from lp.registry.browser.product import ProductDownloadFileMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone,

@@ -68,7 +68,7 @@ from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
     )
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
 from lp.services.fields import (

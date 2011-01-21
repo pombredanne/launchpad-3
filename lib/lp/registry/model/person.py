@@ -181,6 +181,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -253,7 +254,6 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
