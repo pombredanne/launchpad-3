@@ -280,7 +280,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     publish = Bool(
         title=_("Publish"), required=False,
-        description=_("Publish changes to the APT archive."))
+        description=_("Update the APT archive."))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
