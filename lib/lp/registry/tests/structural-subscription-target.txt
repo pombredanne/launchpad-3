@@ -19,23 +19,17 @@ notification level for bugs is set to NOTHING.
 
     >>> def print_subscriptions_list(subscriptions):
     ...     for subscription in subscriptions:
-    ...         print '%s %s %s' % (
+    ...         print '%s %s' % (
     ...               subscription.subscriber.name,
-    ...               subscription.bug_notification_level.name,
-    ...               subscription.blueprint_notification_level.name)
-
-    >>> from lp.registry.interfaces.structuralsubscription import BlueprintNotificationLevel
+    ...               subscription.bug_notification_level.name)
 
     >>> subscription = target.addBugSubscription(foobar, foobar)
-    >>> subscription.blueprint_notification_level = (
-    ...     BlueprintNotificationLevel.LIFECYCLE)
     >>> print_subscriptions_list(target.getSubscriptions())
-    name16 COMMENTS LIFECYCLE
-    ubuntu-team COMMENTS NOTHING
+    name16 COMMENTS
+    ubuntu-team COMMENTS
     >>> target.removeBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
-    name16 NOTHING LIFECYCLE
-    ubuntu-team COMMENTS NOTHING
+    ubuntu-team COMMENTS
 
 To get a user's subscription to the target, use
 IStructuralSubscriptionTarget.getSubscription.
@@ -52,12 +46,12 @@ we use getSubscriptions.
     >>> subscription = target.addSubscription(no_priv, no_priv)
     >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
     >>> print_subscriptions_list(target.bug_subscriptions)
-    no-priv METADATA NOTHING
-    ubuntu-team COMMENTS NOTHING
+    no-priv METADATA
+    ubuntu-team COMMENTS
     >>> subscriptions = target.getSubscriptions(min_bug_notification_level=
     ...                         BugNotificationLevel.COMMENTS)
     >>> print_subscriptions_list(subscriptions)
-    ubuntu-team COMMENTS NOTHING
+    ubuntu-team COMMENTS
 
 
 Structural subscriptions and indirect bug subscriptions
