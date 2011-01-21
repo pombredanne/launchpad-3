@@ -14,7 +14,6 @@ from storm.locals import (
     Reference,
     )
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum

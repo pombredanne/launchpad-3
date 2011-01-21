@@ -16,14 +16,10 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_read_operation,
-    export_write_operation,
     exported,
-    mutator_for,
-    operation_parameters,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,

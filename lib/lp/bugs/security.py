@@ -64,8 +64,8 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
     def checkAuthenticated(self, user):
         """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs. Any bug that can be seen can
-        be edited.
+        explicit subscribers to edit private bugs. Any bug that can be
+        seen can be edited.
         """
         return self.obj.userCanView(user)
 
