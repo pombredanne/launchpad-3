@@ -48,6 +48,8 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    # We mark this as doNotSnapshot() because it's a magically-generated
+    # Storm attribute and it causes Snapshot to break.
     bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
     bug_notification_level = exported(
         Choice(
