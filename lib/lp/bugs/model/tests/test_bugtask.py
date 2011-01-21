@@ -211,10 +211,21 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqual(self.searchClause(any()), None)
         self.assertEqual(self.searchClause(all()), None)
 
-    def test_single_tag_presence(self):
+    def test_single_tag_presence_any(self):
         # The WHERE clause to test for the presence of a single
-        # tag. Should be the same for an `any` query or an `all`
-        # query.
+        # tag where at least one tag is desired.
+        expected_query = (
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('fred'))""")
+        self.assertEqualIgnoringWhitespace(
+            expected_query,
+            self.searchClause(any(u'fred')))
+
+    def test_single_tag_presence_all(self):
+        # The WHERE clause to test for the presence of a single
+        # tag where all tags are desired.
         expected_query = (
             """EXISTS
                  (SELECT TRUE FROM BugTag
@@ -222,15 +233,11 @@ class TestBugTaskTagSearchClauses(TestCase):
                      AND BugTag.tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
-            self.searchClause(any(u'fred')))
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
             self.searchClause(all(u'fred')))
 
-    def test_single_tag_absence(self):
+    def test_single_tag_absence_any(self):
         # The WHERE clause to test for the absence of a single
-        # tag. Should be the same for an `any` query or an `all`
-        # query.
+        # tag where at least one tag is desired.
         expected_query = (
             """NOT EXISTS
                  (SELECT TRUE FROM BugTag
@@ -239,6 +246,15 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(any(u'-fred')))
+
+    def test_single_tag_absence_all(self):
+        # The WHERE clause to test for the absence of a single
+        # tag where all tags are desired.
+        expected_query = (
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('fred'))""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(all(u'-fred')))
@@ -278,11 +294,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                  (SELECT TRUE FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'bob'
-                  UNION
-                  SELECT TRUE FROM BugTag
-                   WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred')""",
+                     AND BugTag.tag IN ('bob', 'fred'))""",
             self.searchClause(any(u'fred', u'bob')))
         # In an `any` query, a positive wildcard is dominant over
         # other positive tags because "bugs with one or more tags" is
@@ -347,11 +359,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """NOT EXISTS
                  (SELECT TRUE FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'bob'
-                  UNION
-                  SELECT TRUE FROM BugTag
-                   WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred')""",
+                     AND BugTag.tag IN ('bob', 'fred'))""",
             self.searchClause(all(u'-fred', u'-bob')))
         # In an `all` query, a negative wildcard is dominant over
         # other negative tags because "bugs without any tags" is a
@@ -371,7 +379,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """(EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag IN ('fred'))
                 OR NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
@@ -381,11 +389,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """(EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'eric'
-                   UNION
-                  SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag IN ('eric', 'fred'))
                 OR NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
@@ -415,11 +419,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """(EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'eric'
-                   UNION
-                   SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag IN ('eric', 'fred'))
                 OR NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
@@ -431,11 +431,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """(EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'eric'
-                   UNION
-                   SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag IN ('eric', 'fred'))
                 OR NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id))""",
@@ -465,7 +461,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                 AND NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'))""",
+                      AND BugTag.tag IN ('bob')))""",
             self.searchClause(all(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
             """(EXISTS
@@ -479,11 +475,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                 AND NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'
-                   UNION
-                   SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag IN ('bob', 'harry')))""",
             self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is superfluous in the presence of
         # other positive tags.
@@ -495,11 +487,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                 AND NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'
-                   UNION
-                   SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag IN ('bob', 'harry')))""",
             self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')))
         # The positive wildcard is not superfluous in the absence of
         # other positive tags.
@@ -510,11 +498,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                 AND NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'
-                   UNION
-                   SELECT TRUE FROM BugTag
-                    WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag IN ('bob', 'harry')))""",
             self.searchClause(all(u'-bob', u'*', u'-harry')))
         # The negative wildcard is dominant over other negative tags.
         self.assertEqualIgnoringWhitespace(
