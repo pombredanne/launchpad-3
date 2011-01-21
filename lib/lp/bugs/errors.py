@@ -11,14 +11,14 @@ __all__ = [
 
 from lazr.restful.declarations import webservice_error
 
+from canonical.launchpad.validators import LaunchpadValidationError
+
 
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
     webservice_error(400)
 
 
-class InvalidDuplicateValue(Exception):
+class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
-
