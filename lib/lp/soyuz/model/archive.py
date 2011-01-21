@@ -1373,7 +1373,7 @@ class Archive(SQLBase):
 
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        return store.find(
             BinaryPackageRelease,
             BinaryPackageFile.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
@@ -1381,10 +1381,8 @@ class Archive(SQLBase):
             LibraryFileAlias.filename == filename,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True)
-        if results.count() > 1:
-            return None
-        return results.one()
+                BinaryPackageRelease.id,
+            ).order_by(Desc(BinaryPackagePublishingHistory.id)).first()
 
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
