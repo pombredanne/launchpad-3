@@ -21,7 +21,7 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
-LPS.use('node', 'lazr.effects', function(Y) {
+YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
