@@ -61,7 +61,7 @@ class IBugSubscription(Interface):
             description=_(
                 "The volume and type of bug notifications "
                 "this subscription will generate."),
-            readonly=True))
+            ))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
@@ -80,17 +80,17 @@ class IBugSubscription(Interface):
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
 
-    @mutator_for(bug_notification_level)
-    @operation_parameters(new_level=copy_field(bug_notification_level))
-    @call_with(user=REQUEST_USER)
-    @export_write_operation()
-    def transitionToBugNotificationLevel(new_level, user):
-        """Transition the subscription to `new_level`.
-
-        This method exists to ensure that BugNotificationLevel changes
-        don't get caught by the BugActivity machinery, where they cause
-        problems.
-
-        :param new_level: The new `BugNotificationLevel` for this
-                          subscription.
-        """
+#    @mutator_for(bug_notification_level)
+#    @operation_parameters(new_level=copy_field(bug_notification_level))
+#    @call_with(user=REQUEST_USER)
+#    @export_write_operation()
+#    def transitionToBugNotificationLevel(new_level, user):
+#        """Transition the subscription to `new_level`.
+#
+#        This method exists to ensure that BugNotificationLevel changes
+#        don't get caught by the BugActivity machinery, where they cause
+#        problems.
+#
+#        :param new_level: The new `BugNotificationLevel` for this
+#                          subscription.
+#        """

@@ -33,8 +33,7 @@ class TestBugSubscription(TestCaseWithFactory):
             subscription = self.bug.subscribe(
                 self.subscriber, self.subscriber)
             for level in BugNotificationLevel.items:
-                subscription.transitionToBugNotificationLevel(
-                    level, self.subscriber)
+                subscription.bug_notification_level = level
                 self.assertEqual(
                     level, subscription.bug_notification_level)
 
@@ -46,9 +45,21 @@ class TestBugSubscription(TestCaseWithFactory):
             subscription = self.bug.subscribe(
                 self.subscriber, self.subscriber)
 
+        def set_bug_notification_level(level):
+            subscription.bug_notification_level = level
+
         with person_logged_in(other_person):
             for level in BugNotificationLevel.items:
                 self.assertRaises(
-                    Unauthorized,
-                    subscription.transitionToBugNotificationLevel,
-                    level, other_person)
+                    Unauthorized, set_bug_notification_level, level)
+
+    def test_transitionToBugNotificationLevel_works_for_team_owners(self):
+        # A team owner can call transitionToBugNotificationLevel() on
+        # the team's subscriptions.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            subscription = self.bug.subscribe(team, team.teamowner)
+            for level in BugNotificationLevel.items:
+                subscription.bug_notification_level = level
+                self.assertEqual(
+                    level, subscription.bug_notification_level)
