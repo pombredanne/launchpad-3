@@ -68,6 +68,22 @@ class TestLineParsing(TestCase):
         self.assertEqual(
             request, 'GET /10133748/cramfsswap_1.4.1.tar.gz HTTP/1.0')
 
+    def test_parsing_line_with_spaces_in_username(self):
+        # Some lines have spaces in the username, left unquoted by
+        # Apache. They can still be parsed OK, since no other fields
+        # have similar issues.
+        line = (r'1.1.1.1 - Some User [25/Jan/2009:15:48:07 +0000] "GET '
+                r'/10133748/cramfsswap_1.4.1.tar.gz HTTP/1.0" 200 12341 '
+                r'"http://foo.bar/?baz=\"bang\"" '
+                r'"\"Nokia2630/2.0 (05.20) Profile/MIDP-2.1 '
+                r'Configuration/CLDC-1.1\""')
+        host, date, status, request = get_host_date_status_and_request(line)
+        self.assertEqual(host, '1.1.1.1')
+        self.assertEqual(date, '[25/Jan/2009:15:48:07 +0000]')
+        self.assertEqual(status, '200')
+        self.assertEqual(
+            request, 'GET /10133748/cramfsswap_1.4.1.tar.gz HTTP/1.0')
+
     def test_day_extraction(self):
         date = '[13/Jun/2008:18:38:57 +0100]'
         self.assertEqual(get_day(date), datetime(2008, 6, 13))
@@ -100,6 +116,16 @@ class TestLineParsing(TestCase):
         self.assertEqual(
             path,
             r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b Z%7B...')
+
+    def test_parsing_invalid_url(self):
+        # An invalid URL should just be treated as a path, not cause an
+        # exception.
+        request = r'GET http://blah/1234/fewfwfw GET http://blah HTTP/1.0'
+        method, path = get_method_and_path(request)
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
+            path,
+            r'http://blah/1234/fewfwfw GET http://blah')
 
 
 class Test_get_fd_and_file_size(TestCase):

@@ -7,7 +7,14 @@ __all__ = [
     'StructuralSubscriptionTargetMixin',
     ]
 
-from sqlobject import ForeignKey
+import pytz
+
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
+
 from storm.expr import (
     Alias,
     And,
@@ -31,8 +38,7 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
+from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import (
     quote,
     SQLBase,
@@ -80,40 +86,49 @@ class StructuralSubscription(SQLBase):
 
     _table = 'StructuralSubscription'
 
-    product = ForeignKey(
-        dbName='product', foreignKey='Product', notNull=False, default=None)
-    productseries = ForeignKey(
-        dbName='productseries', foreignKey='ProductSeries', notNull=False,
-        default=None)
-    project = ForeignKey(
-        dbName='project', foreignKey='ProjectGroup', notNull=False,
-        default=None)
-    milestone = ForeignKey(
-        dbName='milestone', foreignKey='Milestone', notNull=False,
-        default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution', notNull=False,
-        default=None)
-    distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries', notNull=False,
-        default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    subscriber = ForeignKey(
-        dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_person, notNull=True)
-    subscribed_by = ForeignKey(
-        dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    bug_notification_level = EnumCol(
+    __storm_table__ = 'StructuralSubscription'
+
+    id = Int(primary=True)
+
+    productID = Int("product", default=None)
+    product = Reference(productID, "Product.id")
+
+    productseriesID = Int("productseries", default=None)
+    productseries = Reference(productseriesID, "ProductSeries.id")
+
+    projectID = Int("project", default=None)
+    project = Reference(projectID, "ProjectGroup.id")
+
+    milestoneID = Int("milestone", default=None)
+    milestone = Reference(milestoneID, "Milestone.id")
+
+    distributionID = Int("distribution", default=None)
+    distribution = Reference(distributionID, "Distribution.id")
+
+    distroseriesID = Int("distroseries", default=None)
+    distroseries = Reference(distroseriesID, "DistroSeries.id")
+
+    sourcepackagenameID = Int("sourcepackagename", default=None)
+    sourcepackagename = Reference(sourcepackagenameID, "SourcePackageName.id")
+
+    subscriberID = Int("subscriber", allow_none=False,
+                        validator=validate_person)
+    subscriber = Reference(subscriberID, "Person.id")
+
+    subscribed_byID = Int("subscribed_by", allow_none=False,
+                          validator=validate_public_person)
+    subscribed_by = Reference(subscribed_byID, "Person.id")
+
+    bug_notification_level = DBEnum(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
-        notNull=True)
-    date_created = UtcDateTimeCol(
-        dbName='date_created', notNull=True, default=UTC_NOW)
-    date_last_updated = UtcDateTimeCol(
-        dbName='date_last_updated', notNull=True, default=UTC_NOW)
+        allow_none=False)
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
+    date_last_updated = DateTime(
+        "date_last_updated", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
 
     @property
     def target(self):

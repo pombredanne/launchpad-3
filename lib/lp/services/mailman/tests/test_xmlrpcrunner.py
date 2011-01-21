@@ -7,9 +7,14 @@ __all__ = []
 
 from contextlib import contextmanager
 from datetime import datetime
+import socket
 
+from Mailman import Errors
 from Mailman.Logging.Syslog import syslog
-from Mailman.Queue.XMLRPCRunner import XMLRPCRunner
+from Mailman.Queue.XMLRPCRunner import (
+    handle_proxy_error,
+    XMLRPCRunner,
+    )
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mailman.testing import (
@@ -25,6 +30,7 @@ def one_loop_exception(runner):
     This function replaces _check_list_actions() with a function that
     raises an error. _oneloop() handles the exception.
     """
+
     def raise_exception():
         raise Exception('Test exception handling.')
 
@@ -50,25 +56,6 @@ class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
         # MailmanTestCase's setup of the test proxy is ignored because
         # the runner had a reference to the true proxy in its __init__.
         self.runner._proxy = get_mailing_list_api_test_proxy()
-
-    def get_mark(self):
-        """Return the first mark line found in the log."""
-        log_path = syslog._logfiles['xmlrpc']._Logger__filename
-        mark = None
-        with open(log_path, 'r') as log_file:
-            for line in log_file.readlines():
-                if '--MARK--' in line:
-                    mark = line
-                    break
-        return mark
-
-    def reset_log(self):
-        """Truncate the log."""
-        log_path = syslog._logfiles['xmlrpc']._Logger__filename
-        syslog._logfiles['xmlrpc'].close()
-        with open(log_path, 'w') as log_file:
-            log_file.truncate()
-        syslog.write_ex('xmlrpc', 'Reset by test.')
 
     def test_heartbeat_on_start(self):
         # A heartbeat is recorded in the log on start.
@@ -107,3 +94,42 @@ class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
             self.runner._oneloop()
         mark = self.get_mark()
         self.assertTrue(mark is None)
+
+
+class TestHandleProxyError(MailmanTestCase):
+    """Test XMLRPCRunner.handle_proxy_error function."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestHandleProxyError, self).setUp()
+        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
+            'team-1', 'team-1-owner')
+        self.mm_list = self.makeMailmanList(self.mailing_list)
+        syslog.write_ex('xmlrpc', 'Ensure the log is open.')
+        self.reset_log()
+
+    def test_communication_log_entry(self):
+        # Connection errors are reported in the log.
+        error = socket.error('Testing socket error.')
+        handle_proxy_error(error)
+        mark = self.get_log_entry('Cannot talk to Launchpad:')
+        self.assertTrue(mark is not None)
+
+    def test_fault_log_entry(self):
+        # Fault errors are reported in the log.
+        error = Exception('Testing generic error.')
+        handle_proxy_error(error)
+        mark = self.get_log_entry('Launchpad exception:')
+        self.assertTrue(mark is not None)
+
+    def test_message_raises_discard_message_error(self):
+        # When message is passed to the function, DiscardMessage is raised
+        # and the message is re-enqueued in the incoming queue.
+        error = Exception('Testing generic error.')
+        msg = self.makeMailmanMessage(
+            self.mm_list, 'lost@noplace.dom', 'subject', 'any content.')
+        msg_data = {}
+        self.assertRaises(
+            Errors.DiscardMessage, handle_proxy_error, error, msg, msg_data)
+        self.assertIsEnqueued(msg)

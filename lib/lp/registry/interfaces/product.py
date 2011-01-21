@@ -732,6 +732,9 @@ class IProductPublic(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
 
+    active_or_packaged_series = Attribute(
+        _("Series that are active and/or have been packaged."))
+
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
