@@ -2384,6 +2384,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 spr = self.makeSourcePackageRelease(
                     source_package_recipe_build=sprb,
                     sourcepackagename=sourcepackagename,
+                    distroseries=distroseries, archive=archive)
+                spph = self.makeSourcePackagePublishingHistory(
+                    sourcepackagerelease=spr, archive=archive,
                     distroseries=distroseries)
 
                 # Make some complete and incomplete builds.
