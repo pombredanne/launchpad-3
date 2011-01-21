@@ -410,7 +410,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _handleUpdateSubscription(self, level):
         """Handle updating a user's subscription."""
         subscription = self.current_user_subscription
-        subscription.bug_notification_level = level
+        subscription.transitionToBugNotificationLevel(
+            level, self.user)
         self.request.response.addNotification(
             "Your subscription to this bug has been updated.")
 
