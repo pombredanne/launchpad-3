@@ -354,8 +354,11 @@ class InlineEditPickerWidget:
             # We look at the top of the annotation stack, since Ajax
             # requests always go to the most recent version of the web
             # service.
-            exported_tag_stack = self.interface_attribute.getTaggedValue(
-                'lazr.restful.exported')
+            try:
+                exported_tag_stack = self.interface_attribute.getTaggedValue(
+                    'lazr.restful.exported')
+            except KeyError:
+                return False
             mutator_info = exported_tag_stack.get('mutator_annotations')
             if mutator_info is not None:
                 mutator_method, mutator_extra = mutator_info
