@@ -153,10 +153,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built daily
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
-            Daily build archive: Secret PPA
+            Daily build archive: Secret PPA Edit
             Distribution series: Secret Squirrel
             .*
 
@@ -604,11 +604,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            PPA 2
+            PPA 2 Edit
             Distribution series: Mumbly Midget
             .*
 
@@ -664,11 +664,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            Secret PPA
+            Secret PPA Edit
             Distribution series: Mumbly Midget
             .*
 
@@ -804,11 +804,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            Secret PPA
+            Secret PPA Edit
             Distribution series: Mumbly Midget
             .*
 
@@ -855,10 +855,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
-            Daily build archive: Secret PPA
+            Daily build archive: Secret PPA Edit
             Distribution series: Secret Squirrel
 
             Latest builds
