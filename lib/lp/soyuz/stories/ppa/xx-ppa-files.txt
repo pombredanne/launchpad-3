@@ -350,14 +350,14 @@ binaries across to no-priv's public ppa.
     >>> logout()
 
     >>> print file_librarian_url
-    http://localhost:58000/.../test-pkg_1.0.dsc
+    http://.../test-pkg_1.0.dsc
 
     >>> print http(r"""
     ... GET %s HTTP/1.1
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../test-pkg_1.0.dsc
+    Location: http://.../test-pkg_1.0.dsc
     ...
 
 

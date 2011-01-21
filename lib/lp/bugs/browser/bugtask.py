@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'assignee_renderer',
     'BugListingBatchNavigator',
     'BugListingPortletInfoView',
     'BugListingPortletStatsView',
@@ -72,7 +71,6 @@ from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IJSONRequestCache,
     IReference,
-    IReferenceChoice,
     IWebServiceClientRequest,
     )
 from lazr.uri import URI
@@ -265,21 +263,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
-
-
-@component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def assignee_renderer(context, field, request):
-    """Render a bugtask assignee as a link."""
-
-    def render(value):
-        if context.assignee is None:
-            return ''
-        else:
-            return (
-                '<span>%s</span>' %
-                PersonFormatterAPI(context.assignee).link(None))
-    return render
 
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)

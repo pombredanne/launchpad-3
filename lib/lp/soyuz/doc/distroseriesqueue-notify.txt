@@ -260,5 +260,5 @@ Only one email is generated:
 
 Clean up, otherwise stuff is left lying around in /var/tmp.
 
-  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()
