@@ -443,7 +443,28 @@ class UserUploadHandler(UploadHandler):
         self.moveProcessedUpload(destination, self.processor.log)
 
 
+class CannotGetBuild(Exception):
+
+    """Attempting to retrieve the build for this upload failed."""
+
+
 class BuildUploadHandler(UploadHandler):
+
+    def getBuild(self):
+        try:
+            job_id = parse_build_upload_leaf_name(self.upload)
+        except ValueError:
+            raise CannotGetBuild(
+                "Unable to extract build id from leaf name %s, skipping." %
+                self.upload)
+        try:
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+        except NotFoundError:
+            raise CannotGetBuild(
+                "Unable to find package build job with id %d. Skipping." %
+                job_id)
+            return
+        return buildfarm_job.getSpecificJob()
 
     def process(self):
         """Process an upload that is the result of a build.
@@ -451,22 +472,12 @@ class BuildUploadHandler(UploadHandler):
         The name of the leaf is the build id of the build.
         Build uploads always contain a single package per leaf.
         """
-        try:
-            job_id = parse_build_upload_leaf_name(self.upload)
-        except ValueError:
-            self.processor.log.warn(
-                "Unable to extract build id from leaf name %s, skipping." %
-                self.upload)
-            return
-        try:
-            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-        except NotFoundError:
-            self.processor.log.warn(
-                "Unable to find package build job with id %d. Skipping." %
-                job_id)
-            return
         logger = BufferLogger()
-        build = buildfarm_job.getSpecificJob()
+        try:
+            build = self.getBuild()
+        except CannotGetBuild, e:
+            self.processor.log.warn(e)
+            return
         if build.status != BuildStatus.UPLOADING:
             self.processor.log.warn(
                 "Expected build status to be 'UPLOADING', was %s. Ignoring." %
