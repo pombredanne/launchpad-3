@@ -688,19 +688,16 @@ class MailingListSet:
             LeftJoin(Team,
                      Team.id == MailingList.teamID),
             )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
+        team_ids = set(store.find(
+                Person.id,
                 And(Person.name.is_in(team_names),
                     Person.teamowner != None)))
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
-                MailingList,
+        list_ids = set(store.find(
+                MailingList.id,
                 MailingList.teamID.is_in(team_ids)))
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription, TeamParticipation,
-             Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -710,11 +707,11 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
         by_team = {}
-        for address, subscription, participation, person, team in preferred:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        for email, display_name, team_name in preferred:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email)
+            by_team.setdefault(team_name, set()).add(value)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -734,16 +731,16 @@ class MailingListSet:
                      Team.id == MailingList.teamID),
             )
         explicit = store.using(*tables).find(
-            (EmailAddress, MailingList, Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
-        for address, mailing_list, person, team in explicit:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        for email, display_name, team_name in explicit:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email)
+            by_team.setdefault(team_name, set()).add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -766,9 +763,8 @@ class MailingListSet:
             Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
+        team_ids = set(store.find(
+                Person.id,
                 And(Person.name.is_in(team_names),
                     Person.teamowner != None)))
         team_members = store.using(*tables).find(
@@ -793,9 +789,8 @@ class MailingListSet:
                      MailingList.id == MessageApproval.mailing_listID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
-                MailingList,
+        list_ids = set(store.find(
+                MailingList.id,
                 MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
