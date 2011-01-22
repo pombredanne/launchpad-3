@@ -83,26 +83,55 @@ class TestMailinglistSet(TestCaseWithFactory):
 
     def makeTeamWithMailingListSubscribers(self, team_name, super_team=None,
                                            auto_subscribe=True):
-        """Create a team, mailing list, and subcribers.
-
-        Subscribers is an iterable of tuples
-        """
+        """Create a team, mailing list, and subcribers."""
+        team = self.factory.makeTeam(name=team_name)
         if super_team is None:
-            owner = self.factory.makePerson()
+            mailing_list = self.factory.makeMailingList(team, team.teamowner)
         else:
-            owner = super_team.teamowner
-        team = self.factory.makeTeam(name=team_name, owner=owner)
-        if super_team is None:
-            mailing_list = self.factory.makeMailingList(team, owner)
-        else:
-            super_team.addMember(team, reviewer=owner)
+            super_team.addMember(
+                team, reviewer=team.teamowner, force_team_add=True)
+            mailing_list = super_team.mailing_list
         member = self.factory.makePerson()
+        team.addMember(member, reviewer=team.teamowner)
         if auto_subscribe:
-            member.mailing_list_auto_subscribe_policy = (
-                MailingListAutoSubscribePolicy.ALWAYS)
-        team.addMember(member, reviewer=owner)
+            mailing_list.subscribe(member)
         transaction.commit()
         return team, member
+
+    def test_getSenderAddresses_dict_keys(self):
+        # getSenderAddresses() returns a dict of teams names
+        # {team_name: [(member_displayname, member_email) ...]}
+        team1, member1 = self.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        team2, member2 = self.makeTeamWithMailingListSubscribers(
+            'team2', auto_subscribe=False)
+        team_names = [team1.name, team2.name]
+        result = self.mailing_list_set.getSenderAddresses(team_names)
+        self.assertEqual(team_names, sorted(result.keys()))
+
+    def test_getSenderAddresses_dict_values(self):
+        # getSenderAddresses() returns a dict of team namess with a list of
+        # all direct and indirect member tuples.
+        # {team_name: [(member_displayname, member_email) ...]}
+        team1, member1 = self.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        result = self.mailing_list_set.getSenderAddresses([team1.name])
+        list_senders = sorted([
+            (m.displayname, m.preferredemail.email)
+            for m in team1.allmembers])
+        self.assertEqual(list_senders, sorted(result[team1.name]))
+
+    def test_getSenderAddresses_participation_dict_values(self):
+        # getSenderAddresses() dict values includes indirect participants.
+        team1, member1 = self.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        team2, member2 = self.makeTeamWithMailingListSubscribers(
+            'team2', auto_subscribe=False, super_team=team1)
+        result = self.mailing_list_set.getSenderAddresses([team1.name])
+        list_senders = sorted([
+            (m.displayname, m.preferredemail.email)
+            for m in team1.allmembers if m.preferredemail])
+        self.assertEqual(list_senders, sorted(result[team1.name]))
 
     def test_getSubscribedAddresses_dict_keys(self):
         # getSubscribedAddresses() returns a dict of team names.
@@ -123,25 +152,13 @@ class TestMailinglistSet(TestCaseWithFactory):
             (member1.displayname, member1.preferredemail.email)]
         self.assertEqual(list_subscribers, result[team1.name])
 
-    def test_getSenderAddresses_dict_keys(self):
-        # getSenderAddresses() returns a dict of teams names
-        # {team_name: [(member_displayname, member_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
-            'team1', auto_subscribe=False)
+    def test_getSubscribedAddresses_participation_dict_values(self):
+        # getSubscribedAddresses() dict values includes indirect participants.
+        team1, member1 = self.makeTeamWithMailingListSubscribers('team1')
         team2, member2 = self.makeTeamWithMailingListSubscribers(
-            'team2', auto_subscribe=False)
-        team_names = [team1.name, team2.name]
-        result = self.mailing_list_set.getSenderAddresses(team_names)
-        self.assertEqual(team_names, sorted(result.keys()))
-
-    def test_getSenderAddresses_dict_values(self):
-        # getSenderAddresses() returns a dict of team namess with a list of
-        # all direct and indirect member tuples.
-        # {team_name: [(member_displayname, member_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
-            'team1', auto_subscribe=False)
-        result = self.mailing_list_set.getSenderAddresses([team1.name])
+            'team2', super_team=team1)
+        result = self.mailing_list_set.getSubscribedAddresses([team1.name])
         list_subscribers = sorted([
-            (m.displayname, m.preferredemail.email)
-            for m in team1.allmembers])
+            (member1.displayname, member1.preferredemail.email),
+            (member2.displayname, member2.preferredemail.email)])
         self.assertEqual(list_subscribers, sorted(result[team1.name]))
