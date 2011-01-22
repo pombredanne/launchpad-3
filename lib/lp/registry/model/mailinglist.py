@@ -665,13 +665,15 @@ class MailingListSet:
     def _getTeamIdsAndMailingListIds(self, team_names):
         """Return a tuple of team and mailing list Ids for the team names."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        team_ids = set(store.find(
-                Person.id,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None)))
-        list_ids = set(store.find(
-                MailingList.id,
-                MailingList.teamID.is_in(team_ids)))
+        tables = (
+            Person,
+            Join(MailingList, MailingList.team == Person.id))
+        results = set(store.using(*tables).find(
+            (Person.id, MailingList.id),
+            And(Person.name.is_in(team_names),
+                Person.teamowner != None)))
+        team_ids = [result[0] for result in results]
+        list_ids = [result[1] for result in results]
         return team_ids, list_ids
 
     def getSubscribedAddresses(self, team_names):
