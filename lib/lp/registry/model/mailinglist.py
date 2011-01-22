@@ -662,6 +662,18 @@ class MailingListSet:
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
 
+    def _getTeamIdsAndMailingListIds(self, team_names):
+        """Return a tuple of team and mailing list Ids for the team names."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        team_ids = set(store.find(
+                Person.id,
+                And(Person.name.is_in(team_names),
+                    Person.teamowner != None)))
+        list_ids = set(store.find(
+                MailingList.id,
+                MailingList.teamID.is_in(team_ids)))
+        return team_ids, list_ids
+
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
@@ -688,13 +700,7 @@ class MailingListSet:
             LeftJoin(Team,
                      Team.id == MailingList.teamID),
             )
-        team_ids = set(store.find(
-                Person.id,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None)))
-        list_ids = set(store.find(
-                MailingList.id,
-                MailingList.teamID.is_in(team_ids)))
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
             (EmailAddress.email, Person.displayname, Team.name),
@@ -763,10 +769,7 @@ class MailingListSet:
             Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        team_ids = set(store.find(
-                Person.id,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None)))
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         team_members = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
@@ -789,9 +792,6 @@ class MailingListSet:
                      MailingList.id == MessageApproval.mailing_listID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        list_ids = set(store.find(
-                MailingList.id,
-                MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
