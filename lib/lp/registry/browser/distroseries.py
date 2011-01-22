@@ -70,11 +70,11 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.registry.browser import MilestoneOverlayMixin
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.registry.browser import MilestoneOverlayMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,

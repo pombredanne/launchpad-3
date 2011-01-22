@@ -32,6 +32,11 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
+    )
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
@@ -41,11 +46,6 @@ from lp.registry.errors import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    IStructuralSubscriptionTargetHelper,
-    )
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     ANONYMOUS,
     login,

@@ -21,6 +21,9 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionView,
+    )
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageNavigation,
@@ -30,9 +33,6 @@ from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionView,
-    )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,

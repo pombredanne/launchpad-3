@@ -1055,6 +1055,41 @@
         recipient"/>
   </class>
 
+    <!-- StructuralSubscription -->
+
+    <class
+        class="lp.bugs.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
+        <require
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
+    </class>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
+
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>

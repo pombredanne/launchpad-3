@@ -29,7 +29,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
 from lp.services.fields import SearchTag
