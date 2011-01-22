@@ -2713,8 +2713,10 @@ class Person(
     @property
     def structural_subscriptions(self):
         """See `IPerson`."""
-        return StructuralSubscription.selectBy(
-            subscriber=self, orderBy=['-date_created'])
+        return IStore(self).find(
+            StructuralSubscription,
+            StructuralSubscription.subscriberID==self.id).order_by(
+                Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
