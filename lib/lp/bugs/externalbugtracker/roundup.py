@@ -223,7 +223,7 @@ class Roundup(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`"""
-        # XXX: 2007-08-28 Graham Binns bug=135317
+        # XXX: Graham Binns 2007-08-28 bug=135317:
         #      At present, Roundup does not support exporting only a
         #      subset of bug ids as a batch (launchpad bug 135317). When
         #      this bug is fixed we need to change this method to only
