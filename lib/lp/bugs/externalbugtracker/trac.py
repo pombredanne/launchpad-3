@@ -271,8 +271,7 @@ class Trac(ExternalBugTracker):
     _status_lookup_titles = 'Trac status',
     _status_lookup = LookupTree(
         ('new', 'open', 'reopened', BugTaskStatus.NEW),
-        # XXX: 2007-08-06 Graham Binns:
-        #      We should follow dupes if possible.
+        # XXX: Graham Binns 2007-08-06: We should follow dupes if possible.
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
         # Status fixverified added for bug 667340, for http://trac.yorba.org/,
         # but could be generally useful so adding here.
