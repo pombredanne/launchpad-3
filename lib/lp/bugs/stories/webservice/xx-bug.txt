@@ -211,7 +211,7 @@ the web UI. It is impossible, for example, to create circular relationships.
   ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
   ...       dumps(dict(
   ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
-  HTTP/1.1 417 Expectation Failed
+  HTTP/1.1 400 Bad Request
   ...
   Bug 16 is already a duplicate of bug 5. You
   can only mark a bug report as duplicate of one that

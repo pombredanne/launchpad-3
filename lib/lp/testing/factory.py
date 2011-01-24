@@ -2127,7 +2127,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
-        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # XXX: architecturetag & processorfamily are tightly coupled. It's
         # wrong to just make a fresh architecture tag without also making a
         # processor family to go with it (ideally with processors!)
         if architecturetag is None:
@@ -2384,6 +2384,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 spr = self.makeSourcePackageRelease(
                     source_package_recipe_build=sprb,
                     sourcepackagename=sourcepackagename,
+                    distroseries=distroseries, archive=archive)
+                spph = self.makeSourcePackagePublishingHistory(
+                    sourcepackagerelease=spr, archive=archive,
                     distroseries=distroseries)
 
                 # Make some complete and incomplete builds.

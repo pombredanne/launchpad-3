@@ -1,9 +1,11 @@
-= BugSubscription =
+BugSubscription
+===============
 
 Users can get email notifications of changes to bugs by subscribing to
 them.
 
-== Bug Subscriber APIs ==
+Bug Subscriber APIs
+-------------------
 
 First, let's login:
 
@@ -22,7 +24,8 @@ IBug has a subscriptions attribute:
 This list returns only *direct* subscribers. Bugs can also have
 indirect subscribers.
 
-=== Direct vs. Indirect Subscriptions ===
+Direct vs. Indirect Subscriptions
+.................................
 
 A user is directly subscribed to a bug if they or someone else has
 subscribed them to the bug.
@@ -147,6 +150,7 @@ Here are some examples of the three types of indirect subscribers:
     >>> subscription_no_priv = linux_source.addBugSubscription(
     ...     mr_no_privs, mr_no_privs)
 
+    >>> transaction.commit()
     >>> print_displayname(
     ...     sub.subscriber for sub in linux_source.bug_subscriptions)
     No Privileges Person
@@ -434,12 +438,12 @@ To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an
 INotificationRecipientSet instance for us:
 
-   >>> recipients = linux_source_bug.getBugNotificationRecipients()
+    >>> recipients = linux_source_bug.getBugNotificationRecipients()
 
 You can query for the addresses and reasons:
 
-   >>> addresses = recipients.getEmails()
-   >>> [(address, recipients.getReason(address)[1]) for address in addresses]
+    >>> addresses = recipients.getEmails()
+    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', 'Subscriber'),
@@ -455,10 +459,10 @@ was directly subscribed, thus he is returned by
 getBugNotificationRecipients() even if the parameter level is larger than
 his structural subscription setting.
 
-   >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=BugNotificationLevel.COMMENTS)
-   >>> addresses = recipients.getEmails()
-   >>> [(address, recipients.getReason(address)[1]) for address in addresses]
+    >>> recipients = linux_source_bug.getBugNotificationRecipients(
+    ...     level=BugNotificationLevel.COMMENTS)
+    >>> addresses = recipients.getEmails()
+    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', 'Subscriber'),
@@ -470,11 +474,11 @@ When Sample Person is unsubscribed from linux_source_bug, he is no
 longer included in the result of getBugNotificationRecipients() for
 the COMMENTS level...
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
-   >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=BugNotificationLevel.COMMENTS)
-   >>> addresses = recipients.getEmails()
-   >>> [(address, recipients.getReason(address)[1]) for address in addresses]
+    >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
+    >>> recipients = linux_source_bug.getBugNotificationRecipients(
+    ...     level=BugNotificationLevel.COMMENTS)
+    >>> addresses = recipients.getEmails()
+    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
@@ -483,11 +487,11 @@ the COMMENTS level...
 
 ...but remains included for the level LIFECYCLE.
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
-   >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=BugNotificationLevel.LIFECYCLE)
-   >>> addresses = recipients.getEmails()
-   >>> [(address, recipients.getReason(address)[1]) for address in addresses]
+    >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
+    >>> recipients = linux_source_bug.getBugNotificationRecipients(
+    ...     level=BugNotificationLevel.LIFECYCLE)
+    >>> addresses = recipients.getEmails()
+    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in ubuntu)'),
@@ -524,7 +528,8 @@ be unsubscribed from dupes.
     >>> bug_five.isSubscribedToDupes(sample_person)
     True
 
-== Subscribing and Unsubscribing ==
+Subscribing and Unsubscribing
+-----------------------------
 
 To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
@@ -585,7 +590,8 @@ the user was unsubscribed.
     False
 
 
-=== Determining whether a user can unsubscribe someone ===
+Determining whether a user can unsubscribe someone
+..................................................
 
 As user can't unsubscribe just anyone from a bug. To check whether
 someone can be unusubscribed, the canBeUnsubscribedByUser() method on
@@ -640,13 +646,11 @@ will raise an exception if the user does not have permission.
     UserCannotUnsubscribePerson: ...
 
 
-== Automatic Subscriptions on Bug Creation ==
+Automatic Subscriptions on Bug Creation
+---------------------------------------
 
 When a new bug is opened, only the bug reporter is automatically, explicitly
 subscribed to the bug:
-
-XXX: Brad Bollenbach, 2005-11-25: These bits need real sample data. See
-https://launchpad.net/bugs/5484.
 
 Define a function that get subscriber email addresses back conveniently:
 
@@ -804,7 +808,7 @@ package.
 So, if the Ubuntu team is added as a bug contact to evolution:
 
     >>> evolution.addBugSubscription(ubuntu_team, ubuntu_team)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
 The team will be implicitly subscribed to the previous bug we
 created. (Remember that Sample Person is also implicitly subscribed
@@ -848,7 +852,8 @@ security bug filed on a package, because Ubuntu has no security contact:
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 
 
-== Subscribed by ==
+Subscribed by
+-------------
 
 Each `BugSubscription` records who created it, and provides a handy
 utility method for formatting this information. The methods

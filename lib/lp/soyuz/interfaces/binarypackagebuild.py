@@ -186,6 +186,23 @@ class IBinaryPackageBuildView(IPackageBuild):
         :return: the corresponding `IBinaryPackageFile` if it was found.
         """
 
+    def getBinaryPackageNamesForDisplay():
+        """Retrieve the build's binary package names for display purposes.
+
+        :return: a result set of
+            (`IBinaryPackageRelease`, `IBinaryPackageName`) ordered by name
+            and `IBinaryPackageRelease.id`.
+        """
+
+    def getBinaryFilesForDisplay():
+        """Retrieve the build's `IBinaryPackageFile`s for display purposes.
+
+        Also prefetches other related objects needed for display.
+
+        :return: a result set of (`IBinaryPackageRelease`,
+            `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
+        """
+
 
 class IBinaryPackageBuildEdit(Interface):
     """A Build interface for items requiring launchpad.Edit."""
@@ -318,6 +335,7 @@ class IBinaryPackageBuildSet(Interface):
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+
     def retryDepWaiting(distroarchseries):
         """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
 
