@@ -37,7 +37,6 @@ from zope.schema import (
     Datetime,
     Field,
     Int,
-    Object,
     Text,
     TextLine,
     )
@@ -155,14 +154,14 @@ class ITranslationImportQueueEntry(Interface):
         exported_as="date_created")
 
     productseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
             schema=IProductSeries))
 
     distroseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
@@ -212,7 +211,7 @@ class ITranslationImportQueueEntry(Interface):
         "True if this entry is to be imported into the Ubuntu distribution.")
 
     sourcepackage = exported(
-        Object(
+        Reference(
             schema=ISourcePackage,
             title=_("The sourcepackage associated with this entry."),
             readonly=True))

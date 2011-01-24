@@ -252,15 +252,34 @@
                     transitionToMilestone
                     transitionToTarget"/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    distribution
+                    distroseries
+                    importance
+                    milestone
+                    owner
+                    product
+                    productseries
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    sourcepackagename
+                    statusdisplayhtml
+                    statuselsewhere
+                    statusexplanation
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -1090,6 +1109,7 @@
         factory=".model.structuralsubscription.DistributionTargetHelper"
         permission="zope.Public"/>
 
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>
