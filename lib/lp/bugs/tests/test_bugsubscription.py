@@ -12,6 +12,7 @@ from testtools.matchers import (
     MatchesAny,
     )
 
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
@@ -19,6 +20,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     login,
@@ -97,23 +99,26 @@ class TestBugSubscription(TestCaseWithFactory):
     def test_permission_check_query_count_for_admin_members(self):
         # Checking permissions shouldn't cost anything.
         team = self.factory.makeTeam()
+        team_name = team.name
         with person_logged_in(team.teamowner):
+            salgado = getUtility(IPersonSet).getByName('salgado')
             team.addMember(
-                self.subscriber, team.teamowner,
+                salgado, team.teamowner,
                 status=TeamMembershipStatus.ADMIN)
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        collector = QueryCollector()
-        collector.register()
-        self.addCleanup(collector.unregister)
-        logout()
-        login(USER_EMAIL)
         ws_subscription = webservice.named_post(
             u'http://api.launchpad.dev/beta/bugs/%d' % self.bug.id,
             'subscribe', person=webservice.getAbsoluteUrl('/~%s' %
-            team.name), level=u"Details")
+            team_name), level=u"Details").jsonBody()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        expected_query_count = 0
         for level in BugNotificationLevel.items:
             webservice.patch(
                 ws_subscription['self_link'], 'application/json',
                 dumps({u'bug_notification_level': level.title}))
-        self.assertThat(collector, HasQueryCount(Equals(1))) 
+            expected_query_count += 1
+        self.assertThat(
+            collector, HasQueryCount(Equals(expected_query_count)))
