@@ -13,6 +13,7 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
@@ -191,3 +192,13 @@ class TestRecipeBuildListing(BrowserTestCase):
             text = extract_text(row)
             view_records_text.add(text.replace(' ', '').replace('\n', ''))
         self.assertEquals(records_text, view_records_text)
+
+    def test_one_recipe_redirects_to_recipe_page(self):
+        # Ensure that if the product or person has only one recipe, they are
+        # redirected right to the recipe page.
+        recipe = self.factory.makeSourcePackageRecipe()
+        root_url = self.layer.appserver_root_url(facet='code')
+        recipes_url = '%s/~%s/+recipes' % (root_url, recipe.owner.name)
+        expected_url = canonical_url(recipe)
+        browser = self.getUserBrowser(recipes_url)
+        self.assertEquals(expected_url, browser.url)

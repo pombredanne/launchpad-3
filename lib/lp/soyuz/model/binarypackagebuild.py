@@ -4,7 +4,10 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BinaryPackageBuild', 'BinaryPackageBuildSet']
+__all__ = [
+    'BinaryPackageBuild',
+    'BinaryPackageBuildSet',
+    ]
 
 import datetime
 import logging
@@ -161,18 +164,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def current_component(self):
         """See `IBuild`."""
         latest_publication = self._getLatestPublication()
-
-        # XXX cprov 2009-06-06 bug=384220:
-        # This assertion works fine in production, since all build records
-        # are legitimate and have a corresponding source publishing record
-        # (which triggered their creation, in first place). However our
-        # sampledata is severely broken in this area and depends heavily
-        # on the fallback to the source package original component.
-        #assert latest_publication is not None, (
-        #    'Build %d lacks a corresponding source publication.' % self.id)
-        if latest_publication is None:
-            return self.source_package_release.component
-
+        assert latest_publication is not None, (
+            'Build %d lacks a corresponding source publication.' % self.id)
         return latest_publication.component
 
     @property
@@ -977,7 +970,7 @@ class BinaryPackageBuildSet:
     def getBuildsByArchIds(self, distribution, arch_ids, status=None,
                            name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
-        # If not distroarchseries was found return empty list
+        # If no distroarchseries were passed in, return an empty list
         if not arch_ids:
             return EmptyResultSet()
 
