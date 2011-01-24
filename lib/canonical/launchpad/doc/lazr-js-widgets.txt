@@ -122,8 +122,8 @@ The foo.bar user can see the activator's edit button.
     </span>
     ...Y.lp.app.picker.addPickerPatcher(...
 
-The resource_uri is the canonical_url for the object in
+The json_resource_uri is the canonical_url for the object in
 WebServiceClientRequests.
 
-    >>> print widget.resource_uri
+    >>> print widget.json_resource_uri
     "/firefox/+bug/1"

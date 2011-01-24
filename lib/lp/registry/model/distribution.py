@@ -19,9 +19,11 @@ from sqlobject import (
     )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
+    And,
     Desc,
     Int,
     Join,
+    Max,
     Or,
     SQL,
     )
@@ -123,6 +125,7 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror,
     MirrorContent,
+    MirrorFreshness,
     MirrorStatus,
     )
 from lp.registry.interfaces.packaging import PackagingType
@@ -135,7 +138,11 @@ from lp.registry.interfaces.pocket import suffixpocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
-from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import (
+    DistributionMirror,
+    MirrorDistroArchSeries,
+    MirrorDistroSeriesSource,
+    )
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
@@ -155,6 +162,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -439,27 +447,79 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
+    def _getActiveMirrors(self, mirror_content_type,
+            by_country=False, needs_fresh=False):
+        """Builds the query to get the mirror data for various purposes."""
+        mirrors = list(Store.of(self).find(
+            DistributionMirror,
+            And(
+                DistributionMirror.distribution == self.id,
+                DistributionMirror.content == mirror_content_type,
+                DistributionMirror.enabled == True,
+                DistributionMirror.status == MirrorStatus.OFFICIAL,
+                DistributionMirror.official_candidate == True)))
+
+        if by_country and mirrors:
+            # Since country data is needed, fetch countries into the cache.
+            countries = list(Store.of(self).find(
+                Country,
+                Country.id.is_in(mirror.countryID for mirror in mirrors)))
+
+        if needs_fresh and mirrors:
+            # Preload the distribution_mirrors' cache for mirror freshness.
+            mirror_ids = [mirror.id for mirror in mirrors]
+
+            arch_mirrors = list(Store.of(self).find(
+                (MirrorDistroArchSeries.distribution_mirrorID,
+                 Max(MirrorDistroArchSeries.freshness)),
+                MirrorDistroArchSeries.distribution_mirrorID.is_in(mirror_ids)
+            ).group_by(MirrorDistroArchSeries.distribution_mirrorID))
+            arch_mirror_freshness = {}
+            arch_mirror_freshness.update(
+                [(mirror_id, MirrorFreshness.items[mirror_freshness]) for
+                 (mirror_id, mirror_freshness) in arch_mirrors])
+
+            source_mirrors = list(Store.of(self).find(
+                (MirrorDistroSeriesSource.distribution_mirrorID,
+                 Max(MirrorDistroSeriesSource.freshness)), 
+                MirrorDistroSeriesSource.distribution_mirrorID.is_in(
+                    [mirror.id for mirror in mirrors])).group_by(
+                        MirrorDistroSeriesSource.distribution_mirrorID))
+            source_mirror_freshness = {}
+            source_mirror_freshness.update(
+                [(mirror_id, MirrorFreshness.items[mirror_freshness]) for
+                 (mirror_id, mirror_freshness) in source_mirrors])
+
+            for mirror in mirrors:
+                cache = get_property_cache(mirror)
+                cache.arch_mirror_freshness = arch_mirror_freshness.get(mirror.id, None)
+                cache.source_mirror_freshness = source_mirror_freshness.get(mirror.id, None)
+        return mirrors
+
     @property
     def archive_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            content=MirrorContent.ARCHIVE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+        return self._getActiveMirrors(MirrorContent.ARCHIVE)
 
     @property
-    def cdimage_mirrors(self):
+    def archive_mirrors_by_country(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            content=MirrorContent.RELEASE,
-            enabled=True,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+        return self._getActiveMirrors(
+            MirrorContent.ARCHIVE,
+            by_country=True,
+            needs_fresh=True)
+
+    @property
+    def cdimage_mirrors(self, by_country=False):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(MirrorContent.RELEASE)
+
+    @property
+    def cdimage_mirrors_by_country(self):
+        """See `IDistribution`."""
+        return self._getActiveMirrors(
+            MirrorContent.RELEASE,
+            by_country=True)
 
     @property
     def disabled_mirrors(self):
