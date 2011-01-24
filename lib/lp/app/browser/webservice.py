@@ -8,6 +8,7 @@ __all__ = []
 
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IReference,
     IWebServiceClientRequest,
     )
 from zope import component
@@ -18,22 +19,24 @@ from zope.interface import (
 from zope.schema.interfaces import IText
 
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import PersonFormatterAPI
-from lp.services.fields import IPersonChoice
+from lp.app.browser.tales import format_link
 
 
-@component.adapter(Interface, IPersonChoice, IWebServiceClientRequest)
+@component.adapter(Interface, IReference, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
-def person_xhtml_representation(context, field, request):
-    """Render a person as a link to the person."""
+def reference_xhtml_representation(context, field, request):
+    """Render an object as a link to the object."""
 
     def render(value):
-        # The value is a webservice link to a person.
-        person = getattr(context, field.__name__, None)
-        if person is None:
+        # The value is a webservice link to the object, we want field value.
+        obj = getattr(context, field.__name__, None)
+        if obj is None:
             return ''
         else:
-            return PersonFormatterAPI(person).link(None)
+            try:
+                return format_link(obj)
+            except NotImplementedError:
+                return value
     return render
 
 
@@ -47,7 +50,6 @@ def text_xhtml_representation(context, field, request):
         if value is None:
             return ''
         nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
+        return formatter(nomail).text_to_html()
 
     return renderer

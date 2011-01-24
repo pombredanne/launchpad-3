@@ -1157,19 +1157,19 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             self.archive.getBinaryPackageReleaseByFileName(
                 "this-is-not-real_1.2.3-4_all.deb"))
 
-    def test_returns_none_for_duplicate_file(self):
+    def test_returns_latest_for_duplicate_file(self):
         # In the unlikely case of multiple BPRs in this archive with the same
         # name (hopefully impossible, but it still happens occasionally due
-        # to bugs), None is returned.
+        # to bugs), the latest is returned.
 
         # Publish the same binaries again. Evil.
-        self.publisher.getPubBinaries(
+        new_pubs = self.publisher.getPubBinaries(
             version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertIs(
-            None,
+        self.assertEquals(
+            new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
 

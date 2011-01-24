@@ -735,6 +735,8 @@ class IProductPublic(
     active_or_packaged_series = Attribute(
         _("Series that are active and/or have been packaged."))
 
+    packagings = Attribute(_("All the packagings for the project."))
+
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
