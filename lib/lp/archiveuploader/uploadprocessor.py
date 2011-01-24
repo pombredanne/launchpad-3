@@ -181,7 +181,7 @@ class UploadHandler:
 
         return sorted(fnames, key=sourceFirst)
 
-    def processChangesFile(self, changes_file, logger=None, build=None):
+    def processChangesFile(self, changes_file, logger=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -237,7 +237,7 @@ class UploadHandler:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution, build)
+        policy = self._getPolicyForDistro(distribution)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -275,7 +275,7 @@ class UploadHandler:
             result = UploadStatusEnum.ACCEPTED
 
             try:
-                upload.process(build)
+                self._processUpload(upload)
             except UploadPolicyError, e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
@@ -316,8 +316,7 @@ class UploadHandler:
                 upload.do_reject(notify)
                 self.processor.ztm.abort()
             else:
-                successful = upload.do_accept(
-                    notify=notify, build=build)
+                successful = self._acceptUpload(upload, notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     logger.info(
@@ -451,8 +450,14 @@ class UserUploadHandler(UploadHandler):
             destination = "failed"
         self.moveProcessedUpload(destination, self.processor.log)
 
-    def _getPolicyForDistro(self, distribution, build):
-        return self.processor._getPolicyForDistro(distribution, build)
+    def _getPolicyForDistro(self, distribution):
+        return self.processor._getPolicyForDistro(distribution, None)
+
+    def _processUpload(self, upload):
+        upload.process(None)
+
+    def _acceptUpload(self, upload, notify):
+        return upload.do_accept(notify=notify, build=None)
 
 
 class CannotGetBuild(Exception):
@@ -468,8 +473,14 @@ class BuildUploadHandler(UploadHandler):
         if self.build is None:
             self.build = self._getBuild()
 
-    def _getPolicyForDistro(self, distribution, build):
-        return self.processor._getPolicyForDistro(distribution, build)
+    def _getPolicyForDistro(self, distribution):
+        return self.processor._getPolicyForDistro(distribution, self.build)
+
+    def _processUpload(self, upload):
+        upload.process(self.build)
+
+    def _acceptUpload(self, upload, notify):
+        return upload.do_accept(notify=notify, build=self.build)
 
     def _getBuild(self):
         try:
@@ -503,7 +514,7 @@ class BuildUploadHandler(UploadHandler):
         try:
             [changes_file] = self.locateChangesFiles()
             logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(changes_file, logger, self.build)
+            result = self.processChangesFile(changes_file, logger)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
