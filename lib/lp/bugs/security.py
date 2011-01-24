@@ -148,7 +148,7 @@ class EditBugSubscription(AuthorizationBase):
         """
         if self.obj.person.isTeam():
             return (
-                self.obj.person.teamowner == user.person or
+                self.obj.person.teamownerID == user.person.id or
                 user.person in self.obj.person.adminmembers)
         else:
             return user.person == self.obj.person

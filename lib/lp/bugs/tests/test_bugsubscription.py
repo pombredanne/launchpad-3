@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 from simplejson import dumps
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+
+from storm.store import Store
+from testtools.matchers import Equals
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -100,25 +98,39 @@ class TestBugSubscription(TestCaseWithFactory):
         # Checking permissions shouldn't cost anything.
         team = self.factory.makeTeam()
         team_name = team.name
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        store = Store.of(team)
         with person_logged_in(team.teamowner):
-            salgado = getUtility(IPersonSet).getByName('salgado')
             team.addMember(
                 salgado, team.teamowner,
                 status=TeamMembershipStatus.ADMIN)
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
         ws_subscription = webservice.named_post(
             u'http://api.launchpad.dev/beta/bugs/%d' % self.bug.id,
             'subscribe', person=webservice.getAbsoluteUrl('/~%s' %
             team_name), level=u"Details").jsonBody()
-        collector = QueryCollector()
-        collector.register()
-        self.addCleanup(collector.unregister)
-        expected_query_count = 0
-        for level in BugNotificationLevel.items:
-            webservice.patch(
-                ws_subscription['self_link'], 'application/json',
-                dumps({u'bug_notification_level': level.title}))
-            expected_query_count += 1
+        store.flush()
+        query_count_for_subscription = collector.count
+        webservice.patch(
+            ws_subscription['self_link'], 'application/json',
+            dumps({u'bug_notification_level': u'Details'}))
+        queries_for_one_admin = collector.count
+        # Add a few more administrators. The query counts should be the
+        # same regardless of the number of admins.
+        with person_logged_in(team.teamowner):
+            for i in range(5):
+                team.addMember(
+                    self.factory.makePerson(), team.teamowner,
+                    status=TeamMembershipStatus.ADMIN)
+            team.teamowner = salgado
+        store.flush()
+        store.reset()
+        webservice.patch(
+            ws_subscription['self_link'], 'application/json',
+            dumps({u'bug_notification_level': u'Nothing'}))
         self.assertThat(
-            collector, HasQueryCount(Equals(expected_query_count)))
+            collector, HasQueryCount(Equals(queries_for_one_admin)))
