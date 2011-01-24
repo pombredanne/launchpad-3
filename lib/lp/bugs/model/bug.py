@@ -121,12 +121,12 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
+from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
     IBugSet,
     IFileBugData,
-    InvalidDuplicateValue,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
