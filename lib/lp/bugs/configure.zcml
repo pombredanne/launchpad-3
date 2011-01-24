@@ -1055,6 +1055,7 @@
         recipient"/>
   </class>
 
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>

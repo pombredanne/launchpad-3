@@ -78,7 +78,10 @@ SEPARATOR = ' : '
 def format_link(obj, view_name=None):
     """Return the equivalent of obj/fmt:link as a string."""
     adapter = queryAdapter(obj, IPathAdapter, 'fmt')
-    return adapter.link(view_name)
+    link = getattr(adapter, 'link', None)
+    if link is None:
+        raise NotImplementedError("Missing link function on adapter.")
+    return link(view_name)
 
 
 class MenuLinksDict(dict):

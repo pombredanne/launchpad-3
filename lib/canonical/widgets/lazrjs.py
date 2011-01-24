@@ -18,6 +18,7 @@ from textwrap import dedent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
+from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.interfaces import IWebServiceClientRequest
@@ -26,6 +27,7 @@ from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.services.propertycache import cachedproperty
 
 
 class TextLineEditorWidget:
@@ -260,21 +262,22 @@ class InlineEditPickerWidget:
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
     def __init__(self, context, request, interface_attribute, default_html,
-                 id=None, header='Select an item', step_title='Search',
-                 remove_button_text='Remove', null_display_value='None'):
+                 content_box_id=None, header='Select an item',
+                 step_title='Search', remove_button_text='Remove',
+                 null_display_value='None'):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
         :param request: The request object.
-        :param interface_attribute: The attribute being edited.
+        :param interface_attribute: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
-        :param id: The HTML id to use for this widget. Automatically
+        :param content_box_id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param header: The large text at the top of the picker.
         :param step_title: Smaller line of text below the header.
-        :param show_remove_button: Show remove button below search box.
-        :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
+        :param null_display_value: This will be shown for a missing value
         """
         self.context = context
         self.request = request
@@ -282,32 +285,49 @@ class InlineEditPickerWidget:
         self.interface_attribute = interface_attribute
         self.attribute_name = interface_attribute.__name__
 
-        if id is None:
-            self.id = self._generate_id()
+        if content_box_id is None:
+            self.content_box_id = self._generate_id()
         else:
-            self.id = id
+            self.content_box_id = content_box_id
+
+        self.header = header
+        self.step_title = step_title
+        self.remove_button_text = remove_button_text
+        self.null_display_value = null_display_value
 
         # JSON encoded attributes.
-        self.json_id = simplejson.dumps(self.id)
+        self.json_content_box_id = simplejson.dumps(self.content_box_id)
         self.json_attribute = simplejson.dumps(self.attribute_name + '_link')
-        self.vocabulary_name = simplejson.dumps(
+        self.json_vocabulary_name = simplejson.dumps(
             self.interface_attribute.vocabularyName)
-        self.show_remove_button = simplejson.dumps(
-            not self.interface_attribute.required)
+        self.show_remove_button = not self.interface_attribute.required
 
-        self.config = simplejson.dumps(
-            dict(header=header, step_title=step_title,
-                 remove_button_text=remove_button_text,
-                 null_display_value=null_display_value))
+    @property
+    def config(self):
+        return simplejson.dumps(
+            dict(header=self.header, step_title=self.step_title,
+                 remove_button_text=self.remove_button_text,
+                 null_display_value=self.null_display_value,
+                 show_remove_button=self.show_remove_button,
+                 show_assign_me_button=self.show_assign_me_button,
+                 show_search_box=self.show_search_box))
+
+    @cachedproperty
+    def vocabulary(self):
+        registry = getVocabularyRegistry()
+        return registry.get(
+            IVocabulary, self.interface_attribute.vocabularyName)
+
+    @property
+    def show_search_box(self):
+        return IHugeVocabulary.providedBy(self.vocabulary)
 
     @property
     def show_assign_me_button(self):
         # show_assign_me_button is true if user is in the vocabulary.
-        registry = getVocabularyRegistry()
-        vocabulary = registry.get(
-            IHugeVocabulary, self.interface_attribute.vocabularyName)
+        vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
-        return simplejson.dumps(user and user in vocabulary)
+        return user and user in vocabulary
 
     @classmethod
     def _generate_id(cls):
@@ -316,7 +336,7 @@ class InlineEditPickerWidget:
         return 'inline-picker-activator-id-%d' % cls.last_id
 
     @property
-    def resource_uri(self):
+    def json_resource_uri(self):
         return simplejson.dumps(
             canonical_url(
                 self.context, request=IWebServiceClientRequest(self.request),
@@ -334,8 +354,11 @@ class InlineEditPickerWidget:
             # We look at the top of the annotation stack, since Ajax
             # requests always go to the most recent version of the web
             # service.
-            exported_tag_stack = self.interface_attribute.getTaggedValue(
-                'lazr.restful.exported')
+            try:
+                exported_tag_stack = self.interface_attribute.getTaggedValue(
+                    'lazr.restful.exported')
+            except KeyError:
+                return False
             mutator_info = exported_tag_stack.get('mutator_annotations')
             if mutator_info is not None:
                 mutator_method, mutator_extra = mutator_info
