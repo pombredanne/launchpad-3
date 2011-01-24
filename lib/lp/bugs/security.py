@@ -143,8 +143,8 @@ class EditBugSubscription(AuthorizationBase):
 
         A user may edit a subscription if:
          - They are the owner of the subscription.
-         - They are the owner of the team that owns the subscription
-         - They are an admin of the team that owns the subscription
+         - They are the owner of the team that owns the subscription.
+         - They are an admin of the team that owns the subscription.
         """
         if self.obj.person.isTeam():
             return (

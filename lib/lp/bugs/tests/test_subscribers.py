@@ -26,7 +26,7 @@ class TestWhatChanged(TestCaseWithFactory):
     def test_what_changed_works_with_fieldnames(self):
         # When what_changed is passed an ObjectModifiedEvent with a list
         # of fieldnames in its edited_fields property, it will deal with
-        # those fields appropriately
+        # those fields appropriately.
         bug = self.factory.makeBug()
         bug_before_modification = Snapshot(bug, providing=IBug)
         with person_logged_in(bug.owner):
