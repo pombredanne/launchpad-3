@@ -11,7 +11,6 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from sqlobject import SQLObjectNotFound
 from storm.expr import And
 from storm.locals import (
     Int,

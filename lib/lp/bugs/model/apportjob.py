@@ -32,9 +32,6 @@ from canonical.launchpad.database.temporaryblobstorage import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -160,7 +157,7 @@ class ApportJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('apport_blob_uuid', self.context.blob.uuid),
             ('apport_blob_librarian_url',
@@ -207,8 +204,7 @@ class ProcessApportBlobJob(ApportJobDerived):
             ApportJob.job == Job.id,
             ApportJob.job_type == cls.class_job_type,
             ApportJob.blob_id == TemporaryBlobStorage.id,
-            TemporaryBlobStorage.uuid == uuid
-            )
+            TemporaryBlobStorage.uuid == uuid)
 
         job_for_blob = jobs_for_blob.one()
 

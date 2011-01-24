@@ -133,7 +133,7 @@ class ArchiveJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('archive_id', self.context.archive.id),
             ('archive_job_id', self.context.id),

@@ -286,8 +286,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 # or if it is hosted but pending a mirror.
                 Branch.revision_count > 0,
                 Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)
-                ))
+                   Branch.branch_type != BranchType.HOSTED)))
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):

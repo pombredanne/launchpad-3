@@ -15,6 +15,7 @@ from storm.locals import (
 
 from lp.services.database.stormbase import StormBase
 
+
 class BugSubscriptionFilterTag(StormBase):
     """Tags to filter."""
 
