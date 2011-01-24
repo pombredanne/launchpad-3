@@ -28,7 +28,7 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import USER_EMAIL
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestBugSubscription(TestCaseWithFactory):
@@ -97,40 +97,47 @@ class TestBugSubscription(TestCaseWithFactory):
     def test_permission_check_query_count_for_admin_members(self):
         # Checking permissions shouldn't cost anything.
         team = self.factory.makeTeam()
-        team_name = team.name
         salgado = getUtility(IPersonSet).getByName('salgado')
-        store = Store.of(team)
         with person_logged_in(team.teamowner):
             team.addMember(
                 salgado, team.teamowner,
                 status=TeamMembershipStatus.ADMIN)
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
+        self.subscribeAndPatchWithWebservice(team)
+        queries_with_one_admin = collector.count
+        # Now we create an entirely new team and add a bunch of
+        # administrators, including Salgado. We add Salgado last to
+        # check that there's not one query per administrator.
+        login(ADMIN_EMAIL)
+        team_2 = self.factory.makeTeam()
+        for i in range(10):
+            person = self.factory.makePerson()
+            team_2.addMember(
+                person, team_2.teamowner,
+                status=TeamMembershipStatus.ADMIN)
+        team_2.addMember(
+            salgado, team_2.teamowner,
+            status=TeamMembershipStatus.ADMIN)
+        logout()
+        self.subscribeAndPatchWithWebservice(team_2)
+        self.assertThat(
+            collector, HasQueryCount(Equals(queries_with_one_admin)))
+
+    def subscribeAndPatchWithWebservice(self, person_to_subscribe):
+        # We cache the person name here to avoid extra queries. Do we
+        # need to? God knows.
+        person_name = person_to_subscribe.name
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
         ws_subscription = webservice.named_post(
             u'http://api.launchpad.dev/beta/bugs/%d' % self.bug.id,
             'subscribe', person=webservice.getAbsoluteUrl('/~%s' %
-            team_name), level=u"Details").jsonBody()
-        store.flush()
-        query_count_for_subscription = collector.count
-        webservice.patch(
-            ws_subscription['self_link'], 'application/json',
-            dumps({u'bug_notification_level': u'Details'}))
-        queries_for_one_admin = collector.count
-        # Add a few more administrators. The query counts should be the
-        # same regardless of the number of admins.
-        with person_logged_in(team.teamowner):
-            for i in range(5):
-                team.addMember(
-                    self.factory.makePerson(), team.teamowner,
-                    status=TeamMembershipStatus.ADMIN)
-            team.teamowner = salgado
+            person_name), level=u"Details").jsonBody()
+        store = Store.of(person_to_subscribe)
         store.flush()
         store.reset()
         webservice.patch(
             ws_subscription['self_link'], 'application/json',
             dumps({u'bug_notification_level': u'Nothing'}))
-        self.assertThat(
-            collector, HasQueryCount(Equals(queries_for_one_admin)))
