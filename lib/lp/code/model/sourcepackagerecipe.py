@@ -216,7 +216,7 @@ class SourcePackageRecipe(Storm):
             raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
-        component = getUtility(IComponentSet)["multiverse"]
+        component = getUtility(IComponentSet)['main']
 
         buildable_distros = get_buildable_distroseries_set(archive.owner)
         if distroseries not in buildable_distros:
@@ -271,14 +271,8 @@ class SourcePackageRecipe(Storm):
 
     def getLastBuild(self):
         """See `ISourcePackageRecipeBuild`."""
-        store = Store.of(self)
-        result = store.find(
-            (SourcePackageRecipeBuild),
-            SourcePackageRecipeBuild.recipe == self,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == BuildFarmJob.id)
-        result.order_by(Desc(BuildFarmJob.date_finished))
-        return result.first()
+        return self._getBuilds(
+            True, Desc(BuildFarmJob.date_finished)).first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""
