@@ -15,6 +15,8 @@ __all__ = [
     ]
 
 
+import collections
+
 from email import message_from_string
 from email.Header import (
     decode_header,
@@ -712,12 +714,12 @@ class MailingListSet:
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
-        by_team = {}
+        by_team = collections.defaultdict(set)
         for email, display_name, team_name in preferred:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
             value = (display_name, email)
-            by_team.setdefault(team_name, set()).add(value)
+            by_team[team_name].add(value)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -746,7 +748,7 @@ class MailingListSet:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
             value = (display_name, email)
-            by_team.setdefault(team_name, set()).add(value)
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -800,13 +802,13 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE,
                 ))
         # Sort allowed posters by team/mailing list.
-        by_team = {}
+        by_team = collections.defaultdict(set)
         all_posters = team_members.union(approved_posters)
         for team_name, person_displayname, email in all_posters:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
             value = (person_displayname, email)
-            by_team.setdefault(team_name, set()).add(value)
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
