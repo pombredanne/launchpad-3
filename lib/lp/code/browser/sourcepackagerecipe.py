@@ -53,9 +53,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     LaunchpadView,
     Link,
-    Navigation,
     NavigationMenu,
-    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -73,7 +71,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import format_link
+from lp.app.browser.tales import (
+    format_link,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -84,9 +84,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    )
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.archive import Archive

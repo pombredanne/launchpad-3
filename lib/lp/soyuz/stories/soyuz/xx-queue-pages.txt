@@ -229,11 +229,11 @@ files have no link, so we just get None.
 
   >>> for row in filelist:
   ...     print row.find('a')
-  <a href="http://localhost:58000/.../alsa-utils_1.0.9a-4ubuntu1.dsc">
+  <a href="http://.../alsa-utils_1.0.9a-4ubuntu1.dsc">
     alsa-utils_1.0.9a-4ubuntu1.dsc
   </a>
   None
-  <a href="http://localhost:58000/.../alsa-utils.diff.gz">diff from 1.0.9a-4 to 1.0.9a-4ubuntu1</a>
+  <a href="http://.../alsa-utils.diff.gz">diff from 1.0.9a-4 to 1.0.9a-4ubuntu1</a>
 
 On binary queue items we also present the stamp 'NEW' for files never
 published in the archive (it helps archive admins when reviewing
@@ -581,6 +581,6 @@ button will be disabled.
 
 == Clean up ==
 
-  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()
 

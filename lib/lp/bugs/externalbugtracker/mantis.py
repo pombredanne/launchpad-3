@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mantis ExternalBugTracker utility."""
@@ -28,7 +28,7 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
-    UnparseableBugData,
+    UnparsableBugData,
     )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
@@ -272,7 +272,7 @@ class Mantis(ExternalBugTracker):
         csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:
-            raise UnparseableBugData("Empty CSV for %s" % self.baseurl)
+            raise UnparsableBugData("Empty CSV for %s" % self.baseurl)
 
         # Clean out stray, unquoted newlines inside csv_data to avoid
         # the CSV module blowing up.
@@ -284,11 +284,11 @@ class Mantis(ExternalBugTracker):
         # ordering and even different columns in the export.
         self.headers = [h.lower() for h in csv_data.pop(0).split(",")]
         if len(self.headers) < 2:
-            raise UnparseableBugData("CSV header mangled: %r" % self.headers)
+            raise UnparsableBugData("CSV header mangled: %r" % self.headers)
 
         if not csv_data:
             # A file with a header and no bugs is also useless.
-            raise UnparseableBugData("CSV for %s contained no bugs!"
+            raise UnparsableBugData("CSV for %s contained no bugs!"
                                      % self.baseurl)
 
         try:
@@ -304,8 +304,7 @@ class Mantis(ExternalBugTracker):
             return bugs
 
         except csv.Error, error:
-            raise UnparseableBugData(
-                "Exception parsing CSV file: %s." % error)
+            raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
     def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
@@ -377,18 +376,16 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise UnparseableBugData(
-                "Key %r not found." % (key,))
+            raise UnparsableBugData("Key %r not found." % (key,))
 
         value_cell = key_node.findNext('td')
         if value_cell is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value cell for key %r not found." % (key,))
 
         value_node = value_cell.string
         if value_node is None:
-            raise UnparseableBugData(
-                "Value for key %r not found." % (key,))
+            raise UnparsableBugData("Value for key %r not found." % (key,))
 
         return value_node.strip()
 
@@ -412,39 +409,35 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise UnparseableBugData(
-                "Key %r not found." % (key,))
+            raise UnparsableBugData("Key %r not found." % (key,))
 
         key_cell = key_node.parent
         if key_cell is None:
-            raise UnparseableBugData(
-                "Cell for key %r not found." % (key,))
+            raise UnparsableBugData("Cell for key %r not found." % (key,))
 
         key_row = key_cell.parent
         if key_row is None:
-            raise UnparseableBugData(
-                "Row for key %r not found." % (key,))
+            raise UnparsableBugData("Row for key %r not found." % (key,))
 
         try:
             key_pos = key_row.findAll('td').index(key_cell)
         except ValueError:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Key cell in row for key %r not found." % (key,))
 
         value_row = key_row.findNextSibling('tr')
         if value_row is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value row for key %r not found." % (key,))
 
         value_cell = value_row.findAll('td')[key_pos]
         if value_cell is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value cell for key %r not found." % (key,))
 
         value_node = value_cell.string
         if value_node is None:
-            raise UnparseableBugData(
-                "Value for key %r not found." % (key,))
+            raise UnparsableBugData("Value for key %r not found." % (key,))
 
         return value_node.strip()
 

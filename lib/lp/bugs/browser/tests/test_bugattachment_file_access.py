@@ -88,7 +88,7 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(next_view, RedirectionView)
         mo = re.match(
-            '^http://localhost:58000/\d+/foo.txt$', next_view.target)
+            '^http://.*/\d+/foo.txt$', next_view.target)
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):
@@ -213,13 +213,13 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertEqual(303, response.status)
 
         # The Librarian URL has, for our test case, the form
-        # "https://NNNN.restricted.localhost:58000/NNNN/foo.txt?token=..."
-        # where NNNN is an integer.
+        # "https://NNNN.restricted.launchpad.dev:PORT/NNNN/foo.txt?token=..."
+        # where NNNN and PORT are integers.
         parsed_url = urlparse(response.getHeader('location'))
         self.assertEqual('https', parsed_url.scheme)
         mo = re.search(
-            r'^i\d+\.restricted\.localhost:58000$', parsed_url.netloc)
-        self.assertIsNot(None, mo)
+            r'^i\d+\.restricted\..+:\d+$', parsed_url.netloc)
+        self.assertIsNot(None, mo, parsed_url.netloc)
         mo = re.search(r'^/\d+/foo\.txt$', parsed_url.path)
         self.assertIsNot(None, mo)
         params = parse_qs(parsed_url.query)
