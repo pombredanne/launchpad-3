@@ -5,16 +5,30 @@
 
 __metaclass__ = type
 
+from simplejson import dumps
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
+
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
+    login,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
+from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import USER_EMAIL
 
 
 class TestBugSubscription(TestCaseWithFactory):
@@ -79,3 +93,27 @@ class TestBugSubscription(TestCaseWithFactory):
                 subscription.bug_notification_level = level
                 self.assertEqual(
                     level, subscription.bug_notification_level)
+
+    def test_permission_check_query_count_for_admin_members(self):
+        # Checking permissions shouldn't cost anything.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                self.subscriber, team.teamowner,
+                status=TeamMembershipStatus.ADMIN)
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        logout()
+        login(USER_EMAIL)
+        ws_subscription = webservice.named_post(
+            u'http://api.launchpad.dev/beta/bugs/%d' % self.bug.id,
+            'subscribe', person=webservice.getAbsoluteUrl('/~%s' %
+            team.name), level=u"Details")
+        for level in BugNotificationLevel.items:
+            webservice.patch(
+                ws_subscription['self_link'], 'application/json',
+                dumps({u'bug_notification_level': level.title}))
+        self.assertThat(collector, HasQueryCount(Equals(1))) 

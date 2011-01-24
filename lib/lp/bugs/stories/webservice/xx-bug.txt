@@ -889,7 +889,7 @@ An individual can subscribe themself at a given BugNotificationLevel.
     person_link: u'...'
     resource_type_link: u'...'
     self_link: u'...'
-    subscribed_by_link: u'...'
+    subscribed_by_link: u'...'efc
 
 They can also update the subscription's bug_notification_level directly.
 
