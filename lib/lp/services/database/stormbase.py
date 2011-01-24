@@ -12,9 +12,10 @@ from zope.component import getUtility
 
 from lp.services.propertycache import clear_property_cache
 
+
 class StormBase(Storm):
-    """A cache "safe" version of storm.base.Storm
-    
+    """A safe version of storm.base.Storm to use in launchpad.
+
     This class adds storm cache management functions to base.Storm.
     """
 
