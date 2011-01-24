@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = []
 
 from textwrap import dedent
-import transaction
 
 from zope.component import getUtility
 
@@ -76,28 +75,7 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
             ['pa2', 'pb1'], [person.name for person in subscribers])
 
 
-class MailingListSetMixin:
-    """Helpers for testing the MailingListSet class."""
-
-    def makeTeamWithMailingListSubscribers(self, team_name, super_team=None,
-                                           auto_subscribe=True):
-        """Create a team, mailing list, and subcribers."""
-        team = self.factory.makeTeam(name=team_name)
-        if super_team is None:
-            mailing_list = self.factory.makeMailingList(team, team.teamowner)
-        else:
-            super_team.addMember(
-                team, reviewer=team.teamowner, force_team_add=True)
-            mailing_list = super_team.mailing_list
-        member = self.factory.makePerson()
-        team.addMember(member, reviewer=team.teamowner)
-        if auto_subscribe:
-            mailing_list.subscribe(member)
-        transaction.commit()
-        return team, member
-
-
-class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
+class TestMailinglistSet(TestCaseWithFactory):
     """Test the mailing list set class."""
 
     layer = DatabaseFunctionalLayer
@@ -110,9 +88,9 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
     def test_getSenderAddresses_dict_keys(self):
         # getSenderAddresses() returns a dict of teams names
         # {team_name: [(member_displayname, member_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
-        team2, member2 = self.makeTeamWithMailingListSubscribers(
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
             'team2', auto_subscribe=False)
         team_names = [team1.name, team2.name]
         result = self.mailing_list_set.getSenderAddresses(team_names)
@@ -122,7 +100,7 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
         # getSenderAddresses() returns a dict of team namess with a list of
         # all membera display names and email addresses.
         # {team_name: [(member_displayname, member_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
         list_senders = sorted([
@@ -132,7 +110,7 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
 
     def test_getSenderAddresses_participation_dict_values(self):
         # getSenderAddresses() dict values includes indirect participants.
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
         list_senders = sorted([
@@ -143,8 +121,10 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
     def test_getSubscribedAddresses_dict_keys(self):
         # getSubscribedAddresses() returns a dict of team names.
         # {team_name: [(subscriber_displayname, subscriber_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers('team1')
-        team2, member2 = self.makeTeamWithMailingListSubscribers('team2')
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
+            'team2')
         team_names = [team1.name, team2.name]
         result = self.mailing_list_set.getSubscribedAddresses(team_names)
         self.assertEqual(team_names, sorted(result.keys()))
@@ -153,7 +133,8 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
         # getSubscribedAddresses() returns a dict of teams names with a list
         # of subscriber tuples.
         # {team_name: [(subscriber_displayname, subscriber_email) ...]}
-        team1, member1 = self.makeTeamWithMailingListSubscribers('team1')
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
         result = self.mailing_list_set.getSubscribedAddresses([team1.name])
         list_subscribers = [
             (member1.displayname, member1.preferredemail.email)]
@@ -161,8 +142,9 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
 
     def test_getSubscribedAddresses_participation_dict_values(self):
         # getSubscribedAddresses() dict values includes indirect participants.
-        team1, member1 = self.makeTeamWithMailingListSubscribers('team1')
-        team2, member2 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
             'team2', super_team=team1)
         result = self.mailing_list_set.getSubscribedAddresses([team1.name])
         list_subscribers = sorted([
@@ -173,17 +155,16 @@ class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
     def test_getSubscribedAddresses_preferredemail_dict_values(self):
         # getSubscribedAddresses() dict values include users who want email to
         # go to their preferred address.
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         team1.mailing_list.subscribe(member1)
-        transaction.commit()
         result = self.mailing_list_set.getSubscribedAddresses([team1.name])
         list_subscribers = [
             (member1.displayname, member1.preferredemail.email)]
         self.assertEqual(list_subscribers, result[team1.name])
 
 
-class TestMailinglistSetMessages(TestCaseWithFactory, MailingListSetMixin):
+class TestMailinglistSetMessages(TestCaseWithFactory):
     """Test the mailing list set class message rules."""
 
     layer = LaunchpadFunctionalLayer
@@ -196,7 +177,7 @@ class TestMailinglistSetMessages(TestCaseWithFactory, MailingListSetMixin):
     def test_getSenderAddresses_approved_dict_values(self):
         # getSenderAddresses() dict values includes senders where were
         # approved in the list moderation queue.
-        team1, member1 = self.makeTeamWithMailingListSubscribers(
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         owner1 = team1.teamowner
         sender = self.factory.makePerson()
@@ -211,7 +192,6 @@ class TestMailinglistSetMessages(TestCaseWithFactory, MailingListSetMixin):
         message = getUtility(IMessageSet).fromEmail(email)
         held_message = team1.mailing_list.holdMessage(message)
         held_message.approve(owner1)
-        transaction.commit()
         result = self.mailing_list_set.getSenderAddresses([team1.name])
         list_senders = sorted([
             (owner1.displayname, owner1.preferredemail.email),

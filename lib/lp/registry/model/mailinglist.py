@@ -75,11 +75,9 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp.registry.interfaces.mailinglist import (
@@ -664,7 +662,7 @@ class MailingListSet:
 
     def _getTeamIdsAndMailingListIds(self, team_names):
         """Return a tuple of team and mailing list Ids for the team names."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         tables = (
             Person,
             Join(MailingList, MailingList.team == Person.id))
@@ -678,7 +676,7 @@ class MailingListSet:
 
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -757,7 +755,7 @@ class MailingListSet:
 
     def getSenderAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # First, we need to find all the members of all the mailing lists for
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
