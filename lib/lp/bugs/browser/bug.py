@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -38,20 +37,12 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IWebServiceClientRequest,
-    )
 import pytz
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     providedBy,
@@ -60,7 +51,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -86,7 +76,6 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.project import ProjectScopeWidget
 from lp.app.browser.launchpadform import (
@@ -95,8 +84,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
+from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -208,10 +197,11 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
-    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+    links = [
+        'editdescription', 'markduplicate', 'visibility', 'addupstream',
+        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -269,15 +259,15 @@ class BugContextMenu(ContextMenu):
                 'changes'))
 
     def nominate(self):
-        """Return the 'Target/Nominate for release' Link."""
+        """Return the 'Target/Nominate for series' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to release"
+            text = "Target to series"
             return Link('+nominate', text, icon='milestone')
         elif (check_permission("launchpad.BugSupervisor", target) or
             self.user is None):
-            text = 'Nominate for release'
+            text = 'Nominate for series'
             return Link('+nominate', text, icon='milestone')
         else:
             return Link('+nominate', '', enabled=False, icon='milestone')
@@ -504,9 +494,10 @@ class BugViewMixin:
         """Get a dict of attachment type -> attachments list."""
         # Note that this is duplicated with get_comments_for_bugtask
         # if you are looking to consolidate things.
-        result = {BugAttachmentType.PATCH: [],
-                  'other': []
-        }
+        result = {
+            BugAttachmentType.PATCH: [],
+            'other': [],
+            }
         for attachment in self.context.attachments_unpopulated:
             info = {
                 'attachment': attachment,
@@ -634,7 +625,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
-    field_names = ['title', 'description', 'tags', 'name']
+    field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
     next_url = None
@@ -1050,20 +1041,3 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
-
-
-# XXX mars 2009-05-12 bug=372847
-# This will likely have to change or be removed when the bug description
-# changes from IText to IDescription.
-@adapter(IBug, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def bug_description_xhtml_representation(context, field, request):
-    """Render `IBug.description` as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
-
-    return renderer

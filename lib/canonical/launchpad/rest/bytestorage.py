@@ -12,10 +12,17 @@ __all__ = [
 from cStringIO import StringIO
 
 from lazr.restful.interfaces import IByteStorage
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasSet,
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
@@ -47,6 +54,12 @@ class LibraryBackedByteStorage:
     @property
     def alias_url(self):
         """See `IByteStorage`."""
+        if self.file_alias.restricted:
+            lfa_with_parent = getMultiAdapter(
+                (self.file_alias, self.entry.context),
+                ILibraryFileAliasWithParent)
+            token = lfa_with_parent.createToken()
+            return self.file_alias.private_url + '?token=%s' % token
         return self.file_alias.getURL()
 
     @property

@@ -105,7 +105,7 @@ class BugzillaRemoteComponentFinder:
     def __init__(self, logger=None, static_bugzilla_text=None):
         """Instantiates object, without performing any parsing.
 
-        :param logger: A logger object such as QuietFakeLogger or FakeLogger
+        :param logger: A logger object
         :param static_bugzilla_text: Instead of retrieving the remote
          web page for a bug tracker, act as if this static text was
          returned.  This is intended for testing purposes to avoid

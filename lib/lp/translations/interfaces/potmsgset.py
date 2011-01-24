@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -157,6 +157,20 @@ class IPOTMsgSet(Interface):
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
+    def getOtherTranslation(language, side):
+        """Returns the TranslationMessage that is current on the other side.
+
+        :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
+        """
+
+    def getSharedTranslation(language, side):
+        """Returns a shared TranslationMessage.
+
+        :param language: The language in which to find the message.
+        :param side: The side from which this message is seen.
+        """
+
     def getLocalTranslationMessages(potemplate, language,
                                     include_dismissed=False,
                                     include_unreviewed=True):
@@ -219,19 +233,24 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations, is_imported,
-                          lock_timestamp, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False,
-                          allow_credits=False):
+    def updateTranslation(pofile, submitter, new_translations,
+                          is_current_upstream, lock_timestamp,
+                          force_shared=False, force_diverged=False,
+                          force_suggestion=False, ignore_errors=False,
+                          force_edition_rights=False, allow_credits=False):
         """Update or create a translation message using `new_translations`.
+
+        This method is Launchpad Translations's sliderule: it does
+        everything, nobody fully understands it all, and we intend to
+        replace it with a range of less flexible tools.
 
         :param pofile: a `POFile` to add `new_translations` to.
         :param submitter: author of the translations.
         :param new_translations: a dictionary of plural forms, with the
             integer plural form number as the key and the translation as the
             value.
-        :param is_imported: indicates whether this update is imported from a
-            packaged po file.
+        :param is_current_upstream: indicates whether this update is
+            imported from a packaged po file.
         :param lock_timestamp: The timestamp when we checked the values we
             want to update.
         :param force_suggestion: Whether to force translation to be
@@ -244,11 +263,30 @@ class IPOTMsgSet(Interface):
             message.
 
         If there is an error with the translations and ignore_errors is not
-        True or it's not a fuzzy submit, raises gettextpo.error
+        True or it's not a fuzzy submit, raises GettextValidationError.
 
         :return: a modified or newly created translation message; or None if
             no message is to be updated.  This can happen when updating a
-            translation credits message without the is_imported parameter set.
+            translation credits message without the is_current_upstream
+            parameter set.
+        """
+
+    def validateTranslations(translations):
+        """Validate `translations` against gettext.
+
+        :param translations: A dict mapping plural forms to translated
+            strings.
+        :raises GettextValidationError: if there is a problem with the
+            translations.
+        """
+
+    def submitSuggestion(pofile, submitter, new_translations):
+        """Submit a suggested translation for this message.
+
+        If an identical message is already present, it will be returned
+        (and it is not changed).  Otherwise, a new one is created and
+        returned.  Suggestions for translation credits messages are
+        ignored, and None is returned in that case.
         """
 
     def dismissAllSuggestions(pofile, reviewer, lock_timestamp):
@@ -262,16 +300,78 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def resetCurrentTranslation(pofile, lock_timestamp):
-        """Reset the currently used translation.
+    def getCurrentTranslation(potemplate, language, side):
+        """Get a current translation message.
 
-        This will set the "is_current" attribute to False and if the message
-        is diverge, will try to converge it.
-        :param pofile: a `POFile` to dismiss suggestions from.
-        :param lock_timestamp: the timestamp when we checked the values we
-            want to update.
+        :param potemplate: An `IPOTemplate` to look up a translation for.
+            If it's None, ignore diverged translations.
+        :param language: translation should be to this `ILanguage`.
+        :param side: translation side to look at.  (A `TranslationSide` value)
+        """
 
-        If a translation conflict is detected, TranslationConflict is raised.
+    def setCurrentTranslation(pofile, submitter, translations, origin,
+                              share_with_other_side=False,
+                              lock_timestamp=None):
+        """Set the message's translation in Ubuntu, or upstream, or both.
+
+        :param pofile: `POFile` you're setting translations in.  Other
+            `POFiles` that share translations with this one may also be
+            affected.
+        :param submitter: `Person` who is setting these translations.
+        :param translations: a dict mapping plural-form numbers to the
+            translated string for that form.
+        :param origin: A `RosettaTranslationOrigin`.
+        :param share_with_other_side: When sharing this translation,
+            share it with the other `TranslationSide` as well.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
+        """
+
+    def old_resetCurrentTranslation(pofile, lock_timestamp):
+        """Reset a translation.
+
+        OBSOLETE in Recife.  In the new model, use the new
+        `resetCurrentTranslation` implementation instead.
+        """
+
+    def resetCurrentTranslation(pofile, lock_timestamp=None,
+                                share_with_other_side=False):
+        """Turn the current translation back into a suggestion.
+
+        This deactivates the message's current translation.  The message
+        becomes untranslated or, if it was diverged, reverts to its
+        shared translation.
+
+        The previously current translation becomes visible as a new
+        suggestion again, as do all suggestions that came after it.
+
+        :param pofile: The `POFile` to make the change in.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
+        :param share_with_other_side: Make the same change on the other
+            translation side.
+        """
+
+    def clearCurrentTranslation(pofile, submitter, origin,
+                                share_with_other_side=False,
+                                lock_timestamp=None):
+        """Set the current message in `pofile` to be untranslated.
+
+        If the current message is shared, this will also clear it in
+        other translations that share the same message.
+
+        :param pofile: The translation file that should have its current
+            translation for this `POTMsgSet` cleared.  If the message is
+            shared, this may not be the only translation file that will
+            be affected.
+        :param submitter: The person responsible for clearing the message.
+        :param origin: `RosettaTranslationOrigin`.
+        :param share_with_other_side: If the current message is also
+            current on the other side (i.e. the Ubuntu side if working
+            upstream, or vice versa) then should it be cleared there as
+            well?
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
         """
 
     def applySanityFixes(unicode_text):

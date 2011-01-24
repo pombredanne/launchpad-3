@@ -313,8 +313,11 @@ they were published. We include any relevant builds for failures.
     iceweasel - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
-is from most recent.
+is from most recent.  The view's latest_updates property is cached so we need
+to reload the view.
 
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> view.filtered_sources[1].datepublished = UTC_NOW
@@ -449,7 +452,17 @@ from using PPAs.
     True
 
     >>> print view.archive_description_html.value
-    http://example.dom/
+    <p>http://example.dom/</p>
+
+The description is HTML escaped, and not linkified even when it contains HTML
+tags.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = (
+    ...     '<a href="http://example.com/">http://example.com/</a>')
+    >>> login(ANONYMOUS)
+    >>> print view.archive_description_html.value
+    <p>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;</p>
 
 The PPA description is linked when the user has made a contribution.
 

@@ -18,7 +18,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.scripts import QuietFakeLogger
 from lp.registry.interfaces.mailinglist import (
     CannotSubscribe,
     IMailingListSet,
@@ -26,6 +25,7 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.log.logger import BufferLogger
 
 
 class Importer:
@@ -42,7 +42,7 @@ class Importer:
         assert self.mailing_list.status == MailingListStatus.ACTIVE, (
             'Team mailing list is not active: %s' % team_name)
         if log is None:
-            self.log = QuietFakeLogger()
+            self.log = BufferLogger()
         else:
             self.log = log
 

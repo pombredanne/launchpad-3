@@ -11,9 +11,9 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts import FakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -56,11 +56,7 @@ class TestSoyuzScript(unittest.TestCase):
 
         soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
         # Store output messages, for future checks.
-        soyuz.logger = FakeLogger()
-        self.output = []
-        def message(prefix, *stuff, **kw):
-            self.output.append("%s %s" % (prefix, stuff[0]))
-        soyuz.logger.message = message
+        soyuz.logger = BufferLogger()
         soyuz.setupLocation()
         return soyuz
 
@@ -198,9 +194,9 @@ class TestSoyuzScript(unittest.TestCase):
             [b.displayname for b in binaries],
             ['pmount 2:1.9-1 in hoary hppa'])
         self.assertEqual(
-            self.output,
-            ['WARNING pmount 0.1-1 in hoary i386 was skipped '
-             'because it is not in MAIN component'])
+            soyuz.logger.getLogBuffer(),
+            'WARNING pmount 0.1-1 in hoary i386 was skipped '
+            'because it is not in MAIN component\n')
 
         soyuz = self.getSoyuz(component='multiverse')
         self.assertRaises(

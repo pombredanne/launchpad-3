@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,11 +8,15 @@ from datetime import (
     timedelta,
     )
 from new import classobj
-import pytz
 import sys
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    Not,
+    )
 import unittest
 
+import pytz
 from zope.component import getUtility
 
 from storm.expr import Join
@@ -23,10 +27,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     greater_than,
     )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    )
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
@@ -35,7 +36,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask, BugTaskResultSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -90,14 +91,23 @@ class SearchTestBase:
         # If the user is subscribed to the bug, it is included in the
         # search result.
         user = self.factory.makePerson()
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.subscribe(user, self.owner)
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        with person_logged_in(admin):
+            bug = self.bugtasks[-1].bug
+            bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
         # Private bugs are included in search results for admins.
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
+        self.assertSearchFinds(params, self.bugtasks)
+
+        # Private bugs are included in search results for the assignee.
+        user = self.factory.makePerson()
+        bugtask = self.bugtasks[-1]
+        with person_logged_in(admin):
+            bugtask.transitionToAssignee(user)
+        params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
     def test_search_by_bug_reporter(self):
@@ -976,6 +986,65 @@ class QueryBugIDs:
 
     def resultValuesForBugtasks(self, expected_bugtasks):
         return [bugtask.bug.id for bugtask in expected_bugtasks]
+
+
+class TestCachingAssignees(TestCaseWithFactory):
+    """Searching bug tasks should pre-cache the bugtask assignees."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestCachingAssignees, self).setUp()
+        self.owner = self.factory.makePerson(name="bug-owner")
+        with person_logged_in(self.owner):
+            # Create some bugs with assigned bugtasks.
+            self.bug = self.factory.makeBug(
+                owner=self.owner)
+            self.bug.default_bugtask.transitionToAssignee(
+                self.factory.makePerson())
+
+            for i in xrange(9):
+                bugtask = self.factory.makeBugTask(
+                    bug=self.bug)
+                bugtask.transitionToAssignee(
+                    self.factory.makePerson())
+            self.bug.setPrivate(True, self.owner)
+
+    def _get_bug_tasks(self):
+        """Get the bugtasks for a bug.
+
+        This method is used rather than Bug.bugtasks since the later does
+        prejoining which would spoil the test.
+        """
+        store = Store.of(self.bug)
+        return store.find(
+            BugTask, BugTask.bug == self.bug)
+
+    def test_no_precaching(self):
+        bugtasks = self._get_bug_tasks()
+        Store.of(self.bug).invalidate()
+        with person_logged_in(self.owner):
+            with StormStatementRecorder() as recorder:
+                # Access the assignees to trigger a query.
+                names = [bugtask.assignee.name for bugtask in bugtasks]
+                # With no caching, the number of queries is roughly twice the
+                # number of bugtasks.
+                query_count_floor = len(names) * 2
+                self.assertThat(
+                    recorder, HasQueryCount(Not(LessThan(query_count_floor))))
+
+    def test_precaching(self):
+        bugtasks = self._get_bug_tasks()
+        Store.of(self.bug).invalidate()
+        with person_logged_in(self.owner):
+            with StormStatementRecorder() as recorder:
+                bugtasks = BugTaskResultSet(bugtasks)
+                # Access the assignees to trigger a query if not properly
+                # cached.
+                names = [bugtask.assignee.name for bugtask in bugtasks]
+                # With caching the number of queries is two, one for the
+                # bugtask and one for all of the assignees at once.
+                self.assertThat(recorder, HasQueryCount(Equals(2)))
 
 
 def test_suite():

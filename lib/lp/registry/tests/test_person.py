@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -62,11 +62,13 @@ from lp.registry.model.karma import (
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     login_person,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -81,7 +83,7 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonTeams, self).setUp()
-        self.user = self.factory.makePerson()
+        self.user = self.factory.makePerson(name="test-member")
         self.a_team = self.factory.makeTeam(name='a')
         self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
         self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
@@ -229,6 +231,31 @@ class TestPersonTeams(TestCaseWithFactory):
         # to do this don't blow up unnecessarily. Similarly feature flags
         # team: scopes depend on this.
         self.assertFalse(self.user.inTeam('does-not-exist'))
+
+    def test_inTeam_person_incorrect_archive(self):
+        # If a person has an archive marked incorrectly that person should
+        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PARTNER)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_no_archive(self):
+        # If a person has no archive that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_ppa_archive(self):
+        # If a person has a PPA that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PPA)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
 
 
 class TestPerson(TestCaseWithFactory):
@@ -428,12 +455,12 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(TestCase):
+class TestPersonSet(TestCaseWithFactory):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        super(TestPersonSet, self).setUp()
         login(ANONYMOUS)
         self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
@@ -456,6 +483,31 @@ class TestPersonSet(TestCase):
             person2 is None,
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
+
+    def test_getPrecachedPersonsFromIDs(self):
+        # The getPrecachedPersonsFromIDs() method should only make one
+        # query to load all the extraneous data. Accessing the
+        # attributes should then cause zero queries.
+        person_ids = [
+            self.factory.makePerson().id
+            for i in range(3)]
+
+        with StormStatementRecorder() as recorder:
+            persons = list(self.person_set.getPrecachedPersonsFromIDs(
+                person_ids, need_karma=True, need_ubuntu_coc=True,
+                need_location=True, need_archive=True,
+                need_preferred_email=True, need_validity=True))
+        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+
+        with StormStatementRecorder() as recorder:
+            for person in persons:
+                person.is_valid_person
+                person.karma
+                person.is_ubuntu_coc_signer
+                person.location
+                person.archive
+                person.preferredemail
+        self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
 
 class KarmaTestMixin:

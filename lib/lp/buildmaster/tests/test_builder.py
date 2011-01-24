@@ -32,7 +32,6 @@ from zope.security.proxy import (
 from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -75,6 +74,7 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -151,7 +151,7 @@ class TestBuilder(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
-        d = lostbuilding_builder.updateStatus(QuietFakeLogger())
+        d = lostbuilding_builder.updateStatus(BufferLogger())
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
             # 'Fault' comes from the LostBuildingBrokenSlave, this is
@@ -200,7 +200,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = builder.handleTimeout(QuietFakeLogger(), 'blah')
+        d = builder.handleTimeout(BufferLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):

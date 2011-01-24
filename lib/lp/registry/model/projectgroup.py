@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -20,8 +20,8 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    SQL,
     Join,
+    SQL,
     )
 from storm.locals import Int
 from storm.store import Store
@@ -91,6 +91,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSet,
     )
 from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
@@ -100,13 +101,13 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -114,7 +115,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin, HasDriversMixin):
+                   HasMilestonesMixin, HasDriversMixin,
+                   TranslationPolicyMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -169,7 +171,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def products(self):
-        return Product.selectBy(project=self, active=True, orderBy='name')
+        return Product.selectBy(
+            project=self, active=True, orderBy='displayname')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
@@ -193,7 +196,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.
@@ -206,6 +209,16 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def has_translatable(self):
         """See `IProjectGroup`."""
         return not self.translatables().is_empty()
+
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, (
+            "Got a SourcePackage for a ProjectGroup!")
+        # ProjectGroup translations are considered upstream.  They are
+        # automatically shared.
+        return True
 
     def has_branches(self):
         """ See `IProjectGroup`."""
@@ -314,10 +327,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
-        official_bug_tags = set()
-        for product in self.products:
-            official_bug_tags.update(product.official_bug_tags)
-        return sorted(official_bug_tags)
+        store = Store.of(self)
+        result = store.find(
+            OfficialBugTag.tag,
+            OfficialBugTag.product == Product.id,
+            Product.project == self.id).order_by(OfficialBugTag.tag)
+        result.config(distinct=True)
+        return result
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""

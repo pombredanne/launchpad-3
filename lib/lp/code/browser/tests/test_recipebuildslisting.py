@@ -7,13 +7,13 @@ __metaclass__ = type
 
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
@@ -48,12 +48,7 @@ class TestRecipeBuildListing(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _extract_view_text(self, recipe_build_record):
-        naked_archive = removeSecurityProxy(
-            recipe_build_record.archive)
-        naked_distribution = removeSecurityProxy(
-            naked_archive.distribution)
         text = '\n'.join(str(item) for item in (
-                naked_distribution.displayname,
                 recipe_build_record.sourcepackagename.name,
                 recipe_build_record.recipe.name,
                 recipe_build_record.recipeowner.displayname,
@@ -71,7 +66,7 @@ class TestRecipeBuildListing(BrowserTestCase):
         text = self.getMainText(
             root, '+daily-builds', rootsite='code', no_login=no_login)
         expected_text = """
-            Most Recently Completed Daily Recipe Builds
+            Packages Built Daily With Recipes
             .*
             Source Package
             Recipe
@@ -128,6 +123,50 @@ class TestRecipeBuildListing(BrowserTestCase):
             view_records_text.add(text.replace(' ', '').replace('\n', ''))
         self.assertEquals(records_text, view_records_text)
 
+    def test_recentbuild_filter_with_no_records(self):
+        # This test ensures that the filter control works properly when the
+        # filtered record set contains no records. We should be able to
+        # select All again and have the page re-display all records."
+
+        login(ANONYMOUS)
+        # Create records all outside the filter time window.
+        records, records_outside_30_days = (
+            self.factory.makeRecipeBuildRecords(0, 2))
+        records_text = set()
+        for record in records_outside_30_days:
+            record_text = self._extract_view_text(
+                record).replace(' ', '').replace('\n', '')
+            records_text.add(record_text)
+
+        def check_build_records(table):
+            view_records_text = set()
+            for row in table.tbody.fetch('tr'):
+                text = extract_text(row)
+                view_records_text.add(text.replace(' ', '').replace('\n', ''))
+            self.assertEquals(records_text, view_records_text)
+
+        # Initial rendering has all records.
+        root_url = self.layer.appserver_root_url(facet='code')
+        browser = self.getUserBrowser("%s/+daily-builds" % root_url)
+        table = find_tag_by_id(browser.contents, 'daily-build-listing')
+        check_build_records(table)
+
+        # There are no filtered records.
+        status_control = browser.getControl(
+            name='field.when_completed_filter')
+        status_control.value = ['WITHIN_30_DAYS']
+        browser.getControl('Filter').click()
+        table = find_tag_by_id(browser.contents, 'daily-build-listing')
+        self.assertIs(None, table)
+
+        # We can click All and see the record again.
+        status_control = browser.getControl(
+            name='field.when_completed_filter')
+        status_control.value = ['ALL']
+        browser.getControl('Filter').click()
+        table = find_tag_by_id(browser.contents, 'daily-build-listing')
+        check_build_records(table)
+
     def test_all_records_filter(self):
         login(ANONYMOUS)
         records, records_outside_30_days = (
@@ -153,3 +192,13 @@ class TestRecipeBuildListing(BrowserTestCase):
             text = extract_text(row)
             view_records_text.add(text.replace(' ', '').replace('\n', ''))
         self.assertEquals(records_text, view_records_text)
+
+    def test_one_recipe_redirects_to_recipe_page(self):
+        # Ensure that if the product or person has only one recipe, they are
+        # redirected right to the recipe page.
+        recipe = self.factory.makeSourcePackageRecipe()
+        root_url = self.layer.appserver_root_url(facet='code')
+        recipes_url = '%s/~%s/+recipes' % (root_url, recipe.owner.name)
+        expected_url = canonical_url(recipe)
+        browser = self.getUserBrowser(recipes_url)
+        self.assertEquals(expected_url, browser.url)

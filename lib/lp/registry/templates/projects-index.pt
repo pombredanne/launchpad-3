@@ -33,6 +33,9 @@
           tal:condition="not: view/search_requested"
           type="submit" value="Search project groups" />
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('text');
+       // --></script>
 
       <div tal:condition="view/search_requested">
           <tal:searching condition="view/search_results">
