@@ -4,11 +4,16 @@
 __metaclass__ = type
 __all__ = []
 
+from textwrap import dedent
 import transaction
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
@@ -71,15 +76,8 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
             ['pa2', 'pb1'], [person.name for person in subscribers])
 
 
-class TestMailinglistSet(TestCaseWithFactory):
-    """Test the mailing list set class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestMailinglistSet, self).setUp()
-        self.mailing_list_set = getUtility(IMailingListSet)
-        login_celebrity('admin')
+class MailingListSetMixin:
+    """Helpers for testing the MailingListSet class."""
 
     def makeTeamWithMailingListSubscribers(self, team_name, super_team=None,
                                            auto_subscribe=True):
@@ -98,6 +96,17 @@ class TestMailinglistSet(TestCaseWithFactory):
         transaction.commit()
         return team, member
 
+
+class TestMailinglistSet(TestCaseWithFactory, MailingListSetMixin):
+    """Test the mailing list set class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMailinglistSet, self).setUp()
+        self.mailing_list_set = getUtility(IMailingListSet)
+        login_celebrity('admin')
+
     def test_getSenderAddresses_dict_keys(self):
         # getSenderAddresses() returns a dict of teams names
         # {team_name: [(member_displayname, member_email) ...]}
@@ -111,7 +120,7 @@ class TestMailinglistSet(TestCaseWithFactory):
 
     def test_getSenderAddresses_dict_values(self):
         # getSenderAddresses() returns a dict of team namess with a list of
-        # all direct and indirect member tuples.
+        # all membera display names and email addresses.
         # {team_name: [(member_displayname, member_email) ...]}
         team1, member1 = self.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
@@ -125,8 +134,6 @@ class TestMailinglistSet(TestCaseWithFactory):
         # getSenderAddresses() dict values includes indirect participants.
         team1, member1 = self.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
-        team2, member2 = self.makeTeamWithMailingListSubscribers(
-            'team2', auto_subscribe=False, super_team=team1)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
         list_senders = sorted([
             (m.displayname, m.preferredemail.email)
@@ -162,3 +169,52 @@ class TestMailinglistSet(TestCaseWithFactory):
             (member1.displayname, member1.preferredemail.email),
             (member2.displayname, member2.preferredemail.email)])
         self.assertEqual(list_subscribers, sorted(result[team1.name]))
+
+    def test_getSubscribedAddresses_preferredemail_dict_values(self):
+        # getSubscribedAddresses() dict values include users who want email to
+        # go to their preferred address.
+        team1, member1 = self.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        team1.mailing_list.subscribe(member1)
+        transaction.commit()
+        result = self.mailing_list_set.getSubscribedAddresses([team1.name])
+        list_subscribers = [
+            (member1.displayname, member1.preferredemail.email)]
+        self.assertEqual(list_subscribers, result[team1.name])
+
+
+class TestMailinglistSetMessages(TestCaseWithFactory, MailingListSetMixin):
+    """Test the mailing list set class message rules."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestMailinglistSetMessages, self).setUp()
+        self.mailing_list_set = getUtility(IMailingListSet)
+        login_celebrity('admin')
+
+    def test_getSenderAddresses_approved_dict_values(self):
+        # getSenderAddresses() dict values includes senders where were
+        # approved in the list moderation queue.
+        team1, member1 = self.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        owner1 = team1.teamowner
+        sender = self.factory.makePerson()
+        email = dedent(str("""\
+            From: %s
+            To: %s
+            Subject: A question
+            Message-ID: <first-post>
+            Date: Fri, 01 Aug 2000 01:08:59 -0000\n
+            I have a question about this team.
+            """ % (sender.preferredemail.email, team1.mailing_list.address)))
+        message = getUtility(IMessageSet).fromEmail(email)
+        held_message = team1.mailing_list.holdMessage(message)
+        held_message.approve(owner1)
+        transaction.commit()
+        result = self.mailing_list_set.getSenderAddresses([team1.name])
+        list_senders = sorted([
+            (owner1.displayname, owner1.preferredemail.email),
+            (member1.displayname, member1.preferredemail.email),
+            (sender.displayname, sender.preferredemail.email)])
+        self.assertEqual(list_senders, sorted(result[team1.name]))
