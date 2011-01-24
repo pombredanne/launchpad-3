@@ -48,10 +48,15 @@ class TestBranchDeletes(TestCaseWithFactory):
     def test_delete_branch_with_stacked_branch_errors(self):
         # When trying to delete a branch that cannot be deleted, the
         # error is raised across the webservice instead of oopsing.
-        stacked_branch = self.factory.makeBranch(stacked_on=self.branch)
-        target_branch = self.lp.branches.getByUniqueName(branch.name)
+        login_person(self.branch_owner)
+        stacked_branch = self.factory.makeBranch(
+            stacked_on=self.branch,
+            owner=self.branch_owner)
+        logout()
+        target_branch = self.lp.branches.getByUniqueName(
+            unique_name='~jimhenson/fraggle/rock')
         api_error = self.assertRaises(
             HTTPError,
-            branch.delete)
+            target_branch.lp_delete)
         self.assertIn('Cannot delete', api_error.content)
         self.assertEqual(httplib.FORBIDDEN, api_error.response.status)

@@ -1068,6 +1068,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if break_references:
             self._breakReferences()
         if not self.canBeDeleted():
+            import pdb; pdb.set_trace()
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
 
