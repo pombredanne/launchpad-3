@@ -6,11 +6,12 @@ __metaclass__ = type
 import httplib
 import transaction
 
-from zope.security.management import endInteraction
+from zope.component import getUtility
 
 from lazr.restfulclient.errors import HTTPError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.interfaces.branch import IBranchSet
 from lp.testing import (
     launchpadlib_for,
     login_person,
@@ -25,16 +26,24 @@ class TestBranchDeletes(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBranchDeletes, self).setUp()
+        self.branch_owner = self.factory.makePerson(name='jimhenson')
         self.branch = self.factory.makeBranch(
-            product=self.factory.makeProduct(),
-            name='fraggle')
+            owner=self.branch_owner,
+            product=self.factory.makeProduct(name='fraggle'),
+            name='rock')
         self.lp = launchpadlib_for("test", self.branch.owner.name)
-        transaction.commit()
 
     def test_delete_branch_without_artifacts(self):
         # A branch unencumbered by links or stacked branches deletes.
-        target_branch = self.lp.branches.getByUniqueName(unique_name='fraggle')
-        target_branch.delete()
+        target_branch = self.lp.branches.getByUniqueName(
+            unique_name='~jimhenson/fraggle/rock')
+        target_branch.lp_delete()
+        
+        login_person(self.branch_owner)
+        branch_set = getUtility(IBranchSet)
+        self.assertIs(
+            None,
+            branch_set.getByUniqueName('~jimhenson/fraggle/rock'))
 
     def test_delete_branch_with_stacked_branch_errors(self):
         # When trying to delete a branch that cannot be deleted, the
