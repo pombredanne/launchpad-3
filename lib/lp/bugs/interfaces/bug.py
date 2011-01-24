@@ -18,8 +18,6 @@ __all__ = [
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
-    'InvalidBugTargetType',
-    'InvalidDuplicateValue',
     ]
 
 from textwrap import dedent
@@ -39,7 +37,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -908,11 +905,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """
 
 
-class InvalidDuplicateValue(Exception):
-    """A bug cannot be set as the duplicate of another."""
-    webservice_error(417)
-
-
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
@@ -1174,8 +1166,3 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
-
-
-class InvalidBugTargetType(Exception):
-    """Bug target's type is not valid."""
-    webservice_error(400)

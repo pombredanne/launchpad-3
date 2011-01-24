@@ -897,8 +897,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
-            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
-            source_package_recipe_build=build, version='0+r42')
+            archive=self.ppa, sourcepackagename=package_name,
+            distroseries=self.squirrel, source_package_recipe_build=build,
+            version='0+r42')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release, archive=self.ppa,
+            distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
         binary_build = self.factory.makeBinaryPackageBuild(
             source_package_release=source_package_release,
@@ -924,8 +928,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
-            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
-            source_package_recipe_build=build, version='0+r42')
+            archive=self.ppa, sourcepackagename=package_name,
+            distroseries=self.squirrel, source_package_recipe_build=build,
+            version='0+r42')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release, archive=self.ppa,
+            distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
         binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
             source_package_release=source_package_release,
