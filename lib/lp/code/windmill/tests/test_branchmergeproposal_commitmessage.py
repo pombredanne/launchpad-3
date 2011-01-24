@@ -48,7 +48,7 @@ class TestCommitMessage(WindmillTestCase):
 
         client = self.client
 
-        login_person(eric, "test", client)
+        login_person(eric, "eric@example.com", "test", client)
 
         client.open(url=canonical_url(bmp))
         client.waits.forPageLoad(timeout=PAGE_LOAD)
@@ -94,7 +94,7 @@ class TestQueueStatus(WindmillTestCase):
         merge_url = canonical_url(merge_proposal)
         client.open(url=merge_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(mike, "test", client)
+        login_person(mike, "mike@example.com", "test", client)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
