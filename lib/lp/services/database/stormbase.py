@@ -19,6 +19,8 @@ class StormBase(Storm):
     This class adds storm cache management functions to base.Storm.
     """
 
+    # XXX: jcsackett 2011-01-20 bug=622648: Much as with the SQLBase,
+    # this is not tested.
     def __storm_flushed__(self):
         """Invalidate the web service cache."""
         cache = getUtility(IRepresentationCache)
@@ -26,7 +28,4 @@ class StormBase(Storm):
 
     def __storm_invalidated__(self):
         """Flush cached properties."""
-        # TODO: Fix this?
-        # XXX: jcsackett 2011-01-20 bug=622648: Much as with the SQLBase,
-        # this is not tested.
         clear_property_cache(self)
