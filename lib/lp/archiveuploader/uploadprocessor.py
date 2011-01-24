@@ -143,6 +143,15 @@ class UploadHandler:
         self.upload = upload
         self.upload_path = os.path.join(self.fsroot, self.upload)
 
+    @staticmethod
+    def forProcessor(processor, fsroot, upload, build=None):
+        if processor.builds:
+            # Upload directories contain build results,
+            # directories are named after job ids.
+            return BuildUploadHandler(processor, fsroot, upload, build)
+        else:
+            return UserUploadHandler(processor, fsroot, upload)
+
     def locateChangesFiles(self):
         """Locate .changes files in the given upload directory.
 
@@ -228,7 +237,7 @@ class UploadHandler:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self.processor._getPolicyForDistro(distribution, build)
+        policy = self._getPolicyForDistro(distribution, build)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -442,6 +451,9 @@ class UserUploadHandler(UploadHandler):
             destination = "failed"
         self.moveProcessedUpload(destination, self.processor.log)
 
+    def _getPolicyForDistro(self, distribution, build):
+        return self.processor._getPolicyForDistro(distribution, build)
+
 
 class CannotGetBuild(Exception):
 
@@ -450,9 +462,14 @@ class CannotGetBuild(Exception):
 
 class BuildUploadHandler(UploadHandler):
 
-    def __init__(self, processor, fsroot, upload):
+    def __init__(self, processor, fsroot, upload, build=None):
         super(BuildUploadHandler, self).__init__(processor, fsroot, upload)
-        self.build = self._getBuild()
+        self.build = build
+        if self.build is None:
+            self.build = self._getBuild()
+
+    def _getPolicyForDistro(self, distribution, build):
+        return self.processor._getPolicyForDistro(distribution, build)
 
     def _getBuild(self):
         try:
@@ -570,12 +587,7 @@ class UploadProcessor:
                         upload, leaf_name))
                     continue
                 try:
-                    if self.builds:
-                        # Upload directories contain build results,
-                        # directories are named after job ids.
-                        handler = BuildUploadHandler(self, fsroot, upload)
-                    else:
-                        handler = UserUploadHandler(self, fsroot, upload)
+                    handler = UploadHandler.forProcessor(self, fsroot, upload)
                 except CannotGetBuild, e:
                     self.log.warn(e)
                 else:

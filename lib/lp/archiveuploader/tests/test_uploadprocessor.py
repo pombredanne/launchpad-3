@@ -146,12 +146,14 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         shutil.rmtree(self.queue_folder)
         super(TestUploadProcessorBase, self).tearDown()
 
-    def getUploadProcessor(self, txn):
+    def getUploadProcessor(self, txn, builds=None):
+	if builds is None:
+            builds = self.options.builds
 
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
-            if self.options.builds:
+            if builds:
                 policy.distroseries = build.distro_series
                 policy.pocket = build.pocket
                 policy.archive = build.archive
@@ -160,8 +162,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, self.options.builds,
-            self.options.keep, getPolicy, txn, self.log)
+            self.options.nomails, builds, self.options.keep, getPolicy, txn,
+            self.log)
 
     def publishPackage(self, packagename, version, source=True,
                         archive=None):
@@ -278,7 +280,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         so that we can debug failing tests effectively.
         """
         results = []
-        handler = UploadHandler(processor, '.', upload_dir)
+        self.assertEqual(processor.builds, build is not None)
+        handler = UploadHandler.forProcessor(processor, '.', upload_dir, build)
         changes_files = handler.locateChangesFiles()
         for changes_file in changes_files:
             result = handler.processChangesFile(changes_file, build=build)
@@ -657,7 +660,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.layer.txn.commit()
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_original_build)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
@@ -688,12 +693,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
              build=bar_copied_build)
 
         # Make sure the upload succeeded.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.is_rejected, False)
+            build_uploadprocessor.last_processed_upload.is_rejected, False)
 
         # The upload should also be auto-accepted even though there's no
         # ancestry.  This means items should go to ACCEPTED and not NEW.
@@ -759,8 +764,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary")
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.processUpload(
-            uploadprocessor, upload_dir, build=bar_original_build)
+            build_uploadprocessor, upload_dir, build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
@@ -782,7 +789,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         shutil.rmtree(upload_dir)
         self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_copied_build)
         [duplicated_binary_upload] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='bar',
@@ -822,7 +829,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-2_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
@@ -842,14 +851,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         shutil.rmtree(upload_dir)
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_copied_build)
 
         # The binary just uploaded is accepted because it's destined for a
         # copy archive and the PRIMARY and the COPY archives are isolated
         # from each other.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.is_rejected, False)
+            build_uploadprocessor.last_processed_upload.is_rejected, False)
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
@@ -997,8 +1006,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.ubuntu.main_archive)
         self.layer.txn.commit()
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.processUpload(
-            uploadprocessor, upload_dir, build=foocomm_build)
+            build_uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
             "Subject: foocomm_1.0-1_i386.changes rejected",
@@ -1165,9 +1176,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.assertTrue(
+        self.assertIn(
             "Unable to find mandatory field 'Files' "
-            "in the changes file" in error_text)
+            "in the changes file", error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
