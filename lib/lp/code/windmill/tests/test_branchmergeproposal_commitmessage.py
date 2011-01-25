@@ -108,7 +108,7 @@ class TestQueueStatus(WindmillTestCase):
         client.waits.sleep(milliseconds=SLEEP)
 
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
 
         client.asserts.assertText(
@@ -119,10 +119,10 @@ class TestQueueStatus(WindmillTestCase):
         client.open(url=merge_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             timeout=FOR_ELEMENT)
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
 
 
