@@ -23,6 +23,7 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
@@ -597,8 +598,9 @@ class MessageSharingMerge(LaunchpadScript):
         """
         clashing_current = None
         if message.is_current_ubuntu:
-            found = target_potmsgset.getCurrentTranslationMessage(
-                potemplate=target_potemplate, language=message.language)
+            found = target_potmsgset.getCurrentTranslation(
+                potemplate=target_potemplate, language=message.language,
+                side=TranslationSide.UBUNTU)
             if found is not None and found.potemplate == target_potemplate:
                 clashing_current = found
 

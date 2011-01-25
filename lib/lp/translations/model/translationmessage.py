@@ -475,8 +475,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUbuntu(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language)
+            incumbent = self.potmsgset.getCurrentTranslation(
+                self.potemplate, self.language, TranslationSide.UBUNTU)
             if incumbent == self:
                 return
             if (incumbent is not None and

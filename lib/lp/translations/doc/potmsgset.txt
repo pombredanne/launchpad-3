@@ -234,8 +234,9 @@ We get a POTMsgSet and verify it's a singular form:
     >>> potmsgset.msgid_plural is None
     True
 
-    >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     evolution_potemplate, pt_BR_dummypofile.language)
+    >>> current = potmsgset.getCurrentTranslation(
+    ...     evolution_potemplate, pt_BR_dummypofile.language,
+    ...     evolution_potemplate.translation_side)
     >>> print current
     None
     >>> pt_BR_dummy_current = potmsgset.getCurrentTranslationMessageOrDummy(
@@ -503,15 +504,17 @@ translations in Spanish:
     >>> evo_product_message = evo_product_template.getPOTMsgSetByMsgIDText(
     ...     ' cards')
     >>> evo_product_translation = (
-    ...     evo_product_message.getCurrentTranslationMessage(
-    ...         evo_product_template, spanish))
+    ...     evo_product_message.getCurrentTranslation(
+    ...         evo_product_template, spanish,
+    ...         evo_product_template.translation_side))
     >>> evo_product_translation.translations
     [u' tarjetas']
     >>> evo_distro_message = evo_distro_template.getPOTMsgSetByMsgIDText(
     ...     ' cards')
     >>> evo_distro_translation = (
-    ...     evo_distro_message.getCurrentTranslationMessage(
-    ...         evo_distro_template, spanish))
+    ...     evo_distro_message.getCurrentTranslation(
+    ...         evo_distro_template, spanish,
+    ...         evo_distro_template.translation_side))
     >>> evo_distro_translation.translations
     [u' caratas']
 
@@ -599,8 +602,9 @@ Let's take a message 'test man page' that is translated into Spanish.
     >>> pofile = evo_man_template.getPOFileByLang('es')
     >>> print pofile.title
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-    >>> current = potmsgset_translated.getCurrentTranslationMessage(
-    ...     evo_man_template, pofile.language)
+    >>> current = potmsgset_translated.getCurrentTranslation(
+    ...     evo_man_template, pofile.language,
+    ...     evo_man_template.translation_side)
     >>> print current.translations
     [u'just a translation']
 
@@ -635,8 +639,9 @@ dummy anymore.
 Given that it doesn't exist in our database, is impossible to have a
 submission already for it.
 
-    >>> current = potmsgset_untranslated.getCurrentTranslationMessage(
-    ...     pmount_man_template, pofile.language)
+    >>> current = potmsgset_untranslated.getCurrentTranslation(
+    ...     pmount_man_template, pofile.language,
+    ...     pmount_man_template.translation_side)
     >>> print current
     None
     >>> imported = potmsgset_untranslated.getOtherTranslation(
