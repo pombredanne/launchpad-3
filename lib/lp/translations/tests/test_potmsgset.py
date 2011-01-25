@@ -365,9 +365,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there is an imported translation on the external POTMsgSet,
         # it is returned as the externally used suggestion.
-        imported_translation = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            is_current_upstream=True)
+        imported_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset)
         imported_translation.makeCurrentUbuntu(False)
 
         transaction.commit()
@@ -425,11 +424,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there is an imported, non-current translation on the external
         # POTMsgSet, it is not returned as the external suggestion.
-        imported_translation = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            is_current_upstream=True)
-        imported_translation.makeCurrentUbuntu(False)
-
+        imported_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset)
         transaction.commit()
 
         self.assertEquals(
@@ -1279,9 +1275,9 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         owner = pofile.potemplate.owner
         translation = {0: self.factory.getUniqueString()}
-        shared_message = self.factory.makeSharedTranslationMessage(
+        shared_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=owner,
-            translations=translation)
+            translations=translation, current_other=True)
         self.assertTrue(shared_message.is_current_ubuntu)
 
         suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
@@ -1330,7 +1326,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         owner = pofile.potemplate.owner
         translation = {0: self.factory.getUniqueString()}
         translation2 = {0: self.factory.getUniqueString()}
-        shared_message = self.factory.makeSharedTranslationMessage(
+        shared_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=owner,
             translations=translation)
         diverged_message = self.factory.makeCurrentTranslationMessage(
