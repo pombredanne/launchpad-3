@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackagePublishingHistory,
+    IPublishingSet,
     ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import (
@@ -1084,6 +1085,36 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         # The binary should not be published for hppa.
         self.assertCopied(copies, nobby, ('i386',))
+
+    def test_copies_only_new_indep_publications(self):
+        # When copying  architecture-independent binaries to a series with
+        # existing publications in some architectures, new publications
+        # are only created in the missing archs.
+
+        # Make a new architecture-specific source and binary.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='all')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        # Now make a new distroseries with two archs.
+        nobby = self.createNobby(('i386', 'hppa'))
+
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        # Manually copy the indep pub to just i386.
+        getUtility(IPublishingSet).newBinaryPublication(
+            target_archive, bin_i386.binarypackagerelease, nobby['i386'],
+            bin_i386.component, bin_i386.section, bin_i386.priority,
+            bin_i386.pocket)
+        # Now we can copy the package with binaries.
+        copies = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+
+        # The copy succeeds, and no i386 publication is created.
+        self.assertCopied(copies, nobby, ('hppa',))
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
