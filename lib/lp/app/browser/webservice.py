@@ -4,7 +4,9 @@
 """Adapters for registry objects for the webservice."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'format_text_for_web',
+]
 
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -40,16 +42,19 @@ def reference_xhtml_representation(context, field, request):
     return render
 
 
+def format_text_for_web(value):
+    """Format the string for displaying on a web page.
+
+    Standard practice is to obfuscate the email and render as html.
+    """
+    if value is None:
+        return ''
+    nomail = FormattersAPI(value).obfuscate_email()
+    return FormattersAPI(nomail).text_to_html()
+
+
 @component.adapter(Interface, IText, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def text_xhtml_representation(context, field, request):
     """Render text as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        if value is None:
-            return ''
-        nomail = formatter(value).obfuscate_email()
-        return formatter(nomail).text_to_html()
-
-    return renderer
+    return format_text_for_web

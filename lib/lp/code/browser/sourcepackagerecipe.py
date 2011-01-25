@@ -62,7 +62,10 @@ from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import InlineEditPickerWidget
+from canonical.widgets.lazrjs import (
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    )
 from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -72,9 +75,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import (
-    format_link,
-    )
+from lp.app.browser.tales import format_link
+from lp.app.browser.webservice import format_text_for_web
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -255,6 +257,19 @@ class SourcePackageRecipeView(LaunchpadView):
             content_box_id='recipe-ppa',
             header='Change daily build archive',
             step_title='Select a PPA')
+
+    @property
+    def recipe_text_edit_html(self):
+        """The recipe text as widget HTML."""
+        text_html = format_text_for_web(self.context.recipe_text)
+        return TextAreaEditorWidget(
+            self.context,
+            'recipe_text',
+            canonical_url(self.context, view_name='+edit'),
+            id="edit-recipe-text",
+            title="Do we want a title",
+            value=text_html,
+            accept_empty=False)
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):

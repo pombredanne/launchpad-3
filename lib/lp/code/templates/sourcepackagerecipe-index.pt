@@ -166,6 +166,10 @@
       <div class='portlet'>
         <h2>Recipe contents</h2>
         <pre tal:content="context/recipe_text" />
+
+        <div id="edit-recipe-text" class="lazr-multiline-edit"
+             tal:content="structure view/recipe_text_edit_html"/>
+
       </div>
     </div>
   </div>

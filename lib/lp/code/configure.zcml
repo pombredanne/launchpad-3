@@ -965,7 +965,7 @@
        permission="launchpad.Edit"
        interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEdit"
        set_schema="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEditableAttributes"
-       set_attributes="builder_recipe date_last_modified"
+       set_attributes="recipe_text builder_recipe date_last_modified"
         />
   </class>
   <class

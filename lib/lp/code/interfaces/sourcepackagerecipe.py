@@ -23,8 +23,10 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_operation_as,
     export_write_operation,
     exported,
+    mutator_for,
     operation_parameters,
     REQUEST_USER,
     )
@@ -32,6 +34,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -97,7 +100,7 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
-    recipe_text = exported(Text())
+    recipe_text = exported(Text(readonly=True))
 
     def isOverQuota(requester, distroseries):
         """True if the recipe/requester/distroseries combo is >= quota.
@@ -134,6 +137,13 @@ class ISourcePackageRecipeView(Interface):
 
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
+
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_parameters(recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
+    @export_write_operation()
+    def _setRecipeText(recipe_text):
+        """Set the text of the recipe."""
 
     @operation_parameters(recipe_text=Text())
     @export_write_operation()
