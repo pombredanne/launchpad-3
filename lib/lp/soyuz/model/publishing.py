@@ -1279,13 +1279,13 @@ class PublishingSet:
                     pocket))
         return secure_copies
 
-    def publishBinary(self, archive, binarypackagerelease, distroarchseries,
+    def publishBinary(self, archive, binarypackagerelease, requested_arch,
                       component, section, priority, pocket):
         """See `IPublishingSet`."""
         if not binarypackagerelease.architecturespecific:
-            target_archs = distroarchseries.distroseries.enabled_architectures
+            target_archs = requested_arch.distroseries.enabled_architectures
         else:
-            target_archs = [distroarchseries]
+            target_archs = [requested_arch]
 
         # DDEBs targeted to the PRIMARY archive are published in the
         # corresponding DEBUG archive.
@@ -1306,7 +1306,7 @@ class PublishingSet:
                 name=binarypackagerelease.name, exact_match=True,
                 version=binarypackagerelease.version,
                 status=active_publishing_status, pocket=pocket,
-                distroarchseries=distroarchseries)
+                distroarchseries=arch)
             if not bool(binaries_in_destination):
                 published_binaries.append(
                     getUtility(IPublishingSet).newBinaryPublication(
