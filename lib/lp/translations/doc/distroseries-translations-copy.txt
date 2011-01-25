@@ -24,17 +24,15 @@ Functions to create source packages, templates and and translations.
     ...         sourcepackagename=package.sourcepackagename,
     ...         name=name, translation_domain=name+'-domain')
 
-    >>> global_sequence = 1
     >>> def makeTranslation(template, msgid, translations, sequence=None):
-    ...     global global_sequence
     ...     if sequence is None:
-    ...         sequence = global_sequence
-    ...         global_sequence += 1
+    ...         sequence = factory.getUniqueInteger()
     ...     msgset = factory.makePOTMsgSet(template, msgid, sequence=sequence)
     ...     for language, translation in translations.items():
     ...         pofile = template.getPOFileByLang(language)
-    ...         factory.makeSharedTranslationMessage(pofile, msgset,
-    ...             translations=[translation], is_current_upstream=True)
+    ...         factory.makeCurrentTranslationMessage(
+    ...             pofile, msgset, translations=[translation],
+    ...             current_other=True)
     ...     return msgset
 
     >>> package1 = makeSourcePackage('package1')
