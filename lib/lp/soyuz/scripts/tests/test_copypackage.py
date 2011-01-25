@@ -1099,7 +1099,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=source)
 
-        # Now make a new distroseries with only i386.
+        # Now make a new distroseries with two archs.
         nobby = self.createNobby(('i386', 'hppa'))
 
         target_archive = self.factory.makeArchive(
