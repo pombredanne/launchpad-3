@@ -226,8 +226,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # A shared translation is current on both sides.
         shared_translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=self.potmsgset, current_other=True)
-        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
-            ubuntu_potemplate, ubuntu_pofile.language), shared_translation)
+        self.assertEquals(self.potmsgset.getCurrentTranslation(
+            ubuntu_potemplate, ubuntu_pofile.language,
+            ubuntu_potemplate.translation_side), shared_translation)
         self.assertEquals(self.potmsgset.getOtherTranslation(
             pofile.language, self.devel_potemplate.translation_side),
             shared_translation)
@@ -235,8 +236,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # A diverted translation on the other side is not returned.
         diverged_translation = self.factory.makeCurrentTranslationMessage(
             pofile=ubuntu_pofile, potmsgset=self.potmsgset, diverged=True)
-        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
-            ubuntu_potemplate, ubuntu_pofile.language), diverged_translation)
+        self.assertEquals(self.potmsgset.getCurrentTranslation(
+            ubuntu_potemplate, ubuntu_pofile.language,
+            ubuntu_potemplate.translation_side), diverged_translation)
         self.assertEquals(self.potmsgset.getOtherTranslation(
             pofile.language, self.devel_potemplate.translation_side),
             shared_translation)
@@ -1510,13 +1512,15 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
 
-        eo_translation = credits.getCurrentTranslationMessage(
-            self.potemplate, eo_pofile.language)
+        eo_translation = credits.getCurrentTranslation(
+            self.potemplate, eo_pofile.language,
+            self.potemplate.translation_side)
         self.assertIsNot(None, eo_translation,
             "Translation credits are not translated upon creation.")
 
-        sr_translation = credits.getCurrentTranslationMessage(
-            self.potemplate, sr_pofile.language)
+        sr_translation = credits.getCurrentTranslation(
+            self.potemplate, sr_pofile.language,
+            self.potemplate.translation_side)
         self.assertIsNot(None, sr_translation,
             "Translation credits are not translated upon "
             "creation in 2nd POFile.")
@@ -1526,8 +1530,9 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
-        eo_translation = potmsgset.getCurrentTranslationMessage(
-            self.potemplate, eo_pofile.language)
+        eo_translation = potmsgset.getCurrentTranslation(
+            self.potemplate, eo_pofile.language,
+            self.potemplate.translation_side)
         self.assertIs(None, eo_translation)
 
     def test_creation_not_imported(self):
@@ -1556,8 +1561,9 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
             self.potemplate, u'translator-credits', sequence=1)
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
-        eo_translation = credits.getCurrentTranslationMessage(
-            self.potemplate, eo_pofile.language)
+        eo_translation = credits.getCurrentTranslation(
+            self.potemplate, eo_pofile.language,
+            self.potemplate.translation_side)
         self.assertIsNot(None, eo_translation,
             "Translation credits receive no dummy translation upon "
             "POFile creation.")
