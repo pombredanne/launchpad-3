@@ -1279,13 +1279,13 @@ class PublishingSet:
                     pocket))
         return secure_copies
 
-    def publishBinary(self, archive, binarypackagerelease, requested_arch,
+    def publishBinary(self, archive, binarypackagerelease, distroarchseries,
                       component, section, priority, pocket):
         """See `IPublishingSet`."""
         if not binarypackagerelease.architecturespecific:
-            target_archs = requested_arch.distroseries.enabled_architectures
+            target_archs = distroarchseries.distroseries.enabled_architectures
         else:
-            target_archs = [requested_arch]
+            target_archs = [distroarchseries]
 
         # DDEBs targeted to the PRIMARY archive are published in the
         # corresponding DEBUG archive.
@@ -1298,7 +1298,7 @@ class PublishingSet:
             archive = debug_archive
 
         published_binaries = []
-        for arch in target_archs:
+        for target_arch in target_archs:
             # We only publish the binary if it doesn't already exist in
             # the destination. Note that this means we don't support
             # override changes on their own.
@@ -1306,11 +1306,11 @@ class PublishingSet:
                 name=binarypackagerelease.name, exact_match=True,
                 version=binarypackagerelease.version,
                 status=active_publishing_status, pocket=pocket,
-                distroarchseries=arch)
+                distroarchseries=target_arch)
             if not bool(binaries_in_destination):
                 published_binaries.append(
                     getUtility(IPublishingSet).newBinaryPublication(
-                        archive, binarypackagerelease, arch, component,
+                        archive, binarypackagerelease, target_arch, component,
                         section, priority, pocket))
         return published_binaries
 
