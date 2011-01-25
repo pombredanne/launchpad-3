@@ -669,7 +669,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
                 self.createRelatedBranches(base_branch))
         with person_logged_in(self.chef):
             view = create_initialized_view(branch, "+new-recipe")
-            self.assertEqual(0, len( view.related_series_branches))
+            self.assertEqual(0, len(view.related_series_branches))
             self.assertEqual(
                 related_package_branches, view.related_package_branches)
 
