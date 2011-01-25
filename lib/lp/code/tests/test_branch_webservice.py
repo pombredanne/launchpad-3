@@ -59,4 +59,4 @@ class TestBranchDeletes(TestCaseWithFactory):
             HTTPError,
             target_branch.lp_delete)
         self.assertIn('Cannot delete', api_error.content)
-        self.assertEqual(httplib.FORBIDDEN, api_error.response.status)
+        self.assertEqual(httplib.BAD_REQUEST, api_error.response.status)
