@@ -6,7 +6,7 @@
   <legend>Related Branches</legend>
   <table class="extra-options">
 
-    <table class="listing" id="related-package-branches-listing"
+    <table class="listing" style="width: 65em;" id="related-package-branches-listing"
         tal:condition="packageBranches">
       <thead>
         <tr>
@@ -16,7 +16,7 @@
       </thead>
       <tbody>
         <tr tal:repeat="branch packageBranches">
-          <td width="60%">
+          <td width="75%">
             <a href="#"
                tal:content="branch/displayname"
                tal:attributes="href branch/fmt:url">
@@ -34,7 +34,7 @@
       </tbody>
     </table>
 
-    <table class="listing" id="related-series-branches-listing"
+    <table class="listing" style="width: 65em; margin-top: 1.5em;" id="related-series-branches-listing"
         tal:condition="seriesBranches">
       <thead>
         <tr>
@@ -44,7 +44,7 @@
       </thead>
       <tbody>
         <tr tal:repeat="branch seriesBranches">
-          <td width="60%">
+          <td width="75%">
             <a href="#"
                tal:content="branch/displayname"
                tal:attributes="href branch/fmt:url">
@@ -61,6 +61,5 @@
         </tr>
       </tbody>
     </table>
-
   </table>
 </fieldset>

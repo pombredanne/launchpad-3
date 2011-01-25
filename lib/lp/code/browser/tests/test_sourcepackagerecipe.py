@@ -51,7 +51,6 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing.views import create_initialized_view
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
