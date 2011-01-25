@@ -540,6 +540,7 @@ we do it directly in the database.
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.interfaces.side import TranslationSide
     >>> login("carlos@canonical.com")
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
@@ -552,8 +553,10 @@ we do it directly in the database.
     >>> evolution_pofile = evolution_potemplate.getPOFileByLang('es')
     >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(' cards')
     >>> spanish = evolution_pofile.language
-    >>> imported = potmsgset.getImportedTranslationMessage(
-    ...     evolution_potemplate, spanish)
+
+    >>> imported = potmsgset.getCurrentTranslation(
+    ...     evolution_potemplate, spanish,
+    ...     side=TranslationSide.UPSTREAM)
     >>> imported.translations
     [u' tarjetas']
 

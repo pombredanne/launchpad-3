@@ -148,12 +148,6 @@ class IPOTMsgSet(Interface):
         Diverged messages are preferred.
         """
 
-    def getImportedTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage as imported from the package.
-
-        Diverged messages are preferred.
-        """
-
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 

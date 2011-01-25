@@ -46,7 +46,6 @@ Get a person to create a translation with.
 
 Add a translation.
 
-    >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> message = factory.makeCurrentTranslationMessage(
@@ -118,8 +117,8 @@ This is marked as current in both Ubuntu and upstream.
     >>> upstream_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(
-    ...     template, spanish) == upstream_message
+    >>> potmsgset.getCurrentTranslation(
+    ...     template, spanish, template.translation_side) == upstream_message
     True
 
 Excellent. This shows that activating a new upstream translation upon
