@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 
-from datetime import datetime
 import logging
 from optparse import (
     OptionParser,
@@ -15,7 +14,6 @@ from optparse import (
     )
 from unittest import TestLoader
 
-from pytz import timezone
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -24,7 +22,10 @@ from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
@@ -387,10 +388,10 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(
             unrelated_nl_pofile.potemplate, 'Foo',
             sequence=0)
-        unrelated_nl_message = potmsgset.updateTranslation(
-            unrelated_nl_pofile, unrelated_nl_pofile.potemplate.owner,
-            {0: "Foe"}, is_current_upstream=False,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        unrelated_nl_message = self.factory.makeCurrentTranslationMessage(
+            unrelated_nl_pofile, potmsgset,
+            translator=unrelated_nl_pofile.potemplate.owner,
+            translations={0: "Foe"})
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
         rowcount = self._removeMessages(
@@ -553,7 +554,7 @@ class TestRemoveTranslations(TestCase):
             answer.destroySelf()
 
 
-class TestRemoveTranslationsUnmasking(TestCase):
+class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
     """Test that `remove_translations` "unmasks" upstream messages.
 
     When a current, non-upstream message is deleted, the deletion code
@@ -570,70 +571,40 @@ class TestRemoveTranslationsUnmasking(TestCase):
 
         # Set up a template with a Laotian translation file.  There's
         # one message to be translated.
-        factory = LaunchpadObjectFactory()
-        self.pofile = factory.makePOFile('lo')
-        potemplate = self.pofile.potemplate
-        self.potmsgset = factory.makePOTMsgSet(potemplate, 'foo',
-                                               sequence=0)
+        potemplate = self.factory.makePOTemplate()
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate, 'foo', sequence=0)
+        self.pofile = self.factory.makePOFile('lo', potemplate=potemplate)
 
-    def _setTranslation(self, text, is_current_upstream=False):
-        return self.potmsgset.updateTranslation(
-            self.pofile, self.pofile.owner, {0: text},
-            is_current_upstream=is_current_upstream,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        self.ubuntu = self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.potmsgset, current_other=True)
+        self.upstream = self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.potmsgset, current_other=False)
+        Store.of(self.upstream).flush()
+        self.assertFalse(
+            self.upstream.is_current_ubuntu, "Broken test setup.")
+        self.assertTrue(
+            self.upstream.is_current_upstream, "Broken test setup.")
+        self.assertTrue(self.ubuntu.is_current_ubuntu, "Broken test setup.")
+        self.assertFalse(
+            self.ubuntu.is_current_upstream, "Broken test setup.")
 
     def test_unmask_upstream_message(self):
         # Basic use case: upstream message is unmasked.
-        cleanups = []
-        try:
-            upstream = self._setTranslation(
-                'upstream', is_current_upstream=True)
-            cleanups.append(upstream)
-            ubuntu = self._setTranslation(
-                'ubuntu', is_current_upstream=False)
-            cleanups.append(ubuntu)
-            self.assertFalse(upstream.is_current_ubuntu, "Broken test setup.")
-            self.assertTrue(
-                upstream.is_current_upstream, "Broken test setup.")
-            self.assertTrue(ubuntu.is_current_ubuntu, "Broken test setup.")
-            self.assertFalse(ubuntu.is_current_upstream, "Broken test setup.")
-            Store.of(ubuntu).flush()
-
-            remove_translations(ids=[ubuntu.id])
-
-            sync(upstream)
-            self.assertTrue(upstream.is_current_upstream)
-            self.assertTrue(upstream.is_current_ubuntu)
-        finally:
-            # Clean up.
-            remove_translations(ids=[message.id for message in cleanups])
+        remove_translations(ids=[self.ubuntu.id])
+        sync(self.upstream)
+        self.assertTrue(self.upstream.is_current_upstream)
+        self.assertTrue(self.upstream.is_current_ubuntu)
 
     def test_unmask_right_message(self):
         # Unmasking picks the right message, and doesn't try to violate
         # the unique constraint on is_current_upstream.
-        cleanups = []
-        try:
-            inactive = self._setTranslation('inactive')
-            cleanups.append(inactive)
-            upstream = self._setTranslation(
-                'upstream', is_current_upstream=True)
-            cleanups.append(upstream)
-            ubuntu = self._setTranslation(
-                'ubuntu', is_current_upstream=False)
-            self.assertFalse(inactive.is_current_ubuntu, "Broken test setup.")
-            self.assertFalse(
-                inactive.is_current_upstream, "Broken test setup.")
-            Store.of(ubuntu).flush()
-
-            remove_translations(ids=[ubuntu.id])
-
-            sync(upstream)
-            sync(inactive)
-            self.assertTrue(upstream.is_current_ubuntu)
-            self.assertFalse(inactive.is_current_ubuntu)
-        finally:
-            # Clean up.
-            remove_translations(ids=[message.id for message in cleanups])
+        inactive = self.factory.makeSuggestion(self.pofile, self.potmsgset)
+        remove_translations(ids=[self.ubuntu.id])
+        sync(self.upstream)
+        sync(inactive)
+        self.assertTrue(self.upstream.is_current_ubuntu)
+        self.assertFalse(inactive.is_current_ubuntu)
 
 
 def test_suite():
