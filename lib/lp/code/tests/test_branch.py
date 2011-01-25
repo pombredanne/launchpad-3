@@ -3,8 +3,6 @@
 
 """Unit tests for methods of Branch and BranchSet."""
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 

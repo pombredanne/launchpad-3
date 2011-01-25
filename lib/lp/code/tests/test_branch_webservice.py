@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 import httplib
-import transaction
 
 from zope.component import getUtility
 
@@ -38,7 +37,7 @@ class TestBranchDeletes(TestCaseWithFactory):
         target_branch = self.lp.branches.getByUniqueName(
             unique_name='~jimhenson/fraggle/rock')
         target_branch.lp_delete()
-        
+
         login_person(self.branch_owner)
         branch_set = getUtility(IBranchSet)
         self.assertIs(
