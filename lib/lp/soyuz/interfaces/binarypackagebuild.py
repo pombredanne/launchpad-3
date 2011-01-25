@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackageBuild',
     'IBuildRescoreForm',
     'IBinaryPackageBuildSet',
+    'UnparsableDependencies',
     ]
 
 from lazr.enum import (
@@ -50,6 +51,10 @@ class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
     webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
+
+
+class UnparsableDependencies(Exception):
+    """Raised when parsing invalid dependencies on a binary package."""
 
 
 class IBinaryPackageBuildView(IPackageBuild):

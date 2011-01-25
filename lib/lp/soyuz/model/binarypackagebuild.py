@@ -90,6 +90,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     CannotBeRescored,
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
+    UnparsableDependencies,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -496,7 +497,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         try:
             parsed_deps = apt_pkg.ParseDepends(self.dependencies)
         except (ValueError, TypeError):
-            raise AssertionError(
+            raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.dependencies))
@@ -1078,7 +1079,12 @@ class BinaryPackageBuildSet:
             # We're changing 'build' so make sure we have an object from
             # the master store.
             build = IMasterObject(build)
-            build.updateDependencies()
+            try:
+                build.updateDependencies()
+            except UnparsableDependencies, e:
+                logger.error(e)
+                continue
+
             if build.dependencies:
                 logger.debug(
                     "Skipping %s: %s" % (build.title, build.dependencies))
