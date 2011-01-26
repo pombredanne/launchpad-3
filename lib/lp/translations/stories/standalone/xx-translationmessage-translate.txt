@@ -554,21 +554,22 @@ we do it directly in the database.
     >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(' cards')
     >>> spanish = evolution_pofile.language
 
-    >>> imported = potmsgset.getCurrentTranslation(
+    >>> upstream_message = potmsgset.getCurrentTranslation(
     ...     evolution_potemplate, spanish,
     ...     side=TranslationSide.UPSTREAM)
-    >>> imported.translations
+    >>> upstream_message.translations
     [u' tarjetas']
 
 We replace it with an empty, imported translation:
 
-    >>> import datetime, pytz
-    >>> UTC = pytz.timezone('UTC')
-    >>> translation_message = potmsgset.updateTranslation(
-    ...     evolution_pofile, carlos, {0: u''}, is_current_upstream=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> print translation_message
-    None
+    >>> empty_upstream_message = factory.makeSuggestion(
+    ...     potmsgset=potmsgset, pofile=evolution_pofile, translator=carlos,
+    ...     translations={0: u''})
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(upstream_message).is_current_upstream = False
+    >>> removeSecurityProxy(empty_upstream_message).is_current_upstream = True
+    >>> empty_upstream_message.translations
+    [u'']
 
     >>> logout()
 
@@ -578,8 +579,13 @@ packaged translation anymore.
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...              '+source/evolution/+pots/evolution-2.2/es/5/+translate')
     >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_other')
-    >>> print packaged
-    None
+
+XXX: 2011-01-25 henninge, bug=707825: This should either display nothing or
+a string like "(no translation)". This documents the current behavior although
+it would be different if the translation had been properly reset.
+
+    >>> print extract_text(packaged)
+    In upstream:
 
 
 Shared and diverged translations

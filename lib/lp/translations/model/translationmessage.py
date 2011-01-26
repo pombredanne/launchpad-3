@@ -490,7 +490,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def makeCurrentUpstream(self, new_value=True):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
+            incumbent = self.potmsgset.getCurrentTranslation(
                 self.potemplate, self.language, TranslationSide.UPSTREAM)
             if incumbent == self:
                 return
