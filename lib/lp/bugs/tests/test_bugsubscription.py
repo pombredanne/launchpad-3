@@ -128,6 +128,9 @@ class TestBugSubscription(TestCaseWithFactory):
         with person_logged_in(self.subscriber):
             self.updateBugNotificationLevelWithWebService(
                 self.bug.id, team.name, self.subscriber)
+        # Grab the number of queries exceuted for the previous update.
+        # collector.count is reset with each request, so we need to
+        # store it here for later use.
         queries_with_one_admin = collector.count
         # It might seem odd that we don't do this all as one with block,
         # but using the collector and the webservice means our
@@ -137,3 +140,10 @@ class TestBugSubscription(TestCaseWithFactory):
                 self.bug.id, team_2.name, self.subscriber)
         self.assertThat(
             collector, HasQueryCount(Equals(queries_with_one_admin)))
+        # 25 is an entirely arbitrary limit for the number of queries
+        # this requires, based on the number run when the code was
+        # written; it should give us a nice early warning if the number
+        # of queries starts to grow for reasons other than the number of
+        # admins.
+        self.assertThat(
+            collector, HasQueryCount(LessThan(25)))
