@@ -337,8 +337,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template,
-            singular=self.potmsgset.singular_text,
+            external_template, singular=self.potmsgset.singular_text,
             sequence=1)
         external_pofile = self.factory.makePOFile(
             potemplate=external_template)
@@ -364,29 +363,28 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
 
-        # If there is an imported translation on the external POTMsgSet,
-        # it is returned as the externally used suggestion.
-        imported_translation = self.factory.makeCurrentTranslationMessage(
+        # If there is a translation for the other side on the external
+        # POTMsgSet, it is returned as an externally used suggestion.
+        other_translation = self.factory.makeSuggestion(
             pofile=external_pofile, potmsgset=external_potmsgset)
-        imported_translation.makeCurrentUbuntu(False)
+        removeSecurityProxy(other_translation).is_current_ubuntu = True
 
         transaction.commit()
 
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
-            [imported_translation])
+            [other_translation])
 
         # If there is a current translation on the external POTMsgSet,
         # it is returned as the externally used suggestion as well.
-        current_translation = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            is_current_upstream=False)
+        current_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
 
-        self.assertEquals(
+        self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
-            [imported_translation, current_translation])
+            [other_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
         """Test retrieval of externally suggested translations."""
