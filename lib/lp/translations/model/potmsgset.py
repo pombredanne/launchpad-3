@@ -48,7 +48,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
-    BrokenTextError,
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
@@ -1001,120 +1000,6 @@ class POTMsgSet(SQLBase):
             share_with_other_side=share_with_other_side,
             lock_timestamp=lock_timestamp)
         message.markReviewed(submitter)
-
-    def applySanityFixes(self, text):
-        """See `IPOTMsgSet`."""
-        if text is None:
-            return None
-
-        # Fix the visual point that users copy & paste from the web interface.
-        new_text = self.convertDotToSpace(text)
-        # Now, fix the newline chars.
-        new_text = self.normalizeNewLines(new_text)
-        # Finally, set the same whitespaces at the start/end of the string.
-        new_text = self.normalizeWhitespaces(new_text)
-        # Also, if it's an empty string, replace it with None.
-        # XXX CarlosPerelloMarin 2007-11-16: Until we figure out
-        # ResettingTranslations
-        if new_text == '':
-            new_text = None
-
-        return new_text
-
-    def convertDotToSpace(self, text):
-        """See IPOTMsgSet."""
-        if u'\u2022' in self.singular_text or u'\u2022' not in text:
-            return text
-
-        return text.replace(u'\u2022', ' ')
-
-    def normalizeWhitespaces(self, translation_text):
-        """See IPOTMsgSet."""
-        if translation_text is None:
-            return None
-
-        stripped_singular_text = self.singular_text.strip()
-        stripped_translation_text = translation_text.strip()
-        new_translation_text = None
-
-        if (len(stripped_singular_text) > 0 and
-            len(stripped_translation_text) == 0):
-            return ''
-
-        if len(stripped_singular_text) != len(self.singular_text):
-            # There are whitespaces that we should copy to the 'text'
-            # after stripping it.
-            prefix = self.singular_text[:-len(self.singular_text.lstrip())]
-            postfix = self.singular_text[len(self.singular_text.rstrip()):]
-            new_translation_text = '%s%s%s' % (
-                prefix, stripped_translation_text, postfix)
-        elif len(stripped_translation_text) != len(translation_text):
-            # msgid does not have any whitespace, we need to remove
-            # the extra ones added to this text.
-            new_translation_text = stripped_translation_text
-        else:
-            # The text is not changed.
-            new_translation_text = translation_text
-
-        return new_translation_text
-
-    def normalizeNewLines(self, translation_text):
-        """See IPOTMsgSet."""
-        # There are three different kinds of newlines:
-        windows_style = u'\r\n'
-        mac_style = u'\r'
-        unix_style = u'\n'
-        # We need the stripped variables because a 'windows' style will be at
-        # the same time a 'mac' and 'unix' style.
-        stripped_translation_text = translation_text.replace(
-            windows_style, u'')
-        stripped_singular_text = self.singular_text.replace(
-            windows_style, u'')
-
-        # Get the style that uses singular_text.
-        original_style = None
-        if windows_style in self.singular_text:
-            original_style = windows_style
-
-        if mac_style in stripped_singular_text:
-            if original_style is not None:
-                raise BrokenTextError(
-                    "original text (%r) mixes different newline markers" %
-                        self.singular_text)
-            original_style = mac_style
-
-        if unix_style in stripped_singular_text:
-            if original_style is not None:
-                raise BrokenTextError(
-                    "original text (%r) mixes different newline markers" %
-                        self.singular_text)
-            original_style = unix_style
-
-        # Get the style that uses the given text.
-        translation_style = None
-        if windows_style in translation_text:
-            translation_style = windows_style
-
-        if mac_style in stripped_translation_text:
-            if translation_style is not None:
-                raise BrokenTextError(
-                    "translation text (%r) mixes different newline markers" %
-                        translation_text)
-            translation_style = mac_style
-
-        if unix_style in stripped_translation_text:
-            if translation_style is not None:
-                raise BrokenTextError(
-                    "translation text (%r) mixes different newline markers" %
-                        translation_text)
-            translation_style = unix_style
-
-        if original_style is None or translation_style is None:
-            # We don't need to do anything, the text is not changed.
-            return translation_text
-
-        # Fix the newline chars.
-        return translation_text.replace(translation_style, original_style)
 
     @property
     def hide_translations_from_anonymous(self):

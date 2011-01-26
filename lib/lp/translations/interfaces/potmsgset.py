@@ -28,7 +28,6 @@ __metaclass__ = type
 
 __all__ = [
     'IPOTMsgSet',
-    'BrokenTextError',
     'POTMsgSetInIncompatibleTemplatesError',
     'TranslationCreditsType',
     ]
@@ -60,10 +59,6 @@ class TranslationCreditsType(EnumeratedType):
 
         How they do them in KDE for translator names.
         """)
-
-
-class BrokenTextError(ValueError):
-    """Exception raised when we detect values on a text that aren't valid."""
 
 
 class POTMsgSetInIncompatibleTemplatesError(Exception):
@@ -313,44 +308,6 @@ class IPOTMsgSet(Interface):
         :param lock_timestamp: Timestamp of the original translation state
             that this change is based on.
         """
-
-    def applySanityFixes(unicode_text):
-        """Return 'unicode_text' or None after doing some sanitization.
-
-        The text is checked against the msgid using the following filters:
-
-          self.convertDotToSpace
-          self.normalizeWhitespaces
-          self.normalizeNewLines
-
-        If the resulting string after these operations is an empty string,
-        it returns None.
-
-        :param unicode_text: A unicode text that needs to be checked.
-        """
-
-    def convertDotToSpace(unicode_text):
-        """Return 'unicode_text' with the u'\u2022' char exchanged with a
-        normal space.
-
-        If the self.singular_text contains that character, 'unicode_text' is
-        returned without changes as it's a valid char instead of our way to
-        represent a normal space to the user.
-        """
-
-    def normalizeWhitespaces(unicode_text):
-        """Return 'unicode_text' with the same trailing and leading
-        whitespaces that self.singular_text has.
-
-        If 'unicode_text' has only whitespaces but self.singular_text has
-        other characters, the empty string (u'') is returned to note it as an
-        untranslated string.
-        """
-
-    def normalizeNewLines(unicode_text):
-        """Return 'unicode_text' with new lines chars in sync with the msgid.
-        """
-
 
     hide_translations_from_anonymous = Attribute(
         """Whether the translations for this message should be hidden.
