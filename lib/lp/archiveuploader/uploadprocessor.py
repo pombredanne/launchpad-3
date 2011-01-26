@@ -545,23 +545,14 @@ class UserUploadHandler(UploadHandler):
         """
         changes_files = self.locateChangesFiles()
 
-        # Keep track of the various results
-        some_failed = False
-        some_rejected = False
-        some_accepted = False
+        results = set()
 
         for changes_file in changes_files:
             self.processor.log.debug(
                 "Considering changefile %s" % changes_file)
             try:
-                result = self.processChangesFile(
-                    changes_file, self.processor.log)
-                if result == UploadStatusEnum.FAILED:
-                    some_failed = True
-                elif result == UploadStatusEnum.REJECTED:
-                    some_rejected = True
-                else:
-                    some_accepted = True
+                results.add(self.processChangesFile(
+                    changes_file, self.processor.log))
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
@@ -574,18 +565,15 @@ class UserUploadHandler(UploadHandler):
                 error_utility.raising(info, request)
                 self.processor.log.error(
                     '%s (%s)' % (message, request.oopsid))
-                some_failed = True
-
-        if some_failed:
-            destination = "failed"
-        elif some_rejected:
-            destination = "rejected"
-        elif some_accepted:
-            destination = "accepted"
+                results.add(UploadStatusEnum.FAILED)
+        if len(results) == 0:
+            destination = UploadStatusEnum.FAILED
         else:
-            # There were no changes files at all. We consider
-            # the upload to be failed in this case.
-            destination = "failed"
+            for destination in [
+                UploadStatusEnum.FAILED, UploadStatusEnum.REJECTED,
+                UploadStatusEnum.ACCEPTED]:
+                if destination in results:
+                    break
         self.moveProcessedUpload(destination, self.processor.log)
 
     def _getPolicyForDistro(self, distribution):
