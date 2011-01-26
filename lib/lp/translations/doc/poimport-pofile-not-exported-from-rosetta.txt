@@ -118,7 +118,7 @@ And the method returned an email with a notification of the error.
     apply your changes and upload the merged file.
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>

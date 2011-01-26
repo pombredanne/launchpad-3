@@ -249,7 +249,6 @@ class UploadProcessor:
             UploadStatusEnum.FAILED: "failed",
             UploadStatusEnum.REJECTED: "rejected",
             UploadStatusEnum.ACCEPTED: "accepted"}[result]
-        build.date_finished = datetime.datetime.now(pytz.UTC)
         if not (result == UploadStatusEnum.ACCEPTED and
                 build.verifySuccessfulUpload() and
                 build.status == BuildStatus.FULLYBUILT):

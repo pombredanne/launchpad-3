@@ -25,6 +25,7 @@ from canonical.launchpad.browser.librarian import (
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -87,7 +88,7 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(next_view, RedirectionView)
         mo = re.match(
-            '^http://localhost:58000/\d+/foo.txt$', next_view.target)
+            '^http://.*/\d+/foo.txt$', next_view.target)
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):
@@ -202,27 +203,30 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         # Librarian URL.  We cannot simply access these Librarian URLs
         # for restricted Librarian files because the host name used in
         # the URLs is different for each file, and our test envireonment
-        # does not support wildcard DNS. So let's disable the redirection
-        # mechanism in our client's HTTP connection and inspect the
-        # the Librarian URL.
-        # The Librarian URL has, for our test case, the form
-        # "https://NNNN.restricted.localhost:58000/NNNN/foo.txt?token=..."
-        # where NNNN is an integer.
-        response, content = launchpad.rawGet(
-            ws_bugattachment.data._wadl_resource._url, follow_redirects=False)
+        # does not support wildcard DNS, and because the Launchpadlib
+        # browser automatically follows redirects.
+        # LaunchpadWebServiceCaller, on the other hand, gives us
+        # access to a raw HTTPResonse object.
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        response = webservice.get(ws_bugattachment.data._wadl_resource._url)
         self.assertEqual(303, response.status)
-        parsed_url = urlparse(response['location'])
+
+        # The Librarian URL has, for our test case, the form
+        # "https://NNNN.restricted.launchpad.dev:PORT/NNNN/foo.txt?token=..."
+        # where NNNN and PORT are integers.
+        parsed_url = urlparse(response.getHeader('location'))
         self.assertEqual('https', parsed_url.scheme)
         mo = re.search(
-            r'^i\d+\.restricted\.localhost:58000$', parsed_url.netloc)
-        self.assertIsNot(None, mo)
+            r'^i\d+\.restricted\..+:\d+$', parsed_url.netloc)
+        self.assertIsNot(None, mo, parsed_url.netloc)
         mo = re.search(r'^/\d+/foo\.txt$', parsed_url.path)
         self.assertIsNot(None, mo)
         params = parse_qs(parsed_url.query)
         self.assertEqual(['token'], params.keys())
 
         # If a user which cannot access the private bug itself tries to
-        # to access the attachemnt, an Unauthorized error is raised.
+        # to access the attachment, an Unauthorized error is raised.
         other_launchpad = launchpadlib_for(
             'test_unauthenticated', other_user, version='devel')
         self.assertRaises(

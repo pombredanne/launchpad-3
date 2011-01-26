@@ -4,6 +4,7 @@
 # Twisted Application Configuration file.
 # Use with "twistd2.4 -y <file.tac>", e.g. "twistd -noy server.tac"
 
+import os
 import signal
 
 from meliae import scanner
@@ -27,7 +28,12 @@ from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 dbconfig.setConfigSection('librarian')
 execute_zcml_for_scripts()
 
-path = config.librarian_server.root
+if os.environ.get('LP_TEST_INSTANCE'):
+    # Running in ephemeral mode: get the root dir from the environment and
+    # dynamically allocate ports.
+    path = os.environ['LP_LIBRARIAN_ROOT']
+else:
+    path = config.librarian_server.root
 if config.librarian_server.upstream_host:
     upstreamHost = config.librarian_server.upstream_host
     upstreamPort = config.librarian_server.upstream_port
@@ -67,15 +73,19 @@ def setUpListener(uploadPort, webPort, restricted):
     site.displayTracebacks = False
     strports.service(str(webPort), site).setServiceParent(librarianService)
 
-# Set up the public librarian.
-uploadPort = config.librarian.upload_port
-webPort = config.librarian.download_port
-setUpListener(uploadPort, webPort, restricted=False)
-
-# Set up the restricted librarian.
-webPort = config.librarian.restricted_download_port
-uploadPort = config.librarian.restricted_upload_port
-setUpListener(uploadPort, webPort, restricted=True)
+if os.environ.get('LP_TEST_INSTANCE'):
+    # Running in ephemeral mode: allocate ports on demand.
+    setUpListener(0, 0, restricted=False)
+    setUpListener(0, 0, restricted=True)
+else:
+    # Set up the public librarian.
+    uploadPort = config.librarian.upload_port
+    webPort = config.librarian.download_port
+    setUpListener(uploadPort, webPort, restricted=False)
+    # Set up the restricted librarian.
+    webPort = config.librarian.restricted_download_port
+    uploadPort = config.librarian.restricted_upload_port
+    setUpListener(uploadPort, webPort, restricted=True)
 
 # Log OOPS reports
 set_up_oops_reporting('librarian', 'librarian')

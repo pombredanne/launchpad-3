@@ -28,13 +28,17 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import NamedFunc
+from storm.expr import (
+    LeftJoin,
+    NamedFunc,
+    )
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
     Not,
+    Or,
     Select,
     SQL,
     Store,
@@ -48,9 +52,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -58,6 +59,9 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -74,7 +78,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.registry.model.series import ACTIVE_STATUSES
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -145,6 +148,7 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
@@ -156,7 +160,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.hasdrivers import HasDriversMixin
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -799,6 +803,38 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
+
+    @property
+    def active_or_packaged_series(self):
+        store = Store.of(self)
+        tables = [
+            ProductSeries,
+            LeftJoin(Packaging, Packaging.productseries == ProductSeries.id),
+            ]
+        result = store.using(*tables).find(
+            ProductSeries,
+            ProductSeries.product == self,
+            Or(ProductSeries.status.is_in(ACTIVE_STATUSES),
+               Packaging.id != None))
+        result = result.order_by(Desc(ProductSeries.name))
+        result.config(distinct=True)
+        return result
+
+    @property
+    def packagings(self):
+        store = Store.of(self)
+        result = store.find(
+            (Packaging, DistroSeries),
+            Packaging.distroseries == DistroSeries.id,
+            Packaging.productseries == ProductSeries.id,
+            ProductSeries.product == self)
+        result = result.order_by(
+            DistroSeries.version, ProductSeries.name, Packaging.id)
+
+        def decorate(row):
+            packaging, distroseries = row
+            return packaging
+        return DecoratedResultSet(result, decorate)
 
     @property
     def name_with_project(self):
@@ -1572,7 +1608,7 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.

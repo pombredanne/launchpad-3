@@ -25,6 +25,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
@@ -264,7 +265,7 @@ class CopyChecker:
 
         # If there are no conflicts with the same version, we can skip the
         # rest of the checks, but we still want to check conflicting files
-        if (destination_archive_conflicts.count() == 0 and
+        if (not bool(destination_archive_conflicts) and
             len(inventory_conflicts) == 0):
             self._checkConflictingFiles(source)
             return
@@ -555,7 +556,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    if source_in_destination.count() == 0:
+    if not bool(source_in_destination):
         source_copy = source.copyTo(series, pocket, archive)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
@@ -635,7 +636,14 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.status != BuildStatus.FULLYBUILT:
+            # Don't copy builds that aren't yet done, or those without a
+            # corresponding enabled architecture in the new series.
+            try:
+                target_arch = series[build.arch_tag]
+            except NotFoundError:
+                continue
+            if (not target_arch.enabled or
+                build.status != BuildStatus.FULLYBUILT):
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload

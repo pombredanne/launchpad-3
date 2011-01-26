@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'assignee_renderer',
     'BugListingBatchNavigator',
     'BugListingPortletInfoView',
     'BugListingPortletStatsView',
@@ -72,7 +71,6 @@ from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IJSONRequestCache,
     IReference,
-    IReferenceChoice,
     IWebServiceClientRequest,
     )
 from lazr.uri import URI
@@ -164,15 +162,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget,
-    BugTaskAssigneeWidget,
-    BugTaskBugWatchWidget,
-    BugTaskSourcePackageNameWidget,
-    DBItemDisplayWidget,
-    NewLineToSpacesWidget,
-    NominationReviewActionWidget,
-    )
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
@@ -208,6 +197,15 @@ from lp.bugs.browser.bugcomment import (
     group_comments_with_activity,
     )
 from lp.bugs.browser.widgets.bug import BugTagsWidget
+from lp.bugs.browser.widgets.bugtask import (
+    AssigneeDisplayWidget,
+    BugTaskAssigneeWidget,
+    BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget,
+    DBItemDisplayWidget,
+    NewLineToSpacesWidget,
+    NominationReviewActionWidget,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -265,21 +263,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
-
-
-@component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def assignee_renderer(context, field, request):
-    """Render a bugtask assignee as a link."""
-
-    def render(value):
-        if context.assignee is None:
-            return ''
-        else:
-            return (
-                '<span>%s</span>' %
-                PersonFormatterAPI(context.assignee).link(None))
-    return render
 
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
@@ -2017,8 +2000,14 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
+    >>> for status in initial['status']:
+    ...     print status.name
+    NEW
+    INCOMPLETE
+    CONFIRMED
+    TRIAGED
+    INPROGRESS
+    FIXCOMMITTED
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)

@@ -106,12 +106,11 @@ class ISourcePackageRecipeView(Interface):
         :param distroseries: The distroseries to build for.
         """
 
-    def getBuilds(pending=False):
-        """Return a ResultSet of all the builds in the given state.
+    def getBuilds():
+        """Return a ResultSet of all the non-pending builds."""
 
-        :param pending: If True, select all builds that are pending.  If
-            False, select all builds that are not pending.
-        """
+    def getPendingBuilds():
+        """Return a ResultSet of all the pending builds."""
 
     def getLastBuild():
         """Return the the most recent build of this recipe."""

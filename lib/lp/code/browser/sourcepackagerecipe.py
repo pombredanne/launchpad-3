@@ -53,18 +53,17 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     LaunchpadView,
     Link,
-    Navigation,
     NavigationMenu,
-    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
+from canonical.widgets.lazrjs import InlineEditPickerWidget
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -73,7 +72,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import format_link
+from lp.app.browser.tales import (
+    format_link,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -84,9 +85,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    )
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.archive import Archive
@@ -144,17 +142,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             yield item
 
 
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
-
-
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
     """Navigation menu for sourcepackage recipes."""
 
@@ -196,7 +183,12 @@ class SourcePackageRecipeView(LaunchpadView):
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
-        if self.dailyBuildWithoutUploadPermission():
+        if recipe.build_daily and recipe.daily_build_archive is None:
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>There is no PPA."))
+        elif self.dailyBuildWithoutUploadPermission():
             self.request.response.addWarningNotification(
                 structured(
                     "Daily builds for this recipe will <strong>not</strong> "
@@ -221,7 +213,7 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
@@ -239,6 +231,30 @@ class SourcePackageRecipeView(LaunchpadView):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             return not has_upload
         return False
+
+    @property
+    def person_picker(self):
+        return InlineEditPickerWidget(
+            self.context, self.request, ISourcePackageRecipe['owner'],
+            format_link(self.context.owner),
+            content_box_id='recipe-owner',
+            header='Change owner',
+            step_title='Select a new owner')
+
+    @property
+    def archive_picker(self):
+        ppa = self.context.daily_build_archive
+        if ppa is None:
+            initial_html = 'None'
+        else:
+            initial_html = format_link(ppa)
+        return InlineEditPickerWidget(
+            self.context, self.request,
+            ISourcePackageAddSchema['daily_build_archive'],
+            initial_html,
+            content_box_id='recipe-ppa',
+            header='Change daily build archive',
+            step_title='Select a PPA')
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):

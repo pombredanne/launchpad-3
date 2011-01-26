@@ -26,6 +26,11 @@
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
 
+    <class class="lp.bugs.model.bugtask.BugTaskResultSet">
+        <allow interface="storm.zope.interfaces.IResultSet" />
+        <allow attributes="__getslice__" />
+    </class>
+
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
         <allow
@@ -247,15 +252,34 @@
                     transitionToMilestone
                     transitionToTarget"/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    distribution
+                    distroseries
+                    importance
+                    milestone
+                    owner
+                    product
+                    productseries
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    sourcepackagename
+                    statusdisplayhtml
+                    statuselsewhere
+                    statusexplanation
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -270,9 +294,6 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
-        <adapter
-            factory="lp.bugs.browser.bugtask.assignee_renderer"
-            name="assignee"/>
         <adapter
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
@@ -783,9 +804,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 
@@ -1056,6 +1074,7 @@
         recipient"/>
   </class>
 
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>
