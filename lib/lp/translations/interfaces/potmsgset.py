@@ -227,44 +227,6 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations,
-                          is_current_upstream, lock_timestamp,
-                          force_shared=False, force_diverged=False,
-                          force_suggestion=False, ignore_errors=False,
-                          force_edition_rights=False, allow_credits=False):
-        """Update or create a translation message using `new_translations`.
-
-        This method is Launchpad Translations's sliderule: it does
-        everything, nobody fully understands it all, and we intend to
-        replace it with a range of less flexible tools.
-
-        :param pofile: a `POFile` to add `new_translations` to.
-        :param submitter: author of the translations.
-        :param new_translations: a dictionary of plural forms, with the
-            integer plural form number as the key and the translation as the
-            value.
-        :param is_current_upstream: indicates whether this update is
-            imported from a packaged po file.
-        :param lock_timestamp: The timestamp when we checked the values we
-            want to update.
-        :param force_suggestion: Whether to force translation to be
-            a suggestion, even if submitted by an editor.
-        :param ignore_errors: A flag that controls whether the translations
-            should be stored even when an error is detected.
-        :param force_edition_rights: A flag that 'forces' handling this
-            submission as coming from an editor, even if `submitter` is not.
-        :param allow_credits: Override the protection of translation credits
-            message.
-
-        If there is an error with the translations and ignore_errors is not
-        True or it's not a fuzzy submit, raises GettextValidationError.
-
-        :return: a modified or newly created translation message; or None if
-            no message is to be updated.  This can happen when updating a
-            translation credits message without the is_current_upstream
-            parameter set.
-        """
-
     def validateTranslations(translations):
         """Validate `translations` against gettext.
 

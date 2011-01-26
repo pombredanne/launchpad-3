@@ -714,8 +714,8 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         transaction.commit()
         # Make the translation a suggestion, too.
         suggestion3 = self.translation
-        suggestion3.makeCurrentUbuntu(False)
-        suggestion3.makeCurrentUpstream(False)
+        removeSecurityProxy(suggestion3).is_current_ubuntu = False
+        removeSecurityProxy(suggestion3).is_current_upstream = False
         self._setDateCreated(suggestion3)
         transaction.commit()
         # All suggestions are visible.

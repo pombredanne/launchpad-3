@@ -190,14 +190,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # This object is already non persistent, so nothing needs to be done.
         return
 
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_upstream = new_value
-
     def getSharedEquivalent(self):
         """See `ITranslationMessage`."""
         raise NotImplementedError()
@@ -471,36 +463,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             forms_match))
 
         return twins.order_by(TranslationMessage.id).first()
-
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslation(
-                self.potemplate, self.language, TranslationSide.UBUNTU)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_ubuntu = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getCurrentTranslation(
-                self.potemplate, self.language, TranslationSide.UPSTREAM)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_upstream = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_upstream = new_value
 
 
 class TranslationMessageSet:
