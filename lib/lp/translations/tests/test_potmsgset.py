@@ -395,11 +395,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template,
-            singular=self.potmsgset.singular_text)
-        external_potmsgset.setSequence(external_template, 1)
-        external_pofile = self.factory.makePOFile('sr', external_template)
-        serbian = external_pofile.language
+            external_template, singular=self.potmsgset.singular_text,
+            sequence=1)
+        external_pofile = self.factory.makePOFile(
+            potemplate=external_template)
+        language = external_pofile.language
         self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
@@ -407,7 +407,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
-            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            self.potmsgset.getExternallySuggestedTranslationMessages(
+                language),
             [])
 
         # If there is a suggestion on the external POTMsgSet,
@@ -418,29 +419,32 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            self.potmsgset.getExternallySuggestedTranslationMessages(
+                language),
             [external_suggestion])
 
-        # If there is an imported, non-current translation on the external
+        # If there is a translation for the other side on the external
         # POTMsgSet, it is not returned as the external suggestion.
-        imported_translation = self.factory.makeCurrentTranslationMessage(
+        other_translation = self.factory.makeSuggestion(
             pofile=external_pofile, potmsgset=external_potmsgset)
+        removeSecurityProxy(other_translation).is_current_ubuntu = True
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            self.potmsgset.getExternallySuggestedTranslationMessages(
+                language),
             [external_suggestion])
 
         # A current translation on the external POTMsgSet is not
         # considered an external suggestion.
-        current_translation = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            is_current_upstream=False)
+        current_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            self.potmsgset.getExternallySuggestedTranslationMessages(
+                language),
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):
