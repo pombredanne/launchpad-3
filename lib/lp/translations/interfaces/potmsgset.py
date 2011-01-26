@@ -321,13 +321,6 @@ class IPOTMsgSet(Interface):
             that this change is based on.
         """
 
-    def old_resetCurrentTranslation(pofile, lock_timestamp):
-        """Reset a translation.
-
-        OBSOLETE in Recife.  In the new model, use the new
-        `resetCurrentTranslation` implementation instead.
-        """
-
     def resetCurrentTranslation(pofile, lock_timestamp=None,
                                 share_with_other_side=False):
         """Turn the current translation back into a suggestion.

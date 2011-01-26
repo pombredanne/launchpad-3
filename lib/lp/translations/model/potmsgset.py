@@ -1390,29 +1390,6 @@ class POTMsgSet(SQLBase):
 
         return message
 
-    def old_resetCurrentTranslation(self, pofile, lock_timestamp):
-        """See `POTMsgSet`.
-
-        This message is OBSOLETE in the Recife feature branch.  It's
-        still here only until we replace its one call with the new
-        method.
-        """
-        assert lock_timestamp is not None, "No lock timestamp given."
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
-        if current is None:
-            return
-
-        # Check for translation conflicts and update the required
-        # attributes.
-        self._maybeRaiseTranslationConflict(current, lock_timestamp)
-        current.is_current_ubuntu = False
-        # Converge the current translation only if it is diverged and
-        # not current upstream.
-        if current.is_diverged and not current.is_current_upstream:
-            current.potemplate = None
-        pofile.markChanged()
-
     def resetCurrentTranslation(self, pofile, lock_timestamp=None,
                                 share_with_other_side=False):
         """See `IPOTMsgSet`."""
