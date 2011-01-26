@@ -5,33 +5,21 @@
 
 __metaclass__ = type
 
-from simplejson import dumps
-
-from storm.store import Store
 from testtools.matchers import Equals
 
-from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.bugs.interfaces.bug import IBugSet
 from lp.registry.enum import BugNotificationLevel
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
-    login,
-    login_person,
-    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestBugSubscription(TestCaseWithFactory):
