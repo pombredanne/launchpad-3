@@ -147,7 +147,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn, builds=None):
-	if builds is None:
+        if builds is None:
             builds = self.options.builds
 
         def getPolicy(distro, build):
@@ -281,7 +281,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         """
         results = []
         self.assertEqual(processor.builds, build is not None)
-        handler = UploadHandler.forProcessor(processor, '.', upload_dir, build)
+        handler = UploadHandler.forProcessor(
+            processor, '.', upload_dir, build)
         changes_files = handler.locateChangesFiles()
         for changes_file in changes_files:
             result = handler.processChangesFile(changes_file)
@@ -407,7 +408,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.assertEqual(located_dirs, ['dir1', 'dir2', 'dir3'])
         finally:
             shutil.rmtree(testdir)
-
 
     def _makeUpload(self, testdir):
         """Create a dummy upload for testing the move/remove methods."""
@@ -1838,7 +1838,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
 
-
 class TestUploadHandler(TestUploadProcessorBase):
 
     def testInvalidLeafName(self):
@@ -1850,7 +1849,8 @@ class TestUploadHandler(TestUploadProcessorBase):
             CannotGetBuild, BuildUploadHandler, self.uploadprocessor,
             upload_dir, "bar")
         self.assertIn(
-            'Unable to extract build id from leaf name bar, skipping.', str(e))
+            'Unable to extract build id from leaf name bar, skipping.',
+            str(e))
 
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build

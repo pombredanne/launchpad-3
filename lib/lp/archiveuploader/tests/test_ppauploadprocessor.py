@@ -771,7 +771,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
 
-        self.processUpload(self.build_uploadprocessor, upload_dir, build=build)
+        self.processUpload(
+            self.build_uploadprocessor, upload_dir, build=build)
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)

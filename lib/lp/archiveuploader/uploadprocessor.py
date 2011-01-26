@@ -47,14 +47,12 @@ above, failed being worst).
 
 __metaclass__ = type
 
-import datetime
 import os
 import shutil
 import stat
 import sys
 
 from contrib.glock import GlobalLock
-import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -177,6 +175,7 @@ class UploadHandler:
 
         Aside from that, a standard string sort.
         """
+
         def sourceFirst(filename):
             return (not filename.endswith("_source.changes"), filename)
 
@@ -389,7 +388,8 @@ class UploadHandler:
 
         distro_filename = self.upload_path + ".distro"
         if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.processor.base_fsroot, subdir_name,
+            target_path = os.path.join(self.processor.base_fsroot,
+                                       subdir_name,
                                        os.path.basename(distro_filename))
             logger.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
@@ -436,7 +436,8 @@ class UserUploadHandler(UploadHandler):
                 request = ScriptRequest(properties)
                 error_utility = ErrorReportingUtility()
                 error_utility.raising(info, request)
-                self.processor.log.error('%s (%s)' % (message, request.oopsid))
+                self.processor.log.error(
+                    '%s (%s)' % (message, request.oopsid))
                 some_failed = True
 
         if some_failed:
@@ -652,7 +653,6 @@ class UploadProcessor:
         return sorted_dir_names
 
 
-
 def _getDistributionAndSuite(parts, exc_type):
     """Return an `IDistribution` and a valid suite name for the given path.
 
@@ -788,5 +788,3 @@ def parse_upload_path(relative_path):
             % (archive.displayname, archive.distribution.name))
 
     return (distribution, suite_name, archive)
-
-
