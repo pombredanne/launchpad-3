@@ -100,7 +100,7 @@ def merge_translationtemplateitems(subordinate, representative,
         merge_pofiletranslators(item.potmsgset, representative_template)
 
 
-def filter_clashes(clashing_current, clashing_imported, twin):
+def filter_clashes(clashing_ubuntu, clashing_upstream, twin):
     """Filter clashes for harmless clashes with an identical message.
 
     Takes the three forms of clashes a message can have in a context
@@ -116,11 +116,11 @@ def filter_clashes(clashing_current, clashing_imported, twin):
     This function returns the same tuple but with these "harmless"
     clashes eliminated.
     """
-    if clashing_current == twin:
-        clashing_current = None
-    if clashing_imported == twin:
-        clashing_imported = None
-    return clashing_current, clashing_imported, twin
+    if clashing_ubuntu == twin:
+        clashing_ubuntu = None
+    if clashing_upstream == twin:
+        clashing_upstream = None
+    return clashing_ubuntu, clashing_upstream, twin
 
 
 def sacrifice_flags(message, incumbents=None):
@@ -592,32 +592,32 @@ class MessageSharingMerge(LaunchpadScript):
         environment already has a current message for that language, or
         similar for the message being imported.
 
-        :return: a tuple of a clashing current message or None, a
-            clashing imported message or None, and a message that is
+        :return: a tuple of a clashing ubuntu message or None, a
+            clashing upstream message or None, and a message that is
             identical to the one you passed in, if present.
         """
-        clashing_current = None
+        clashing_ubuntu = None
         if message.is_current_ubuntu:
             found = target_potmsgset.getCurrentTranslation(
                 potemplate=target_potemplate, language=message.language,
                 side=TranslationSide.UBUNTU)
             if found is not None and found.potemplate == target_potemplate:
-                clashing_current = found
+                clashing_ubuntu = found
 
-        clashing_imported = None
+        clashing_upstream = None
         if message.is_current_upstream:
             found = target_potmsgset.getCurrentTranslation(
                 potemplate=target_potemplate, language=message.language,
                 side=TranslationSide.UPSTREAM)
             if found is not None and found.potemplate == target_potemplate:
-                clashing_imported = found
+                clashing_upstream = found
 
         twin = message.findIdenticalMessage(
             target_potmsgset, target_potemplate)
 
-        # Clashes with a twin message not real clashes: in such cases the
+        # Clashes with a twin message are not real clashes: in such cases the
         # message can be merged into the twin without problems.
-        return filter_clashes(clashing_current, clashing_imported, twin)
+        return filter_clashes(clashing_ubuntu, clashing_upstream, twin)
 
     def _saveByDiverging(self, message, target_potmsgset, source_potmsgset):
         """Avoid a TranslationMessage clash during POTMsgSet merge.
