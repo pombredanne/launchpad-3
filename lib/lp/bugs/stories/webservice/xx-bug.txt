@@ -1202,7 +1202,7 @@ renamed bug tracker.
   name: u'bob'
   registrant_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_tracker'
-  self_link: u'http://.../bugs/bugtrackers/bob'w
+  self_link: u'http://.../bugs/bugtrackers/bob'
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
@@ -1837,6 +1837,7 @@ The collection of all CVEs is available at the top level.
     status: u'Candidate'
     title: u'CVE-2005-2737 (Candidate)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2005-2737'
+    web_link: u'http://launchpad.dev/bugs/cve/2005-2737'
     ---
     ...
     self_link: u'http://.../bugs/cve/2005-2736'
@@ -1874,6 +1875,7 @@ And for every bug we can look at the CVEs linked to it.
     status: u'Entry'
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
+    web_link: u'http://launchpad.dev/bugs/cve/1999-8979'
     ---
 
 For every CVE we can also look at the bugs linked to it.

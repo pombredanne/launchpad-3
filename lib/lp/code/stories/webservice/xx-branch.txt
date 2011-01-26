@@ -142,6 +142,7 @@ time goes on.
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
 
 
