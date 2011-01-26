@@ -338,10 +338,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
-            singular=self.potmsgset.singular_text)
-        external_potmsgset.setSequence(external_template, 1)
-        external_pofile = self.factory.makePOFile('sr', external_template)
-        serbian = external_pofile.language
+            singular=self.potmsgset.singular_text,
+            sequence=1)
+        external_pofile = self.factory.makePOFile(
+            potemplate=external_template)
+        language = external_pofile.language
         self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
@@ -349,7 +350,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
-            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
 
         # If there are only suggestions on the external POTMsgSet,
@@ -360,7 +361,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
 
         # If there is an imported translation on the external POTMsgSet,
@@ -372,7 +373,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            self.potmsgset.getExternallyUsedTranslationMessages(language),
             [imported_translation])
 
         # If there is a current translation on the external POTMsgSet,
@@ -384,7 +385,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         transaction.commit()
 
         self.assertEquals(
-            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            self.potmsgset.getExternallyUsedTranslationMessages(language),
             [imported_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
