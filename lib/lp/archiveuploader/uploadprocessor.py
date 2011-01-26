@@ -150,6 +150,7 @@ class UploadHandler:
             # directories are named after job ids.
             return BuildUploadHandler(processor, fsroot, upload, build)
         else:
+            assert build is None
             return UserUploadHandler(processor, fsroot, upload)
 
     def locateChangesFiles(self):
