@@ -34,14 +34,15 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
 
     def test_text(self):
         # Test the XHTML representation of a text field.
-        text = u'\N{SNOWMAN} snowman@example.com'
+        text = u'\N{SNOWMAN} snowman@example.com bug 1'
         # We need something that has an IPersonChoice, a project will do.
         product = self.factory.makeProduct()
         field = IProduct['description']
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The representation is UTF-8 encoded with hidden email.
+        # The representation is linkified html with hidden email.
         self.assertEqual(
-            '<p>\xe2\x98\x83 &lt;email address hidden&gt;</p>',
+            u'<p>\N{SNOWMAN} &lt;email address hidden&gt; '
+            '<a href="/bugs/1">bug 1</a></p>',
             renderer(text))
