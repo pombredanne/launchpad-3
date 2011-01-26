@@ -660,13 +660,15 @@ class BuildUploadHandler(UploadHandler):
             error_utility.raising(info, request)
             logger.error('%s (%s)' % (message, request.oopsid))
             result = UploadStatusEnum.FAILED
-        if not (result == UploadStatusEnum.ACCEPTED and
-                self.build.verifySuccessfulUpload() and
-                self.build.status == BuildStatus.FULLYBUILT):
+        if (result != UploadStatusEnum.ACCEPTED or
+            not self.build.verifySuccessfulUpload()):
             self.build.status = BuildStatus.FAILEDTOUPLOAD
+        if self.build.status != BuildStatus.FULLYBUILT:
             self.build.notify(extra_info="Uploading build %s failed." %
                               self.upload)
             self.build.storeUploadLog(logger.getLogBuffer())
+        else:
+            self.build.notify()
         self.processor.ztm.commit()
         self.moveProcessedUpload(result, logger)
 

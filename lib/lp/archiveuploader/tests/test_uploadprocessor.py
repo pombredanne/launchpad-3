@@ -1950,10 +1950,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
 
-    def testSourcePackageRecipeBuild(self):
-        # Properly uploaded source packages should result in the
-        # build status changing to FULLYBUILT.
-
+    def doSuccessRecipeBuild(self):
         # Upload a source package
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
@@ -1981,12 +1978,23 @@ class TestUploadHandler(TestUploadProcessorBase):
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
+        return build
 
+    def testSourcePackageRecipeBuild(self):
+        # Properly uploaded source packages should result in the
+        # build status changing to FULLYBUILT.
+        build = self.doSuccessRecipeBuild()
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.duration)
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
+
+    def testSourcePackageRecipeBuild_success_mail(self):
+        self.doSuccessRecipeBuild()
+        (mail,) = pop_notifications()
+        subject = mail['Subject'].replace('\n\t', ' ')
+        self.assertIn('Successfully built', subject)
 
     def testSourcePackageRecipeBuild_fail(self):
         # A source package recipe build will fail if no files are present.

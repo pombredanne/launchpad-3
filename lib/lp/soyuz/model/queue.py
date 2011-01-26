@@ -192,8 +192,22 @@ class PackageUpload(SQLBase):
     # PackageUploadSource objects which are related.
     sources = SQLMultipleJoin('PackageUploadSource',
                               joinColumn='packageupload')
+    # Does not include source builds.
     builds = SQLMultipleJoin('PackageUploadBuild',
                              joinColumn='packageupload')
+
+    def getSourceBuild(self):
+        #avoid circular import
+        from lp.code.model.sourcepackagerecipebuild import (
+            SourcePackageRecipeBuild)
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        return Store.of(self).find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id ==
+                SourcePackageRelease.source_package_recipe_build_id,
+            SourcePackageRelease.id ==
+            PackageUploadSource.sourcepackagereleaseID,
+            PackageUploadSource.packageupload == self.id).one()
 
     # Also the custom files associated with the build.
     customfiles = SQLMultipleJoin('PackageUploadCustom',
@@ -487,6 +501,10 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    @cachedproperty
+    def from_build(self):
+        return bool(self.builds) or self.getSourceBuild()
 
     def isAutoSyncUpload(self, changed_by_email):
         """See `IPackageUpload`."""
@@ -1063,17 +1081,17 @@ class PackageUpload(SQLBase):
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False,
-               allow_unsigned=None):
+               allow_unsigned=None, notify_success=True):
         """See `IPackageUpload`."""
 
         self.logger = logger
 
         # If this is a binary or mixed upload, we don't send *any* emails
         # provided it's not a rejection or a security upload:
-        if(self.contains_build and
+        if(self.from_build and
            self.status != PackageUploadStatus.REJECTED and
            self.pocket != PackagePublishingPocket.SECURITY):
-            debug(self.logger, "Not sending email, upload contains binaries.")
+            debug(self.logger, "Not sending email, upload is from a build.")
             return
 
         # XXX julian 2007-05-11:
