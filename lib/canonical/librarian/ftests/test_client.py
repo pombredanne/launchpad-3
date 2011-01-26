@@ -102,7 +102,11 @@ class LibrarianClientTestCase(unittest.TestCase):
         client = LibrarianClient()
         ISlaveStore(LibraryFileAlias).close()
         with SlaveDatabasePolicy():
-            client.addFile('sample.txt', 6, StringIO('sample'), 'text/plain')
+            alias_id = client.addFile(
+                'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        f = client.getFileByAlias(alias_id)
+        self.assertEqual(f.read(), 'sample')
 
     def test__getURLForDownload(self):
         # This protected method is used by getFileByAlias. It is supposed to
