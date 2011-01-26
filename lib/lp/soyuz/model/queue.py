@@ -1081,7 +1081,7 @@ class PackageUpload(SQLBase):
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False,
-               allow_unsigned=None, notify_success=True):
+               allow_unsigned=None):
         """See `IPackageUpload`."""
 
         self.logger = logger
