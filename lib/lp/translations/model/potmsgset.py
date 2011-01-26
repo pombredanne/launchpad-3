@@ -36,7 +36,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
-    UTC_NOW,
     )
 from canonical.database.sqlbase import (
     cursor,
@@ -47,8 +46,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.launchpad.readonly import is_read_only
-from lp.app.errors import UnexpectedFormData
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
@@ -83,7 +80,6 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
 from lp.translations.utilities.validate import (
-    GettextValidationError,
     validate_translation,
     )
 
