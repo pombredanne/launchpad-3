@@ -166,13 +166,14 @@ class TranslatedProductMixin(TranslatableProductMixin):
 
     def _makeTranslationMessage(self, pofile, potmsgset, text, diverged):
         """Set a translation for given message in given translation."""
-        message = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, translations=[text],
-            translator=pofile.owner)
         if diverged:
-            message.potemplate = pofile.potemplate
+            message = self.factory.makeDivergedTranslationMessage(
+                pofile=pofile, potmsgset=potmsgset, translations=[text],
+                translator=pofile.owner)
         else:
-            message.potemplate = None
+            message = self.factory.makeCurrentTranslationMessage(
+                pofile=pofile, potmsgset=potmsgset, translations=[text],
+                translator=pofile.owner)
 
         return message
 
