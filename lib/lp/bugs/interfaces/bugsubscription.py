@@ -59,7 +59,10 @@ class IBugSubscription(Interface):
             description=_(
                 "The volume and type of bug notifications "
                 "this subscription will generate."),
-            ))
+            ),
+        # We want this field to be exported in the devel version of the
+        # API only.
+        ('devel', dict(exported=True)), exported=False)
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
