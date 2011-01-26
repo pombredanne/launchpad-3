@@ -1,4 +1,4 @@
-<span tal:attributes="id view/id">
+<span tal:attributes="id view/content_box_id">
     <span class="yui3-activator-data-box">
     <tal:attribute replace="structure view/default_html"/>
     </span>
@@ -14,13 +14,13 @@ LPS.use('lp.app.picker', function(Y) {
         return;
     }
 
-    Y.lp.app.picker.addPickerPatcher(
-        ${view/vocabulary_name},
-        ${view/resource_uri},
+    Y.on('load', function(e) {
+      Y.lp.app.picker.addPickerPatcher(
+        ${view/json_vocabulary_name},
+        ${view/json_resource_uri},
         ${view/json_attribute},
-        ${view/json_id},
-        ${view/show_remove_button},
-        ${view/show_assign_me_button},
+        ${view/json_content_box_id},
         ${view/config});
+      }, window);
 });
 "/>

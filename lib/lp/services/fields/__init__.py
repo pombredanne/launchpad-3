@@ -105,6 +105,7 @@ from canonical.launchpad.validators.name import (
     name_validator,
     valid_name,
     )
+from lp.bugs.errors import InvalidDuplicateValue
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -344,6 +345,8 @@ class BugField(Reference):
     schema = property(_get_schema, _set_schema)
 
 
+# XXX: Tim Penhey 2011-01-21 bug 706099
+# Should have bug specific fields in lp.services.fields
 class DuplicateBug(BugField):
     """A bug that the context is a duplicate of."""
 
@@ -358,10 +361,10 @@ class DuplicateBug(BugField):
         current_bug = self.context
         dup_target = value
         if current_bug == dup_target:
-            raise LaunchpadValidationError(_(dedent("""
+            raise InvalidDuplicateValue(_(dedent("""
                 You can't mark a bug as a duplicate of itself.""")))
         elif dup_target.duplicateof is not None:
-            raise LaunchpadValidationError(_(dedent("""
+            raise InvalidDuplicateValue(_(dedent("""
                 Bug ${dup} is already a duplicate of bug ${orig}. You
                 can only mark a bug report as duplicate of one that
                 isn't a duplicate itself.

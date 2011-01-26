@@ -1063,7 +1063,8 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         entry.getGuessedPOFile()
 
-        credits.getCurrentTranslationMessage(template, self.language)
+        credits.getCurrentTranslation(
+            template, self.language, template.translation_side)
         self.assertNotEqual(None, credits)
 
 
