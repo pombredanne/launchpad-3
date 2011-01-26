@@ -664,9 +664,9 @@ class BuildUploadHandler(UploadHandler):
             not self.build.verifySuccessfulUpload()):
             self.build.status = BuildStatus.FAILEDTOUPLOAD
         if self.build.status != BuildStatus.FULLYBUILT:
+            self.build.storeUploadLog(logger.getLogBuffer())
             self.build.notify(extra_info="Uploading build %s failed." %
                               self.upload)
-            self.build.storeUploadLog(logger.getLogBuffer())
         else:
             self.build.notify()
         self.processor.ztm.commit()

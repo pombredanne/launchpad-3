@@ -1991,12 +1991,14 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_success_mail(self):
+        # When a source package recipe build succeeds, it sends a build-style
+        # email, not user-upload-style one.
         self.doSuccessRecipeBuild()
         (mail,) = pop_notifications()
         subject = mail['Subject'].replace('\n\t', ' ')
         self.assertIn('Successfully built', subject)
 
-    def testSourcePackageRecipeBuild_fail(self):
+    def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.
 
         # Upload a source package
@@ -2020,10 +2022,22 @@ class TestUploadHandler(TestUploadProcessorBase):
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
+        return build
+
+    def testSourcePackageRecipeBuild_fail(self):
+        build = self.doFailureRecipeBuild()
         self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.duration)
         self.assertIsNot(None, build.upload_log)
+
+    def testSourcePackageRecipeBuild_fail_mail(self):
+        self.doFailureRecipeBuild()
+        (mail,) = pop_notifications()
+        subject = mail['Subject'].replace('\n\t', ' ')
+        self.assertIn('Failed to upload', subject)
+        body = mail.get_payload(decode=True)
+        self.assertIn('Upload Log: http', body)
 
     def testBuildWithInvalidStatus(self):
         # Builds with an invalid (non-UPLOADING) status should trigger
