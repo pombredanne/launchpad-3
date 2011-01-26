@@ -770,7 +770,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
-
         self.processUpload(
             self.build_uploadprocessor, upload_dir, build=build)
         queue_items = self.breezy.getQueueItems(

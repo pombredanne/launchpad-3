@@ -133,9 +133,126 @@ class PPAUploadPathError(Exception):
     """Exception when parsing a PPA upload path."""
 
 
+class UploadProcessor:
+    """Responsible for processing uploads. See module docstring."""
+
+    def __init__(self, base_fsroot, dry_run, no_mails, builds, keep,
+                 policy_for_distro, ztm, log):
+        """Create a new upload processor.
+
+        :param base_fsroot: Root path for queue to use
+        :param dry_run: Run but don't commit changes to database
+        :param no_mails: Don't send out any emails
+        :param builds: Interpret leaf names as build ids
+        :param keep: Leave the files in place, don't move them away
+        :param policy_for_distro: callback to obtain Policy object for a
+            distribution
+        :param ztm: Database transaction to use
+        :param log: Logger to use for reporting
+        """
+        self.base_fsroot = base_fsroot
+        self.dry_run = dry_run
+        self.keep = keep
+        self.last_processed_upload = None
+        self.log = log
+        self.no_mails = no_mails
+        self.builds = builds
+        self._getPolicyForDistro = policy_for_distro
+        self.ztm = ztm
+
+    def processUploadQueue(self, leaf_name=None):
+        """Search for uploads, and process them.
+
+        Uploads are searched for in the 'incoming' directory inside the
+        base_fsroot.
+
+        This method also creates the 'incoming', 'accepted', 'rejected', and
+        'failed' directories inside the base_fsroot if they don't yet exist.
+        """
+        try:
+            self.log.debug("Beginning processing")
+
+            for subdir in ["incoming", "accepted", "rejected", "failed"]:
+                full_subdir = os.path.join(self.base_fsroot, subdir)
+                if not os.path.exists(full_subdir):
+                    self.log.debug("Creating directory %s" % full_subdir)
+                    os.mkdir(full_subdir)
+
+            fsroot = os.path.join(self.base_fsroot, "incoming")
+            uploads_to_process = self.locateDirectories(fsroot)
+            self.log.debug("Checked in %s, found %s"
+                           % (fsroot, uploads_to_process))
+            for upload in uploads_to_process:
+                self.log.debug("Considering upload %s" % upload)
+                if leaf_name is not None and upload != leaf_name:
+                    self.log.debug("Skipping %s -- does not match %s" % (
+                        upload, leaf_name))
+                    continue
+                try:
+                    handler = UploadHandler.forProcessor(self, fsroot, upload)
+                except CannotGetBuild, e:
+                    self.log.warn(e)
+                else:
+                    handler.process()
+        finally:
+            self.log.debug("Rolling back any remaining transactions.")
+            self.ztm.abort()
+
+    def locateDirectories(self, fsroot):
+        """Return a list of upload directories in a given queue.
+
+        This method operates on the queue atomically, i.e. it suppresses
+        changes in the queue directory, like new uploads, by acquiring
+        the shared upload_queue lockfile while the directory are listed.
+
+        :param fsroot: path to a 'queue' directory to be inspected.
+
+        :return: a list of upload directories found in the queue
+            alphabetically sorted.
+        """
+        # Protecting listdir by a lock ensures that we only get completely
+        # finished directories listed. See lp.poppy.hooks for the other
+        # locking place.
+        lockfile_path = os.path.join(fsroot, ".lock")
+        fsroot_lock = GlobalLock(lockfile_path)
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+
+        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
+        # changed by its owner. Since we can't predict which process will
+        # create it in production systems we simply ignore errors when trying
+        # to grant the right permission. At least, one of the process will
+        # be able to do so.
+        try:
+            os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        except OSError, err:
+            self.log.debug('Could not fix the lockfile permission: %s' % err)
+
+        try:
+            fsroot_lock.acquire(blocking=True)
+            dir_names = os.listdir(fsroot)
+        finally:
+            # Skip lockfile deletion, see similar code in lp.poppy.hooks.
+            fsroot_lock.release(skip_delete=True)
+
+        sorted_dir_names = sorted(
+            dir_name
+            for dir_name in dir_names
+            if os.path.isdir(os.path.join(fsroot, dir_name)))
+
+        return sorted_dir_names
+
+
 class UploadHandler:
+    """Handler for processing a single upload."""
 
     def __init__(self, processor, fsroot, upload):
+        """Constructor.
+
+        :param processor: The `UploadProcessor` that requested processing the
+            upload.
+        :param fsroot: Path to the directory containing the upload directory
+        :param upload: Name of the directory containing the upload.
+        """
         self.processor = processor
         self.fsroot = fsroot
         self.upload = upload
@@ -143,6 +260,14 @@ class UploadHandler:
 
     @staticmethod
     def forProcessor(processor, fsroot, upload, build=None):
+        """Instantiate an UploadHandler subclass for a given upload.
+
+        :param processor: The `UploadProcessor` that requested processing the
+            upload.
+        :param fsroot: Path to the directory containing the upload directory
+        :param upload: Name of the directory containing the upload.
+        :param build: Optional; the build that produced the upload.
+        """
         if processor.builds:
             # Upload directories contain build results,
             # directories are named after job ids.
@@ -152,7 +277,7 @@ class UploadHandler:
             return UserUploadHandler(processor, fsroot, upload)
 
     def locateChangesFiles(self):
-        """Locate .changes files in the given upload directory.
+        """Locate .changes files in the upload directory.
 
         Return .changes files sorted with *_source.changes first. This
         is important to us, as in an upload containing several changes files,
@@ -168,18 +293,6 @@ class UploadHandler:
                     changes_files.append(
                         os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
-
-    @staticmethod
-    def orderFilenames(fnames):
-        """Order filenames, sorting *_source.changes before others.
-
-        Aside from that, a standard string sort.
-        """
-
-        def sourceFirst(filename):
-            return (not filename.endswith("_source.changes"), filename)
-
-        return sorted(fnames, key=sourceFirst)
 
     def processChangesFile(self, changes_file, logger=None):
         """Process a single changes file.
@@ -197,6 +310,10 @@ class UploadHandler:
 
         Returns a value from UploadStatusEnum, or re-raises an exception
         from NascentUpload.
+
+        :param changes_file: filename of the changes file to process.
+        :param logger: logger to use for processing.
+        :return: an `UploadStatusEnum` value
         """
         if logger is None:
             logger = self.processor.log
@@ -342,19 +459,13 @@ class UploadHandler:
 
         return result
 
-    def moveProcessedUpload(self, destination, logger):
-        """Move or remove the upload depending on the status of the upload.
-        """
-        if destination == "accepted":
-            self.removeUpload(logger)
-        else:
-            self.moveUpload(destination, logger)
-
     def removeUpload(self, logger):
         """Remove an upload that has succesfully been processed.
 
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
+
+        :param logger: The logger to use for logging results.
         """
         if self.processor.keep or self.processor.dry_run:
             logger.debug("Keeping contents untouched")
@@ -368,11 +479,25 @@ class UploadHandler:
             logger.debug("Removing distro file %s", distro_filename)
             os.remove(distro_filename)
 
+    def moveProcessedUpload(self, destination, logger):
+        """Move or remove the upload depending on the status of the upload.
+
+        :param destination: An `UploadStatusEnum` value.
+        :param logger: The logger to use for logging results.
+        """
+        if destination == "accepted":
+            self.removeUpload(logger)
+        else:
+            self.moveUpload(destination, logger)
+
     def moveUpload(self, subdir_name, logger):
         """Move the upload to the named subdir of the root, eg 'accepted'.
 
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
+
+        :param subdir_name: Name of the subdirectory to move to.
+        :param logger: The logger to use for logging results.
         """
         if self.processor.keep or self.processor.dry_run:
             logger.debug("Keeping contents untouched")
@@ -395,6 +520,18 @@ class UploadHandler:
                                                             target_path))
             shutil.move(distro_filename, target_path)
 
+    @staticmethod
+    def orderFilenames(fnames):
+        """Order filenames, sorting *_source.changes before others.
+
+        Aside from that, a standard string sort.
+        """
+
+        def sourceFirst(filename):
+            return (not filename.endswith("_source.changes"), filename)
+
+        return sorted(fnames, key=sourceFirst)
+
 
 class UserUploadHandler(UploadHandler):
 
@@ -405,7 +542,6 @@ class UserUploadHandler(UploadHandler):
         of the changes files. If there are no changes files, the result
         is 'failed', otherwise it is the worst of the results from the
         individual changes files, in order 'failed', 'rejected', 'accepted'.
-
         """
         changes_files = self.locateChangesFiles()
 
@@ -470,6 +606,13 @@ class CannotGetBuild(Exception):
 class BuildUploadHandler(UploadHandler):
 
     def __init__(self, processor, fsroot, upload, build=None):
+        """Constructor.
+
+        See `UploadHandler`.
+        :build: Optional build that produced this upload.  If not supplied,
+            will be retrieved using the id in the upload.
+        :raises: CannotGetBuild if the build could not be retrieved.
+        """
         super(BuildUploadHandler, self).__init__(processor, fsroot, upload)
         self.build = build
         if self.build is None:
@@ -529,10 +672,6 @@ class BuildUploadHandler(UploadHandler):
             error_utility.raising(info, request)
             logger.error('%s (%s)' % (message, request.oopsid))
             result = UploadStatusEnum.FAILED
-        destination = {
-            UploadStatusEnum.FAILED: "failed",
-            UploadStatusEnum.REJECTED: "rejected",
-            UploadStatusEnum.ACCEPTED: "accepted"}[result]
         if not (result == UploadStatusEnum.ACCEPTED and
                 self.build.verifySuccessfulUpload() and
                 self.build.status == BuildStatus.FULLYBUILT):
@@ -541,116 +680,7 @@ class BuildUploadHandler(UploadHandler):
                               self.upload)
             self.build.storeUploadLog(logger.getLogBuffer())
         self.processor.ztm.commit()
-        self.moveProcessedUpload(destination, logger)
-
-
-class UploadProcessor:
-    """Responsible for processing uploads. See module docstring."""
-
-    def __init__(self, base_fsroot, dry_run, no_mails, builds, keep,
-                 policy_for_distro, ztm, log):
-        """Create a new upload processor.
-
-        :param base_fsroot: Root path for queue to use
-        :param dry_run: Run but don't commit changes to database
-        :param no_mails: Don't send out any emails
-        :param builds: Interpret leaf names as build ids
-        :param keep: Leave the files in place, don't move them away
-        :param policy_for_distro: callback to obtain Policy object for a
-            distribution
-        :param ztm: Database transaction to use
-        :param log: Logger to use for reporting
-        """
-        self.base_fsroot = base_fsroot
-        self.dry_run = dry_run
-        self.keep = keep
-        self.last_processed_upload = None
-        self.log = log
-        self.no_mails = no_mails
-        self.builds = builds
-        self._getPolicyForDistro = policy_for_distro
-        self.ztm = ztm
-
-    def processUploadQueue(self, leaf_name=None):
-        """Search for uploads, and process them.
-
-        Uploads are searched for in the 'incoming' directory inside the
-        base_fsroot.
-
-        This method also creates the 'incoming', 'accepted', 'rejected', and
-        'failed' directories inside the base_fsroot if they don't yet exist.
-        """
-        try:
-            self.log.debug("Beginning processing")
-
-            for subdir in ["incoming", "accepted", "rejected", "failed"]:
-                full_subdir = os.path.join(self.base_fsroot, subdir)
-                if not os.path.exists(full_subdir):
-                    self.log.debug("Creating directory %s" % full_subdir)
-                    os.mkdir(full_subdir)
-
-            fsroot = os.path.join(self.base_fsroot, "incoming")
-            uploads_to_process = self.locateDirectories(fsroot)
-            self.log.debug("Checked in %s, found %s"
-                           % (fsroot, uploads_to_process))
-            for upload in uploads_to_process:
-                self.log.debug("Considering upload %s" % upload)
-                if leaf_name is not None and upload != leaf_name:
-                    self.log.debug("Skipping %s -- does not match %s" % (
-                        upload, leaf_name))
-                    continue
-                try:
-                    handler = UploadHandler.forProcessor(self, fsroot, upload)
-                except CannotGetBuild, e:
-                    self.log.warn(e)
-                else:
-                    handler.process()
-        finally:
-            self.log.debug("Rolling back any remaining transactions.")
-            self.ztm.abort()
-
-    def locateDirectories(self, fsroot):
-        """Return a list of upload directories in a given queue.
-
-        This method operates on the queue atomically, i.e. it suppresses
-        changes in the queue directory, like new uploads, by acquiring
-        the shared upload_queue lockfile while the directory are listed.
-
-        :param fsroot: path to a 'queue' directory to be inspected.
-
-        :return: a list of upload directories found in the queue
-            alphabetically sorted.
-        """
-        # Protecting listdir by a lock ensures that we only get completely
-        # finished directories listed. See lp.poppy.hooks for the other
-        # locking place.
-        lockfile_path = os.path.join(fsroot, ".lock")
-        fsroot_lock = GlobalLock(lockfile_path)
-        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
-
-        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
-        # changed by its owner. Since we can't predict which process will
-        # create it in production systems we simply ignore errors when trying
-        # to grant the right permission. At least, one of the process will
-        # be able to do so.
-        try:
-            os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError, err:
-            self.log.debug('Could not fix the lockfile permission: %s' % err)
-
-        try:
-            fsroot_lock.acquire(blocking=True)
-            dir_names = os.listdir(fsroot)
-        finally:
-            # Skip lockfile deletion, see similar code in lp.poppy.hooks.
-            fsroot_lock.release(skip_delete=True)
-
-        sorted_dir_names = sorted(
-            dir_name
-            for dir_name in dir_names
-            if os.path.isdir(os.path.join(fsroot, dir_name)))
-
-        return sorted_dir_names
+        self.moveProcessedUpload(result, logger)
 
 
 def _getDistributionAndSuite(parts, exc_type):
