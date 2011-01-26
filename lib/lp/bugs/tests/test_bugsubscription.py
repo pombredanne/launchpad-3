@@ -99,36 +99,31 @@ class TestBugSubscription(TestCaseWithFactory):
     def test_permission_check_query_count_for_admin_members(self):
         # Checking permissions shouldn't cost anything.
         team = self.factory.makeTeam()
-        salgado = getUtility(IPersonSet).getByName('salgado')
         with person_logged_in(team.teamowner):
             team.addMember(
-                salgado, team.teamowner,
+                self.subscriber, team.teamowner,
                 status=TeamMembershipStatus.ADMIN)
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        self.subscribeAndPatchWithWebservice(team, salgado)
+        self.subscribeAndPatchWithWebservice(team, self.subscriber)
         queries_with_one_admin = collector.count
         # Now we create an entirely new team and add a bunch of
         # administrators, including Salgado. We add Salgado last to
         # check that there's not one query per administrator.
         login(ADMIN_EMAIL)
         team_2 = self.factory.makeTeam()
-        store = Store.of(team_2)
         for i in range(10):
             person = self.factory.makePerson()
-            # We need to flush here to make sure that addMember()
-            # doesn't explode due to the new Person not being associated
-            # with a Store.
             team_2.addMember(
                 person, team_2.teamowner,
                 status=TeamMembershipStatus.ADMIN)
         team_2 = getUtility(IPersonSet).getByName(team_2.name)
-        salgado = getUtility(IPersonSet).getByName('salgado')
+        new_admin = self.factory.makePerson()
         team_2.addMember(
-            salgado, team_2.teamowner,
+            new_admin, team_2.teamowner,
             status=TeamMembershipStatus.ADMIN)
-        self.subscribeAndPatchWithWebservice(team_2, salgado)
+        self.subscribeAndPatchWithWebservice(team_2, new_admin)
         self.assertThat(
             collector, HasQueryCount(Equals(queries_with_one_admin + 1)))
 
