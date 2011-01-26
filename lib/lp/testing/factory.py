@@ -2628,30 +2628,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
-    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
-                                     translator=None, suggestion=False,
-                                     reviewer=None, translations=None,
-                                     date_updated=None,
-                                     is_current_upstream=False):
-        translation_message = self.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, translator=translator,
-            suggestion=suggestion, reviewer=reviewer,
-            is_current_upstream=is_current_upstream,
-            translations=translations, date_updated=date_updated,
-            force_shared=True)
-        return translation_message
-
     def makeCurrentTranslationMessage(self, pofile=None, potmsgset=None,
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None):
         """Create a `TranslationMessage` and make it current.
-
-        This is similar to `makeTranslationMessage`, except:
-         * It doesn't create suggestions.
-         * It doesn't rely on the obsolescent updateTranslation.
-         * It activates the message on the correct translation side.
 
         By default the message will only be current on the side (Ubuntu
         or upstream) that `pofile` is on.
