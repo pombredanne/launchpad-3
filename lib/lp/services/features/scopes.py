@@ -71,9 +71,6 @@ class PageScope(BaseScope):
 
     pattern = r'pageid:'
 
-    def __init__(self, request):
-        self.request = request
-
     def lookup(self, scope_name):
         """Is the given scope match the current pageid?"""
         pageid_scope = scope_name[len('pageid:'):]
@@ -112,9 +109,6 @@ class TeamScope(BaseScope):
 
     pattern = r'team:'
 
-    def __init__(self, request):
-        self.request = request
-
     def lookup(self, scope_name):
         """Is the given scope a team membership?
 
@@ -137,9 +131,6 @@ class ServerScope(BaseScope):
     """
 
     pattern = r'server\.'
-
-    def __init__(self, request):
-        self.request = request
 
     def lookup(self, scope_name):
         """Match the current server as a scope."""

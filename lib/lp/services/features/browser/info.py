@@ -10,7 +10,6 @@ __all__ = [
 
 
 from collections import namedtuple
-from textwrap import dedent
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.features.flags import (
@@ -21,22 +20,12 @@ from lp.services.features.scopes import (
     HANDLERS,
     undocumented_scopes,
     )
+from lp.services.utils import docstring_dedent
 
 
 # Named tuples to use when passing flag and scope data to the template.
 Flag = namedtuple('Flag', ('name', 'domain', 'description', 'default'))
 Scope = namedtuple('Scope', ('regex', 'description'))
-
-
-def docstring_dedent(s):
-    """Remove leading indentation from a doc string.
-
-    Since the first line doesn't have indentation, split it off, dedent, and
-    then reassemble.
-    """
-    # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
-    return (first + '\n' + dedent(rest)).strip()
 
 
 class FeatureInfoView(LaunchpadView):

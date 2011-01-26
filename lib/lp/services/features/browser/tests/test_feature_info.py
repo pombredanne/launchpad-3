@@ -124,18 +124,19 @@ class TestUndocumentedFeatureFlags(TestCase):
     def setUp(self):
         super(TestUndocumentedFeatureFlags, self).setUp()
         # Stash away any already encountered undocumented flags.
-        self.saved_undocumented = undocumented_flags.copy()
-        self.saved_documented = documented_flags.copy()
+        saved_undocumented = undocumented_flags.copy()
+        saved_documented = documented_flags.copy()
         undocumented_flags.clear()
         documented_flags.clear()
 
-    def tearDown(self):
-        super(TestUndocumentedFeatureFlags, self).tearDown()
-        # Put the saved undocumented flags back.
-        undocumented_flags.clear()
-        documented_flags.clear()
-        undocumented_flags.update(self.saved_undocumented)
-        documented_flags.update(self.saved_documented)
+        def clean_up_undocumented_flags():
+            # Put the saved undocumented flags back.
+            undocumented_flags.clear()
+            documented_flags.clear()
+            undocumented_flags.update(saved_undocumented)
+            documented_flags.update(saved_documented)
+
+        self.addCleanup(clean_up_undocumented_flags)
 
     def test_reading_undocumented_feature_flags(self):
         """Reading undocumented feature flags records them as undocumented."""

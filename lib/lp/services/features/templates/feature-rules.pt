@@ -19,7 +19,7 @@
         <tal:diff replace="structure view/diff"/>
       </div>
       For more information about the available feature flags and scopes see
-      the <a href="+feature-info">feature flag info page</a>.
+      the <a href="+feature-info">feature flag info</a>.
     </div>
   </div>
 </div>
