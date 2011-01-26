@@ -76,7 +76,6 @@ from lp.translations.interfaces.pofile import (
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import TranslationCreditsType
-    )
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,
