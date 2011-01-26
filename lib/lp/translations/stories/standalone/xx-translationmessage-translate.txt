@@ -582,7 +582,8 @@ packaged translation anymore.
 
 XXX: 2011-01-25 henninge, bug=707825: This should either display nothing or
 a string like "(no translation)". This documents the current behavior although
-it would be different if the translation had been properly reset.
+it would be different if the translation had been properly reset. Also the
+wording here ("packaged") needs to be adapted.
 
     >>> print extract_text(packaged)
     In upstream:
