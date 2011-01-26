@@ -110,7 +110,7 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translatoins.utilities.sanitize import MixedNewlineMarkersError
+from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
