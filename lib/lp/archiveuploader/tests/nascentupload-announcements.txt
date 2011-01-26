@@ -318,7 +318,7 @@ override sync policy to allow binary uploads):
   >>> bar_src.logger = FakeLogger()
   >>> result = bar_src.do_accept()
   DEBUG Creating queue entry
-  DEBUG Not sending email, upload contains binaries.
+  DEBUG Not sending email; upload is from a build.
 
 We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published

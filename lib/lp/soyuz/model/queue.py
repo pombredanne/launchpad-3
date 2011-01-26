@@ -1091,7 +1091,7 @@ class PackageUpload(SQLBase):
         if(self.from_build and
            self.status != PackageUploadStatus.REJECTED and
            self.pocket != PackagePublishingPocket.SECURITY):
-            debug(self.logger, "Not sending email, upload is from a build.")
+            debug(self.logger, "Not sending email; upload is from a build.")
             return
 
         # XXX julian 2007-05-11:
