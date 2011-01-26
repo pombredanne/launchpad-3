@@ -17,10 +17,12 @@ from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.bugs.interfaces.bug import IBugSet
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
+    launchpadlib_for,
     login,
     logout,
     person_logged_in,
@@ -105,39 +107,50 @@ class TestBugSubscription(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        self.subscribeAndPatchWithWebservice(team)
+        self.subscribeAndPatchWithWebservice(team, salgado)
         queries_with_one_admin = collector.count
+        self.assertThat(
+            collector, HasQueryCount(Equals(1)))
         # Now we create an entirely new team and add a bunch of
         # administrators, including Salgado. We add Salgado last to
         # check that there's not one query per administrator.
         login(ADMIN_EMAIL)
         team_2 = self.factory.makeTeam()
+        store = Store.of(team_2)
         for i in range(10):
             person = self.factory.makePerson()
+            # We need to flush here to make sure that addMember()
+            # doesn't explode due to the new Person not being associated
+            # with a Store.
             team_2.addMember(
                 person, team_2.teamowner,
                 status=TeamMembershipStatus.ADMIN)
+        team_2 = getUtility(IPersonSet).getByName(team_2.name)
+        salgado = getUtility(IPersonSet).getByName('salgado')
         team_2.addMember(
             salgado, team_2.teamowner,
             status=TeamMembershipStatus.ADMIN)
-        logout()
-        self.subscribeAndPatchWithWebservice(team_2)
+        self.subscribeAndPatchWithWebservice(team_2, salgado)
         self.assertThat(
-            collector, HasQueryCount(Equals(queries_with_one_admin)))
+            collector, HasQueryCount(Equals(queries_with_one_admin + 1)))
 
-    def subscribeAndPatchWithWebservice(self, person_to_subscribe):
-        # We cache the person name here to avoid extra queries. Do we
-        # need to? God knows.
-        person_name = person_to_subscribe.name
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-        ws_subscription = webservice.named_post(
-            u'http://api.launchpad.dev/beta/bugs/%d' % self.bug.id,
-            'subscribe', person=webservice.getAbsoluteUrl('/~%s' %
-            person_name), level=u"Details").jsonBody()
+    def subscribeAndPatchWithWebservice(self, person_to_subscribe,
+                                        subscriber):
         store = Store.of(person_to_subscribe)
+        person_name = person_to_subscribe.name
+        login(ADMIN_EMAIL)
+        self.bug = getUtility(IBugSet).get(self.bug.id)
+        person_to_subscribe = getUtility(IPersonSet).getByName(
+            person_name)
+        subscriber = getUtility(IPersonSet).getByName(
+            subscriber.name)
+        self.bug.subscribe(person_to_subscribe, subscriber)
+        launchpad = launchpadlib_for("test", subscriber)
+        lplib_bug = launchpad.bugs[self.bug.id]
+        lplib_person = launchpad.people[person_name]
+        [lplib_subscription] = [
+            subscription for subscription in lplib_bug.subscriptions
+            if subscription.person == lplib_person]
         store.flush()
         store.reset()
-        webservice.patch(
-            ws_subscription['self_link'], 'application/json',
-            dumps({u'bug_notification_level': u'Nothing'}))
+        lplib_subscription.bug_notification_level = u'Nothing'
