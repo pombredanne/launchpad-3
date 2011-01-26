@@ -109,8 +109,6 @@ class TestBugSubscription(TestCaseWithFactory):
         self.addCleanup(collector.unregister)
         self.subscribeAndPatchWithWebservice(team, salgado)
         queries_with_one_admin = collector.count
-        self.assertThat(
-            collector, HasQueryCount(Equals(1)))
         # Now we create an entirely new team and add a bunch of
         # administrators, including Salgado. We add Salgado last to
         # check that there's not one query per administrator.
