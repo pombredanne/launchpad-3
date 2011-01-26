@@ -282,49 +282,6 @@ class POTMsgSet(SQLBase):
             current.setPOFile(pofile)
             return current
 
-    def _getUsedTranslationMessage(self, potemplate, language, current=True):
-        """Get a translation message which is either used in
-        Launchpad (current=True) or in an import (current=False).
-
-        Prefers a diverged message if present.
-        """
-        # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
-        # carefully: they need to match condition specified in indexes,
-        # or Postgres may not pick them up (in complicated queries,
-        # Postgres query optimizer sometimes does text-matching of indexes).
-        if current:
-            used_clause = 'is_current_ubuntu IS TRUE'
-        else:
-            used_clause = 'is_current_upstream IS TRUE'
-        if potemplate is None:
-            template_clause = 'TranslationMessage.potemplate IS NULL'
-        else:
-            template_clause = (
-                '(TranslationMessage.potemplate IS NULL OR '
-                ' TranslationMessage.potemplate=%s)' % sqlvalues(potemplate))
-        clauses = [
-            'potmsgset = %s' % sqlvalues(self),
-            used_clause,
-            template_clause,
-            'TranslationMessage.language = %s' % sqlvalues(language)]
-
-        order_by = '-COALESCE(potemplate, -1)'
-
-        # This should find at most two messages: zero or one shared
-        # message, and zero or one diverged one.
-        return TranslationMessage.selectFirst(
-            ' AND '.join(clauses), orderBy=[order_by])
-
-    def getCurrentTranslationMessage(self, potemplate, language):
-        """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, current=True)
-
-    def getSharedTranslationMessage(self, language):
-        """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            None, language, current=True)
-
     def getOtherTranslation(self, language, side):
         """See `IPOTMsgSet`."""
         traits = getUtility(
