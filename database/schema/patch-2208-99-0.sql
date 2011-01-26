@@ -25,4 +25,4 @@ ALTER TABLE SourcePackageRelease
 ALTER TABLE BinaryPackageRelease
     ALTER COLUMN debversion_sort_key not null;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 25, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
