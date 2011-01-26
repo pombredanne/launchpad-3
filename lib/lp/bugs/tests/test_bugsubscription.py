@@ -24,6 +24,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
     login,
+    login_person,
     logout,
     person_logged_in,
     TestCaseWithFactory,
@@ -42,6 +43,19 @@ class TestBugSubscription(TestCaseWithFactory):
         super(TestBugSubscription, self).setUp()
         self.bug = self.factory.makeBug()
         self.subscriber = self.factory.makePerson()
+
+    def updateBugNotificationLevelWithWebService(self, bug_id,
+                                                 subscriber_name,
+                                                 update_as):
+        """A helper method to update a subscription's bug_notification_level.
+        """
+        launchpad = launchpadlib_for("test", update_as)
+        lplib_bug = launchpad.bugs[self.bug.id]
+        lplib_subscriber = launchpad.people[subscriber_name]
+        [lplib_subscription] = [
+            subscription for subscription in lplib_bug.subscriptions
+            if subscription.person == lplib_subscriber]
+        lplib_subscription.bug_notification_level = u'Nothing'
 
     def test_subscribers_can_change_bug_notification_level(self):
         # The bug_notification_level of a subscription can be changed by
@@ -97,53 +111,41 @@ class TestBugSubscription(TestCaseWithFactory):
                     level, subscription.bug_notification_level)
 
     def test_permission_check_query_count_for_admin_members(self):
-        # Checking permissions shouldn't cost anything.
+        # The number of administrators a team has doesn't affect the
+        # number of queries carried out when checking that one of those
+        # administrators can update that team's subscriptions.
         team = self.factory.makeTeam()
+        team_2 = self.factory.makeTeam()
+        # For this test we'll create two teams, one with one
+        # administrator and the other with several.
         with person_logged_in(team.teamowner):
             team.addMember(
                 self.subscriber, team.teamowner,
                 status=TeamMembershipStatus.ADMIN)
+            self.bug.subscribe(team, team.teamowner)
+        with person_logged_in(team_2.teamowner):
+            for i in range(10):
+                person = self.factory.makePerson()
+                team_2.addMember(
+                    person, team_2.teamowner,
+                    status=TeamMembershipStatus.ADMIN)
+            team_2.addMember(
+                self.subscriber, team_2.teamowner,
+                status=TeamMembershipStatus.ADMIN)
+            self.bug.subscribe(team_2, team_2.teamowner)
+
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        self.subscribeAndPatchWithWebservice(team, self.subscriber)
+        with person_logged_in(self.subscriber):
+            self.updateBugNotificationLevelWithWebService(
+                self.bug.id, team.name, self.subscriber)
         queries_with_one_admin = collector.count
-        # Now we create an entirely new team and add a bunch of
-        # administrators, including Salgado. We add Salgado last to
-        # check that there's not one query per administrator.
-        login(ADMIN_EMAIL)
-        team_2 = self.factory.makeTeam()
-        for i in range(10):
-            person = self.factory.makePerson()
-            team_2.addMember(
-                person, team_2.teamowner,
-                status=TeamMembershipStatus.ADMIN)
-        team_2 = getUtility(IPersonSet).getByName(team_2.name)
-        new_admin = self.factory.makePerson()
-        team_2.addMember(
-            new_admin, team_2.teamowner,
-            status=TeamMembershipStatus.ADMIN)
-        self.subscribeAndPatchWithWebservice(team_2, new_admin)
+        # It might seem odd that we don't do this all as one with block,
+        # but using the collector and the webservice means our
+        # interaction goes away, so we have to set up a new one.
+        with person_logged_in(self.subscriber):
+            self.updateBugNotificationLevelWithWebService(
+                self.bug.id, team_2.name, self.subscriber)
         self.assertThat(
-            collector, HasQueryCount(Equals(queries_with_one_admin + 1)))
-
-    def subscribeAndPatchWithWebservice(self, person_to_subscribe,
-                                        subscriber):
-        store = Store.of(person_to_subscribe)
-        person_name = person_to_subscribe.name
-        login(ADMIN_EMAIL)
-        self.bug = getUtility(IBugSet).get(self.bug.id)
-        person_to_subscribe = getUtility(IPersonSet).getByName(
-            person_name)
-        subscriber = getUtility(IPersonSet).getByName(
-            subscriber.name)
-        self.bug.subscribe(person_to_subscribe, subscriber)
-        launchpad = launchpadlib_for("test", subscriber)
-        lplib_bug = launchpad.bugs[self.bug.id]
-        lplib_person = launchpad.people[person_name]
-        [lplib_subscription] = [
-            subscription for subscription in lplib_bug.subscriptions
-            if subscription.person == lplib_person]
-        store.flush()
-        store.reset()
-        lplib_subscription.bug_notification_level = u'Nothing'
+            collector, HasQueryCount(Equals(queries_with_one_admin)))
