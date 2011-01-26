@@ -34,6 +34,12 @@ class ISourcePackageRelease(Interface):
     maintainer = Attribute("The person in general responsible for this "
         "release")
     version = Attribute("A version string")
+    # XXX: review this
+    debversion = TextLine(
+        title=_("Debian Version"),
+        description=_(
+            "A representation of the debian version string that is "
+            "easily manipulated by the database server."))
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
     dscsigningkey = Attribute("DSC Signing Key")
