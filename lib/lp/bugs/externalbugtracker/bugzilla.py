@@ -357,7 +357,9 @@ class Bugzilla(ExternalBugTracker):
             data = {
                 'form_name': 'buglist.cgi',
                 'bug_id_type': 'include',
-                'columnlist': 'id,product,bug_status,resolution',
+                'columnlist':
+                    ('id,product,bug_status,resolution,'
+                     'priority,bug_severity'),
                 'bug_id': ','.join(bug_ids),
                 }
             if self.version < (2, 17, 1):
