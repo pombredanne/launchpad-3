@@ -19,7 +19,6 @@ from zope.schema import (
     List,
     Object,
     Text,
-    TextLine,
     )
 
 from canonical.launchpad import _

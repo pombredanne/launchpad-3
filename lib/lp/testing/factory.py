@@ -2603,6 +2603,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         If translations is a sequence, it is enumerated into a dict.
         If translations is None, an arbitrary single translation is created.
         """
+        translations = removeSecurityProxy(translations)
         if translations is None:
             return {0: self.getUniqueString()}
         if isinstance(translations, dict):
@@ -2649,7 +2650,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
                                       current_other=False,
-                                      date_created=None, date_reviewed=None):
+                                      date_created=None, date_reviewed=None,
+                                      language_code=None):
         """Create a `TranslationMessage` and make it current.
 
         This is similar to `makeTranslationMessage`, except:
@@ -2683,20 +2685,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
+        assert None in (language_code, pofile), (
+            'Cannot specify both language_code and pofile.')
         if pofile is None:
-            pofile = self.makePOFile()
+            pofile = self.makePOFile(language_code)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:
             reviewer = self.makePerson()
-        if translations is None:
-            translations = {0: self.getUniqueString()}
-        else:
-            translations = sanitize_translations_from_webui(
-                potmsgset.singular_text, translations,
-                pofile.language.pluralforms)
+        translations = sanitize_translations_from_webui(
+            potmsgset.singular_text,
+            self.makeTranslationsDict(translations),
+            pofile.language.pluralforms)
 
         if diverged:
             message = self.makeDivergedTranslationMessage(

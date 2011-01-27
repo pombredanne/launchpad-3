@@ -11,6 +11,10 @@ from datetime import (
     )
 
 from pytz import UTC
+from sqlobject import (
+    SQLObjectNotFound,
+    )
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -28,7 +32,10 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potranslation import POTranslation
-from lp.translations.model.translationmessage import DummyTranslationMessage
+from lp.translations.model.translationmessage import (
+    DummyTranslationMessage,
+    TranslationMessage,
+    )
 
 
 class TestTranslationMessage(TestCaseWithFactory):
@@ -660,3 +667,65 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         setattr(self.other_message, last_form, translation)
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
+
+
+class TestShareIfPossible(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def make_unshared_message(self, converged=False, different_language=False,
+            different_translations=False, different_potmsgsets=False):
+        if different_language:
+            language_code='fr'
+        else:
+            language_code='lt'
+        message = self.factory.makeCurrentTranslationMessage(
+            language_code=language_code, diverged=not converged)
+        if different_translations:
+            translations = None
+        else:
+            translations = message.translations
+        if different_potmsgsets:
+            potmsgset = None
+        else:
+            potmsgset = message.potmsgset
+        other_message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=potmsgset, language_code='lt',
+            translations=translations)
+        return message
+
+    @staticmethod
+    def shareIfPossibleDeletes(message):
+        message_id = message.id
+        message.shareIfPossible()
+        Store.of(message).flush()
+        try:
+            TranslationMessage.get(message_id)
+        except SQLObjectNotFound:
+            return True
+        else:
+            return False
+
+    def test_share_success(self):
+        message = self.make_unshared_message()
+        self.assertTrue(self.shareIfPossibleDeletes(message))
+
+    def test_converged(self):
+        """Converged messages are skipped."""
+        message = self.make_unshared_message(converged=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
+
+    def test_different_language(self):
+        """Messages in different languages are not shared."""
+        message = self.make_unshared_message(different_language=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
+
+    def test_different_translations(self):
+        """Messages with different translations are not shared."""
+        message = self.make_unshared_message(different_translations=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
+
+    def test_different_potmsgset(self):
+        """Messages with different potmsgsets are not shared."""
+        message = self.make_unshared_message(different_potmsgsets=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
