@@ -52,6 +52,7 @@ class WidgetBase:
             self.mutator_method_name = mutator_method.__name__
         else:
             self.mutator_method_name = None
+        self.resource_uri = canonical_url(self.context, force_local_path=True)
 
     @classmethod
     def _generate_id(cls):
@@ -331,6 +332,7 @@ class InlineEditPickerWidget(WidgetBase):
         self.null_display_value = null_display_value
 
         # JSON encoded attributes.
+        self.json_resource_uri = simplejson.dumps(self.resource_uri)
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
         self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
         self.json_vocabulary_name = simplejson.dumps(
@@ -363,14 +365,6 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
-
-    @property
-    def json_resource_uri(self):
-        return simplejson.dumps(
-            canonical_url(
-                self.context, request=IWebServiceClientRequest(self.request),
-                path_only_if_possible=True))
-
 
 
 def vocabulary_to_choice_edit_items(
