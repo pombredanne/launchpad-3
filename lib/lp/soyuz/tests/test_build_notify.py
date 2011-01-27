@@ -203,20 +203,11 @@ class TestBuildNotify(TestCaseWithFactory):
         self._assert_mail_is_correct(build, notification, ppa=True)
 
     def test_notify_successfully_built(self):
-        # We can notify the creator when the build is sucessful.
+        # Successful builds don't notify anyone.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.FULLYBUILT.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
-
-    def test_notify_successfully_built_ppa(self):
-        # We can notify the creator when the build is sucessful.
-        self.create_builds(self.ppa)
-        build = self.builds[BuildStatus.FULLYBUILT.value]
-        build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        self.assertEqual([], pop_notifications())
 
     def test_notify_dependency_wait(self):
         # We can notify the creator when the build can't find a dependency.
@@ -321,7 +312,7 @@ class TestBuildNotify(TestCaseWithFactory):
         # When the 'notify_owner' config option is False, we don't send mail
         # to the owner of the SPR.
         self.create_builds(self.archive)
-        build = self.builds[BuildStatus.FULLYBUILT.value]
+        build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         notify_owner = dedent("""
             [builddmaster]
             send_build_notification: True
@@ -357,7 +348,7 @@ class TestBuildNotify(TestCaseWithFactory):
         sponsor = self.factory.makePerson('sponsor@example.com')
         key = self.factory.makeGPGKey(owner=sponsor)
         self.create_builds(self.archive)
-        build = self.builds[BuildStatus.FULLYBUILT.value]
+        build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         spr = build.current_source_publication.sourcepackagerelease
         # Push past the security proxy
         removeSecurityProxy(spr).dscsigningkey = key
