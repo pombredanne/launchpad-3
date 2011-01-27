@@ -5,7 +5,11 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
 
 from zope.security.interfaces import Unauthorized
 
@@ -37,7 +41,7 @@ class TestBugSubscription(TestCaseWithFactory):
                                                  update_as):
         """A helper method to update a subscription's bug_notification_level.
         """
-        launchpad = launchpadlib_for("test", update_as)
+        launchpad = launchpadlib_for("test", update_as, version='devel')
         lplib_bug = launchpad.bugs[self.bug.id]
         lplib_subscriber = launchpad.people[subscriber_name]
         [lplib_subscription] = [
@@ -139,7 +143,10 @@ class TestBugSubscription(TestCaseWithFactory):
             self.updateBugNotificationLevelWithWebService(
                 self.bug.id, team_2.name, self.subscriber)
         self.assertThat(
-            collector, HasQueryCount(Equals(queries_with_one_admin)))
+            collector, HasQueryCount(
+                MatchesAny(
+                    Equals(queries_with_one_admin),
+                    LessThan(queries_with_one_admin))))
         # 25 is an entirely arbitrary limit for the number of queries
         # this requires, based on the number run when the code was
         # written; it should give us a nice early warning if the number
