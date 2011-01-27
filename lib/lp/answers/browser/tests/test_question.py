@@ -16,6 +16,26 @@ from lp.testing import (
 from lp.testing.views import create_initialized_view
 
 
+class TestQuestionEditView(TestCaseWithFactory):
+    """Verify the behavior of the QuestionEditView."""
+
+    def test_details_can_change_without_reopen(self):
+        # If the question target changes, the question doesn't reopen.
+
+        # Setup a solved question
+        answerer = self.factory.makePerson()
+        original_target = self.factory.makeProduct(name='oldandbusted')
+        new_target = self.factory.makeProduct(name='newhotness')
+        question = self.factory.makeQuestion(target=original_target)
+        answer = question.giveAnswer(answerer, "This is solved.")
+        question.confirmAnswer("Yes it is.", answer=answer)
+
+        import pdb; pdb.set_trace()
+
+
+        
+
+
 class TestQuestionAddView(TestCaseWithFactory):
     """Verify the behavior of the QuestionAddView."""
 
