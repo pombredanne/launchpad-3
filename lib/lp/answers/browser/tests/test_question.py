@@ -26,6 +26,7 @@ class TestQuestionEditView(TestCaseWithFactory):
         answerer = self.factory.makePerson()
         original_target = self.factory.makeProduct(name='oldandbusted')
         new_target = self.factory.makeProduct(name='newhotness')
+        login_person(answerer)
         question = self.factory.makeQuestion(target=original_target)
         answer = question.giveAnswer(answerer, "This is solved.")
         question.confirmAnswer("Yes it is.", answer=answer)
