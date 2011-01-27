@@ -9,7 +9,7 @@ from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.widgets.lazrjs import InlineEditPickerWidget
+from lp.app.browser.lazrjs import InlineEditPickerWidget
 from lp.testing import (
     login_person,
     TestCaseWithFactory,

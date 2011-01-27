@@ -11,7 +11,7 @@ We have a convenient wrapper for the inlineedit/editor JS widget in
 TextLineEditorWidget.
 
     >>> from canonical.launchpad.webapp.publisher import canonical_url
-    >>> from canonical.widgets.lazrjs import TextLineEditorWidget
+    >>> from lp.app.browser.lazrjs import TextLineEditorWidget
     >>> bug = factory.makeBug(title='My bug is > important')
 
 The wrapper takes as arguments the object and the attribute of the
@@ -83,7 +83,7 @@ The InlineEditPickerWidget can be used for any interface attribute that
 has a vocabulary defined for it.
 
     >>> from zope.component import getUtility
-    >>> from canonical.widgets.lazrjs import InlineEditPickerWidget
+    >>> from lp.app.browser.lazrjs import InlineEditPickerWidget
     >>> from lp.bugs.interfaces.bugtask import IBugTask, IBugTaskSet
     >>> bugtask = getUtility(IBugTaskSet).get(2)
     >>> def create_inline_edit_picker_widget():

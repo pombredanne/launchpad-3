@@ -86,16 +86,16 @@ from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget,
-    TextLineEditorWidget,
-    )
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    )
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError

@@ -62,7 +62,6 @@ from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import InlineEditPickerWidget
 from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -72,9 +71,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import (
-    format_link,
-    )
+from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,

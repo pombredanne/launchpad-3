@@ -122,7 +122,6 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.product import (
     GhostWidget,
@@ -143,6 +142,7 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
+from lp.app.browser.lazrjs import TextLineEditorWidget
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError

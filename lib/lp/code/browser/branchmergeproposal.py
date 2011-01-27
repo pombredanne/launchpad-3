@@ -87,11 +87,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
    )
-from lp.app.browser.tales import DateTimeFormatterAPI
-from canonical.widgets.lazrjs import (
+from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment

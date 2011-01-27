@@ -111,7 +111,7 @@ class TextWidgetBase(WidgetBase):
 class TextLineEditorWidget(TextWidgetBase):
     """Wrapper for the lazr-js inlineedit/editor.js widget."""
 
-    __call__ = ViewPageTemplateFile('templates/text-line-editor.pt')
+    __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
 
     def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit",
@@ -162,7 +162,7 @@ class TextLineEditorWidget(TextWidgetBase):
 class TextAreaEditorWidget(TextWidgetBase):
     """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
-    __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
+    __call__ = ViewPageTemplateFile('../templates/text-area-editor.pt')
 
     def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit", value=None,
@@ -187,7 +187,7 @@ class InlineEditPickerWidget(WidgetBase):
     """
 
     widget_type = 'inline-picker-activator'
-    __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
+    __call__ = ViewPageTemplateFile('../templates/inline-picker.pt')
 
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
