@@ -92,7 +92,6 @@ has a vocabulary defined for it.
     ...         context=view.context,
     ...         interface_attribute=IBugTask['assignee'],
     ...         default_html='default-html',
-    ...         context_box_id='box-id',
     ...         header='Change assignee',
     ...         step_title='Search for people or teams',
     ...         remove_button_text='Remove Assignee',
