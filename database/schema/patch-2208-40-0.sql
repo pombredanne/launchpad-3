@@ -279,4 +279,4 @@ ALTER TABLE SourcePackageRelease
 ALTER TABLE BinaryPackageRelease
     RENAME COLUMN debversion TO version;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 40, 0);
