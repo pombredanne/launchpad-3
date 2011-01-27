@@ -60,6 +60,10 @@ class WidgetBase:
     def resource_uri(self):
         return canonical_url(self.context, force_local_path=True)
 
+    @property
+    def json_resource_uri(self):
+        return simplejson.dumps(self.resource_uri)
+
     @classmethod
     def _generate_id(cls):
         """Return a presumably unique id for this widget."""
@@ -172,6 +176,7 @@ class TextLineEditorWidget:
         self.initial_value_override = initial_value_override
         self.width = width
 
+
     @classmethod
     def _generate_id(cls):
         """Return a presumably unique id for this widget."""
@@ -213,91 +218,35 @@ class TextLineEditorWidget:
 class TextAreaEditorWidget(TextLineEditorWidget):
     """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
-    def __init__(self, *args, **kwds):
+    __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
+
+    def __init__(self, context, attribute, edit_url, id=None, title="Edit",
+                 value=None, accept_empty=False, visible=True):
         """Create the widget wrapper."""
-        if 'value' in kwds:
-            self.value = kwds.get('value', '')
-            kwds.pop('value')
-        super(TextAreaEditorWidget, self).__init__(*args, **kwds)
+        self.value = value
+        super(TextAreaEditorWidget, self).__init__(
+            context, attribute, edit_url, id, title, accept_empty=accept_empty)
 
-    # The HTML template used to render the widget.
-    # Replacements:
-    #   activation_script: the JS script to active the widget
-    #   attribute: the name of the being edited
-    #   context_url: the url to the current context
-    #   edit_url: the URL used to edit the value when JS is turned off
-    #   id: the widget unique id
-    #   title: the widget title
-    #   trigger: the trigger (button) HTML code
-    #   value: the current field value
-    WIDGET_TEMPLATE = dedent(u"""\
-        <div id="multi-text-editor">
-          <div class="clearfix">
-            %(edit_controls)s
-            <h2>%(title)s</h2>
-          </div>
-          <div class="yui3-editable_text-text">%(value)s</div>
-        </div>
-        %(activation_script)s
-        """)
+        self.request = get_current_browser_request()
+        self.json_content_box_id = simplejson.dumps('#' + self.id)
+        self.json_accept_empty = simplejson.dumps(self.accept_empty)
+        self.json_attribute = simplejson.dumps(self.public_attribute)
+        if visible:
+            self.tag_class = 'lazr-multiline-edit'
+        else:
+            self.tag_class = 'lazr-multiline-edit unseen'
 
-    CONTROLS_TEMPLATE = dedent(u"""\
-        <div class="edit-controls">
-          &nbsp;
-          %(trigger)s
-        </div>
-        """)
+    @property
+    def resource_uri(self):
+        return canonical_url(self.context, force_local_path=True)
 
-    ACTIVATION_TEMPLATE = dedent(u"""\
-        <script>
-        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
-            var widget = new Y.EditableText({
-                contentBox: '#%(id)s',
-                accept_empty: %(accept_empty)s,
-                multiline: true,
-                buttons: 'top'
-            });
-            widget.editor.plug({
-                fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                  patch: '%(attribute)s',
-                  resource: '%(context_url)s/%(attribute)s',
-                  patch_field: true,
-                  accept: 'application/xhtml+xml'
-            }});
-            if (!Y.UA.opera) {
-                widget.render();
-            }
-            var lpns = Y.namespace('lp');
-            if (!lpns.widgets) {
-                lpns.widgets = {};
-            }
-            lpns.widgets['%(id)s'] = widget;
-        });
-        </script>
-        """)
+    @property
+    def json_resource_uri(self):
+        return simplejson.dumps(self.resource_uri + '/' + self.public_attribute)
 
-    def __call__(self):
-        """Return the HTML to include to render the widget."""
-        params = {
-            'activation_script': '',
-            'trigger': '',
-            'edit_url': self.edit_url,
-            'id': self.id,
-            'title': self.title,
-            'value': self.value,
-            'context_url': canonical_url(
-                self.context, path_only_if_possible=True),
-            'attribute': self.attribute,
-            'accept_empty': self.accept_empty,
-            'edit_controls': '',
-            }
-        # Only display the trigger link and the activation script if
-        # the user can write the attribute.
-        if canWrite(self.context, self.attribute):
-            params['trigger'] = self.TRIGGER_TEMPLATE % params
-            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-            params['edit_controls'] = self.CONTROLS_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params
+    @property
+    def can_write(self):
+        return canWrite(self.context, self.attribute)
 
 
 class InlineEditPickerWidget(WidgetBase):
@@ -368,10 +317,6 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
-
-    @property
-    def json_resource_uri(self):
-        return simplejson.dumps(self.resource_uri)
 
 
 def vocabulary_to_choice_edit_items(

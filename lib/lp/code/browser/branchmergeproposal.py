@@ -691,11 +691,19 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for bug in self.context.related_bugs]
 
     @property
+    def edit_description_link_class(self):
+        if self.context.description:
+            return "unseen"
+        else:
+            return ""
+
+    @property
     def description_html(self):
         """The description as widget HTML."""
         description = self.context.description
         if description is None:
             description = ''
+        visible = bool(description)
         formatter = FormattersAPI
         hide_email = formatter(description).obfuscate_email()
         description = formatter(hide_email).text_to_html()
@@ -706,7 +714,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             id="edit-description",
             title="Description of the Change",
             value=description,
-            accept_empty=True)
+            accept_empty=True, visible=visible)
+
+    @property
+    def edit_commit_message_link_class(self):
+        if self.context.commit_message:
+            return "unseen"
+        else:
+            return ""
 
     @property
     def commit_message_html(self):
@@ -714,6 +729,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         commit_message = self.context.commit_message
         if commit_message is None:
             commit_message = ''
+        visible = bool(commit_message)
         formatter = FormattersAPI
         hide_email = formatter(commit_message).obfuscate_email()
         commit_message = formatter(hide_email).text_to_html()
@@ -724,7 +740,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             id="edit-commit_message",
             title="Commit Message",
             value=commit_message,
-            accept_empty=True)
+            accept_empty=True, visible=visible)
 
     @property
     def status_config(self):
