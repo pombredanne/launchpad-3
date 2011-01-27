@@ -636,7 +636,8 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
                     'merge_proposal': None,
                     }
                 if x < len(merge_proposals):
-                    merge_proposals[x].markAsMerged(branch_revision.id)
+                    merge_proposals[x].markAsMerged(
+                            branch_revision.sequence)
                     rev_info['merge_proposal'] = merge_proposals[x]
                 expected_rev_details.append(rev_info)
 

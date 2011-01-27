@@ -227,14 +227,14 @@ class GenericBranchCollection:
                 'linked_bugs': None,
                 'merge_proposal': None,
                 }
-            merge_proposal = merge_proposal_revs.get(branch_revision.id)
+            merge_proposal = merge_proposal_revs.get(branch_revision.sequence)
             rev_info['merge_proposal'] = merge_proposal
             if merge_proposal is not None:
                 rev_info['linked_bugs'] = linked_bugs.get(
                     merge_proposal.source_branch.id)
             return rev_info
 
-        rev_nos = [revision.id for revision in revisions]
+        rev_nos = [revision.sequence for revision in revisions]
         merge_proposals = self.getMergeProposals(
                 target_branch=branch, merged_revnos=rev_nos,
                 statuses=[BranchMergeProposalStatus.MERGED])
