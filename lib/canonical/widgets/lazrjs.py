@@ -11,9 +11,7 @@ __all__ = [
     'vocabulary_to_choice_edit_items',
     ]
 
-import cgi
 import simplejson
-from textwrap import dedent
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -34,21 +32,21 @@ from lp.services.propertycache import cachedproperty
 class WidgetBase:
     """Useful methods for all widgets."""
 
-    # Class variable used to generate a unique per-page id for the widget
-    # in case it's not provided.
-    last_id = 0
-
     def __init__(self, context, exported_field, content_box_id):
         self.context = context
         self.exported_field = exported_field
 
         self.request = get_current_browser_request()
         self.attribute_name = exported_field.__name__
+        self.optional_field = not exported_field.required
 
         if content_box_id is None:
             content_box_id = "edit-%s" % self.attribute_name
         self.content_box_id = content_box_id
 
+        # The mutator method name is used to determine whether or not the
+        # current user has permission to alter the attribute if the attribute
+        # is using a mutator function.
         self.mutator_method_name = None
         ws_stack = exported_field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if ws_stack is None:
@@ -64,20 +62,21 @@ class WidgetBase:
 
     @property
     def resource_uri(self):
+        """A local path to the context object.
+
+        The javascript uses the normalize_uri method that adds the appropriate
+        prefix to the uri.  Doing it this way avoids needing to adapt the
+        current request into a webservice request in order to get an api url.
+        """
         return canonical_url(self.context, force_local_path=True)
 
     @property
     def json_resource_uri(self):
         return simplejson.dumps(self.resource_uri)
 
-    @classmethod
-    def _generate_id(cls):
-        """Return a presumably unique id for this widget."""
-        cls.last_id += 1
-        return '%s-id-%d' % (cls.widget_type, cls.last_id)
-
     @property
     def can_write(self):
+        """Can the current user write to the attribute."""
         if canWrite(self.context, self.attribute_name):
             return True
         elif self.mutator_method_name is not None:
@@ -90,16 +89,16 @@ class WidgetBase:
 
 
 class TextWidgetBase(WidgetBase):
+    """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, content_box_id,
-                 accept_empty, title, edit_view, edit_url):
+                 title, edit_view, edit_url):
         super(TextWidgetBase, self).__init__(
             context, exported_field, content_box_id)
         if edit_url is None:
             edit_url = canonical_url(self.context, view_name=edit_view)
         self.edit_url = edit_url
-        # TODO: check the exported_field to determine accept_empty
-        self.accept_empty = simplejson.dumps(accept_empty)
+        self.accept_empty = simplejson.dumps(self.optional_field)
         self.title = title
         self.json_attribute = simplejson.dumps(self.api_attribute)
         self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
@@ -116,7 +115,7 @@ class TextLineEditorWidget(TextWidgetBase):
 
     def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit",
-                 tag='h1', accept_empty=False, edit_view="+edit", edit_url=None, 
+                 tag='h1', edit_view="+edit", edit_url=None,
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -130,7 +129,6 @@ class TextLineEditorWidget(TextWidgetBase):
         :param tag: The HTML tag to use.
         :param public_attribute: If given, the name of the attribute in the
             public webservice API.
-        :param accept_empty: Whether the field accepts empty input or not.
         :param default_text: Text to show in the unedited field, if the
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
@@ -138,7 +136,7 @@ class TextLineEditorWidget(TextWidgetBase):
         :param width: Initial widget width.
         """
         super(TextLineEditorWidget, self).__init__(
-            context, exported_field, content_box_id, accept_empty,
+            context, exported_field, content_box_id,
             title, edit_view, edit_url)
         self.tag = tag
         self.default_text = default_text
@@ -167,11 +165,11 @@ class TextAreaEditorWidget(TextWidgetBase):
     __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
 
     def __init__(self, context, exported_field, content_box_id=None,
-                 title="Edit", value=None, accept_empty=False,
+                 title="Edit", value=None,
                  edit_view="+edit", edit_url=None, visible=True):
         """Create the widget wrapper."""
         super(TextAreaEditorWidget, self).__init__(
-            context, exported_field, content_box_id, accept_empty,
+            context, exported_field, content_box_id,
             title, edit_view, edit_url)
         self.value = value
         if visible:
@@ -221,8 +219,6 @@ class InlineEditPickerWidget(WidgetBase):
         self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
         self.json_vocabulary_name = simplejson.dumps(
             self.exported_field.vocabularyName)
-        # TODO: can this be unified with accept_empty?
-        self.show_remove_button = not self.exported_field.required
 
     @property
     def config(self):
@@ -230,7 +226,7 @@ class InlineEditPickerWidget(WidgetBase):
             dict(header=self.header, step_title=self.step_title,
                  remove_button_text=self.remove_button_text,
                  null_display_value=self.null_display_value,
-                 show_remove_button=self.show_remove_button,
+                 show_remove_button=self.optional_field,
                  show_assign_me_button=self.show_assign_me_button,
                  show_search_box=self.show_search_box))
 

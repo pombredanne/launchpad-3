@@ -862,10 +862,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
     @property
     def displayname_edit_widget(self):
-        widget = TextLineEditorWidget(
+        return TextLineEditorWidget(
             self.context, IArchive['displayname'],
             title="Edit the displayname")
-        return widget
 
     @property
     def sources_list_entries(self):

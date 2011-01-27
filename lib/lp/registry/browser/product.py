@@ -1001,7 +1001,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['programminglang'],
             title='Edit programming languages',
             tag='span',
-            accept_empty=True,
             width='9em',
             **additional_arguments)
         self.show_programming_languages = bool(
