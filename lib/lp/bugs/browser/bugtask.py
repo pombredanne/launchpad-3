@@ -1040,9 +1040,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         description = formatter(hide_email).text_to_html()
         return TextAreaEditorWidget(
             self.context.bug,
-            'description',
+            IBug['description'],
             canonical_url(self.context, view_name='+edit'),
-            id="edit-description",
+            "edit-description",
             title="Bug Description",
             value=description)
 

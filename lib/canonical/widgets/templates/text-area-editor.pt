@@ -1,4 +1,4 @@
-<div tal:attributes="id view/id;
+<div tal:attributes="id view/content_box_id;
                      class view/tag_class">
   <div class="clearfix">
     <div class="edit-controls" tal:condition="view/can_write">
@@ -15,7 +15,7 @@
         tal:content="structure string:
         LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
-                contentBox: ${view/json_content_box_id},
+                contentBox: ${view/widget_css_selector},
                 accept_empty: ${view/accept_empty},
                 multiline: true,
                 buttons: 'top'
@@ -23,7 +23,7 @@
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: ${view/json_attribute},
-                  resource: ${view/json_resource_uri},
+                  resource: ${view/json_attribute_uri},
                   patch_field: true,
                   accept: 'application/xhtml+xml'
             }});
@@ -34,7 +34,7 @@
             if (!lpns.widgets) {
                 lpns.widgets = {};
             }
-            lpns.widgets['${view/id}'] = widget;
+            lpns.widgets['${view/content_box_id}'] = widget;
         });
 "/>
 </div>

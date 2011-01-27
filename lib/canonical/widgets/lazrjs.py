@@ -215,38 +215,32 @@ class TextLineEditorWidget:
         return self.WIDGET_TEMPLATE % params 
 
 
-class TextAreaEditorWidget(TextLineEditorWidget):
+class TextAreaEditorWidget(WidgetBase):
     """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
     __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
 
-    def __init__(self, context, attribute, edit_url, id=None, title="Edit",
-                 value=None, accept_empty=False, visible=True):
+    def __init__(self, context, exported_field, edit_url, content_box_id,
+                 title="Edit", value=None, accept_empty=False, visible=True):
         """Create the widget wrapper."""
+        super(TextAreaEditorWidget, self).__init__(context, exported_field)
+        self.edit_url = edit_url
+        self.content_box_id = content_box_id
+        self.title = title
         self.value = value
-        super(TextAreaEditorWidget, self).__init__(
-            context, attribute, edit_url, id, title, accept_empty=accept_empty)
 
-        self.request = get_current_browser_request()
-        self.json_content_box_id = simplejson.dumps('#' + self.id)
-        self.json_accept_empty = simplejson.dumps(self.accept_empty)
-        self.json_attribute = simplejson.dumps(self.public_attribute)
+        self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
+        self.accept_empty = simplejson.dumps(accept_empty)
+        self.json_attribute = simplejson.dumps(self.api_attribute)
         if visible:
             self.tag_class = 'lazr-multiline-edit'
         else:
             self.tag_class = 'lazr-multiline-edit unseen'
 
     @property
-    def resource_uri(self):
-        return canonical_url(self.context, force_local_path=True)
+    def json_attribute_uri(self):
+        return simplejson.dumps(self.resource_uri + '/' + self.api_attribute)
 
-    @property
-    def json_resource_uri(self):
-        return simplejson.dumps(self.resource_uri + '/' + self.public_attribute)
-
-    @property
-    def can_write(self):
-        return canWrite(self.context, self.attribute)
 
 
 class InlineEditPickerWidget(WidgetBase):

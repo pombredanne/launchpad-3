@@ -910,9 +910,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         return TextAreaEditorWidget(
             self.context,
-            'description',
+            IArchive['description'],
             canonical_url(self.context, view_name='+edit'),
-            id="edit-description",
+            "edit-description",
             title=self.archive_label + " description",
             value=description)
 
