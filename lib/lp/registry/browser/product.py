@@ -989,8 +989,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def initialize(self):
         self.status_message = None
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, IProduct['title'],
-            "product-title", title="Edit this title")
+            self.context, IProduct['title'], title="Edit this title")
         if self.context.programminglang is None:
             additional_arguments = dict(
                 default_text='Not yet specified',
@@ -1000,7 +999,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             additional_arguments = {}
         self.languages_edit_widget = TextLineEditorWidget(
             self.context, IProduct['programminglang'],
-            'programminglang', title='Edit programming languages',
+            title='Edit programming languages',
             tag='span',
             accept_empty=True,
             width='9em',

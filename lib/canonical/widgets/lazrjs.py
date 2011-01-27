@@ -41,10 +41,14 @@ class WidgetBase:
     def __init__(self, context, exported_field, content_box_id):
         self.context = context
         self.exported_field = exported_field
-        self.content_box_id = content_box_id
 
         self.request = get_current_browser_request()
         self.attribute_name = exported_field.__name__
+
+        if content_box_id is None:
+            content_box_id = "edit-%s" % self.attribute_name
+        self.content_box_id = content_box_id
+
         self.mutator_method_name = None
         ws_stack = exported_field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if ws_stack is None:
@@ -107,7 +111,7 @@ class TextLineEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, content_box_id,
+    def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit",
                  tag='h1', accept_empty=False, edit_view="+edit",
                  default_text=None, initial_value_override=None, width=None):
@@ -159,7 +163,7 @@ class TextAreaEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
 
-    def __init__(self, context, exported_field, content_box_id,
+    def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit", value=None, accept_empty=False,
                  edit_view="+edit", visible=True):
         """Create the widget wrapper."""
