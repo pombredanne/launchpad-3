@@ -825,7 +825,6 @@ We can get the collection of subscriptions to a bug.
   ...     pprint_entry(entry)
   ...     print
   bug_link: u'http://.../bugs/1'
-  bug_notification_level: u'Discussion'
   date_created: u'2006-10-16T18:31:43.156104+00:00'
   person_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_subscription'
@@ -845,7 +844,6 @@ Each subscription can be accessed individually.
   ...     subscription_entries[1]['self_link']).jsonBody()
   >>> pprint_entry(subscription)
   bug_link: u'http://.../bugs/1'
-  bug_notification_level: u'Discussion'
   date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
@@ -876,12 +874,15 @@ uses the calling user.
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
 
-An individual can subscribe themself at a given BugNotificationLevel.
+Using the devel api, an individual can subscribe themself at a given
+BugNotificationLevel.
 
+    >>> bug_one_devel = webservice.get(
+    ...     '/bugs/1', api_version='devel').jsonBody()
     >>> new_subscription = webservice.named_post(
-    ...     bug_one['self_link'], 'subscribe',
+    ...     bug_one_devel['self_link'], 'subscribe',
     ...     person=webservice.getAbsoluteUrl('/~salgado'),
-    ...     level=u"Details").jsonBody()
+    ...     level=u"Details", api_version="devel").jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: u'.../bugs/1'
     bug_notification_level: u'Details'
@@ -897,7 +898,7 @@ They can also update the subscription's bug_notification_level directly.
     >>> pprint_entry(
     ...     webservice.patch(
     ...         new_subscription['self_link'], 'application/json',
-    ...         dumps(patch)).jsonBody())
+    ...         dumps(patch), api_version="devel").jsonBody())
     bug_link: u'.../bugs/1'
     bug_notification_level: u'Nothing'...
 
