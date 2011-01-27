@@ -683,7 +683,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             target_team)
 
     def test_merge_deletes_recipes(self):
-        # When person/teams are merged, recipes they owned are deleted.
+        # When person/teams are merged, recipes the from person owned are
+        # deleted.
         person = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
         # Disable the recipe owners PPA
@@ -712,6 +713,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         recipes = mergee.getRecipes()
         self.assertEqual(1, recipes.count())
         self.assertEqual(u'TO', recipes[0].description)
+
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
