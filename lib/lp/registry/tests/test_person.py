@@ -17,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -62,9 +58,14 @@ from lp.registry.model.karma import (
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    login,
     login_person,
     logout,
     person_logged_in,
@@ -681,6 +682,36 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             test_team,
             target_team)
 
+    def test_merge_deletes_recipes(self):
+        # When person/teams are merged, recipes they owned are deleted.
+        person = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        # Disable the recipe owners PPA
+        with person_logged_in(recipe.owner):
+            recipe.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(recipe.owner, person)
+        login_person(person)
+        self.person_set.merge(recipe.owner, person)
+        self.assertEqual(0, person.getRecipes().count())
+
+    def test_merge_with_duplicated_recipes(self):
+        # When person/teams are merged, if the from person has a recipe with
+        # the same name as the to person, the from person's recipes are
+        # deleted.
+        merge_from = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'FROM')
+        merge_to = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'TO')
+        mergee = merge_to.owner
+        # Disable merge_from's PPA
+        with person_logged_in(merge_from.owner):
+            merge_from.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(merge_from.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(merge_from.owner, merge_to.owner)
+        recipes = mergee.getRecipes()
+        self.assertEqual(1, recipes.count())
+        self.assertEqual(u'TO', recipes[0].description)
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
