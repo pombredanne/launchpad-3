@@ -22,7 +22,6 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
-from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -40,19 +39,21 @@ class WidgetBase:
 
     def __init__(self, context, exported_field):
         self.context = context
+        self.resource_uri = canonical_url(context, force_local_path=True)
         self.exported_field = exported_field
         self.attribute_name = exported_field.__name__
-        # If there is no webservice tagged versioned dict, there is no point
-        # having a widget, so let it explode with a KeyError here.
+        self.mutator_method_name = None
         ws_stack = exported_field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-        self.api_attribute = ws_stack['as']
-        mutator_info = ws_stack.get('mutator_annotations')
-        if mutator_info is not None:
-            mutator_method, mutator_extra = mutator_info
-            self.mutator_method_name = mutator_method.__name__
+        if ws_stack is None:
+            # The field may be a copy, or similarly named to one we care
+            # about.
+            self.api_attribute = self.attribute_name
         else:
-            self.mutator_method_name = None
-        self.resource_uri = canonical_url(self.context, force_local_path=True)
+            self.api_attribute = ws_stack['as']
+            mutator_info = ws_stack.get('mutator_annotations')
+            if mutator_info is not None:
+                mutator_method, mutator_extra = mutator_info
+                self.mutator_method_name = mutator_method.__name__
 
     @classmethod
     def _generate_id(cls):
