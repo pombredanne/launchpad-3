@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'TextAreaEditorWidget',
     'InlineEditPickerWidget',
-    'vocabulary_to_choice_edit_items',
+    'TextAreaEditorWidget',
     'TextLineEditorWidget',
+    'vocabulary_to_choice_edit_items',
     ]
 
 import cgi
