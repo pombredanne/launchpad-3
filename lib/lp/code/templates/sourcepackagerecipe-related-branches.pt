@@ -1,65 +1,72 @@
 <fieldset id="related-branches"
-              class="collapsible collapsed"
-              tal:define="seriesBranches view/related_series_branches;
+              class="collapsible collapsed" style="width: 60em"
+              tal:define="seriesBranches view/related_series_branch_info;
                           packageBranches view/related_package_branches"
               tal:condition="python: seriesBranches or packageBranches">
   <legend>Related Branches</legend>
-  <table class="extra-options">
+  <table>
 
-    <table class="listing" style="width: 65em;" id="related-package-branches-listing"
-        tal:condition="packageBranches">
-      <thead>
-        <tr>
-          <th>Source Package Branches</th>
-          <th>Source Package</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="branch packageBranches">
-          <td width="75%">
-            <a href="#"
-               tal:content="branch/displayname"
-               tal:attributes="href branch/fmt:url">
-              source package branch
-            </a>
-          </td>
-          <td>
-            <a href="#"
-               tal:attributes="href branch/sourcepackage/fmt:url"
-               tal:content="branch/sourcepackagename/name">
-              source package
-            </a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div tal:condition="packageBranches" id="related-package-branches">
+      <h2>Source package branches</h2>
+      <table class="listing" id="related-package-branches-listing">
+        <thead>
+          <tr>
+            <th>Branch URL</th>
+            <th>Source package</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="branch packageBranches">
+            <td width="80%">
+              <a href="#"
+                 tal:content="branch/displayname"
+                 tal:attributes="href branch/fmt:url">
+                source package branch
+              </a>
+            </td>
+            <td>
+              <a href="#"
+                 tal:attributes="href branch/sourcepackage/fmt:url"
+                 tal:content="branch/sourcepackagename/name">
+                source package
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <table class="listing" style="width: 65em; margin-top: 1.5em;" id="related-series-branches-listing"
-        tal:condition="seriesBranches">
-      <thead>
-        <tr>
-          <th>Product Series Branches</th>
-          <th>Owner</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="branch seriesBranches">
-          <td width="75%">
-            <a href="#"
-               tal:content="branch/displayname"
-               tal:attributes="href branch/fmt:url">
-              product series branch
-            </a>
-          </td>
-          <td>
-            <a href="#"
-               tal:content="branch/owner/displayname"
-               tal:attributes="href branch/owner/fmt:url">
-              owner
-            </a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div tal:condition="seriesBranches" id="related-series-branches">
+      <h2 style="margin-top: 1.5em;">Product series branches</h2>
+      <table class="listing" id="related-series-branches-listing">
+        <thead>
+          <tr>
+            <th>Branch URL</th>
+            <th>Product series</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="branch_info seriesBranches">
+            <tal:defines define="branch python:branch_info[0];
+                                product_series python:branch_info[1];">
+            <td width="80%">
+              <a href="#"
+                 tal:content="branch/displayname"
+                 tal:attributes="href branch/fmt:url">
+                product series branch
+              </a>
+            </td>
+            <td>
+              <a href="#"
+                 tal:content="product_series/name"
+                 tal:attributes="href product_series/fmt:url">
+                product or series
+              </a>
+            </td>
+            </tal:defines>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </table>
 </fieldset>

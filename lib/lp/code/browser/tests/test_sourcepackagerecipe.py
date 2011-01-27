@@ -32,6 +32,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -109,7 +110,7 @@ class TestCaseForRecipe(BrowserTestCase):
             daily_build_archive=self.ppa)
 
     def createRelatedBranches(self, base_branch=None, nr_series_branches=5,
-                              nr_package_branches=5):
+                              nr_package_branches=5, with_private=False):
         """Create a recipe base branch and some others associated with it.
         The other branches are:
           - series branches: a set of branches associated with product
@@ -117,7 +118,7 @@ class TestCaseForRecipe(BrowserTestCase):
           - package branches: a set of branches associated with packagesource
             entities of the same product as the recipe base branch.
         """
-        related_series_branches = set()
+        related_series_branch_info = []
         related_package_branches = set()
         # Make the base_branch if required and find the product if one exists.
         naked_product = None
@@ -132,21 +133,34 @@ class TestCaseForRecipe(BrowserTestCase):
 
         # Only branches related to products have related series branches.
         if nr_series_branches > 0 and naked_product is not None:
-            # Add a development branch
-            naked_product.development_focus.name = 'trunk'
-            devel_branch = self.factory.makeProductBranch(
-                product=naked_product, name='trunk', owner=self.chef)
-            linked_branch = ICanHasLinkedBranch(naked_product)
-            linked_branch.setBranch(devel_branch)
-            related_series_branches.add(devel_branch)
-
+            series_branch_info = []
             # Add some product series
             for x in range(nr_series_branches-1):
                 branch = self.factory.makeBranch(
                     product=naked_product, owner=self.chef)
-                self.factory.makeProductSeries(
+                series = self.factory.makeProductSeries(
                     product=naked_product, branch=branch)
-                related_series_branches.add(branch)
+                series_branch_info.append((branch, series))
+            if with_private:
+                branch = self.factory.makeBranch(
+                    product=naked_product, owner=self.chef, private=True)
+                series = self.factory.makeProductSeries(
+                    product=naked_product, branch=branch)
+                series_branch_info.append((branch, series))
+
+            # Sort them
+            related_series_branch_info = sorted_version_numbers(
+                    series_branch_info, key=lambda branch_info: (
+                        getattr(branch_info[1], 'name')))
+
+            # Add a development branch at the start of the list.
+            naked_product.development_focus.name = 'trunk'
+            devel_branch = self.factory.makeProductBranch(
+                product=naked_product, name='trunk_branch', owner=self.chef)
+            linked_branch = ICanHasLinkedBranch(naked_product)
+            linked_branch.setBranch(devel_branch)
+            related_series_branch_info.insert(0,
+                    (devel_branch, naked_product.development_focus))
 
         if nr_package_branches > 0:
             # Create related package branches if the base_branch is
@@ -196,10 +210,10 @@ class TestCaseForRecipe(BrowserTestCase):
 
         return (
             base_branch,
-            sorted(related_series_branches, key=attrgetter('unique_name')),
+            related_series_branch_info,
             sorted(related_package_branches, key=attrgetter('unique_name')))
 
-    def checkRelatedBranches(self, related_series_branches,
+    def checkRelatedBranches(self, related_series_branch_info,
                              related_package_branches, browser_contents):
         """Check that the browser contents contain the correct branch info."""
         login(ANONYMOUS)
@@ -210,6 +224,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.assertIsNot(related_branches, None)
 
         # Check the related package branches.
+        root_url = canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='code')
+        root_url = root_url.rstrip('/')
         branch_table = soup.find(
             'table', {'id': 'related-package-branches-listing'})
         if not related_package_branches:
@@ -218,9 +235,6 @@ class TestCaseForRecipe(BrowserTestCase):
             rows = branch_table.tbody.findAll('tr')
 
             package_branches_info = []
-            root_url = canonical_url(
-                getUtility(ILaunchpadRoot), rootsite='code')
-            root_url = root_url.rstrip('/')
             for row in rows:
                 branch_links = row.findAll('a')
                 self.assertEqual(2, len(branch_links))
@@ -243,7 +257,7 @@ class TestCaseForRecipe(BrowserTestCase):
         # Check the related series branches.
         branch_table = soup.find(
             'table', {'id': 'related-series-branches-listing'})
-        if not related_series_branches:
+        if not related_series_branch_info:
             self.assertIs(branch_table, None)
         else:
             rows = branch_table.tbody.findAll('tr')
@@ -258,13 +272,19 @@ class TestCaseForRecipe(BrowserTestCase):
                 series_branches_info.append(branch_links[1]['href'])
                 series_branches_info.append(branch_links[1].renderContents())
             expected_branch_info = []
-            for branch in related_series_branches:
+            for branch_info in related_series_branch_info:
+                branch = branch_info[0]
+                product_series = branch_info[1]
                 expected_branch_info.append(
-                    canonical_url(branch, rootsite='code'))
+                    canonical_url(branch,
+                                  rootsite='code',
+                                  path_only_if_possible=True))
                 expected_branch_info.append(branch.displayname)
-                expected_branch_info.append(canonical_url(branch.owner))
-                expected_branch_info.append(branch.owner.displayname)
-            self.assertEqual(series_branches_info, expected_branch_info)
+                expected_branch_info.append(
+                    canonical_url(product_series,
+                                  path_only_if_possible=True))
+                expected_branch_info.append(product_series.name)
+            self.assertEqual(expected_branch_info, series_branches_info)
 
 
 def get_message_text(browser, index):
@@ -619,7 +639,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_new_recipe_with_package_branches(self):
         # The series branches table should not appear if there are none.
-        (branch, related_series_branches, related_package_branches) = (
+        (branch, related_series_branch_info, related_package_branches) = (
             self.createRelatedBranches(nr_series_branches=0))
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
@@ -627,15 +647,15 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         related_branches = soup.find('fieldset', {'id': 'related-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-package-branches-listing'})
+            'div', {'id': 'related-package-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-series-branches-listing'})
+            'div', {'id': 'related-series-branches'})
         self.assertIs(related_branches, None)
 
     def test_new_recipe_with_series_branches(self):
         # The package branches table should not appear if there are none.
-        (branch, related_series_branches, related_package_branches) = (
+        (branch, related_series_branch_info, related_package_branches) = (
             self.createRelatedBranches(nr_package_branches=0))
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
@@ -643,21 +663,21 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         related_branches = soup.find('fieldset', {'id': 'related-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-series-branches-listing'})
+            'div', {'id': 'related-series-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-package-branches-listing'})
+            'div', {'id': 'related-package-branches'})
         self.assertIs(related_branches, None)
 
     def test_new_product_branch_recipe_view_related_branches(self):
         # The view class should provide the expected related branches for
         # rendering.
-        (branch, related_series_branches,
+        (branch, related_series_branch_info,
             related_package_branches) = self.createRelatedBranches()
         with person_logged_in(self.chef):
             view = create_initialized_view(branch, "+new-recipe")
             self.assertEqual(
-                related_series_branches, view.related_series_branches)
+                related_series_branch_info, view.related_series_branch_info)
             self.assertEqual(
                 related_package_branches, view.related_package_branches)
 
@@ -669,18 +689,30 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
                 self.createRelatedBranches(base_branch))
         with person_logged_in(self.chef):
             view = create_initialized_view(branch, "+new-recipe")
-            self.assertEqual(0, len(view.related_series_branches))
+            self.assertEqual(0, len(view.related_series_branch_info))
+            self.assertEqual(
+                related_package_branches, view.related_package_branches)
+
+    def test_new_product_branch_recipe_view_with_private_branches(self):
+        # The view class should not expose private branches.
+        (branch, related_series_branch_info,
+            related_package_branches) = self.createRelatedBranches(
+                with_private=True)
+        with person_logged_in(self.chef):
+            view = create_initialized_view(branch, "+new-recipe")
+            self.assertEqual(
+                related_series_branch_info, view.related_series_branch_info)
             self.assertEqual(
                 related_package_branches, view.related_package_branches)
 
     def test_new_product_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
-        (branch, related_series_branches,
+        (branch, related_series_branch_info,
             related_package_branches) = self.createRelatedBranches()
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
         self.checkRelatedBranches(
-            related_series_branches, related_package_branches,
+            related_series_branch_info, related_package_branches,
             browser.contents)
 
     def test_new_sourcepackage_branch_recipe_with_related_branches(self):
@@ -1135,10 +1167,10 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         related_branches = soup.find('fieldset', {'id': 'related-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-package-branches-listing'})
+            'div', {'id': 'related-package-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-series-branches-listing'})
+            'div', {'id': 'related-series-branches'})
         self.assertIs(related_branches, None)
 
     def test_edit_recipe_with_series_branches(self):
@@ -1153,10 +1185,10 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         related_branches = soup.find('fieldset', {'id': 'related-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-series-branches-listing'})
+            'div', {'id': 'related-series-branches'})
         self.assertIsNot(related_branches, None)
         related_branches = soup.find(
-            'table', {'id': 'related-package-branches-listing'})
+            'div', {'id': 'related-package-branches'})
         self.assertIs(related_branches, None)
 
     def test_edit_product_branch_recipe_view_related_branches(self):
@@ -1164,12 +1196,12 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # rendering.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            (branch, related_series_branches,
+            (branch, related_series_branch_info,
                 related_package_branches) = self.createRelatedBranches(
                     base_branch=recipe.base_branch)
             view = create_initialized_view(recipe, "+edit")
             self.assertEqual(
-                related_series_branches, view.related_series_branches)
+                related_series_branch_info, view.related_series_branch_info)
             self.assertEqual(
                 related_package_branches, view.related_package_branches)
 
@@ -1183,7 +1215,20 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             (branch, ignore, related_package_branches) = (
                     self.createRelatedBranches(base_branch))
             view = create_initialized_view(recipe, "+edit")
-            self.assertEqual(0, len(view.related_series_branches))
+            self.assertEqual(0, len(view.related_series_branch_info))
+            self.assertEqual(
+                related_package_branches, view.related_package_branches)
+
+    def test_edit_product_branch_recipe_view_with_private_branches(self):
+        # The view class should not expose private branches.
+        with person_logged_in(self.chef):
+            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+            (branch, related_series_branch_info,
+                related_package_branches) = self.createRelatedBranches(
+                    base_branch=recipe.base_branch, with_private=True)
+            view = create_initialized_view(recipe, "+edit")
+            self.assertEqual(
+                related_series_branch_info, view.related_series_branch_info)
             self.assertEqual(
                 related_package_branches, view.related_package_branches)
 
@@ -1191,13 +1236,13 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            (branch, related_series_branches,
+            (branch, related_series_branch_info,
                 related_package_branches) = self.createRelatedBranches(
                     base_branch=recipe.base_branch)
         browser = self.getUserBrowser(
             canonical_url(recipe, view_name='+edit'), user=self.chef)
         self.checkRelatedBranches(
-            related_series_branches, related_package_branches,
+            related_series_branch_info, related_package_branches,
             browser.contents)
 
     def test_edit_sourcepackage_branch_recipe_with_related_branches(self):

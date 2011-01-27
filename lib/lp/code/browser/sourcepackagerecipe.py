@@ -93,6 +93,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     )
+from lp.registry.browser.product import SortSeriesMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
@@ -415,17 +416,17 @@ class RelatedBranchesWidget(Widget):
         '../templates/sourcepackagerecipe-related-branches.pt')
 
     related_package_branches = []
-    related_series_branches = []
+    related_series_branch_info = []
 
     def hasInput(self):
         return True
 
     def setRenderedValue(self, value):
         self.related_package_branches = value['related_package_branches']
-        self.related_series_branches = value['related_series_branches']
+        self.related_series_branch_info = value['related_series_branch_info']
 
 
-class RecipeRelatedBranchesMixin(LaunchpadFormView):
+class RecipeRelatedBranchesMixin(LaunchpadFormView, SortSeriesMixin):
     """A class to find related branches for a recipe's base branch."""
 
     custom_widget('related-branches', RelatedBranchesWidget)
@@ -446,37 +447,62 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
         self.widgets['related-branches'].display_label = False
         self.widgets['related-branches'].setRenderedValue(dict(
                 related_package_branches=self.related_package_branches,
-                related_series_branches=self.related_series_branches))
+                related_series_branch_info=self.related_series_branch_info))
+
+    def _getSeriesBranches(self):
+        """Get the series branches for the product, dev focus first."""
+        sorted_series = self.sorted_active_series_list
+        result = []
+
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].branch
+        if check_permission('launchpad.View', dev_focus_branch):
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = ICanHasLinkedBranch(series).branch
+            if (branch is not None and
+                branch not in result and
+                check_permission('launchpad.View', branch)):
+                result.append(branch)
+        return result
 
     @cachedproperty
-    def related_series_branches(self):
-        """Find development branches related to the base branch's product."""
-        result = set()
+    def related_series_branch_info(self):
+        """Find development branch info related to the base branch's product.
+
+        The result is a list of tuples:
+            (branch, product_series)
+        where:
+            branch: the related branch.
+            product_series: the product series associated with the branch.
+
+        The development focus is first in the list.
+        """
+        result = []
         branch_to_check = self.getBranch()
 
         # Branch target may be product or sourcepackage. We only want to deal
-        # with products here.
-        product = branch_to_check.product
-        if product is None:
+        # with products here. Set product member attribute for use in the
+        # sorted_active_series_list call.
+        self.product = branch_to_check.product
+        if self.product is None:
             return result
 
-        # We include the development focus branch.
-        dev_focus_branch = ICanHasLinkedBranch(product).branch
-        if dev_focus_branch is not None:
-            result.add(dev_focus_branch)
-
-        # Now any branches for the product's series.
-        for series in product.series:
+        sorted_series = self.sorted_active_series_list
+        for series in sorted_series:
             try:
                 branch = ICanHasLinkedBranch(series).branch
-                if branch is not None:
-                    result.add(branch)
+                branch = series.branch
+                if (branch is not None and
+                    branch not in result and branch != branch_to_check and
+                    check_permission('launchpad.View', branch)):
+                    result.append((branch, series))
             except NoLinkedBranch:
                 # If there's no branch for a particular series, we don't care.
                 pass
-        # We don't want to include the source branch.
-        result.discard(branch_to_check)
-        return sorted(result, key=attrgetter('unique_name'))
+
+        return result
 
     @cachedproperty
     def related_package_branches(self):
@@ -492,8 +518,9 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
             for sourcepackage in product.distrosourcepackages:
                 try:
                     branch = ICanHasLinkedBranch(sourcepackage).branch
-                    if branch is not None:
-                        result.add(branch)
+                    if (branch is not None and
+                        check_permission('launchpad.View', branch)):
+                            result.add(branch)
                 except NoLinkedBranch:
                     # If there's no branch for a particular source package,
                     # we don't care.
@@ -504,7 +531,9 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
         sourcepackage = branch_to_check.sourcepackage
         if sourcepackage is not None:
             linked_branches = sourcepackage.linkedBranches()
-            result.update(linked_branches.values())
+            result.update(
+                    [branch for branch in linked_branches.values()
+                     if check_permission('launchpad.View', branch)])
 
         # We don't want to include the source branch.
         result.discard(branch_to_check)
