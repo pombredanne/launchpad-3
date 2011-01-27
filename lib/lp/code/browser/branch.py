@@ -100,13 +100,13 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.suggestion import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
