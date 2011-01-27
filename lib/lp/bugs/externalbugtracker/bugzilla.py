@@ -471,10 +471,6 @@ class Bugzilla(ExternalBugTracker):
                 self.remote_bug_product[bug_id] = (
                     product_node.childNodes[0].data)
 
-    def initializeRemoteImportance(self, bug_ids):
-        for bug_id in bug_ids:
-            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
-
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`."""
         try:
