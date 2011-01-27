@@ -22,6 +22,7 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from canonical.lazr.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -39,6 +40,7 @@ class WidgetBase:
 
     def __init__(self, context, exported_field):
         self.context = context
+        self.request = get_current_browser_request()
         self.exported_field = exported_field
         self.attribute_name = exported_field.__name__
         self.mutator_method_name = None
