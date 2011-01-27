@@ -64,8 +64,8 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
     def checkAuthenticated(self, user):
         """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs. Any bug that can be
-        seen can be edited.
+        explicit subscribers to edit private bugs. Any bug that can be seen can
+        be edited.
         """
         return self.obj.userCanView(user)
 
@@ -132,26 +132,6 @@ class EditBugAttachment(
 class ViewBugSubscription(AnonymousAuthorization):
 
     usedfor = IBugSubscription
-
-
-class EditBugSubscription(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBugSubscription
-
-    def checkAuthenticated(self, user):
-        """Check that a user may edit a subscription.
-
-        A user may edit a subscription if:
-         - They are the owner of the subscription.
-         - They are the owner of the team that owns the subscription.
-         - They are an admin of the team that owns the subscription.
-        """
-        if self.obj.person.isTeam():
-            return (
-                self.obj.person.teamowner == user.person or
-                user.person in self.obj.person.adminmembers)
-        else:
-            return user.person == self.obj.person
 
 
 class ViewBugMessage(AnonymousAuthorization):

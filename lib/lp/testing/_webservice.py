@@ -153,7 +153,7 @@ class QueryCollector:
     """Collect database calls made in web requests.
 
     These are only retrievable at the end of a request, and for tests it is
-    useful to be able to make assertions about the calls made during a
+    useful to be able to make aassertions about the calls made during a
     request: this class provides a tool to gather them in a simple fashion.
 
     :ivar count: The count of db queries the last web request made.
