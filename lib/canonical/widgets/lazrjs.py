@@ -92,10 +92,12 @@ class WidgetBase:
 class TextWidgetBase(WidgetBase):
 
     def __init__(self, context, exported_field, content_box_id,
-                 accept_empty, title, edit_view):
+                 accept_empty, title, edit_view, edit_url):
         super(TextWidgetBase, self).__init__(
             context, exported_field, content_box_id)
-        self.edit_url = canonical_url(self.context, view_name=edit_view)
+        if edit_url is None:
+            edit_url = canonical_url(self.context, view_name=edit_view)
+        self.edit_url = edit_url
         self.accept_empty = simplejson.dumps(accept_empty)
         self.title = title
         self.json_attribute = simplejson.dumps(self.api_attribute)
@@ -113,7 +115,7 @@ class TextLineEditorWidget(TextWidgetBase):
 
     def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit",
-                 tag='h1', accept_empty=False, edit_view="+edit",
+                 tag='h1', accept_empty=False, edit_view="+edit", edit_url=None, 
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -136,7 +138,7 @@ class TextLineEditorWidget(TextWidgetBase):
         """
         super(TextLineEditorWidget, self).__init__(
             context, exported_field, content_box_id, accept_empty,
-            title, edit_view)
+            title, edit_view, edit_url)
         self.tag = tag
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
@@ -165,11 +167,11 @@ class TextAreaEditorWidget(TextWidgetBase):
 
     def __init__(self, context, exported_field, content_box_id=None,
                  title="Edit", value=None, accept_empty=False,
-                 edit_view="+edit", visible=True):
+                 edit_view="+edit", edit_url=None, visible=True):
         """Create the widget wrapper."""
         super(TextAreaEditorWidget, self).__init__(
             context, exported_field, content_box_id, accept_empty,
-            title, edit_view)
+            title, edit_view, edit_url)
         self.value = value
 
         self.accept_empty = simplejson.dumps(accept_empty)
