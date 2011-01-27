@@ -988,8 +988,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, IProduct['title'], title="Edit this title")
+            product, title_field, title)
         if self.context.programminglang is None:
             additional_arguments = dict(
                 default_text='Not yet specified',
@@ -997,12 +1000,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 )
         else:
             additional_arguments = {}
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, IProduct['programminglang'],
-            title='Edit programming languages',
-            tag='span',
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title,
+            tag='span', width='9em', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'InlineEditPickerWidget',
+    'standard_text_html_representation',
     'TextAreaEditorWidget',
     'TextLineEditorWidget',
     'vocabulary_to_choice_edit_items',
@@ -26,6 +27,7 @@ from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.propertycache import cachedproperty
 
 
@@ -91,8 +93,8 @@ class WidgetBase:
 class TextWidgetBase(WidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
-    def __init__(self, context, exported_field, content_box_id,
-                 title, edit_view, edit_url):
+    def __init__(self, context, exported_field, title, content_box_id,
+                 edit_view, edit_url):
         super(TextWidgetBase, self).__init__(
             context, exported_field, content_box_id)
         if edit_url is None:
@@ -113,8 +115,7 @@ class TextLineEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, content_box_id=None,
-                 title="Edit",
+    def __init__(self, context, exported_field, title, content_box_id=None,
                  tag='h1', edit_view="+edit", edit_url=None,
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
@@ -136,8 +137,8 @@ class TextLineEditorWidget(TextWidgetBase):
         :param width: Initial widget width.
         """
         super(TextLineEditorWidget, self).__init__(
-            context, exported_field, content_box_id,
-            title, edit_view, edit_url)
+            context, exported_field, title, content_box_id,
+            edit_view, edit_url)
         self.tag = tag
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
@@ -164,19 +165,28 @@ class TextAreaEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('../templates/text-area-editor.pt')
 
-    def __init__(self, context, exported_field, content_box_id=None,
-                 title="Edit", value=None,
-                 edit_view="+edit", edit_url=None, visible=True):
+    def __init__(self, context, exported_field, title, content_box_id=None,
+                 edit_view="+edit", edit_url=None,
+                 hide_empty=True, linkify_text=True):
         """Create the widget wrapper."""
         super(TextAreaEditorWidget, self).__init__(
-            context, exported_field, content_box_id,
-            title, edit_view, edit_url)
-        self.value = value
-        if visible:
-            self.tag_class = 'lazr-multiline-edit'
-        else:
-            self.tag_class = 'lazr-multiline-edit unseen'
+            context, exported_field, title, content_box_id,
+            edit_view, edit_url)
+        self.hide_empty = hide_empty
+        self.linkify_text = linkify_text
 
+    @property
+    def tag_class(self):
+        """The CSS class for the widget."""
+        classes = ['lazr-multiline-edit']
+        if self.hide_empty and not self.value:
+            classes.append('unseen')
+        return ' '.join(classes)
+
+    @cachedproperty
+    def value(self):
+        text = getattr(self.context, self.attribute_name, None)
+        return standard_text_html_representation(text, self.linkify_text)
 
 
 class InlineEditPickerWidget(WidgetBase):
@@ -293,3 +303,13 @@ def vocabulary_to_choice_edit_items(
     else:
         return items
 
+
+def standard_text_html_representation(value, linkify_text=True):
+    """Render a string for html display.
+
+    For this we obfuscate email and render as html.
+    """
+    if value is None:
+        return ''
+    nomail = FormattersAPI(value).obfuscate_email()
+    return FormattersAPI(nomail).text_to_html(linkify_text=linkify_text)

@@ -92,7 +92,6 @@ from lp.app.browser.lazrjs import (
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import (
@@ -700,18 +699,11 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def description_html(self):
         """The description as widget HTML."""
-        description = self.context.description
-        if description is None:
-            description = ''
-        formatter = FormattersAPI
-        hide_email = formatter(description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+        mp = self.context
+        description = IBranchMergeProposal['description']
+        title = "Description of the Change"
         return TextAreaEditorWidget(
-            self.context,
-            IBranchMergeProposal['description'],
-            title="Description of the Change",
-            value=description, edit_view='+edit-description',
-            visible=bool(description))
+            mp, description, title, edit_view='+edit-description')
 
     @property
     def edit_commit_message_link_class(self):
@@ -723,18 +715,11 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def commit_message_html(self):
         """The commit message as widget HTML."""
-        commit_message = self.context.commit_message
-        if commit_message is None:
-            commit_message = ''
-        formatter = FormattersAPI
-        hide_email = formatter(commit_message).obfuscate_email()
-        commit_message = formatter(hide_email).text_to_html()
+        mp = self.context,
+        commit_message = IBranchMergeProposal['commit_message']
+        title = "Commit Message"
         return TextAreaEditorWidget(
-            self.context,
-            IBranchMergeProposal['commit_message'],
-            title="Commit Message",
-            value=commit_message, edit_view='+edit-commit-message',
-            visible=bool(commit_message))
+            mp, commit_message, title, edit_view='+edit-commit-message')
 
     @property
     def status_config(self):

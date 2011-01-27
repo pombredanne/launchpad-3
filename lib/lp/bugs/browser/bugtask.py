@@ -177,7 +177,6 @@ from lp.app.browser.lazrjs import (
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import (
-    FormattersAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
@@ -1035,15 +1034,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_description_html(self):
         """The bug's description as HTML."""
-        formatter = FormattersAPI
-        hide_email = formatter(self.context.bug.description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+        bug = self.context.bug
+        description = IBug['description']
+        title = "Bug Description"
+        edit_url = canonical_url(self.context, view_name='+edit')
         return TextAreaEditorWidget(
-            self.context.bug,
-            IBug['description'],
-            title="Bug Description",
-            value=description,
-            edit_url=canonical_url(self.context, view_name='+edit'))
+            bug, description, title, edit_url=edit_url)
 
     @property
     def bug_heat_html(self):
