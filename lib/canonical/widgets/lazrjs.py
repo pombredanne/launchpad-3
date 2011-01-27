@@ -34,6 +34,10 @@ from lp.services.propertycache import cachedproperty
 class WidgetBase:
     """Useful methods for all widgets."""
 
+    # Class variable used to generate a unique per-page id for the widget
+    # in case it's not provided.
+    last_id = 0
+
     def __init__(self, context, exported_field):
         self.context = context
         self.exported_field = exported_field
@@ -48,6 +52,12 @@ class WidgetBase:
             self.mutator_method_name = mutator_method.__name__
         else:
             self.mutator_method_name = None
+
+    @classmethod
+    def _generate_id(cls):
+        """Return a presumably unique id for this widget."""
+        cls.last_id += 1
+        return '%s-id-%d' % (cls.widget_type, cls.last_id)
 
     @property
     def can_write(self):
@@ -290,11 +300,11 @@ class InlineEditPickerWidget(WidgetBase):
     VocabularyPickerWidget.
     """
 
-    last_id = 0
+    widget_type = 'inline-picker-activator'
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
     def __init__(self, context, request, exported_field, default_html,
-                 content_box_id=None, header='Select an item',
+                 content_box_id, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
                  null_display_value='None'):
         """Create a widget wrapper.
@@ -314,12 +324,7 @@ class InlineEditPickerWidget(WidgetBase):
         super(InlineEditPickerWidget, self).__init__(context, exported_field)
         self.request = request
         self.default_html = default_html
-
-        if content_box_id is None:
-            self.content_box_id = self._generate_id()
-        else:
-            self.content_box_id = content_box_id
-
+        self.content_box_id = content_box_id
         self.header = header
         self.step_title = step_title
         self.remove_button_text = remove_button_text
@@ -358,12 +363,6 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
-
-    @classmethod
-    def _generate_id(cls):
-        """Return a presumably unique id for this widget."""
-        cls.last_id += 1
-        return 'inline-picker-activator-id-%d' % cls.last_id
 
     @property
     def json_resource_uri(self):
