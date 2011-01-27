@@ -98,6 +98,7 @@ class TextWidgetBase(WidgetBase):
         if edit_url is None:
             edit_url = canonical_url(self.context, view_name=edit_view)
         self.edit_url = edit_url
+        # TODO: check the exported_field to determine accept_empty
         self.accept_empty = simplejson.dumps(accept_empty)
         self.title = title
         self.json_attribute = simplejson.dumps(self.api_attribute)
@@ -173,8 +174,6 @@ class TextAreaEditorWidget(TextWidgetBase):
             context, exported_field, content_box_id, accept_empty,
             title, edit_view, edit_url)
         self.value = value
-
-        self.accept_empty = simplejson.dumps(accept_empty)
         if visible:
             self.tag_class = 'lazr-multiline-edit'
         else:
@@ -193,7 +192,7 @@ class InlineEditPickerWidget(WidgetBase):
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
     def __init__(self, context, exported_field, default_html,
-                 content_box_id, header='Select an item',
+                 content_box_id=None, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
                  null_display_value='None'):
         """Create a widget wrapper.
@@ -222,6 +221,7 @@ class InlineEditPickerWidget(WidgetBase):
         self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
         self.json_vocabulary_name = simplejson.dumps(
             self.exported_field.vocabularyName)
+        # TODO: can this be unified with accept_empty?
         self.show_remove_button = not self.exported_field.required
 
     @property

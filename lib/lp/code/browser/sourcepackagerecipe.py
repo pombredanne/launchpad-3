@@ -237,7 +237,6 @@ class SourcePackageRecipeView(LaunchpadView):
         return InlineEditPickerWidget(
             self.context, ISourcePackageRecipe['owner'],
             format_link(self.context.owner),
-            content_box_id='recipe-owner',
             header='Change owner',
             step_title='Select a new owner')
 
@@ -252,7 +251,6 @@ class SourcePackageRecipeView(LaunchpadView):
             self.context,
             ISourcePackageAddSchema['daily_build_archive'],
             initial_html,
-            content_box_id='recipe-ppa',
             header='Change daily build archive',
             step_title='Select a PPA')
 
