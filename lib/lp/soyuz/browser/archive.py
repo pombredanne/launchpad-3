@@ -863,9 +863,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     @property
     def displayname_edit_widget(self):
         widget = TextLineEditorWidget(
-            self.context, 'displayname',
+            self.context, IArchive['displayname'],
             canonical_url(self.context, view_name='+edit'),
-            id="displayname", title="Edit the displayname")
+            "displayname", title="Edit the displayname")
         return widget
 
     @property

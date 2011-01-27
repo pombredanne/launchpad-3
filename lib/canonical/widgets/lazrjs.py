@@ -38,10 +38,12 @@ class WidgetBase:
     # in case it's not provided.
     last_id = 0
 
-    def __init__(self, context, exported_field):
+    def __init__(self, context, exported_field, content_box_id):
         self.context = context
-        self.request = get_current_browser_request()
         self.exported_field = exported_field
+        self.content_box_id = content_box_id
+
+        self.request = get_current_browser_request()
         self.attribute_name = exported_field.__name__
         self.mutator_method_name = None
         ws_stack = exported_field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
@@ -83,58 +85,31 @@ class WidgetBase:
             return False
 
 
-class TextLineEditorWidget:
+class TextWidgetBase(WidgetBase):
+
+    def __init__(self, context, exported_field, edit_url, content_box_id,
+                 accept_empty, title):
+        super(TextWidgetBase, self).__init__(
+            context, exported_field, content_box_id)
+        self.edit_url = edit_url
+        self.accept_empty = simplejson.dumps(accept_empty)
+        self.title = title
+        self.json_attribute = simplejson.dumps(self.api_attribute)
+        self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
+
+    @property
+    def json_attribute_uri(self):
+        return simplejson.dumps(self.resource_uri + '/' + self.api_attribute)
+
+
+class TextLineEditorWidget(TextWidgetBase):
     """Wrapper for the lazr-js inlineedit/editor.js widget."""
 
-    # Class variable used to generate a unique per-page id for the widget
-    # in case it's not provided.
-    last_id = 0
+    __call__ = ViewPageTemplateFile('templates/text-line-editor.pt')
 
-    # The HTML template used to render the widget.
-    # Replacements:
-    #   activation_script: the JS script to active the widget
-    #   attribute: the name of the being edited
-    #   context_url: the url to the current context
-    #   edit_url: the URL used to edit the value when JS is turned off
-    #   id: the widget unique id
-    #   title: the widget title
-    #   trigger: the trigger (button) HTML code
-    #   value: the current field value
-    WIDGET_TEMPLATE = dedent(u"""\
-        <%(tag)s id="%(id)s"><span
-            class="yui3-editable_text-text">%(value)s</span>
-            %(trigger)s
-        </%(tag)s>
-        %(activation_script)s
-        """)
-
-    # Template for the trigger button.
-    TRIGGER_TEMPLATE = dedent(u"""\
-        <a href="%(edit_url)s" class="yui3-editable_text-trigger sprite edit"
-        ></a>
-        """)
-
-    # Template for the activation script.
-    ACTIVATION_TEMPLATE = dedent(u"""\
-        <script>
-        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
-            var widget = new Y.EditableText({
-                contentBox: '#%(id)s',
-                accept_empty: %(accept_empty)s,
-                width: '%(width)s',
-                initial_value_override: %(initial_value_override)s
-            });
-            widget.editor.plug({
-                fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                  patch: '%(public_attribute)s',
-                  resource: '%(context_url)s'}});
-            widget.render();
-        });
-        </script>
-        """)
-
-    def __init__(self, context, attribute, edit_url, id=None, title="Edit",
-                 tag='h1', public_attribute=None, accept_empty=False,
+    def __init__(self, context, exported_field, edit_url, content_box_id,
+                 title="Edit",
+                 tag='h1', accept_empty=False,
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -155,67 +130,24 @@ class TextLineEditorWidget:
             field value instead of the attribute's current value.
         :param width: Initial widget width.
         """
-        self.context = context
-        self.attribute = attribute
-        self.edit_url = edit_url
+        super(TextLineEditorWidget, self).__init__(
+            context, exported_field, edit_url, content_box_id, accept_empty,
+            title)
         self.tag = tag
-        if accept_empty:
-            self.accept_empty = 'true'
-        else:
-            self.accept_empty = 'false'
-        if public_attribute is None:
-            self.public_attribute = attribute
-        else:
-            self.public_attribute = public_attribute
-        if id is None:
-            self.id = self._generate_id()
-        else:
-            self.id = id
-        self.title = title
         self.default_text = default_text
         self.initial_value_override = initial_value_override
         self.width = width
 
+    @property
+    def open_tag(self):
+        return '<%s id="%s">' % (self.tag, self.content_box_id)
 
-    @classmethod
-    def _generate_id(cls):
-        """Return a presumably unique id for this widget."""
-        cls.last_id += 1
-        return 'inline-textline-editor-id%d' % cls.last_id
-
-    def __call__(self):
-        """Return the HTML to include to render the widget."""
-        # We can't use the value None because of the cgi.escape() and because
-        # that wouldn't look very good in the ui!
-        value = getattr(self.context, self.attribute, self.default_text)
-        if value is None:
-            value = self.default_text
-        params = {
-            'activation_script': '',
-            'trigger': '',
-            'edit_url': self.edit_url,
-            'id': self.id,
-            'title': self.title,
-            'value': cgi.escape(value),
-            'context_url': canonical_url(
-                self.context, path_only_if_possible=True),
-            'attribute': self.attribute,
-            'tag': self.tag,
-            'public_attribute': self.public_attribute,
-            'accept_empty': self.accept_empty,
-            'initial_value_override': simplejson.dumps(
-                self.initial_value_override),
-            'width': self.width,
-            }
-        # Only display the trigger link and the activation script if
-        # the user can write the attribute.
-        if canWrite(self.context, self.attribute):
-            params['trigger'] = self.TRIGGER_TEMPLATE % params
-            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params 
+    @property
+    def close_tag(self):
+        return '</%s>' % self.tag
 
 
-class TextAreaEditorWidget(WidgetBase):
+class TextAreaEditorWidget(TextWidgetBase):
     """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
     __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
@@ -223,23 +155,16 @@ class TextAreaEditorWidget(WidgetBase):
     def __init__(self, context, exported_field, edit_url, content_box_id,
                  title="Edit", value=None, accept_empty=False, visible=True):
         """Create the widget wrapper."""
-        super(TextAreaEditorWidget, self).__init__(context, exported_field)
-        self.edit_url = edit_url
-        self.content_box_id = content_box_id
-        self.title = title
+        super(TextAreaEditorWidget, self).__init__(
+            context, exported_field, edit_url, content_box_id, accept_empty,
+            title)
         self.value = value
 
-        self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
         self.accept_empty = simplejson.dumps(accept_empty)
-        self.json_attribute = simplejson.dumps(self.api_attribute)
         if visible:
             self.tag_class = 'lazr-multiline-edit'
         else:
             self.tag_class = 'lazr-multiline-edit unseen'
-
-    @property
-    def json_attribute_uri(self):
-        return simplejson.dumps(self.resource_uri + '/' + self.api_attribute)
 
 
 
@@ -270,9 +195,9 @@ class InlineEditPickerWidget(WidgetBase):
         :param remove_button_text: Override default button text: "Remove"
         :param null_display_value: This will be shown for a missing value
         """
-        super(InlineEditPickerWidget, self).__init__(context, exported_field)
+        super(InlineEditPickerWidget, self).__init__(
+            context, exported_field, content_box_id)
         self.default_html = default_html
-        self.content_box_id = content_box_id
         self.header = header
         self.step_title = step_title
         self.remove_button_text = remove_button_text
