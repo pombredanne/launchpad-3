@@ -680,7 +680,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'],
-            canonical_url(self.context, view_name='+edit'),
             "bug-title", title="Edit this summary")
 
         # XXX 2010-10-05 gmb bug=655597:
@@ -1042,7 +1041,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return TextAreaEditorWidget(
             self.context.bug,
             IBug['description'],
-            canonical_url(self.context, view_name='+edit'),
             "edit-description",
             title="Bug Description",
             value=description)

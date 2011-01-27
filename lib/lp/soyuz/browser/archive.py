@@ -864,7 +864,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def displayname_edit_widget(self):
         widget = TextLineEditorWidget(
             self.context, IArchive['displayname'],
-            canonical_url(self.context, view_name='+edit'),
             "displayname", title="Edit the displayname")
         return widget
 
@@ -911,7 +910,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         return TextAreaEditorWidget(
             self.context,
             IArchive['description'],
-            canonical_url(self.context, view_name='+edit'),
             "edit-description",
             title=self.archive_label + " description",
             value=description)

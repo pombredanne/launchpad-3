@@ -710,10 +710,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return TextAreaEditorWidget(
             self.context,
             IBranchMergeProposal['description'],
-            canonical_url(self.context, view_name='+edit-description'),
             "edit-description",
             title="Description of the Change",
-            value=description,
+            value=description, edit_view='+edit-description',
             accept_empty=True, visible=visible)
 
     @property
@@ -736,10 +735,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return TextAreaEditorWidget(
             self.context,
             IBranchMergeProposal['commit_message'],
-            canonical_url(self.context, view_name='+edit-commit-message'),
             "edit-commit_message",
             title="Commit Message",
-            value=commit_message,
+            value=commit_message, edit_view='+edit-commit-message',
             accept_empty=True, visible=visible)
 
     @property

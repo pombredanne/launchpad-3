@@ -87,11 +87,11 @@ class WidgetBase:
 
 class TextWidgetBase(WidgetBase):
 
-    def __init__(self, context, exported_field, edit_url, content_box_id,
-                 accept_empty, title):
+    def __init__(self, context, exported_field, content_box_id,
+                 accept_empty, title, edit_view):
         super(TextWidgetBase, self).__init__(
             context, exported_field, content_box_id)
-        self.edit_url = edit_url
+        self.edit_url = canonical_url(self.context, view_name=edit_view)
         self.accept_empty = simplejson.dumps(accept_empty)
         self.title = title
         self.json_attribute = simplejson.dumps(self.api_attribute)
@@ -107,9 +107,9 @@ class TextLineEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, edit_url, content_box_id,
+    def __init__(self, context, exported_field, content_box_id,
                  title="Edit",
-                 tag='h1', accept_empty=False,
+                 tag='h1', accept_empty=False, edit_view="+edit",
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -131,8 +131,8 @@ class TextLineEditorWidget(TextWidgetBase):
         :param width: Initial widget width.
         """
         super(TextLineEditorWidget, self).__init__(
-            context, exported_field, edit_url, content_box_id, accept_empty,
-            title)
+            context, exported_field, content_box_id, accept_empty,
+            title, edit_view)
         self.tag = tag
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
@@ -159,12 +159,13 @@ class TextAreaEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/text-area-editor.pt')
 
-    def __init__(self, context, exported_field, edit_url, content_box_id,
-                 title="Edit", value=None, accept_empty=False, visible=True):
+    def __init__(self, context, exported_field, content_box_id,
+                 title="Edit", value=None, accept_empty=False,
+                 edit_view="+edit", visible=True):
         """Create the widget wrapper."""
         super(TextAreaEditorWidget, self).__init__(
-            context, exported_field, edit_url, content_box_id, accept_empty,
-            title)
+            context, exported_field, content_box_id, accept_empty,
+            title, edit_view)
         self.value = value
 
         self.accept_empty = simplejson.dumps(accept_empty)
