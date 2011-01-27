@@ -623,8 +623,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
