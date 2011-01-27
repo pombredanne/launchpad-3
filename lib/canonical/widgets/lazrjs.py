@@ -39,7 +39,6 @@ class WidgetBase:
 
     def __init__(self, context, exported_field):
         self.context = context
-        self.resource_uri = canonical_url(context, force_local_path=True)
         self.exported_field = exported_field
         self.attribute_name = exported_field.__name__
         self.mutator_method_name = None
@@ -54,6 +53,10 @@ class WidgetBase:
             if mutator_info is not None:
                 mutator_method, mutator_extra = mutator_info
                 self.mutator_method_name = mutator_method.__name__
+
+    @property
+    def resource_uri(self):
+        return canonical_url(self.context, force_local_path=True)
 
     @classmethod
     def _generate_id(cls):
@@ -305,14 +308,13 @@ class InlineEditPickerWidget(WidgetBase):
     widget_type = 'inline-picker-activator'
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
-    def __init__(self, context, request, exported_field, default_html,
+    def __init__(self, context, exported_field, default_html,
                  content_box_id, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
                  null_display_value='None'):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
-        :param request: The request object.
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
@@ -324,7 +326,6 @@ class InlineEditPickerWidget(WidgetBase):
         :param null_display_value: This will be shown for a missing value
         """
         super(InlineEditPickerWidget, self).__init__(context, exported_field)
-        self.request = request
         self.default_html = default_html
         self.content_box_id = content_box_id
         self.header = header
@@ -333,7 +334,6 @@ class InlineEditPickerWidget(WidgetBase):
         self.null_display_value = null_display_value
 
         # JSON encoded attributes.
-        self.json_resource_uri = simplejson.dumps(self.resource_uri)
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
         self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
         self.json_vocabulary_name = simplejson.dumps(
@@ -366,6 +366,10 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
+
+    @property
+    def json_resource_uri(self):
+        return simplejson.dumps(self.resource_uri)
 
 
 def vocabulary_to_choice_edit_items(

@@ -90,9 +90,9 @@ has a vocabulary defined for it.
     ...     view = create_initialized_view(bugtask, '+index')
     ...     return InlineEditPickerWidget(
     ...         context=view.context,
-    ...         request=view.request,
     ...         interface_attribute=IBugTask['assignee'],
     ...         default_html='default-html',
+    ...         context_box_id='box-id',
     ...         header='Change assignee',
     ...         step_title='Search for people or teams',
     ...         remove_button_text='Remove Assignee',

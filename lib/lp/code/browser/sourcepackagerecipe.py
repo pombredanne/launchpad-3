@@ -235,7 +235,7 @@ class SourcePackageRecipeView(LaunchpadView):
     @property
     def person_picker(self):
         return InlineEditPickerWidget(
-            self.context, self.request, ISourcePackageRecipe['owner'],
+            self.context, ISourcePackageRecipe['owner'],
             format_link(self.context.owner),
             content_box_id='recipe-owner',
             header='Change owner',
@@ -249,7 +249,7 @@ class SourcePackageRecipeView(LaunchpadView):
         else:
             initial_html = format_link(ppa)
         return InlineEditPickerWidget(
-            self.context, self.request,
+            self.context,
             ISourcePackageAddSchema['daily_build_archive'],
             initial_html,
             content_box_id='recipe-ppa',
