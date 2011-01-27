@@ -540,8 +540,7 @@ class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
         naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
 
         self.assertEqual(None, ds_diff.package_diff_url)
-        self.assertTrue(ds_diff.parent_package_diff_url.startswith(
-            'http://localhost:58000/'))
+        self.assertTrue(ds_diff.parent_package_diff_url is not None)
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
