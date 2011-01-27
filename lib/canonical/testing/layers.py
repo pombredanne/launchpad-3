@@ -124,7 +124,7 @@ from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
-from canonical.librarian.testing.server import LibrarianTestSetup
+from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -820,13 +820,21 @@ class LibrarianLayer(DatabaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        cls.librarian_fixture = LibrarianTestSetup()
+        cls.librarian_fixture = LibrarianServerFixture(
+            BaseLayer.config_fixture)
         cls.librarian_fixture.setUp()
         cls._check_and_reset()
+
+        # Make sure things using the appserver config know the
+        # correct Librarian port numbers.
+        cls.appserver_config_fixture.add_section(
+            cls.librarian_fixture.service_config)
 
     @classmethod
     @profiled
     def tearDown(cls):
+        # Permit multiple teardowns while we sort out the layering
+        # responsibilities : not desirable though.
         if cls.librarian_fixture is None:
             return
         try:
@@ -837,9 +845,8 @@ class LibrarianLayer(DatabaseLayer):
             try:
                 if not cls._reset_between_tests:
                     raise LayerInvariantError(
-                            "_reset_between_tests not reset before LibrarianLayer "
-                            "shutdown"
-                            )
+                        "_reset_between_tests not reset before "
+                        "LibrarianLayer shutdown")
             finally:
                 librarian.cleanUp()
 
@@ -943,7 +950,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
-    
+
     @classmethod
     @profiled
     def testSetUp(cls):

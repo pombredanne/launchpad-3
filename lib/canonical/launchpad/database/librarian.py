@@ -30,7 +30,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-import storm.base
 from storm.locals import (
     Date,
     Desc,
@@ -71,6 +70,7 @@ from canonical.librarian.interfaces import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.database.stormbase import StormBase
 
 
 class LibraryFileContent(SQLBase):
@@ -305,7 +305,7 @@ class LibraryFileDownloadCount(SQLBase):
     country = Reference(country_id, 'Country.id')
 
 
-class TimeLimitedToken(storm.base.Storm):
+class TimeLimitedToken(StormBase):
     """A time limited access token for accessing a private file."""
 
     __storm_table__ = 'TimeLimitedToken'

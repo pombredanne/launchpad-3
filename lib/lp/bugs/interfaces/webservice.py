@@ -12,8 +12,6 @@ which tells `lazr.restful` that it should look for webservice exports here.
 __all__ = [
     'BugNominationStatusError',
     'IBug',
-    'InvalidBugTargetType',
-    'InvalidDuplicateValue',
     'IBugActivity',
     'IBugAttachment',
     'IBugBranch',
@@ -43,8 +41,6 @@ __all__ = [
 
 from lp.bugs.interfaces.bug import (
     IBug,
-    InvalidBugTargetType,
-    InvalidDuplicateValue,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -84,8 +80,6 @@ from lp.bugs.interfaces.cve import (
     )
 from lp.bugs.interfaces.malone import IMaloneApplication
 
-
-
 
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.

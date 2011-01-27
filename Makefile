@@ -383,7 +383,7 @@ clean: clean_js clean_buildout
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
-			  /var/tmp/fatsam.appserver \
+			  /var/tmp/fatsam.test \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \

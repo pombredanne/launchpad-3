@@ -916,7 +916,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             title=self.archive_label + " description",
             value=description)
 
-    @property
+    @cachedproperty
     def latest_updates(self):
         """Return the last five published sources for this archive."""
         sources = self.context.getPublishedSources(

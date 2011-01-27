@@ -15,6 +15,7 @@ __all__ = [
 
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
+    canonical_url,
     LaunchpadView,
     Link,
     )
@@ -46,6 +47,13 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
     def page_title(self):
         return 'Source Package Recipes for %(displayname)s' % {
             'displayname': self.context.displayname}
+
+    def initialize(self):
+        super(RecipeListingView, self).initialize()
+        recipes = self.context.getRecipes()
+        if recipes.count() == 1:
+            recipe = recipes.one()
+            self.request.response.redirect(canonical_url(recipe))
 
 
 class BranchRecipeListingView(RecipeListingView):

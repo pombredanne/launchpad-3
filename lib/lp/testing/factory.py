@@ -262,6 +262,7 @@ from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     launchpadlib_for,
     login,
     login_as,
@@ -2127,7 +2128,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
-        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # XXX: architecturetag & processorfamily are tightly coupled. It's
         # wrong to just make a fresh architecture tag without also making a
         # processor family to go with it (ideally with processors!)
         if architecturetag is None:
@@ -2384,6 +2385,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 spr = self.makeSourcePackageRelease(
                     source_package_recipe_build=sprb,
                     sourcepackagename=sourcepackagename,
+                    distroseries=distroseries, archive=archive)
+                spph = self.makeSourcePackagePublishingHistory(
+                    sourcepackagerelease=spr, archive=archive,
                     distroseries=distroseries)
 
                 # Make some complete and incomplete builds.
@@ -2592,7 +2596,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
-    def _makeTranslationsDict(self, translations=None):
+    def makeTranslationsDict(self, translations=None):
         """Make sure translations are stored in a dict, e.g. {0: "foo"}.
 
         If translations is already dict, it is returned unchanged.
@@ -2616,7 +2620,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
-        translations = self._makeTranslationsDict(translations)
+        translations = self.makeTranslationsDict(translations)
         translation_message = potmsgset.submitSuggestion(
             pofile, translator, translations)
         assert translation_message is not None, (
@@ -2838,6 +2842,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 subscription_policy=subscription_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
+
+    def makeTeamWithMailingListSubscribers(self, team_name, super_team=None,
+                                           auto_subscribe=True):
+        """Create a team, mailing list, and subscribers.
+
+        :param team_name: The name of the team to create.
+        :param super_team: Make the team a member of the super_team.
+        :param auto_subscribe: Automatically subscribe members to the
+            mailing list.
+        :return: A tuple of team and the member user.
+        """
+        team = self.makeTeam(name=team_name)
+        member = self.makePerson()
+        with celebrity_logged_in('admin'):
+            if super_team is None:
+                mailing_list = self.makeMailingList(team, team.teamowner)
+            else:
+                super_team.addMember(
+                    team, reviewer=team.teamowner, force_team_add=True)
+                mailing_list = super_team.mailing_list
+            team.addMember(member, reviewer=team.teamowner)
+            if auto_subscribe:
+                mailing_list.subscribe(member)
+        return team, member
 
     def makeMirrorProbeRecord(self, mirror):
         """Create a probe record for a mirror of a distribution."""

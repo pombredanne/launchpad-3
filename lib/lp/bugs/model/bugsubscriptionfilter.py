@@ -8,7 +8,6 @@ __all__ = ['BugSubscriptionFilter']
 
 from itertools import chain
 
-from storm.base import Storm
 from storm.locals import (
     Bool,
     Int,
@@ -28,9 +27,10 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscriptionFilter(Storm):
+class BugSubscriptionFilter(StormBase):
     """A filter to specialize a *structural* subscription."""
 
     implements(IBugSubscriptionFilter)
