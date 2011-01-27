@@ -1,5 +1,5 @@
 <tal:open-tag replace="structure view/open_tag"/><span
-  class="yui3-editable_text-text">${view/value}</span>
+  class="yui3-editable_text-text"><tal:text replace="view/value"/></span>
   <a tal:condition="view/can_write"
      tal:attributes="href view/edit_url"
      class="yui3-editable_text-trigger sprite edit"></a>

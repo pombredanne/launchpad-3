@@ -135,8 +135,8 @@ class TextLineEditorWidget(TextWidgetBase):
             title)
         self.tag = tag
         self.default_text = default_text
-        self.initial_value_override = initial_value_override
-        self.width = width
+        self.initial_value_override = simplejson.dumps(initial_value_override)
+        self.width = simplejson.dumps(width)
 
     @property
     def open_tag(self):
@@ -145,6 +145,13 @@ class TextLineEditorWidget(TextWidgetBase):
     @property
     def close_tag(self):
         return '</%s>' % self.tag
+
+    @property
+    def value(self):
+        text = getattr(self.context, self.attribute_name, self.default_text)
+        if text is None:
+            text = self.default_text
+        return text
 
 
 class TextAreaEditorWidget(TextWidgetBase):
