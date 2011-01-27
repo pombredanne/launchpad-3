@@ -30,10 +30,12 @@ from urlparse import (
     )
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
@@ -139,7 +141,7 @@ class FileUploadClient:
             # Get the name of the database the client is using, so that
             # the server can check that the client is using the same
             # database as the server.
-            store = IMasterStore(LibraryFileAlias)
+            store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
             databaseName = self._getDatabaseName(store)
 
             # Generate new content and alias IDs.
