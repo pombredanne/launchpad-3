@@ -821,6 +821,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return result
 
     @property
+    def packagings(self):
+        store = Store.of(self)
+        result = store.find(
+            (Packaging, DistroSeries),
+            Packaging.distroseries == DistroSeries.id,
+            Packaging.productseries == ProductSeries.id,
+            ProductSeries.product == self)
+        result = result.order_by(
+            DistroSeries.version, ProductSeries.name, Packaging.id)
+
+        def decorate(row):
+            packaging, distroseries = row
+            return packaging
+        return DecoratedResultSet(result, decorate)
+
+    @property
     def name_with_project(self):
         """See lib.canonical.launchpad.interfaces.IProduct"""
         if self.project and self.project.name != self.name:

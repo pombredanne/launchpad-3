@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['BugSubscription']
 
 import pytz
-from storm.base import Storm
 from storm.locals import (
     DateTime,
     Int,
@@ -20,9 +19,10 @@ from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscription(Storm):
+class BugSubscription(StormBase):
     """A relationship between a person and a bug."""
 
     implements(IBugSubscription)

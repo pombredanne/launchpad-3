@@ -211,7 +211,7 @@ the web UI. It is impossible, for example, to create circular relationships.
   ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
   ...       dumps(dict(
   ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
-  HTTP/1.1 417 Expectation Failed
+  HTTP/1.1 400 Bad Request
   ...
   Bug 16 is already a duplicate of bug 5. You
   can only mark a bug report as duplicate of one that
@@ -873,6 +873,34 @@ uses the calling user.
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
+
+Using the devel api, an individual can subscribe themself at a given
+BugNotificationLevel.
+
+    >>> bug_one_devel = webservice.get(
+    ...     '/bugs/1', api_version='devel').jsonBody()
+    >>> new_subscription = webservice.named_post(
+    ...     bug_one_devel['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'),
+    ...     level=u"Details", api_version="devel").jsonBody()
+    >>> pprint_entry(new_subscription)
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Details'
+    date_created: u'...'
+    person_link: u'...'
+    resource_type_link: u'...'
+    self_link: u'...'
+    subscribed_by_link: u'...'
+
+They can also update the subscription's bug_notification_level directly.
+
+    >>> patch = {u'bug_notification_level': u'Nothing'}
+    >>> pprint_entry(
+    ...     webservice.patch(
+    ...         new_subscription['self_link'], 'application/json',
+    ...         dumps(patch), api_version="devel").jsonBody())
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Nothing'...
 
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
@@ -2093,7 +2121,7 @@ Each bug has a collection of activities that have taken place with it.
   next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
   resource_type_link: u'http://.../#bug_activity-page-resource'
   start: 0
-  total_size: 23
+  total_size: 25
   ...
 
   >>> bug_nine_activity = webservice.get(
