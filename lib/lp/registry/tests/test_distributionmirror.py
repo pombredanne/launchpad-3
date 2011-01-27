@@ -26,6 +26,8 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing.factory import LaunchpadObjectFactory
 
 
+# XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
+# TestCaseWithFactory.
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
@@ -89,6 +91,30 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnlessEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.UNKNOWN)
+
+    def test_source_mirror_freshness_property(self):
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).source_mirror_freshness,
+            MirrorFreshness.TWODAYSBEHIND)
+
+    def test_arch_mirror_freshness_property(self):
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).arch_mirror_freshness,
+            MirrorFreshness.ONEHOURBEHIND)
 
     def test_archive_mirror_with_source_content_freshness(self):
         self._create_source_mirror(

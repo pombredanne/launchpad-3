@@ -124,7 +124,10 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        windmill_login_person(objs['eric'], "test", client)
+        # The `objs` used here hides the email, but that is no longer
+        # accessible.  We have to pass it in by hand.
+        windmill_login_person(
+            objs['eric'], "eric@example.com", "test", client)
 
         start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
         client.open(url=start_url)

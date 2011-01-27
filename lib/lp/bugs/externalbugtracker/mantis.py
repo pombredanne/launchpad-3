@@ -83,14 +83,13 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
             url = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
-        # XXX: Gavin Panella 2007-08-28: Previous versions of the Mantis
-        # external bug tracker fetched login_anon.php in addition to the
-        # login.php method above, but none of the Mantis installations tested
-        # actually needed this. For example, the ALSA bugtracker actually
-        # issues an error "Your account may be disabled" when
-        # accessing this page. For now it's better to *not* try this
-        # page because we may end up annoying admins with spurious
-        # login attempts.
+        # Previous versions of the Mantis external bug tracker fetched
+        # login_anon.php in addition to the login.php method above, but none
+        # of the Mantis installations tested actually needed this. For
+        # example, the ALSA bugtracker actually issues an error "Your account
+        # may be disabled" when accessing this page. For now it's better to
+        # *not* try this page because we may end up annoying admins with
+        # spurious login attempts.
 
         return url
 

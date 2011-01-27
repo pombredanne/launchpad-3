@@ -12,6 +12,7 @@ import unittest
 from lp.services.utils import (
     CachingIterator,
     decorate_with,
+    docstring_dedent,
     iter_split,
     )
 from lp.testing import TestCase
@@ -139,6 +140,20 @@ class TestDecorateWith(TestCase):
         result = decorator(lambda: arbitrary_value)()
         self.assertEqual(arbitrary_value, result)
 
+
+class TestDocstringDedent(TestCase):
+    """Tests for `docstring_dedent`."""
+
+    def test_single_line(self):
+        self.assertEqual(docstring_dedent('docstring'), 'docstring')
+
+    def test_multi_line(self):
+        docstring = """This is a multiline docstring.
+
+        This is the second line.
+        """
+        result = 'This is a multiline docstring.\n\nThis is the second line.'
+        self.assertEqual(docstring_dedent(docstring), result)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
