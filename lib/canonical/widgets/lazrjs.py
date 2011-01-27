@@ -21,6 +21,7 @@ from zope.security.checker import canAccess, canWrite
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 
@@ -28,6 +29,37 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.services.propertycache import cachedproperty
+
+
+class WidgetBase:
+    """Useful methods for all widgets."""
+
+    def __init__(self, context, exported_field):
+        self.context = context
+        self.exported_field = exported_field
+        self.attribute_name = exported_field.__name__
+        # If there is no webservice tagged versioned dict, there is no point
+        # having a widget, so let it explode with a KeyError here.
+        ws_stack = exported_field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        self.api_attribute = ws_stack['as']
+        mutator_info = ws_stack.get('mutator_annotations')
+        if mutator_info is not None:
+            mutator_method, mutator_extra = mutator_info
+            self.mutator_method_name = mutator_method.__name__
+        else:
+            self.mutator_method_name = None
+
+    @property
+    def can_write(self):
+        if canWrite(self.context, self.attribute_name):
+            return True
+        elif self.mutator_method_name is not None:
+            # The user may not have write access on the attribute itself, but
+            # the REST API may have a mutator method configured, such as
+            # transitionToAssignee.
+            return canAccess(self.context, self.mutator_method_name)
+        else:
+            return False
 
 
 class TextLineEditorWidget:
@@ -251,7 +283,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
         return self.WIDGET_TEMPLATE % params
 
 
-class InlineEditPickerWidget:
+class InlineEditPickerWidget(WidgetBase):
     """Wrapper for the lazr-js picker widget.
 
     This widget is not for editing form values like the
@@ -261,7 +293,7 @@ class InlineEditPickerWidget:
     last_id = 0
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
-    def __init__(self, context, request, interface_attribute, default_html,
+    def __init__(self, context, request, exported_field, default_html,
                  content_box_id=None, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
                  null_display_value='None'):
@@ -269,7 +301,7 @@ class InlineEditPickerWidget:
 
         :param context: The object that is being edited.
         :param request: The request object.
-        :param interface_attribute: The attribute being edited. This should be
+        :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
         :param content_box_id: The HTML id to use for this widget. Automatically
@@ -279,11 +311,9 @@ class InlineEditPickerWidget:
         :param remove_button_text: Override default button text: "Remove"
         :param null_display_value: This will be shown for a missing value
         """
-        self.context = context
+        super(InlineEditPickerWidget, self).__init__(context, exported_field)
         self.request = request
         self.default_html = default_html
-        self.interface_attribute = interface_attribute
-        self.attribute_name = interface_attribute.__name__
 
         if content_box_id is None:
             self.content_box_id = self._generate_id()
@@ -297,10 +327,10 @@ class InlineEditPickerWidget:
 
         # JSON encoded attributes.
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
-        self.json_attribute = simplejson.dumps(self.attribute_name + '_link')
+        self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
         self.json_vocabulary_name = simplejson.dumps(
-            self.interface_attribute.vocabularyName)
-        self.show_remove_button = not self.interface_attribute.required
+            self.exported_field.vocabularyName)
+        self.show_remove_button = not self.exported_field.required
 
     @property
     def config(self):
@@ -316,7 +346,7 @@ class InlineEditPickerWidget:
     def vocabulary(self):
         registry = getVocabularyRegistry()
         return registry.get(
-            IVocabulary, self.interface_attribute.vocabularyName)
+            IVocabulary, self.exported_field.vocabularyName)
 
     @property
     def show_search_box(self):
@@ -342,29 +372,6 @@ class InlineEditPickerWidget:
                 self.context, request=IWebServiceClientRequest(self.request),
                 path_only_if_possible=True))
 
-    @property
-    def can_write(self):
-        if canWrite(self.context, self.attribute_name):
-            return True
-        else:
-            # The user may not have write access on the attribute itself, but
-            # the REST API may have a mutator method configured, such as
-            # transitionToAssignee.
-            #
-            # We look at the top of the annotation stack, since Ajax
-            # requests always go to the most recent version of the web
-            # service.
-            try:
-                exported_tag_stack = self.interface_attribute.getTaggedValue(
-                    'lazr.restful.exported')
-            except KeyError:
-                return False
-            mutator_info = exported_tag_stack.get('mutator_annotations')
-            if mutator_info is not None:
-                mutator_method, mutator_extra = mutator_info
-                return canAccess(self.context, mutator_method.__name__)
-            else:
-                return False
 
 
 def vocabulary_to_choice_edit_items(
