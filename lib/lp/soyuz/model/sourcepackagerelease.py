@@ -138,10 +138,7 @@ class SourcePackageRelease(SQLBase):
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
-    version = StringCol(dbName='debversion', notNull=True)
-    # XXX: review this
-    debversion = StringCol(
-        dbName='debversion', notNull=True)
+    version = StringCol(dbName='version', notNull=True)
     changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')

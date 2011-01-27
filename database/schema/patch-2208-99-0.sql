@@ -269,4 +269,14 @@ ALTER TABLE SourcePackageRelease
 ALTER TABLE BinaryPackageRelease
     ALTER COLUMN debversion SET not null;
 
+ALTER TABLE SourcePackageRelease
+    DROP COLUMN version;
+ALTER TABLE BinaryPackageRelease
+    DROP COLUMN version;
+
+ALTER TABLE SourcePackageRelease
+    RENAME COLUMN debversion TO version;
+ALTER TABLE BinaryPackageRelease
+    RENAME COLUMN debversion TO version;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
