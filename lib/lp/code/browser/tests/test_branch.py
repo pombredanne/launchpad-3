@@ -415,7 +415,7 @@ class TestBranchView(BrowserTestCase):
             revisions = self._add_revisions(branch, 2)
             mp = self.factory.makeBranchMergeProposal(
                 target_branch=branch, registrant=branch.owner)
-            mp.markAsMerged(merged_revno=revisions[0].id)
+            mp.markAsMerged(merged_revno=revisions[0].sequence)
 
             # These values are extracted here and used below.
             mp_url = canonical_url(mp, rootsite='code', force_local_path=True)
@@ -456,7 +456,7 @@ class TestBranchView(BrowserTestCase):
             revisions = self._add_revisions(branch, 2)
             mp = self.factory.makeBranchMergeProposal(
                 target_branch=branch, registrant=branch.owner)
-            mp.markAsMerged(merged_revno=revisions[0].id)
+            mp.markAsMerged(merged_revno=revisions[0].sequence)
 
             # record linked bug info for use below
             linked_bug_urls = []
