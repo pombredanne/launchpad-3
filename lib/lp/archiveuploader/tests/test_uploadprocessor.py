@@ -2032,6 +2032,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIsNot(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_fail_mail(self):
+        # Failures should generate a message that includes the upload log URL.
         self.doFailureRecipeBuild()
         (mail,) = pop_notifications()
         subject = mail['Subject'].replace('\n\t', ' ')
