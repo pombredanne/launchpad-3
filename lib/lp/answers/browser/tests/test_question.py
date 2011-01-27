@@ -27,14 +27,32 @@ class TestQuestionEditView(TestCaseWithFactory):
         original_target = self.factory.makeProduct(name='oldandbusted')
         new_target = self.factory.makeProduct(name='newhotness')
         login_person(answerer)
-        question = self.factory.makeQuestion(target=original_target)
+        question = self.factory.makeQuestion(
+            target=original_target,
+            description="I want an answer.")
         answer = question.giveAnswer(answerer, "This is solved.")
         question.confirmAnswer("Yes it is.", answer=answer)
-
-        import pdb; pdb.set_trace()
-
-
         
+        form = {
+            'field.actions.change': 'Save Changes',
+            'field.assignee': '',
+            'field.description': question.description,
+            'field.language': 'en',
+            'field.language-empty-marker': 1,
+            'field.target': 'product',
+            'field.target.distribution': '',
+            'field.target.distribution-empty-marker': 1,
+            'field.target.package': '',
+            'field.target.product': new_target.name,
+            'field.title': question.title,
+            }
+        view = create_initialized_view(
+            question,
+            name='+edit',
+            layer=AnswersLayer,
+            form=form,
+            principal=answerer)
+        self.assertEqual([], view.errors)
 
 
 class TestQuestionAddView(TestCaseWithFactory):
