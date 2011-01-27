@@ -114,7 +114,7 @@ class TestBuildNotify(TestCaseWithFactory):
             duration = 'not finished'
             build_log = 'see builder page'
         elif (
-            build.status == BuildStatus.SUPERSEDED or 
+            build.status == BuildStatus.SUPERSEDED or
             build.status == BuildStatus.NEEDSBUILD):
             duration = 'not available'
             build_log = 'not available'
@@ -355,6 +355,6 @@ class TestBuildNotify(TestCaseWithFactory):
         build.notify()
         notifications = pop_notifications()
         expected_emails = self.buildd_admins_email + [
-            'sponsor@example.com', 'test@example.com'] 
+            'sponsor@example.com', 'test@example.com']
         actual_emails = [n['To'] for n in notifications]
         self.assertEquals(expected_emails, actual_emails)

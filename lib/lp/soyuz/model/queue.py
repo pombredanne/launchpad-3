@@ -72,7 +72,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
-    BinaryPackageFormat,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
