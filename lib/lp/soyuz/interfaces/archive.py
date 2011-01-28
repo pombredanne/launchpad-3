@@ -417,7 +417,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "NOTE: This is for migration of OEM PPAs only!"))
 
     enabled_restricted_families = CollectionField(
-            title=_(
+            title=_("Enabled restricted families"),
+            description=_(
                 "The restricted architecture families on which this archive "
                 "can build."),
             value_type=Reference(schema=IProcessorFamily),

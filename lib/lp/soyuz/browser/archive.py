@@ -2043,13 +2043,13 @@ class ArchiveAdminView(BaseArchiveEditView):
         for family in getUtility(IProcessorFamilySet).getRestricted():
             terms.append(SimpleTerm(
                 family, token=family.name, title=family.title))
+        old_field = IArchive['enabled_restricted_families']
         return form.Fields(
-            List(__name__='enabled_restricted_families',
-                 title=_('Enabled restricted families'),
+            List(__name__=old_field.__name__,
+                 title=old_field.title,
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
-                 description=_('Select the restricted architecture families '
-                               'on which the archive is allowed to build.')),
+                 description=old_field.description),
                  render_context=self.render_context)
 
 
