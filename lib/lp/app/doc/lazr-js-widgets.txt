@@ -1,31 +1,40 @@
 LAZR JS Wrappers
 ================
 
-The canonical.widgets.lazrjs module contains a bunch of wrapper
-for widgets defined in Lazr-JS.
+The lp.app.browser.lazrjs module contains several classes that simplify the
+use of widgets defined in Lazr-JS.
+
+When rendering these widgets in page templates, all you need to do is 'call'
+them.  TAL will do this for you.
+
+  <tal:widget replace="structure view/nifty_widget"/>
+
 
 TextLineEditorWidget
---------------------------
+--------------------
 
 We have a convenient wrapper for the inlineedit/editor JS widget in
 TextLineEditorWidget.
 
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
     >>> from lp.app.browser.lazrjs import TextLineEditorWidget
-    >>> bug = factory.makeBug(title='My bug is > important')
 
-The wrapper takes as arguments the object and the attribute of the
-object that is being edited, as well as the URL to use for editing when
-when JS is turned off.
+The bare minimum that you need to provide the widget is the object that you
+are editing, and the exported field that is being edited, and a title for the
+edit link that is rendered as the itle of the anchor so it shows on mouse
+over, and the tag that surrounds the text.
 
-    >>> widget = TextLineEditorWidget(
-    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'))
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> product = factory.makeProduct(
+    ...     name='widget', title='Widgets > important')
+    >>> title_field = IProduct['title']
+    >>> title = 'Edit the title'
+    >>> widget = TextLineEditorWidget(product, title_field, title, 'h1')
 
 The widget is rendered by executing it, it prints out the attribute
 content.
 
     >>> print widget()
-    <h1 id="..."><span class="yui3-editable_text-text">My bug is &gt;
+    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
     </h1>
 
@@ -33,96 +42,229 @@ In addition, when the logged in user can edit the value, there is a link to
 the edit view that appears as well as a <script> tag that will change that
 link into an AJAX control when JS is available:
 
-    >>> login('no-priv@canonical.com')
+    >>> login_person(product.owner)
     >>> print widget()
-    <h1 id="..."><span class="yui3-editable_text-text">My bug is &gt;
+    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
-        <a href="http://bugs.launchpad.dev/.../+edit"
-           class="yui3-editable_text-trigger sprite edit"
-        ></a>
+        <a class="yui3-editable_text-trigger sprite edit"
+           href="http://launchpad.dev/widget/+edit"></a>
     </h1>
     <script>
     ...
     </script>
 
-The id and title attribute to use can be passed via parameters to the
-constructor:
 
-    >>> widget = TextLineEditorWidget(
-    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
-    ...     id="bug-title", title="Edit this summary")
+Changing the tag
+****************
+
+The id of the surrounding tag defaults to "edit-" followed by the name of the
+attribute being edited.  This can be overridden if needed using the
+"content_box_id" constructor argument.
+
+    >>> span_widget = TextLineEditorWidget(
+    ...     product, title_field, title, 'span', content_box_id="overridden")
+    >>> login(ANONYMOUS) # To not get the script tag rendered
+    >>> print span_widget()
+    <span id="overridden">...</span>
+
+
+Changing the edit link
+**********************
+
+When there is a logged in user that has edit rights on the field being edited,
+the edit button is shown, and has a link that takes to the user to a normal
+edit page if javascript is disabled.  This link defaults to the '+edit' view
+of the object being edited.  This can be overridden in two ways:
+  * change the 'edit_view' parameter to be a different view
+  * provide an 'edit_url' to use instead
+
+    >>> print widget.edit_url
+    http://launchpad.dev/widget/+edit
+
+    >>> diff_view = TextLineEditorWidget(
+    ...     product, title_field, title, 'h1', edit_view='+edit-people')
+    >>> print diff_view.edit_url
+    http://launchpad.dev/widget/+edit-people
+
+    >>> diff_url = TextLineEditorWidget(
+    ...     product, title_field, title, 'h1', edit_url='http://example.com/')
+    >>> print diff_url.edit_url
+    http://example.com/
+
+
+Other nifty bits
+****************
+
+You are also able to set the default text to show if the attribute has no
+value using the 'default_text' parameter.  The 'initial_value_override' is
+used by the javascript widget to provide that text instead of the objects
+value (of the default_text).  The width of the field can also be specified
+using the 'width' parameter (please use 'em's).
+
+For an example of these parameters, see the editor for a products programming
+languages.
+
+
+TextAreaEditorWidget
+--------------------
+
+This widget renders a multi-line editor.  Example uses of this widget are:
+  * editing a bug's description
+  * editing a merge proposal's commit message or description
+  * editing a PPA's description
+
+    >>> from lp.app.browser.lazrjs import TextAreaEditorWidget
+
+The bare minimum that you need to provide the widget is the object that you
+are editing, and the exported field that is being edited, and a title for the
+edit link that is rendered as the itle of the anchor so it shows on mouse
+over.
+
+    >>> eric = factory.makePerson(name='eric')
+    >>> archive = factory.makeArchive(
+    ...     owner=eric, name='ppa', description='short description')
+    >>> from lp.soyuz.interfaces.archive import IArchive
+    >>> description = IArchive['description']
+    >>> widget = TextAreaEditorWidget(archive, description, 'A title')
+
+With no-one logged in, there are no edit buttons.
+
     >>> print widget()
-    <h1 id="bug-title">...
-        ...class="yui3-editable_text-trigger sprite edit"...
+    <div id="edit-description" class="lazr-multiline-edit">
+      <div class="clearfix">
+        <h2>A title</h2>
+      </div>
+      <div class="yui3-editable_text-text"><p>short description</p></div>
+    </div>
 
-The initial_value_override parameter is passed as a JSON-serialized value.
+The initial text defaults to the value of the attribute, which is then passed
+through two string formatter methods to obfuscate the email and then return
+the text as HTML.
 
-    >>> widget = TextLineEditorWidget(
-    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
-    ...     id="bug-title", title="Edit this summary",
-    ...     initial_value_override='This bug has no title')
+When the logged in user has edit permission, the edit button is shown, and
+javascript is written to the page to hook up the links to show the multiline
+editor.
+
+    >>> login_person(eric)
     >>> print widget()
-    <h1 id="bug-title">...
-        ...initial_value_override: "This bug has no title"...
+    <div id="edit-description" class="lazr-multiline-edit">
+      <div class="clearfix">
+        <div class="edit-controls">
+          &nbsp;
+          <a class="yui3-editable_text-trigger sprite edit"
+             href="http://launchpad.dev/~eric/+archive/ppa/+edit"></a>
+        </div>
+        <h2>A title</h2>
+      </div>
+      <div class="yui3-editable_text-text"><p>short description</p></div>
+      <script>...</script>
+    </div>
 
-When the value isn't supplied it defaults to None, which is serialized as a
-Javascript null.
 
-    >>> widget = TextLineEditorWidget(
-    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
-    ...     id="bug-title", title="Edit this summary")
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.
+
+
+Hiding the widget for empty fields
+**********************************
+
+Sometimes you don't want to show the widget if there is no content.  An
+example of this can be found in the branch merge proposal view for editing the
+description or the commit message.  This uses links when there is no content.
+Ideally the interaction with the links would be encoded as part of the widget
+itself, but that is an exercise left for another yak shaver.
+
+Hiding the widget is done by appending the "unseen" CSS class to the outer
+tag.
+
+    >>> archive.description = None
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(widget)
     >>> print widget()
-    <h1 id="bug-title">...
-        ...initial_value_override: null...
+    <div id="edit-description" class="lazr-multiline-edit unseen">
+    ...
+
+This behaviour can be overridden by setting the "hide_empty" parameter to
+False.
+
+    >>> widget = TextAreaEditorWidget(
+    ...     archive, description, 'A title', hide_empty=False)
+    >>> print widget()
+    <div id="edit-description" class="lazr-multiline-edit">
+    ...
+
+
+Not linkifying the text
+***********************
+
+A part of the standard HTML rendering is to "linkify" links.  That is, turn
+words that look like hyperlinks into anchors.  This is not always considered a
+good idea as some spammers can create PPAs and link to other sites in the
+descriptions.  since the barrier to create a PPA is relatively low, we
+restrict the linkability of some fields.  The constructor provides a
+"linkify_text" parameter that defaults to True.  Set this to False to avoid
+the linkification of text.  See the IArchive['description'] editor for an example.
 
 
 InlineEditPickerWidget
 ----------------------
 
-The InlineEditPickerWidget can be used for any interface attribute that
-has a vocabulary defined for it.
+The InlineEditPickerWidget provides a simple way to create a popup selector
+widget to choose items from a vocabulary.
 
-    >>> from zope.component import getUtility
     >>> from lp.app.browser.lazrjs import InlineEditPickerWidget
-    >>> from lp.bugs.interfaces.bugtask import IBugTask, IBugTaskSet
-    >>> bugtask = getUtility(IBugTaskSet).get(2)
-    >>> def create_inline_edit_picker_widget():
-    ...     view = create_initialized_view(bugtask, '+index')
-    ...     return InlineEditPickerWidget(
-    ...         context=view.context,
-    ...         interface_attribute=IBugTask['assignee'],
-    ...         default_html='default-html',
-    ...         header='Change assignee',
-    ...         step_title='Search for people or teams',
-    ...         remove_button_text='Remove Assignee',
-    ...         null_display_value='Nobody')
 
-An unauthenticated user cannot see the activator's edit button, which
-is revealed by Y.lp.app.picker.addPickerPatcher.
+The bare minimum that you need to provide the widget is the object that you
+are editing, and the exported field that is being edited, and the default
+HTML representation of the field you are editing.
 
-    >>> login(ANONYMOUS)
-    >>> widget = create_inline_edit_picker_widget()
-    >>> print widget.can_write
-    False
+Since most of the things that are being chosen are entities in Launchpad, and
+most of those entities have URLs, a common approach is to have the default
+HTML be a link to that entity.  There is a utility function called format_link
+that does the equivalent of the TALES expression 'obj/fmt:link'.
+
+    >>> from lp.app.browser.tales import format_link
+    >>> default_text = format_link(archive.owner)
+
+The vocabulary is determined from the field passed in.  If the vocabulary is a
+huge vocabulary (one that provides a search), then the picker is shown with an
+entry field to allow the user to search for an item.  If the vocabulary is not
+huge, the different items are shown in the normal paginated way for the user
+to select.
+
+    >>> owner = IArchive['owner']
+    >>> widget = InlineEditPickerWidget(archive, owner, default_text)
     >>> print widget()
-    <span id="inline-picker-activator-id-...">...
-    <div class="yui3-activator-message-box yui3-activator-hidden" />
+    <span id="edit-owner">
+      <span class="yui3-activator-data-box">
+        <a...>Eric</a>
+      </span>
+      <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
+        Edit
+      </button>
+      <div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
 
-The foo.bar user can see the activator's edit button.
 
-    >>> login('foo.bar@canonical.com')
-    >>> widget = create_inline_edit_picker_widget()
-    >>> print widget.can_write
-    True
-    >>> print widget()
-    <span id="inline-picker-activator-id-...">
-    ...<div class="yui3-activator-message-box yui3-activator-hidden" />
-    </span>
-    ...Y.lp.app.picker.addPickerPatcher(...
+Picker headings
+***************
 
-The json_resource_uri is the canonical_url for the object in
-WebServiceClientRequests.
+The picker has two headings that are almost always desirable to customize.
+  * "header" - Shown at the top of the picker
+  * "step_title" - Shown just below the green progress bar
 
-    >>> print widget.json_resource_uri
-    "/firefox/+bug/1"
+To customize these, pass the named parameters into the constructor of the
+widget.
+
+
+Other nifty links
+*****************
+
+If the logged in user is in the defined vocabulary (only occurs with people
+type vocabularies), a link is shown "Assign me'.
+
+If the field is optional, a "Remove" link is shown.  The "Remove" text is
+customizable thought the "remove_button_text" parameter.
