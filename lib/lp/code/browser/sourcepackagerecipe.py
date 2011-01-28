@@ -245,10 +245,9 @@ class SourcePackageRecipeView(LaunchpadView):
             initial_html = 'None'
         else:
             initial_html = format_link(ppa)
+        field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context,
-            ISourcePackageAddSchema['daily_build_archive'],
-            initial_html,
+            self.context, field, initial_html,
             header='Change daily build archive',
             step_title='Select a PPA')
 
