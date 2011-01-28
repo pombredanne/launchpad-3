@@ -2013,6 +2013,9 @@ class BaseWindmillLayer(AppServerLayer):
             cls.config_file.close()
         config.reloadConfig()
         reset_logging()
+        # XXX: deryck 2011-01-28 bug=709438
+        # Windmill mucks about with the default timeout and this is
+        # a fix until the library itself can be cleaned up.
         socket.setdefaulttimeout(None)
 
     @classmethod
