@@ -864,7 +864,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def displayname_edit_widget(self):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
-        return TextLineEditorWidget(self.context, display_name, title)
+        return TextLineEditorWidget(self.context, display_name, title, 'h1')
 
     @property
     def sources_list_entries(self):
@@ -900,8 +900,11 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         archive = self.context
         description = IArchive['description']
         title = self.archive_label + " description"
+        # Don't hide empty archive descriptions.  Even though the interface
+        # says they are required, the model doesn't.
         return TextAreaEditorWidget(
-            archive, description, title, linkify_text=linkify_text)
+            archive, description, title, hide_empty=False,
+            linkify_text=linkify_text)
 
     @cachedproperty
     def latest_updates(self):
