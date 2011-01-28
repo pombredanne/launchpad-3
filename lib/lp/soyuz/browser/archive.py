@@ -83,7 +83,6 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget,
     PlainMultiCheckBoxWidget,
     )
-from canonical.widgets.archive import PPANameWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -124,6 +123,7 @@ from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
     )
+from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
