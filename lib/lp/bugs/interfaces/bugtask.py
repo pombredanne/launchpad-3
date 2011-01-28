@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBlueprintSearch',
     'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
@@ -28,8 +29,6 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -37,13 +36,16 @@ __all__ = [
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
-    'valid_remote_bug_url']
+    'valid_remote_bug_url',
+    ]
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -340,7 +342,7 @@ class BugBranchSearch(EnumeratedType):
     """Bug branch search option.
 
     The possible values to search for bugs having branches attached
-    or not having branches attched.
+    or not having branches attached.
     """
 
     ALL = Item("Show all bugs")
@@ -348,6 +350,20 @@ class BugBranchSearch(EnumeratedType):
     BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
 
     BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
+
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
 
 
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
