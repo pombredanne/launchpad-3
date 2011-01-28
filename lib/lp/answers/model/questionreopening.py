@@ -45,27 +45,12 @@ class QuestionReopening(SQLBase):
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
 
-def create_questionreopening(question, event):
-    """Event subscriber that creates a QuestionReopening event.
+def create_questionreopening(question):
+    """Helper function to handle question reopening.
 
-    A QuestionReopening is created question with an answer changes back to the
-    OPEN state.
+    A QuestionReopening is created when question with an answer changes back
+    to the OPEN state.
     """
-    # XXX flacoste 2006-10-25 The QuestionReopening is probably not that
-    # useful anymore since the question history is nearly complete.
-    # If we decide to still keep that class, this subscriber should
-    # probably be moved outside of database code.
-    if question.status != QuestionStatus.OPEN:
-        return
-
-    # Only create a QuestionReopening if the question had previsouly an
-    # answer.
-    old_question = event.object_before_modification
-    if old_question.answerer is None:
-        return
-    assert question.answerer is None, (
-        "Open question shouldn't have an answerer.")
-
     # The last added message is the cause of the reopening.
     reopen_msg = question.messages[-1]
 
