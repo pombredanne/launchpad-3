@@ -62,10 +62,6 @@ from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget,
-    TextAreaEditorWidget,
-    )
 from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -75,8 +71,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
+from lp.app.browser.lazrjs import (
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import format_link
-from lp.app.browser.webservice import format_text_for_web
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -237,9 +236,8 @@ class SourcePackageRecipeView(LaunchpadView):
     @property
     def person_picker(self):
         return InlineEditPickerWidget(
-            self.context, self.request, ISourcePackageRecipe['owner'],
+            self.context, ISourcePackageRecipe['owner'],
             format_link(self.context.owner),
-            content_box_id='recipe-owner',
             header='Change owner',
             step_title='Select a new owner')
 
@@ -250,26 +248,18 @@ class SourcePackageRecipeView(LaunchpadView):
             initial_html = 'None'
         else:
             initial_html = format_link(ppa)
+        field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, self.request,
-            ISourcePackageAddSchema['daily_build_archive'],
-            initial_html,
-            content_box_id='recipe-ppa',
+            self.context, field, initial_html,
             header='Change daily build archive',
             step_title='Select a PPA')
 
     @property
     def recipe_text_edit_html(self):
         """The recipe text as widget HTML."""
-        text_html = format_text_for_web(self.context.recipe_text)
+        recipe_text = ISourcePackageRecipe['recipe_text']
         return TextAreaEditorWidget(
-            self.context,
-            'recipe_text',
-            canonical_url(self.context, view_name='+edit'),
-            id="edit-recipe-text",
-            title="Do we want a title",
-            value=text_html,
-            accept_empty=False)
+            self.context, recipe_text, title="Do we want a title")
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):

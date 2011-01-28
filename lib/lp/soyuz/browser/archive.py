@@ -86,16 +86,16 @@ from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget,
-    TextLineEditorWidget,
-    )
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    )
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
@@ -862,11 +862,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
     @property
     def displayname_edit_widget(self):
-        widget = TextLineEditorWidget(
-            self.context, 'displayname',
-            canonical_url(self.context, view_name='+edit'),
-            id="displayname", title="Edit the displayname")
-        return widget
+        display_name = IArchive['displayname']
+        title = "Edit the displayname"
+        return TextLineEditorWidget(self.context, display_name, title, 'h1')
 
     @property
     def sources_list_entries(self):
@@ -896,25 +894,17 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     @property
     def archive_description_html(self):
         """The archive's description as HTML."""
-        formatter = FormattersAPI
-
-        description = self.context.description
-        if description is not None:
-            description = formatter(description).obfuscate_email()
-        else:
-            description = ''
-
+        linkify_text = True
         if self.context.is_ppa:
-            description = formatter(description).text_to_html(
-                linkify_text=(not self.context.owner.is_probationary))
-
+            linkify_text = not self.context.owner.is_probationary
+        archive = self.context
+        description = IArchive['description']
+        title = self.archive_label + " description"
+        # Don't hide empty archive descriptions.  Even though the interface
+        # says they are required, the model doesn't.
         return TextAreaEditorWidget(
-            self.context,
-            'description',
-            canonical_url(self.context, view_name='+edit'),
-            id="edit-description",
-            title=self.archive_label + " description",
-            value=description)
+            archive, description, title, hide_empty=False,
+            linkify_text=linkify_text)
 
     @cachedproperty
     def latest_updates(self):

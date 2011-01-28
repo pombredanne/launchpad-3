@@ -4,9 +4,7 @@
 """Adapters for registry objects for the webservice."""
 
 __metaclass__ = type
-__all__ = [
-    'format_text_for_web',
-]
+__all__ = []
 
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -20,7 +18,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import IText
 
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import standard_text_html_representation
 from lp.app.browser.tales import format_link
 
 
@@ -42,19 +40,8 @@ def reference_xhtml_representation(context, field, request):
     return render
 
 
-def format_text_for_web(value):
-    """Format the string for displaying on a web page.
-
-    Standard practice is to obfuscate the email and render as html.
-    """
-    if value is None:
-        return ''
-    nomail = FormattersAPI(value).obfuscate_email()
-    return FormattersAPI(nomail).text_to_html()
-
-
 @component.adapter(Interface, IText, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def text_xhtml_representation(context, field, request):
     """Render text as XHTML using the webservice."""
-    return format_text_for_web
+    return standard_text_html_representation
