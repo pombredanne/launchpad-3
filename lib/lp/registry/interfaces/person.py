@@ -392,28 +392,47 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
+    The policies that describe who can be a member and how new memberships
+    are handled.
     """
 
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of
-        the team's administrators.
+        Membership is closed, requires approval, and subteams must be closed.
+        Any user can propose a new member, but team administrators approve
+        membership. Subteams must be Moderated or Restricted. Moderated is a
+        good choice for teams that manage things that need to be secure, like
+        projects, branches, or PPAs, but want to encourage users to help.
         """)
 
     OPEN = DBItem(2, """
         Open Team
 
-        Any user can join and no approval is required.
+        Membership is open, no approval required, and subteams can be open or
+        closed. Any user can be a member of the team and no approval is
+        required. Subteams can be Open, Delegated, Moderated, or Restricted.
+        Open is a good choice for encouraging a community of contributors.
         """)
 
     RESTRICTED = DBItem(3, """
         Restricted Team
 
-        New members can only be added by one of the team's administrators.
+        Membership is closed, requires approval, and subteams must be closed.
+        Only the team's administrators can invite a user to be a member.
+        Subteams must be Moderated or Restricted. Restricted is a good choice
+        for teams that manage things that need to be secure, like projects,
+        branches, or PPAs.
+        """)
+
+    DELEGATED = DBItem(4, """
+        Delegated Team
+
+        Membership is open, requires approval, and subteams can be open or
+        closed. Any user can be a member of the team via a subteam, but team
+        administrators approve direct memberships. Subteams can be Open,
+        Delegated, Moderated, or Restricted. Delegated is a good choice for
+        managing a large community of contributors.
         """)
 
 
