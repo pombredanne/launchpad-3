@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Wrappers for lazr-js widgets."""
@@ -125,12 +125,12 @@ class TextLineEditorWidget(TextWidgetBase):
             a field from an interface of the form ISomeInterface['fieldname']
         :param title: The string to use as the link title.
         :param tag: The HTML tag to use.
+        :param content_box_id: The HTML id to use for this widget.
+            Defaults to edit-<attribute name>.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
-        :param content_box_id: The HTML id to use for this widget.
-            Defaults to edit-<attribute name>.
         :param default_text: Text to show in the unedited field, if the
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
@@ -169,7 +169,23 @@ class TextAreaEditorWidget(TextWidgetBase):
     def __init__(self, context, exported_field, title, content_box_id=None,
                  edit_view="+edit", edit_url=None,
                  hide_empty=True, linkify_text=True):
-        """Create the widget wrapper."""
+        """Create the widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param title: The string to use as the link title.
+        :param content_box_id: The HTML id to use for this widget.
+            Defaults to edit-<attribute name>.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param hide_empty: If the attribute has no value, or is empty, then
+            hide the editor by adding the "unseen" CSS class.
+        :param linkify_text: If True the HTML version of the text will have
+            things that look like links made into anchors.
+        """
         super(TextAreaEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
             edit_view, edit_url)
