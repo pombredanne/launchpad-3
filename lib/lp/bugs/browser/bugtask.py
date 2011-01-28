@@ -678,7 +678,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
-            bug, IBug['title'], title="Edit this summary",
+            bug, IBug['title'], "Edit this summary", 'h1',
             edit_url=canonical_url(self.context, view_name='+edit'))
 
         # XXX 2010-10-05 gmb bug=655597:

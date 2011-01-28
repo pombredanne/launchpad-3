@@ -992,19 +992,17 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         title_field = IProduct['title']
         title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title)
-        if self.context.programminglang is None:
-            additional_arguments = dict(
-                default_text='Not yet specified',
-                initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+            product, title_field, title, 'h1')
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
+        if self.context.programminglang is None:
+            additional_arguments.update(dict(
+                default_text='Not yet specified',
+                initial_value_override='',
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            product, programming_lang, title,
-            tag='span', width='9em', **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))

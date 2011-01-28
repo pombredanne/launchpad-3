@@ -115,21 +115,22 @@ class TextLineEditorWidget(TextWidgetBase):
 
     __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, title, content_box_id=None,
-                 tag='h1', edit_view="+edit", edit_url=None,
+    def __init__(self, context, exported_field, title, tag,
+                 content_box_id=None, edit_view="+edit", edit_url=None,
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
-        :param attribute: The name of the attribute being edited.
-        :param edit_url: The URL to use for editing when the user isn't logged
-            in and when JS is off.
-        :param id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
-        :param title: The string to use as the link title. Defaults to 'Edit'.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param title: The string to use as the link title.
         :param tag: The HTML tag to use.
-        :param public_attribute: If given, the name of the attribute in the
-            public webservice API.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param content_box_id: The HTML id to use for this widget.
+            Defaults to edit-<attribute name>.
         :param default_text: Text to show in the unedited field, if the
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
@@ -196,7 +197,6 @@ class InlineEditPickerWidget(WidgetBase):
     VocabularyPickerWidget.
     """
 
-    widget_type = 'inline-picker-activator'
     __call__ = ViewPageTemplateFile('../templates/inline-picker.pt')
 
     def __init__(self, context, exported_field, default_html,
