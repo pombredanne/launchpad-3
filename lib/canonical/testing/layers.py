@@ -2013,6 +2013,7 @@ class BaseWindmillLayer(AppServerLayer):
             cls.config_file.close()
         config.reloadConfig()
         reset_logging()
+        set_default_timeout_function(test_default_timeout)
 
     @classmethod
     @profiled
