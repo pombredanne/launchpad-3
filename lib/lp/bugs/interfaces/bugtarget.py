@@ -203,12 +203,14 @@ class IHasBugs(Interface):
     has_bugtasks = Attribute(
         "True if a BugTask has ever been reported for this target.")
 
+    # Version: devel
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+    # "Pop" the devel version before declaring the 1.0 version.
     @operation_removed_in_version('devel')
-
+    # Version: 1.0
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_1_0)
     @operation_returns_collection_of(IBugTask)
