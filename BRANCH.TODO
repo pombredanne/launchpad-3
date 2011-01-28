@@ -3,3 +3,17 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+- Add BugBlueprintSearch enum.
+
+   Similar to BugBranchSearch.
+
+- Add linked_blueprints to IHasBugs.searchTasks()
+
+   There's some stuff in there I don't understand about the operation
+   being removed in the devel version of the API.
+
+- Add linked_blueprints arg to all implementations of searchTasks()
+
+- Implement BugTaskSearch._buildBlueprintRelatedClause().
+
+- Call _buildBlueprintRelatedClause() from buildQuery().
