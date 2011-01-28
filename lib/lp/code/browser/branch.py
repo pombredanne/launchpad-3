@@ -408,7 +408,7 @@ class BranchMirrorMixin:
         branch = self.branch
 
         # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
+        if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
         # XXX: Tim Penhey, 2008-05-30
