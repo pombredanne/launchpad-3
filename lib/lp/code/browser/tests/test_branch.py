@@ -89,6 +89,16 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         self.assertEqual(
             "http://example.com/good/mirror", view.mirror_location)
 
+    def testLocationlessRemoteBranch(self):
+        # A branch from a normal location is fine.
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.REMOTE,
+            url=None)
+        view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
+        self.assertTrue(view.user is None)
+        self.assertIs(None, view.mirror_location)
+
     def testHiddenBranchAsAnonymous(self):
         # A branch location with a defined private host is hidden from
         # anonymous browsers.
