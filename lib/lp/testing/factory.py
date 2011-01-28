@@ -1290,7 +1290,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     related_package_branch_info.append(
                             (branch, distroseries))
 
-            related_package_branch_info = sorted(
+            related_package_branch_info = sorted_version_numbers(
                     related_package_branch_info, key=lambda branch_info: (
                         getattr(branch_info[1], 'name')))
 

@@ -60,24 +60,6 @@ class _BaseBranchTarget:
         """See `IBranchTarget`."""
         return []
 
-    def _getSortedActiveProductSeries(self, product):
-        """Return a sorted, list of active series.
-
-        The series list is sorted by version in reverse order.
-        The development focus is always first in the list.
-        """
-        series_list = []
-        for series in product.series:
-            if (series.status != SeriesStatus.OBSOLETE
-                and series != product.development_focus):
-                series_list.append(series)
-        # Now sort the list by name with newer versions before older.
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        # Add the development focus first.
-        series_list.insert(0, product.development_focus)
-        return series_list
-
 
 class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -196,13 +178,15 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         result = []
         linked_branches = self.sourcepackage.linkedBranches()
+        distroseries = self.sourcepackage.distroseries
         result.extend(
-                [(branch, self.sourcepackage.distroseries)
+                [(branch, distroseries)
                  for branch in linked_branches.values()
                  if (check_permission('launchpad.View', branch) and
-                    branch != parent_branch)])
+                    branch != parent_branch and
+                    distroseries.status != SeriesStatus.OBSOLETE)])
 
-        return sorted(result, key=lambda branch_info: (
+        return sorted_version_numbers(result, key=lambda branch_info: (
                     getattr(branch_info[1], 'name')))
 
 
@@ -386,8 +370,18 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def getRelatedSeriesBranchInfo(self, parent_branch):
         """See `IBranchTarget`."""
+        sorted_series = []
+        for series in self.product.series:
+            if (series.status != SeriesStatus.OBSOLETE
+                and series != self.product.development_focus):
+                sorted_series.append(series)
+        # Now sort the list by name with newer versions before older.
+        sorted_series = sorted_version_numbers(sorted_series,
+                                             key=attrgetter('name'))
+        # Add the development focus first.
+        sorted_series.insert(0, self.product.development_focus)
+
         result = []
-        sorted_series = self._getSortedActiveProductSeries(self.product)
         for series in sorted_series:
             try:
                 branch = get_linked_to_branch(series).branch
@@ -415,7 +409,7 @@ class ProductBranchTarget(_BaseBranchTarget):
                 # we don't care.
                 pass
 
-        return sorted(result, key=lambda branch_info: (
+        return sorted_version_numbers(result, key=lambda branch_info: (
                     getattr(branch_info[1], 'name')))
 
 
