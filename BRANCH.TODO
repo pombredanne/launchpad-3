@@ -17,3 +17,5 @@
 - Implement BugTaskSearch._buildBlueprintRelatedClause().
 
 - Call _buildBlueprintRelatedClause() from buildQuery().
+
+- Update advanced search UI.
