@@ -45,26 +45,24 @@ class QuestionReopening(SQLBase):
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
 
-def create_questionreopening(question):
+def create_questionreopening(
+        question,
+        reopen_msg,
+        old_status,
+        old_answerer,
+        old_date_solved):
     """Helper function to handle question reopening.
 
     A QuestionReopening is created when question with an answer changes back
     to the OPEN state.
     """
-    # The last added message is the cause of the reopening.
-    reopen_msg = question.messages[-1]
-
-    # Make sure that the last message is really the last added one.
-    assert [reopen_msg] == (
-        list(set(question.messages).difference(old_question.messages))), (
-            "Reopening message isn't the last one.")
-
     reopening = QuestionReopening(
-            question=question, reopener=reopen_msg.owner,
+            question=question,
+            reopener=reopen_msg.owner,
             datecreated=reopen_msg.datecreated,
-            answerer=old_question.answerer,
-            date_solved=old_question.date_solved,
-            priorstate=old_question.status)
+            answerer=old_answerer,
+            date_solved=old_date_solved,
+            priorstate=old_status)
 
     reopening = ProxyFactory(reopening)
     notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))

@@ -87,6 +87,7 @@ from lp.answers.interfaces.questionenums import (
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
+from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.buglink import IBugLinkTarget
@@ -478,8 +479,20 @@ class Question(SQLBase, BugLinkTargetMixin):
             raise InvalidQuestionStateError(
                 "Question status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
-            self.owner, comment, datecreated=datecreated,
-            action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
+            self.owner,
+            comment,
+            datecreated=datecreated,
+            action=QuestionAction.REOPEN,
+            new_status=QuestionStatus.OPEN)
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
+        create_questionreopening(
+            self,
+            msg,
+            old_status,
+            old_answerer,
+            old_date_solved)
         self.answer = None
         self.answerer = None
         self.date_solved = None
