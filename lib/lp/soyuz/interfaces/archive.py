@@ -419,7 +419,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     enabled_restricted_families = CollectionField(
             title=_("Enabled restricted families"),
             description=_(
-                "The restricted architecture families on which this archive "
+                "The restricted architecture families on which the archive "
                 "can build."),
             value_type=Reference(schema=IProcessorFamily),
             readonly=False)
