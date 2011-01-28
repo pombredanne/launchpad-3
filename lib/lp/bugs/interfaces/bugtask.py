@@ -1160,9 +1160,9 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None,
-                 exclude_conjoined_tasks=False):
+                 linked_branches=None, linked_blueprints=None,
+                 structural_subscriber=None, modified_since=None,
+                 created_since=None, exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1205,6 +1205,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.linked_blueprints = linked_blueprints
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
@@ -1281,8 +1282,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None, modified_since=None,
-                       created_since=None):
+                       linked_blueprints=None, structural_subscriber=None,
+                       modified_since=None, created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1348,7 +1349,8 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
-        search_params.linked_branches=linked_branches
+        search_params.linked_branches = linked_branches
+        search_params.linked_blueprints = linked_blueprints
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
