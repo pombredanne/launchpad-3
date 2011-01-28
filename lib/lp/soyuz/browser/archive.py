@@ -1936,7 +1936,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                    'relative_build_score', 'external_dependencies']
     custom_widget('external_dependencies', TextAreaWidget, height=3)
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
-    label = 'Administer'
+    page_title = 'Administer'
 
     @property
     def label(self):
