@@ -11,7 +11,16 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from lazr.delegates import delegates
+from pytz import utc
+from storm.expr import (
+    LeftJoin,
+    Or,
+    )
 from storm.locals import (
     Bool,
     Desc,
@@ -178,8 +187,19 @@ class SourcePackageRecipe(Storm):
 
     @classmethod
     def findStaleDailyBuilds(cls):
-        store = IStore(cls)
-        return store.find(cls, cls.is_stale == True, cls.build_daily == True)
+        one_day_ago = datetime.now(utc) - timedelta(hours=23, minutes=50)
+        joins = LeftJoin(LeftJoin(LeftJoin(
+            SourcePackageRecipe, 
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id), 
+            PackageBuild, 
+            PackageBuild.id == SourcePackageRecipeBuild.package_build_id),
+            BuildFarmJob, 
+            BuildFarmJob.id == PackageBuild.build_farm_job_id)
+        return IStore(cls).using(joins).find(
+            cls, cls.is_stale == True, cls.build_daily == True,
+            Or(SourcePackageRecipeBuild.id == None,
+            BuildFarmJob.date_created < one_day_ago)).config(distinct=True)
 
     @staticmethod
     def exists(owner, name):

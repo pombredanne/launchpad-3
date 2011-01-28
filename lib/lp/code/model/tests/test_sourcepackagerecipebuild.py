@@ -270,8 +270,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertFalse(recipe.is_stale)
 
     def test_makeDailyBuilds_skips_if_built_in_last_24_hours(self):
-        # The makeDailyBuilds() call exits early if the recipe has been built
-        # in the last 24 hours.
+        # We won't create a build during makeDailyBuilds() if the recipe
+        # has been built in the last 24 hours.
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         recipe.requestBuild(

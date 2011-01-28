@@ -197,13 +197,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             logger = logging.getLogger()
         builds = []
         for recipe in recipes:
-            # If there is a last build, and it was created less than 24 hours
-            # ago, skip the recipe, *and* don't update staleness.
-            latest_build = recipe.getLastBuild()
-            if latest_build is not None:
-                pb = latest_build.package_build
-                if datetime.now(utc) - pb.date_created < timedelta(hours=24):
-                    continue
             recipe.is_stale = False
             logger.debug(
                 'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
