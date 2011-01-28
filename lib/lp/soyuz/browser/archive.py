@@ -1143,8 +1143,12 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
-
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
+    label = 'Delete packages'
+
+    @property
+    def label(self):
+        return 'Delete packages from %s' % self.context.displayname
 
     @property
     def default_status_filter(self):
@@ -1248,10 +1252,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     a copying action that can be performed upon a set of selected packages.
     """
     schema = IPPAPackageFilter
-
     custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
     custom_widget('include_binaries', LaunchpadRadioWidget)
+    label = 'Copy packages'
+
+    @property
+    def label(self):
+        return 'Copy packages from %s' % self.context.displayname
 
     default_pocket = PackagePublishingPocket.RELEASE
 
@@ -1782,7 +1790,8 @@ class ArchiveActivateView(LaunchpadFormView):
     field_names = ('name', 'displayname', 'description')
     custom_widget('description', TextAreaWidget, height=3)
     custom_widget('name', PPANameWidget, label="URL")
-    label = "Personal Package Archive Activation"
+    label = 'Activate a Personal Package Archive'
+    page_title = 'Activate PPA'
 
     @property
     def ubuntu(self):
@@ -1913,6 +1922,11 @@ class ArchiveEditView(BaseArchiveEditView):
     field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
+    page_title = 'Change details'
+
+    @property
+    def label(self):
+        return 'Edit %s' % self.context.displayname
 
 
 class ArchiveAdminView(BaseArchiveEditView):
@@ -1920,10 +1934,13 @@ class ArchiveAdminView(BaseArchiveEditView):
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'build_debug_symbols', 'buildd_secret', 'authorized_size',
                    'relative_build_score', 'external_dependencies']
-
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    label = 'Administer'
+
+    @property
+    def label(self):
+        return 'Administer %s' % self.context.displayname
 
     def updateContextFromData(self, data):
         """Update context from form data.
