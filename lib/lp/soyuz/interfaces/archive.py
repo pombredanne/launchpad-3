@@ -289,9 +289,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Private"), required=False,
             description=_(
                 "Restrict access to the archive to its owner and "
-                "subscribers. This can only be changed by a Launchpad admin "
-                "or commercial admin, and only if the archive has never had "
-                "any sources published.")))
+                "subscribers. This can only be changed if the archive has "
+                "never had any sources published.")))
 
     require_virtualized = exported(
         Bool(
@@ -418,8 +417,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "NOTE: This is for migration of OEM PPAs only!"))
 
     enabled_restricted_families = CollectionField(
-            title=_("Restricted architecture families this archive can build "
-                    "on"),
+            title=_(
+                "The restricted architecture families on which this archive "
+                "can build."),
             value_type=Reference(schema=IProcessorFamily),
             readonly=False)
 
@@ -428,9 +428,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Commercial"),
             required=True,
             description=_(
-                "Mark the archive as commercial, displaying it in Software "
-                "Center's commercial listings. Only private archives can be "
-                "commercial.")))
+                "Display the archive in Software Center's commercial "
+                "listings. Only private archives can be commercial.")))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
