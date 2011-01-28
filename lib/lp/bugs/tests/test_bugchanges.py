@@ -59,7 +59,8 @@ class TestBugChanges(unittest.TestCase):
         # Create a new bug subscription with a new person.
         subscriber = self.factory.makePerson(name=name)
         subscription = target.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = level
+        filter = subscription.newBugFilter()
+        filter.bug_notification_level = level
         return subscriber
 
     def saveOldChanges(self, bug=None, append=False):

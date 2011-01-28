@@ -59,6 +59,13 @@ class IBugSubscriptionFilterAttributes(Interface):
     exclude_any_tags = Bool(
         title=_("Exclude all tags"),
         required=True, default=False)
+    bug_notification_level = exported(
+        Choice(
+            title=_("Bug notification level"), required=True,
+            vocabulary=BugNotificationLevel,
+            default=BugNotificationLevel.NOTHING,
+            description=_("The volume and type of bug notifications "
+                          "this subscription will generate.")))
 
     description = exported(
         Text(

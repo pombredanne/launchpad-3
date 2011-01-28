@@ -20,6 +20,7 @@ from zope.interface import implements
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.registry.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
     )
@@ -44,6 +45,10 @@ class BugSubscriptionFilter(StormBase):
     structural_subscription = Reference(
         structural_subscription_id, "StructuralSubscription.id")
 
+    bug_notification_level = DBEnum(
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.NOTHING,
+        allow_none=False)
     find_all_tags = Bool(allow_none=False, default=False)
     include_any_tags = Bool(allow_none=False, default=False)
     exclude_any_tags = Bool(allow_none=False, default=False)
