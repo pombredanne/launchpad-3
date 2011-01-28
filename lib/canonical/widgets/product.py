@@ -24,6 +24,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.schema import Choice, Text
 
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.restful.interface import copy_field
@@ -40,7 +41,7 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
-    LowerCaseTextWidget, StrippedTextWidget)
+    StrippedTextWidget, URIComponentWidget)
 from lp.registry.interfaces.product import IProduct
 
 
@@ -409,31 +410,13 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return '\n'.join(html)
 
 
-class ProductNameWidget(LowerCaseTextWidget):
+class ProductNameWidget(URIComponentWidget):
     """A text input widget that looks like a url path component entry.
 
     URL: http://launchpad.net/[____________]
     """
-    template = ViewPageTemplateFile('templates/project-url.pt')
 
-    def __init__(self, *args):
-        # pylint: disable-msg=E1002
-        self.read_only = False
-        super(ProductNameWidget, self).__init__(*args)
-
-    def __call__(self):
-        return self.template()
-
-    @property
-    def product_name(self):
-        return self.request.form.get('field.name', '').lower()
-
-    @property
-    def widget_type(self):
-        if self.read_only:
-            return 'hidden'
-        else:
-            return 'text'
+    base_url = 'https://launchpad.net/'
 
 
 class GhostMixin:
