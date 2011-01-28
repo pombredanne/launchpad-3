@@ -60,7 +60,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.services.fields import Tag
 
 
-search_tasks_params_base = {
+search_tasks_params_common = {
     "order_by": List(
         title=_('List of fields by which the results are ordered.'),
         value_type=Text(),
@@ -173,13 +173,13 @@ search_tasks_params_base = {
         required=False),
     }
 
-search_tasks_params_for_api_1_0 = dict(
-    search_tasks_params_base,
+search_tasks_params_for_api_default = dict(
+    search_tasks_params_common,
     omit_targeted=copy_field(
         IBugTaskSearch['omit_targeted']))
 
 search_tasks_params_for_api_devel = dict(
-    search_tasks_params_base,
+    search_tasks_params_common,
     omit_targeted=copy_field(
         IBugTaskSearch['omit_targeted'], default=False),
     linked_blueprints=Choice(
@@ -215,18 +215,21 @@ class IHasBugs(Interface):
     has_bugtasks = Attribute(
         "True if a BugTask has ever been reported for this target.")
 
-    # Version: devel
+    # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
-    # Pop the 1.0 version and begin declaring the devel version.
+
+    # Pop the *default* version (decorators are run last to first).
     @operation_removed_in_version('devel')
-    # Version: 1.0
+
+    # searchTasks default API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(**search_tasks_params_for_api_1_0)
+    @operation_parameters(**search_tasks_params_for_api_default)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,
@@ -246,8 +249,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    structural_subscriber=None, modified_since=None,
-                    created_since=None, prejoins=[]):
+                    linked_blueprints=None, structural_subscriber=None,
+                    modified_since=None, created_since=None, prejoins=[]):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
