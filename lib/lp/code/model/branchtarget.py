@@ -11,18 +11,25 @@ __all__ = [
     'ProductBranchTarget',
     ]
 
+from operator import attrgetter
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on,
     IBranchTarget,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 
 
 def branch_to_target(branch):
@@ -44,6 +51,32 @@ class _BaseBranchTarget:
         return getUtility(ICodeImportSet).new(
             registrant, self, branch_name, rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
+
+    def getRelatedSeriesBranchInfo(self, parent_branch):
+        """See `IBranchTarget`."""
+        return []
+
+    def getRelatedPackageBranchInfo(self, parent_branch):
+        """See `IBranchTarget`."""
+        return []
+
+    def _getSortedActiveProductSeries(self, product):
+        """Return a sorted, list of active series.
+
+        The series list is sorted by version in reverse order.
+        The development focus is always first in the list.
+        """
+        series_list = []
+        for series in product.series:
+            if (series.status != SeriesStatus.OBSOLETE
+                and series != product.development_focus):
+                series_list.append(series)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        # Add the development focus first.
+        series_list.insert(0, product.development_focus)
+        return series_list
 
 
 class PackageBranchTarget(_BaseBranchTarget):
@@ -158,6 +191,19 @@ class PackageBranchTarget(_BaseBranchTarget):
         branch.product = None
         branch.distroseries = self.sourcepackage.distroseries
         branch.sourcepackagename = self.sourcepackage.sourcepackagename
+
+    def getRelatedPackageBranchInfo(self, parent_branch):
+        """See `IBranchTarget`."""
+        result = []
+        linked_branches = self.sourcepackage.linkedBranches()
+        result.extend(
+                [(branch, self.sourcepackage.distroseries)
+                 for branch in linked_branches.values()
+                 if (check_permission('launchpad.View', branch) and
+                    branch != parent_branch)])
+
+        return sorted(result, key=lambda branch_info: (
+                    getattr(branch_info[1], 'name')))
 
 
 class PersonBranchTarget(_BaseBranchTarget):
@@ -337,6 +383,40 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
+
+    def getRelatedSeriesBranchInfo(self, parent_branch):
+        """See `IBranchTarget`."""
+        result = []
+        sorted_series = self._getSortedActiveProductSeries(self.product)
+        for series in sorted_series:
+            try:
+                branch = get_linked_to_branch(series).branch
+                if (branch not in result and branch != parent_branch and
+                    check_permission('launchpad.View', branch)):
+                    result.append((branch, series))
+            except NoLinkedBranch:
+                # If there's no branch for a particular series, we don't care.
+                pass
+
+        return result
+
+    def getRelatedPackageBranchInfo(self, parent_branch):
+        """See `IBranchTarget`."""
+        result = []
+        for distrosourcepackage in self.product.distrosourcepackages:
+            try:
+                branch = get_linked_to_branch(distrosourcepackage).branch
+                series = distrosourcepackage.distribution.currentseries
+                if (branch != parent_branch and series is not None and
+                    check_permission('launchpad.View', branch)):
+                        result.append((branch, series))
+            except NoLinkedBranch:
+                # If there's no branch for a particular source package,
+                # we don't care.
+                pass
+
+        return sorted(result, key=lambda branch_info: (
+                    getattr(branch_info[1], 'name')))
 
 
 def get_canonical_url_data_for_target(branch_target):

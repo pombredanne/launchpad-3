@@ -143,3 +143,25 @@ class IBranchTarget(Interface):
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
         """
+
+    def getRelatedSeriesBranchInfo(parent_branch):
+        """Find development branch info related to this target.
+
+        The result is a list of tuples:
+            (branch, product_series)
+        where:
+            branch: the related branch.
+            product_series: the product series associated with the branch.
+
+        The development focus is first in the list.
+        """
+
+    def getRelatedPackageBranchInfo(parent_branch):
+        """Find package branch info related to this target.
+
+        The result is a list of tuples:
+            (branch, distro_series)
+        where:
+            branch: the related branch.
+            distro_series: the distro series associated with the branch.
+        """

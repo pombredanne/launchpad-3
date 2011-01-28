@@ -7,6 +7,8 @@
 
 This module should not contain tests (but it should be tested).
 """
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 
 __metaclass__ = type
 __all__ = [
@@ -34,7 +36,7 @@ from itertools import count
 from operator import (
     isMappingType,
     isSequenceType,
-    )
+    attrgetter)
 import os
 from pytz import UTC
 from random import randint
@@ -1147,6 +1149,156 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         queue = getUtility(IBranchMergeQueueSource).new(
             name, owner, registrant, description, configuration, branches)
         return queue
+
+    def makeRelatedBranchesForSourcePackage(self, sourcepackage=None,
+                                            **kwargs):
+        """Create some branches associated with a sourcepackage."""
+
+        reference_branch = self.makePackageBranch(sourcepackage=sourcepackage)
+        return self.makeRelatedBranches(
+                reference_branch=reference_branch, **kwargs)
+
+    def makeRelatedBranchesForProduct(self, product=None, **kwargs):
+        """Create some branches associated with a product."""
+
+        reference_branch = self.makeProductBranch(product=product)
+        return self.makeRelatedBranches(
+                reference_branch=reference_branch, **kwargs)
+
+    def makeRelatedBranches(self, reference_branch=None,
+                            with_series_branches=True,
+                            with_package_branches=True,
+                            with_private_branches=False):
+        """Create some branches associated with a reference branch.
+        The other branches are:
+          - series branches: a set of branches associated with product
+            series of the same product as the reference branch.
+          - package branches: a set of branches associated with packagesource
+            entities of the same product as the reference branch or the same
+            sourcepackage depending on what type of branch it is.
+
+        If no reference branch is supplied, create one.
+
+        Returns: a tuple consisting of
+        (reference_branch, related_series_branches, related_package_branches)
+
+        """
+        related_series_branch_info = []
+        related_package_branch_info = []
+        # Make the base_branch if required and find the product if one exists.
+        naked_product = None
+        if reference_branch is None:
+            naked_product = removeSecurityProxy(self.makeProduct())
+            # Create the 'source' branch ie the base branch of a recipe.
+            reference_branch = self.makeProductBranch(
+                                            name="reference_branch",
+                                            product=naked_product)
+        elif reference_branch.product is not None:
+            naked_product = removeSecurityProxy(reference_branch.product)
+
+        related_branch_owner = self.makePerson()
+        # Only branches related to products have related series branches.
+        if with_series_branches and naked_product is not None:
+            series_branch_info = []
+            # Add some product series
+            def makeSeriesBranch(name, is_private=False):
+                branch = self.makeBranch(
+                    name=name,
+                    product=naked_product, owner=related_branch_owner,
+                    private=is_private)
+                series = self.makeProductSeries(
+                    product=naked_product, branch=branch)
+                return branch, series
+            for x in range(4):
+                is_private = x == 0 and with_private_branches
+                (branch, series) = makeSeriesBranch(
+                        name=("series_branch_%s" % x), is_private=is_private)
+                if not is_private:
+                    series_branch_info.append((branch, series))
+
+            # Sort them
+            related_series_branch_info = sorted_version_numbers(
+                    series_branch_info, key=lambda branch_info: (
+                        getattr(branch_info[1], 'name')))
+
+            # Add a development branch at the start of the list.
+            naked_product.development_focus.name = 'trunk'
+            devel_branch = self.makeProductBranch(
+                product=naked_product, name='trunk_branch',
+                owner=related_branch_owner)
+            linked_branch = ICanHasLinkedBranch(naked_product)
+            linked_branch.setBranch(devel_branch)
+            related_series_branch_info.insert(0,
+                    (devel_branch, naked_product.development_focus))
+
+        if with_package_branches:
+            # Create related package branches if the base_branch is
+            # associated with a product.
+            if naked_product is not None:
+                def makePackageBranch(name, is_private=False):
+                    distro = self.makeDistribution()
+                    distroseries = self.makeDistroSeries(
+                        distribution=distro)
+                    sourcepackagename = self.makeSourcePackageName()
+
+                    suitesourcepackage = self.makeSuiteSourcePackage(
+                        sourcepackagename=sourcepackagename,
+                        distroseries=distroseries,
+                        pocket=PackagePublishingPocket.RELEASE)
+                    naked_sourcepackage = removeSecurityProxy(
+                        suitesourcepackage)
+
+                    branch = self.makePackageBranch(
+                        name=name, owner=related_branch_owner,
+                        sourcepackagename=sourcepackagename,
+                        distroseries=distroseries, private=is_private)
+                    linked_branch = ICanHasLinkedBranch(naked_sourcepackage)
+                    with celebrity_logged_in('admin'):
+                        linked_branch.setBranch(branch, related_branch_owner)
+
+                    series = self.makeProductSeries(product=naked_product)
+                    self.makePackagingLink(
+                        distroseries=distroseries, productseries=series,
+                        sourcepackagename=sourcepackagename)
+                    return branch, distroseries
+
+                for x in range(5):
+                    is_private = x == 0 and with_private_branches
+                    branch, distroseries = makePackageBranch(
+                            name=("product_package_branch_%s" % x),
+                            is_private=is_private)
+                    if not is_private:
+                        related_package_branch_info.append(
+                                (branch, distroseries))
+
+            # Create related package branches if the base_branch is
+            # associated with a sourcepackage.
+            if reference_branch.sourcepackage is not None:
+                distroseries = reference_branch.sourcepackage.distroseries
+                for pocket in [
+                        PackagePublishingPocket.RELEASE,
+                        PackagePublishingPocket.UPDATES,
+                        ]:
+                    branch = self.makePackageBranch(
+                            name="package_branch_%s" % pocket.name,
+                            distroseries=distroseries)
+                    with celebrity_logged_in('admin'):
+                        reference_branch.sourcepackage.setBranch(
+                            pocket, branch,
+                            related_branch_owner)
+
+                    related_package_branch_info.append(
+                            (branch, distroseries))
+
+            related_package_branch_info = sorted(
+                    related_package_branch_info, key=lambda branch_info: (
+                        getattr(branch_info[1], 'name')))
+
+
+        return (
+            reference_branch,
+            related_series_branch_info,
+            related_package_branch_info)
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.

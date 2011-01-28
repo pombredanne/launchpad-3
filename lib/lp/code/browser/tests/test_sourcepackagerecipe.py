@@ -109,112 +109,8 @@ class TestCaseForRecipe(BrowserTestCase):
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa)
 
-    def createRelatedBranches(self, base_branch=None, nr_series_branches=5,
-                              nr_package_branches=5, with_private=False):
-        """Create a recipe base branch and some others associated with it.
-        The other branches are:
-          - series branches: a set of branches associated with product
-            series of the same product as the recipe base branch.
-          - package branches: a set of branches associated with packagesource
-            entities of the same product as the recipe base branch.
-        """
-        related_series_branch_info = []
-        related_package_branches = set()
-        # Make the base_branch if required and find the product if one exists.
-        naked_product = None
-        if base_branch is None:
-            naked_product = removeSecurityProxy(
-                self.factory.makeProduct(owner=self.chef))
-            # Create the 'source' branch ie the base branch of a recipe.
-            base_branch = self.factory.makeProductBranch(
-                                            product=naked_product)
-        elif base_branch.product is not None:
-            naked_product = removeSecurityProxy(base_branch.product)
-
-        # Only branches related to products have related series branches.
-        if nr_series_branches > 0 and naked_product is not None:
-            series_branch_info = []
-            # Add some product series
-            for x in range(nr_series_branches-1):
-                branch = self.factory.makeBranch(
-                    product=naked_product, owner=self.chef)
-                series = self.factory.makeProductSeries(
-                    product=naked_product, branch=branch)
-                series_branch_info.append((branch, series))
-            if with_private:
-                branch = self.factory.makeBranch(
-                    product=naked_product, owner=self.chef, private=True)
-                series = self.factory.makeProductSeries(
-                    product=naked_product, branch=branch)
-                series_branch_info.append((branch, series))
-
-            # Sort them
-            related_series_branch_info = sorted_version_numbers(
-                    series_branch_info, key=lambda branch_info: (
-                        getattr(branch_info[1], 'name')))
-
-            # Add a development branch at the start of the list.
-            naked_product.development_focus.name = 'trunk'
-            devel_branch = self.factory.makeProductBranch(
-                product=naked_product, name='trunk_branch', owner=self.chef)
-            linked_branch = ICanHasLinkedBranch(naked_product)
-            linked_branch.setBranch(devel_branch)
-            related_series_branch_info.insert(0,
-                    (devel_branch, naked_product.development_focus))
-
-        if nr_package_branches > 0:
-            # Create related package branches if the base_branch is
-            # associated with a product.
-            if base_branch.product is not None:
-                distro = self.factory.makeDistribution()
-                distroseries = self.factory.makeDistroSeries(
-                    distribution=distro)
-
-                for x in range(nr_package_branches):
-                    sourcepackagename = self.factory.makeSourcePackageName()
-
-                    suitesourcepackage = self.factory.makeSuiteSourcePackage(
-                        sourcepackagename=sourcepackagename,
-                        distroseries=distroseries,
-                        pocket=PackagePublishingPocket.RELEASE)
-                    naked_sourcepackage = removeSecurityProxy(
-                        suitesourcepackage)
-
-                    branch = self.factory.makePackageBranch(
-                        owner=self.chef, sourcepackagename=sourcepackagename,
-                        distroseries=distroseries)
-                    linked_branch = ICanHasLinkedBranch(naked_sourcepackage)
-                    with celebrity_logged_in('admin'):
-                        linked_branch.setBranch(branch, self.chef)
-
-                    series = self.factory.makeProductSeries(
-                        product=naked_product)
-                    self.factory.makePackagingLink(
-                        distroseries=distroseries, productseries=series,
-                        sourcepackagename=sourcepackagename)
-                    related_package_branches.add(branch)
-
-            # Create related package branches if the base_branch is
-            # associated with a sourcepackage.
-            if base_branch.sourcepackage is not None:
-                for pocket in [
-                        PackagePublishingPocket.RELEASE,
-                        PackagePublishingPocket.UPDATES,
-                        ]:
-                    branch = self.factory.makePackageBranch(
-                            sourcepackage=base_branch.sourcepackage)
-                    with celebrity_logged_in('admin'):
-                        base_branch.sourcepackage.setBranch(
-                                pocket, branch, self.chef)
-                    related_package_branches.add(branch)
-
-        return (
-            base_branch,
-            related_series_branch_info,
-            sorted(related_package_branches, key=attrgetter('unique_name')))
-
     def checkRelatedBranches(self, related_series_branch_info,
-                             related_package_branches, browser_contents):
+                             related_package_branch_info, browser_contents):
         """Check that the browser contents contain the correct branch info."""
         login(ANONYMOUS)
         soup = BeautifulSoup(browser_contents)
@@ -229,7 +125,7 @@ class TestCaseForRecipe(BrowserTestCase):
         root_url = root_url.rstrip('/')
         branch_table = soup.find(
             'table', {'id': 'related-package-branches-listing'})
-        if not related_package_branches:
+        if not related_package_branch_info:
             self.assertIs(branch_table, None)
         else:
             rows = branch_table.tbody.findAll('tr')
@@ -245,13 +141,15 @@ class TestCaseForRecipe(BrowserTestCase):
                     '%s%s' % (root_url, branch_links[1]['href']))
                 package_branches_info.append(branch_links[1].renderContents())
             expected_branch_info = []
-            for branch in related_package_branches:
+            for branch_info in related_package_branch_info:
+                branch = branch_info[0]
+                distro_series = branch_info[1]
                 expected_branch_info.append(
                     canonical_url(branch, rootsite='code'))
                 expected_branch_info.append(branch.displayname)
                 expected_branch_info.append(
-                    canonical_url(branch.sourcepackage, rootsite='code'))
-                expected_branch_info.append(branch.sourcepackage.name)
+                    canonical_url(distro_series, rootsite='code'))
+                expected_branch_info.append(distro_series.name)
             self.assertEqual(package_branches_info, expected_branch_info)
 
         # Check the related series branches.
@@ -640,7 +538,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_new_recipe_with_package_branches(self):
         # The series branches table should not appear if there are none.
         (branch, related_series_branch_info, related_package_branches) = (
-            self.createRelatedBranches(nr_series_branches=0))
+            self.factory.makeRelatedBranches(with_series_branches=False))
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
         soup = BeautifulSoup(browser.contents)
@@ -656,7 +554,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_new_recipe_with_series_branches(self):
         # The package branches table should not appear if there are none.
         (branch, related_series_branch_info, related_package_branches) = (
-            self.createRelatedBranches(nr_package_branches=0))
+            self.factory.makeRelatedBranches(with_package_branches=False))
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
         soup = BeautifulSoup(browser.contents)
@@ -669,61 +567,25 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             'div', {'id': 'related-package-branches'})
         self.assertIs(related_branches, None)
 
-    def test_new_product_branch_recipe_view_related_branches(self):
-        # The view class should provide the expected related branches for
-        # rendering.
-        (branch, related_series_branch_info,
-            related_package_branches) = self.createRelatedBranches()
-        with person_logged_in(self.chef):
-            view = create_initialized_view(branch, "+new-recipe")
-            self.assertEqual(
-                related_series_branch_info, view.related_series_branch_info)
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
-    def test_new_sourcepackage_branch_recipe_view_related_branches(self):
-        # The view class should provide the expected related branches for
-        # rendering.
-        base_branch= self.factory.makePackageBranch()
-        (branch, ignore, related_package_branches) = (
-                self.createRelatedBranches(base_branch))
-        with person_logged_in(self.chef):
-            view = create_initialized_view(branch, "+new-recipe")
-            self.assertEqual(0, len(view.related_series_branch_info))
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
-    def test_new_product_branch_recipe_view_with_private_branches(self):
-        # The view class should not expose private branches.
-        (branch, related_series_branch_info,
-            related_package_branches) = self.createRelatedBranches(
-                with_private=True)
-        with person_logged_in(self.chef):
-            view = create_initialized_view(branch, "+new-recipe")
-            self.assertEqual(
-                related_series_branch_info, view.related_series_branch_info)
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
     def test_new_product_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
         (branch, related_series_branch_info,
-            related_package_branches) = self.createRelatedBranches()
+            related_package_branch_info) = self.factory.makeRelatedBranches()
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
         self.checkRelatedBranches(
-            related_series_branch_info, related_package_branches,
+            related_series_branch_info, related_package_branch_info,
             browser.contents)
 
     def test_new_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
-        base_branch= self.factory.makePackageBranch()
-        (branch, ignore, related_package_branches) = (
-                self.createRelatedBranches(base_branch))
+        reference_branch= self.factory.makePackageBranch()
+        (branch, ignore, related_package_branch_info) = (
+                self.factory.makeRelatedBranches(reference_branch))
         browser = self.getUserBrowser(
             canonical_url(branch, view_name='+new-recipe'), user=self.chef)
         self.checkRelatedBranches(
-                set(), related_package_branches, browser.contents)
+                set(), related_package_branch_info, browser.contents)
 
     def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
         # If the user creating a recipe has no existing PPAs, the selector
@@ -1159,8 +1021,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # The series branches table should not appear if there are none.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            self.createRelatedBranches(
-                    base_branch=recipe.base_branch, nr_series_branches=0)
+            self.factory.makeRelatedBranches(
+                    reference_branch=recipe.base_branch,
+                    with_series_branches=False)
         browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
         browser.getLink('Edit recipe').click()
         soup = BeautifulSoup(browser.contents)
@@ -1177,8 +1040,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # The package branches table should not appear if there are none.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            self.createRelatedBranches(
-                    base_branch=recipe.base_branch, nr_package_branches=0)
+            self.factory.makeRelatedBranches(
+                    reference_branch=recipe.base_branch,
+                    with_package_branches=False)
         browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
         browser.getLink('Edit recipe').click()
         soup = BeautifulSoup(browser.contents)
@@ -1191,72 +1055,32 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             'div', {'id': 'related-package-branches'})
         self.assertIs(related_branches, None)
 
-    def test_edit_product_branch_recipe_view_related_branches(self):
-        # The view class should provide the expected related branches for
-        # rendering.
-        with person_logged_in(self.chef):
-            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            (branch, related_series_branch_info,
-                related_package_branches) = self.createRelatedBranches(
-                    base_branch=recipe.base_branch)
-            view = create_initialized_view(recipe, "+edit")
-            self.assertEqual(
-                related_series_branch_info, view.related_series_branch_info)
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
-    def test_edit_sourcepackage_branch_recipe_view_related_branches(self):
-        # The view class should provide the expected related branches for
-        # rendering.
-        with person_logged_in(self.chef):
-            base_branch= self.factory.makePackageBranch()
-            recipe = self.factory.makeSourcePackageRecipe(
-                    owner=self.chef, branches=[base_branch])
-            (branch, ignore, related_package_branches) = (
-                    self.createRelatedBranches(base_branch))
-            view = create_initialized_view(recipe, "+edit")
-            self.assertEqual(0, len(view.related_series_branch_info))
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
-    def test_edit_product_branch_recipe_view_with_private_branches(self):
-        # The view class should not expose private branches.
-        with person_logged_in(self.chef):
-            recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
-            (branch, related_series_branch_info,
-                related_package_branches) = self.createRelatedBranches(
-                    base_branch=recipe.base_branch, with_private=True)
-            view = create_initialized_view(recipe, "+edit")
-            self.assertEqual(
-                related_series_branch_info, view.related_series_branch_info)
-            self.assertEqual(
-                related_package_branches, view.related_package_branches)
-
     def test_edit_product_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
             (branch, related_series_branch_info,
-                related_package_branches) = self.createRelatedBranches(
-                    base_branch=recipe.base_branch)
+                related_package_branch_info) = (
+                    self.factory.makeRelatedBranches(
+                    reference_branch=recipe.base_branch))
         browser = self.getUserBrowser(
             canonical_url(recipe, view_name='+edit'), user=self.chef)
         self.checkRelatedBranches(
-            related_series_branch_info, related_package_branches,
+            related_series_branch_info, related_package_branch_info,
             browser.contents)
 
     def test_edit_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
-            base_branch= self.factory.makePackageBranch()
+            reference_branch= self.factory.makePackageBranch()
             recipe = self.factory.makeSourcePackageRecipe(
-                    owner=self.chef, branches=[base_branch])
-            (branch, ignore, related_package_branches) = (
-                    self.createRelatedBranches(base_branch))
+                    owner=self.chef, branches=[reference_branch])
+            (branch, ignore, related_package_branch_info) = (
+                    self.factory.makeRelatedBranches(reference_branch))
             browser = self.getUserBrowser(
                 canonical_url(recipe, view_name='+edit'), user=self.chef)
             self.checkRelatedBranches(
-                    set(), related_package_branches, browser.contents)
+                    set(), related_package_branch_info, browser.contents)
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):

@@ -1,7 +1,7 @@
 <fieldset id="related-branches"
               class="collapsible collapsed" style="width: 60em"
               tal:define="seriesBranches view/related_series_branch_info;
-                          packageBranches view/related_package_branches"
+                          packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
   <legend>Related Branches</legend>
   <table>
@@ -12,11 +12,13 @@
         <thead>
           <tr>
             <th>Branch URL</th>
-            <th>Source package</th>
+            <th>Distro series</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="branch packageBranches">
+          <tr tal:repeat="branch_info packageBranches">
+            <tal:defines define="branch python:branch_info[0];
+                    distro_series python:branch_info[1];">
             <td width="80%">
               <a href="#"
                  tal:content="branch/displayname"
@@ -26,11 +28,12 @@
             </td>
             <td>
               <a href="#"
-                 tal:attributes="href branch/sourcepackage/fmt:url"
-                 tal:content="branch/sourcepackagename/name">
-                source package
+                 tal:attributes="href distro_series/fmt:url"
+                 tal:content="distro_series/name">
+                distro series
               </a>
             </td>
+            </tal:defines>
           </tr>
         </tbody>
       </table>
@@ -60,7 +63,7 @@
               <a href="#"
                  tal:content="product_series/name"
                  tal:attributes="href product_series/fmt:url">
-                product or series
+                product series
               </a>
             </td>
             </tal:defines>
