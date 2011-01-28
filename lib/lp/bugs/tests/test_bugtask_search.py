@@ -648,7 +648,6 @@ class ProductSeriesTarget(BugTargetTestBase):
         # product are returned, including bug tasks for the main product
         # of the series. Hence we must set the status for all products
         # in order to avoid a failure of test_upstream_status().
-        bug = bugtask.bug
         for other_task in bugtask.related_tasks:
             other_target = other_task.target
             if IProduct.providedBy(other_target):
@@ -1032,7 +1031,7 @@ class TestCachingAssignees(TestCaseWithFactory):
                 bugtasks = BugTaskResultSet(bugtasks)
                 # Access the assignees to trigger a query if not properly
                 # cached.
-                names = [bugtask.assignee.name for bugtask in bugtasks]
+                [bugtask.assignee.name for bugtask in bugtasks]
                 # With caching the number of queries is two, one for the
                 # bugtask and one for all of the assignees at once.
                 self.assertThat(recorder, HasQueryCount(Equals(2)))
