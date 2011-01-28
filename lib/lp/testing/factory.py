@@ -36,7 +36,7 @@ from itertools import count
 from operator import (
     isMappingType,
     isSequenceType,
-    attrgetter)
+    )
 import os
 from pytz import UTC
 from random import randint

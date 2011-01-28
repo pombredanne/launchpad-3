@@ -428,6 +428,7 @@ def product_series_to_branch_target(product_series):
     """The Product itself is the branch target given a ProductSeries."""
     return ProductBranchTarget(product_series.product)
 
+
 def distribution_sourcepackage_to_branch_target(distro_sourcepackage):
     """The development version of the distro sourcepackage is the target."""
     dev_version = distro_sourcepackage.development_version

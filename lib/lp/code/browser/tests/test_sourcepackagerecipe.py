@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
 from textwrap import dedent
 
 from mechanize import LinkNotFoundError
@@ -32,7 +31,6 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -45,7 +43,6 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
@@ -55,7 +52,6 @@ from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
-    celebrity_logged_in,
     login,
     person_logged_in,
     TestCaseWithFactory,

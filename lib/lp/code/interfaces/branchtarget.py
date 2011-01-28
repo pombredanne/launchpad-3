@@ -26,7 +26,6 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.enums import BranchType
 
 
