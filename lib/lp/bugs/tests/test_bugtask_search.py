@@ -28,6 +28,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
+    BugBlueprintSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
@@ -444,6 +445,23 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
         self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_blueprints_linked(self):
+        # Search results can be limited to bugs with or without linked
+        # blueprints.
+        with person_logged_in(self.owner):
+            blueprint = self.factory.makeSpecification()
+            blueprint.linkBug(self.bugtasks[0].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITH_BLUEPRINTS))
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS))
+        self.assertSearchFinds(params, self.bugtasks[1:])
+        params = self.getBugTaskSearchParams(user=None)
+        self.assertSearchFinds(params, self.bugtasks)
 
     def test_limit_search_to_one_bug(self):
         # Search results can be limited to a given bug.
