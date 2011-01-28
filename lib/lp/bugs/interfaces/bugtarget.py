@@ -35,7 +35,6 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -52,6 +51,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
     IBugTask,
@@ -59,7 +59,8 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.services.fields import Tag
 
-search_tasks_params_for_api_1_0 = {
+
+search_tasks_params_base = {
     "order_by": List(
         title=_('List of fields by which the results are ordered.'),
         value_type=Text(),
@@ -80,7 +81,6 @@ search_tasks_params_for_api_1_0 = {
     "tags": copy_field(IBugTaskSearch['tag']),
     "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
-    "omit_targeted": copy_field(IBugTaskSearch['omit_targeted']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
     "milestone_assignment": copy_field(
         IBugTaskSearch['milestone_assignment']),
@@ -172,9 +172,21 @@ search_tasks_params_for_api_1_0 = {
             "date."),
         required=False),
     }
-search_tasks_params_for_api_devel = search_tasks_params_for_api_1_0.copy()
-search_tasks_params_for_api_devel["omit_targeted"] = copy_field(
-    IBugTaskSearch['omit_targeted'], default=False)
+
+search_tasks_params_for_api_1_0 = dict(
+    search_tasks_params_base,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted']))
+
+search_tasks_params_for_api_devel = dict(
+    search_tasks_params_base,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted'], default=False),
+    linked_blueprints=Choice(
+        title=_(
+            u"Search for bugs that are linked to blueprints or for "
+            u"bugs that are not linked to branches."),
+        vocabulary=BugBlueprintSearch, required=False))
 
 
 class IHasBugs(Interface):
@@ -208,7 +220,7 @@ class IHasBugs(Interface):
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
-    # "Pop" the devel version before declaring the 1.0 version.
+    # Pop the 1.0 version and begin declaring the devel version.
     @operation_removed_in_version('devel')
     # Version: 1.0
     @call_with(search_params=None, user=REQUEST_USER)
