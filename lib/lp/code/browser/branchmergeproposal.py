@@ -715,7 +715,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def commit_message_html(self):
         """The commit message as widget HTML."""
-        mp = self.context,
+        mp = self.context
         commit_message = IBranchMergeProposal['commit_message']
         title = "Commit Message"
         return TextAreaEditorWidget(
