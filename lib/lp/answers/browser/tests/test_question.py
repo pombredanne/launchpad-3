@@ -11,6 +11,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.publisher import AnswersLayer
 from lp.testing import (
     login_person,
+    logout,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -18,6 +19,8 @@ from lp.testing.views import create_initialized_view
 
 class TestQuestionEditView(TestCaseWithFactory):
     """Verify the behavior of the QuestionEditView."""
+
+    layer = DatabaseFunctionalLayer
 
     def test_details_can_change_without_reopen(self):
         # If the question target changes, the question doesn't reopen.
@@ -29,7 +32,9 @@ class TestQuestionEditView(TestCaseWithFactory):
         login_person(answerer)
         question = self.factory.makeQuestion(
             target=original_target,
-            description="I want an answer.")
+            title="I want an answer.")
+        logout()
+        login_person(question.owner)
         answer = question.giveAnswer(answerer, "This is solved.")
         question.confirmAnswer("Yes it is.", answer=answer)
         
