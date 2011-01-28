@@ -13,7 +13,6 @@
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.code.branchmergeproposal.diff', function(Y) {
-            Y.lp.bugs.bugtask_index.use_advanced_subscriptions = true;
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
               Y.lp.code.branchmergeproposal.diff.connect_diff_links();
