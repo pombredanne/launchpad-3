@@ -22,7 +22,10 @@ from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
-from zope.schema import Choice, Text
+from zope.schema import (
+    Choice,
+    Text,
+    )
 
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -32,16 +35,23 @@ from lazr.restful.interface import copy_field
 from canonical.launchpad.browser.widgets import DescriptionWidget
 from lp.services.fields import StrippedTextLine
 from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerSet)
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerSet,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
-    StrippedTextWidget, URIComponentWidget)
+    StrippedTextWidget,
+    URIComponentWidget,
+    )
 from lp.registry.interfaces.product import IProduct
 
 

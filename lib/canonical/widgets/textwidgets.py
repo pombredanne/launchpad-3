@@ -7,7 +7,10 @@ import re
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.datetime import parse, DateTimeError
-from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
+from zope.app.form.browser.textwidgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.app.form.interfaces import ConversionError
 
 from lp.app.errors import UnexpectedFormData
