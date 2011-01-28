@@ -45,7 +45,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
@@ -415,7 +415,7 @@ class POTMsgSet(SQLBase):
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = ISlaveStore(TranslationMessage).find(
+        result = IStore(TranslationMessage).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
