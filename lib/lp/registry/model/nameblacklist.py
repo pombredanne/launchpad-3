@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 
-from storm.base import Storm
 from storm.locals import (
     Int,
     Reference,
@@ -24,9 +23,10 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklistSet,
     )
 from lp.registry.model.person import Person
+from lp.services.database.stormbase import StormBase
 
 
-class NameBlacklist(Storm):
+class NameBlacklist(StormBase):
     """Class for the NameBlacklist table."""
 
     implements(INameBlacklist)
