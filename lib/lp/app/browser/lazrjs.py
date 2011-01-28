@@ -248,13 +248,17 @@ class InlineEditPickerWidget(WidgetBase):
 
     @property
     def config(self):
-        return simplejson.dumps(
-            dict(header=self.header, step_title=self.step_title,
-                 remove_button_text=self.remove_button_text,
-                 null_display_value=self.null_display_value,
-                 show_remove_button=self.optional_field,
-                 show_assign_me_button=self.show_assign_me_button,
-                 show_search_box=self.show_search_box))
+        return dict(
+            header=self.header, step_title=self.step_title,
+            remove_button_text=self.remove_button_text,
+            null_display_value=self.null_display_value,
+            show_remove_button=self.optional_field,
+            show_assign_me_button=self.show_assign_me_button,
+            show_search_box=self.show_search_box)
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
 
     @cachedproperty
     def vocabulary(self):
