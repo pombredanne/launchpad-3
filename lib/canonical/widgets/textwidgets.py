@@ -1,12 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
 import pytz
 import re
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.datetime import parse, DateTimeError
-from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
+from zope.app.form.browser.textwidgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.app.form.interfaces import ConversionError
 
 from lp.app.errors import UnexpectedFormData
@@ -154,6 +158,31 @@ class URIWidget(TextWidget):
         if isinstance(input, list):
             raise UnexpectedFormData('Only a single value is expected')
         return TextWidget._toFieldValue(self, input)
+
+
+class URIComponentWidget(LowerCaseTextWidget):
+    """A text input widget that looks like a URL path component entry."""
+
+    template = ViewPageTemplateFile('templates/uri-component.pt')
+    read_only = False
+
+    def __call__(self):
+        return self.template()
+
+    @property
+    def base_url(self):
+        raise NotImplementedError()
+
+    @property
+    def current_name(self):
+        return self._getFormValue().lower()
+
+    @property
+    def widget_type(self):
+        if self.read_only:
+            return 'hidden'
+        else:
+            return 'text'
 
 
 class DelimitedListWidget(TextAreaWidget):

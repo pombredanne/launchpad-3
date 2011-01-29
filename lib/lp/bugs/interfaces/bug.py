@@ -22,7 +22,6 @@ __all__ = [
 
 from textwrap import dedent
 
-from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -433,13 +432,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     # subscription-related methods
 
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True),
-        # level actually uses BugNotificationLevel as its vocabulary,
-        # but due to circular import problems we fix that in
-        # _schema_circular_imports.py rather than here.
-        level=Choice(
-            vocabulary=DBEnumeratedType, required=False,
-            title=_('Level')))
+        person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True, level=None):
