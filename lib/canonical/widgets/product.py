@@ -33,16 +33,11 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
-from lp.services.fields import StrippedTextLine
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType,
-    IBugTracker,
-    IBugTrackerSet,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
@@ -52,7 +47,13 @@ from canonical.widgets.textwidgets import (
     StrippedTextWidget,
     URIComponentWidget,
     )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerSet,
+    )
 from lp.registry.interfaces.product import IProduct
+from lp.services.fields import StrippedTextLine
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -426,7 +427,9 @@ class ProductNameWidget(URIComponentWidget):
     URL: http://launchpad.net/[____________]
     """
 
-    base_url = 'https://launchpad.net/'
+    @property
+    def base_url(self):
+        return allvhosts.configs['mainsite'].rooturl
 
 
 class GhostMixin:

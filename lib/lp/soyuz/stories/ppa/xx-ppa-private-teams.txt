@@ -36,7 +36,7 @@ The form looks almost identical to that for a public team.
 
    >>> browser.getLink('Create a new PPA').click()
    >>> print browser.title
-   Personal Package Archive Activation : ...Private Team...
+   Activate PPA : ...Private Team...
 
 There is, however, an extra bit of information indicating the new PPA
 will be private.
