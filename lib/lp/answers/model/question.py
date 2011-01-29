@@ -288,7 +288,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.answerer = None
         self.answer = None
         self.date_solved = None
-        
+
         msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.SETSTATUS, new_status=new_status)
@@ -300,7 +300,7 @@ class Question(SQLBase, BugLinkTargetMixin):
                 old_status,
                 old_answerer,
                 old_date_solved)
-        return msg 
+        return msg
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -731,7 +731,6 @@ class QuestionSet:
                 raise AssertionError(
                     'product_id and distribution_id are NULL')
         return projects
-        
 
     @staticmethod
     def new(title=None, description=None, owner=None,
