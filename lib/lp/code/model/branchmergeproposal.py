@@ -650,7 +650,6 @@ class BranchMergeProposal(SQLBase):
         TargetRevision = ClassAlias(BranchRevision)
         target_join = LeftJoin(
             TargetRevision, And(
-                SourceRevision.branch_id == self.target_branch.id,
                 TargetRevision.branch_id == self.target_branch.id,
                 TargetRevision.revision_id == SourceRevision.revision_id))
         origin = [SourceRevision, target_join]

@@ -75,10 +75,7 @@ from lp.translations.interfaces.pofile import (
     IPOFileSet,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.potmsgset import (
-    BrokenTextError,
-    TranslationCreditsType,
-    )
+from lp.translations.interfaces.potmsgset import TranslationCreditsType
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,
@@ -113,6 +110,7 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
 from lp.translations.utilities.rosettastats import RosettaStats
+from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
@@ -1022,7 +1020,7 @@ class POFile(SQLBase, POFileMixIn):
             import_rejected = True
             entry_to_import.setErrorOutput(
                 "File was not exported from Launchpad.")
-        except (BrokenTextError, TranslationFormatSyntaxError,
+        except (MixedNewlineMarkersError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError, UnicodeDecodeError), (
                 exception):
             # The import failed with a format error. We log it and select the

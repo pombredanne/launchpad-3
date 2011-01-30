@@ -19,7 +19,6 @@ from zope.schema import (
     List,
     Object,
     Text,
-    TextLine,
     )
 
 from canonical.launchpad import _
@@ -288,20 +287,6 @@ class ITranslationMessage(Interface):
         :param reviewer: the person who reviewed the message.
         :param timestamp: optional timestamp indicating when the review
             happened.  Defaults to "now."
-        """
-
-    def makeCurrentUbuntu(new_value=True):
-        """Set the `is_current_ubuntu` flag.
-
-        If setting to True, clears the flag on any competing
-        TranslationMessages.
-        """
-
-    def makeCurrentUpstream(new_value=True):
-        """Set the `is_current_upstream` flag.
-
-        If setting to True, clears the flag on any competing
-        TranslationMessages.
         """
 
 

@@ -3371,6 +3371,15 @@ class PersonSet:
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
+    def _mergeSourcePackageRecipes(self, cur, from_id, to_id):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = IMasterStore(SourcePackageRecipe)
+        recipes = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == from_id)
+        for recipe in recipes:
+            recipe.destroySelf()
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -3871,8 +3880,7 @@ class PersonSet:
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
-        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        self._mergeSourcePackageRecipes(cur, from_id, to_id)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
