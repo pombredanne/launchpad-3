@@ -277,7 +277,7 @@
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveEditView"
         permission="launchpad.Edit"
-        template="../templates/archive-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         facet="overview"
@@ -291,7 +291,7 @@
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveAdminView"
         permission="launchpad.Commercial"
-        template="../templates/archive-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.Edit"

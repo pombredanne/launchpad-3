@@ -44,6 +44,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     List,
     TextLine,
@@ -125,6 +126,7 @@ from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
     )
+from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
@@ -136,7 +138,6 @@ from lp.soyuz.interfaces.archive import (
     IArchive,
     IArchiveEditDependenciesForm,
     IArchiveSet,
-    IPPAActivateForm,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -1120,8 +1121,12 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
-
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
+    label = 'Delete packages'
+
+    @property
+    def label(self):
+        return 'Delete packages from %s' % self.context.displayname
 
     @property
     def default_status_filter(self):
@@ -1223,10 +1228,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     a copying action that can be performed upon a set of selected packages.
     """
     schema = IPPAPackageFilter
-
     custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
     custom_widget('include_binaries', LaunchpadRadioWidget)
+    label = 'Copy packages'
+
+    @property
+    def label(self):
+        return 'Copy packages from %s' % self.context.displayname
 
     default_pocket = PackagePublishingPocket.RELEASE
 
@@ -1751,9 +1760,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 class ArchiveActivateView(LaunchpadFormView):
     """PPA activation view class."""
 
-    schema = IPPAActivateForm
+    schema = IArchive
+    field_names = ('name', 'displayname', 'description')
     custom_widget('description', TextAreaWidget, height=3)
-    label = "Personal Package Archive Activation"
+    custom_widget('name', PPANameWidget, label="URL")
+    label = 'Activate a Personal Package Archive'
+    page_title = 'Activate PPA'
 
     @property
     def ubuntu(self):
@@ -1777,12 +1789,12 @@ class ArchiveActivateView(LaunchpadFormView):
         """
         LaunchpadFormView.setUpFields(self)
 
-        if self.context.archive is not None:
-            self.form_fields = self.form_fields.select(
-                'name', 'displayname', 'description')
-        else:
-            self.form_fields = self.form_fields.select(
-                'name', 'displayname', 'accepted', 'description')
+        if self.context.archive is None:
+            accepted = Bool(
+                __name__='accepted',
+                title=_("I have read and accepted the PPA Terms of Use."),
+                required=True, default=False)
+            self.form_fields += form.Fields(accepted)
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1870,9 +1882,9 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def validate_save(self, action, data):
         """Default save validation does nothing."""
@@ -1884,6 +1896,11 @@ class ArchiveEditView(BaseArchiveEditView):
     field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
+    page_title = 'Change details'
+
+    @property
+    def label(self):
+        return 'Edit %s' % self.context.displayname
 
 
 class ArchiveAdminView(BaseArchiveEditView):
@@ -1891,10 +1908,13 @@ class ArchiveAdminView(BaseArchiveEditView):
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'build_debug_symbols', 'buildd_secret', 'authorized_size',
                    'relative_build_score', 'external_dependencies']
-
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    page_title = 'Administer'
+
+    @property
+    def label(self):
+        return 'Administer %s' % self.context.displayname
 
     def updateContextFromData(self, data):
         """Update context from form data.
@@ -1997,13 +2017,13 @@ class ArchiveAdminView(BaseArchiveEditView):
         for family in getUtility(IProcessorFamilySet).getRestricted():
             terms.append(SimpleTerm(
                 family, token=family.name, title=family.title))
+        old_field = IArchive['enabled_restricted_families']
         return form.Fields(
-            List(__name__='enabled_restricted_families',
-                 title=_('Enabled restricted families'),
+            List(__name__=old_field.__name__,
+                 title=old_field.title,
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
-                 description=_('Select the restricted architecture families '
-                               'on which this archive is allowed to build.')),
+                 description=old_field.description),
                  render_context=self.render_context)
 
 
