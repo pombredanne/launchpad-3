@@ -40,9 +40,16 @@ __all__ = [
     'WrongBranchMergeProposal',
 ]
 
-from lazr.restful.declarations import webservice_error
+from bzrlib.plugins.builder.recipe import RecipeParseError
+from lazr.restful.declarations import (
+    error_status,
+    webservice_error,
+    )
 
 from lp.app.errors import NameLookupFailed
+
+# Annotate the RecipeParseError's with a 400 webservice status.
+error_status(400)(RecipeParseError)
 
 
 class BadBranchMergeProposalSearchContext(Exception):
