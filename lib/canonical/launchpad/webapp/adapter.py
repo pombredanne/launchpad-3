@@ -24,7 +24,10 @@ from psycopg2.extensions import (
     QueryCanceledError,
     )
 import pytz
-from storm.database import register_scheme
+from storm.database import (
+    Connection,
+    register_scheme,
+    )
 from storm.databases.postgres import (
     Postgres,
     PostgresConnection,
@@ -607,12 +610,12 @@ class LaunchpadStatementTracer:
         if self._debug_sql_extra:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
+        param_strings = Connection.to_database(params)
+        statement_with_values = statement % tuple(param_strings)
         if self._debug_sql or self._debug_sql_extra:
             stmt_to_log = statement
             if self._debug_sql_bind_values:
-                from storm.database import Connection
-                param_strings = Connection.to_database(params)
-                stmt_to_log = statement % tuple(param_strings)
+                stmt_to_log = statement_with_values
             sys.stderr.write(stmt_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
@@ -622,7 +625,7 @@ class LaunchpadStatementTracer:
         if request_starttime is None:
             return
         action = get_request_timeline(get_current_browser_request()).start(
-            'SQL-%s' % connection._database.name, statement)
+            'SQL-%s' % connection._database.name, statement_with_values)
         connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,
