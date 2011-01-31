@@ -169,7 +169,7 @@ class TestOrderedMultiService(TestCase):
         self.assertEqual(
             [('startService', 'svc one'), ('startService', 'svc two')],
             call_log)
-        
+
     def test_stopService_stops_in_reverse_order(self):
         """
         stopService stops services in the reverse of the order they were
@@ -187,7 +187,7 @@ class TestOrderedMultiService(TestCase):
         self.assertEqual(
             [('stopService', 'svc two'), ('stopService', 'svc one')],
             call_log)
-        
+
     def test_services_are_stopped_in_series_not_parallel(self):
         """
         The contained services are stopped sequentially, i.e.

@@ -67,7 +67,8 @@ class ShutdownCleanlyService(service.MultiService):
     def __init__(self, factories):
         """Constructor.
 
-        :param factories: A collection of ConnTrackingFactoryWrapper instances.
+        :param factories: A collection of ConnTrackingFactoryWrapper
+            instances.
         """
         self.factories = factories
         service.MultiService.__init__(self)
@@ -82,7 +83,7 @@ class ShutdownCleanlyService(service.MultiService):
 
 
 class ServerAvailableResource(resource.Resource):
-    """A Resource that indicates if a service is available for new connections.
+    """A Resource indicating if a service is available for new connections.
 
     A 200 response code (OK) indicates the service is available, and a 503
     (Service Not Available) indicates the service is shutting down and no new
@@ -142,7 +143,8 @@ class OrderedMultiService(service.MultiService):
     @inlineCallbacks
     def stopService(self):
         """See service.MultiService.stopService."""
-        service.Service.stopService(self) # intentionally skip MultiService.stopService
+        # intentionally skip MultiService.stopService
+        service.Service.stopService(self)
         while self.services:
             svc = self.services.pop()
             yield maybeDeferred(svc.stopService)
@@ -153,8 +155,8 @@ def make_web_status_service(strport, tracking_factories):
 
     See daemons/sftp.tac for an example use.
 
-    :param strport: a strport describing the port the web service should listen
-        on.
+    :param strport: a strport describing the port the web service should
+        listen on.
     :param tracking_factories: a collection of ConnTrackingFactoryWrapper
         instances.
     :returns: a service.Service
