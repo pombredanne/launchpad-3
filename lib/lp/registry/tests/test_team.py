@@ -18,7 +18,10 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.enum import PersonTransferJobType
-from lp.registry.errors import TeamSubscriptionPolicyError
+from lp.registry.errors import (
+    JoinNotAllowed,
+    TeamSubscriptionPolicyError,
+    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -376,6 +379,41 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         self.assertEqual(
             None,
             self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
+
+
+class TestPersonJoinTeam(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_join_restricted_team_error(self):
+        # Calling join with a Restricted team raises an error.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        user = self.factory.makePerson()
+        login_person(user)
+        self.assertRaises(JoinNotAllowed, user.join, team, user)
+
+    def test_join_moderated_team_proposed(self):
+        # Joining a Moderated team creates a Proposed TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        users = list(team.proposedmembers)
+        self.assertEqual(1, len(users))
+        self.assertEqual(user, users[0])
+
+    def test_join_open_team_appoved(self):
+        # Joining an Open team creates an Approved TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        members = list(team.approvedmembers)
+        self.assertEqual(1, len(members))
+        self.assertEqual(user, members[0])
 
 
 class TestMembershipManagement(TestCaseWithFactory):
