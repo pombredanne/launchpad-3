@@ -836,7 +836,6 @@ We can get the collection of subscriptions to a bug.
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
-  web_link: u'http://bugs.../bugs/1/+subscription/name12'
   <BLANKLINE>
   bug_link: u'http://.../bugs/1'
   date_created: u'2006-10-16T18:31:43.154816+00:00'

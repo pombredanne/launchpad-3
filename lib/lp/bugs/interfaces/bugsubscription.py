@@ -38,7 +38,7 @@ from lp.services.fields import PersonChoice
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(PersonChoice(

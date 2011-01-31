@@ -1037,7 +1037,6 @@ attributes.
     resource_type_link: u'http://.../#archive_dependency'
     self_link: u'http://.../~cprov/+archive/ppa/+dependency/1'
     title: u'Primary Archive for Ubuntu Linux - RELEASE (main, universe)'
-    web_link: u'http://launchpad.../~cprov/+archive/ppa/+dependency/1'
 
 Asking for an archive on which there is no dependency returns None.
 
