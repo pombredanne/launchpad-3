@@ -363,8 +363,6 @@ The diff is now visible through the merge proposal.
     source_revision_id: u'rev-a'
     stale: True
     target_revision_id: u'rev-b'
-    web_link:
-      u'http://code.../~source/fooix/fix-it/+merge/.../+preview-diff'
 
 It is possible that the diff will be empty.
 
