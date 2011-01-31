@@ -1027,11 +1027,11 @@ alphabetically by package name.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
     >>> pmount.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> [package.name for package in no_priv.getBugSubscriberPackages()]
     [u'mozilla-firefox', u'pmount']

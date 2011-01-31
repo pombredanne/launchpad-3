@@ -23,10 +23,12 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.librarian.testing.server import (
-    cleanupLibrarianFiles,
     fillLibrarianFile,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
+    )
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.log.logger import BufferLogger
@@ -68,7 +70,7 @@ class TestSyncSource(TestCase):
         """
         super(TestSyncSource, self).tearDown()
         os.chdir(self._home)
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
         shutil.rmtree(self._jail)
 
     def _listFiles(self):
@@ -492,6 +494,14 @@ class TestGenerateChanges(TestCase):
         changes = self.generateChanges(closes=["1232", "4323"])
         self.assertEquals("1232 4323", changes["Closes"])
         self.assertNotIn("Launchpad-bugs-fixed", changes)
+
+    def test_binary_newline(self):
+        # If the Dsc Binary: line contains newlines those are properly
+        # formatted in the new changes file.
+        dsc = self.getBaseDsc()
+        dsc["Binary"] = "binary1\n binary2 \n binary3"
+        changes = self.generateChanges(dsc=dsc)
+        self.assertEquals("binary1\n binary2 \n binary3", changes["Binary"])
 
     def test_lp_closes(self):
         # Launchpad-Bugs-Fixed gets set if any Launchpad bugs to close were

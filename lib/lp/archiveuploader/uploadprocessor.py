@@ -47,14 +47,12 @@ above, failed being worst).
 
 __metaclass__ = type
 
-import datetime
 import os
 import shutil
 import stat
 import sys
 
 from contrib.glock import GlobalLock
-import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -190,127 +188,15 @@ class UploadProcessor:
                     self.log.debug("Skipping %s -- does not match %s" % (
                         upload, leaf_name))
                     continue
-                if self.builds:
-                    # Upload directories contain build results,
-                    # directories are named after job ids.
-                    self.processBuildUpload(fsroot, upload)
+                try:
+                    handler = UploadHandler.forProcessor(self, fsroot, upload)
+                except CannotGetBuild, e:
+                    self.log.warn(e)
                 else:
-                    self.processUpload(fsroot, upload)
+                    handler.process()
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
-
-    def processBuildUpload(self, fsroot, upload):
-        """Process an upload that is the result of a build.
-
-        The name of the leaf is the build id of the build.
-        Build uploads always contain a single package per leaf.
-        """
-        upload_path = os.path.join(fsroot, upload)
-        try:
-            job_id = parse_build_upload_leaf_name(upload)
-        except ValueError:
-            self.log.warn("Unable to extract build id from leaf name %s,"
-                " skipping." % upload)
-            return
-        try:
-            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-        except NotFoundError:
-            self.log.warn(
-                "Unable to find package build job with id %d. Skipping." %
-                job_id)
-            return
-        logger = BufferLogger()
-        build = buildfarm_job.getSpecificJob()
-        if build.status != BuildStatus.UPLOADING:
-            self.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
-                build.status.name)
-            return
-        self.log.debug("Build %s found" % build.id)
-        try:
-            [changes_file] = self.locateChangesFiles(upload_path)
-            logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(
-                upload_path, changes_file, logger, build)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            info = sys.exc_info()
-            message = (
-                'Exception while processing upload %s' % upload_path)
-            properties = [('error-explanation', message)]
-            request = ScriptRequest(properties)
-            error_utility = ErrorReportingUtility()
-            error_utility.raising(info, request)
-            logger.error('%s (%s)' % (message, request.oopsid))
-            result = UploadStatusEnum.FAILED
-        destination = {
-            UploadStatusEnum.FAILED: "failed",
-            UploadStatusEnum.REJECTED: "rejected",
-            UploadStatusEnum.ACCEPTED: "accepted"}[result]
-        build.date_finished = datetime.datetime.now(pytz.UTC)
-        if not (result == UploadStatusEnum.ACCEPTED and
-                build.verifySuccessfulUpload() and
-                build.status == BuildStatus.FULLYBUILT):
-            build.status = BuildStatus.FAILEDTOUPLOAD
-            build.notify(extra_info="Uploading build %s failed." % upload)
-            build.storeUploadLog(logger.getLogBuffer())
-        self.ztm.commit()
-        self.moveProcessedUpload(upload_path, destination, logger)
-
-    def processUpload(self, fsroot, upload):
-        """Process an upload's changes files, and move it to a new directory.
-
-        The destination directory depends on the result of the processing
-        of the changes files. If there are no changes files, the result
-        is 'failed', otherwise it is the worst of the results from the
-        individual changes files, in order 'failed', 'rejected', 'accepted'.
-
-        """
-        upload_path = os.path.join(fsroot, upload)
-        changes_files = self.locateChangesFiles(upload_path)
-
-        # Keep track of the various results
-        some_failed = False
-        some_rejected = False
-        some_accepted = False
-
-        for changes_file in changes_files:
-            self.log.debug("Considering changefile %s" % changes_file)
-            try:
-                result = self.processChangesFile(
-                    upload_path, changes_file, self.log)
-                if result == UploadStatusEnum.FAILED:
-                    some_failed = True
-                elif result == UploadStatusEnum.REJECTED:
-                    some_rejected = True
-                else:
-                    some_accepted = True
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                info = sys.exc_info()
-                message = (
-                    'Exception while processing upload %s' % upload_path)
-                properties = [('error-explanation', message)]
-                request = ScriptRequest(properties)
-                error_utility = ErrorReportingUtility()
-                error_utility.raising(info, request)
-                self.log.error('%s (%s)' % (message, request.oopsid))
-                some_failed = True
-
-        if some_failed:
-            destination = "failed"
-        elif some_rejected:
-            destination = "rejected"
-        elif some_accepted:
-            destination = "accepted"
-        else:
-            # There were no changes files at all. We consider
-            # the upload to be failed in this case.
-            destination = "failed"
-        self.moveProcessedUpload(upload_path, destination, self.log)
 
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.
@@ -355,8 +241,43 @@ class UploadProcessor:
 
         return sorted_dir_names
 
-    def locateChangesFiles(self, upload_path):
-        """Locate .changes files in the given upload directory.
+
+class UploadHandler:
+    """Handler for processing a single upload."""
+
+    def __init__(self, processor, fsroot, upload):
+        """Constructor.
+
+        :param processor: The `UploadProcessor` that requested processing the
+            upload.
+        :param fsroot: Path to the directory containing the upload directory
+        :param upload: Name of the directory containing the upload.
+        """
+        self.processor = processor
+        self.fsroot = fsroot
+        self.upload = upload
+        self.upload_path = os.path.join(self.fsroot, self.upload)
+
+    @staticmethod
+    def forProcessor(processor, fsroot, upload, build=None):
+        """Instantiate an UploadHandler subclass for a given upload.
+
+        :param processor: The `UploadProcessor` that requested processing the
+            upload.
+        :param fsroot: Path to the directory containing the upload directory
+        :param upload: Name of the directory containing the upload.
+        :param build: Optional; the build that produced the upload.
+        """
+        if processor.builds:
+            # Upload directories contain build results,
+            # directories are named after job ids.
+            return BuildUploadHandler(processor, fsroot, upload, build)
+        else:
+            assert build is None
+            return UserUploadHandler(processor, fsroot, upload)
+
+    def locateChangesFiles(self):
+        """Locate .changes files in the upload directory.
 
         Return .changes files sorted with *_source.changes first. This
         is important to us, as in an upload containing several changes files,
@@ -365,16 +286,15 @@ class UploadProcessor:
         """
         changes_files = []
 
-        for dirpath, dirnames, filenames in os.walk(upload_path):
-            relative_path = dirpath[len(upload_path) + 1:]
+        for dirpath, dirnames, filenames in os.walk(self.upload_path):
+            relative_path = dirpath[len(self.upload_path) + 1:]
             for filename in filenames:
                 if filename.endswith(".changes"):
                     changes_files.append(
                         os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
-    def processChangesFile(self, upload_path, changes_file, logger=None,
-                           build=None):
+    def processChangesFile(self, changes_file, logger=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -390,9 +310,13 @@ class UploadProcessor:
 
         Returns a value from UploadStatusEnum, or re-raises an exception
         from NascentUpload.
+
+        :param changes_file: filename of the changes file to process.
+        :param logger: logger to use for processing.
+        :return: an `UploadStatusEnum` value
         """
         if logger is None:
-            logger = self.log
+            logger = self.processor.log
         # Calculate the distribution from the path within the upload
         # Reject the upload since we could not process the path,
         # Store the exception information as a rejection message.
@@ -430,7 +354,7 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution, build)
+        policy = self._getPolicyForDistro(distribution)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -442,9 +366,9 @@ class UploadProcessor:
 
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
-        changesfile_path = os.path.join(upload_path, changes_file)
+        changesfile_path = os.path.join(self.upload_path, changes_file)
         upload = NascentUpload.from_changesfile_path(
-            changesfile_path, policy, self.log)
+            changesfile_path, policy, self.processor.log)
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
@@ -461,14 +385,14 @@ class UploadProcessor:
             upload.reject(upload_path_error)
 
         # Store processed NascentUpload instance, mostly used for tests.
-        self.last_processed_upload = upload
+        self.processor.last_processed_upload = upload
 
         try:
             logger.info("Processing upload %s" % upload.changes.filename)
             result = UploadStatusEnum.ACCEPTED
 
             try:
-                upload.process(build)
+                self._processUpload(upload)
             except UploadPolicyError, e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
@@ -502,101 +426,251 @@ class UploadProcessor:
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
             notify = True
-            if self.dry_run or self.no_mails:
+            if self.processor.dry_run or self.processor.no_mails:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
                 upload.do_reject(notify)
-                self.ztm.abort()
+                self.processor.ztm.abort()
             else:
-                successful = upload.do_accept(
-                    notify=notify, build=build)
+                successful = self._acceptUpload(upload, notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     logger.info(
                         "Rejection during accept. Aborting partial accept.")
-                    self.ztm.abort()
+                    self.processor.ztm.abort()
 
             if upload.is_rejected:
                 logger.info("Upload was rejected:")
                 for msg in upload.rejections:
                     logger.info("\t%s" % msg)
 
-            if self.dry_run:
+            if self.processor.dry_run:
                 logger.info("Dry run, aborting transaction.")
-                self.ztm.abort()
+                self.processor.ztm.abort()
             else:
                 logger.info(
                     "Committing the transaction and any mails associated "
                     "with this upload.")
-                self.ztm.commit()
+                self.processor.ztm.commit()
         except:
-            self.ztm.abort()
+            self.processor.ztm.abort()
             raise
 
         return result
 
-    def removeUpload(self, upload, logger):
+    def removeUpload(self, logger):
         """Remove an upload that has succesfully been processed.
 
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
+
+        :param logger: The logger to use for logging results.
         """
-        if self.keep or self.dry_run:
+        if self.processor.keep or self.processor.dry_run:
             logger.debug("Keeping contents untouched")
             return
 
-        logger.debug("Removing upload directory %s", upload)
-        shutil.rmtree(upload)
+        logger.debug("Removing upload directory %s", self.upload_path)
+        shutil.rmtree(self.upload_path)
 
-        distro_filename = upload + ".distro"
+        distro_filename = self.upload_path + ".distro"
         if os.path.isfile(distro_filename):
             logger.debug("Removing distro file %s", distro_filename)
             os.remove(distro_filename)
 
-    def moveProcessedUpload(self, upload_path, destination, logger):
+    def moveProcessedUpload(self, destination, logger):
         """Move or remove the upload depending on the status of the upload.
+
+        :param destination: An `UploadStatusEnum` value.
+        :param logger: The logger to use for logging results.
         """
         if destination == "accepted":
-            self.removeUpload(upload_path, logger)
+            self.removeUpload(logger)
         else:
-            self.moveUpload(upload_path, destination, logger)
+            self.moveUpload(destination, logger)
 
-    def moveUpload(self, upload, subdir_name, logger):
+    def moveUpload(self, subdir_name, logger):
         """Move the upload to the named subdir of the root, eg 'accepted'.
 
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
+
+        :param subdir_name: Name of the subdirectory to move to.
+        :param logger: The logger to use for logging results.
         """
-        if self.keep or self.dry_run:
+        if self.processor.keep or self.processor.dry_run:
             logger.debug("Keeping contents untouched")
             return
 
-        pathname = os.path.basename(upload)
+        pathname = os.path.basename(self.upload_path)
 
         target_path = os.path.join(
-            self.base_fsroot, subdir_name, pathname)
+            self.processor.base_fsroot, subdir_name, pathname)
         logger.debug("Moving upload directory %s to %s" %
-            (upload, target_path))
-        shutil.move(upload, target_path)
+            (self.upload_path, target_path))
+        shutil.move(self.upload_path, target_path)
 
-        distro_filename = upload + ".distro"
+        distro_filename = self.upload_path + ".distro"
         if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.base_fsroot, subdir_name,
+            target_path = os.path.join(self.processor.base_fsroot,
+                                       subdir_name,
                                        os.path.basename(distro_filename))
             logger.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             shutil.move(distro_filename, target_path)
 
-    def orderFilenames(self, fnames):
+    @staticmethod
+    def orderFilenames(fnames):
         """Order filenames, sorting *_source.changes before others.
 
         Aside from that, a standard string sort.
         """
+
         def sourceFirst(filename):
             return (not filename.endswith("_source.changes"), filename)
 
         return sorted(fnames, key=sourceFirst)
+
+
+class UserUploadHandler(UploadHandler):
+
+    def process(self):
+        """Process an upload's changes files, and move it to a new directory.
+
+        The destination directory depends on the result of the processing
+        of the changes files. If there are no changes files, the result
+        is 'failed', otherwise it is the worst of the results from the
+        individual changes files, in order 'failed', 'rejected', 'accepted'.
+        """
+        changes_files = self.locateChangesFiles()
+
+        results = set()
+
+        for changes_file in changes_files:
+            self.processor.log.debug(
+                "Considering changefile %s" % changes_file)
+            try:
+                results.add(self.processChangesFile(
+                    changes_file, self.processor.log))
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing upload %s' % self.upload_path)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.processor.log.error(
+                    '%s (%s)' % (message, request.oopsid))
+                results.add(UploadStatusEnum.FAILED)
+        if len(results) == 0:
+            destination = UploadStatusEnum.FAILED
+        else:
+            for destination in [
+                UploadStatusEnum.FAILED, UploadStatusEnum.REJECTED,
+                UploadStatusEnum.ACCEPTED]:
+                if destination in results:
+                    break
+        self.moveProcessedUpload(destination, self.processor.log)
+
+    def _getPolicyForDistro(self, distribution):
+        return self.processor._getPolicyForDistro(distribution, None)
+
+    def _processUpload(self, upload):
+        upload.process(None)
+
+    def _acceptUpload(self, upload, notify):
+        return upload.do_accept(notify=notify, build=None)
+
+
+class CannotGetBuild(Exception):
+
+    """Attempting to retrieve the build for this upload failed."""
+
+
+class BuildUploadHandler(UploadHandler):
+
+    def __init__(self, processor, fsroot, upload, build=None):
+        """Constructor.
+
+        See `UploadHandler`.
+        :build: Optional build that produced this upload.  If not supplied,
+            will be retrieved using the id in the upload.
+        :raises: CannotGetBuild if the build could not be retrieved.
+        """
+        super(BuildUploadHandler, self).__init__(processor, fsroot, upload)
+        self.build = build
+        if self.build is None:
+            self.build = self._getBuild()
+
+    def _getPolicyForDistro(self, distribution):
+        return self.processor._getPolicyForDistro(distribution, self.build)
+
+    def _processUpload(self, upload):
+        upload.process(self.build)
+
+    def _acceptUpload(self, upload, notify):
+        return upload.do_accept(notify=notify, build=self.build)
+
+    def _getBuild(self):
+        try:
+            job_id = parse_build_upload_leaf_name(self.upload)
+        except ValueError:
+            raise CannotGetBuild(
+                "Unable to extract build id from leaf name %s, skipping." %
+                self.upload)
+        try:
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+        except NotFoundError:
+            raise CannotGetBuild(
+                "Unable to find package build job with id %d. Skipping." %
+                job_id)
+            return
+        return buildfarm_job.getSpecificJob()
+
+    def process(self):
+        """Process an upload that is the result of a build.
+
+        The name of the leaf is the build id of the build.
+        Build uploads always contain a single package per leaf.
+        """
+        logger = BufferLogger()
+        if self.build.status != BuildStatus.UPLOADING:
+            self.processor.log.warn(
+                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                self.build.status.name)
+            return
+        self.processor.log.debug("Build %s found" % self.build.id)
+        try:
+            [changes_file] = self.locateChangesFiles()
+            logger.debug("Considering changefile %s" % changes_file)
+            result = self.processChangesFile(changes_file, logger)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            info = sys.exc_info()
+            message = (
+                'Exception while processing upload %s' % self.upload_path)
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(info, request)
+            logger.error('%s (%s)' % (message, request.oopsid))
+            result = UploadStatusEnum.FAILED
+        if (result != UploadStatusEnum.ACCEPTED or
+            not self.build.verifySuccessfulUpload()):
+            self.build.status = BuildStatus.FAILEDTOUPLOAD
+        if self.build.status != BuildStatus.FULLYBUILT:
+            self.build.storeUploadLog(logger.getLogBuffer())
+            self.build.notify(extra_info="Uploading build %s failed." %
+                              self.upload)
+        else:
+            self.build.notify()
+        self.processor.ztm.commit()
+        self.moveProcessedUpload(result, logger)
 
 
 def _getDistributionAndSuite(parts, exc_type):
@@ -734,5 +808,3 @@ def parse_upload_path(relative_path):
             % (archive.displayname, archive.distribution.name))
 
     return (distribution, suite_name, archive)
-
-

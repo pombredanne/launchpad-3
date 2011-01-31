@@ -1,4 +1,5 @@
-= POFileTranslateView =
+POFileTranslateView
+===================
 
 On this section, we are going to test the view class for an IPOFile.
 
@@ -169,16 +170,11 @@ update.
 
 But first, let's see current values.
 
-    >>> pofile_es.updateStatistics()
-    (6, 1, 1, 1)
-    >>> pofile_es.currentCount()
-    6
+    >>> stats = pofile_es.updateStatistics()
     >>> pofile_es.updatesCount()
-    1
+    0
     >>> pofile_es.rosettaCount()
-    1
-    >>> pofile_es.unreviewedCount()
-    1
+    7
 
 Now we do a submission with new translations:
 
@@ -208,8 +204,11 @@ Now we do a submission with new translations:
 
 And check again.
 
-    >>> pofile_es.updateStatistics()
-    (5, 2, 3, 1)
+    >>> stats = pofile_es.updateStatistics()
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    8
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
@@ -281,8 +280,9 @@ their sequence is 0.
 
 And we can see that we didn't get errors.
 
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile_es.potemplate, pofile_es.language,
+    ...     pofile_es.potemplate.translation_side)
     >>> translationmessage.translations
     [u'Foo']
     >>> pofile_view.errors
@@ -365,7 +365,8 @@ Now, we are going to check the alternative language submission.
 #    >>> pofile_view.second_lang_code
 #    'fr'
 
-= POFileUploadView =
+POFileUploadView
+================
 
 Let's check that the upload form sets the right fields.
 
@@ -420,7 +421,8 @@ given POFile instead of the one given with the submit.
 
     >>> transaction.commit()
 
-= POFileNavigation =
+POFileNavigation
+================
 
 This class is used to traverse from IPOFile objects to ITranslationMessage
 ones.
@@ -482,7 +484,8 @@ object, we will get a TranslationMessage.
 #    True
 
 
-= POExportView =
+POExportView
+============
 
 POExportView class is used to handle download requests from the web
 site.

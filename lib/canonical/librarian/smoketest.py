@@ -8,6 +8,7 @@
 
 from cStringIO import StringIO
 import datetime
+import sys
 import urllib
 
 from zope.component import getUtility
@@ -46,19 +47,21 @@ def read_file(url):
     return data
 
 
-def do_smoketest(restricted_client, regular_client):
-    print 'adding a private file to the librarian...'
+def do_smoketest(restricted_client, regular_client, output=None):
+    if output is None:
+        output = sys.stdout
+    output.write('adding a private file to the librarian...\n')
     private_url = store_file(restricted_client)
-    print 'retrieving private file from', private_url
+    output.write('retrieving private file from %s\n' % (private_url,))
     if read_file(private_url) != FILE_DATA:
-        print 'ERROR: data fetched does not match data written'
+        output.write('ERROR: data fetched does not match data written\n')
         return 1
 
-    print 'adding a public file to the librarian...'
+    output.write('adding a public file to the librarian...\n')
     public_url = store_file(regular_client)
-    print 'retrieving public file from', public_url
+    output.write('retrieving public file from %s\n' % (public_url,))
     if read_file(public_url) != FILE_DATA:
-        print 'ERROR: data fetched does not match data written'
+        output.write('ERROR: data fetched does not match data written\n')
         return 1
 
     return 0
