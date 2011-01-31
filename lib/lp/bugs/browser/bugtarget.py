@@ -1352,7 +1352,7 @@ class BugTargetBugTagsView(LaunchpadView):
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = self.context.official_bug_tags
+        official_tags = list(self.context.official_bug_tags)
         tags = self.getUsedBugTagsWithURLs()
         other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
         popular_tags = [tag['tag'] for tag in sorted(
