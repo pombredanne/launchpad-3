@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -15,6 +15,7 @@ __all__ = [
     'JoinTeamEvent',
     'Owner',
     'Person',
+    'person_sort_key',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
@@ -22,7 +23,8 @@ __all__ = [
     'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
-    'WikiNameSet']
+    'WikiNameSet',
+    ]
 
 from datetime import (
     datetime,
@@ -276,7 +278,6 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -337,6 +338,17 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+_person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
+
+
+def person_sort_key(person):
+    """Identical to `person_sort_key` in the database."""
+    # Strip noise out of displayname. We do not have to bother with
+    # name, as we know it is just plain ascii.
+    displayname = _person_sort_re.sub(u'', person.displayname.lower())
+    return "%s, %s" % (displayname.strip(), person.name)
 
 
 class Person(
@@ -1685,10 +1697,15 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        return PersonSet()._getPrecachedPersons(
+        # Use a PersonSet object that is not security proxied to allow
+        # manipulation of the object.
+        person_set = PersonSet()
+        return person_set._getPrecachedPersons(
             origin, conditions, store=Store.of(self),
-            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location, need_archive=need_archive,
+            need_karma=need_karma,
+            need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location,
+            need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity)
 
@@ -2602,8 +2619,7 @@ class Person(
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
-        # TODO: Using exists would be faster than count().
-        return bool(store.find(SignedCodeOfConduct, query).count())
+        return not store.find(SignedCodeOfConduct, query).is_empty()
 
     @staticmethod
     def _is_ubuntu_coc_signer_condition():
@@ -2663,29 +2679,6 @@ class Person(
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
 
-    @property
-    def has_existing_ppa(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
-    @property
-    def has_ppa_with_published_packages(self):
-        """See `IPerson`."""
-        result = Store.of(self).find(
-            Archive,
-            SourcePackagePublishingHistory.archive == Archive.id,
-            Archive.owner == self.id,
-            Archive.purpose == ArchivePurpose.PPA,
-            Archive.status.is_in(
-                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        return not result.is_empty()
-
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
@@ -2720,8 +2713,10 @@ class Person(
     @property
     def structural_subscriptions(self):
         """See `IPerson`."""
-        return StructuralSubscription.selectBy(
-            subscriber=self, orderBy=['-date_created'])
+        return IStore(self).find(
+            StructuralSubscription,
+            StructuralSubscription.subscriberID==self.id).order_by(
+                Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
@@ -3376,6 +3371,15 @@ class PersonSet:
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
+    def _mergeSourcePackageRecipes(self, cur, from_id, to_id):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = IMasterStore(SourcePackageRecipe)
+        recipes = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == from_id)
+        for recipe in recipes:
+            recipe.destroySelf()
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -3786,7 +3790,9 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
-        if from_person.has_existing_ppa:
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            from_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
 
@@ -3814,17 +3820,12 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
+            # Polls are not carried over when merging teams.
+            ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
             # check above which prevents teams with associated mailing lists
             # from being merged.
             ('mailinglist', 'team'),
-            ('translationrelicensingagreement', 'person'),
-            # Polls are not carried over when merging teams.
-            # XXX: BradCrittenden 2010-12-16 bug=691105:
-            # Even though polls have been removed as a feature and from the
-            # data model, they still exist in the database and must be skipped
-            # here to avoid violating uniqueness constraints.
-            ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
@@ -3833,6 +3834,7 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -3878,8 +3880,7 @@ class PersonSet:
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
-        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        self._mergeSourcePackageRecipes(cur, from_id, to_id)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
@@ -4133,18 +4134,24 @@ class PersonSet:
                     PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
-            # Not everyone has PPA's
+            # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
             # avoid duplicating the relationships.
+            archive_conditions = Or(
+                Archive.id == None,
+                And(
+                    Archive.owner == Person.id,
+                    Archive.id == Select(
+                        tables=Archive,
+                        columns=Min(Archive.id),
+                        where=And(
+                            Archive.purpose == ArchivePurpose.PPA,
+                            Archive.owner == Person.id))))
             origin.append(
-                LeftJoin(Archive, Archive.owner == Person.id))
+                LeftJoin(Archive, archive_conditions))
             columns.append(Archive)
-            conditions = And(conditions,
-                Or(Archive.id == None, And(
-                Archive.id == Select(Min(Archive.id),
-                    Archive.owner == Person.id, Archive),
-                Archive.purpose == ArchivePurpose.PPA)))
-        # checking validity requires having a preferred email.
+
+        # Checking validity requires having a preferred email.
         if need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
@@ -4152,16 +4159,16 @@ class PersonSet:
             columns.append(EmailAddress)
             conditions = And(conditions,
                 Or(EmailAddress.status == None,
-                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+                   EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
             decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
-            columns = columns[0]
+            column = columns[0]
             # Return a simple ResultSet
-            return store.using(*origin).find(columns, conditions)
+            return store.using(*origin).find(column, conditions)
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)

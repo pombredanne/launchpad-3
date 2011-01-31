@@ -9,12 +9,12 @@ import os
 import time
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
-from canonical.librarian.testing.server import LibrarianTestSetup
 from canonical.testing.layers import LibrarianLayer
 from lp.testing import TestCase
 
 
 class SIGDUMPMEMTestCase(TestCase):
+
     layer = LibrarianLayer
 
     def test_sigdumpmem(self):
@@ -23,10 +23,8 @@ class SIGDUMPMEMTestCase(TestCase):
             os.unlink(DUMP_FILE)
         self.assertFalse(os.path.exists(DUMP_FILE))
 
-        # Use the global instance used by the Layer machinery; it would
-        # be nice to be able to access those without globals / magical
-        # 'constructors'.
-        pid = LibrarianTestSetup().pid
+        # Use the global instance used by the Layer machinery
+        pid = LibrarianLayer.librarian_fixture.pid
 
         # Send the signal and ensure the dump file is created.
         os.kill(pid, SIGDUMPMEM)

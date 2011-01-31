@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -62,8 +58,14 @@ from lp.registry.model.karma import (
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    login,
     login_person,
     logout,
     person_logged_in,
@@ -82,7 +84,7 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonTeams, self).setUp()
-        self.user = self.factory.makePerson()
+        self.user = self.factory.makePerson(name="test-member")
         self.a_team = self.factory.makeTeam(name='a')
         self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
         self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
@@ -230,6 +232,31 @@ class TestPersonTeams(TestCaseWithFactory):
         # to do this don't blow up unnecessarily. Similarly feature flags
         # team: scopes depend on this.
         self.assertFalse(self.user.inTeam('does-not-exist'))
+
+    def test_inTeam_person_incorrect_archive(self):
+        # If a person has an archive marked incorrectly that person should
+        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PARTNER)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_no_archive(self):
+        # If a person has no archive that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_ppa_archive(self):
+        # If a person has a PPA that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PPA)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
 
 
 class TestPerson(TestCaseWithFactory):
@@ -654,6 +681,38 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             self._doMerge,
             test_team,
             target_team)
+
+    def test_merge_deletes_recipes(self):
+        # When person/teams are merged, recipes the from person owned are
+        # deleted.
+        person = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        # Disable the recipe owners PPA
+        with person_logged_in(recipe.owner):
+            recipe.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(recipe.owner, person)
+        login_person(person)
+        self.person_set.merge(recipe.owner, person)
+        self.assertEqual(0, person.getRecipes().count())
+
+    def test_merge_with_duplicated_recipes(self):
+        # When person/teams are merged, if the from person has a recipe with
+        # the same name as the to person, the from person's recipes are
+        # deleted.
+        merge_from = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'FROM')
+        merge_to = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'TO')
+        mergee = merge_to.owner
+        # Disable merge_from's PPA
+        with person_logged_in(merge_from.owner):
+            merge_from.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(merge_from.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(merge_from.owner, merge_to.owner)
+        recipes = mergee.getRecipes()
+        self.assertEqual(1, recipes.count())
+        self.assertEqual(u'TO', recipes[0].description)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

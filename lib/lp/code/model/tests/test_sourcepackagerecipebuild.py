@@ -235,12 +235,20 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertIs(None, build.manifest)
 
     def test_makeDailyBuilds(self):
-        self.assertEqual([],
-            SourcePackageRecipeBuild.makeDailyBuilds())
+        self.assertEqual([], SourcePackageRecipeBuild.makeDailyBuilds())
         recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
-        build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
+        [build] = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_makeDailyBuilds_skips_missing_archive(self):
+        """When creating daily builds, skip ones that are already pending."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        with person_logged_in(recipe.owner):
+            recipe.daily_build_archive = None
+        builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        self.assertEqual([], builds)
 
     def test_makeDailyBuilds_logs_builds(self):
         # If a logger is passed into the makeDailyBuilds method, each recipe
@@ -251,7 +259,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         logger = BufferLogger()
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
         self.assertEqual(
-            'DEBUG Build for eric/funky-recipe requested\n',
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - build requested for Warty (4.10)\n',
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_clears_is_stale(self):

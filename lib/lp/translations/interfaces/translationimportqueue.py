@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -37,7 +37,6 @@ from zope.schema import (
     Datetime,
     Field,
     Int,
-    Object,
     Text,
     TextLine,
     )
@@ -155,14 +154,14 @@ class ITranslationImportQueueEntry(Interface):
         exported_as="date_created")
 
     productseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
             schema=IProductSeries))
 
     distroseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
@@ -175,10 +174,13 @@ class ITranslationImportQueueEntry(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    is_published = Bool(
-        title=_("This import comes from a published file"),
+    by_maintainer = Bool(
+        title=_(
+            "This upload was done by the maintainer "
+            "of the project or package."),
         description=_(
-            "If checked, this import will be handled as already published."),
+            "If checked, the translations in this import will be marked "
+            "as is_current_upstream."),
         required=True,
         default=False)
 
@@ -209,7 +211,7 @@ class ITranslationImportQueueEntry(Interface):
         "True if this entry is to be imported into the Ubuntu distribution.")
 
     sourcepackage = exported(
-        Object(
+        Reference(
             schema=ISourcePackage,
             title=_("The sourcepackage associated with this entry."),
             readonly=True))
@@ -308,15 +310,15 @@ class ITranslationImportQueue(Interface):
     def countEntries():
         """Return the number of `TranslationImportQueueEntry` records."""
 
-    def addOrUpdateEntry(path, content, is_published, importer,
+    def addOrUpdateEntry(path, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
-        :arg path: is the path, with the filename, of the file imported.
+        :arg path: is the path, with the filename, of the uploaded file.
         :arg content: is the file content.
-        :arg is_published: indicates if the imported file is already published
-            by upstream.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
@@ -331,14 +333,14 @@ class ITranslationImportQueue(Interface):
         only one of them can be specified.
         """
 
-    def addOrUpdateEntriesFromTarball(content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
-        :arg is_published: indicates if the imported file is already published
-            by upstream.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.

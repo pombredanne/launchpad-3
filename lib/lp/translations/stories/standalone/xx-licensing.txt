@@ -55,17 +55,6 @@ nor input boxes available.
     >>> for input in main_content.findAll('input'):
     ...     print 'Found input:\n%s' % input
 
-Karl is also denied submitting a POST request.
-
-    >>> print http(r"""
-    ... POST /alsa-utils/trunk/+pots/alsa-utils/es/+translate HTTP/1.1
-    ... Host: translations.launchpad.dev
-    ... """)
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ...UnexpectedFormData: Anonymous users or users who are not accepting
-    our licensing terms cannot do POST submissions...
-
 Karl changes his mind. He returns to the licensing page.
 
     >>> browser.open('http://translations.launchpad.dev/~karl/')
