@@ -27,8 +27,8 @@ from canonical.launchpad.searchbuilder import (
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
