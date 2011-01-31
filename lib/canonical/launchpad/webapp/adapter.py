@@ -601,8 +601,6 @@ class LaunchpadStatementTracer:
 
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
-        self._debug_sql_bind_values = bool(
-            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
@@ -613,10 +611,7 @@ class LaunchpadStatementTracer:
         param_strings = Connection.to_database(params)
         statement_with_values = statement % tuple(param_strings)
         if self._debug_sql or self._debug_sql_extra:
-            stmt_to_log = statement
-            if self._debug_sql_bind_values:
-                stmt_to_log = statement_with_values
-            sys.stderr.write(stmt_to_log + "\n")
+            sys.stderr.write(statement_with_values + "\n")
             sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
