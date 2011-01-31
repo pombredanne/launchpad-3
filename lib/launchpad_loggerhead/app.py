@@ -17,7 +17,6 @@ from loggerhead.apps.branch import BranchWSGIApp
 
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-from openid.store.memstore import MemoryStore
 
 from paste.fileapp import DataApp
 from paste.request import construct_url, parse_querystring, path_info_pop
@@ -64,7 +63,6 @@ class RootApp:
         self.branchfs = xmlrpclib.ServerProxy(
             config.codehosting.codehosting_endpoint)
         self.session_var = session_var
-        self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
 
     def get_transport(self):
@@ -76,7 +74,10 @@ class RootApp:
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
-        return Consumer(environ[self.session_var], self.store)
+        # Multiple instances need to share a store or not use one at all (in
+        # which case they will use check_authentication). Using no store is
+        # easier, and check_authentication is cheap.
+        return Consumer(environ[self.session_var], None)
 
     def _begin_login(self, environ, start_response):
         """Start the process of authenticating with OpenID.
