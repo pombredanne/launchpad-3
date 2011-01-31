@@ -220,7 +220,7 @@ class TestTeamSubscriptionPolicyError(TestCaseWithFactory):
         self.assertEqual('a message', error.doc())
 
 
-class TestTeamSubscriptionPolicyBase(TestCaseWithFactory):
+class TeamSubscriptionPolicyBase(TestCaseWithFactory):
     """`TeamSubsciptionPolicyChoice` base test class."""
 
     layer = DatabaseFunctionalLayer
@@ -236,7 +236,7 @@ class TestTeamSubscriptionPolicyBase(TestCaseWithFactory):
         login_person(self.team.teamowner)
 
 
-class TestTeamSubscriptionPolicyChoiceCommon(TestTeamSubscriptionPolicyBase):
+class TestTeamSubscriptionPolicyChoiceCommon(TeamSubscriptionPolicyBase):
     """Test `TeamSubsciptionPolicyChoice` constraints."""
 
     # Any policy can be used in set of tests.
@@ -254,8 +254,7 @@ class TestTeamSubscriptionPolicyChoiceCommon(TestTeamSubscriptionPolicyBase):
         self.assertEqual(None, field._getTeam())
 
 
-class TestTeamSubscriptionPolicyChoiceModerated(
-                                              TestTeamSubscriptionPolicyBase):
+class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
     """Test `TeamSubsciptionPolicyChoice` Moderated constraints."""
 
     POLICY = TeamSubscriptionPolicy.MODERATED
@@ -317,7 +316,14 @@ class TestTeamSubscriptionPolicyChoiceModerated(
             None, self.field.validate(TeamSubscriptionPolicy.OPEN))
 
 
-class TestTeamSubscriptionPolicyChoiceOpen(TestTeamSubscriptionPolicyBase):
+class TestTeamSubscriptionPolicyChoiceRestrcted(
+                                   TestTeamSubscriptionPolicyChoiceModerated):
+    """Test `TeamSubsciptionPolicyChoice` Restricted constraints."""
+
+    POLICY = TeamSubscriptionPolicy.RESTRICTED
+
+
+class TestTeamSubscriptionPolicyChoiceOpen(TeamSubscriptionPolicyBase):
     """Test `TeamSubsciptionPolicyChoice` Open constraints."""
 
     POLICY = TeamSubscriptionPolicy.OPEN
@@ -342,6 +348,13 @@ class TestTeamSubscriptionPolicyChoiceOpen(TestTeamSubscriptionPolicyBase):
             self.field.constraint(TeamSubscriptionPolicy.MODERATED))
         self.assertEqual(
             None, self.field.validate(TeamSubscriptionPolicy.MODERATED))
+
+
+class TestTeamSubscriptionPolicyChoiceDelegated(
+                                        TestTeamSubscriptionPolicyChoiceOpen):
+    """Test `TeamSubsciptionPolicyChoice` Delegated constraints."""
+
+    POLICY = TeamSubscriptionPolicy.DELEGATED
 
 
 class TestVisibilityConsistencyWarning(TestCaseWithFactory):
