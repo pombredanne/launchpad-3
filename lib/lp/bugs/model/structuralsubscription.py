@@ -39,7 +39,6 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -493,22 +492,23 @@ class BugFilterSetBuilder:
         # does not know how to compile an expression with a proxied list.
         self.tags = list(bugtask.bug.tags)
         # Set up common conditions.
-        self.base_conditions = And(
-            BugSubscriptionFilter.bug_notification_level >= level,
-            join_condition)
+        self.base_conditions = join_condition
         # Set up common filter conditions.
+        self.filter_conditions = And(
+            BugSubscriptionFilter.bug_notification_level >= level,
+            self.base_conditions)
         if len(self.tags) == 0:
             self.filter_conditions = And(
                 # When the bug has no tags, filters with include_any_tags set
                 # can never match.
                 Not(BugSubscriptionFilter.include_any_tags),
-                self.base_conditions)
+                self.filter_conditions)
         else:
             self.filter_conditions = And(
                 # When the bug has tags, filters with exclude_any_tags set can
                 # never match.
                 Not(BugSubscriptionFilter.exclude_any_tags),
-                self.base_conditions)
+                self.filter_conditions)
 
     @property
     def subscriptions_without_filters(self):

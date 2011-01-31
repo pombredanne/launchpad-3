@@ -17,6 +17,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter

@@ -28,6 +28,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.enum import BugNotificationLevel
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import person_logged_in
 
 
 class TestBugChanges(unittest.TestCase):
@@ -59,8 +60,9 @@ class TestBugChanges(unittest.TestCase):
         # Create a new bug subscription with a new person.
         subscriber = self.factory.makePerson(name=name)
         subscription = target.addBugSubscription(subscriber, subscriber)
-        filter = subscription.newBugFilter()
-        filter.bug_notification_level = level
+        with person_logged_in(subscriber):
+            filter = subscription.newBugFilter()
+            filter.bug_notification_level = level
         return subscriber
 
     def saveOldChanges(self, bug=None, append=False):

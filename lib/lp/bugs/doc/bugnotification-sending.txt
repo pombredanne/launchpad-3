@@ -1122,7 +1122,7 @@ structural subscribers with no filters, or with the notification level
 of COMMENTS or higher. Sample Person's subscription currently does not
 have any filters, so he receives these notifications.
 
-    >>> print len(subscription_no_priv.bug_filters)
+    >>> print subscription_no_priv.bug_filters.count()
     0
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
@@ -1447,10 +1447,8 @@ after all.
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
-    Subject: [Bug 1] subject
+    Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
-    <BLANKLINE>
-    no comment for no-priv.
     <BLANKLINE>
     ** Summary changed to: whatever.
     <BLANKLINE>
