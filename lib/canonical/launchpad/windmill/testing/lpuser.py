@@ -61,10 +61,10 @@ class AnonymousUser:
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 
-def login_person(person, password, client):
+def login_person(person, email, password, client):
     """Create a LaunchpadUser for a person and password."""
     user = LaunchpadUser(
-        person.displayname, person.preferredemail.email, password)
+        person.displayname, email, password)
     user.ensure_login(client)
 
 

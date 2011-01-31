@@ -621,6 +621,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         if not config.builddmaster.send_build_notification:
             return
+        if self.status == BuildStatus.FULLYBUILT:
+            return
 
         recipients = set()
 
