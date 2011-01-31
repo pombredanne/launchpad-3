@@ -673,7 +673,7 @@ class TestShareIfPossible(TestCaseWithFactory):
             different_language=False, different_translations=False,
             different_potmsgsets=False, is_current_ubuntu=False,
             clashing_ubuntu=False, is_current_upstream=False,
-            clashing_upstream=False):
+            clashing_upstream=False, existing_shared=True):
         if different_language:
             language_code='fr'
         else:
@@ -690,10 +690,13 @@ class TestShareIfPossible(TestCaseWithFactory):
             potmsgset = None
         else:
             potmsgset = translation.potmsgset
-        other_translation = self.factory.makeCurrentTranslationMessage(
-            potmsgset=potmsgset, language_code='lt',
-            translations=translations)
-        other_translation.is_current_upstream = False
+        if existing_shared:
+            other_translation = self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language_code='lt',
+                translations=translations)
+            other_translation.is_current_upstream = False
+        else:
+            other_translation = None
         if clashing_upstream:
             self.factory.makeCurrentTranslationMessage(
                 potmsgset=potmsgset, language_code='lt')
@@ -772,3 +775,50 @@ class TestShareIfPossible(TestCaseWithFactory):
             is_current_upstream=True, clashing_upstream=True)
         self.assertFalse(self.shareIfPossibleDeletes(translation))
         self.assertFalse(other_translation.is_current_upstream)
+
+    def test_no_shared_with_clashes(self):
+        """In the base case, the message converges.
+
+        Existing current translations are not considered clashes."""
+        translation = self.make_unshared_translation(
+            existing_shared=False, clashing_upstream=True,
+            clashing_ubuntu=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_upstream_no_clash(self):
+        """Converges if current_upstream with no clash."""
+        translation = self.make_unshared_translation(
+            existing_shared=False, is_current_upstream=True,
+            clashing_upstream=False)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_upstream_clash(self):
+        """Unchanged if current_upstream clashes."""
+        translation = self.make_unshared_translation(
+            existing_shared=False, is_current_upstream=True,
+            clashing_upstream=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertTrue(translation.is_diverged)
+
+    def test_no_shared_current_ubuntu_no_clash(self):
+        """Converges if current_ubuntu with no clash."""
+        translation = self.make_unshared_translation(
+            existing_shared=False, is_current_ubuntu=True,
+            clashing_ubuntu=False)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_ubuntu_clash(self):
+        """Unchanged if current_ubuntu clashes."""
+        translation = self.make_unshared_translation(
+            existing_shared=False, is_current_ubuntu=True,
+            clashing_ubuntu=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertTrue(translation.is_diverged)
