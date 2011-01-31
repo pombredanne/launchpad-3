@@ -497,7 +497,6 @@ representations too.
     resource_type_link: u'http://.../#wiki_name'
     self_link: u'http://.../~salgado/+wikiname/2'
     url: u'https://wiki.ubuntu.com/GuilhermeSalgado'
-    web_link: u'http://launchpad.../~salgado/+wikiname/2'
     wiki: u'https://wiki.ubuntu.com/'
     wikiname: u'GuilhermeSalgado'
 
