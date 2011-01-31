@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from twisted.application import service
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import Factory, Protocol
+from twisted.internet.protocol import (
+    Factory,
+    Protocol,
+    )
 from twisted.web import http
 
 from lp.testing import TestCase
