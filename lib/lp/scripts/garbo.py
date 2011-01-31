@@ -535,7 +535,6 @@ class BugMessageIndexer(TunableLoop):
     maximum_chunk_size = 10000
 
     def _to_process(self):
-        # XXX: may need an index on BugMessage.index alone.
         return IMasterStore(BugMessage).find(
             BugMessage.bugID,
             BugMessage.index==None).config(distinct=True)
@@ -548,7 +547,7 @@ class BugMessageIndexer(TunableLoop):
         bugs_to_index = list(self._to_process()[:chunk_size])
         bugs = IMasterStore(Bug).find(Bug, Bug.id.is_in(bugs_to_index))
         for bug in bugs:
-            bug.indexMessages()
+            bug.reindexMessages()
         transaction.commit()
         self.log.debug("Indexed %d bugs" % len(bugs_to_index))
 

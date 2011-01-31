@@ -432,11 +432,12 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
 
-    def indexMessages(self):
+    def reindexMessages(self):
         """See `IBug`."""
         indexed_messages = self._indexed_messages(include_bugmessage=True)
         for indexed_message, bugmessage in indexed_messages:
-            bugmessage.index = indexed_message.index
+            if bugmessage.index != indexed_message.index: 
+                bugmessage.index = indexed_message.index
 
     @property
     def indexed_messages(self):

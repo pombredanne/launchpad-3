@@ -36,7 +36,7 @@ class TestBugIndexedMessages(TestCaseWithFactory):
         for indexed_message in self.bug_2.indexed_messages:
             self.failUnlessEqual(None, indexed_message.parent)
 
-    def test_indexMessages_indexes_messages(self):
+    def test_reindexMessages_indexes_messages(self):
         self.bug_2.bug_messages[0].index = None
-        self.bug_2.indexMessages()
+        self.bug_2.reindexMessages()
         self.assertEqual(0, self.bug_2.bug_messages[0].index)

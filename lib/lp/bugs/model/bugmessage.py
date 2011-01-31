@@ -46,7 +46,7 @@ class BugMessage(SQLBase):
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     # -- The index of the message is cached in the DB. Currently optional until
-    # we migrate all data.
+    # we migrate all data. Bug 704446 has info about the migration.
     index = IntCol(default=None)
 
 

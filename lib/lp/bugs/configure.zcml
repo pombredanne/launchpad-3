@@ -796,7 +796,7 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    indexMessages
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
