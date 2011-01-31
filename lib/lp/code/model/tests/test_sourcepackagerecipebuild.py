@@ -281,7 +281,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([], daily_builds)
 
     def test_makeDailyBuilds_skips_non_stale_builds(self):
-        # makeDailyBuilds() won't create a build if the recipe isn't stale.
+        # If the recipe isn't stale, makeDailyBuilds() won't create a build.
         self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=False)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
