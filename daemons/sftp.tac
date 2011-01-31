@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This is a Twisted application config file.  To run, use:
@@ -12,12 +12,21 @@ from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 
 from lp.codehosting.sshserver.daemon import (
-    ACCESS_LOG_NAME, get_key_path, LOG_NAME, make_portal, OOPS_CONFIG_SECTION,
-    PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
+    ACCESS_LOG_NAME,
+    get_key_path,
+    LOG_NAME,
+    make_portal,
+    OOPS_CONFIG_SECTION,
+    PRIVATE_KEY_FILE,
+    PUBLIC_KEY_FILE,
+    )
 from lp.services.sshserver.service import SSHService
 from lp.services.twistedsupport.gracefulshutdown import (
-    ConnTrackingFactoryWrapper, ShutdownCleanlyService, OrderedMultiService,
-    make_web_status_service)
+    ConnTrackingFactoryWrapper,
+    make_web_status_service,
+    OrderedMultiService,
+    ShutdownCleanlyService,
+    )
 
 
 # Construct an Application that has the codehosting SSH server.

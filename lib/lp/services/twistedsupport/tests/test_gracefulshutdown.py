@@ -1,18 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for our graceful daemon shutdown support."""
 
 __metaclass__ = type
 
-from lp.testing import TestCase
-
-from lp.services.twistedsupport import gracefulshutdown
-
 from twisted.application import service
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, Protocol
 from twisted.web import http
+
+from lp.testing import TestCase
+
+from lp.services.twistedsupport import gracefulshutdown
 
 
 class TestConnTrackingFactoryWrapper(TestCase):

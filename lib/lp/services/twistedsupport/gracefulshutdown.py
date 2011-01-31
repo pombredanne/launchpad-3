@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for graceful shutdown of Twisted services."""
@@ -15,7 +15,11 @@ __all__ = [
 from twisted.application import service, strports
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import (
-    Deferred, gatherResults, maybeDeferred, inlineCallbacks)
+    Deferred,
+    gatherResults,
+    inlineCallbacks,
+    maybeDeferred,
+    )
 from twisted.web import resource, server
 from zope.interface import implements
 
