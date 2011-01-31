@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
@@ -27,6 +28,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -436,6 +438,14 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         """)
 
 
+OPEN_TEAM_POLICY = (
+    TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
+
+
+CLOSED_TEAM_POLICY = (
+    TeamSubscriptionPolicy.RESTRICTED, TeamSubscriptionPolicy.MODERATED)
+
+
 class PersonVisibility(DBEnumeratedType):
     """The visibility level of person or team objects.
 
@@ -522,10 +532,10 @@ def team_subscription_policy_can_transition(team, policy):
     if team is None or policy == team.subscriptionpolicy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif policy == TeamSubscriptionPolicy.OPEN:
+    elif policy in OPEN_TEAM_POLICY:
         # The team can be open if its super teams are open.
         for team in team.super_teams:
-            if team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
+            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
@@ -535,11 +545,11 @@ def team_subscription_policy_can_transition(team, policy):
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
-    elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.
         for member in team.activemembers:
-            if member.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
