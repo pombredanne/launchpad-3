@@ -398,16 +398,6 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     are handled.
     """
 
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Any user can propose a new member, but team administrators approve
-        membership. Subteams must be Moderated or Restricted. Moderated is a
-        good choice for teams that manage things that need to be secure, like
-        projects, branches, or PPAs, but want to encourage users to help.
-        """)
-
     OPEN = DBItem(2, """
         Open Team
 
@@ -415,16 +405,6 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         closed. Any user can be a member of the team and no approval is
         required. Subteams can be Open, Delegated, Moderated, or Restricted.
         Open is a good choice for encouraging a community of contributors.
-        """)
-
-    RESTRICTED = DBItem(3, """
-        Restricted Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Only the team's administrators can invite a user to be a member.
-        Subteams must be Moderated or Restricted. Restricted is a good choice
-        for teams that manage things that need to be secure, like projects,
-        branches, or PPAs.
         """)
 
     DELEGATED = DBItem(4, """
@@ -435,6 +415,26 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         administrators approve direct memberships. Subteams can be Open,
         Delegated, Moderated, or Restricted. Delegated is a good choice for
         managing a large community of contributors.
+        """)
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        Membership is closed, requires approval, and subteams must be closed.
+        Any user can propose a new member, but team administrators approve
+        membership. Subteams must be Moderated or Restricted. Moderated is a
+        good choice for teams that manage things that need to be secure, like
+        projects, branches, or PPAs, but want to encourage users to help.
+        """)
+
+    RESTRICTED = DBItem(3, """
+        Restricted Team
+
+        Membership is closed, requires approval, and subteams must be closed.
+        Only the team's administrators can invite a user to be a member.
+        Subteams must be Moderated or Restricted. Restricted is a good choice
+        for teams that manage things that need to be secure, like projects,
+        branches, or PPAs.
         """)
 
 
