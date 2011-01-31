@@ -1419,12 +1419,13 @@ def _build_tag_set_query_any(tags):
     :param tags: An iterable of valid tags without - or + and not wildcards.
     :return: A string SQL query fragment or None if no tags were provided.
     """
-    tags = list(tags)
+    tags = sorted(tags)
     if tags == []:
         return None
-    return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
-        % sqlvalues(sorted(tags)))
+    return "EXISTS (%s)" % (
+        "SELECT TRUE FROM BugTag"
+        " WHERE BugTag.bug = Bug.id"
+        " AND BugTag.tag IN %s") % sqlvalues(tags)
 
 
 def build_tag_search_clause(tags_spec):
@@ -2671,7 +2672,7 @@ class BugTaskSet:
                     AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
         expirable_bugtasks = BugTask.select(
-            query +  unconfirmed_bug_condition,
+            query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:
