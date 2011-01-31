@@ -404,6 +404,17 @@ class TestPersonJoinTeam(TestCaseWithFactory):
         self.assertEqual(1, len(users))
         self.assertEqual(user, users[0])
 
+    def test_join_delegated_team_proposed(self):
+        # Joining a Delegated team creates a Proposed TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        users = list(team.proposedmembers)
+        self.assertEqual(1, len(users))
+        self.assertEqual(user, users[0])
+
     def test_join_open_team_appoved(self):
         # Joining an Open team creates an Approved TeamMembership.
         team = self.factory.makeTeam(
