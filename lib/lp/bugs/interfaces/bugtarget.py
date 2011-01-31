@@ -185,7 +185,7 @@ search_tasks_params_for_api_devel = dict(
     linked_blueprints=Choice(
         title=_(
             u"Search for bugs that are linked to blueprints or for "
-            u"bugs that are not linked to branches."),
+            u"bugs that are not linked to blueprints."),
         vocabulary=BugBlueprintSearch, required=False))
 
 
