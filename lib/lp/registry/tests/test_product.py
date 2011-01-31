@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,7 +10,6 @@ import unittest
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
-from zope.component import getUtility
 
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing.pages import (
@@ -22,7 +21,6 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -345,9 +343,8 @@ class BugSupervisorTestCase(TestCaseWithFactory):
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.
         # This is a regression test for bug 438985.
-        user = getUtility(IPersonSet).getByName(self.person.name)
         self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=user)
+            bug_supervisor=self.person, user=self.person)
 
         self.assertEqual(
             self.product.bug_supervisor, self.person,

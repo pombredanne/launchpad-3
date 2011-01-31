@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import operator
 import time
 
 from pytz import UTC
@@ -448,6 +449,26 @@ class TestGarbo(TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugMessage_indexer(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        # The garbo sets BugMessage.index - so create a bug with three
+        # messages: 1 indexed and two not indexed. The two should get indexed
+        # when the garbo job runs.
+        bug = self.factory.makeBug()
+        for _ in range(3):
+            self.factory.makeBugComment(bug)
+        messages = list(bug.bug_messages)
+        messages[0].index = 0
+        messages[1].index = None
+        messages[2].index = None
+        indexed_messages = bug.indexed_messages
+        self.runHourly()
+        index_getter = operator.attrgetter('index')
+        indexed_messages = sorted(indexed_messages, key=index_getter)
+        expected = map(index_getter, indexed_messages)
+        actual = map(index_getter, bug.bug_messages)
+        self.assertEqual(expected, actual)
 
     def test_BugNotificationPruner(self):
         # Create some sample data

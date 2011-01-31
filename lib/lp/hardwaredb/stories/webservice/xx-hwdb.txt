@@ -540,7 +540,7 @@ Accessing the raw submission data yields a redirect to a Librarian URL.
     HTTP/1.1 303 See Other...
     Content-Length: 0
     Content-Type: text/plain
-    Location: http://localhost:58000/92/sample-submission-2.xml
+    Location: http://.../92/sample-submission-2.xml
     ...
 
 A 404 error is returned when a client tries to access a non-existent

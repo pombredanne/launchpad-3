@@ -58,9 +58,7 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
@@ -74,11 +72,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.bug import (
-    BugTagsWidget,
-    LargeBugTagsWidget,
-    )
-from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
@@ -103,6 +96,11 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.widgets.bug import (
+    BugTagsWidget,
+    LargeBugTagsWidget,
+    )
+from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,

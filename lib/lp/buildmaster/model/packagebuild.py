@@ -94,6 +94,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
+    @property
+    def url_id(self):
+        return self.build_farm_job_id
+
     # The following two properties are part of the IPackageBuild
     # interface, but need to be provided by derived classes.
     distribution = None
@@ -222,6 +226,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         if filename is None:
             filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
         file_size = len(content)
         file_content = StringIO(content)
         restricted = self.is_private

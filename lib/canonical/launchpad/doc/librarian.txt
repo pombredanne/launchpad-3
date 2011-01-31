@@ -78,9 +78,11 @@ We can retrieve the LibraryFileAlias we just created using its ID or sha1.
 
 We can get its URL too
 
+    >>> from canonical.config import config
     >>> import re
     >>> re.search(
-    ...     r'^http://localhost:58000/\d+/text.txt$', alias.http_url
+    ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
+    ...     alias.http_url
     ...     ) is not None
     True
 
@@ -88,19 +90,17 @@ Librarian also serves the same file through https, we use this for branding
 and similar inline-presented objects which would trigger security warnings on
 https pages otherwise.
 
-    >>> re.search(
-    ...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
-    ...     ) is not None
+    >>> re.search(r'^https://.+/\d+/text.txt$', alias.https_url) is not None
     True
 
 And we even have a convenient method which returns either the http URL or the
 https one, depending on a config value.
 
-    >>> from canonical.config import config
     >>> config.vhosts.use_https
     False
     >>> re.search(
-    ...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
+    ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
+    ...     alias.getURL()
     ...     ) is not None
     True
 
@@ -111,7 +111,7 @@ https one, depending on a config value.
     ...     """)
     >>> config.push('test', test_data)
     >>> re.search(
-    ...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
+    ...     r'^https://.+/\d+/text.txt$', alias.https_url
     ...     ) is not None
     True
 
@@ -208,15 +208,17 @@ files in the Librarian.
     >>> f.read()
     'This is some data'
     >>> url = client.getURLForAlias(aid)
-    >>> re.search(r'^http://localhost:58000/\d+/text.txt$', url) is not None
+    >>> re.search(
+    ...     r'^%s\d+/text.txt$' % config.librarian.download_url, url
+    ...     ) is not None
     True
 
 When secure=True, the returned url has the id as part of the domain name and
 the protocol is https:
 
-    >>> expected = 'https://i%d.restricted.localhost:58000/%d/text.txt' % (
-    ...     aid, aid)
-    >>> expected == client.getURLForAlias(aid, secure=True)
+    >>> expected = r'^https://i%d\..+:\d+/%d/text.txt$' % (aid, aid)
+    >>> found = client.getURLForAlias(aid, secure=True)
+    >>> re.search(expected, found) is not None
     True
 
 
@@ -250,7 +252,7 @@ until it begins a new transaction.
     ...     'text.txt', len(data), StringIO(data), 'text/plain'
     ...     )
     >>> print url
-    http://localhost:58000/.../text.txt
+    http://.../text.txt
     >>> from urllib2 import urlopen
     >>> urlopen(url).read()
     'This is some data'
@@ -277,7 +279,7 @@ except for test cases, the URL is the only thing useful (because the
 client can't see the database records yet).
 
     >>> import re
-    >>> match = re.search('^http://localhost:\d+/(\d+)/', url)
+    >>> match = re.search('/(\d+)/', url)
     >>> alias_id = int(match.group(1))
     >>> alias = lfas[alias_id]
     >>> print alias.expires.isoformat()
@@ -311,7 +313,10 @@ attribute set.
     True
 
     >>> print file_alias.http_url
-    http://localhost:58005/.../private.txt
+    http://.../private.txt
+    >>> file_alias.http_url.startswith(
+    ...     config.librarian.restricted_download_url)
+    True
 
     >>> transaction.commit()
     >>> file_alias.open()
@@ -339,7 +344,7 @@ But using the restricted librarian will work:
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url
-    http://localhost:58005/.../private.txt
+    http://.../private.txt
 
 Trying to access that file directly on the normal librarian will fail
 (by switching the port)
@@ -386,7 +391,9 @@ file:
     ...     'another-private.txt', len(private_content),
     ...     StringIO(private_content), 'text/plain')
     >>> print url
-    http://localhost:58005/.../another-private.txt
+    http://.../another-private.txt
+    >>> url.startswith(config.librarian.restricted_download_url)
+    True
 
 The file can then immediately be retrieved:
 
@@ -434,6 +441,15 @@ An UploadFailed will be raised if you try to create a file with no content
         [...]
     UploadFailed: Invalid length: 0
 
+If you really want a zero length file you can do it:
+
+    >>> aid = client.addFile('test.txt', 0, StringIO(''), 'text/plain',
+    ...     allow_zero_length=True)
+    >>> transaction.commit()
+    >>> f = client.getFileByAlias(aid)
+    >>> f.read()
+    ''
+
 An AssertionError will be raised if the number of bytes that could be read
 from the file don't match the declared size.
 
@@ -450,7 +466,7 @@ Filenames with spaces in them work.
     >>> f.read()
     'This is some data'
     >>> url = client.getURLForAlias(aid)
-    >>> re.search(r'^http://localhost:58000/\d+/hot%20dog$', url) is not None
+    >>> re.search(r'/\d+/hot%20dog$', url) is not None
     True
 
 Unicode file names work.  Note that the filename in the resulting URL
@@ -463,7 +479,7 @@ is encoded as UTF-8.
     >>> f.read()
     'This is some data'
     >>> url = client.getURLForAlias(aid)
-    >>> re.search(r'^http://localhost:58000/\d+/Yow%E2%80%BD$', url) is not None
+    >>> re.search(r'/\d+/Yow%E2%80%BD$', url) is not None
     True
 
 Files will get garbage collected on production systems as per
