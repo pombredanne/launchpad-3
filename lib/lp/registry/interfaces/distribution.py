@@ -99,7 +99,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -234,19 +234,24 @@ class IDistributionPublic(
         description=_("The person or team that has the rights to review and "
                       "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam'))
-    lucilleconfig = TextLine(
-        title=_("Lucille Config"),
-        description=_("The Lucille Config."), required=False)
     archive_mirrors = exported(doNotSnapshot(
         CollectionField(
             description=_("All enabled and official ARCHIVE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    archive_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     cdimage_mirrors = exported(doNotSnapshot(
         CollectionField(
             description=_("All enabled and official RELEASE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    cdimage_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
@@ -284,9 +289,9 @@ class IDistributionPublic(
         "get the full functionality of LP")
 
     translation_focus = Choice(
-        title=_("Translation Focus"),
+        title=_("Translation focus"),
         description=_(
-            "The DistroSeries that should get the translation effort focus."),
+            "The release series that translators should focus on."),
         required=False,
         vocabulary='FilteredDistroSeries')
 
@@ -636,7 +641,8 @@ class IDistribution(
         archive = ubuntu.main_archive
         series = ubuntu.current_series
         print archive.getPublishedSources(exact_match=True,
-            source_name="apport", distro_series=series)[0].source_package_version
+            source_name="apport",
+            distro_series=series)[0].source_package_version
     """
     export_as_webservice_entry()
 

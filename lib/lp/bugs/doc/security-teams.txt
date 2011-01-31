@@ -4,6 +4,7 @@ Security Teams
 Responsibility for security-related bugs, are modelled in Launchpad with
 a "security contact" on a Distribution or a Product.
 
+    >>> from itertools import chain
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -60,8 +61,9 @@ The reporter, Foo Bar, and the Ubuntu security contact, Mark
 Shuttleworth are both subscribed to the bug.
 
     >>> def subscriber_names(bug):
-    ...     subscribers = (
-    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> subscriber_names(bug)

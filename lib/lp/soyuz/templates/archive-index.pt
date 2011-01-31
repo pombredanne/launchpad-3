@@ -31,9 +31,7 @@
         This archive has been disabled.
       </p>
 
-      <div id="edit-description" class="lazr-multiline-edit"
-        tal:content="structure view/archive_description_html"
-        />
+      <tal:widget replace="structure view/archive_description_html"/>
     </div>
 
     <tal:ppa-upload-hint condition="context/is_ppa">

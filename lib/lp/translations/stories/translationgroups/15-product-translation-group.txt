@@ -32,11 +32,11 @@ Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Change permissions').click()
+    >>> netapplet_owner_browser.getLink('Configure translations').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
-    Permissions and policies...
+    Configure translations : Translations : NetApplet
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions
@@ -47,11 +47,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(no value)']
 
-Ordinary users cannot see the "Change permissions" link or the page it
+Ordinary users cannot see the "Configure translations" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Change permissions').click()
+    >>> user_browser.getLink('Configure translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError

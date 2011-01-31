@@ -12,9 +12,7 @@ from datetime import (
 import textwrap
 import unittest
 
-from bzrlib.plugins.builder.recipe import (
-    ForbiddenInstructionError,
-)
+from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from pytz import UTC
 from storm.locals import Store
 import transaction
@@ -586,6 +584,21 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         addBuild(11)
         self.assertEqual(
             timedelta(minutes=11), recipe.getMedianBuildDuration())
+
+    def test_getBuilds(self):
+        # Builds that need building are pending.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        self.assertEqual([], list(recipe.getBuilds()))
+        self.assertEqual([build], list(recipe.getPendingBuilds()))
+
+    def test_getBuilds_cancelled(self):
+        # Cancelled builds are not considered pending.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        build.cancelBuild()
+        self.assertEqual([build], list(recipe.getBuilds()))
+        self.assertEqual([], list(recipe.getPendingBuilds()))
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

@@ -2,13 +2,8 @@
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+"""Build Jobs initialisation."""
 
-# pylint: disable-msg=C0103,W0403
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
-#         Celso Providelo <celso.providelo@canonical.com>
-#
-# Build Jobs initialisation
-#
 __metaclass__ = type
 
 import _pythonpath
@@ -23,4 +18,3 @@ if __name__ == '__main__':
         script.run()
     finally:
         script.unlock()
-

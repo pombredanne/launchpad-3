@@ -30,9 +30,11 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJobSource, BranchMergeProposalJobType)
+    BranchMergeProposalJobSource,
+    BranchMergeProposalJobType,
+    )
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import (
     Revision,
     RevisionAuthor,
@@ -42,7 +44,10 @@ from lp.code.model.tests.test_diff import commit_file
 from lp.codehosting.bzrutils import write_locked
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory, temp_dir
+from lp.testing import (
+    temp_dir,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )

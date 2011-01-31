@@ -87,7 +87,7 @@ from lp.services.fields import (
     Title,
     URIField,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class ProjectNameField(PillarNameField):

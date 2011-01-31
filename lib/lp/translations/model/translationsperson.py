@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -285,7 +285,7 @@ class TranslationsPerson:
 
         ProductSeriesJoin = LeftJoin(
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.

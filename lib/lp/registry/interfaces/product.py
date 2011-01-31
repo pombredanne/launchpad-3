@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -136,7 +136,7 @@ from lp.services.fields import (
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 # This is based on the definition of <label> in RFC 1035, section
 # 2.3.1, which is what SourceForge project names are based on.
@@ -679,11 +679,11 @@ class IProductPublic(
 
     translation_focus = exported(
         ReferenceChoice(
-            title=_("Translation Focus"), required=False,
+            title=_("Translation focus"), required=False,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_(
-                'The ProductSeries where translations are focused.')))
+                'Project series that translators should focus on.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -705,10 +705,6 @@ class IProductPublic(
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
         "and potentially one from the project, too.")
-
-    aggregatetranslationpermission = Attribute("The translation permission "
-        "that applies to translations in this product, based on the "
-        "permissions that apply to the product as well as its project.")
 
     commercial_subscription = exported(
         Reference(
@@ -735,6 +731,11 @@ class IProductPublic(
             description=_(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
+
+    active_or_packaged_series = Attribute(
+        _("Series that are active and/or have been packaged."))
+
+    packagings = Attribute(_("All the packagings for the project."))
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.

@@ -132,10 +132,6 @@ class RemoteBugUpdater(WorkingBase):
             error = None
             oops_id = None
 
-            # XXX: 2007-10-17 Graham Binns
-            #      This nested set of try:excepts isn't really
-            #      necessary and can be refactored out when bug
-            #      136391 is dealt with.
             try:
                 new_remote_status = (
                     self.external_bugtracker.getRemoteStatus(
@@ -179,7 +175,6 @@ class RemoteBugUpdater(WorkingBase):
                 for bug_watch in bug_watches:
                     bug_watch_updater = BugWatchUpdater(
                         self, bug_watch, self.external_bugtracker)
-
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance)
@@ -234,4 +229,3 @@ class RemoteBugUpdater(WorkingBase):
             launchpad_status = BugTaskStatus.UNKNOWN
 
         return launchpad_status
-
