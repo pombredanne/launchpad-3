@@ -13,23 +13,6 @@ from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translator import ITranslatorSet
 
 
-# Description of the translations permissions model:
-# * OPEN lets anyone edit or suggest.
-# * STRUCTURED lets translation team members edit and anyone
-# suggest, but acts like OPEN when no translation team
-# applies.
-# * RESTRICTED lets translation team members edit and anyone
-# suggest, but acts like CLOSED when no translation team
-# applies.
-# * CLOSED lets only translation team members edit translations
-# or enter suggestions.
-translation_permissions = [
-    TranslationPermission.OPEN,
-    TranslationPermission.STRUCTURED,
-    TranslationPermission.RESTRICTED,
-    TranslationPermission.CLOSED,
-    ]
-
 # A user can be translating either a translation that's not covered by a
 # translation team ("untended"), or one that is ("tended"), or one whose
 # translation team the user is a member of ("member").
@@ -161,7 +144,7 @@ class TestTranslationPermission(TestCaseWithFactory):
             permissions_model[permission, coverage],
             privilege_level,
             "Wrong privileges for %s with translation team coverage '%s'." % (
-                permission, coverage))
+                permission.name, coverage))
 
     def test_translationgroup_models(self):
         # Test that a translation group bestows the expected privilege
@@ -171,7 +154,7 @@ class TestTranslationPermission(TestCaseWithFactory):
         user = self.factory.makePerson()
         product = self.factory.makeProduct()
         pofiles = self.makePOFilesForCoverageLevels(product, user)
-        for permission in translation_permissions:
+        for permission in TranslationPermission.items:
             product.translationpermission = permission
             for coverage in team_coverage:
                 pofile = pofiles[coverage]
@@ -185,7 +168,7 @@ class TestTranslationPermission(TestCaseWithFactory):
         user = self.factory.makePerson()
         pofile = self.factory.makePOFile()
         product = pofile.potemplate.productseries.product
-        for permission in translation_permissions:
+        for permission in TranslationPermission.items:
             product.translationpermission = permission
             privilege_level = PrivilegeLevel.check(pofile, user)
             self.assertPrivilege(permission, 'untended', privilege_level)
@@ -234,9 +217,9 @@ class TestTranslationPermission(TestCaseWithFactory):
         product = self.makeProductInProjectGroup()
         user = self.factory.makePerson()
         pofiles = self.makePOFilesForCoverageLevels(product, user)
-        for project_permission in translation_permissions:
+        for project_permission in TranslationPermission.items:
             product.project.translationpermission = project_permission
-            for product_permission in translation_permissions:
+            for product_permission in TranslationPermission.items:
                 product.translationpermission = product_permission
                 effective_permission = combine_permissions(product)
 
@@ -290,9 +273,9 @@ class TestTranslationPermission(TestCaseWithFactory):
 
         # The strictest of Open and something else is always the
         # something else.
-        for project_permission in translation_permissions:
+        for project_permission in TranslationPermission.items:
             product.project.translationpermission = project_permission
-            for product_permission in translation_permissions:
+            for product_permission in TranslationPermission.items:
                 product.translationpermission = product_permission
                 expected_permission = (
                     combinations[project_permission][product_permission])

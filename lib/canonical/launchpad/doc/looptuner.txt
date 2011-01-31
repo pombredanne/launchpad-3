@@ -324,7 +324,9 @@ compensates, then finally converges towards it.
 If the cost function is highly regular and predictable, the oscillation will
 be a neat alternation of oversized and undersized chunks.
 
-    >>> body = CostedLoop((lambda c: pow(1.2, c)), 50)
+We use math.pow here, since __builtin__.pow is overridden by twisted.conch.
+
+    >>> body = CostedLoop(lambda c: math.pow(1.2, c), 50)
     >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start
@@ -348,7 +350,9 @@ be a neat alternation of oversized and undersized chunks.
 With more extreme exponential behaviour, the overshoot increases but the
 effect remains the same:
 
-    >>> body = CostedLoop((lambda c: pow(3, c)), 50)
+We use math.pow here, since __builtin__.pow is overridden by twisted.conch.
+
+    >>> body = CostedLoop(lambda c: math.pow(3, c), 50)
     >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start

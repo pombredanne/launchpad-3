@@ -73,11 +73,6 @@ class BugWatchUpdater(WorkingBase):
                 len(self.bug_watch.bugtasks) > 0
                 )
 
-        # XXX: Gavin Panella 2010-04-19 bug=509223:
-        # Exception handling is all wrong! If any of these
-        # throw an exception, *all* the watches in
-        # self.bug_watches, even those that have not errored,
-        # will have negative activity added.
         error_message = None
         error_status = None
         oops_id = None

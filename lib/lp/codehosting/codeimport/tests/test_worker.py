@@ -27,6 +27,7 @@ from bzrlib.errors import (
     NotBranchError,
     )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib import trace
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
@@ -132,7 +133,10 @@ class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
     def setUp(self):
-        super(TestBazaarBranchStore, self).setUp()
+        WorkerTest.setUp(self)
+        # XXX: JonathanLange 2010-12-24 bug=694140: Avoid spurious "No
+        # handlers for logger 'bzr'" messages.
+        trace._bzr_logger = logging.getLogger('bzr')
         self.temp_dir = self.makeTemporaryDirectory()
         self.arbitrary_branch_id = 10
 

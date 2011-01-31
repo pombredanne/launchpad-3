@@ -300,7 +300,7 @@ class TestBugzilla(Bugzilla):
         else:
             raise AssertionError('Unknown page: %s' % page)
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page.
 
         :form: is a dict of form variables being POSTed.
@@ -1119,7 +1119,7 @@ class TestMantis(Mantis):
         else:
             return ''
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         if self.trace_calls:
             print "CALLED _postPage(%r, ...)" % (page)
         return ''

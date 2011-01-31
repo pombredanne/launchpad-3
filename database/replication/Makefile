@@ -13,6 +13,7 @@
 #
 # To test the staging rebuild script:
 #
+#  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
 #  $ pg_dump --format=c launchpad_dev | bzip2 -c > launchpad.dump.bz2
 #  $ make stagingsetup \
@@ -37,6 +38,7 @@ NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
+STAGING_LOGDIR=/srv/staging.launchpad.net/staging-logs
 DOGFOOD_DBNAME=launchpad_dogfood
 DOGFOOD_DUMP=launchpad.dump
 
@@ -168,22 +170,27 @@ _replicate:
 	./slon_ctl.py --lag="0 seconds" start \
 		 node1_node "dbname=${_MASTER} user=slony"
 	# Initialize the cluster and create replication sets.
-	./initialize.py
+	./initialize.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Create the soon-to-be-slave database, empty at this point.
 	${CREATEDB} --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
 	# Start the slon daemon for the slave
 	./slon_ctl.py --lag="0 seconds" start \
 	    node2_node "dbname=${_SLAVE} user=slony"
 	# Setup the slave
-	./new-slave.py 2 "dbname=${_SLAVE}"
+	./new-slave.py 2 "dbname=${_SLAVE}" \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Upgrade all databases in the cluster and reset security.
 	@echo Running upgrade.py `date`
-	${SHHH} ../schema/upgrade.py
+	${SHHH} ../schema/upgrade.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running fti.py `date`
-	${SHHH} ../schema/fti.py
+	${SHHH} ../schema/fti.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running security.py `date`
 	./slon_ctl.py stop # security.py can deadlock with slony
-	${SHHH} ../schema/security.py --cluster -U slony
+	${SHHH} ../schema/security.py --cluster -U slony \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Restart slon daemons with default lag setting.
 	./slon_ctl.py --lag="${LAG}" start
 	# Generate a preamble for manual slonik(1) usage.

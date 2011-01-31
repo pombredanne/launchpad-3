@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from itertools import chain
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -31,8 +32,8 @@ from lp.bugs.model.bugnotification import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.matchers import Contains
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import Contains
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -246,9 +247,9 @@ class NotificationForRegistrantsMixin:
         self.pillar.official_malone = True
         [bugtask] = self.bug.bugtasks
         all_subscribers = set(
-            [person.name for person in
-             self.bug.getDirectSubscribers() +
-             self.bug.getIndirectSubscribers()])
+            [person.name for person in chain(
+                    self.bug.getDirectSubscribers(),
+                    self.bug.getIndirectSubscribers())])
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(
@@ -268,9 +269,9 @@ class NotificationForRegistrantsMixin:
         self.pillar.official_malone = False
         [bugtask] = self.bug.bugtasks
         all_subscribers = set(
-            [person.name for person in
-             self.bug.getDirectSubscribers() +
-             self.bug.getIndirectSubscribers()])
+            [person.name for person in chain(
+                    self.bug.getDirectSubscribers(),
+                    self.bug.getIndirectSubscribers())])
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,W1001
@@ -55,9 +55,7 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 
 
@@ -156,7 +154,7 @@ class SourcePackageRecipe(Storm):
 
     @property
     def recipe_text(self):
-        return str(self.builder_recipe)
+        return self.builder_recipe.get_recipe_text()
 
     @staticmethod
     def new(registrant, owner, name, recipe, description,
@@ -248,19 +246,27 @@ class SourcePackageRecipe(Storm):
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
-    def getBuilds(self, pending=False):
+    def getBuilds(self):
         """See `ISourcePackageRecipe`."""
-        if pending:
-            clauses = [BuildFarmJob.date_finished == None]
-        else:
-            clauses = [BuildFarmJob.date_finished != None]
+        where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
+        order_by = Desc(BuildFarmJob.date_finished), BuildFarmJob.id
+        return self._getBuilds(where_clause, order_by)
+
+    def getPendingBuilds(self):
+        """See `ISourcePackageRecipe`."""
+        where_clause = BuildFarmJob.status == BuildStatus.NEEDSBUILD
+        order_by = Desc(BuildFarmJob.date_created), BuildFarmJob.id
+        return self._getBuilds(where_clause, order_by)
+
+    def _getBuilds(self, where_clause, order_by):
+        """The actual query to get the builds."""
         result = Store.of(self).find(
             SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe==self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
-            *clauses)
-        result.order_by(Desc(BuildFarmJob.date_finished))
+            where_clause)
+        result.order_by(order_by)
         return result
 
     def getLastBuild(self):

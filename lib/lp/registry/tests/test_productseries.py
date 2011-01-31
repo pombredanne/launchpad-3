@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
@@ -17,8 +15,12 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -301,5 +303,18 @@ class TestProductSeriesReleases(TestCaseWithFactory):
             self.productseries.getLatestRelease())
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of productseries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_productseries(self):
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        productseries = self.factory.makeProductSeries()
+        skipped = [
+            'milestones',
+            'all_milestones',
+            ]
+        self.assertThat(
+            productseries,
+            DoesNotSnapshot(skipped, IProductSeries))
