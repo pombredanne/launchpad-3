@@ -959,6 +959,12 @@ class IBugTaskSearchBase(Interface):
     has_no_branches = Bool(
         title=_('Show bugs without linked branches'), required=False,
         default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
