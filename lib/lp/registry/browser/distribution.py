@@ -35,6 +35,7 @@ __all__ = [
     'DistributionView',
     ]
 
+from collections import defaultdict
 import datetime
 
 from zope.component import getUtility
@@ -961,10 +962,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -1001,6 +1002,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     @cachedproperty
     def mirror_count(self):
         return len(self.mirrors)
+
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
