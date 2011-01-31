@@ -197,7 +197,9 @@ class SourcePackageRecipe(Storm):
                 And(BuildFarmJob.id == PackageBuild.build_farm_job_id,
                     BuildFarmJob.date_created > one_day_ago)),
             SourcePackageRecipe,
-            SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id)
+            And(SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id,
+                SourcePackageRecipe.daily_build_archive_id ==
+                PackageBuild.archive_id))
         return IStore(cls).using(joins).find(
             cls, cls.is_stale == True, cls.build_daily == True,
             BuildFarmJob.date_created == None).config(distinct=True)

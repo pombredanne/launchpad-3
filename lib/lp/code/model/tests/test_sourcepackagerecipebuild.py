@@ -321,6 +321,23 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEquals([], list(daily_builds))
 
+    def test_makeDailyBuilds_with_new_build_different_archive(self):
+        # If a recipe has been built into an archive that isn't the
+        # daily_build_archive, we will create a build.
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        archive = self.factory.makeArchive(owner=recipe.owner)
+        build = recipe.requestBuild(
+            archive, recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE)
+        nb = removeSecurityProxy(build)
+        nb.date_created = datetime.now(utc) - timedelta(hours=8)
+        # The build also needs to be completed
+        nb.status = BuildStatus.FULLYBUILT
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        actual_title = [b.title for b in daily_builds]
+        self.assertEquals([build.title], actual_title)
+
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
 
