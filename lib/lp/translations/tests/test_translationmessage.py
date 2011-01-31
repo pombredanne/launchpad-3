@@ -670,13 +670,17 @@ class TestShareIfPossible(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def make_unshared_message(self, converged=False, different_language=False,
-            different_translations=False, different_potmsgsets=False):
+            different_translations=False, different_potmsgsets=False,
+            is_current_ubuntu=False, clashing_ubuntu=False,
+            is_current_upstream=False, clashing_upstream=False):
         if different_language:
             language_code='fr'
         else:
             language_code='lt'
         message = self.factory.makeCurrentTranslationMessage(
             language_code=language_code, diverged=not converged)
+        message.is_current_ubuntu = is_current_ubuntu
+        message.is_current_upstream = is_current_upstream
         if different_translations:
             translations = None
         else:
@@ -688,6 +692,13 @@ class TestShareIfPossible(TestCaseWithFactory):
         other_message = self.factory.makeCurrentTranslationMessage(
             potmsgset=potmsgset, language_code='lt',
             translations=translations)
+        if clashing_upstream:
+            self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language_code='lt')
+        if clashing_ubuntu:
+            self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language_code='lt',
+                side=TranslationSide.UBUNTU)
         return message
 
     @staticmethod
@@ -703,6 +714,7 @@ class TestShareIfPossible(TestCaseWithFactory):
             return False
 
     def test_share_success(self):
+        """The base case deletes the message."""
         message = self.make_unshared_message()
         self.assertTrue(self.shareIfPossibleDeletes(message))
 
@@ -724,4 +736,28 @@ class TestShareIfPossible(TestCaseWithFactory):
     def test_different_potmsgset(self):
         """Messages with different potmsgsets are not shared."""
         message = self.make_unshared_message(different_potmsgsets=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
+
+    def test_current_ubuntu_no_clash(self):
+        """If message is current-Ubuntu, and there's no clash, delete."""
+        message = self.make_unshared_message(
+            is_current_ubuntu=True, clashing_ubuntu=False)
+        self.assertTrue(self.shareIfPossibleDeletes(message))
+
+    def test_current_ubuntu_clash(self):
+        """Keep if message is current-Ubuntu, but clashes."""
+        message = self.make_unshared_message(
+            is_current_ubuntu=True, clashing_ubuntu=True)
+        self.assertFalse(self.shareIfPossibleDeletes(message))
+
+    def test_current_upstream_no_clash(self):
+        """If message is current-upstream, and there's no clash, delete."""
+        message = self.make_unshared_message(
+            is_current_upstream=True, clashing_upstream=False)
+        self.assertTrue(self.shareIfPossibleDeletes(message))
+
+    def test_current_upstream_clash(self):
+        """Keep if message is current-upstream, but clashes."""
+        message = self.make_unshared_message(
+            is_current_upstream=True, clashing_upstream=True)
         self.assertFalse(self.shareIfPossibleDeletes(message))

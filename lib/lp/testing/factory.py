@@ -273,6 +273,9 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.side import (
+    TranslationSide,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
@@ -2485,15 +2488,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True):
+                       copy_pofiles=True, side=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
-            # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries(owner=owner)
-            # Make it use Translations, otherwise there's little point
-            # to us creating a template for it.
-            naked_series = removeSecurityProxy(productseries)
-            naked_series.product.translations_usage = ServiceUsage.LAUNCHPAD
+            if side != TranslationSide.UBUNTU:
+                # No context for this template; set up a productseries.
+                productseries = self.makeProductSeries(owner=owner)
+                # Make it use Translations, otherwise there's little point
+                # to us creating a template for it.
+                naked_series = removeSecurityProxy(productseries)
+                naked_series.product.translations_usage = (
+                    ServiceUsage.LAUNCHPAD)
+            else:
+                distroseries = self.makeDistroSeries()
+                sourcepackagename = self.makeSourcePackageName()
+
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
@@ -2527,7 +2536,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None):
+                   create_sharing=False, language=None, side=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2536,7 +2545,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 language = self.makeLanguage()
             language_code = language.code
         if potemplate is None:
-            potemplate = self.makePOTemplate(owner=owner)
+            potemplate = self.makePOTemplate(owner=owner, side=side)
+        else:
+            assert side is None
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
@@ -2609,7 +2620,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None,
-                                      language_code=None):
+                                      language_code=None,
+                                      side=None):
         """Create a `TranslationMessage` and make it current.
 
         By default the message will only be current on the side (Ubuntu
@@ -2640,8 +2652,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             "A diverged message can't be current on the other side.")
         assert None in (language_code, pofile), (
             'Cannot specify both language_code and pofile.')
+        assert None in (side, pofile), (
+            'Cannot specify both translation_side and pofile.')
         if pofile is None:
-            pofile = self.makePOFile(language_code)
+            pofile = self.makePOFile(language_code, side=side)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
