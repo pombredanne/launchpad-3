@@ -18,10 +18,15 @@ from twisted.web import http
 class TestConnTrackingFactoryWrapper(TestCase):
 
     def test_isAvailable_initial_state(self):
+        """Initially a ConnTrackingFactoryWrapper is available."""
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         self.assertTrue(ctf.isAvailable())
 
     def test_allConnectionsGone_when_no_connections(self):
+        """
+        The allConnectionsGone deferred is fired immediately when there are no
+        connections when stopFactory occurs.
+        """
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         self.was_fired = False
         self.assertTrue(ctf.isAvailable())
@@ -33,6 +38,10 @@ class TestConnTrackingFactoryWrapper(TestCase):
         self.assertTrue(self.was_fired)
 
     def test_allConnectionsGone_when_exactly_one_connection(self):
+        """
+        When there is one connection allConnectionsGone fires when that
+        connection goes away.
+        """
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         # Make one connection
         p = Protocol()
@@ -47,6 +56,10 @@ class TestConnTrackingFactoryWrapper(TestCase):
         self.assertTrue(self.was_fired)
 
     def test_allConnectionsGone_when_more_than_one_connection(self):
+        """
+        When there are two connections allConnectionsGone fires when both
+        connections go away.
+        """
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         # Make two connection
         p1 = Protocol()
@@ -65,6 +78,9 @@ class TestConnTrackingFactoryWrapper(TestCase):
         self.assertTrue(self.was_fired)
 
     def test_unregisterProtocol_before_stopFactory(self):
+        """Connections can go away before stopFactory occurs without causing
+        errors.
+        """
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         p = Protocol()
         ctf.registerProtocol(p)
@@ -74,9 +90,11 @@ class TestConnTrackingFactoryWrapper(TestCase):
 class TestServerAvailableResource(TestCase):
 
     def make_dummy_http_request(self):
+        """Make a dummy HTTP request for tests."""
         return http.Request('fake channel', True)
 
     def test_200_when_available(self):
+        """When the factory is available a 200 response is generated."""
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         r = gracefulshutdown.ServerAvailableResource([ctf])
         request = self.make_dummy_http_request()
@@ -88,6 +106,10 @@ class TestServerAvailableResource(TestCase):
         self.assertEqual(200, request.code)
 
     def test_503_after_shutdown_starts(self):
+        """
+        When the factory is unavailable (i.e. stopFactory was called) a 503
+        response is generated.
+        """
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         r = gracefulshutdown.ServerAvailableResource([ctf])
         ctf.stopFactory()
@@ -101,6 +123,7 @@ class TestServerAvailableResource(TestCase):
 
 
 class TestService(service.Service):
+    """A Service that simply logs calls to startService and stopService."""
 
     def __init__(self, name, call_log):
         self.setName(name)
@@ -114,17 +137,25 @@ class TestService(service.Service):
 
 
 class ServiceWithAsyncStop(service.Service):
+    """
+    A Service that does not finish stopping until something fires its
+    stopDeferred.
+    """
+
     def __init__(self):
         self.stop_called = False
         self.stopDeferred = Deferred()
+
     def stopService(self):
         self.stop_called = True
         return self.stopDeferred
 
 
 class TestOrderedMultiService(TestCase):
+    """Tests for OrderedMultiService."""
 
     def test_startService_starts_services_in_the_order_they_were_added(self):
+        """startService starts services in the order they are attached."""
         oms = gracefulshutdown.OrderedMultiService()
         call_log = []
         service1 = TestService('svc one', call_log)
@@ -137,6 +168,10 @@ class TestOrderedMultiService(TestCase):
             call_log)
         
     def test_stopService_stops_in_reverse_order(self):
+        """
+        stopService stops services in the reverse of the order they were
+        attached.
+        """
         oms = gracefulshutdown.OrderedMultiService()
         call_log = []
         service1 = TestService('svc one', call_log)
@@ -151,6 +186,11 @@ class TestOrderedMultiService(TestCase):
             call_log)
         
     def test_services_are_stopped_in_series_not_parallel(self):
+        """
+        The contained services are stopped sequentially, i.e.
+        OrderedMultiService.stopService waits for each service to
+        finish stopping before it starts stopping the next.
+        """
         oms = gracefulshutdown.OrderedMultiService()
         service1 = ServiceWithAsyncStop()
         service1.setServiceParent(oms)

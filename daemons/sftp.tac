@@ -36,6 +36,7 @@ shutdown_cleanly_svc = ShutdownCleanlyService(tracked_factories)
 shutdown_cleanly_svc.setServiceParent(ordered_services)
 
 def ssh_factory_decorator(factory):
+    """Add idle timeouts and connection tracking to a factory."""
     f = TimeoutFactory(factory, timeoutPeriod=config.codehosting.idle_timeout)
     f = ConnTrackingFactoryWrapper(f)
     tracked_factories.add(f)

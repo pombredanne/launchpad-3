@@ -144,6 +144,10 @@ class SSHService(service.Service):
         :param access_log_path: The path to the access log file.
         :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
+        :param factory_decorator: An optional callable that can decorate the
+            server factory (e.g. with a
+            `twisted.protocols.policies.TimeoutFactory`).  It takes one
+            argument, a factory, and must return a factory.
         :param banner: An announcement printed to users when they connect.
             By default, announce nothing.
         """
