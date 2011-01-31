@@ -669,7 +669,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def make_unshared_translation(self, converged=False,
+    def makeUnsharedTranslation(self, converged=False,
             different_language=False, different_translations=False,
             different_potmsgsets=False, is_current_ubuntu=False,
             clashing_ubuntu=False, is_current_upstream=False,
@@ -720,35 +720,35 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_share_success(self):
         """The base case deletes the translation."""
-        translation = self.make_unshared_translation()[0]
+        translation = self.makeUnsharedTranslation()[0]
         self.assertTrue(self.shareIfPossibleDeletes(translation))
 
     def test_converged(self):
         """Converged translations are skipped."""
-        translation = self.make_unshared_translation(converged=True)[0]
+        translation = self.makeUnsharedTranslation(converged=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_language(self):
         """Translations in different languages are not shared."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             different_language=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_translations(self):
         """Translations with different translations are not shared."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             different_translations=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_potmsgset(self):
         """Translations with different potmsgsets are not shared."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             different_potmsgsets=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_current_ubuntu_no_clash(self):
         """If translation is current-Ubuntu, and there's no clash, delete."""
-        translation, other_translation = self.make_unshared_translation(
+        translation, other_translation = self.makeUnsharedTranslation(
             is_current_ubuntu=True, clashing_ubuntu=False)
         self.assertFalse(other_translation.is_current_ubuntu)
         self.assertTrue(self.shareIfPossibleDeletes(translation))
@@ -756,14 +756,14 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_current_ubuntu_clash(self):
         """Keep if translation is current-Ubuntu, but clashes."""
-        translation, other_translation = self.make_unshared_translation(
+        translation, other_translation = self.makeUnsharedTranslation(
             is_current_ubuntu=True, clashing_ubuntu=True)
         self.assertFalse(self.shareIfPossibleDeletes(translation))
         self.assertFalse(other_translation.is_current_ubuntu)
 
     def test_current_upstream_no_clash(self):
         """If tranlation is current-upstream, and there's no clash, delete."""
-        translation, other_translation = self.make_unshared_translation(
+        translation, other_translation = self.makeUnsharedTranslation(
             is_current_upstream=True, clashing_upstream=False)
         self.assertFalse(other_translation.is_current_upstream)
         self.assertTrue(self.shareIfPossibleDeletes(translation))
@@ -771,7 +771,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_current_upstream_clash(self):
         """Keep if translation is current-upstream, but clashes."""
-        translation, other_translation = self.make_unshared_translation(
+        translation, other_translation = self.makeUnsharedTranslation(
             is_current_upstream=True, clashing_upstream=True)
         self.assertFalse(self.shareIfPossibleDeletes(translation))
         self.assertFalse(other_translation.is_current_upstream)
@@ -780,7 +780,7 @@ class TestShareIfPossible(TestCaseWithFactory):
         """In the base case, the message converges.
 
         Existing current translations are not considered clashes."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             existing_shared=False, clashing_upstream=True,
             clashing_ubuntu=True)[0]
         self.assertTrue(translation.is_diverged)
@@ -789,7 +789,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_no_shared_current_upstream_no_clash(self):
         """Converges if current_upstream with no clash."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             existing_shared=False, is_current_upstream=True,
             clashing_upstream=False)[0]
         self.assertTrue(translation.is_diverged)
@@ -798,7 +798,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_no_shared_current_upstream_clash(self):
         """Unchanged if current_upstream clashes."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             existing_shared=False, is_current_upstream=True,
             clashing_upstream=True)[0]
         self.assertTrue(translation.is_diverged)
@@ -807,7 +807,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_no_shared_current_ubuntu_no_clash(self):
         """Converges if current_ubuntu with no clash."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             existing_shared=False, is_current_ubuntu=True,
             clashing_ubuntu=False)[0]
         self.assertTrue(translation.is_diverged)
@@ -816,7 +816,7 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_no_shared_current_ubuntu_clash(self):
         """Unchanged if current_ubuntu clashes."""
-        translation = self.make_unshared_translation(
+        translation = self.makeUnsharedTranslation(
             existing_shared=False, is_current_ubuntu=True,
             clashing_ubuntu=True)[0]
         self.assertTrue(translation.is_diverged)
