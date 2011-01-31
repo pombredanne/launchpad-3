@@ -451,14 +451,16 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
         branch_to_check = self.getBranch()
         return IBranchTarget(
                 branch_to_check.target).getRelatedSeriesBranchInfo(
-                                            branch_to_check)
+                                            branch_to_check,
+                                            limit_results=5)
 
     @cachedproperty
     def related_package_branch_info(self):
         branch_to_check = self.getBranch()
         return IBranchTarget(
                 branch_to_check.target).getRelatedPackageBranchInfo(
-                                            branch_to_check)
+                                            branch_to_check,
+                                            limit_results=5)
 
 
 class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,

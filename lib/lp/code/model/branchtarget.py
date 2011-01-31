@@ -52,11 +52,11 @@ class _BaseBranchTarget:
             registrant, self, branch_name, rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
-    def getRelatedSeriesBranchInfo(self, parent_branch):
+    def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
         return []
 
-    def getRelatedPackageBranchInfo(self, parent_branch):
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
         return []
 
@@ -174,7 +174,7 @@ class PackageBranchTarget(_BaseBranchTarget):
         branch.distroseries = self.sourcepackage.distroseries
         branch.sourcepackagename = self.sourcepackage.sourcepackagename
 
-    def getRelatedPackageBranchInfo(self, parent_branch):
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
         result = []
         linked_branches = self.sourcepackage.linkedBranches()
@@ -186,8 +186,13 @@ class PackageBranchTarget(_BaseBranchTarget):
                     branch != parent_branch and
                     distroseries.status != SeriesStatus.OBSOLETE)])
 
-        return sorted_version_numbers(result, key=lambda branch_info: (
+        result = sorted_version_numbers(result, key=lambda branch_info: (
                     getattr(branch_info[1], 'name')))
+
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
+        return result
 
 
 class PersonBranchTarget(_BaseBranchTarget):
@@ -368,7 +373,7 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.distroseries = None
         branch.sourcepackagename = None
 
-    def getRelatedSeriesBranchInfo(self, parent_branch):
+    def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
         sorted_series = []
         for series in self.product.series:
@@ -392,9 +397,12 @@ class ProductBranchTarget(_BaseBranchTarget):
                 # If there's no branch for a particular series, we don't care.
                 pass
 
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
         return result
 
-    def getRelatedPackageBranchInfo(self, parent_branch):
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
         result = []
         for distrosourcepackage in self.product.distrosourcepackages:
@@ -409,8 +417,13 @@ class ProductBranchTarget(_BaseBranchTarget):
                 # we don't care.
                 pass
 
-        return sorted_version_numbers(result, key=lambda branch_info: (
+        result = sorted_version_numbers(result, key=lambda branch_info: (
                     getattr(branch_info[1], 'name')))
+
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
+        return result
 
 
 def get_canonical_url_data_for_target(branch_target):

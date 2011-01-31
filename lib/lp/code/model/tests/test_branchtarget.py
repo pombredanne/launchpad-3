@@ -500,6 +500,18 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             related_package_branches,
             self.target.getRelatedPackageBranchInfo(branch))
 
+    def test_related_branches_with_limit(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info[:2],
+            self.target.getRelatedSeriesBranchInfo(branch, 2))
+        self.assertEqual(
+            related_package_branches[:2],
+            self.target.getRelatedPackageBranchInfo(branch, 2))
+
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
     """Only certain branches are allowed to be default stacked-on branches."""
