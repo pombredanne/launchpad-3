@@ -244,39 +244,15 @@ CREATE AGGREGATE max(debversion)  (
 
 /* END OF debversion PATCH */
 
-
-ALTER TABLE SourcePackageRelease
-    ADD COLUMN debversion debversion ;
-ALTER TABLE BinaryPackageRelease
-    ADD COLUMN debversion debversion ;
-
-UPDATE SourcePackageRelease 
-    SET debversion = version;
-UPDATE BinaryPackageRelease 
-    SET debversion = version;
-
-/* Is there a quicker way of migrating the index data? */
 DROP INDEX binarypackagerelease_version_sort;
 DROP INDEX sourcepackagerelease_version_sort;
 
-CREATE INDEX SourcePackageRelease__debversion__idx
-    ON SourcePackageRelease(debversion);
-CREATE INDEX BinaryPackageRelease__debversion__idx
-    ON BinaryPackageRelease(debversion);
+ALTER TABLE SourcePackageRelease ALTER COLUMN version TYPE debversion;
+ALTER TABLE BinaryPackageRelease ALTER COLUMN version TYPE debversion;
 
-ALTER TABLE SourcePackageRelease
-    ALTER COLUMN debversion SET not null;
-ALTER TABLE BinaryPackageRelease
-    ALTER COLUMN debversion SET not null;
-
-ALTER TABLE SourcePackageRelease
-    DROP COLUMN version;
-ALTER TABLE BinaryPackageRelease
-    DROP COLUMN version;
-
-ALTER TABLE SourcePackageRelease
-    RENAME COLUMN debversion TO version;
-ALTER TABLE BinaryPackageRelease
-    RENAME COLUMN debversion TO version;
+CREATE INDEX SourcePackageRelease__version__idx
+    ON SourcePackageRelease(version);
+CREATE INDEX BinaryPackageRelease__version__idx
+    ON BinaryPackageRelease(version);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 40, 0);
