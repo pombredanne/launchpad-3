@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
-    login_person,
     TestCaseWithFactory,
     )
 from lp.bugs.publisher import BugsLayer
@@ -14,7 +13,7 @@ from lp.testing.views import create_view
 
 class TestBugTargetTags(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer 
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTargetTags, self).setUp()
@@ -35,4 +34,6 @@ class TestBugTargetTags(TestCaseWithFactory):
             self.project,
             name="+bugtarget-portlet-tags-content",
             layer=BugsLayer)
-        self.assertEqual([u'foo'], [tag['tag'] for tag in view.tags_cloud_data])
+        self.assertEqual(
+            [u'foo'],
+            [tag['tag'] for tag in view.tags_cloud_data])
