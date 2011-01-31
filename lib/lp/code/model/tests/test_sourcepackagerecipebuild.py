@@ -304,6 +304,23 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         actual_title = [b.title for b in daily_builds]
         self.assertEquals([build.title], actual_title)
 
+    def test_makeDailyBuilds_with_an_older_and_newer_build(self):
+        # If a recipe has been built twice, and the most recent build is
+        # within 24 hours, makeDailyBuilds() won't create a build.
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        for timediff in (timedelta(hours=24, seconds=1), timedelta(hours=8)):
+            build = recipe.requestBuild(
+                recipe.daily_build_archive, recipe.owner,
+                list(recipe.distroseries)[0],
+                PackagePublishingPocket.RELEASE)
+            nb = removeSecurityProxy(build)
+            nb.date_created = datetime.now(utc) - timediff
+            # The build also needs to be completed
+            nb.status = BuildStatus.FULLYBUILT
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        self.assertEquals([], list(daily_builds))
+
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
 

@@ -18,8 +18,9 @@ from datetime import (
 from lazr.delegates import delegates
 from pytz import utc
 from storm.expr import (
-    LeftJoin,
-    Or,
+    And,
+    Join,
+    RightJoin,
     )
 from storm.locals import (
     Bool,
@@ -188,18 +189,18 @@ class SourcePackageRecipe(Storm):
     @classmethod
     def findStaleDailyBuilds(cls):
         one_day_ago = datetime.now(utc) - timedelta(hours=23, minutes=50)
-        joins = LeftJoin(LeftJoin(LeftJoin(
-            SourcePackageRecipe, 
+        joins = RightJoin(Join(Join(
             SourcePackageRecipeBuild,
-            SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id), 
             PackageBuild, 
             PackageBuild.id == SourcePackageRecipeBuild.package_build_id),
-            BuildFarmJob, 
-            BuildFarmJob.id == PackageBuild.build_farm_job_id)
+            BuildFarmJob,
+            And(BuildFarmJob.id == PackageBuild.build_farm_job_id,
+                BuildFarmJob.date_created > one_day_ago)),
+            SourcePackageRecipe, 
+            SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id)
         return IStore(cls).using(joins).find(
             cls, cls.is_stale == True, cls.build_daily == True,
-            Or(SourcePackageRecipeBuild.id == None,
-            BuildFarmJob.date_created < one_day_ago)).config(distinct=True)
+            BuildFarmJob.date_created == None).config(distinct=True)
 
     @staticmethod
     def exists(owner, name):
