@@ -623,8 +623,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
@@ -796,6 +796,7 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
@@ -836,7 +837,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch visible index"/>
     </class>
 
     <!-- BugMessageSet -->
