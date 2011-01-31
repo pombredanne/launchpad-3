@@ -28,6 +28,7 @@ We publish a subset of their attributes.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
@@ -93,6 +94,7 @@ The archive has the following attributes:
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
+    web_link: u'http://launchpad.../ubuntutest/+archive/primary'
 
 A distribution can also provide a list of all its archives:
 
@@ -833,6 +835,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
     commercial: False
@@ -847,6 +850,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
 == Creating subscriptions to a (private) archive ==
 
@@ -904,6 +908,7 @@ We publish a subset of the IArchiveSubscriber attributes.
     self_link: u'http://api.../~cprov/+archive/p3a/+subscriptions/mark'
     status: u'Active'
     subscriber_link: u'http://api.launchpad.dev/beta/~mark'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a/+subscriptions/mark'
 
 Other webservice users cannot view the subscription.
 
@@ -1032,6 +1037,7 @@ attributes.
     resource_type_link: u'http://.../#archive_dependency'
     self_link: u'http://.../~cprov/+archive/ppa/+dependency/1'
     title: u'Primary Archive for Ubuntu Linux - RELEASE (main, universe)'
+    web_link: u'http://launchpad.../~cprov/+archive/ppa/+dependency/1'
 
 Asking for an archive on which there is no dependency returns None.
 

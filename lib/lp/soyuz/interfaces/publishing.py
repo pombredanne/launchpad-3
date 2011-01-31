@@ -635,7 +635,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A source package publishing history record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 #
@@ -855,7 +855,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A binary package publishing record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPublishingSet(Interface):

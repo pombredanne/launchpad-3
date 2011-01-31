@@ -31,7 +31,7 @@ from lp.soyuz.interfaces.archive import IArchive
 
 class IArchiveDependency(Interface):
     """ArchiveDependency interface."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=_("The archive ID."), readonly=True)
 
