@@ -175,13 +175,32 @@
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
-      branch - the branch that has the bug branch links
-      revisions - the revisions to list
-  </tal:comment>
+      branch - the branch that has the revisions
+      Either:
+          revisions - the revisions to list.
+        or
+          revision_info - extended revision information (revision,
+                          merge_proposal, linked_bugs) to list.
 
+  </tal:comment>
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
   <dl class="revision">
+    <!-- Display the extended revision listing -->
+    <tal:revision repeat="rev_info revision_info"
+                  define="codebrowse view/codebrowse_url"
+                  condition="revision_info | nothing">
+      <div tal:define="rev_no python:rev_info['revision']">
+        <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+      </div>
+    </tal:revision>
+    <!-- Display the standard revision listing -->
     <tal:revision repeat="rev_no revisions"
-                  define="codebrowse view/codebrowse_url">
+                  define="codebrowse view/codebrowse_url"
+                  condition="revisions | nothing">
       <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
   </dl>
@@ -192,7 +211,11 @@
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
-      rev_no - the branch revision to be displayed.
+      Either:
+          rev_no - the branch revision to be displayed.
+        or
+          rev_info - a dict of the branch revision information (revision,
+                     merge_proposal, linked_bugs) to be displayed.
       codebrowse - the branch's codebrowse root.
 
     It is expected that this macro is called from within a definition
@@ -227,13 +250,33 @@
         tal:content="rev_no/revision/revision_date/fmt:displaydate"
         >2005-10-05 14:34:22 WST</span>
   </dt>
-  <dd class="revision-comment">
+  <dd class="subordinate revision-comment">
     <tal:commit-message
         replace="structure rev_no/revision/log_body/fmt:obfuscate-email/fmt:text-to-html">
       The revision commit message.
     </tal:commit-message>
   </dd>
 
+  <div tal:condition="rev_info | nothing">
+    <div tal:define="merge_proposal python:rev_info['merge_proposal']"
+         tal:condition="merge_proposal">
+      <dd class="subordinate revision-comment">
+        Merged branch <a tal:attributes="href merge_proposal/fmt:url"
+                    tal:content="merge_proposal/source_branch/displayname">source branch</a>
+        <tal:linkedbugs
+                define="linked_bugs python:rev_info['linked_bugs']"
+                condition="linked_bugs">with linked bugs
+          <dl>
+              <tal:bug repeat="bug linked_bugs">
+                <dd class="subordinate revision-comment">
+                  <tal:bug-link replace="structure bug/fmt:link"/>
+                </dd>
+              </tal:bug>
+          </dl>
+        </tal:linkedbugs>
+      </dd>
+    </div>
+  </div>
 </metal:revision-text>
 
 <metal:no-revision-message define-macro="no-revision-message">

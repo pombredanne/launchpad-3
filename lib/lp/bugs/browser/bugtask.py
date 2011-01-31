@@ -163,11 +163,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget,
-    TextLineEditorWidget,
-    vocabulary_to_choice_edit_items,
-    )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpadform import (
@@ -176,8 +171,12 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    vocabulary_to_choice_edit_items,
+    )
 from lp.app.browser.tales import (
-    FormattersAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
@@ -679,8 +678,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
-            bug, 'title', canonical_url(self.context, view_name='+edit'),
-            id="bug-title", title="Edit this summary")
+            bug, IBug['title'], "Edit this summary", 'h1',
+            edit_url=canonical_url(self.context, view_name='+edit'))
 
         # XXX 2010-10-05 gmb bug=655597:
         #     This line of code keeps the view's query count down,
@@ -1035,16 +1034,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_description_html(self):
         """The bug's description as HTML."""
-        formatter = FormattersAPI
-        hide_email = formatter(self.context.bug.description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+        bug = self.context.bug
+        description = IBug['description']
+        title = "Bug Description"
+        edit_url = canonical_url(self.context, view_name='+edit')
         return TextAreaEditorWidget(
-            self.context.bug,
-            'description',
-            canonical_url(self.context, view_name='+edit'),
-            id="edit-description",
-            title="Bug Description",
-            value=description)
+            bug, description, title, edit_url=edit_url)
 
     @property
     def bug_heat_html(self):
