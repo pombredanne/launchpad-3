@@ -18,12 +18,6 @@
   </tal:devmode>
 </metal:block>
 
-<div metal:fill-slot="heading">
-  <h1 tal:content="CONTEXTS/fmt:pagetitle">
-    Copy packages from Blah PPA
-  </h1>
-</div>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     <tal:cannot_copy condition="not: view/can_copy">

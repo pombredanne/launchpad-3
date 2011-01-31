@@ -86,7 +86,6 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSubset,
     LanguageNotFound,
     )
-from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
@@ -111,6 +110,7 @@ from lp.translations.model.translationtemplateitem import (
     )
 from lp.translations.model.vpotexport import VPOTExport
 from lp.translations.utilities.rosettastats import RosettaStats
+from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
@@ -902,7 +902,7 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             errors, warnings = translation_importer.importFile(
                 entry_to_import, logger)
-        except (BrokenTextError, TranslationFormatSyntaxError,
+        except (MixedNewlineMarkersError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError, UnicodeDecodeError), (
                 exception):
             if logger:
