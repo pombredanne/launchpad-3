@@ -669,30 +669,31 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def make_unshared_message(self, converged=False, different_language=False,
-            different_translations=False, different_potmsgsets=False,
-            is_current_ubuntu=False, clashing_ubuntu=False,
-            is_current_upstream=False, clashing_upstream=False):
+    def make_unshared_translation(self, converged=False,
+            different_language=False, different_translations=False,
+            different_potmsgsets=False, is_current_ubuntu=False,
+            clashing_ubuntu=False, is_current_upstream=False,
+            clashing_upstream=False):
         if different_language:
             language_code='fr'
         else:
             language_code='lt'
-        message = self.factory.makeCurrentTranslationMessage(
+        translation = self.factory.makeCurrentTranslationMessage(
             language_code=language_code, diverged=not converged)
-        message.is_current_ubuntu = is_current_ubuntu
-        message.is_current_upstream = is_current_upstream
+        translation.is_current_ubuntu = is_current_ubuntu
+        translation.is_current_upstream = is_current_upstream
         if different_translations:
             translations = None
         else:
-            translations = message.translations
+            translations = translation.translations
         if different_potmsgsets:
             potmsgset = None
         else:
-            potmsgset = message.potmsgset
-        other_message = self.factory.makeCurrentTranslationMessage(
+            potmsgset = translation.potmsgset
+        other_translation = self.factory.makeCurrentTranslationMessage(
             potmsgset=potmsgset, language_code='lt',
             translations=translations)
-        other_message.is_current_upstream = False
+        other_translation.is_current_upstream = False
         if clashing_upstream:
             self.factory.makeCurrentTranslationMessage(
                 potmsgset=potmsgset, language_code='lt')
@@ -700,71 +701,74 @@ class TestShareIfPossible(TestCaseWithFactory):
             self.factory.makeCurrentTranslationMessage(
                 potmsgset=potmsgset, language_code='lt',
                 side=TranslationSide.UBUNTU)
-        return message, other_message
+        return translation, other_translation
 
     @staticmethod
-    def shareIfPossibleDeletes(message):
-        message_id = message.id
-        message.shareIfPossible()
-        Store.of(message).flush()
+    def shareIfPossibleDeletes(translation):
+        translation_id = translation.id
+        translation.shareIfPossible()
+        Store.of(translation).flush()
         try:
-            TranslationMessage.get(message_id)
+            TranslationMessage.get(translation_id)
         except SQLObjectNotFound:
             return True
         else:
             return False
 
     def test_share_success(self):
-        """The base case deletes the message."""
-        message = self.make_unshared_message()[0]
-        self.assertTrue(self.shareIfPossibleDeletes(message))
+        """The base case deletes the translation."""
+        translation = self.make_unshared_translation()[0]
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
 
     def test_converged(self):
-        """Converged messages are skipped."""
-        message = self.make_unshared_message(converged=True)[0]
-        self.assertFalse(self.shareIfPossibleDeletes(message))
+        """Converged translations are skipped."""
+        translation = self.make_unshared_translation(converged=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_language(self):
-        """Messages in different languages are not shared."""
-        message = self.make_unshared_message(different_language=True)[0]
-        self.assertFalse(self.shareIfPossibleDeletes(message))
+        """Translations in different languages are not shared."""
+        translation = self.make_unshared_translation(
+            different_language=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_translations(self):
-        """Messages with different translations are not shared."""
-        message = self.make_unshared_message(different_translations=True)[0]
-        self.assertFalse(self.shareIfPossibleDeletes(message))
+        """Translations with different translations are not shared."""
+        translation = self.make_unshared_translation(
+            different_translations=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_different_potmsgset(self):
-        """Messages with different potmsgsets are not shared."""
-        message = self.make_unshared_message(different_potmsgsets=True)[0]
-        self.assertFalse(self.shareIfPossibleDeletes(message))
+        """Translations with different potmsgsets are not shared."""
+        translation = self.make_unshared_translation(
+            different_potmsgsets=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
 
     def test_current_ubuntu_no_clash(self):
-        """If message is current-Ubuntu, and there's no clash, delete."""
-        message, other_message = self.make_unshared_message(
+        """If translation is current-Ubuntu, and there's no clash, delete."""
+        translation, other_translation = self.make_unshared_translation(
             is_current_ubuntu=True, clashing_ubuntu=False)
-        self.assertFalse(other_message.is_current_ubuntu)
-        self.assertTrue(self.shareIfPossibleDeletes(message))
-        self.assertTrue(other_message.is_current_ubuntu)
+        self.assertFalse(other_translation.is_current_ubuntu)
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
+        self.assertTrue(other_translation.is_current_ubuntu)
 
     def test_current_ubuntu_clash(self):
-        """Keep if message is current-Ubuntu, but clashes."""
-        message, other_message = self.make_unshared_message(
+        """Keep if translation is current-Ubuntu, but clashes."""
+        translation, other_translation = self.make_unshared_translation(
             is_current_ubuntu=True, clashing_ubuntu=True)
-        self.assertFalse(self.shareIfPossibleDeletes(message))
-        self.assertFalse(other_message.is_current_ubuntu)
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+        self.assertFalse(other_translation.is_current_ubuntu)
 
     def test_current_upstream_no_clash(self):
-        """If message is current-upstream, and there's no clash, delete."""
-        message, other_message = self.make_unshared_message(
+        """If tranlation is current-upstream, and there's no clash, delete."""
+        translation, other_translation = self.make_unshared_translation(
             is_current_upstream=True, clashing_upstream=False)
-        self.assertFalse(other_message.is_current_upstream)
-        self.assertTrue(self.shareIfPossibleDeletes(message))
-        self.assertTrue(other_message.is_current_upstream)
+        self.assertFalse(other_translation.is_current_upstream)
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
+        self.assertTrue(other_translation.is_current_upstream)
 
     def test_current_upstream_clash(self):
-        """Keep if message is current-upstream, but clashes."""
-        message, other_message = self.make_unshared_message(
+        """Keep if translation is current-upstream, but clashes."""
+        translation, other_translation = self.make_unshared_translation(
             is_current_upstream=True, clashing_upstream=True)
-        self.assertFalse(self.shareIfPossibleDeletes(message))
-        self.assertFalse(other_message.is_current_upstream)
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+        self.assertFalse(other_translation.is_current_upstream)
