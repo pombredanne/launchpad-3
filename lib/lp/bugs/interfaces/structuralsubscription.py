@@ -158,7 +158,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
         """Add a subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
-        for the target, with no levels set.
+        for the target, without filters.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.

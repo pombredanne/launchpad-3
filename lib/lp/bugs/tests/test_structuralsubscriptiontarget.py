@@ -203,8 +203,7 @@ class FilteredStructuralSubscriptionTestBase:
         # If no one has a filtered subscription for the given bug, the result
         # of getSubscriptionsForBugTask() is the same as for
         # getSubscriptions().
-        subscriptions = self.target.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.NOTHING)
+        subscriptions = self.target.getSubscriptions()
         self.assertSubscriptions(list(subscriptions))
 
     def test_getSubscriptionsForBugTask_with_filter_on_status(self):
@@ -248,7 +247,7 @@ class FilteredStructuralSubscriptionTestBase:
         # which getSubscriptionsForBugTask() observes.
 
         # Adjust the subscription level to METADATA.
-        filter = subscription.newBugFilter()
+        filter = self.subscription.newBugFilter()
         filter.bug_notification_level = BugNotificationLevel.METADATA
 
         # The subscription is found when looking for NOTHING or above.

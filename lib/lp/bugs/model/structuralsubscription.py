@@ -372,9 +372,6 @@ class StructuralSubscriptionTargetMixin:
                 subscribed_by=subscribed_by,
                 **self._target_args)
 
-    # XXX legacy support?
-    addBugSubscription = addSubscription
-
     def userCanAlterBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
 
@@ -391,6 +388,19 @@ class StructuralSubscriptionTargetMixin:
                 and not subscribed_by.inTeam(admins)):
                 return False
         return True
+
+    def addBugSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        # This is a helper method for creating a structural
+        # subscription. It is useful so long as subscriptions are mainly
+        # used to implement bug contacts.
+
+        if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s' % (
+                    subscribed_by.name, subscriber.name))
+
+        return self.addSubscription(subscriber, subscribed_by)
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):
         """See `IStructuralSubscriptionTarget`."""
