@@ -48,7 +48,7 @@ class BugSubscriptionFilter(StormBase):
 
     bug_notification_level = DBEnum(
         enum=BugNotificationLevel,
-        default=BugNotificationLevel.NOTHING,
+        default=BugNotificationLevel.COMMENTS,
         allow_none=False)
     find_all_tags = Bool(allow_none=False, default=False)
     include_any_tags = Bool(allow_none=False, default=False)
