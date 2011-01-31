@@ -692,6 +692,7 @@ class TestShareIfPossible(TestCaseWithFactory):
         other_message = self.factory.makeCurrentTranslationMessage(
             potmsgset=potmsgset, language_code='lt',
             translations=translations)
+        other_message.is_current_upstream = False
         if clashing_upstream:
             self.factory.makeCurrentTranslationMessage(
                 potmsgset=potmsgset, language_code='lt')
@@ -699,7 +700,7 @@ class TestShareIfPossible(TestCaseWithFactory):
             self.factory.makeCurrentTranslationMessage(
                 potmsgset=potmsgset, language_code='lt',
                 side=TranslationSide.UBUNTU)
-        return message
+        return message, other_message
 
     @staticmethod
     def shareIfPossibleDeletes(message):
@@ -715,49 +716,55 @@ class TestShareIfPossible(TestCaseWithFactory):
 
     def test_share_success(self):
         """The base case deletes the message."""
-        message = self.make_unshared_message()
+        message = self.make_unshared_message()[0]
         self.assertTrue(self.shareIfPossibleDeletes(message))
 
     def test_converged(self):
         """Converged messages are skipped."""
-        message = self.make_unshared_message(converged=True)
+        message = self.make_unshared_message(converged=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(message))
 
     def test_different_language(self):
         """Messages in different languages are not shared."""
-        message = self.make_unshared_message(different_language=True)
+        message = self.make_unshared_message(different_language=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(message))
 
     def test_different_translations(self):
         """Messages with different translations are not shared."""
-        message = self.make_unshared_message(different_translations=True)
+        message = self.make_unshared_message(different_translations=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(message))
 
     def test_different_potmsgset(self):
         """Messages with different potmsgsets are not shared."""
-        message = self.make_unshared_message(different_potmsgsets=True)
+        message = self.make_unshared_message(different_potmsgsets=True)[0]
         self.assertFalse(self.shareIfPossibleDeletes(message))
 
     def test_current_ubuntu_no_clash(self):
         """If message is current-Ubuntu, and there's no clash, delete."""
-        message = self.make_unshared_message(
+        message, other_message = self.make_unshared_message(
             is_current_ubuntu=True, clashing_ubuntu=False)
+        self.assertFalse(other_message.is_current_ubuntu)
         self.assertTrue(self.shareIfPossibleDeletes(message))
+        self.assertTrue(other_message.is_current_ubuntu)
 
     def test_current_ubuntu_clash(self):
         """Keep if message is current-Ubuntu, but clashes."""
-        message = self.make_unshared_message(
+        message, other_message = self.make_unshared_message(
             is_current_ubuntu=True, clashing_ubuntu=True)
         self.assertFalse(self.shareIfPossibleDeletes(message))
+        self.assertFalse(other_message.is_current_ubuntu)
 
     def test_current_upstream_no_clash(self):
         """If message is current-upstream, and there's no clash, delete."""
-        message = self.make_unshared_message(
+        message, other_message = self.make_unshared_message(
             is_current_upstream=True, clashing_upstream=False)
+        self.assertFalse(other_message.is_current_upstream)
         self.assertTrue(self.shareIfPossibleDeletes(message))
+        self.assertTrue(other_message.is_current_upstream)
 
     def test_current_upstream_clash(self):
         """Keep if message is current-upstream, but clashes."""
-        message = self.make_unshared_message(
+        message, other_message = self.make_unshared_message(
             is_current_upstream=True, clashing_upstream=True)
         self.assertFalse(self.shareIfPossibleDeletes(message))
+        self.assertFalse(other_message.is_current_upstream)
