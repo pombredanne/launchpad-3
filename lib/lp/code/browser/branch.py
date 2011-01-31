@@ -138,6 +138,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -612,6 +613,12 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                 bug for bug in bugs
                 if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
         return bugs
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
