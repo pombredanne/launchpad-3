@@ -13,7 +13,8 @@ to that branch.
     >>> stdout
     ''
     >>> print stderr
-    INFO Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock
+    INFO Creating lockfile:
+    /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
     INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
@@ -59,6 +60,7 @@ files into the branches.  We mock it up here.
     ...     """Test version of ExportTranslationsToBranch."""
     ...     simulate_race = False
     ...     simulated_latest_commit = None
+    ...     config_name = "translations_export_to_branch"
     ...
     ...     def __init__(self, *args, **kwargs):
     ...         super(MockExportTranslationsToBranch, self).__init__(
@@ -107,7 +109,7 @@ have Dutch translations.
     ...     pofile = factory.makePOFile(
     ...         'nl', potemplate=template, owner=gazblachko.owner)
     ...
-    ...     factory.makeTranslationMessage(
+    ...     factory.makeCurrentTranslationMessage(
     ...         pofile=pofile, potmsgset=potmsgset,
     ...         translator=gazblachko.owner, reviewer=gazblachko.owner,
     ...         translations=['%s msgstr' % name])
@@ -234,7 +236,7 @@ won't work, so we email a notification to the branch owner.
     >>> potmsgset = factory.makePOTMsgSet(template)
     >>> pofile = removeSecurityProxy(
     ...     factory.makePOFile('nl', potemplate=template))
-    >>> tm = factory.makeTranslationMessage(
+    >>> tm = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner)
 
     >>> server = get_rw_server(direct_database=True)

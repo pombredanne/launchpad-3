@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IProduct."""
@@ -22,26 +22,38 @@ from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
-from zope.schema import Choice, Text
+from zope.schema import (
+    Choice,
+    Text,
+    )
+
 
 from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
-from lp.services.fields import StrippedTextLine
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerSet)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
-    LowerCaseTextWidget, StrippedTextWidget)
+    StrippedTextWidget,
+    URIComponentWidget,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerSet,
+    )
 from lp.registry.interfaces.product import IProduct
+from lp.services.fields import StrippedTextLine
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -409,31 +421,15 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return '\n'.join(html)
 
 
-class ProductNameWidget(LowerCaseTextWidget):
+class ProductNameWidget(URIComponentWidget):
     """A text input widget that looks like a url path component entry.
 
     URL: http://launchpad.net/[____________]
     """
-    template = ViewPageTemplateFile('templates/project-url.pt')
-
-    def __init__(self, *args):
-        # pylint: disable-msg=E1002
-        self.read_only = False
-        super(ProductNameWidget, self).__init__(*args)
-
-    def __call__(self):
-        return self.template()
 
     @property
-    def product_name(self):
-        return self.request.form.get('field.name', '').lower()
-
-    @property
-    def widget_type(self):
-        if self.read_only:
-            return 'hidden'
-        else:
-            return 'text'
+    def base_url(self):
+        return allvhosts.configs['mainsite'].rooturl
 
 
 class GhostMixin:

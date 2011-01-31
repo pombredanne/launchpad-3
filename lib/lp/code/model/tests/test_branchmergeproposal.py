@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -9,9 +9,11 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from difflib import unified_diff
-import transaction
 from unittest import (
     TestCase,
     TestLoader,
@@ -21,6 +23,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -1933,6 +1936,27 @@ class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
             (diff1.old_revision, diff1.new_revision),
         ])
         self.assertEqual([diff2, diff1], result)
+
+
+class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getUnlandedSourceBranchRevisions(self):
+        # Revisions in the source branch but not in the target are shown
+        # as unlanded.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=5)
+        r1 = bmp.source_branch.getBranchRevision(sequence=1)
+        initial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
+        self.assertEquals(5, len(initial_revisions))
+        self.assertIn(r1, initial_revisions)
+        # If we push one of the revisions into the target, it disappears
+        # from the unlanded list.
+        bmp.target_branch.createBranchRevision(1, r1.revision)
+        partial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
+        self.assertEquals(4, len(partial_revisions))
+        self.assertNotIn(r1, partial_revisions)
 
 
 def test_suite():

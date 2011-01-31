@@ -31,6 +31,9 @@ The default navigation menu is registered for the 'overview' facet.
     link members
         url: .../~name18/+members
         ...
+    link polls
+        url: .../~name18/+polls
+        ...
     link profile
         url: .../~name18
         ...

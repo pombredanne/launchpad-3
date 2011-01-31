@@ -55,7 +55,7 @@
 
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd tal:content="structure context/owner/fmt:link" />
+            <dd tal:content="structure view/person_picker"/>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
@@ -67,10 +67,7 @@
           </dl>
           <dl id="daily_build_archive">
             <dt>Daily build archive:</dt>
-            <dd tal:content="structure context/daily_build_archive/fmt:link"
-                tal:condition="context/daily_build_archive">
-            </dd>
-            <dd tal:condition="not: context/daily_build_archive">None</dd>
+            <dd tal:content="structure view/archive_picker"/>
           </dl>
 
           <dl id="distros">
@@ -168,7 +165,7 @@
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
-        <pre tal:content="context/builder_recipe" />
+        <pre tal:content="context/recipe_text" />
       </div>
     </div>
   </div>

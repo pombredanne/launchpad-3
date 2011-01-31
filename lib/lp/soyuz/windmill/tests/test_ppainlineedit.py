@@ -20,7 +20,7 @@ class TestPPAInlineEditing(unittest.TestCase):
 
         ppa_displayname_inline_edit_test = widgets.InlineEditorWidgetTest(
             url='%s/~cprov/+archive/ppa' % SoyuzWindmillLayer.base_url,
-            widget_id='displayname',
+            widget_id='edit-displayname',
             expected_value='PPA for Celso Providelo',
             new_value="Celso's default PPA",
             name='test_ppa_displayname_inline_edit',

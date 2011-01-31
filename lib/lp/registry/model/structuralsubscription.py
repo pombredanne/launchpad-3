@@ -7,7 +7,15 @@ __all__ = [
     'StructuralSubscriptionTargetMixin',
     ]
 
-from sqlobject import ForeignKey
+import pytz
+
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
+
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -31,12 +39,8 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    )
+from canonical.database.enumcol import DBEnum
+from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
@@ -74,51 +78,64 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.services.propertycache import cachedproperty
 
 
-class StructuralSubscription(SQLBase):
+class StructuralSubscription(Storm):
     """A subscription to a Launchpad structure."""
 
     implements(IStructuralSubscription)
 
-    _table = 'StructuralSubscription'
+    __storm_table__ = 'StructuralSubscription'
 
-    product = ForeignKey(
-        dbName='product', foreignKey='Product', notNull=False, default=None)
-    productseries = ForeignKey(
-        dbName='productseries', foreignKey='ProductSeries', notNull=False,
-        default=None)
-    project = ForeignKey(
-        dbName='project', foreignKey='ProjectGroup', notNull=False,
-        default=None)
-    milestone = ForeignKey(
-        dbName='milestone', foreignKey='Milestone', notNull=False,
-        default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution', notNull=False,
-        default=None)
-    distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries', notNull=False,
-        default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    subscriber = ForeignKey(
-        dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_person, notNull=True)
-    subscribed_by = ForeignKey(
-        dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    bug_notification_level = EnumCol(
+    id = Int(primary=True)
+
+    productID = Int("product", default=None)
+    product = Reference(productID, "Product.id")
+
+    productseriesID = Int("productseries", default=None)
+    productseries = Reference(productseriesID, "ProductSeries.id")
+
+    projectID = Int("project", default=None)
+    project = Reference(projectID, "ProjectGroup.id")
+
+    milestoneID = Int("milestone", default=None)
+    milestone = Reference(milestoneID, "Milestone.id")
+
+    distributionID = Int("distribution", default=None)
+    distribution = Reference(distributionID, "Distribution.id")
+
+    distroseriesID = Int("distroseries", default=None)
+    distroseries = Reference(distroseriesID, "DistroSeries.id")
+
+    sourcepackagenameID = Int("sourcepackagename", default=None)
+    sourcepackagename = Reference(sourcepackagenameID, "SourcePackageName.id")
+
+    subscriberID = Int("subscriber", allow_none=False,
+                        validator=validate_person)
+    subscriber = Reference(subscriberID, "Person.id")
+
+    subscribed_byID = Int("subscribed_by", allow_none=False,
+                          validator=validate_public_person)
+    subscribed_by = Reference(subscribed_byID, "Person.id")
+
+    bug_notification_level = DBEnum(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
-        notNull=True)
-    blueprint_notification_level = EnumCol(
+        allow_none=False)
+    blueprint_notification_level = DBEnum(
         enum=BlueprintNotificationLevel,
         default=BlueprintNotificationLevel.NOTHING,
-        notNull=True)
-    date_created = UtcDateTimeCol(
-        dbName='date_created', notNull=True, default=UTC_NOW)
-    date_last_updated = UtcDateTimeCol(
-        dbName='date_last_updated', notNull=True, default=UTC_NOW)
+        allow_none=False)
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
+    date_last_updated = DateTime(
+        "date_last_updated", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
+
+    def __init__(self, subscriber, subscribed_by, **kwargs):
+        self.subscriber = subscriber
+        self.subscribed_by = subscribed_by
+        for arg, value in kwargs.iteritems():
+            setattr(self, arg, value)
 
     @property
     def target(self):
@@ -412,13 +429,9 @@ class StructuralSubscriptionTargetMixin:
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.name, subscriber.name))
 
-        subscription_to_remove = None
-        for subscription in self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA):
-            # Only search for bug subscriptions
-            if subscription.subscriber == subscriber:
-                subscription_to_remove = subscription
-                break
+        subscription_to_remove = self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA,
+            subscriber=subscriber).one()
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
@@ -432,39 +445,44 @@ class StructuralSubscriptionTargetMixin:
                 subscription_to_remove.bug_notification_level = (
                     BugNotificationLevel.NOTHING)
             else:
-                subscription_to_remove.destroySelf()
+                store = Store.of(subscription_to_remove)
+                store.remove(subscription_to_remove)
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
-        all_subscriptions = self.getSubscriptions()
-        for subscription in all_subscriptions:
-            if subscription.subscriber == person:
-                return subscription
-        return None
+        # getSubscriptions returns all subscriptions regardless of
+        # the person for person==None, so we special-case that.
+        if person is None:
+            return None
+        all_subscriptions = self.getSubscriptions(subscriber=person)
+        return all_subscriptions.one()
 
     def getSubscriptions(self,
                          min_bug_notification_level=
                          BugNotificationLevel.NOTHING,
                          min_blueprint_notification_level=
-                         BlueprintNotificationLevel.NOTHING):
+                         BlueprintNotificationLevel.NOTHING,
+                         subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
+        from lp.registry.model.person import Person
         clauses = [
-            "StructuralSubscription.subscriber = Person.id",
-            "StructuralSubscription.bug_notification_level "
-            ">= %s" % quote(min_bug_notification_level),
-            "StructuralSubscription.blueprint_notification_level "
-            ">= %s" % quote(min_blueprint_notification_level),
+            StructuralSubscription.subscriberID==Person.id,
+            (StructuralSubscription.bug_notification_level >=
+             min_bug_notification_level),
+            (StructuralSubscription.blueprint_notification_level >=
+             min_blueprint_notification_level),
             ]
         for key, value in self._target_args.iteritems():
-            if value is None:
-                clauses.append(
-                    "StructuralSubscription.%s IS NULL" % (key,))
-            else:
-                clauses.append(
-                    "StructuralSubscription.%s = %s" % (key, quote(value)))
-        query = " AND ".join(clauses)
-        return StructuralSubscription.select(
-            query, orderBy='Person.displayname', clauseTables=['Person'])
+            clauses.append(
+                getattr(StructuralSubscription, key)==value)
+
+        if subscriber is not None:
+            clauses.append(
+                StructuralSubscription.subscriberID==subscriber.id)
+
+        store = Store.of(self.__helper.pillar)
+        return store.find(
+            StructuralSubscription, *clauses).order_by('Person.displayname')
 
     @property
     def bug_subscriptions(self):

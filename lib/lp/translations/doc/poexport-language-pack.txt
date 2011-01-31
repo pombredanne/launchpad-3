@@ -168,9 +168,9 @@ Attach the en-US.xpi (the template) file.
 
     >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
-    >>> published = True
+    >>> by_maintainer = True
     >>> template_entry = translation_import_queue.addOrUpdateEntry(
-    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     firefox_template.path, en_US_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template)
 
@@ -179,7 +179,7 @@ Attach the es.xpi file (the translation) file.
     >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
     >>> firefox_es_translation = firefox_template.newPOFile('es')
     >>> translation_entry = translation_import_queue.addOrUpdateEntry(
-    ...     'es.xpi', es_xpi.read(), published,
+    ...     'es.xpi', es_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template,
     ...     pofile=firefox_es_translation)
@@ -297,9 +297,8 @@ on 2000/01/01.
 
     >>> pofile_es = template.newPOFile('es')
     >>> translations = { 0: u'blah (es)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_es, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, potmsgset, mark, translations=translations)
     >>> pofile_es.date_changed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
@@ -307,9 +306,8 @@ Create a Welsh PO file, with an active translation submission created on
 
     >>> pofile_cy = template.newPOFile('cy')
     >>> translations = { 0: u'blah (cy)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_cy, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_cy, potmsgset, mark, translations=translations)
     >>> pofile_cy.date_changed = d2000_01_03
     >>> transaction.commit()
 

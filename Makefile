@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python
+PYTHON=python2.6
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -383,7 +383,7 @@ clean: clean_js clean_buildout
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
-			  /var/tmp/fatsam.appserver \
+			  /var/tmp/fatsam.test \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \

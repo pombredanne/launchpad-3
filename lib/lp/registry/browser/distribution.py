@@ -35,6 +35,7 @@ __all__ = [
     'DistributionView',
     ]
 
+from collections import defaultdict
 import datetime
 
 from zope.component import getUtility
@@ -426,11 +427,11 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         summary = 'Enable tracking of feature planning.'
         return Link('+edit', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
-        return Link('+edit', text, summary, icon='edit')
+        return Link('+configure-translations', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -961,10 +962,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -980,7 +981,11 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.archive_mirrors
+        return self.context.archive_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -992,7 +997,11 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.cdimage_mirrors
+        return self.context.cdimage_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
