@@ -18,12 +18,6 @@
   </tal:devmode>
 </metal:block>
 
-<div metal:fill-slot="heading">
-  <h1 tal:content="CONTEXTS/fmt:pagetitle">
-    Delete packages from Blah PPA
-  </h1>
-</div>
-
 <div metal:fill-slot="main">
 <div class="top-portlet">
     <tal:inactive_ppa_header condition="not: view/has_sources">

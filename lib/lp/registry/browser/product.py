@@ -122,7 +122,6 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.product import (
     GhostWidget,
@@ -143,6 +142,7 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
+from lp.app.browser.lazrjs import TextLineEditorWidget
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
@@ -988,25 +988,21 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, 'title',
-            canonical_url(self.context, view_name='+edit'),
-            id="product-title", title="Edit this title")
+            product, title_field, title, 'h1')
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
         if self.context.programminglang is None:
-            additional_arguments = dict(
+            additional_arguments.update(dict(
                 default_text='Not yet specified',
                 initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, 'programminglang',
-            canonical_url(self.context, view_name='+edit'),
-            id='programminglang', title='Edit programming languages',
-            tag='span', public_attribute='programming_language',
-            accept_empty=True,
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
