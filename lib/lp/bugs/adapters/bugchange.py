@@ -349,6 +349,7 @@ class BugDescriptionChange(AttributeChange):
             u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
 
+
 def _is_status_change_lifecycle_change(old_status, new_status):
     """Is a status change a lifecycle change."""
     # Bug is moving from one of unresolved bug statuses (like
@@ -360,6 +361,7 @@ def _is_status_change_lifecycle_change(old_status, new_status):
     bug_is_reopened = (old_status in RESOLVED_BUGTASK_STATUSES and
                        new_status in UNRESOLVED_BUGTASK_STATUSES)
     return bug_is_closed or bug_is_reopened
+
 
 class BugDuplicateChange(AttributeChange):
     """Describes a change to a bug's duplicate marker."""
@@ -818,6 +820,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return None
@@ -832,6 +835,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return "(unassigned)"
