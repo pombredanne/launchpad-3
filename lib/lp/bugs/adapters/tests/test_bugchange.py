@@ -49,7 +49,7 @@ class BugChangeTestCase(unittest.TestCase):
                 "Expected %s from get_bug_change_class() for field name %s. "
                 "Got %s." % (expected, field_name, received))
 
-    def test_get_bug_changes_change_type(self):
+    def test_get_bug_changes_change_level(self):
         # get_bug_changes() returns all bug changes for a certain
         # BugDelta, and change_type is usually METADATA.
         bug = self.factory.makeBug()
@@ -65,7 +65,7 @@ class BugChangeTestCase(unittest.TestCase):
         changes = list(get_bug_changes(bug_delta))
         self.assertTrue(isinstance(changes[0], BugDescriptionChange))
         self.assertEquals(BugNotificationLevel.METADATA,
-                          changes[0].change_type)
+                          changes[0].change_level)
 
 
 def test_suite():

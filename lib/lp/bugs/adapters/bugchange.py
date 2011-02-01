@@ -115,7 +115,7 @@ class BugChangeBase:
     implements(IBugChange)
 
     # Most changes will be at METADATA level.
-    change_type = BugNotificationLevel.METADATA
+    change_level = BugNotificationLevel.METADATA
 
     def __init__(self, when, person):
         self.person = person
@@ -192,7 +192,7 @@ class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
     # A bug is "created" on a different target.
-    change_type = BugNotificationLevel.LIFECYCLE
+    change_level = BugNotificationLevel.LIFECYCLE
 
     def __init__(self, when, person, bug_task):
         super(BugTaskAdded, self).__init__(when, person)
@@ -733,7 +733,7 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     display_attribute = 'title'
 
     @property
-    def change_type(self):
+    def change_level(self):
         """If bug is closed, it's a LIFECYCLE change."""
         closed_statuses = [
             BugTaskStatus.FIXRELEASED,
