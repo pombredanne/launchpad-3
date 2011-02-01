@@ -41,6 +41,8 @@ from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.enum import BugNotificationLevel
@@ -735,17 +737,15 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     @property
     def change_level(self):
         """If bug is closed, it's a LIFECYCLE change."""
-        closed_statuses = [
-            BugTaskStatus.FIXRELEASED,
-            BugTaskStatus.EXPIRED,
-            BugTaskStatus.WONTFIX,
-            BugTaskStatus.INVALID]
-        if (self.old_value not in closed_statuses and
-            self.new_value in closed_statuses):
-            # Very simplistic way to ensure that we are not sending
-            # emails for bugs going from INVALID -> WONTFIX.  Also
-            # includes transitions like WONTFIX->FIXRELEASED which might
-            # not be as desireable. -- danilo
+        if ((self.old_value in UNRESOLVED_BUGTASK_STATUSES and
+             self.new_value in RESOLVED_BUGTASK_STATUSES) or
+            (self.old_value in RESOLVED_BUGTASK_STATUSES and
+             self.new_value in UNRESOLVED_BUGTASK_STATUSES)):
+            # If bugs are moving from one of unresolved bug statuses
+            # (like 'in progress') to one of resolved ('fix released'),
+            # or if they are moving back from one one of resolved
+            # to one of unresolved (re-opening a bug), then we consider
+            # it a lifecycle change.
             return BugNotificationLevel.LIFECYCLE
         return BugNotificationLevel.METADATA
 
