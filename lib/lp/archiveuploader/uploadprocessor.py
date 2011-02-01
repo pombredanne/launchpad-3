@@ -645,9 +645,9 @@ class BuildUploadHandler(UploadHandler):
             return
         try:
             # The recipe may have been deleted so we need to flag that here
-            # and will handle below. We check so that we don't go the the
+            # and will handle below. We check so that we don't go to the
             # expense of doing an unnecessary upload. We don't just exit here
-            # because we want the cleanup to occur.
+            # because we want the standard cleanup to occur.
             recipe_deleted = self.build.recipe is None
             if recipe_deleted:
                 result = UploadStatusEnum.FAILED
