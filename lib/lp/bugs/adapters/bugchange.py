@@ -349,9 +349,42 @@ class BugDescriptionChange(AttributeChange):
             u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
 
+def _is_status_change_lifecycle_change(old_status, new_status):
+    """Is a status change a lifecycle change."""
+    # Bug is moving from one of unresolved bug statuses (like
+    # 'in progress') to one of resolved ('fix released').
+    bug_is_closed = (old_status in UNRESOLVED_BUGTASK_STATUSES and
+                     new_status in RESOLVED_BUGTASK_STATUSES)
+
+    # Bug is moving back from one of resolved bug statuses (reopening).
+    bug_is_reopened = (old_status in RESOLVED_BUGTASK_STATUSES and
+                       new_status in UNRESOLVED_BUGTASK_STATUSES)
+    return bug_is_closed or bug_is_reopened
 
 class BugDuplicateChange(AttributeChange):
     """Describes a change to a bug's duplicate marker."""
+
+    @property
+    def change_level(self):
+        lifecycle = False
+        old_bug = self.old_value
+        new_bug = self.new_value
+        if old_bug is not None and new_bug is not None:
+            # Bug was already a duplicate of one bug,
+            # and we are changing it to be a duplicate of another bug.
+            lifecycle = _is_status_change_lifecycle_change(
+                old_bug.default_bugtask.status,
+                new_bug.default_bugtask.status)
+        elif new_bug is not None:
+            # old_bug is None here, so we are just adding a duplicate marker.
+            lifecycle = (new_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
+        else:
+            pass
+        if lifecycle:
+            return BugNotificationLevel.LIFECYCLE
+        else:
+            return BugNotificationLevel.METADATA
 
     def getBugActivity(self):
         if self.old_value is not None and self.new_value is not None:
@@ -734,14 +767,9 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     @property
     def change_level(self):
         """See `IBugChange`."""
-        # Bug is moving from one of unresolved bug statuses (like
-        # 'in progress') to one of resolved ('fix released').
-        bug_is_closed = (self.old_value in UNRESOLVED_BUGTASK_STATUSES and
-                         self.new_value in RESOLVED_BUGTASK_STATUSES)
-
-        # Bug is moving back from one of resolved bug statuses (reopening).
-        bug_is_reopened = (self.old_value in RESOLVED_BUGTASK_STATUSES and
-                           self.new_value in UNRESOLVED_BUGTASK_STATUSES)
+        # Is bug being closed or reopened.
+        lifecycle_change = _is_status_change_lifecycle_change(
+            self.old_value, self.new_value)
 
         # When bug task is put into INCOMPLETE status, and subscriber
         # is the person who originally reported the bug, we still notify
@@ -750,8 +778,7 @@ class BugTaskStatusChange(BugTaskAttributeChange):
             self.new_value == BugTaskStatus.INCOMPLETE and
             self.bug_task.bug.owner == self.person)
 
-        if (bug_is_closed or bug_is_reopened or
-            subscriber_is_asked_for_info):
+        if (lifecycle_change or subscriber_is_asked_for_info):
             return BugNotificationLevel.LIFECYCLE
         return BugNotificationLevel.METADATA
 
