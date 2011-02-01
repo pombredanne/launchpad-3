@@ -396,7 +396,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
     The policies that describe who can be a member and how new memberships
     are handled. The choice of policy reflects the need to build a community
-    verses the need to control Launchpad assets.
+    versus the need to control Launchpad assets.
     """
 
     OPEN = DBItem(2, """

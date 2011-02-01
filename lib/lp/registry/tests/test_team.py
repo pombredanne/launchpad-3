@@ -242,7 +242,7 @@ class TeamSubscriptionPolicyBase(TestCaseWithFactory):
 class TestTeamSubscriptionPolicyChoiceCommon(TeamSubscriptionPolicyBase):
     """Test `TeamSubsciptionPolicyChoice` constraints."""
 
-    # Any policy can be used in set of tests.
+    # Any policy will work here, so we'll just pick one.
     POLICY = TeamSubscriptionPolicy.MODERATED
 
     def test___getTeam_with_team(self):
