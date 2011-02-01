@@ -5,8 +5,3 @@
 
 __metaclass__ = type
 __all__ = []
-
-# Imports go here.
-
-
-# Code goes here.
