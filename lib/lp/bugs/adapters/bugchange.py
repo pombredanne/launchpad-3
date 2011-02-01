@@ -38,8 +38,12 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bugchange import IBugChange
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTask,
+    )
 from lp.registry.interfaces.product import IProduct
+from lp.registry.enum import BugNotificationLevel
 
 
 class NoBugChangeFoundError(Exception):
@@ -110,11 +114,12 @@ class BugChangeBase:
 
     implements(IBugChange)
 
+    # Most changes will be at METADATA level.
+    change_type = BugNotificationLevel.METADATA
+
     def __init__(self, when, person):
         self.person = person
         self.when = when
-        # Most changes will be at METADATA level.
-        self.change_type = BugNotificationLevel.METADATA
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
