@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugchange import (
     BUG_CHANGE_LOOKUP,
     BugDescriptionChange,
@@ -21,10 +20,10 @@ from lp.testing import TestCaseWithFactory
 
 class BugChangeTestCase(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        super(BugChangeTestCase, self).setUp(ANONYMOUS)
+        super(BugChangeTestCase, self).setUp()
 
     def test_get_bug_change_class(self):
         # get_bug_change_class() should return whatever is contained
@@ -42,10 +41,10 @@ class BugChangeTestCase(TestCaseWithFactory):
 
 class BugChangeLevelTestCase(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        super(BugChangeLevelTestCase, self).setUp(ANONYMOUS)
+        super(BugChangeLevelTestCase, self).setUp()
 
     def test_get_bug_changes_change_level(self):
         # get_bug_changes() returns all bug changes for a certain
