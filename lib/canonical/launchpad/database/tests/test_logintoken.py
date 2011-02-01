@@ -29,8 +29,8 @@ class TestLoginToken(TestCaseWithFactory):
         # sendMergeRequestEmail() sends an email to the user informing him/her
         # of the request.
 
-        user1 = self.factory.makePerson()
-        user2 = self.factory.makePerson()
+        user1 = self.factory.makePerson(name="requester")
+        user2 = self.factory.makePerson(name="duplicate", displayname="Bob")
 
         with person_logged_in(user1):
             token = getUtility(ILoginTokenSet).new(
@@ -47,7 +47,7 @@ class TestLoginToken(TestCaseWithFactory):
             accounts with another.
 
             If you go ahead, this will merge the account called
-            '... (...)' into the account '...'.
+            'Bob (duplicate)' into the account 'requester'.
 
             To confirm you want to do this, please follow
             this link:
