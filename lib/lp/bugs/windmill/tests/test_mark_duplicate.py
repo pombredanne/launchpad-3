@@ -115,7 +115,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(link=u'bug #1')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            id=u'bug-title', timeout=constants.FOR_ELEMENT)
+            id=u'edit-title', timeout=constants.FOR_ELEMENT)
 
         # Make sure all js loads are complete before trying the next test.
         client.waits.forElement(
