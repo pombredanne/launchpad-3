@@ -39,11 +39,6 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
             'searchTasks', api_version='devel').jsonBody()
         self.assertEqual(response['total_size'], 1)
 
-    def test_linked_blueprints_in_devel(self):
-        response = self.webservice.named_get('/mebuntu/inkanyamba',
-            'searchTasks', api_version='devel').jsonBody()
-        self.assertEqual(response['total_size'], 1)
-
 
 class TestLinkedBlueprintsParameter(TestCaseWithFactory):
     """Tests for the linked_blueprints parameter."""
