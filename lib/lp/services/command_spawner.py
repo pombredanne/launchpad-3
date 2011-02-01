@@ -145,7 +145,12 @@ class CommandSpawner:
             self.communicate()
 
     def kill(self):
-        """Kill any remaining child processes."""
+        """Kill any remaining child processes.
+
+        You'll still need to call `complete` to make sure that the child
+        processes are cleaned up.  Until then, they will stay around as
+        zombies.
+        """
         for process in self.running_processes.iterkeys():
             process.terminate()
 
