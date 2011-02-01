@@ -29,7 +29,11 @@ def get_process_output_files(process):
 
 
 def make_files_nonblocking(files):
-    """Put each of `files` in non-blocking mode."""
+    """Put each of `files` in non-blocking mode.
+
+    This allows the `CommandSpawner` to read all available output from a
+    process without blocking until the process completes.
+    """
     for this_file in files:
         fcntl(this_file, F_SETFL, fcntl(this_file, F_GETFL) | O_NONBLOCK)
 
@@ -54,7 +58,11 @@ COMPLETION = 3
 class CommandSpawner:
     """Simple manager to execute commands in parallel.
 
-    Typical life cycle is:
+    Lets you run commands in sub-processes that will run simulaneously.
+    The CommandSpawner looks for output from the running processes, and
+    manages their cleanup.
+
+    The typical usage pattern is:
 
     >>> spawner = CommandSpawner()
     >>> spawner.start(["echo", "One parallel process"])
@@ -62,7 +70,9 @@ class CommandSpawner:
     >>> spawner.complete()
 
     There are facilities for processing output and error output from the
-    sub-processes, as well as dealing with success and failure.
+    sub-processes, as well as dealing with success and failure.  You can
+    pass callbacks to the `start` method, to be called when these events
+    occur.
 
     As yet there is no facility for feeding input to the processes.
     """
@@ -75,7 +85,11 @@ class CommandSpawner:
               completion_handler=None):
         """Run `command` in a sub-process.
 
-        :param command: A command line to execute in a sub-process.  May be
+        This starts the command, but does not wait for it to complete.
+        Instead of waiting for completion, you can pass handlers that
+        will be called when certain events occur.
+
+        :param command: Command line to execute in a sub-process.  May be
             either a string (for a single executable name) or a list of
             strings (for an executable name plus arguments).
         :param stdout_handler: Callback to handle output received from the
@@ -162,14 +176,12 @@ class CommandSpawner:
 
     def _service(self, process, events_by_fd):
         """Service `process`."""
-        stdout = process.stdout
-        stderr = process.stderr
-        stdout_events = events_by_fd.get(stdout.fileno(), 0)
-        stderr_events = events_by_fd.get(stderr.fileno(), 0)
+        stdout_events = events_by_fd.get(process.stdout.fileno(), 0)
+        stderr_events = events_by_fd.get(process.stderr.fileno(), 0)
         if has_pending_output(stdout_events):
-            self._read(process, stdout, STDOUT)
+            self._read(process, process.stdout, STDOUT)
         if has_pending_output(stderr_events):
-            self._read(process, stderr, STDERR)
+            self._read(process, process.stderr, STDERR)
         if has_terminated(stdout_events):
             process.wait()
 
