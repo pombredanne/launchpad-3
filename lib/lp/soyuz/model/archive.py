@@ -80,8 +80,8 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
+    OPEN_TEAM_POLICY,
     PersonVisibility,
-    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -1704,7 +1704,7 @@ class Archive(SQLBase):
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if person.isTeam() and (
-            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
             return (
