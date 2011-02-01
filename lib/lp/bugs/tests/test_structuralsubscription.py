@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -26,6 +27,37 @@ class TestStructuralSubscription(TestCaseWithFactory):
         with person_logged_in(self.product.owner):
             self.subscription = self.product.addSubscription(
                 self.product.owner, self.product.owner)
+
+    def test_delete_requires_Edit_permission(self):
+        # delete() is only available to the subscriber.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, lambda: self.subscription.delete)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, lambda: self.subscription.delete)
+
+    def test_simple_delete(self):
+        with person_logged_in(self.product.owner):
+            self.subscription.delete()
+            self.assertEqual(
+                self.product.getSubscription(self.product.owner), None)
+
+    def test_delete_cascades_to_filters(self):
+        with person_logged_in(self.product.owner):
+            subscription_id = self.subscription.id
+            self.subscription.newBugFilter()
+            self.subscription.delete()
+            self.assertEqual(
+                self.product.getSubscription(self.product.owner), None)
+            store = Store.of(self.product)
+            # The original delete fails if it does not remove the
+            # filter first, but this is a nice double-check.
+            self.assertEqual(
+                store.find(
+                    BugSubscriptionFilter,
+                    BugSubscriptionFilter.structural_subscription_id ==
+                        subscription_id
+                    ).one(),
+                None)
 
     def test_bug_filters_empty(self):
         # The bug_filters attribute is empty to begin with.

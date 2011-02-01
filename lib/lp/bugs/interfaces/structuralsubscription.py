@@ -21,6 +21,7 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     export_read_operation,
     export_write_operation,
@@ -98,6 +99,10 @@ class IStructuralSubscriptionRestricted(Interface):
     @export_factory_operation(Interface, [])
     def newBugFilter():
         """Returns a new `BugSubscriptionFilter` for this subscription."""
+
+    @export_destructor_operation()
+    def delete():
+        """Delete this structural subscription filter."""
 
 
 class IStructuralSubscription(
