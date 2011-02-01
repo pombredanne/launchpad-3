@@ -432,12 +432,20 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
 
+    def reindexMessages(self):
+        """See `IBug`."""
+        indexed_messages = self._indexed_messages(include_bugmessage=True)
+        for indexed_message, bugmessage in indexed_messages:
+            if bugmessage.index != indexed_message.index: 
+                bugmessage.index = indexed_message.index
+
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=True):
+    def _indexed_messages(self, include_content=False, include_parents=True,
+        include_bugmessage=False):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
@@ -445,12 +453,14 @@ class Bug(SQLBase):
         :param include_parents: If True retrieve the object for parent
             messages too. If False the parent attribute will be *forced* to
             None to reduce database lookups.
+        :param include_bugmessage: If True returns tuples (message,
+            bugmessage). This exists for the indexMessages API.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        if include_parents:
+        if include_parents or include_bugmessage:
             to_messages = lambda rows: [row[0] for row in rows]
         else:
             to_messages = lambda rows: rows
@@ -495,18 +505,26 @@ class Bug(SQLBase):
         def index_message(row, index):
             # convert row to an IndexedMessage
             if include_parents:
-                message, parent = row
+                if include_bugmessage:
+                    message, parent, bugmessage = row
+                else:
+                    message, parent = row
                 if parent is not None:
                     # If there is an IndexedMessage available as parent, use
                     # that to reduce on-demand parent lookups.
                     parent = message_by_id.get(parent.id, parent)
             else:
-                message = row
+                if include_bugmessage:
+                    message, bugmessage = row
+                else:
+                    message = row
                 parent = None # parent attribute is not going to be accessed.
             result = IndexedMessage(message, inside, index, parent)
             # This message may be the parent for another: stash it to permit
             # use.
             message_by_id[message.id] = result
+            if include_bugmessage:
+                result = result, bugmessage
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
@@ -519,13 +537,19 @@ message as parent_message on (
     parent_message.id in (
         select bugmessage.message from bugmessage where bugmessage.bug=%s)),
 BugMessage""" % sqlvalues(self.id))
+            lookup = Message, ParentMessage
+            if include_bugmessage:
+                lookup = lookup + (BugMessage,)
             results = store.using(tables).find(
-                (Message, ParentMessage),
+                lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
         else:
-            results = store.find(Message,
+            lookup = Message
+            if include_bugmessage:
+                lookup = lookup, BugMessage
+            results = store.find(lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
