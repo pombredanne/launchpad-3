@@ -14,6 +14,7 @@ from storm.expr import (
     NamedFunc,
     )
 
+
 # XXX wallyworld 2011-01-31 bug=710466:
 # We need to use a Postgres greatest() function call but Storm doesn't
 # support that yet.
@@ -38,4 +39,3 @@ def compile_countdistinct(compile, countselect, state):
     col = compile(countselect.columns)
     state.pop()
     return "count(distinct(%s))" % col
-
