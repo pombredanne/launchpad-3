@@ -460,8 +460,6 @@ class SearchTestBase:
             user=None, linked_blueprints=(
                 BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS))
         self.assertSearchFinds(params, self.bugtasks[1:])
-        params = self.getBugTaskSearchParams(user=None)
-        self.assertSearchFinds(params, self.bugtasks)
 
     def test_limit_search_to_one_bug(self):
         # Search results can be limited to a given bug.

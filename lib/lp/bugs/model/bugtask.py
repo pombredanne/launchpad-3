@@ -2325,13 +2325,12 @@ class BugTaskSet:
 
     def _buildBlueprintRelatedClause(self, params):
         """Find bugs related to Blueprints, or not."""
-        if params.linked_blueprints == (
-            BugBlueprintSearch.BUGS_WITH_BLUEPRINTS):
+        linked_blueprints = params.linked_blueprints
+        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
             return "EXISTS (%s)" % (
                 "SELECT 1 FROM SpecificationBug"
                 " WHERE SpecificationBug.bug = Bug.id")
-        elif params.linked_blueprints == (
-            BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
+        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
             return "NOT EXISTS (%s)" % (
                 "SELECT 1 FROM SpecificationBug"
                 " WHERE SpecificationBug.bug = Bug.id")
