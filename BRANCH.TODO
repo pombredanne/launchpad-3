@@ -3,33 +3,3 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-Publisher is in lib/lp/archivepublisher/publishing.py.  Timeout in one of:
- * Publisher.C_doFTPArchive
-  - FTPArchiveHandler.run
-   - FTPArchiveHandler.createEmptyPocketRequests
-   - FTPArchiveHandler.generateOverrides
-   - FTPArchiveHandler.generateFileLists
-    - FTPArchiveHandler.getSourceFiles
-    - FTPArchiveHandler.getBinaryFiles
-    - FTPArchiveHandler.publishFileLists
-     - Iterates over all packages
-     - Uses process_in_batches but PublishingTunableLoop does not commit
-   - FTPArchiveHandler.runApt
-    - Runs apt-ftparchive --no-contents generate <apt-config-filename>
-
-According to wgrant, apt-ftparchive takes 15 minutes, and publishFileLists
-uses only a few minutes.
-
-Parallel runs could take care of one architecture each, plus one for source.
-Question: footprint?  Would it blow up a server?
-
-Generating file lists takes hours on dogfood, but that's probably a memory
-problem and there's not much we can do about it.
-
-We probably want to avoid use of BinaryPackageFilePublishing.
- * Try to slice before joining as much as possible.
- * The sliced query is ordered by id, which is a string computed from multiple
-   tables in the join!  Use multi-column ordering instead.
- * Ordering is only needed for consistency across slicing.  Minimize it.
-  - Beware: one LFA may occur in multiple rows.
-  - One SPPH may occur with multiple LFAs.
