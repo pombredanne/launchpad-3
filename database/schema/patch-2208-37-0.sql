@@ -9,4 +9,4 @@ ALTER TABLE BugSubscriptionFilter
         integer DEFAULT 40 NOT NULL;
 CREATE INDEX bugsubscriptionfilter__bug_notification_level__idx ON bugsubscriptionfilter USING btree (bug_notification_level);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 37, 0);
