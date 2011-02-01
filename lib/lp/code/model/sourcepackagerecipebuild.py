@@ -334,6 +334,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         """See `IPackageBuild`."""
         d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
+
         def uploaded_build(ignored):
             # Base implementation doesn't notify on success.
             if self.status == BuildStatus.FULLYBUILT:
