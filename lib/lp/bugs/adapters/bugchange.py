@@ -733,24 +733,25 @@ class BugTaskStatusChange(BugTaskAttributeChange):
 
     @property
     def change_level(self):
-        """If bug is closed, it's a LIFECYCLE change."""
+        """See `IBugChange`."""
+        # Bug is moving from one of unresolved bug statuses (like
+        # 'in progress') to one of resolved ('fix released').
         bug_is_closed = (self.old_value in UNRESOLVED_BUGTASK_STATUSES and
                          self.new_value in RESOLVED_BUGTASK_STATUSES)
+
+        # Bug is moving back from one of resolved bug statuses (reopening).
         bug_is_reopened = (self.old_value in RESOLVED_BUGTASK_STATUSES and
                            self.new_value in UNRESOLVED_BUGTASK_STATUSES)
+
         # When bug task is put into INCOMPLETE status, and subscriber
         # is the person who originally reported the bug, we still notify
         # them because bug now depends on their input.
         subscriber_is_asked_for_info = (
             self.new_value == BugTaskStatus.INCOMPLETE and
             self.bug_task.bug.owner == self.person)
+
         if (bug_is_closed or bug_is_reopened or
             subscriber_is_asked_for_info):
-            # If bugs are moving from one of unresolved bug statuses
-            # (like 'in progress') to one of resolved ('fix released'),
-            # or if they are moving back from one one of resolved
-            # to one of unresolved (re-opening a bug), then we consider
-            # it a lifecycle change.
             return BugNotificationLevel.LIFECYCLE
         return BugNotificationLevel.METADATA
 
