@@ -30,6 +30,11 @@ class TestStructuralSubscription(TestCaseWithFactory):
 
     def test_delete_requires_Edit_permission(self):
         # delete() is only available to the subscriber.
+        # We use a lambda here because a security proxy around
+        # self.subscription is giving us the behavior we want to
+        # demonstrate.  Merely accessing the "delete" name raises
+        # Unauthorized, before the method is even called.  Therefore,
+        # we use a lambda to make the trigger happen within "assertRaises".
         with anonymous_logged_in():
             self.assertRaises(Unauthorized, lambda: self.subscription.delete)
         with person_logged_in(self.factory.makePerson()):
@@ -49,8 +54,10 @@ class TestStructuralSubscription(TestCaseWithFactory):
             self.assertEqual(
                 self.product.getSubscription(self.product.owner), None)
             store = Store.of(self.product)
-            # The original delete fails if it does not remove the
-            # filter first, but this is a nice double-check.
+            # We know that the filter is gone, because we know the
+            # subscription is gone, and the database would have
+            # prevented the deletion of a subscription without first
+            # deleting the filters.  We'll double-check, to be sure.
             self.assertEqual(
                 store.find(
                     BugSubscriptionFilter,
