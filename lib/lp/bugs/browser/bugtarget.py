@@ -505,7 +505,8 @@ class FileBugViewBase(LaunchpadFormView):
             private = False
 
         linkified_ack = structured(FormattersAPI(
-            self.getAcknowledgementMessage(self.context)).text_to_html())
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
         notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
