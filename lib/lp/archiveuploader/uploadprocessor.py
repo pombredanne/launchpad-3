@@ -645,8 +645,11 @@ class BuildUploadHandler(UploadHandler):
             return
         try:
             # The recipe may have been deleted so we need to flag that here
-            # and will handle below.
-            if self.build.recipe is None:
+            # and will handle below. We check so that we don't go the the
+            # expense of doing an unnecessary upload. We don't just exit here
+            # because we want the cleanup to occur.
+            recipe_deleted = self.build.recipe is None
+            if recipe_deleted:
                 result = UploadStatusEnum.FAILED
             else:
                 self.processor.log.debug("Build %s found" % self.build.id)
@@ -669,7 +672,9 @@ class BuildUploadHandler(UploadHandler):
             not self.build.verifySuccessfulUpload()):
             self.build.status = BuildStatus.FAILEDTOUPLOAD
         if self.build.status != BuildStatus.FULLYBUILT:
-            if self.build.recipe is None:
+            if recipe_deleted:
+                # For a deleted recipe, no need to notify that uploading has
+                # failed - we just log a warning.
                 self.processor.log.warn(
                     "Recipe for build %s was deleted. Ignoring." %
                     self.upload)
