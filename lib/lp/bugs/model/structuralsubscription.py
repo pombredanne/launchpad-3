@@ -419,7 +419,8 @@ class StructuralSubscriptionTargetMixin:
             raise DeleteSubscriptionError(
                 "%s is not subscribed to %s." % (
                 subscriber.name, self.displayname))
-        # XXX Delete all associated filters.
+        # XXX gary 2011-02-01 bug=711362
+        # We should delete all associated filters.
         store = Store.of(subscription_to_remove)
         store.remove(subscription_to_remove)
 

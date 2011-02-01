@@ -119,7 +119,7 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
         """Set up fields for form.
 
         Overrides the usual implementation to also set up bug notification."""
-        LaunchpadEditFormView.setUpFields(self)
+        super(BugSubscriptionFilterEditViewBase, self).setUpFields()
         self._setUpBugNotificationLevelField()
 
     @property
