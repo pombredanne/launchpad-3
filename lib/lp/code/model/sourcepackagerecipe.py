@@ -199,7 +199,7 @@ class SourcePackageRecipe(Storm):
             SourcePackageRecipe,
             And(SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id,
                 SourcePackageRecipe.daily_build_archive_id ==
-                PackageBuild.archive_id))
+                    PackageBuild.archive_id))
         return IStore(cls).using(joins).find(
             cls, cls.is_stale == True, cls.build_daily == True,
             BuildFarmJob.date_created == None).config(distinct=True)
