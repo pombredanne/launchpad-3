@@ -168,8 +168,8 @@ class CommandSpawner:
             output = pipe_file.read()
         except IOError, e:
             if e.errno != errno.EAGAIN:
-                # "Resource temporarily unavailable"--not an error for a
-                # nonblocking socket, just nothing to read.
+                # "Resource temporarily unavailable"--not an error
+                # really, just means there's nothing to read.
                 raise
         else:
             if len(output) > 0:
