@@ -20,13 +20,13 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.enum import BugNotificationLevel
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing import person_logged_in
 

@@ -12,12 +12,12 @@ from zope.security.proxy import ProxyFactory
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
-from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     anonymous_logged_in,
     login_person,

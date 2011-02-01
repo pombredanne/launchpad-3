@@ -97,6 +97,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -131,7 +132,6 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1422,7 +1422,7 @@ def _build_tag_set_query_any(tags):
     if tags == []:
         return None
     return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
+        "BugTag.bug = Bug.id AND BugTag.tag IN %s)"
         % sqlvalues(sorted(tags)))
 
 

@@ -21,14 +21,14 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionNavigation,
+    )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.browser.structuralsubscription import (
-    StructuralSubscriptionNavigation,
-    )
-from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
     set_feature_flag,

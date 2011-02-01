@@ -20,8 +20,8 @@ from zope.interface import implements
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
-from lp.registry.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
     )

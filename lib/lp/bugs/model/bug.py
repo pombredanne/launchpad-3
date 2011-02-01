@@ -121,6 +121,7 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -167,7 +168,6 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

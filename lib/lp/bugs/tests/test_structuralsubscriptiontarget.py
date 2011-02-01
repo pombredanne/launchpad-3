@@ -27,6 +27,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -38,7 +39,6 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,

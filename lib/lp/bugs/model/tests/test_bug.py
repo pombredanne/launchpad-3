@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     login_person,

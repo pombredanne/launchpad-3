@@ -25,6 +25,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -47,7 +48,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
