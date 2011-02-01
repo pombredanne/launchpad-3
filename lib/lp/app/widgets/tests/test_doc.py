@@ -20,7 +20,13 @@ from lp.services.testing import build_test_suite
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-special = {}
+special = {
+    'image-widget.txt': LayeredDocFileSuite(
+        '../doc/image-widget.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    }
 
 
 def test_suite():
