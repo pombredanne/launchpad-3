@@ -350,13 +350,6 @@ class BugBranchSearch(EnumeratedType):
     BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
-# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
-# semantics of our current reports would break if it were added to the
-# list below.
-
-# XXX: matsubara 2006-02-02 bug=4201:
-# I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
