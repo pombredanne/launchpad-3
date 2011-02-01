@@ -176,7 +176,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
         self.assertEquals(BugNotificationLevel.METADATA,
                           change.change_level)
 
-    def test_change_level_metadata_duplicate_of_resolved(self):
+    def test_change_level_lifecycle_duplicate_of_resolved(self):
         # Marking a bug as a duplicate of a resolved bug is
         # a BugNotificationLevel.LIFECYCLE change.
         duplicate_of = self.factory.makeBug()
@@ -186,6 +186,36 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             user=self.bug.owner,
             duplicateof={'old': None,
                          'new': duplicate_of})
+
+        change = list(get_bug_changes(bug_delta))[0]
+        self.assertEquals(BugNotificationLevel.LIFECYCLE,
+                          change.change_level)
+
+    def test_change_level_metadata_not_duplicate_of_unresolved(self):
+        # Un-marking a bug as a duplicate of an unresolved bug is a
+        # simple BugNotificationLevel.METADATA change.
+        duplicate_of = self.factory.makeBug()
+        duplicate_of.default_bugtask.transitionToStatus(
+            BugTaskStatus.NEW, self.user)
+        bug_delta = self.createDelta(
+            user=self.bug.owner,
+            duplicateof={'new': None,
+                         'old': duplicate_of})
+
+        change = list(get_bug_changes(bug_delta))[0]
+        self.assertEquals(BugNotificationLevel.METADATA,
+                          change.change_level)
+
+    def test_change_level_lifecycle_not_duplicate_of_resolved(self):
+        # Un-marking a bug as a duplicate of a resolved bug is
+        # a BugNotificationLevel.LIFECYCLE change.
+        duplicate_of = self.factory.makeBug()
+        duplicate_of.default_bugtask.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, self.user)
+        bug_delta = self.createDelta(
+            user=self.bug.owner,
+            duplicateof={'new': None,
+                         'old': duplicate_of})
 
         change = list(get_bug_changes(bug_delta))[0]
         self.assertEquals(BugNotificationLevel.LIFECYCLE,

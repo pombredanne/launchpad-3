@@ -379,8 +379,14 @@ class BugDuplicateChange(AttributeChange):
             # old_bug is None here, so we are just adding a duplicate marker.
             lifecycle = (new_bug.default_bugtask.status in
                          RESOLVED_BUGTASK_STATUSES)
+        elif old_bug is not None:
+            # Unmarking a bug as duplicate.  This is lifecycle change
+            # only if bug has been reopened as a result.
+            lifecycle = (old_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
         else:
             pass
+
         if lifecycle:
             return BugNotificationLevel.LIFECYCLE
         else:
