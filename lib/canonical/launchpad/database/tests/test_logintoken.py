@@ -72,8 +72,10 @@ class TestLoginToken(TestCaseWithFactory):
             expected_message, doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
         def _send_email(from_name, subject, message):
-            self.assertEqual("Launchpad Account Merge", from_name)
-            self.assertEqual("Launchpad: Merge of Accounts Requested", subject)
+            self.assertEqual(
+                "Launchpad Account Merge", from_name)
+            self.assertEqual(
+                "Launchpad: Merge of Accounts Requested", subject)
             self.assertThat(message, expected_matcher)
 
         # Patch our custom _send_email onto the login token.
