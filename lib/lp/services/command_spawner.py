@@ -10,6 +10,7 @@ __all__ = [
     'ReturnCodeReceiver',
     ]
 
+import errno
 from fcntl import (
     fcntl,
     F_GETFL,
@@ -166,9 +167,9 @@ class CommandSpawner:
         try:
             output = pipe_file.read()
         except IOError, e:
-            # "Resource temporarily unavailable"--not an error for a
-            # nonblocking socket, just nothing to read.
-            if e.errno != 11:
+            if e.errno != errno.EAGAIN:
+                # "Resource temporarily unavailable"--not an error for a
+                # nonblocking socket, just nothing to read.
                 raise
         else:
             if len(output) > 0:
