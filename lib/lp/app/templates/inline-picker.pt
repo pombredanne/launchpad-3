@@ -20,7 +20,7 @@ LPS.use('lp.app.picker', function(Y) {
         ${view/json_resource_uri},
         ${view/json_attribute},
         ${view/json_content_box_id},
-        ${view/config});
+        ${view/json_config});
       }, window);
 });
 "/>
