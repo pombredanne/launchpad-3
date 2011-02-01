@@ -225,33 +225,39 @@ class TestCommandSpawnerAcceptance(TestCase):
      * Don't hold up the test suite with slow commands.
     """
 
-    def test_command_can_be_string(self):
+    def _makeSpawner(self):
+        """Create a `CommandSpawner`, and make sure it gets cleaned up."""
         spawner = CommandSpawner()
+        self.addCleanup(spawner.complete)
+        self.addCleanup(spawner.kill)
+        return spawner
+
+    def test_command_can_be_string(self):
+        spawner = self._makeSpawner()
         spawner.start("/bin/pwd")
         spawner.complete()
 
     def test_command_can_be_list(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         spawner.start(["/bin/pwd"])
         spawner.complete()
 
     def test_calls_stdout_handler(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         stdout_handler = AcceptOutput()
         spawner.start(["echo", "hi"], stdout_handler=stdout_handler)
         spawner.complete()
         self.assertEqual("hi\n", stdout_handler.output)
 
     def test_calls_completion_handler(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         completion_handler = ReturnCodeReceiver()
         spawner.start("/bin/true", completion_handler=completion_handler)
         spawner.complete()
         self.assertEqual(0, completion_handler.returncode)
 
     def test_communicate_returns_after_event(self):
-        spawner = CommandSpawner()
-        self.addCleanup(spawner.kill)
+        spawner = self._makeSpawner()
         before = datetime.now(utc)
         spawner.start(["/bin/sleep", "10"])
         spawner.start("/bin/pwd")
@@ -260,7 +266,7 @@ class TestCommandSpawnerAcceptance(TestCase):
         self.assertThat(after - before, LessThan(timedelta(seconds=10)))
 
     def test_kill_terminates_processes(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         spawner.start(["/bin/sleep", "10"])
         spawner.start(["/bin/sleep", "10"])
         before = datetime.now(utc)
@@ -270,15 +276,14 @@ class TestCommandSpawnerAcceptance(TestCase):
         self.assertThat(after - before, LessThan(timedelta(seconds=10)))
 
     def test_start_does_not_block(self):
-        spawner = CommandSpawner()
-        self.addCleanup(spawner.kill)
+        spawner = self._makeSpawner()
         before = datetime.now(utc)
         spawner.start(["/bin/sleep", "10"])
         after = datetime.now(utc)
         self.assertThat(after - before, LessThan(timedelta(seconds=10)))
 
     def test_subprocesses_run_in_parallel(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
 
         processes = 10
         seconds = 0.2
@@ -293,14 +298,14 @@ class TestCommandSpawnerAcceptance(TestCase):
         self.assertThat(after - before, LessThan(sequential_time))
 
     def test_integrates_with_outputlinehandler(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         handler = OutputLineHandler(FakeMethod())
         spawner.start(["echo", "hello"], stdout_handler=handler)
         spawner.complete()
         self.assertEqual([("hello", )], handler.line_processor.extract_args())
 
     def test_integrates_with_returncodereceiver(self):
-        spawner = CommandSpawner()
+        spawner = self._makeSpawner()
         handler = ReturnCodeReceiver()
         spawner.start("/bin/true", completion_handler=handler)
         spawner.complete()
