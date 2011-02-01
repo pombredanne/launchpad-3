@@ -193,9 +193,6 @@ class BugConvertedToQuestion(BugChangeBase):
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
-    # A bug is "created" on a different target.
-    change_level = BugNotificationLevel.LIFECYCLE
-
     def __init__(self, when, person, bug_task):
         super(BugTaskAdded, self).__init__(when, person)
         self.bug_task = bug_task
@@ -737,10 +734,18 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     @property
     def change_level(self):
         """If bug is closed, it's a LIFECYCLE change."""
-        if ((self.old_value in UNRESOLVED_BUGTASK_STATUSES and
-             self.new_value in RESOLVED_BUGTASK_STATUSES) or
-            (self.old_value in RESOLVED_BUGTASK_STATUSES and
-             self.new_value in UNRESOLVED_BUGTASK_STATUSES)):
+        bug_is_closed = (self.old_value in UNRESOLVED_BUGTASK_STATUSES and
+                         self.new_value in RESOLVED_BUGTASK_STATUSES)
+        bug_is_reopened = (self.old_value in RESOLVED_BUGTASK_STATUSES and
+                           self.new_value in UNRESOLVED_BUGTASK_STATUSES)
+        # When bug task is put into INCOMPLETE status, and subscriber
+        # is the person who originally reported the bug, we still notify
+        # them because bug now depends on their input.
+        subscriber_is_asked_for_info = (
+            self.new_value == BugTaskStatus.INCOMPLETE and
+            self.bug_task.bug.owner == self.person)
+        if (bug_is_closed or bug_is_reopened or
+            subscriber_is_asked_for_info):
             # If bugs are moving from one of unresolved bug statuses
             # (like 'in progress') to one of resolved ('fix released'),
             # or if they are moving back from one one of resolved
