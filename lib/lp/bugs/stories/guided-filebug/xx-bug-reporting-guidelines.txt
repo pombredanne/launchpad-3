@@ -97,7 +97,7 @@ description.
     See http://example.com for more details.
     Thank you for filing a bug for https://launchpad.dev/ubuntu/+source/alsa-utils
 
-URLS are linkified.
+URLs are linkified.
 
     >>> print find_tags_by_class(
     ...     user_browser.contents, 'informational message')[0]
