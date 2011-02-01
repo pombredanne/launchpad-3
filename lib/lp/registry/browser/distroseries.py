@@ -59,7 +59,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,

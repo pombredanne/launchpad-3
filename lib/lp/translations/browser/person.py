@@ -34,7 +34,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets import LaunchpadRadioWidget
+from lp.app.widgets import LaunchpadRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

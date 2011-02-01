@@ -42,7 +42,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-from canonical.widgets import HiddenUserWidget
+from lp.app.widgets import HiddenUserWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

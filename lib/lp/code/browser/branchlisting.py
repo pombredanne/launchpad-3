@@ -80,7 +80,7 @@ from canonical.launchpad.webapp.badge import (
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.widgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,

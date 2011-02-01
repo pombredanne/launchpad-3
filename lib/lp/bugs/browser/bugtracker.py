@@ -59,7 +59,7 @@ from canonical.launchpad.webapp.batching import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
+from lp.app.widgets import (
     DelimitedListWidget,
     LaunchpadRadioWidget,
     )

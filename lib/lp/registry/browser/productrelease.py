@@ -44,7 +44,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.lazr.utils import smartquote
-from canonical.widgets import DateTimeWidget
+from lp.app.widgets import DateTimeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

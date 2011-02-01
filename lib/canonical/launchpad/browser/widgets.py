@@ -33,7 +33,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import BranchFormatterAPI
-from canonical.widgets import StrippedTextWidget
+from lp.app.widgets import StrippedTextWidget
 from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch

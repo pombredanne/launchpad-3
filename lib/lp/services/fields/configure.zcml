@@ -86,7 +86,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.FormattableDate"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.DateWidget"
+        factory="lp.app.widgets.date.DateWidget"
         permission="zope.Public"
         />
 </configure>

@@ -3,7 +3,7 @@ The CheckBox Matrix Widget
 
 A custom widget to display checkboxes in multiple columns.
 
-    >>> from canonical.widgets import CheckBoxMatrixWidget
+    >>> from lp.app.widgets import CheckBoxMatrixWidget
 
 This widget is created to allow many options to be displayed in a single
 page.

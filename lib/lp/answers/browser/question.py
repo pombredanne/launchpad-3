@@ -80,7 +80,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
+from lp.app.widgets import (
     LaunchpadRadioWidget,
     TokensTextWidget,
     )

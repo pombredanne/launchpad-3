@@ -57,7 +57,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.widgets import (
+from lp.app.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )

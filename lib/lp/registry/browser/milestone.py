@@ -47,7 +47,7 @@ from canonical.launchpad.webapp.menu import (
     Link,
     NavigationMenu,
     )
-from canonical.widgets import DateWidget
+from lp.app.widgets import DateWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

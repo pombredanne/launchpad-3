@@ -8,7 +8,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="zope.schema.interfaces.IDatetime"
         provides="zope.app.form.interfaces.IDisplayWidget"
-        factory="canonical.widgets.date.DatetimeDisplayWidget"
+        factory="lp.app.widgets.date.DatetimeDisplayWidget"
         permission="zope.Public"
         />
 

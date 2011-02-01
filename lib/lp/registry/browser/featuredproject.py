@@ -20,7 +20,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

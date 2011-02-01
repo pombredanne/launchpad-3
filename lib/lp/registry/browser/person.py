@@ -205,7 +205,7 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
+from lp.app.widgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
