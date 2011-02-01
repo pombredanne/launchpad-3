@@ -5,13 +5,7 @@
 
 __metaclass__ = type
 
-import unittest
-
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
+from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.adapters.bugchange import (
@@ -22,19 +16,15 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.registry.enum import BugNotificationLevel
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 
 
-class BugChangeTestCase(unittest.TestCase):
+class BugChangeTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        login(ANONYMOUS)
-        self.factory = LaunchpadObjectFactory()
-
-    def tearDown(self):
-        logout()
+        super(BugChangeTestCase, self).setUp(ANONYMOUS)
 
     def test_get_bug_change_class(self):
         # get_bug_change_class() should return whatever is contained
@@ -48,6 +38,14 @@ class BugChangeTestCase(unittest.TestCase):
                 expected, received,
                 "Expected %s from get_bug_change_class() for field name %s. "
                 "Got %s." % (expected, field_name, received))
+
+
+class BugChangeLevelTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugChangeLevelTestCase, self).setUp(ANONYMOUS)
 
     def test_get_bug_changes_change_level(self):
         # get_bug_changes() returns all bug changes for a certain
@@ -66,7 +64,3 @@ class BugChangeTestCase(unittest.TestCase):
         self.assertTrue(isinstance(changes[0], BugDescriptionChange))
         self.assertEquals(BugNotificationLevel.METADATA,
                           changes[0].change_level)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
