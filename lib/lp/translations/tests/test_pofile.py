@@ -1855,12 +1855,11 @@ class TestPOFile(TestCaseWithFactory):
 
     def _createMessageSet(self, testmsg):
         # Create a message set from the test data.
-        pomsgset = self.factory.makePOTMsgSet(
+        potmsgset = self.factory.makePOTMsgSet(
             self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
-        pomsgset.updateTranslation(
-            self.pofile, self.pofile.owner,
-            {0: testmsg['string'], },
-            True, None, force_edition_rights=True)
+        translation = self.factory.makeCurrentTranslationMessage(
+            self.pofile, potmsgset=potmsgset, translator=self.pofile.owner,
+            translations={0: testmsg['string'], }, current_other=True)
 
     def test_getTranslationRows_sequence(self):
         # Test for correct sorting of obsolete messages (where sequence=0).

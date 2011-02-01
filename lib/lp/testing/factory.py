@@ -2567,35 +2567,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return pofile, potmsgset
 
-    def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, suggestion=False,
-                               reviewer=None, translations=None,
-                               lock_timestamp=None, date_updated=None,
-                               is_current_upstream=False, force_shared=False,
-                               force_diverged=False):
-        """Make a new `TranslationMessage` in the given PO file."""
-        if pofile is None:
-            pofile = self.makePOFile('sr')
-        if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
-        if translator is None:
-            translator = self.makePerson()
-        if translations is None:
-            translations = [self.getUniqueString()]
-        translation_message = potmsgset.updateTranslation(
-            pofile, translator, translations,
-            is_current_upstream=is_current_upstream,
-            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
-            force_shared=force_shared, force_diverged=force_diverged)
-        if date_updated is not None:
-            naked_translation_message = removeSecurityProxy(
-                translation_message)
-            naked_translation_message.date_created = date_updated
-            if translation_message.reviewer is not None:
-                naked_translation_message.date_reviewed = date_updated
-            naked_translation_message.sync()
-        return translation_message
-
     def makeTranslationsDict(self, translations=None):
         """Make sure translations are stored in a dict, e.g. {0: "foo"}.
 
@@ -2632,30 +2603,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
-    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
-                                     translator=None, suggestion=False,
-                                     reviewer=None, translations=None,
-                                     date_updated=None,
-                                     is_current_upstream=False):
-        translation_message = self.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, translator=translator,
-            suggestion=suggestion, reviewer=reviewer,
-            is_current_upstream=is_current_upstream,
-            translations=translations, date_updated=date_updated,
-            force_shared=True)
-        return translation_message
-
     def makeCurrentTranslationMessage(self, pofile=None, potmsgset=None,
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None):
         """Create a `TranslationMessage` and make it current.
-
-        This is similar to `makeTranslationMessage`, except:
-         * It doesn't create suggestions.
-         * It doesn't rely on the obsolescent updateTranslation.
-         * It activates the message on the correct translation side.
 
         By default the message will only be current on the side (Ubuntu
         or upstream) that `pofile` is on.
@@ -2727,34 +2680,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pofile=pofile, potmsgset=potmsgset, translator=translator,
             translations=translations, date_created=date_created)
         return message.approveAsDiverged(pofile, reviewer)
-
-    def makeTranslation(self, pofile, sequence,
-                        english=None, translated=None,
-                        is_current_upstream=False):
-        """Add a single current translation entry to the given pofile.
-        This should only be used on pristine pofiles with pristine
-        potemplates to avoid conflicts in the sequence numbers.
-        For each entry a new POTMsgSet is created.
-
-        :pofile: The pofile to add to.
-        :sequence: The sequence number for the POTMsgSet.
-        :english: The english string which becomes the msgid in the POTMsgSet.
-        :translated: The translated string which becomes the msgstr.
-        :is_current_upstream: The is_current_upstream flag of the
-            translation message.
-        """
-        if english is None:
-            english = self.getUniqueString('english')
-        if translated is None:
-            translated = self.getUniqueString('translated')
-        naked_pofile = removeSecurityProxy(pofile)
-        potmsgset = self.makePOTMsgSet(naked_pofile.potemplate, english,
-            sequence=sequence)
-        translation = removeSecurityProxy(
-            self.makeTranslationMessage(naked_pofile, potmsgset,
-                translations=[translated]))
-        translation.is_current_upstream = is_current_upstream
-        translation.is_current_ubuntu = True
 
     def makeTranslationImportQueueEntry(self, path=None, productseries=None,
                                         distroseries=None,

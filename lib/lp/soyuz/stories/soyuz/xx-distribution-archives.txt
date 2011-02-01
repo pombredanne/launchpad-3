@@ -199,8 +199,9 @@ it and the 'disabled' styling is gone.
     Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
 
     >>> main_content = find_main_content(nopriv_browser.contents)
-    >>> print main_content.h1
-    <h1 id="displayname">...</h1>
+    >>> print main_content.h1['class']
+    Traceback (most recent call last):
+    KeyError: 'class'
 
     >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
     None
