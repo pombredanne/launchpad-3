@@ -133,10 +133,8 @@ class FTPArchiveHandler:
         # XXX JeroenVermeulen 2011-02-01 bug=181368: Run parallel
         # apt-ftparchive processes for the various architectures (plus
         # source).
-        # XXX JeroenVermeulen 2011-02-01: Log stderr as warning, not
-        # debug.
         stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
-        stderr_handler = OutputLineHandler(self.log.debug, "a-f: ")
+        stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
         completion_handler = ReturnCodeReceiver()
         command = [
             "apt-ftparchive",
@@ -149,6 +147,7 @@ class FTPArchiveHandler:
             command, stdout_handler=stdout_handler,
             stderr_handler=stderr_handler,
             completion_handler=completion_handler)
+        spawner.complete()
         stdout_handler.finalize()
         stderr_handler.finalize()
         if completion_handler.returncode != 0:
