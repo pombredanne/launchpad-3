@@ -643,11 +643,14 @@ class BuildUploadHandler(UploadHandler):
                 "Expected build status to be 'UPLOADING', was %s. Ignoring." %
                 self.build.status.name)
             return
-        self.processor.log.debug("Build %s found" % self.build.id)
         try:
-            [changes_file] = self.locateChangesFiles()
-            logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(changes_file, logger)
+            if self.build.recipe is None:
+                result = UploadStatusEnum.FAILED
+            else:
+                self.processor.log.debug("Build %s found" % self.build.id)
+                [changes_file] = self.locateChangesFiles()
+                logger.debug("Considering changefile %s" % changes_file)
+                result = self.processChangesFile(changes_file, logger)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -664,9 +667,14 @@ class BuildUploadHandler(UploadHandler):
             not self.build.verifySuccessfulUpload()):
             self.build.status = BuildStatus.FAILEDTOUPLOAD
         if self.build.status != BuildStatus.FULLYBUILT:
-            self.build.storeUploadLog(logger.getLogBuffer())
-            self.build.notify(extra_info="Uploading build %s failed." %
-                              self.upload)
+            if self.build.recipe is None:
+                self.processor.log.warn(
+                    "Recipe for build %s was deleted. Ignoring." %
+                    self.upload)
+            else:
+                self.build.storeUploadLog(logger.getLogBuffer())
+                self.build.notify(extra_info="Uploading build %s failed." %
+                                  self.upload)
         else:
             self.build.notify()
         self.processor.ztm.commit()
