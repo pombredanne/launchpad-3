@@ -45,21 +45,25 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(BugChangeLevelTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.user = self.factory.makePerson()
 
-    def test_get_bug_changes_change_level(self):
+    def createDelta(self, **kwargs):
+        return BugDelta(
+            bug=self.bug,
+            bugurl=canonical_url(self.bug),
+            user=self.user,
+            **kwargs)
+
+    def test_change_level_metadata(self):
         # get_bug_changes() returns all bug changes for a certain
-        # BugDelta, and change_type is usually METADATA.
-        bug = self.factory.makeBug()
-        user = self.factory.makePerson()
-        old_description = bug.description
-        bug_delta = BugDelta(
-            bug=bug,
-            bugurl=canonical_url(bug),
-            user=user,
-            description={'new': bug.description,
-                         'old': old_description})
+        # BugDelta. For changes like description change,
+        # change_type is BugNotificationLevel.METADATA.
+        bug_delta = self.createDelta(
+            description={'new': 'new description',
+                         'old': self.bug.description})
 
-        changes = list(get_bug_changes(bug_delta))
-        self.assertTrue(isinstance(changes[0], BugDescriptionChange))
+        change = yield get_bug_changes(bug_delta)
+        self.assertTrue(isinstance(change, BugDescriptionChange))
         self.assertEquals(BugNotificationLevel.METADATA,
-                          changes[0].change_level)
+                          change.change_level)
