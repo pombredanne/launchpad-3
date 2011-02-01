@@ -2,9 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-from select import select
 from StringIO import StringIO
-import subprocess
 
 from storm.expr import (
     Desc,
@@ -24,6 +22,11 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.command_spawner import (
+    CommandSpawner,
+    OutputLineHandler,
+    ReturnCodeReceiver,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
@@ -44,49 +47,6 @@ def safe_mkdir(path):
     """Ensures the path exists, creating it if it doesn't."""
     if not os.path.exists(path):
         os.makedirs(path, 0755)
-
-
-# XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
-# timeout handling and stderr passthrough, could be a single method used for
-# this and the similar requirement in test_on_merge.py.
-
-def run_subprocess_with_logging(process_and_args, log, prefix):
-    """Run a subprocess, gathering the output as it runs and logging it.
-
-    process_and_args is a list containing the process to run and the
-    arguments for it, just as passed in the first argument to
-    subprocess.Popen.
-
-    log is a logger to pass the output we gather.
-
-    prefix is a prefix to attach to each line of output when we log it.
-    """
-    proc = subprocess.Popen(process_and_args,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            close_fds=True)
-    proc.stdin.close()
-    open_readers = set([proc.stdout, proc.stderr])
-    buf = ""
-    while open_readers:
-        rlist, wlist, xlist = select(open_readers, [], [])
-
-        for reader in rlist:
-            chunk = os.read(reader.fileno(), 1024)
-            if chunk == "":
-                open_readers.remove(reader)
-                if buf:
-                    log.debug(buf)
-            else:
-                buf += chunk
-                lines = buf.split("\n")
-                for line in lines[0:-1]:
-                    log.debug("%s%s" % (prefix, line))
-                buf = lines[-1]
-
-    ret = proc.wait()
-    return ret
 
 
 DEFAULT_COMPONENT = "main"
@@ -170,13 +130,32 @@ class FTPArchiveHandler:
     def runApt(self, apt_config_filename):
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
-                                           "generate", apt_config_filename],
-                                          self.log, "a-f: ")
-        if ret:
+        # XXX JeroenVermeulen 2011-02-01 bug=181368: Run parallel
+        # apt-ftparchive processes for the various architectures (plus
+        # source).
+        # XXX JeroenVermeulen 2011-02-01: Log stderr as warning, not
+        # debug.
+        stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
+        stderr_handler = OutputLineHandler(self.log.debug, "a-f: ")
+        completion_handler = ReturnCodeReceiver()
+        command = [
+            "apt-ftparchive",
+            "--no-contents",
+            "generate",
+            apt_config_filename,
+            ]
+        spawner = CommandSpawner()
+        spawner.start(
+            command, stdout_handler=stdout_handler,
+            stderr_handler=stderr_handler,
+            completion_handler=completion_handler)
+        stdout_handler.finalize()
+        stderr_handler.finalize()
+        if completion_handler.returncode != 0:
             raise AssertionError(
-                "Failure from apt-ftparchive. Return code %s" % ret)
-        return ret
+                "Failure from apt-ftparchive. Return code %s"
+                % completion_handler.returncode)
+        return completion_handler.returncode
 
     #
     # Empty Pocket Requests
