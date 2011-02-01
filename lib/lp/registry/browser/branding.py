@@ -15,7 +15,7 @@ from canonical.launchpad.webapp import (
     custom_widget,
     LaunchpadEditFormView,
     )
-from canonical.widgets.image import ImageChangeWidget
+from lp.app.widgets.image import ImageChangeWidget
 
 
 class BrandingChangeView(LaunchpadEditFormView):

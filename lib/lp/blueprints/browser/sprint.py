@@ -45,7 +45,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-from canonical.widgets.date import DateTimeWidget
+from lp.app.widgets.date import DateTimeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

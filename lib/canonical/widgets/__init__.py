@@ -8,12 +8,12 @@
 These may be fed back into Zope3 at some point.
 """
 
-from canonical.widgets.announcementdate import (
+from lp.app.widgets.announcementdate import (
     IAnnouncementDateWidget, AnnouncementDateWidget)
-from canonical.widgets.context import IContextWidget, ContextWidget
-from canonical.widgets.date import (
+from lp.app.widgets.context import IContextWidget, ContextWidget
+from lp.app.widgets.date import (
     DateWidget, DateTimeWidget, DatetimeDisplayWidget)
-from canonical.widgets.image import (
+from lp.app.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.itemswidgets import *
 from canonical.widgets.location import LocationWidget

@@ -213,7 +213,7 @@ from canonical.widgets import (
     PasswordChangeWidget,
     URIWidget,
     )
-from canonical.widgets.image import ImageChangeWidget
+from lp.app.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet

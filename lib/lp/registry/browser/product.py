@@ -117,7 +117,7 @@ from canonical.launchpad.webapp.interfaces import (
     UnsafeFormGetSubmissionError,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.date import DateWidget
+from lp.app.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,

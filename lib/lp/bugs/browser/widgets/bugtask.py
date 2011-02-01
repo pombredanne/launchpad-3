@@ -49,7 +49,7 @@ from zope.schema.interfaces import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.widgets.helpers import get_widget_template
+from lp.app.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import (
