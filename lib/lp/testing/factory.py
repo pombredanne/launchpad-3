@@ -1393,7 +1393,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
-                status=None, distribution=None, milestone=None, series=None):
+                status=None, distribution=None, milestone=None, series=None,
+                tags=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1412,6 +1413,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param series: If set, the series.product must match the product
             parameter, or the series.distribution must match the distribution
             parameter, or the those parameters must be None.
+        :param tags: If set, the tags to be added with the bug.
 
         At least one of the parameters distribution and product must be
         None, otherwise, an assertion error will be raised.
@@ -1437,7 +1439,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
             datecreated=date_created, description=description,
-            status=status)
+            status=status, tags=tags)
         create_bug_params.setBugTarget(
             product=product, distribution=distribution)
         bug = getUtility(IBugSet).createBug(create_bug_params)
