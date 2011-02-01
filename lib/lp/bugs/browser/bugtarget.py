@@ -72,7 +72,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.product import (
+from lp.app.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
     ProductBugTrackerWidget,

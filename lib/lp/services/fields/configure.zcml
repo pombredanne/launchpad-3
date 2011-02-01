@@ -54,7 +54,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IStrippedTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.StrippedTextWidget"
+        factory="lp.app.widgets.textwidgets.StrippedTextWidget"
         permission="zope.Public"
         />
 
@@ -62,7 +62,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.INoneableTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.NoneableTextWidget"
+        factory="lp.app.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
         />
 
@@ -70,7 +70,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IURIField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.URIWidget"
+        factory="lp.app.widgets.textwidgets.URIWidget"
         permission="zope.Public"
         />
 
@@ -78,7 +78,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.ContentNameField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
+        factory="lp.app.widgets.textwidgets.LowerCaseTextWidget"
         permission="zope.Public"
         />
 

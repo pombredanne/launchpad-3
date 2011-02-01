@@ -25,7 +25,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 class SuggestionWidget(LaunchpadRadioWidget):

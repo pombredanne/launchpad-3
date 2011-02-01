@@ -93,7 +93,7 @@ from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from canonical.widgets.project import ProjectScopeWidget
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,

@@ -74,8 +74,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

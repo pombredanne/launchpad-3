@@ -118,17 +118,17 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import (
+from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.popup import PersonPickerWidget
-from canonical.widgets.product import (
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.product import (
     GhostWidget,
     LicenseWidget,
     ProductNameWidget,
     )
-from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,

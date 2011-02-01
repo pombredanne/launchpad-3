@@ -76,8 +76,8 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.project import ProjectScopeWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

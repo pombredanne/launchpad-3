@@ -58,11 +58,11 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.itemswidgets import (
+from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.suggestion import RecipeOwnerWidget
+from lp.app.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

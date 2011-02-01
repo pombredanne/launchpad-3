@@ -7,7 +7,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.registry.interfaces.person import ITeam
 from lp.testing import TestCaseWithFactory
 

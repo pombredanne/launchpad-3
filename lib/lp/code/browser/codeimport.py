@@ -41,8 +41,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import (
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )

@@ -19,7 +19,7 @@ from lazr.enum import (
     )
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,

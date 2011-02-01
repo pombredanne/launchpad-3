@@ -98,8 +98,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.suggestion import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.suggestion import TargetBranchWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

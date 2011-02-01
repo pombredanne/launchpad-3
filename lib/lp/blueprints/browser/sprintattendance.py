@@ -18,7 +18,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     )
 from lp.app.widgets.date import DateTimeWidget
-from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

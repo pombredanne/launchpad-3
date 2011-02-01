@@ -9,7 +9,7 @@ just whitespace, while ensuring that the schema's field value is None.
 This custom widget is used to normalise the value of meaning less
 text value to None.
 
-    >>> from canonical.widgets.textwidgets import NoneableTextWidget
+    >>> from lp.app.widgets.textwidgets import NoneableTextWidget
 
 The IMilestone code_name field cannot be an empty string or a string
 composed of whitespace; the value is considered to be None.

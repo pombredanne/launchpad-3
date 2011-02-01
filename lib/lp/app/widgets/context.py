@@ -9,7 +9,7 @@
 __metaclass__ = type
 
 from zope.interface import implements, Interface
-from canonical.widgets.owner import RequestWidget
+from lp.app.widgets.owner import RequestWidget
 
 class IContextWidget(Interface):
     """The interface for a ContextWidget. A ContextWidget provides a hidden

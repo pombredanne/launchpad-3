@@ -83,11 +83,11 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget,
     PlainMultiCheckBoxWidget,
     )
-from canonical.widgets.itemswidgets import (
+from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

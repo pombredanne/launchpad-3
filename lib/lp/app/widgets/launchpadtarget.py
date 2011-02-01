@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (

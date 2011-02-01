@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias, ILibraryFileAliasSet)
 from lp.services.fields import KEEP_SAME_IMAGE
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
 
 

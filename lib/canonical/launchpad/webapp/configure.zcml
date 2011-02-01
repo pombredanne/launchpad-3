@@ -387,7 +387,7 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.VocabularyPickerWidget"
+      factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 
@@ -397,7 +397,7 @@
       for="lp.services.fields.PublicPersonChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.PersonPickerWidget"
+      factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
 

@@ -34,7 +34,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import BranchFormatterAPI
 from canonical.widgets import StrippedTextWidget
-from canonical.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup

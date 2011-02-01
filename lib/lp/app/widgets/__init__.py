@@ -15,10 +15,10 @@ from lp.app.widgets.date import (
     DateWidget, DateTimeWidget, DatetimeDisplayWidget)
 from lp.app.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
-from canonical.widgets.itemswidgets import *
-from canonical.widgets.location import LocationWidget
-from canonical.widgets.owner import IUserWidget, HiddenUserWidget
-from canonical.widgets.password import PasswordChangeWidget
-from canonical.widgets.textwidgets import (
+from lp.app.widgets.itemswidgets import *
+from lp.app.widgets.location import LocationWidget
+from lp.app.widgets.owner import IUserWidget, HiddenUserWidget
+from lp.app.widgets.password import PasswordChangeWidget
+from lp.app.widgets.textwidgets import (
     DelimitedListWidget, LocalDateTimeWidget, LowerCaseTextWidget,
     StrippedTextWidget, TokensTextWidget, URIWidget)

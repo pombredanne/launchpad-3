@@ -3,7 +3,7 @@
 A widget used when setting the geographic location of a given person.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.widgets.location import LocationWidget
+    >>> from lp.app.widgets.location import LocationWidget
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.services.fields import LocationField
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -88,7 +88,7 @@ which stored the geographic coordinates and the timezone.
     True
     >>> location = widget.getInputValue()
     >>> location
-    <canonical.widgets.location.LocationValue...
+    <lp.app.widgets.location.LocationValue...
     >>> location.latitude # Only the integral part due to rounding errors.
     51...
     >>> location.longitude

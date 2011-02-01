@@ -84,8 +84,8 @@ from canonical.widgets import (
     LaunchpadRadioWidget,
     TokensTextWidget,
     )
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-from canonical.widgets.project import ProjectScopeWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget

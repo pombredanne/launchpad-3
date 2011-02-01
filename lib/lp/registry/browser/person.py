@@ -214,7 +214,7 @@ from canonical.widgets import (
     URIWidget,
     )
 from lp.app.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionenums import QuestionParticipation

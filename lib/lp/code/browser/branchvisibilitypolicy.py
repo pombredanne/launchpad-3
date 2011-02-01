@@ -28,7 +28,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.widgets.itemswidgets import (
+from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidgetWithDescription,
     )
