@@ -5,8 +5,9 @@ Using the "advanced search" form, we can limit a bug task search to
 bugs that are linked to blueprints or to bugs that are not linked to
 any blueprints. Normally, both options are turned on.
 
-    >>> anon_browser.open(
+    >>> advanced_search_url = (
     ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> anon_browser.open(advanced_search_url)
     >>> anon_browser.getControl(
     ...     'Show bugs with linked blueprints').selected
     True
@@ -26,8 +27,7 @@ In this case all bugs are returned.
 When we uncheck 'Show bugs without linked blueprints', only bugs with
 linked blueprints are returned.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> anon_browser.open(advanced_search_url)
     >>> without_blueprints = anon_browser.getControl(
     ...     'Show bugs without linked blueprints')
     >>> without_blueprints.selected = False
@@ -38,8 +38,7 @@ linked blueprints are returned.
 Similary, we can search for blueprints that don't have linked
 blueprints, if we uncheck 'Show bugs with linked blueprints'.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> anon_browser.open(advanced_search_url)
     >>> with_blueprints = anon_browser.getControl(
     ...     'Show bugs with linked blueprints')
     >>> with_blueprints.selected = False
@@ -50,8 +49,7 @@ blueprints, if we uncheck 'Show bugs with linked blueprints'.
 
 If we uncheck both fields, all bugs are returned.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> anon_browser.open(advanced_search_url)
     >>> with_blueprints = anon_browser.getControl(
     ...     'Show bugs with linked blueprints')
     >>> with_blueprints.selected = False
