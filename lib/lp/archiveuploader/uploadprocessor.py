@@ -644,6 +644,8 @@ class BuildUploadHandler(UploadHandler):
                 self.build.status.name)
             return
         try:
+            # The recipe may have been deleted so we need to flag that here
+            # and will handle below.
             if self.build.recipe is None:
                 result = UploadStatusEnum.FAILED
             else:
