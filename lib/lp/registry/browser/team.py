@@ -60,6 +60,7 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.browser.launchpadform import (
@@ -211,7 +212,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
@@ -891,7 +893,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):

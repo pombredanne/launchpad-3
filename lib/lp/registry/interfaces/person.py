@@ -395,7 +395,8 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
     The policies that describe who can be a member and how new memberships
-    are handled.
+    are handled. The choice of policy reflects the need to build a community
+    verses the need to control Launchpad assets.
     """
 
     OPEN = DBItem(2, """
@@ -1799,10 +1800,7 @@ class ITeamPublic(Interface):
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
-                   "'Moderated' means all subscriptions must be approved. "
-                   "'Open' means any user can join without approval. "
-                   "'Restricted' means new members can be added only by a "
-                   "team administrator.")),
+                TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
 
     renewal_policy = exported(
