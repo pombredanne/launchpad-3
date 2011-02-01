@@ -14,6 +14,8 @@ from lp.bugs.adapters.bugchange import (
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.bugtask import BugTaskDelta
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import TestCaseWithFactory
 
@@ -46,6 +48,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
     def setUp(self):
         super(BugChangeLevelTestCase, self).setUp()
         self.bug = self.factory.makeBug()
+        self.bugtask = self.bug.default_bugtask
         self.user = self.factory.makePerson()
 
     def createDelta(self, **kwargs):
@@ -55,15 +58,70 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             user=self.user,
             **kwargs)
 
-    def test_change_level_metadata(self):
-        # get_bug_changes() returns all bug changes for a certain
-        # BugDelta. For changes like description change,
-        # change_type is BugNotificationLevel.METADATA.
+    def test_change_level_metadata_description(self):
+        # Changing a bug description is considered to have change_level
+        # of BugNotificationLevel.METADATA.
         bug_delta = self.createDelta(
             description={'new': 'new description',
                          'old': self.bug.description})
 
-        change = yield get_bug_changes(bug_delta)
+        change = list(get_bug_changes(bug_delta))[0]
         self.assertTrue(isinstance(change, BugDescriptionChange))
+        self.assertEquals(BugNotificationLevel.METADATA,
+                          change.change_level)
+
+    def test_change_level_lifecycle_status_closing(self):
+        # Changing a bug task status from NEW to FIXRELEASED makes this
+        # change a BugNotificationLevel.LIFECYCLE change.
+        bugtask_delta = BugTaskDelta(
+            bugtask=self.bugtask,
+            status={'old': BugTaskStatus.NEW,
+                    'new': BugTaskStatus.FIXRELEASED})
+        bug_delta = self.createDelta(
+            bugtask_deltas=bugtask_delta)
+
+        change = list(get_bug_changes(bug_delta))[0]
+        self.assertEquals(BugNotificationLevel.LIFECYCLE,
+                          change.change_level)
+
+    def test_change_level_lifecycle_status_reopening(self):
+        # Changing a bug task status from FIXRELEASED to TRIAGED makes this
+        # change a BugNotificationLevel.LIFECYCLE change.
+        bugtask_delta = BugTaskDelta(
+            bugtask=self.bugtask,
+            status={'old': BugTaskStatus.FIXRELEASED,
+                    'new': BugTaskStatus.TRIAGED})
+        bug_delta = self.createDelta(
+            bugtask_deltas=bugtask_delta)
+
+        change = list(get_bug_changes(bug_delta))[0]
+        self.assertEquals(BugNotificationLevel.LIFECYCLE,
+                          change.change_level)
+
+    def test_change_level_metadata_status_worked_on(self):
+        # Changing a bug task status from TRIAGED to FIXCOMMITTED makes this
+        # change a BugNotificationLevel.METADATA change.
+        bugtask_delta = BugTaskDelta(
+            bugtask=self.bugtask,
+            status={'old': BugTaskStatus.TRIAGED,
+                    'new': BugTaskStatus.FIXCOMMITTED})
+        bug_delta = self.createDelta(
+            bugtask_deltas=bugtask_delta)
+
+        change = list(get_bug_changes(bug_delta))[0]
+        self.assertEquals(BugNotificationLevel.METADATA,
+                          change.change_level)
+
+    def test_change_level_metadata_status_stays_closed(self):
+        # Changing a bug task status from OPINION to WONTFIX makes this
+        # change a BugNotificationLevel.METADATA change.
+        bugtask_delta = BugTaskDelta(
+            bugtask=self.bugtask,
+            status={'old': BugTaskStatus.OPINION,
+                    'new': BugTaskStatus.WONTFIX})
+        bug_delta = self.createDelta(
+            bugtask_deltas=bugtask_delta)
+
+        change = list(get_bug_changes(bug_delta))[0]
         self.assertEquals(BugNotificationLevel.METADATA,
                           change.change_level)
