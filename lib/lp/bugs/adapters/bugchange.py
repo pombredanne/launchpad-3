@@ -113,6 +113,8 @@ class BugChangeBase:
     def __init__(self, when, person):
         self.person = person
         self.when = when
+        # Most changes will be at METADATA level.
+        self.change_type = BugNotificationLevel.METADATA
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
@@ -183,6 +185,9 @@ class BugConvertedToQuestion(BugChangeBase):
 
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
+
+    # A bug is "created" on a different target.
+    change_type = BugNotificationLevel.LIFECYCLE
 
     def __init__(self, when, person, bug_task):
         super(BugTaskAdded, self).__init__(when, person)
@@ -721,6 +726,23 @@ class BugTaskStatusChange(BugTaskAttributeChange):
 
     # Use `status.title` in activity records and notifications.
     display_attribute = 'title'
+
+    @property
+    def change_type(self):
+        """If bug is closed, it's a LIFECYCLE change."""
+        closed_statuses = [
+            BugTaskStatus.FIXRELEASED,
+            BugTaskStatus.EXPIRED,
+            BugTaskStatus.WONTFIX,
+            BugTaskStatus.INVALID]
+        if (self.old_value not in closed_statuses and
+            self.new_value in closed_statuses):
+            # Very simplistic way to ensure that we are not sending
+            # emails for bugs going from INVALID -> WONTFIX.  Also
+            # includes transitions like WONTFIX->FIXRELEASED which might
+            # not be as desireable. -- danilo
+            return BugNotificationLevel.LIFECYCLE
+        return BugNotificationLevel.METADATA
 
 
 class BugTaskMilestoneChange(BugTaskAttributeChange):
