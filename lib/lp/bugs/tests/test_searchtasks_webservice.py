@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
@@ -20,9 +19,10 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        login('foo.bar@canonical.com')
-        self.distro = self.factory.makeDistribution(name='mebuntu')
+        super(TestOmitTargetedParameter, self).setUp()
+        self.owner = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.distro = self.factory.makeDistribution(name='mebuntu')
         self.release = self.factory.makeDistroRelease(
             name='inkanyamba', distribution=self.distro)
         self.bug = self.factory.makeBugTask(target=self.release)
@@ -52,7 +52,6 @@ class TestLinkedBlueprintsParameter(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLinkedBlueprintsParameter, self).setUp()
-        TestCaseWithFactory.setUp(self)
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
@@ -68,8 +67,10 @@ class TestLinkedBlueprintsParameter(TestCaseWithFactory):
     def test_linked_blueprints_in_devel(self):
         # Searching for linked Blueprints works in the devel API.
         self.search("devel", linked_blueprints="Show all bugs")
-        # If linked_blueprints is not a member of BugBlueprintSearch an
-        # error is returned.
+
+    def test_linked_blueprints_in_devel_2(self):
+        # The linked_blueprints is considered. An error is returned if its
+        # value is not a member of BugBlueprintSearch.
         self.assertRaises(
             ValueError, self.search, "devel",
             linked_blueprints="Teabags!")
