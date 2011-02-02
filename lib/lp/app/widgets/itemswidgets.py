@@ -200,7 +200,7 @@ class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):
 
     The `LaunchpadRadioWidget` does the rendering. Only the True-False values
     are rendered; a missing value item is not rendered. The default labels
-    are rendered as 'yes' and 'no', but can be changed by setting the widget's 
+    are rendered as 'yes' and 'no', but can be changed by setting the widget's
     true_label and false_label attributes.
     """
 
