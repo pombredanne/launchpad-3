@@ -430,8 +430,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # subscription-related methods
-
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
         # level actually uses BugNotificationLevel as its vocabulary,

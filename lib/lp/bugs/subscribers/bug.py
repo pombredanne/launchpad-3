@@ -35,7 +35,6 @@ from lp.bugs.adapters.bugchange import (
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients

@@ -32,7 +32,8 @@ Let's add add change notification and see how it works:
     >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> from lp.bugs.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
 
     >>> messages = [emails for dummy, emails in
     ...     get_email_notifications(notifications)]
@@ -70,7 +71,8 @@ id:
     ...     BugVisibilityChange(
     ...         ten_minutes_ago, sample_person, "private",
     ...         True, False))
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> messages = [emails for dummy, emails in
     ...     get_email_notifications(notifications)]
     >>> len(messages)
@@ -93,7 +95,8 @@ are chained together properly:
     >>> flush_database_updates()
 
     >>> reply = MessageSet().fromText(
-    ...     'Re: subject', 'reply', sample_person, datecreated=ten_minutes_ago)
+    ...     'Re: subject', 'reply', sample_person,
+    ...     datecreated=ten_minutes_ago)
     >>> reply.parent = comment
     >>> bug_one.addCommentNotification(reply)
     >>> bug_one.linkMessage(reply)
@@ -101,7 +104,8 @@ are chained together properly:
 
 Grab the notifications:
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> messages = [emails for dummy, emails in
     ...     get_email_notifications(notifications)]
     >>> len(messages)
