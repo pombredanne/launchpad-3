@@ -3,10 +3,6 @@
 
 __metaclass__ = type
 
-from zope.interface import (
-    Interface,
-    implements,
-    )
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -19,7 +15,6 @@ from lp.app.widgets.itemswidgets import (
     PlainMultiCheckBoxWidget,
     )
 from lp.testing import (
-    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -37,20 +32,16 @@ class ItemWidgetTestCase(TestCaseWithFactory):
         super(ItemWidgetTestCase, self).setUp()
         self.request = LaunchpadTestRequest()
         self.vocabulary = SimpleVocabulary([self.SAFE_TERM, self.UNSAFE_TERM])
-
-        class ITest(Interface):
-            test_field = Choice(
-                title=u'status', vocabulary=self.vocabulary)
-
-        class TestObject:
-            implements(ITest)
-
-            def __init__(self, status=None):
-                self.status = status
-
-        self.field = ITest['test_field'].bind(TestObject())
+        field = Choice(__name__='test_field', vocabulary=self.vocabulary)
+        self.field = field.bind(object())
         self.widget = self.WIDGET_CLASS(
             self.field, self.vocabulary, self.request)
+
+    def assertRenderItem(self, expected, term, checked=False):
+        markup = self.widget._renderItem(
+            index=1, text=term.title, value=term.token,
+            name=self.field.__name__, cssClass=None, checked=checked)
+        self.assertEqual(expected, markup)
 
 
 class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
@@ -58,14 +49,18 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
 
     WIDGET_CLASS = PlainMultiCheckBoxWidget
 
-    def test__renderItem(self):
+    def test__renderItem_checked(self):
         # Render item iterpolation is safe.
-        markup = self.widget._renderItem(
-            index=1,
-            text=self.UNSAFE_TERM.title, value=self.UNSAFE_TERM.token,
-            name=self.field.__name__, cssClass=None, checked=False)
+        expected = (
+            '<input class="checkboxType" checked="checked" id="test_field.1" '
+            'name="test_field" type="checkbox" value="token-1" />&nbsp;'
+            'Safe title ')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
+
+    def test__renderItem_unsafe_content(self):
+        # Render item iterpolation is safe.
         expected = (
             '<input class="checkboxType" id="test_field.1" name="test_field" '
             'type="checkbox" value="token-2" />&nbsp;'
             '&lt;unsafe&gt; &amp;nbsp; title ')
-        self.assertEqual(expected, markup)
+        self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
