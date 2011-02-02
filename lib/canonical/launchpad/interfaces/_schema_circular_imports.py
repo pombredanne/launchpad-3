@@ -20,6 +20,7 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_choice_parameter_type,
+    patch_choice_vocabulary,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_return_type,
@@ -80,6 +81,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWSubmission,
     )
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -486,6 +488,9 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
+patch_choice_vocabulary(
+    IBug, 'subscribe', 'level', BugNotificationLevel)
+
 
 # IFrontPageBugAddForm
 patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
@@ -528,6 +533,7 @@ patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
+patch_collection_property(ISpecification, 'linked_branches', ISpecificationBranch)
 
 # ISpecificationTarget
 patch_entry_return_type(

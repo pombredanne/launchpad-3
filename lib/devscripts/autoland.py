@@ -303,15 +303,15 @@ def get_reviewer_clause(reviewers):
     if not code_reviewers:
         raise MissingReviewError("Need approved votes in order to land.")
     if ui_reviewers:
-        ui_clause = _comma_separated_names(ui_reviewers)
+        ui_clause = '[ui=%s]' % _comma_separated_names(ui_reviewers)
     else:
-        ui_clause = 'none'
+        ui_clause = ''
     if rc_reviewers:
         rc_clause = (
             '[release-critical=%s]' % _comma_separated_names(rc_reviewers))
     else:
         rc_clause = ''
-    return '%s[r=%s][ui=%s]' % (
+    return '%s[r=%s]%s' % (
         rc_clause, _comma_separated_names(code_reviewers), ui_clause)
 
 

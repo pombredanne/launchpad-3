@@ -18,7 +18,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import IText
 
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import standard_text_html_representation
 from lp.app.browser.tales import format_link
 
 
@@ -44,12 +44,4 @@ def reference_xhtml_representation(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def text_xhtml_representation(context, field, request):
     """Render text as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        if value is None:
-            return ''
-        nomail = formatter(value).obfuscate_email()
-        return formatter(nomail).text_to_html()
-
-    return renderer
+    return standard_text_html_representation

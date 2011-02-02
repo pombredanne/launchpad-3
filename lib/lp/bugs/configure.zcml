@@ -252,15 +252,34 @@
                     transitionToMilestone
                     transitionToTarget"/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    distribution
+                    distroseries
+                    importance
+                    milestone
+                    owner
+                    product
+                    productseries
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    sourcepackagename
+                    statusdisplayhtml
+                    statuselsewhere
+                    statusexplanation
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -604,8 +623,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
@@ -617,6 +636,31 @@
           permission="launchpad.Edit"
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
+    <!-- BugSubscriptionInfo -->
+
+    <class class=".model.bug.BugSubscriptionInfo">
+      <!-- Instance variables -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              bug
+              level
+              " />
+      <!-- Properties -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              all_assignees
+              all_pillar_owners_without_bug_supervisors
+              also_notified_subscribers
+              direct_subscriptions
+              duplicate_only_subscriptions
+              duplicate_subscriptions
+              indirect_subscribers
+              structural_subscriptions
+              " />
     </class>
 
     <facet
@@ -700,6 +744,7 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
+                    getSubscriptionInfo
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -777,6 +822,7 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
@@ -817,7 +863,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch visible index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -1055,6 +1101,7 @@
         recipient"/>
   </class>
 
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>

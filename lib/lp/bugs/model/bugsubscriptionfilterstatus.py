@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionFilterStatus']
 
-from storm.base import Storm
 from storm.locals import (
     Int,
     Reference,
@@ -14,9 +13,10 @@ from storm.locals import (
 
 from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscriptionFilterStatus(Storm):
+class BugSubscriptionFilterStatus(StormBase):
     """Statuses to filter."""
 
     __storm_table__ = "BugSubscriptionFilterStatus"
