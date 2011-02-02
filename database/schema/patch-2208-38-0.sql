@@ -8,10 +8,6 @@ CREATE TABLE PersonSettings (
 INSERT INTO PersonSettings (person, verbose_bugnotifications)
 SELECT id, verbose_bugnotifications FROM Person;
 
-CREATE TRIGGER populate_settings_t
-AFTER INSERT ON Person FOR EACH ROW
-EXECUTE PROCEDURE populate_settings();
-
 ALTER TABLE Person DROP COLUMN verbose_bugnotifications;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 38, 0);

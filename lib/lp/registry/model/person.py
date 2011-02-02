@@ -36,6 +36,7 @@ import re
 import subprocess
 import weakref
 
+from lazr.delegates import delegates
 from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
@@ -222,6 +223,7 @@ from lp.registry.interfaces.person import (
     InvalidName,
     IPerson,
     IPersonSet,
+    IPersonSettings,
     ITeam,
     PersonalStanding,
     PersonCreationRationale,
@@ -363,7 +365,7 @@ class PersonSettings(Storm):
 
     __storm_table__ = 'PersonSettings'
 
-    personID = Int("person", default=None)
+    personID = Int("person", default=None, primary=True)
     person = Reference(personID, "Person.id")
 
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
@@ -376,6 +378,12 @@ class Person(
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+
+    def __init__(self, *args, **kwargs):
+        super(Person, self).__init__(*args, **kwargs)
+        # Initialize our PersonSettings object/record.
+        settings = PersonSettings()
+        settings.person = self
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -517,19 +525,9 @@ class Person(
             PersonSettings,
             PersonSettings.person == self).one()
 
-    @property
-    def verbose_notifications(self):
-        return self._person_settings.verbose_notifications
-    @verbose_notifications.setter
-    def verbose_notifications(self, value):
-        self._person_settings.verbose_notifications = value
-
-    @property
-    def selfgenerated_bugnotifications(self):
-        return self._person_settings.selfgenerated_bugnotifications
-    @verbose_notifications.setter
-    def selfgenerated_bugnotifications(self, value):
-        self._person_settings.selfgenerated_bugnotifications = value
+    # This is for verbose_bugnotifications and selfgenerated_bugnotifications,
+    # for now.
+    delegates(IPersonSettings, context='_person_settings')
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')

@@ -16,6 +16,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonSettings',
     'ISoftwareCenterAgentAPI',
     'ISoftwareCenterAgentApplication',
     'IPersonViewRestricted',
@@ -587,8 +588,13 @@ class IHasStanding(Interface):
 class IPersonSettings(Interface):
     """Settings for a person that are not used relatively rarely.
 
-    This is currently an implementation detail--we expose these attributes
-    on IPersonPublic--but we might expect people to use it later.
+    We store these attributes on a separate object, PersonSettings, to which
+    the Person class delegates.  This makes it possible to shrink the size of
+    the person record.
+
+    In the future, perhaps we will adapt IPerson to IPersonSettings when
+    we want these attributes instead of delegating, so we can shrink the
+    class, too.
     """
 
     verbose_bugnotifications = Bool(
@@ -603,7 +609,8 @@ class IPersonSettings(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -835,14 +842,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                       "one and do not choose to hide it. Otherwise"
                       "the empty string."),
         readonly=True)
-
-    verbose_bugnotifications = Bool(
-        title=_("Include bug descriptions when sending me bug notifications"),
-        required=False, default=True)
-
-    selfgenerated_bugnotifications = Bool(
-        title=_("Send me bug notifications for changes I make."),
-        required=False, default=True)
 
     mailing_list_auto_subscribe_policy = exported(
         Choice(title=_('Mailing List Auto-subscription Policy'),
