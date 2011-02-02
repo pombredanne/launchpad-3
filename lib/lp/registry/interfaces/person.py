@@ -586,7 +586,7 @@ class IHasStanding(Interface):
 
 
 class IPersonSettings(Interface):
-    """Settings for a person that are not used relatively rarely.
+    """Settings for a person (not a team!) that are used relatively rarely.
 
     We store these attributes on a separate object, PersonSettings, to which
     the Person class delegates.  This makes it possible to shrink the size of
@@ -595,11 +595,9 @@ class IPersonSettings(Interface):
     In the future, perhaps we will adapt IPerson to IPersonSettings when
     we want these attributes instead of delegating, so we can shrink the
     class, too.
-    """
 
-    verbose_bugnotifications = Bool(
-        title=_("Include bug descriptions when sending me bug notifications"),
-        required=False, default=True)
+    We also may want TeamSettings and PersonTeamSettings in the future.
+    """
 
     selfgenerated_bugnotifications = Bool(
         title=_("Send me bug notifications for changes I make."),
@@ -842,6 +840,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                       "one and do not choose to hide it. Otherwise"
                       "the empty string."),
         readonly=True)
+
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
 
     mailing_list_auto_subscribe_policy = exported(
         Choice(title=_('Mailing List Auto-subscription Policy'),

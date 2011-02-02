@@ -368,7 +368,6 @@ class PersonSettings(Storm):
     personID = Int("person", default=None, primary=True)
     person = Reference(personID, "Person.id")
 
-    verbose_bugnotifications = BoolCol(notNull=True, default=True)
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
 
 
@@ -382,8 +381,29 @@ class Person(
     def __init__(self, *args, **kwargs):
         super(Person, self).__init__(*args, **kwargs)
         # Initialize our PersonSettings object/record.
-        settings = PersonSettings()
-        settings.person = self
+        if not self.is_team:
+            # This is a Person, not a team.  Teams may want a TeamSettings
+            # in the future.
+            settings = PersonSettings()
+            settings.person = self
+
+    @cachedproperty
+    def _person_settings(self):
+        if self.is_team:
+            # Hopefully no-one ever encounters this.  If someone does,
+            # that means that the code is trying to look at
+            # person-specific attributes on a team, and we should warn
+            # about that explicitly to give a hint about what is wrong
+            # (rather than merely returning None).
+            raise NotImplementedError(
+                'Teams do not support this attribute.')
+        else:
+            # This is a person.
+            return IStore(PersonSettings).find(
+                PersonSettings,
+                PersonSettings.person == self).one()
+
+    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -518,16 +538,7 @@ class Person(
         dbName='registrant', foreignKey='Person', default=None,
         storm_validator=validate_public_person)
     hide_email_addresses = BoolCol(notNull=True, default=False)
-
-    @cachedproperty
-    def _person_settings(self):
-        return IStore(PersonSettings).find(
-            PersonSettings,
-            PersonSettings.person == self).one()
-
-    # This is for verbose_bugnotifications and selfgenerated_bugnotifications,
-    # for now.
-    delegates(IPersonSettings, context='_person_settings')
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
