@@ -371,7 +371,7 @@ been subscribed to the bug and there should be no indirect subscribers.
     No Privileges Person
 
     >>> filebug_view.added_bug.getIndirectSubscribers()
-    ()
+    []
 
 The user will be notified that the bug has been marked as private.
 
@@ -560,7 +560,7 @@ bug.
 Since the bug is private, there should be no indirect subscribers.
 
     >>> filebug_view.added_bug.getIndirectSubscribers()
-    ()
+    []
 
 The user will be notified that Mark Shuttleworth has been subscribed to this
 bug and that the bug has been marked as private.

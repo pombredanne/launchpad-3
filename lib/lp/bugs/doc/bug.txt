@@ -488,7 +488,7 @@ When a private bug is filed:
 Since it's private, there are no indirect subscribers.
 
     >>> private_bug.getIndirectSubscribers()
-    ()
+    []
 
 It's up to the submitter to subscribe the maintainer, if they so choose.
 
@@ -512,7 +512,7 @@ sourcepackage. E.g.
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
     >>> private_bug.getIndirectSubscribers()
-    ()
+    []
 
 
 Prevent reporter from being subscribed to filed bugs
