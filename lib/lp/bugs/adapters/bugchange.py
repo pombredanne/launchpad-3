@@ -779,16 +779,10 @@ class BugTaskStatusChange(BugTaskAttributeChange):
         lifecycle_change = _is_status_change_lifecycle_change(
             self.old_value, self.new_value)
 
-        # When the bug task is marked INCOMPLETE, and subscriber is the
-        # person who originally reported the bug, we still notify them
-        # because bug now depends on their input.
-        subscriber_is_asked_for_info = (
-            self.new_value == BugTaskStatus.INCOMPLETE and
-            self.bug_task.bug.owner == self.person)
-
-        if (lifecycle_change or subscriber_is_asked_for_info):
+        if lifecycle_change:
             return BugNotificationLevel.LIFECYCLE
-        return BugNotificationLevel.METADATA
+        else:
+            return BugNotificationLevel.METADATA
 
 
 class BugTaskMilestoneChange(BugTaskAttributeChange):

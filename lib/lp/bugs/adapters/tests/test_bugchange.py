@@ -139,43 +139,6 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
         self.assertEquals(
             BugNotificationLevel.METADATA, change.change_level)
 
-    def test_change_level_metadata_status_incomplete_for_someone_else(self):
-        # Changing a bug task status from NEW to INCOMPLETE makes this
-        # change a BugNotificationLevel.METADATA change if subscriber is
-        # not the original reporter of the bug as well.
-        bugtask_delta = BugTaskDelta(
-            bugtask=self.bugtask,
-            status={
-                'old': BugTaskStatus.NEW,
-                'new': BugTaskStatus.INCOMPLETE,
-                })
-        bug_delta = self.createDelta(
-            bugtask_deltas=bugtask_delta)
-
-        change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
-
-    def test_change_level_lifecycle_status_incomplete_for_subscriber(self):
-        # Changing a bug task status from NEW to INCOMPLETE makes this
-        # change a BugNotificationLevel.LIFECYCLE change if subscriber is
-        # the original reporter of the bug as well: this ensures that
-        # bug reporter gets a notification about their input needed even
-        # if they are only subscribed on the LIFECYCLE level.
-        bugtask_delta = BugTaskDelta(
-            bugtask=self.bugtask,
-            status={
-                'old': BugTaskStatus.NEW,
-                'new': BugTaskStatus.INCOMPLETE,
-                })
-        bug_delta = self.createDelta(
-            user=self.bug.owner,
-            bugtask_deltas=bugtask_delta)
-
-        change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.LIFECYCLE, change.change_level)
-
     def test_change_level_metadata_duplicate_of_unresolved(self):
         # Marking a bug as a duplicate of an unresolved bug is a
         # simple BugNotificationLevel.METADATA change.
