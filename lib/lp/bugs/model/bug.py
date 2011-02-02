@@ -2075,7 +2075,28 @@ def freeze(factory):
 
 
 class BugSubscriptionInfo:
-    """Represents bug subscription sets."""
+    """Represents bug subscription sets.
+
+    The intention for this class is to encapsulate all calculations of
+    subscriptions and subscribers for a bug. Some design considerations:
+
+    * Immutable.
+
+    * Set-based.
+
+    * Sets are cached.
+
+    * Usable with a *snapshot* of a bug. This is interesting for two reasons:
+
+      - Event subscribers commonly deal with snapshots. An instance of this
+        class could be added to a custom snapshot so that multiple subscribers
+        can share the information it contains.
+
+      - Use outside of the web request. A serialized snapshot could be used to
+        calculate subscribers for a particular bug state. This could help us
+        to move even more bug mail processing out of the web request.
+
+    """
 
     implements(IHasBug)
 
