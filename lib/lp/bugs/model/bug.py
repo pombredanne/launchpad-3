@@ -892,7 +892,9 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        info = self.getSubscriptionInfo()
+        if level is None:
+            level = BugNotificationLevel.NOTHING
+        info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
             # Pre-load duplicate bugs.
@@ -2102,6 +2104,7 @@ class BugSubscriptionInfo:
 
     def __init__(self, bug, level):
         self.bug = bug
+        assert level is not None
         self.level = level
 
     @cachedproperty

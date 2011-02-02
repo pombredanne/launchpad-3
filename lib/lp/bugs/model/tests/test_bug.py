@@ -201,22 +201,16 @@ class TestBug(TestCaseWithFactory):
             # the results retuned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
-        reversed_levels = sorted(
-            BugNotificationLevel.items, reverse=True)
-        subscribers = []
-        for level in reversed_levels:
+        for level in BugNotificationLevel.items:
             subscriber = self.factory.makePerson()
-            subscribers.append(subscriber)
             with person_logged_in(subscriber):
                 duplicate_bug.subscribe(subscriber, subscriber, level=level)
-            duplicate_subscribers = (
-                bug.getSubscribersFromDuplicates(level=level))
-            # All the previous subscribers will be included because
-            # their level of subscription is such that they also receive
-            # notifications at the current level.
+            # Only the most recently subscribed person will be included
+            # because the previous subscribers are subscribed at a lower
+            # level.
             self.assertEqual(
-                set(subscribers), set(duplicate_subscribers),
-                "Number of subscribers did not match expected value.")
+                (subscriber,),
+                bug.getSubscribersFromDuplicates(level=level))
 
     def test_subscribers_from_dupes_overrides_using_level(self):
         # Bug.getSubscribersFromDuplicates() does not return subscribers
