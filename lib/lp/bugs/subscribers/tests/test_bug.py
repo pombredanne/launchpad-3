@@ -6,8 +6,8 @@ from storm.store import Store
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugdelta import BugDelta
-#from lp.bugs.interfaces.bugtask import BugTaskStatus
-#from lp.bugs.model.bugtask import BugTaskDelta
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.bugtask import BugTaskDelta
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -70,4 +70,21 @@ class BugSubscriberTestCase(TestCaseWithFactory):
         add_bug_change_notifications(bug_delta)
 
         self.assertContentEqual([self.metadata_subscriber],
+                                self.getNotifiedPersons())
+
+    def test_add_bug_change_notifications_lifecycle(self):
+        # Changing a bug description is considered to have change_level
+        # of BugNotificationLevel.LIFECYCLE.
+        bugtask_delta = BugTaskDelta(
+            bugtask=self.bugtask,
+            status={'old': BugTaskStatus.NEW,
+                    'new': BugTaskStatus.FIXRELEASED})
+        bug_delta = self.createDelta(
+            bugtask_deltas=bugtask_delta)
+
+        add_bug_change_notifications(bug_delta)
+
+        # Both a LIFECYCLE and METADATA subscribers get notified.
+        self.assertContentEqual([self.metadata_subscriber,
+                                 self.lifecycle_subscriber],
                                 self.getNotifiedPersons())
