@@ -3694,10 +3694,10 @@ ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;

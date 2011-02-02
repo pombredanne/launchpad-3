@@ -22,7 +22,10 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     )
+from lp.registry.enum import BugNotificationLevel
+from lp.services.propertycache import cachedproperty
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 
 
@@ -74,7 +77,8 @@ class BugSubscriptionFilterView(LaunchpadView):
         return conditions
 
 
-class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView):
+class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
+                                        AdvancedSubscriptionMixin):
     """Base class for edit or create views of `IBugSubscriptionFilter`."""
 
     schema = IBugSubscriptionFilter
@@ -90,6 +94,33 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView):
     custom_widget("statuses", LabeledMultiCheckBoxWidget)
     custom_widget("importances", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
+
+    target = None # Define in concrete subclass to be the target of the
+    # structural subscription that we are modifying.
+
+    # This is used by the AdvancedSubscriptionMixin.
+    current_user_subscription = None
+
+    @cachedproperty
+    def _bug_notification_level_descriptions(self):
+        displayname = self.target.displayname
+        return {
+            BugNotificationLevel.LIFECYCLE: (
+                "A bug in %s is fixed or re-opened." % displayname),
+            BugNotificationLevel.METADATA: (
+                "Any change is made to a bug in %s, other than a new "
+                "comment being added." % displayname),
+            BugNotificationLevel.COMMENTS: (
+                "A change is made or a new comment is added to a bug in %s."
+                % displayname),
+            }
+
+    def setUpFields(self):
+        """Set up fields for form.
+
+        Overrides the usual implementation to also set up bug notification."""
+        super(BugSubscriptionFilterEditViewBase, self).setUpFields()
+        self._setUpBugNotificationLevelField()
 
     @property
     def next_url(self):
@@ -119,6 +150,15 @@ class BugSubscriptionFilterEditView(
         """Delete the bug filter."""
         self.context.delete()
 
+    @property
+    def current_user_subscription(self):
+        """Return an object that has the value for bug_notification_level."""
+        return self.context
+
+    @property
+    def target(self):
+        return self.context.structural_subscription.target
+
 
 class BugSubscriptionFilterCreateView(
     BugSubscriptionFilterEditViewBase):
@@ -138,3 +178,7 @@ class BugSubscriptionFilterCreateView(
         """Create a new bug filter with the form data."""
         bug_filter = self.context.newBugFilter()
         self.updateContextFromData(data, context=bug_filter)
+
+    @property
+    def target(self):
+        return self.context.target

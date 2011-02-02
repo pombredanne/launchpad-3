@@ -112,11 +112,7 @@ def guess_bugtask(bug, person):
                     # Is the person one of the package subscribers?
                     bug_sub = bugtask.target.getSubscription(person)
                     if bug_sub is not None:
-                        if (bug_sub.bug_notification_level >
-                            BugNotificationLevel.NOTHING):
-                            # The user is subscribed to bug notifications
-                            # for this package
-                            return bugtask
+                        return bugtask
     return None
 
 

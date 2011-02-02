@@ -157,8 +157,6 @@ Private teams can have structural subscriptions to products.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Product at ...>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
 
 Structural Subscription to Distributions
@@ -171,8 +169,6 @@ Private teams can have structural subscriptions to distros.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Distribution 'Ubuntu' (ubuntu)>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
 
 Project Roles

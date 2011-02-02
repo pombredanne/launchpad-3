@@ -1413,12 +1413,13 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         subscription = product.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        filter = subscription.newBugFilter()
+        filter.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [subscriber], list(
                 self.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.METADATA)))
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        filter.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [], list(
                 self.getStructuralSubscribers(
