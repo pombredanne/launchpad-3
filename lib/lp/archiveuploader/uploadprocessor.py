@@ -74,6 +74,9 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
@@ -648,7 +651,8 @@ class BuildUploadHandler(UploadHandler):
             # and will handle below. We check so that we don't go to the
             # expense of doing an unnecessary upload. We don't just exit here
             # because we want the standard cleanup to occur.
-            recipe_deleted = self.build.recipe is None
+            recipe_deleted = (ISourcePackageRecipeBuild.providedBy(self.build)
+                and self.build.recipe is None)
             if recipe_deleted:
                 result = UploadStatusEnum.FAILED
             else:
