@@ -7,8 +7,6 @@
 
 This module should not contain tests (but it should be tested).
 """
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 
 __metaclass__ = type
 __all__ = [
@@ -102,6 +100,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     OAuthPermission,
     )
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
@@ -149,6 +148,7 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
@@ -1235,6 +1235,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # Create related package branches if the base_branch is
             # associated with a product.
             if naked_product is not None:
+
                 def makePackageBranch(name, is_private=False):
                     distro = self.makeDistribution()
                     distroseries = self.makeDistroSeries(
