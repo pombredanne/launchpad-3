@@ -37,8 +37,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 

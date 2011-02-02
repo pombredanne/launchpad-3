@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # python port of the nice maintainace-check script by  Nick Barcet
-# 
+#
 # taken from:
 #  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
 # (where it will vanish once taken here)
@@ -9,7 +9,7 @@
 # this warning filter is only needed on older versions of python-apt,
 # once the machine runs lucid it can be removed
 import warnings
-warnings.filterwarnings("ignore","apt API not stable yet")
+warnings.filterwarnings("ignore", "apt API not stable yet")
 import apt
 warnings.resetwarnings()
 
@@ -29,21 +29,21 @@ from optparse import OptionParser
 #  - distros "kubuntu", "edubuntu" and "netbook" need to be
 #    considered *but* only follow SUPPORT_TIMEFRAME
 #  - anything that is in armel follows SUPPORT_TIMEFRAME
-#  
+#
 
 # codename of the lts releases
-LTS_RELEASES = [ "dapper", "hardy", "lucid" ]
+LTS_RELEASES = ["dapper", "hardy", "lucid"]
 
 # architectures that are full supported (including LTS time)
-PRIMARY_ARCHES =  ["i386", "amd64"]
+PRIMARY_ARCHES = ["i386", "amd64"]
 
 # architectures we support (but not for LTS time)
 SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 
 # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-SERVER_SEEDS = [ "supported-server", "server-ship"]
+SERVER_SEEDS = ["supported-server", "server-ship"]
 DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
-SUPPORTED_SEEDS = [ "all" ]
+SUPPORTED_SEEDS = ["all"]
 
 # normal support timeframe
 # time, seeds, arches
@@ -60,24 +60,45 @@ SUPPORT_TIMEFRAME_LTS = [
 ]
 
 # distro names and if they get LTS support (order is important)
-DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
-                                 ("kubuntu",  True),
-                                 ("netbook",  False),
-                               ]
+DISTRO_NAMES_AND_LTS_SUPPORT = [
+    ("ubuntu", True),
+    ("kubuntu", True),
+    ("netbook", False),
+    ]
+
+# Names of the distribution releases that are not supported by this
+# tool. All later versions are supported.
+UNSUPPORTED_DISTRO_RELEASED = [
+    "dapper",
+    "edgy",
+    "feisty",
+    "gutsy",
+    "hardy",
+    "intrepid",
+    "jaunty",
+    "karmic",
+    ]
+
 
 # germinate output base directory
-BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
+BASE_URL = os.environ.get(
+    "MAINTENANCE_CHECK_BASE_URL", 
+    "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
-HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS"
+HINTS_DIR_URL = os.environ.get(
+    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
+    "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
-ARCHIVE_ROOT = "http://archive.ubuntu.com/ubuntu"
+ARCHIVE_ROOT = os.environ.get(
+    "MAINTENANCE_CHECK_ARCHIVE_ROOT", "http://archive.ubuntu.com/ubuntu")
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
+
 
 def get_binaries_for_source_pkg(srcname):
     """ Return all binary package names for the given source package name.
@@ -92,38 +113,41 @@ def get_binaries_for_source_pkg(srcname):
             pkgnames.add(binary)
     return pkgnames
 
+
 def expand_src_pkgname(pkgname):
     """ Expand a package name if it is prefixed with src.
 
     If the package name is prefixed with src it will be expanded
     to a list of binary package names. Otherwise the original
     package name will be returned.
-    
+
     :param pkgname: The package name (that may include src:prefix).
-    :return: A list of binary package names (the list may be one element long).
+    :return: A list of binary package names (the list may be one element
+             long).
     """
     if not pkgname.startswith("src:"):
         return [pkgname]
     return get_binaries_for_source_pkg(pkgname.split("src:")[1])
 
+
 def create_and_update_deb_src_source_list(distroseries):
     """ Create sources.list and update cache.
 
-    This creates a sources.list file with deb-src entries for a given 
+    This creates a sources.list file with deb-src entries for a given
     distroseries and apt.Cache.update() to make sure the data is up-to-date.
     :param distro: The code name of the distribution series (e.g. lucid).
     :return: None
     :raises: IOError: When cache update fails.
     """
     # apt root dir
-    rootdir="./aptroot.%s" % distroseries
-    sources_list_dir = os.path.join(rootdir, "etc","apt")
+    rootdir = "./aptroot.%s" % distroseries
+    sources_list_dir = os.path.join(rootdir, "etc", "apt")
     if not os.path.exists(sources_list_dir):
         os.makedirs(sources_list_dir)
-    sources_list = open(os.path.join(sources_list_dir, "sources.list"),"w")
+    sources_list = open(os.path.join(sources_list_dir, "sources.list"), "w")
     for pocket in [
-        "%s" % distroseries, 
-        "%s-updates" % distroseries, 
+        "%s" % distroseries,
+        "%s-updates" % distroseries,
         "%s-security" % distroseries]:
         sources_list.write(
             "deb-src %s %s main restricted\n" % (
@@ -134,13 +158,13 @@ def create_and_update_deb_src_source_list(distroseries):
     sources_list.close()
     # create required dirs/files for apt.Cache(rootdir) to work on older
     # versions of python-apt. once lucid is used it can be removed
-    for d in  ["var/lib/dpkg", 
-               "var/cache/apt/archives/partial",
-               "var/lib/apt/lists/partial"]:
-        if not os.path.exists(os.path.join(rootdir,d)):
-            os.makedirs(os.path.join(rootdir,d))
-    if not os.path.exists(os.path.join(rootdir,"var/lib/dpkg/status")):
-        open(os.path.join(rootdir,"var/lib/dpkg/status"),"w")
+    for d in ["var/lib/dpkg",
+              "var/cache/apt/archives/partial",
+              "var/lib/apt/lists/partial"]:
+        if not os.path.exists(os.path.join(rootdir, d)):
+            os.makedirs(os.path.join(rootdir, d))
+    if not os.path.exists(os.path.join(rootdir, "var/lib/dpkg/status")):
+        open(os.path.join(rootdir, "var/lib/dpkg/status"), "w")
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     try:
@@ -148,24 +172,28 @@ def create_and_update_deb_src_source_list(distroseries):
     except SystemError:
         logging.exception("cache.update() failed")
 
+
 def get_structure(distroname, version):
     """ Get structure file conent for named distro and distro version.
-    
+
     :param name: Name of the distribution (e.g. kubuntu, ubuntu, xubuntu).
     :param version: Code name of the distribution version (e.g. lucid).
     :return: List of strings with the structure file content
     """
-    f = urllib2.urlopen("%s/%s.%s/structure" % (BASE_URL, distroname, version))
+    f = urllib2.urlopen("%s/%s.%s/structure" % (
+            BASE_URL, distroname, version))
     structure = f.readlines()
     f.close()
     return structure
+
 
 def expand_seeds(structure, seedname):
     """ Expand seed by its dependencies using the strucure file.
 
     :param structure: The content of the STRUCTURE file as string list.
     :param seedname: The name of the seed as string that needs to be expanded.
-    :return: a set() for the seed dependencies (excluding the original seedname)
+    :return: a set() for the seed dependencies (excluding the original
+             seedname)
     """
     seeds = []
     for line in structure:
@@ -175,9 +203,10 @@ def expand_seeds(structure, seedname):
                 seeds += expand_seeds(structure, seed)
     return set(seeds)
 
+
 def get_packages_for_seeds(name, distro, seeds):
     """
-    get packages for the given name (e.g. ubuntu) and distro release 
+    get packages for the given name (e.g. ubuntu) and distro release
     (e.g. lucid) that are in the given list of seeds
     returns a set() of package names
     """
@@ -185,7 +214,7 @@ def get_packages_for_seeds(name, distro, seeds):
     for bseed in seeds:
         for seed in [bseed]: #, bseed+".build-depends", bseed+".seed"]:
             pkgs_in_seeds[seed] = set()
-            seedurl = "%s/%s.%s/%s" % (BASE_URL,name, distro, seed)
+            seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
             logging.debug("looking for '%s'" % seedurl)
             try:
                 f = urllib2.urlopen(seedurl)
@@ -204,12 +233,14 @@ def get_packages_for_seeds(name, distro, seeds):
                 logging.error("seed %s failed (%s)" % (seedurl, e))
     return pkgs_in_seeds
 
+
 def what_seeds(pkgname, seeds):
     in_seeds = set()
     for s in seeds:
         if pkgname in seeds[s]:
             in_seeds.add(s)
     return in_seeds
+
 
 def compare_support_level(x, y):
     """
@@ -218,9 +249,10 @@ def compare_support_level(x, y):
     :parm y: the second support level
     :return: negative if x < y, zero if x==y, positive if x > y
     """
+
     def support_to_int(support_time):
         """
-        helper that takes a support time string and converts it to 
+        helper that takes a support time string and converts it to
         a integer for cmp()
         """
         # allow strings like "5y (kubuntu-common)
@@ -233,7 +265,9 @@ def compare_support_level(x, y):
             raise ValueError("support time '%s' has to end with y or m" % x)
     return cmp(support_to_int(x), support_to_int(y))
 
-def get_packages_support_time(structure, name, pkg_support_time, support_timeframe_list):
+
+def get_packages_support_time(structure, name, pkg_support_time,
+                              support_timeframe_list):
     """
     input a structure file and a list of pair<timeframe, seedlist>
     return a dict of pkgnames -> support timeframe string
@@ -255,18 +289,21 @@ def get_packages_support_time(structure, name, pkg_support_time, support_timefra
                                 pkg, old_timeframe, timeframe))
                         pkg_support_time[pkg] = timeframe
                 if options.with_seeds:
-                    pkg_support_time[pkg] += " (%s)" % ", ".join(what_seeds(pkg, pkgs_in_seeds))
+                    pkg_support_time[pkg] += " (%s)" % ", ".join(
+                        what_seeds(pkg, pkgs_in_seeds))
 
 
     return pkg_support_time
 
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("--with-seeds", "", default=False,
-                      action="store_true", 
-                      help="add seed(s) of the package that are responsible for the maintaince time")
+                      action="store_true",
+                      help="add seed(s) of the package that are responsible "
+                           "for the maintaince time")
     parser.add_option("--source-packages", "", default=False,
-                      action="store_true", 
+                      action="store_true",
                       help="show as source pkgs")
     parser.add_option("--hints-file", "", default=None,
                       help="use diffenrt use hints file location")
@@ -275,8 +312,8 @@ if __name__ == "__main__":
     # init
     if len(args) > 0:
         distro = args[0]
-        if distro[0] < 'h':
-            print "ERROR: only hardy or later is supported"
+        if distro in UNSUPPORTED_DISTRO_RELEASED:
+            logging.error("only lucid or later is supported")
             sys.exit(1)
     else:
         distro = "lucid"
@@ -286,26 +323,32 @@ if __name__ == "__main__":
 
     if options.hints_file:
         hints_file = options.hints_file
-        (schema, netloc, path, query, fragment) = urlparse.urlsplit(hints_file)
+        (schema, netloc, path, query, fragment) = urlparse.urlsplit(
+            hints_file)
         if not schema:
             hints_file = "file:%s" % path
     else:
         hints_file = HINTS_DIR_URL % distro
-        
+
     # go over the distros we need to check
     pkg_support_time = {}
     for (name, lts_supported) in DISTRO_NAMES_AND_LTS_SUPPORT:
 
         # get basic structure file
-        structure = get_structure(name, distro)
-    
+        try:
+            structure = get_structure(name, distro)
+        except urllib2.HTTPError:
+            logging.error("Can not get structure for '%s'." % name)
+            continue
+
         # get dicts of pkgname -> support timeframe string
         support_timeframe = SUPPORT_TIMEFRAME
         if lts_supported and distro in LTS_RELEASES:
-            support_timeframe =  SUPPORT_TIMEFRAME_LTS
+            support_timeframe = SUPPORT_TIMEFRAME_LTS
         else:
             support_timeframe = SUPPORT_TIMEFRAME
-        get_packages_support_time(structure, name, pkg_support_time, support_timeframe)
+        get_packages_support_time(
+            structure, name, pkg_support_time, support_timeframe)
 
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
@@ -321,10 +364,11 @@ if __name__ == "__main__":
         for pkg in cache:
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]
-                logging.warn("add package in main but not in seeds %s with %s" % 
-                             (pkg.name, pkg_support_time[pkg.name]))
+                logging.warn(
+                    "add package in main but not in seeds %s with %s" % (
+                        pkg.name, pkg_support_time[pkg.name]))
 
-    # now check the hints file that is used to overwrite 
+    # now check the hints file that is used to overwrite
     # the default seeds
     try:
         for line in urllib2.urlopen(hints_file):
@@ -337,14 +381,15 @@ if __name__ == "__main__":
                     if support_time == 'unsupported':
                         try:
                             del pkg_support_time[pkgname]
-                            sys.stderr.write("hints-file: marking %s unsupported\n" % pkgname)
+                            sys.stderr.write("hints-file: marking %s "
+                                             "unsupported\n" % pkgname)
                         except KeyError:
                             pass
                     else:
                         if pkg_support_time.get(pkgname) != support_time:
                             sys.stderr.write(
                                 "hints-file: changing %s from %s to %s\n" % (
-                                    pkgname,  pkg_support_time.get(pkgname), 
+                                    pkgname, pkg_support_time.get(pkgname),
                                     support_time))
                             pkg_support_time[pkgname] = support_time
             except:
@@ -353,7 +398,7 @@ if __name__ == "__main__":
         if e.code != 404:
             raise
         sys.stderr.write("hints-file: %s gave 404 error\n" % hints_file)
-    
+
     # output suitable for the extra-override file
     for pkgname in sorted(pkg_support_time.keys()):
         # special case, the hints file may contain overrides that
@@ -362,7 +407,7 @@ if __name__ == "__main__":
             print "%s %s %s" % (
                 pkgname, SUPPORT_TAG, pkg_support_time[pkgname])
         else:
-            # go over the supported arches, they are divided in 
+            # go over the supported arches, they are divided in
             # first-class (PRIMARY) and second-class with different
             # support levels
             for arch in SUPPORTED_ARCHES:
@@ -373,10 +418,11 @@ if __name__ == "__main__":
                 if arch in PRIMARY_ARCHES:
                     # arch with full LTS support
                     print "%s %s %s" % (
-                        pkgname_and_arch, SUPPORT_TAG, pkg_support_time[pkgname])
+                        pkgname_and_arch, SUPPORT_TAG,
+                        pkg_support_time[pkgname])
                 else:
                     # not a LTS supported architecture, gets only regular
                     # support_timeframe
                     print "%s %s %s" % (
-                        pkgname_and_arch, SUPPORT_TAG, SUPPORT_TIMEFRAME[0][0])
-                
+                        pkgname_and_arch, SUPPORT_TAG,
+                        SUPPORT_TIMEFRAME[0][0])

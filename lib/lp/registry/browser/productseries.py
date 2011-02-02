@@ -127,7 +127,7 @@ from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarView,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )

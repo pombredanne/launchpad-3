@@ -35,6 +35,7 @@ __all__ = [
     'DistributionView',
     ]
 
+from collections import defaultdict
 import datetime
 
 from zope.component import getUtility
@@ -81,6 +82,9 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import RegistryEditFormView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
@@ -88,9 +92,6 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -961,10 +962,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -980,7 +981,11 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.archive_mirrors
+        return self.context.archive_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -992,7 +997,11 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.cdimage_mirrors
+        return self.context.cdimage_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

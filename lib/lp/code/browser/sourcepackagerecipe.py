@@ -53,18 +53,16 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     LaunchpadView,
     Link,
-    Navigation,
     NavigationMenu,
-    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -73,6 +71,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
+from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -83,9 +83,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    )
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.archive import Archive
@@ -143,17 +140,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             yield item
 
 
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
-
-
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
     """Navigation menu for sourcepackage recipes."""
 
@@ -194,6 +180,21 @@ class SourcePackageRecipeView(LaunchpadView):
         # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        recipe = self.context
+        if recipe.build_daily and recipe.daily_build_archive is None:
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>There is no PPA."))
+        elif self.dailyBuildWithoutUploadPermission():
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>The owner of the recipe (%s) does not "
+                    "have permission to upload packages into the daily "
+                    "build PPA (%s)" % (
+                        format_link(recipe.owner),
+                        format_link(recipe.daily_build_archive))))
 
     @property
     def page_title(self):
@@ -210,12 +211,45 @@ class SourcePackageRecipeView(LaunchpadView):
         All pending builds are shown, as well as 1-5 recent builds.
         Recent builds are ordered by date completed.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
                 break
         return builds
+
+    def dailyBuildWithoutUploadPermission(self):
+        """Returns true if there are upload permissions to the daily archive.
+
+        If the recipe isn't built daily, we don't consider this a problem.
+        """
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if recipe.build_daily:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            return not has_upload
+        return False
+
+    @property
+    def person_picker(self):
+        return InlineEditPickerWidget(
+            self.context, ISourcePackageRecipe['owner'],
+            format_link(self.context.owner),
+            header='Change owner',
+            step_title='Select a new owner')
+
+    @property
+    def archive_picker(self):
+        ppa = self.context.daily_build_archive
+        if ppa is None:
+            initial_html = 'None'
+        else:
+            initial_html = format_link(ppa)
+        field = ISourcePackageEditSchema['daily_build_archive']
+        return InlineEditPickerWidget(
+            self.context, field, initial_html,
+            header='Change daily build archive',
+            step_title='Select a PPA')
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -496,7 +530,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),
+            'recipe_text': self.context.recipe_text,
             }
 
     @property

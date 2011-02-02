@@ -26,6 +26,11 @@
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
 
+    <class class="lp.bugs.model.bugtask.BugTaskResultSet">
+        <allow interface="storm.zope.interfaces.IResultSet" />
+        <allow attributes="__getslice__" />
+    </class>
+
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
         <allow
@@ -247,15 +252,34 @@
                     transitionToMilestone
                     transitionToTarget"/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    distribution
+                    distroseries
+                    importance
+                    milestone
+                    owner
+                    product
+                    productseries
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    sourcepackagename
+                    statusdisplayhtml
+                    statuselsewhere
+                    statusexplanation
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -270,9 +294,6 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
-        <adapter
-            factory="lp.bugs.browser.bugtask.assignee_renderer"
-            name="assignee"/>
         <adapter
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
@@ -602,8 +623,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
@@ -775,6 +796,7 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
@@ -783,9 +805,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 
@@ -818,7 +837,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch visible index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -1056,6 +1075,42 @@
         recipient"/>
   </class>
 
+    <!-- StructuralSubscription -->
+
+    <class
+        class="lp.bugs.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
+        <require
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
+    </class>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
+
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
 </configure>

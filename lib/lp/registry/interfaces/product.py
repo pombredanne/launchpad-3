@@ -94,6 +94,9 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy,
     )
@@ -117,9 +120,6 @@ from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     Description,
     IconImageUpload,
@@ -731,6 +731,11 @@ class IProductPublic(
             description=_(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
+
+    active_or_packaged_series = Attribute(
+        _("Series that are active and/or have been packaged."))
+
+    packagings = Attribute(_("All the packagings for the project."))
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.

@@ -25,11 +25,12 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
 from lp.services.fields import SearchTag
@@ -48,37 +49,47 @@ class IBugSubscriptionFilterAttributes(Interface):
 
     find_all_tags = exported(
         Bool(
-            title=_("All given tags must be found, or any."),
+            title=_("Find all tags"),
+            description=_(
+                "If enabled, all tags must match, "
+                "else at least one tag must match."),
             required=True, default=False))
     include_any_tags = Bool(
-        title=_("Include any tags."),
+        title=_("Include any tags"),
         required=True, default=False)
     exclude_any_tags = Bool(
-        title=_("Exclude all tags."),
+        title=_("Exclude all tags"),
         required=True, default=False)
+    bug_notification_level = exported(
+        Choice(
+            title=_("Bug notification level"), required=True,
+            vocabulary=BugNotificationLevel,
+            default=BugNotificationLevel.NOTHING,
+            description=_("The volume and type of bug notifications "
+                          "this subscription will generate.")))
 
     description = exported(
         Text(
-            title=_("Description of this filter."),
+            title=_("A short description of this filter"),
             required=False))
 
     statuses = exported(
         FrozenSet(
-            title=_("The statuses to filter on."),
+            title=_("The statuses interested in (empty for all)"),
             required=True, default=frozenset(),
             value_type=Choice(
                 title=_('Status'), vocabulary=BugTaskStatus)))
 
     importances = exported(
         FrozenSet(
-            title=_("The importances to filter on."),
+            title=_("The importances interested in (empty for all)"),
             required=True, default=frozenset(),
             value_type=Choice(
                 title=_('Importance'), vocabulary=BugTaskImportance)))
 
     tags = exported(
         FrozenSet(
-            title=_("The tags to filter on."),
+            title=_("The tags interested in"),
             required=True, default=frozenset(),
             value_type=SearchTag()))
 

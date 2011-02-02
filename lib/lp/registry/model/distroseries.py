@@ -91,6 +91,9 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
@@ -119,9 +122,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -270,18 +270,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
-    @property
+    @cachedproperty
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
         # This is filtering out the partner component for now, until
         # the second stage of the partner repo arrives in 1.1.8.
-        return Component.select("""
+        return list(Component.select("""
             ComponentSelection.distroseries = %s AND
             Component.id = ComponentSelection.component AND
             Component.name != 'partner'
             """ % self.id,
-            clauseTables=["ComponentSelection"])
+            clauseTables=["ComponentSelection"]))
 
     @property
     def answers_usage(self):
@@ -1540,7 +1540,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             latest_releases = series.getCurrentSourceReleases(
                 packagenames)
             for spph in spphs:
-                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                latest_release = latest_releases.get(spph.meta_sourcepackage)
                 if latest_release is not None and apt_pkg.VersionCompare(
                     latest_release.version, spph.source_package_version) > 0:
                     version = latest_release

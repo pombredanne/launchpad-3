@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import logging
 import sys
 
 from psycopg2 import ProgrammingError
@@ -61,7 +62,6 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -93,10 +93,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        # Since recipes only build into PPAs, they should always build
-        # in main. This will need to change once other archives are
-        # supported.
-        return getUtility(IComponentSet)['main']
+        # Only PPAs currently have a sane default component at the
+        # moment, but we only support recipes for PPAs.
+        component = self.archive.default_component
+        assert component is not None
+        return component
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
@@ -152,7 +153,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % self.recipe.base_branch.unique_name
+        if self.recipe is None:
+            return 'build for deleted recipe'
+        else:
+            branch_name = self.recipe.base_branch.unique_name
+            return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester):
         """Construct a SourcePackageRecipeBuild."""
@@ -185,27 +190,35 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        if logger is None:
+            logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            recipe.is_stale = False
+            logger.debug(
+                'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            if recipe.daily_build_archive is None:
+                logger.debug(' - No daily build archive specified.')
+                continue
             for distroseries in recipe.distroseries:
+                series_name = distroseries.named_version
                 try:
                     build = recipe.requestBuild(
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
+                    logger.debug(
+                        ' - build already pending for %s', series_name)
                     continue
                 except ProgrammingError:
                     raise
                 except:
+                    logger.exception(' - problem with %s', series_name)
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
-                    if logger is not None:
-                        logger.debug(
-                            'Build for %s/%s requested',
-                            recipe.owner.name, recipe.name)
+                    logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
-            recipe.is_stale = False
         return builds
 
     def _unqueueBuild(self):

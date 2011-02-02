@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -31,7 +31,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -39,6 +42,7 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -47,6 +51,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
@@ -60,8 +65,8 @@ from lp.registry.model.karma import (
     KarmaTotalCache,
     )
 from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     login_person,
@@ -82,7 +87,7 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonTeams, self).setUp()
-        self.user = self.factory.makePerson()
+        self.user = self.factory.makePerson(name="test-member")
         self.a_team = self.factory.makeTeam(name='a')
         self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
         self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
@@ -230,6 +235,31 @@ class TestPersonTeams(TestCaseWithFactory):
         # to do this don't blow up unnecessarily. Similarly feature flags
         # team: scopes depend on this.
         self.assertFalse(self.user.inTeam('does-not-exist'))
+
+    def test_inTeam_person_incorrect_archive(self):
+        # If a person has an archive marked incorrectly that person should
+        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PARTNER)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_no_archive(self):
+        # If a person has no archive that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_ppa_archive(self):
+        # If a person has a PPA that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PPA)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
 
 
 class TestPerson(TestCaseWithFactory):
@@ -444,6 +474,15 @@ class TestPersonSet(TestCaseWithFactory):
             "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
+
+    def test_isNameBlacklisted_user_is_admin(self):
+        team = self.factory.makeTeam()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
+        self.store = IStore(self.admin_exp)
+        self.store.flush()
+        user = team.teamowner
+        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
 
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'

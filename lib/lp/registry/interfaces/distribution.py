@@ -73,6 +73,9 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.karma import IKarmaContext
@@ -82,9 +85,6 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     Description,
     IconImageUpload,
@@ -239,11 +239,19 @@ class IDistributionPublic(
             description=_("All enabled and official ARCHIVE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    archive_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     cdimage_mirrors = exported(doNotSnapshot(
         CollectionField(
             description=_("All enabled and official RELEASE mirrors "
                           "of this Distribution."),
             readonly=True, value_type=Object(schema=IDistributionMirror))))
+    cdimage_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(

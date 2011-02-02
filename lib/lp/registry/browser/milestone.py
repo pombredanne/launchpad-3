@@ -15,7 +15,7 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
-    'MilestonesView',
+    'MilestoneWithoutCountsView',
     'MilestoneView',
     'ObjectMilestonesView',
     ]
@@ -55,18 +55,16 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugtask import BugTaskListingItem
-from lp.bugs.interfaces.bugtask import (
-    IBugTaskSet,
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
 from lp.registry.browser.product import ProductDownloadFileMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone,
@@ -213,7 +211,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def should_show_bugs_and_blueprints(self):
         """Display the summary of bugs/blueprints for this milestone?"""
-        return (not self.show_series_context) and self.milestone.active
+        return self.milestone.active
 
     @property
     def page_title(self):
@@ -368,9 +366,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
-class MilestonesView(MilestoneView):
+class MilestoneWithoutCountsView(MilestoneView):
     """Show a milestone in a list of milestones."""
+
     show_series_context = True
+    should_show_bugs_and_blueprints = False
 
 
 class MilestoneAddView(LaunchpadFormView):
@@ -516,3 +516,7 @@ class ObjectMilestonesView(LaunchpadView):
     """A view for listing the milestones for any `IHasMilestones` object"""
 
     label = 'Milestones'
+
+    @cachedproperty
+    def milestones(self):
+        return list(self.context.all_milestones)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -262,6 +262,7 @@ from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     launchpadlib_for,
     login,
     login_as,
@@ -2127,7 +2128,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
-        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # XXX: architecturetag & processorfamily are tightly coupled. It's
         # wrong to just make a fresh architecture tag without also making a
         # processor family to go with it (ideally with processors!)
         if architecturetag is None:
@@ -2149,7 +2150,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution() for non-PPAs and ubuntu for PPAs.
-        :param owner: Supper IPerson, defaults to a new one made with
+        :param owner: Supply IPerson, defaults to a new one made with
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
@@ -2312,6 +2313,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if naked_sprb.date_started is None:
                 naked_sprb.date_started = spr_build.date_created
             naked_sprb.date_finished = naked_sprb.date_started + duration
+        IStore(spr_build).flush()
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
@@ -2383,6 +2385,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 spr = self.makeSourcePackageRelease(
                     source_package_recipe_build=sprb,
                     sourcepackagename=sourcepackagename,
+                    distroseries=distroseries, archive=archive)
+                spph = self.makeSourcePackagePublishingHistory(
+                    sourcepackagerelease=spr, archive=archive,
                     distroseries=distroseries)
 
                 # Make some complete and incomplete builds.
@@ -2562,36 +2567,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return pofile, potmsgset
 
-    def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, suggestion=False,
-                               reviewer=None, translations=None,
-                               lock_timestamp=None, date_updated=None,
-                               is_current_upstream=False, force_shared=False,
-                               force_diverged=False):
-        """Make a new `TranslationMessage` in the given PO file."""
-        if pofile is None:
-            pofile = self.makePOFile('sr')
-        if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
-        if translator is None:
-            translator = self.makePerson()
-        if translations is None:
-            translations = [self.getUniqueString()]
-        translation_message = potmsgset.updateTranslation(
-            pofile, translator, translations,
-            is_current_upstream=is_current_upstream,
-            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
-            force_shared=force_shared, force_diverged=force_diverged)
-        if date_updated is not None:
-            naked_translation_message = removeSecurityProxy(
-                translation_message)
-            naked_translation_message.date_created = date_updated
-            if translation_message.reviewer is not None:
-                naked_translation_message.date_reviewed = date_updated
-            naked_translation_message.sync()
-        return translation_message
-
-    def _makeTranslationsDict(self, translations=None):
+    def makeTranslationsDict(self, translations=None):
         """Make sure translations are stored in a dict, e.g. {0: "foo"}.
 
         If translations is already dict, it is returned unchanged.
@@ -2615,7 +2591,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
-        translations = self._makeTranslationsDict(translations)
+        translations = self.makeTranslationsDict(translations)
         translation_message = potmsgset.submitSuggestion(
             pofile, translator, translations)
         assert translation_message is not None, (
@@ -2627,30 +2603,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
-    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
-                                     translator=None, suggestion=False,
-                                     reviewer=None, translations=None,
-                                     date_updated=None,
-                                     is_current_upstream=False):
-        translation_message = self.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, translator=translator,
-            suggestion=suggestion, reviewer=reviewer,
-            is_current_upstream=is_current_upstream,
-            translations=translations, date_updated=date_updated,
-            force_shared=True)
-        return translation_message
-
     def makeCurrentTranslationMessage(self, pofile=None, potmsgset=None,
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None):
         """Create a `TranslationMessage` and make it current.
-
-        This is similar to `makeTranslationMessage`, except:
-         * It doesn't create suggestions.
-         * It doesn't rely on the obsolescent updateTranslation.
-         * It activates the message on the correct translation side.
 
         By default the message will only be current on the side (Ubuntu
         or upstream) that `pofile` is on.
@@ -2722,34 +2680,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pofile=pofile, potmsgset=potmsgset, translator=translator,
             translations=translations, date_created=date_created)
         return message.approveAsDiverged(pofile, reviewer)
-
-    def makeTranslation(self, pofile, sequence,
-                        english=None, translated=None,
-                        is_current_upstream=False):
-        """Add a single current translation entry to the given pofile.
-        This should only be used on pristine pofiles with pristine
-        potemplates to avoid conflicts in the sequence numbers.
-        For each entry a new POTMsgSet is created.
-
-        :pofile: The pofile to add to.
-        :sequence: The sequence number for the POTMsgSet.
-        :english: The english string which becomes the msgid in the POTMsgSet.
-        :translated: The translated string which becomes the msgstr.
-        :is_current_upstream: The is_current_upstream flag of the
-            translation message.
-        """
-        if english is None:
-            english = self.getUniqueString('english')
-        if translated is None:
-            translated = self.getUniqueString('translated')
-        naked_pofile = removeSecurityProxy(pofile)
-        potmsgset = self.makePOTMsgSet(naked_pofile.potemplate, english,
-            sequence=sequence)
-        translation = removeSecurityProxy(
-            self.makeTranslationMessage(naked_pofile, potmsgset,
-                translations=[translated]))
-        translation.is_current_upstream = is_current_upstream
-        translation.is_current_ubuntu = True
 
     def makeTranslationImportQueueEntry(self, path=None, productseries=None,
                                         distroseries=None,
@@ -2837,6 +2767,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 subscription_policy=subscription_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
+
+    def makeTeamWithMailingListSubscribers(self, team_name, super_team=None,
+                                           auto_subscribe=True):
+        """Create a team, mailing list, and subscribers.
+
+        :param team_name: The name of the team to create.
+        :param super_team: Make the team a member of the super_team.
+        :param auto_subscribe: Automatically subscribe members to the
+            mailing list.
+        :return: A tuple of team and the member user.
+        """
+        team = self.makeTeam(name=team_name)
+        member = self.makePerson()
+        with celebrity_logged_in('admin'):
+            if super_team is None:
+                mailing_list = self.makeMailingList(team, team.teamowner)
+            else:
+                super_team.addMember(
+                    team, reviewer=team.teamowner, force_team_add=True)
+                mailing_list = super_team.mailing_list
+            team.addMember(member, reviewer=team.teamowner)
+            if auto_subscribe:
+                mailing_list.subscribe(member)
+        return team, member
 
     def makeMirrorProbeRecord(self, mirror):
         """Create a probe record for a mirror of a distribution."""
@@ -3101,6 +3055,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
+        IStore(binary_package_build).flush()
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,

@@ -16,6 +16,7 @@ __all__ = [
     'ITimelineProductSeries',
     ]
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
@@ -67,7 +68,7 @@ from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
     )
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
 from lp.services.fields import (
@@ -212,20 +213,20 @@ class IProductSeriesPublic(
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = exported(
+    milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)),
+            value_type=Reference(schema=IMilestone))),
         exported_as='active_milestones')
 
-    all_milestones = exported(
+    all_milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone))))
 
     branch = exported(
         ReferenceChoice(
