@@ -88,3 +88,38 @@ class BugSubscriberTestCase(TestCaseWithFactory):
         self.assertContentEqual([self.metadata_subscriber,
                                  self.lifecycle_subscriber],
                                 self.getNotifiedPersons())
+
+    def test_add_bug_change_notifications_duplicate_lifecycle(self):
+        # Marking a bug as a duplicate of a resolved bug is
+        # a lifecycle change.
+        duplicate_of = self.factory.makeBug()
+        duplicate_of.default_bugtask.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, self.user)
+        bug_delta = self.createDelta(
+            user=self.bug.owner,
+            duplicateof={'old': None,
+                         'new': duplicate_of})
+
+        add_bug_change_notifications(bug_delta)
+
+        # Both a LIFECYCLE and METADATA subscribers get notified.
+        self.assertContentEqual([self.metadata_subscriber,
+                                 self.lifecycle_subscriber],
+                                self.getNotifiedPersons())
+
+    def test_add_bug_change_notifications_duplicate_metadata(self):
+        # Marking a bug as a duplicate of a unresolved bug is
+        # a lifecycle change.
+        duplicate_of = self.factory.makeBug()
+        duplicate_of.default_bugtask.transitionToStatus(
+            BugTaskStatus.INPROGRESS, self.user)
+        bug_delta = self.createDelta(
+            user=self.bug.owner,
+            duplicateof={'old': None,
+                         'new': duplicate_of})
+
+        add_bug_change_notifications(bug_delta)
+
+        # Only METADATA subscribers get notified.
+        self.assertContentEqual([self.metadata_subscriber],
+                                self.getNotifiedPersons())
