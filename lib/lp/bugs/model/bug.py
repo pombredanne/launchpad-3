@@ -26,6 +26,7 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
+from itertools import chain
 import operator
 import re
 
@@ -90,6 +91,7 @@ from canonical.launchpad.database.message import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
     ILaunchpadCelebrities,
     IPersonRoles,
     )
@@ -436,7 +438,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         indexed_messages = self._indexed_messages(include_bugmessage=True)
         for indexed_message, bugmessage in indexed_messages:
-            if bugmessage.index != indexed_message.index: 
+            if bugmessage.index != indexed_message.index:
                 bugmessage.index = indexed_message.index
 
     @property
@@ -822,10 +824,13 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
+    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+        """See `IBug`."""
+        return BugSubscriptionInfo(self, level)
+
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscriptionInfo(
-            self, BugNotificationLevel.NOTHING).direct_subscriptions
+        return self.getSubscriptionInfo().direct_subscriptions
 
     def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -837,7 +842,7 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.NOTHING
-        subscriptions = BugSubscriptionInfo(self, level).direct_subscriptions
+        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
@@ -851,8 +856,8 @@ BugMessage""" % sqlvalues(self.id))
         """
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
-        indirect_subscribers = (
-            self.getAlsoNotifiedSubscribers(recipients, level) +
+        indirect_subscribers = chain(
+            self.getAlsoNotifiedSubscribers(recipients, level),
             self.getSubscribersFromDuplicates(recipients, level))
 
         # Remove security proxy for the sort key, but return
@@ -887,37 +892,18 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            return []
-
         if level is None:
-            notification_level = BugNotificationLevel.NOTHING
-        else:
-            notification_level = level
-
-        dupe_details = dict(
-            Store.of(self).find(
-                (Person, Bug),
-                BugSubscription.person == Person.id,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.bug_notification_level >= notification_level,
-                Bug.duplicateof == self.id))
-
-        dupe_subscribers = set(dupe_details)
-
-        # Direct and "also notified" subscribers take precedence over
-        # subscribers from dupes. Note that we don't supply recipients
-        # here because we are doing this to /remove/ subscribers.
-        dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+            level = BugNotificationLevel.NOTHING
+        info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
-            for subscriber in dupe_subscribers:
+            # Pre-load duplicate bugs.
+            list(self.duplicates)
+            for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
-                    subscriber, dupe_details[subscriber])
+                    subscription.person, subscription.bug)
 
-        return sorted(
-            dupe_subscribers, key=operator.attrgetter("displayname"))
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -2091,10 +2077,34 @@ def freeze(factory):
 
 
 class BugSubscriptionInfo:
-    """Represents bug subscription sets."""
+    """Represents bug subscription sets.
+
+    The intention for this class is to encapsulate all calculations of
+    subscriptions and subscribers for a bug. Some design considerations:
+
+    * Immutable.
+
+    * Set-based.
+
+    * Sets are cached.
+
+    * Usable with a *snapshot* of a bug. This is interesting for two reasons:
+
+      - Event subscribers commonly deal with snapshots. An instance of this
+        class could be added to a custom snapshot so that multiple subscribers
+        can share the information it contains.
+
+      - Use outside of the web request. A serialized snapshot could be used to
+        calculate subscribers for a particular bug state. This could help us
+        to move even more bug mail processing out of the web request.
+
+    """
+
+    implements(IHasBug)
 
     def __init__(self, bug, level):
         self.bug = bug
+        assert level is not None
         self.level = level
 
     @cachedproperty
@@ -2120,6 +2130,22 @@ class BugSubscriptionInfo:
                 Bug.duplicateof == self.bug)
 
     @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def duplicate_only_subscriptions(self):
+        """Subscripitions to duplicates of the bug.
+
+        Excludes subscriptions for people who have a direct subscription or
+        are also notified for another reason.
+        """
+        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        higher_precedence = (
+            self.direct_subscriptions.subscribers.union(
+                self.also_notified_subscribers))
+        return (
+            subscription for subscription in self.duplicate_subscriptions
+            if subscription.person not in higher_precedence)
+
+    @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
@@ -2138,13 +2164,14 @@ class BugSubscriptionInfo:
             if bugtask.milestone is not None:
                 query_arguments.append((bugtask.milestone, bugtask))
         # Build the query.
+        empty = EmptyResultSet()
         union = lambda left, right: (
             removeSecurityProxy(left).union(
                 removeSecurityProxy(right)))
         queries = (
             target.getSubscriptionsForBugTask(bugtask, self.level)
             for target, bugtask in query_arguments)
-        return reduce(union, queries)
+        return reduce(union, queries, empty)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
