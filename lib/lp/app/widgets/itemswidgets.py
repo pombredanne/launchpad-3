@@ -52,11 +52,13 @@ class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         element = renderElement(
-            u'input', value=escape(value), name=name, id=id,
+            u'input', value=value, name=name, id=id,
             cssClass=cssClass, type='checkbox', **kw)
-        return self._joinButtonToMessageTemplate % (element, escape(text))
+        return self._joinButtonToMessageTemplate % (element, text)
 
 
 class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
@@ -72,6 +74,8 @@ class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,

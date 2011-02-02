@@ -13,6 +13,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     PlainMultiCheckBoxWidget,
+    LabeledMultiCheckBoxWidget,
     )
 from lp.testing import (
     TestCaseWithFactory,
@@ -45,7 +46,7 @@ class ItemWidgetTestCase(TestCaseWithFactory):
 
 
 class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
-    """Test the TargetBranchWidget class."""
+    """Test the PlainMultiCheckBoxWidget class."""
 
     WIDGET_CLASS = PlainMultiCheckBoxWidget
 
@@ -70,4 +71,36 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
             '<input class="checkboxType" id="test_field.1" name="test_field" '
             'type="checkbox" value="token-2" />&nbsp;'
             '&lt;unsafe&gt; &amp;nbsp; title ')
+        self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
+
+
+class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
+    """Test the PlainMultiCheckBoxWidget class."""
+
+    WIDGET_CLASS = LabeledMultiCheckBoxWidget
+
+    def test__renderItem_checked(self):
+        # Render item in checked state.
+        expected = (
+            '<label for="field.test_field.1" style="font-weight: normal">'
+            '<input class="checkboxType" checked="checked" id="test_field.1" '
+            'name="test_field" type="checkbox" value="token-1" />&nbsp;'
+            'Safe title</label> ')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
+
+    def test__renderItem_unchecked(self):
+        # Render item in unchecked state.
+        expected = (
+            '<label for="field.test_field.1" style="font-weight: normal">'
+            '<input class="checkboxType" id="test_field.1" name="test_field" '
+            'type="checkbox" value="token-1" />&nbsp;Safe title</label> ')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=False)
+
+    def test__renderItem_unsafe_content(self):
+        # Render item iterpolation is safe.
+        expected = (
+            '<label for="field.test_field.1" style="font-weight: normal">'
+            '<input class="checkboxType" id="test_field.1" name="test_field" '
+            'type="checkbox" value="token-2" />&nbsp;'
+            '&lt;unsafe&gt; &amp;nbsp; title</label> ')
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
