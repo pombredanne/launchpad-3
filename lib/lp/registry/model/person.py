@@ -36,6 +36,7 @@ import re
 import subprocess
 import weakref
 
+from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
     BoolCol,
@@ -50,6 +51,7 @@ from sqlobject.sqlbuilder import (
     OR,
     SQLConstant,
     )
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -65,6 +67,10 @@ from storm.expr import (
     Upper,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -351,6 +357,19 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+class PersonSettings(Storm):
+
+    implements(IPersonSettings)
+
+    __storm_table__ = 'PersonSettings'
+
+    personID = Int("person", default=None)
+    person = Reference(personID, "Person.id")
+
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
+
+
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
@@ -491,7 +510,26 @@ class Person(
         dbName='registrant', foreignKey='Person', default=None,
         storm_validator=validate_public_person)
     hide_email_addresses = BoolCol(notNull=True, default=False)
-    verbose_bugnotifications = BoolCol(notNull=True, default=True)
+
+    @cachedproperty
+    def _person_settings(self):
+        return IStore(PersonSettings).find(
+            PersonSettings,
+            PersonSettings.person == self).one()
+
+    @property
+    def verbose_notifications(self):
+        return self._person_settings.verbose_notifications
+    @verbose_notifications.setter
+    def verbose_notifications(self, value):
+        self._person_settings.verbose_notifications = value
+
+    @property
+    def selfgenerated_bugnotifications(self):
+        return self._person_settings.selfgenerated_bugnotifications
+    @verbose_notifications.setter
+    def selfgenerated_bugnotifications(self, value):
+        self._person_settings.selfgenerated_bugnotifications = value
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')

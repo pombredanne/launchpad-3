@@ -584,6 +584,22 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
+class IPersonSettings(Interface):
+    """Settings for a person that are not used relatively rarely.
+
+    This is currently an implementation detail--we expose these attributes
+    on IPersonPublic--but we might expect people to use it later.
+    """
+
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
+    selfgenerated_bugnotifications = Bool(
+        title=_("Send me bug notifications for changes I make."),
+        required=False, default=True)
+
+
 class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
@@ -822,6 +838,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     verbose_bugnotifications = Bool(
         title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
+    selfgenerated_bugnotifications = Bool(
+        title=_("Send me bug notifications for changes I make."),
         required=False, default=True)
 
     mailing_list_auto_subscribe_policy = exported(
