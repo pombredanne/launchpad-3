@@ -3815,6 +3815,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('personsettings', 'person'),
             ('emailaddress', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
