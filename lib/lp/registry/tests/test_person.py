@@ -684,7 +684,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_merge_moves_branches(self):
         # When person/teams are merged, branches owned by the from person
-        # are copied.
+        # are moved.
         person = self.factory.makePerson()
         branch = self.factory.makeBranch()
         self._do_premerge(branch.owner, person)
@@ -694,9 +694,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(1, branches.count())
 
     def test_merge_with_duplicated_branches(self):
-        # When person/teams are merged, if the from person has a branch with
-        # the same name as the to person, the from person's branches are
-        # renamed.
+        # If both the from and to people have branches with the same name,
+        # merging renames the duplicate from the from person's side.
         product = self.factory.makeProduct()
         from_branch = self.factory.makeBranch(name='foo', product=product)
         to_branch = self.factory.makeBranch(name='foo', product=product)
@@ -710,7 +709,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_merge_moves_recipes(self):
         # When person/teams are merged, recipes owned by the from person are
-        # copied.
+        # moved.
         person = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
         # Delete the PPA, which is required for the merge to work.
@@ -722,9 +721,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(1, person.getRecipes().count())
 
     def test_merge_with_duplicated_recipes(self):
-        # When person/teams are merged, if the from person has a recipe with
-        # the same name as the to person, the from person's recipes are
-        # renamed.
+        # If both the from and to people have recipes with the same name,
+        # merging renames the duplicate from the from person's side.
         merge_from = self.factory.makeSourcePackageRecipe(
             name=u'foo', description=u'FROM')
         merge_to = self.factory.makeSourcePackageRecipe(

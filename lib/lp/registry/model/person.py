@@ -3341,6 +3341,7 @@ class PersonSet:
             (decorator_table.lower(), person_pointer_column.lower()))
 
     def _mergeBranches(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
         branches = getUtility(IBranchCollection).ownedBy(from_person)
         for branch in branches.getBranches():
             removeSecurityProxy(branch).setOwner(to_person, to_person)
@@ -3351,6 +3352,7 @@ class PersonSet:
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
     def _mergeSourcePackageRecipes(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
         recipes = from_person.getRecipes()
         existing_names = [r.name for r in to_person.getRecipes()]
         for recipe in recipes:
@@ -3359,9 +3361,9 @@ class PersonSet:
             while new_name in existing_names:
                 new_name = '%s-%s' % (recipe.name, count)
                 count += 1
-            nr = removeSecurityProxy(recipe)
-            nr.owner = to_person
-            nr.name = new_name
+            naked_recipe = removeSecurityProxy(recipe)
+            naked_recipe.owner = to_person
+            naked_recipe.name = new_name
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
