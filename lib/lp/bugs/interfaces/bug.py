@@ -543,9 +543,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         True to include the master bug's subscribers as recipients.
         """
 
-    def addChangeNotification(text, person, recipients=None, when=None):
-        """Add a bug change notification."""
-
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 

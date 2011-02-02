@@ -747,7 +747,6 @@
                 attributes="
                     addAttachment
                     addChange
-                    addChangeNotification
                     addCommentNotification
                     addNomination
                     addTask
