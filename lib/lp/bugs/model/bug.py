@@ -438,7 +438,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         indexed_messages = self._indexed_messages(include_bugmessage=True)
         for indexed_message, bugmessage in indexed_messages:
-            if bugmessage.index != indexed_message.index: 
+            if bugmessage.index != indexed_message.index:
                 bugmessage.index = indexed_message.index
 
     @property
