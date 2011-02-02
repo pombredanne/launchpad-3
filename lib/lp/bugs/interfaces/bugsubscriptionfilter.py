@@ -25,7 +25,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,

@@ -22,10 +22,10 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.services.propertycache import cachedproperty
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 
 

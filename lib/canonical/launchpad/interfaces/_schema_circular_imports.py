@@ -39,6 +39,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -81,7 +82,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWSubmission,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (

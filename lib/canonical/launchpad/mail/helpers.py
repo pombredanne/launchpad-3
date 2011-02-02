@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.mail import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 

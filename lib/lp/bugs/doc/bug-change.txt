@@ -141,7 +141,7 @@ bug's target for Meta data changes, but not for lifecycle changes.
 
 
     >>> from lp.testing import person_logged_in
-    >>> from lp.registry.enum import BugNotificationLevel
+    >>> from lp.bugs.enum import BugNotificationLevel
     >>> lifecycle_subscriber = factory.makePerson(
     ...         displayname='Lifecycle subscriber')
     >>> metadata_subscriber = factory.makePerson(

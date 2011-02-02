@@ -31,8 +31,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice
 
 

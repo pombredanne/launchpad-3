@@ -1108,7 +1108,7 @@ notification level of the subscription.
     >>> flush_notifications()
     >>> switch_db_to_launchpad()
 
-    >>> from lp.registry.enum import BugNotificationLevel
+    >>> from lp.bugs.enum import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')

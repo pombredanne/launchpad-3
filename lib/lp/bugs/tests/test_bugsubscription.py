@@ -15,7 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
