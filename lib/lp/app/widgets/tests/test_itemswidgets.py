@@ -82,7 +82,7 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
 
 
 class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
-    """Test the PlainMultiCheckBoxWidget class."""
+    """Test the LabeledMultiCheckBoxWidget class."""
 
     WIDGET_CLASS = LabeledMultiCheckBoxWidget
 
@@ -114,7 +114,7 @@ class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
 
 
 class TestLaunchpadRadioWidget(ItemWidgetTestCase):
-    """Test the PlainMultiCheckBoxWidget class."""
+    """Test the LaunchpadRadioWidget class."""
 
     WIDGET_CLASS = LaunchpadRadioWidget
 
@@ -145,23 +145,29 @@ class TestLaunchpadRadioWidget(ItemWidgetTestCase):
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
 
-class TestLaunchpadRadioWidgetWithDescription(ItemWidgetTestCase):
-    """Test the PlainMultiCheckBoxWidget class."""
+class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
+    """Test the LaunchpadRadioWidgetWithDescription class."""
 
-    WIDGET_CLASS = LaunchpadRadioWidgetWithDescription
+    layer = DatabaseFunctionalLayer
 
     class TestEnum(EnumeratedType):
         SAFE_TERM = Item('item-1', description='Safe title')
         UNSAFE_TERM = Item('item-<2>', description='<unsafe> &nbsp; title')
 
     def setUp(self):
-        super(ItemWidgetTestCase, self).setUp()
+        super(TestLaunchpadRadioWidgetWithDescription, self).setUp()
         self.request = LaunchpadTestRequest()
-        self.vocabulary = self.TestEnum
-        field = Choice(__name__='test_field', vocabulary=self.vocabulary)
+        field = Choice(__name__='test_field', vocabulary=self.TestEnum)
         self.field = field.bind(object())
-        self.widget = self.WIDGET_CLASS(
-            self.field, self.vocabulary, self.request)
+        self.widget = LaunchpadRadioWidgetWithDescription(
+            self.field, self.TestEnum, self.request)
+
+    def assertRenderItem(self, expected, method, enum_item):
+        markup = method(
+            index=1, text=enum_item.title, value=enum_item.name,
+            name=self.field.__name__, cssClass=None)
+        markup = ' '.join(markup.split())
+        self.assertEqual(expected, markup)
 
     def test_renderSelectedItem(self):
         # Render checked="checked" item in checked state.
@@ -171,12 +177,8 @@ class TestLaunchpadRadioWidgetWithDescription(ItemWidgetTestCase):
             'name="test_field" type="radio" value="SAFE_TERM" /></td> '
             '<td><label for="test_field.1">item-1</label></td> </tr> '
             '<tr> <td class="formHelp">Safe title</td> </tr>')
-        markup = self.widget.renderSelectedItem(
-            index=1, text=self.TestEnum.SAFE_TERM.title,
-            value=self.TestEnum.SAFE_TERM.name,
-            name=self.field.__name__, cssClass=None)
-        markup = ' '.join(markup.split())
-        self.assertEqual(expected, markup)
+        self.assertRenderItem(
+            expected, self.widget.renderSelectedItem, self.TestEnum.SAFE_TERM)
 
     def test_renderItem(self):
         # Render item in unchecked state.
@@ -186,12 +188,8 @@ class TestLaunchpadRadioWidgetWithDescription(ItemWidgetTestCase):
             'name="test_field" type="radio" value="SAFE_TERM" /></td> '
             '<td><label for="test_field.1">item-1</label></td> </tr> '
             '<tr> <td class="formHelp">Safe title</td> </tr>')
-        markup = self.widget.renderItem(
-            index=1, text=self.TestEnum.SAFE_TERM.title,
-            value=self.TestEnum.SAFE_TERM.name,
-            name=self.field.__name__, cssClass=None)
-        markup = ' '.join(markup.split())
-        self.assertEqual(expected, markup)
+        self.assertRenderItem(
+            expected, self.widget.renderItem, self.TestEnum.SAFE_TERM)
 
     def test_renderSelectedItem_unsafe_content(self):
         # Render selected item escapes unsafe markup.
@@ -202,12 +200,9 @@ class TestLaunchpadRadioWidgetWithDescription(ItemWidgetTestCase):
             '<td><label for="test_field.1">item-&lt;2&gt;</label></td> </tr> '
             '<tr> '
             '<td class="formHelp">&lt;unsafe&gt; &amp;nbsp; title</td> </tr>')
-        markup = self.widget.renderSelectedItem(
-            index=1, text=self.TestEnum.UNSAFE_TERM.title,
-            value=self.TestEnum.UNSAFE_TERM.name,
-            name=self.field.__name__, cssClass=None)
-        markup = ' '.join(markup.split())
-        self.assertEqual(expected, markup)
+        self.assertRenderItem(
+            expected,
+            self.widget.renderSelectedItem, self.TestEnum.UNSAFE_TERM)
 
     def test_renderItem_unsafe_content(self):
         # Render item escapes unsafe markup.
@@ -218,9 +213,5 @@ class TestLaunchpadRadioWidgetWithDescription(ItemWidgetTestCase):
             '<td><label for="test_field.1">item-&lt;2&gt;</label></td> </tr> '
             '<tr> '
             '<td class="formHelp">&lt;unsafe&gt; &amp;nbsp; title</td> </tr>')
-        markup = self.widget.renderItem(
-            index=1, text=self.TestEnum.UNSAFE_TERM.title,
-            value=self.TestEnum.UNSAFE_TERM.name,
-            name=self.field.__name__, cssClass=None)
-        markup = ' '.join(markup.split())
-        self.assertEqual(expected, markup)
+        self.assertRenderItem(
+            expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
