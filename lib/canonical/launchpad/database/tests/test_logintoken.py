@@ -10,7 +10,6 @@ from textwrap import dedent
 
 from testtools.matchers import DocTestMatches
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -19,6 +18,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestLoginToken(TestCaseWithFactory):
@@ -37,6 +37,13 @@ class TestLoginToken(TestCaseWithFactory):
                 user1, user1.preferredemail.email, user2.preferredemail.email,
                 LoginTokenType.ACCOUNTMERGE)
 
+        token.sendMergeRequestEmail()
+        (message,) = pop_notifications()
+        self.assertEqual(
+            "Launchpad Account Merge <noreply@launchpad.net>",
+            message['from'])
+        self.assertEqual(
+            "Launchpad: Merge of Accounts Requested", message['subject'])
         expected_message = dedent("""
             Hello
 
@@ -70,15 +77,4 @@ class TestLoginToken(TestCaseWithFactory):
             """)
         expected_matcher = DocTestMatches(
             expected_message, doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
-
-        def _send_email(from_name, subject, message):
-            self.assertEqual(
-                "Launchpad Account Merge", from_name)
-            self.assertEqual(
-                "Launchpad: Merge of Accounts Requested", subject)
-            self.assertThat(message, expected_matcher)
-
-        # Patch our custom _send_email onto the login token.
-        removeSecurityProxy(token)._send_email = _send_email
-
-        token.sendMergeRequestEmail()
+        self.assertThat(message.get_payload(decode=True), expected_matcher)
