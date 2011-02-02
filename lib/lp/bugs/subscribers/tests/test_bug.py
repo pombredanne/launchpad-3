@@ -45,8 +45,8 @@ class BugSubscriberTestCase(TestCaseWithFactory):
     def newSubscriber(self, bug, name, level):
         # Create a new bug subscription with a new person.
         subscriber = self.factory.makePerson(name=name)
-        subscription = bug.subscribe(subscriber, subscriber,
-                                     level=level)
+        subscription = bug.subscribe(
+            subscriber, subscriber, level=level)
         return subscriber
 
     def getNotifiedPersons(self, include_all=False):
@@ -64,30 +64,33 @@ class BugSubscriberTestCase(TestCaseWithFactory):
         # Changing a bug description is considered to have change_level
         # of BugNotificationLevel.METADATA.
         bug_delta = self.createDelta(
-            description={'new': 'new description',
-                         'old': self.bug.description})
+            description={
+                'new': 'new description',
+                'old': self.bug.description,
+                })
 
         add_bug_change_notifications(bug_delta)
-
-        self.assertContentEqual([self.metadata_subscriber],
-                                self.getNotifiedPersons())
+        self.assertContentEqual(
+            [self.metadata_subscriber], self.getNotifiedPersons())
 
     def test_add_bug_change_notifications_lifecycle(self):
         # Changing a bug description is considered to have change_level
         # of BugNotificationLevel.LIFECYCLE.
         bugtask_delta = BugTaskDelta(
             bugtask=self.bugtask,
-            status={'old': BugTaskStatus.NEW,
-                    'new': BugTaskStatus.FIXRELEASED})
+            status={
+                'old': BugTaskStatus.NEW,
+                'new': BugTaskStatus.FIXRELEASED,
+                })
         bug_delta = self.createDelta(
             bugtask_deltas=bugtask_delta)
 
         add_bug_change_notifications(bug_delta)
 
         # Both a LIFECYCLE and METADATA subscribers get notified.
-        self.assertContentEqual([self.metadata_subscriber,
-                                 self.lifecycle_subscriber],
-                                self.getNotifiedPersons())
+        self.assertContentEqual(
+            [self.metadata_subscriber, self.lifecycle_subscriber],
+            self.getNotifiedPersons())
 
     def test_add_bug_change_notifications_duplicate_lifecycle(self):
         # Marking a bug as a duplicate of a resolved bug is
@@ -97,15 +100,17 @@ class BugSubscriberTestCase(TestCaseWithFactory):
             BugTaskStatus.FIXRELEASED, self.user)
         bug_delta = self.createDelta(
             user=self.bug.owner,
-            duplicateof={'old': None,
-                         'new': duplicate_of})
+            duplicateof={
+                'old': None,
+                'new': duplicate_of,
+                })
 
         add_bug_change_notifications(bug_delta)
 
         # Both a LIFECYCLE and METADATA subscribers get notified.
-        self.assertContentEqual([self.metadata_subscriber,
-                                 self.lifecycle_subscriber],
-                                self.getNotifiedPersons())
+        self.assertContentEqual(
+            [self.metadata_subscriber, self.lifecycle_subscriber],
+            self.getNotifiedPersons())
 
     def test_add_bug_change_notifications_duplicate_metadata(self):
         # Marking a bug as a duplicate of a unresolved bug is
@@ -115,11 +120,13 @@ class BugSubscriberTestCase(TestCaseWithFactory):
             BugTaskStatus.INPROGRESS, self.user)
         bug_delta = self.createDelta(
             user=self.bug.owner,
-            duplicateof={'old': None,
-                         'new': duplicate_of})
+            duplicateof={
+                'old': None,
+                'new': duplicate_of,
+                })
 
         add_bug_change_notifications(bug_delta)
 
         # Only METADATA subscribers get notified.
-        self.assertContentEqual([self.metadata_subscriber],
-                                self.getNotifiedPersons())
+        self.assertContentEqual(
+            [self.metadata_subscriber], self.getNotifiedPersons())

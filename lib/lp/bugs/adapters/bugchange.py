@@ -44,8 +44,8 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.interfaces.product import IProduct
 
 
 class NoBugChangeFoundError(Exception):
@@ -351,7 +351,7 @@ class BugDescriptionChange(AttributeChange):
 
 
 def _is_status_change_lifecycle_change(old_status, new_status):
-    """Is a status change a lifecycle change."""
+    """Is a status change a lifecycle change?"""
     # Bug is moving from one of unresolved bug statuses (like
     # 'in progress') to one of resolved ('fix released').
     bug_is_closed = (old_status in UNRESOLVED_BUGTASK_STATUSES and
@@ -775,13 +775,13 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     @property
     def change_level(self):
         """See `IBugChange`."""
-        # Is bug being closed or reopened.
+        # Is bug being closed or reopened?
         lifecycle_change = _is_status_change_lifecycle_change(
             self.old_value, self.new_value)
 
-        # When bug task is put into INCOMPLETE status, and subscriber
-        # is the person who originally reported the bug, we still notify
-        # them because bug now depends on their input.
+        # When the bug task is marked INCOMPLETE, and subscriber is the
+        # person who originally reported the bug, we still notify them
+        # because bug now depends on their input.
         subscriber_is_asked_for_info = (
             self.new_value == BugTaskStatus.INCOMPLETE and
             self.bug_task.bug.owner == self.person)
