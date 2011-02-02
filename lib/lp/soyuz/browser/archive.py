@@ -79,13 +79,6 @@ from canonical.launchpad.webapp.menu import (
     structured,
     )
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget,
-    LaunchpadDropdownWidget,
-    LaunchpadRadioWidget,
-    PlainMultiCheckBoxWidget,
-    )
-from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -98,6 +91,13 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    PlainMultiCheckBoxWidget,
+    )
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,

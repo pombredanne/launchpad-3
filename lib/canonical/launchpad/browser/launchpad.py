@@ -93,7 +93,6 @@ from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from lp.app.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
@@ -115,6 +114,7 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet

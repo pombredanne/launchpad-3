@@ -30,12 +30,12 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IPrimaryContext,
     )
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.interfaces.bugnomination import (
     IBugNomination,

@@ -39,11 +39,11 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachment,

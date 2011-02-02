@@ -162,8 +162,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.app.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpadform import (
     action,
@@ -186,6 +184,8 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,

@@ -44,13 +44,13 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.date import DateTimeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateTimeWidget
 from lp.registry.browser import (
     BaseRdfView,
     MilestoneOverlayMixin,

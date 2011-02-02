@@ -15,24 +15,24 @@ from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from lp.code.browser.widgets.branch import (
-    BranchPopupWidget,
-    NoProductError,
-    )
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     logout,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.code.browser.widgets.branch import (
+    BranchPopupWidget,
+    NoProductError,
+    )
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.code.enums import BranchType
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing.factory import LaunchpadObjectFactory
 
 

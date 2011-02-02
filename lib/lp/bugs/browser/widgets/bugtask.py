@@ -49,17 +49,17 @@ from zope.schema.interfaces import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.browser.tales import TeamFormatterAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
-    )
-from lp.app.browser.tales import TeamFormatterAPI
-from lp.app.errors import (
-    NotFoundError,
-    UnexpectedFormData,
     )
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,

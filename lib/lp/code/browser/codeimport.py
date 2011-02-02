@@ -40,6 +40,12 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -48,12 +54,6 @@ from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
-from lp.app.browser.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadFormView,
-    )
-from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

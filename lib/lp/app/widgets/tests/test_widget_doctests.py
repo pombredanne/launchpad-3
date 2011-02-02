@@ -3,8 +3,11 @@
 
 __metaclass__ = type
 
-import unittest, doctest
+import doctest
+import unittest
+
 from canonical.testing.layers import DatabaseFunctionalLayer
+
 
 def test_suite():
     suite = unittest.TestSuite()

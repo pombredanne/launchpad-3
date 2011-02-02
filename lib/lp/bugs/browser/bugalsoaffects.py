@@ -44,15 +44,15 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
-from lp.app.widgets.popup import SearchForUpstreamPopupWidget
-from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.bugs.browser.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget,
     )

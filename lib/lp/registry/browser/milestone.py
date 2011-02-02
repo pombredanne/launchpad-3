@@ -47,13 +47,13 @@ from canonical.launchpad.webapp.menu import (
     Link,
     NavigationMenu,
     )
-from lp.app.widgets.date import DateWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (

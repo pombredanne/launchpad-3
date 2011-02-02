@@ -18,16 +18,14 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.interfaces.buglink import (
     IBugLinkForm,
     IUnlinkBugsForm,

@@ -32,7 +32,6 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -40,6 +39,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.tales import LanguageFormatterAPI
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (
     ILanguage,

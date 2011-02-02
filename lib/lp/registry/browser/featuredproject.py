@@ -17,15 +17,13 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 

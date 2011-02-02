@@ -15,6 +15,8 @@ __all__ = [
 import cgi
 import math
 
+from lazr.restful.interface import copy_field
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.app.form.browser.textwidgets import TextWidget
@@ -26,11 +28,6 @@ from zope.schema import (
     Choice,
     Text,
     )
-
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lazr.restful.interface import copy_field
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator

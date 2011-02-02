@@ -31,12 +31,12 @@ from canonical.launchpad.webapp.publisher import (
     Navigation,
     stepthrough,
     )
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distributionsourcepackage import (

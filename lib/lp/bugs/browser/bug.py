@@ -76,8 +76,6 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from lp.app.widgets.project import ProjectScopeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -85,6 +83,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,

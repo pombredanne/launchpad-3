@@ -59,20 +59,20 @@ from canonical.launchpad.webapp.batching import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
-from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
+    IBugTrackerComponentGroup,
     IBugTrackerSet,
     IRemoteBug,
-    IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
 

@@ -15,7 +15,6 @@ from canonical.launchpad.webapp import (
     canonical_url,
     stepthrough,
     )
-from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.answers.interfaces.faq import IFAQ
 from lp.app.browser.launchpadform import (
     action,
@@ -23,6 +22,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.textwidgets import TokensTextWidget
 
 
 class FAQTargetNavigationMixin:

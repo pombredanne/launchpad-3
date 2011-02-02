@@ -18,13 +18,22 @@ from datetime import (
 
 from pytz import utc
 from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import IInputWidget, InputErrors
+from zope.app.form.interfaces import (
+    IInputWidget,
+    InputErrors,
+    )
 from zope.app.form.utility import setUpWidget
-from zope.component import getMultiAdapter, getUtility
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 
 

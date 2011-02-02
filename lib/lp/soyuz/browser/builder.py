@@ -42,13 +42,13 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.owner import HiddenUserWidget
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,

@@ -59,15 +59,15 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
-from lp.app.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget,
-    LaunchpadDropdownWidget,
-    )
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )

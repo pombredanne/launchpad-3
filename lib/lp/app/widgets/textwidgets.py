@@ -2,16 +2,19 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
-import pytz
 import re
 
+import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.datetime import parse, DateTimeError
 from zope.app.form.browser.textwidgets import (
     TextAreaWidget,
     TextWidget,
     )
 from zope.app.form.interfaces import ConversionError
+from zope.datetime import (
+    DateTimeError,
+    parse,
+    )
 
 from lp.app.errors import UnexpectedFormData
 

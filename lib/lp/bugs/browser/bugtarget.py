@@ -72,11 +72,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from lp.app.widgets.product import (
-    GhostCheckBoxWidget,
-    GhostWidget,
-    ProductBugTrackerWidget,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -93,6 +88,11 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
+    )
+from lp.app.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView

@@ -16,12 +16,12 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 

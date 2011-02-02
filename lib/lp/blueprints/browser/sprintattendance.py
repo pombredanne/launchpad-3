@@ -14,16 +14,14 @@ from datetime import timedelta
 import pytz
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from lp.app.widgets.date import DateTimeWidget
-from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateTimeWidget
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 
 

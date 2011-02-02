@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -82,6 +81,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup

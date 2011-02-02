@@ -28,14 +28,14 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget,
-    LaunchpadRadioWidgetWithDescription,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.code.enums import (
     BranchVisibilityRule,

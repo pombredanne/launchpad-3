@@ -35,14 +35,14 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.widgets.date import DateWidget
-from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (
