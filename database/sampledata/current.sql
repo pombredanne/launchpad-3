@@ -2444,7 +2444,7 @@ Binary: commercialpackage
 Maintainer: Julian Edwards <launchpad@julian-edwards.com>
 Architecture: any
 Standards-Version: 3.6.2
-Files:
+Files: 
  f27fb7494c5afbb0fb10b78d16f7da37 179 commercialpackage_1.0.orig.tar.gz
  7d6fa416334c6da3b954bf9ebff6e9ae 610 commercialpackage_1.0-1.diff.gz
 
@@ -2855,7 +2855,7 @@ In some cases the bounty may have been offered in a variety of currencies, so th
 In some cases the bounty may have been offered in a variety ofIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates. currencies, so this USD value is an estimate based on recent currency rates.', 657.00, 50, 16, '2005-08-19 14:33:13.38112', 16, NULL, NULL, NULL, 1);
 INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (3, 'mozilla-svg', 'Support SVG in Mozilla', 'SVG is emerging as a well-supported and well-defined standard for classy vector images. Mozilla should support SVG images natively, without plugins as currently required. In addition, it would be great to be able to address SVG images using the DOM, since they are made up of XML just like XHTML.', ' Since you have come this far, you probably already know that SVG stands for Scalable Vector Graphics, and that it is an XML language for sophisticated 2-dimensional graphics. SVG is to graphics what XHTML is to text, MathML is to mathematical equations and CML is to the description of chemical molecules.
 
-SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL.
+SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL. 
 ', 877.00, 50, 16, '2005-08-19 14:37:20.144375', 16, NULL, NULL, NULL, 1);
 INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (4, 'evo-vcard', 'Comprehensive support for VCARD in Evolution', 'The VCARD standard, as irritating and silly as it is, should be better supported in Evolution. This bounty is for support for the creation, parsing, import and export of VCARDS in Evolution.', 'NOTE: (You MUST have python installed to do this)
 
@@ -3152,7 +3152,7 @@ Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yx
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, NULL, false, false, '2006-07-14 08:48:52.922462', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, NULL, false, false, '2006-07-14 08:49:17.124885', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, NULL, false, false, '2006-07-14 08:49:40.553212', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -3167,10 +3167,10 @@ Steps to Reproduce:
 7. Close the browser window that started all of this.
 8. Close the first dialog with "Cancel".
 
-Actual Results:
+Actual Results:  
 Crash!
 
-Expected Results:
+Expected Results:  
 Not crashed.', 12, 5, NULL, false, false, '2006-05-19 06:37:40.389193', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, NULL, false, false, '2006-05-19 06:37:40.391822', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.393303', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL);
@@ -4257,7 +4257,7 @@ INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_cr
 https://help.ubuntu.com/community/DynamicDNS
 
 ', NULL, 1, 16, '2007-07-03 21:28:59.461247', NULL, NULL, NULL);
-INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_created, last_updated_by, date_last_updated, fti) VALUES (4, 'How can I make VOIP calls?', 'sip phone', 'Ekiga is the standard Ubuntu application to make Voice-over-IP calls.
+INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_created, last_updated_by, date_last_updated, fti) VALUES (4, 'How can I make VOIP calls?', 'sip phone', 'Ekiga is the standard Ubuntu application to make Voice-over-IP calls. 
 
 A document explaining how to configure and use it is available at:
 https://help.ubuntu.com/community/Ekiga', NULL, 1, 12, '2007-07-03 21:33:49.087585', NULL, NULL, NULL);
@@ -5480,7 +5480,7 @@ ALTER TABLE messagechunk DISABLE TRIGGER ALL;
 
 INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (1, 7, 1, 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', NULL, NULL);
 INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (2, 8, 1, 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', NULL, NULL);
-INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (3, 9, 1, 'User-Agent:
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (3, 9, 1, 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -5495,10 +5495,10 @@ Steps to Reproduce:
 7. Close the browser window that started all of this.
 8. Close the first dialog with "Cancel".
 
-Actual Results:
+Actual Results:  
 Crash!
 
-Expected Results:
+Expected Results:  
 Not crashed.', NULL, NULL);
 INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (4, 1, 1, 'Problem exists between chair and keyboard', NULL, NULL);
 INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (5, 3, 1, 'We''ve seen something very similar on AIX with Gnome 2.6 when it is compiled with XFT support. It might be that the anti-aliasing is causing loopback devices to degrade, resulting in a loss of transparency at the system cache level and decoherence in the undelete function. This is only known to be a problem when the moon is gibbous.', NULL, NULL);
@@ -5741,7 +5741,7 @@ ii  zlib1g               1:1.2.2-3           compression library - runtime
 
 ', NULL, NULL);
 INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (45, 45, 1, 'reassign 308994 pmount
-thanks,
+thanks, 
 
 On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
 > When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
@@ -5749,9 +5749,9 @@ On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
 > rw, and blocks get changed. unmounting the volume reports a dirty
 > dvd+rw. the same volume is readable if mounted by hand with the
 > read-only flag.
->
+> 
 
-I guess that''s a pmount issue.. Although i don''t completely understand the
+I guess that''s a pmount issue.. Although i don''t completely understand the 
 issue (don''t have a dvd writer).
 
   Sjoerd
@@ -5763,19 +5763,19 @@ INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (46,
 
 Sjoerd Simons wrote:
 > reassign 308994 pmount
-> thanks,
->
+> thanks, 
+> 
 > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
->
+> 
 >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
 >>burner on my system, the volume is unreadable, since it gets pmounted
 >>rw, and blocks get changed. unmounting the volume reports a dirty
 >>dvd+rw. the same volume is readable if mounted by hand with the
 >>read-only flag.
 >>
->
->
-> I guess that''s a pmount issue.. Although i don''t completely understand the
+> 
+> 
+> I guess that''s a pmount issue.. Although i don''t completely understand the 
 > issue (don''t have a dvd writer).
 
 hope you don''t mind my re-re-assigning back to you even though I''m not a
@@ -5808,34 +5808,34 @@ thanks,
 
 On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
 > reassign 308994 gnome-volume-manager
->
+> 
 > Sjoerd Simons wrote:
 > > reassign 308994 pmount
-> > thanks,
-> >
+> > thanks, 
+> > 
 > > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
-> >
+> > 
 > >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
 > >>burner on my system, the volume is unreadable, since it gets pmounted
 > >>rw, and blocks get changed. unmounting the volume reports a dirty
 > >>dvd+rw. the same volume is readable if mounted by hand with the
 > >>read-only flag.
 > >>
-> >
-> >
-> > I guess that''s a pmount issue.. Although i don''t completely understand the
+> > 
+> > 
+> > I guess that''s a pmount issue.. Although i don''t completely understand the 
 > > issue (don''t have a dvd writer).
->
+> 
 > hope you don''t mind my re-re-assigning back to you even though I''m not a
 > debian-developer.
->
+> 
 > It''s not a pmount thing, rather gnome-volume-manager has pmount
 > hardcoded into it:
->
+> 
 > josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
 > /usr/bin/pmount-hal %h
 > josh@spleen:~$
->
+> 
 > and it doesn''t let the user pass options to pmount. Also, the
 > gnome-volume-properties dialog has no option to set to mount volumes
 > read-only. This is a bug with how gnome-volume-manager uses pmount, not
@@ -5843,11 +5843,11 @@ On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
 
 pmount-hal''s job is to figure out the right options, so it should
 handle dvd+rw''s right. Worst-case it should be changed to decide mounting ro or
-rw based on an hal property.
-
+rw based on an hal property. 
+  
 > I think instead of reassigning, you should mark as "forwarded to
 > upstream". I already filed the upsteam bug for you:
->
+> 
 > http://bugzilla.gnome.org/show_bug.cgi?id=304070
 
 Upstream doesn''t use pmount, so it''s useless forwarding to upstream. Even more,
@@ -5909,15 +5909,15 @@ you anything.
 
 Martin Pitt wrote:
 > Hi!
->
+> 
 > Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
 > pmount bug. However, I do not understand the problem properly. Can you
 > please post your /etc/fstab and the output of "mount" here? This will
 > tell me the file system of your dvd (UDF, I suppose), and what you
 > changed in fstab.
->
+> 
 > Thanks,
->
+> 
 > Martin
 
 
@@ -6748,7 +6748,7 @@ ALTER TABLE pomsgid ENABLE TRIGGER ALL;
 ALTER TABLE potemplate DISABLE TRIGGER ALL;
 
 INSERT INTO potemplate (id, priority, description, copyright, datecreated, path, iscurrent, messagecount, owner, sourcepackagename, distroseries, sourcepackageversion, header, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format, name, translation_domain) VALUES (1, 0, 'Template for evolution in hoary', NULL, '2005-03-18 18:20:12.273149', 'po/evolution-2.2.pot', true, 22, 30, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-08-25 14:56+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6769,7 +6769,7 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 13, true, NULL, NULL, '2005-05-06 20:09:23.775993', NULL, 1, 'pmount', 'pmount');
 INSERT INTO potemplate (id, priority, description, copyright, datecreated, path, iscurrent, messagecount, owner, sourcepackagename, distroseries, sourcepackageversion, header, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format, name, translation_domain) VALUES (3, 0, NULL, NULL, '2005-05-06 20:06:59.867977', 'po/netapplet.pot', true, 43, 12, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-08-24 16:09-0400
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6779,7 +6779,7 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', NULL, false, 5, NULL, '2005-05-06 20:09:20.041475', NULL, 1, 'netapplet', 'NetApplet');
 INSERT INTO potemplate (id, priority, description, copyright, datecreated, path, iscurrent, messagecount, owner, sourcepackagename, distroseries, sourcepackageversion, header, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format, name, translation_domain) VALUES (4, 100, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6789,7 +6789,7 @@ Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
 ', NULL, true, NULL, NULL, '2005-05-06 21:12:13.908028', NULL, 1, 'evolution-2.2', 'evolution-2.2');
 INSERT INTO potemplate (id, priority, description, copyright, datecreated, path, iscurrent, messagecount, owner, sourcepackagename, distroseries, sourcepackageversion, header, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format, name, translation_domain) VALUES (5, 0, NULL, NULL, '2005-05-06 21:10:17.367605', 'debian/po/templates.pot', true, 9, 30, 16, 3, '2:1.7.6-1ubuntu2', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6828,7 +6828,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 ', NULL, false, NULL, NULL, '2006-08-14 18:43:56.08176', NULL, 1, 'man', 'man');
 INSERT INTO potemplate (id, priority, description, copyright, datecreated, path, iscurrent, messagecount, owner, sourcepackagename, distroseries, sourcepackageversion, header, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format, name, translation_domain) VALUES (9, 0, NULL, NULL, '2007-01-05 10:22:21.410795', 'po-disabled/disabled-template.pot', false, 22, 13, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6975,7 +6975,7 @@ INSERT INTO potranslation (id, translation) VALUES (59, 'Upotreba:
 
 %s [options] <device>
   Umount <device> iz direktorija ispod %s ako su zahtjevi policyja
-  zadovoljeni (vidi pumount(1) za detalje). Točka montiranja direktorija je odstranjena
+  zadovoljeni (vidi pumount(1) za detalje). Točka montiranja direktorija je odstranjena 
   kasnije.
 
 Opcije:
@@ -7154,7 +7154,7 @@ INSERT INTO potranslation (id, translation) VALUES (138, 'Bruk:
   Monter <enhet> til en katalog under %s hvis krav er tilfredsstilt
   (se pmount(1) for mer). Hvis <etikett> er oppgitt, vil
   monteringspunktet bli %s/<etikett>, ellers vil det bli
-  %s/<enhet>. Hvis monteringspunktet ikke finnes, vil det
+  %s/<enhet>. Hvis monteringspunktet ikke finnes, vil det 
   bli opprettet.
 
 ');
@@ -7297,7 +7297,7 @@ INSERT INTO potranslation (id, translation) VALUES (201, 'Použití:
   Připojí <zařízení> do adresáře na %s jestliže má oprávnění
   (podívej do pmount(1) na podrobnosti). Jestliže je <jméno>
   zadáno,   připojovací bod bude %s/<jméno>, jinak to bude%s
-  <zařízení>. Jestliže připojovací bod neexistuje,
+  <zařízení>. Jestliže připojovací bod neexistuje, 
   bude vytvořen.
 
 ');
@@ -7402,8 +7402,8 @@ INSERT INTO potranslation (id, translation) VALUES (246, 'Chyba: adresář %s ne
 INSERT INTO potranslation (id, translation) VALUES (247, 'Použití:
 
 %s [parametry] <zařízení>
-  Odpojenit <zařízení> z adresáře pod %s jestliže
-  jsou nastavená požadovná práva (podrobnosti viz pumount(1)).
+  Odpojenit <zařízení> z adresáře pod %s jestliže 
+  jsou nastavená požadovná práva (podrobnosti viz pumount(1)). 
   Adresář připojovacího bodu je poté odstraněn.
 
 Parametry:
@@ -7509,7 +7509,7 @@ INSERT INTO potranslation (id, translation) VALUES (291, 'pmount-hal - ejecutar 
 Uso: pmount-hal <UDI hal> [opciones de pmount]
 
 Esta orden monta el dispositivo descrito por el UDI dado usando pmount. El
-tipo de sistema de ficheros, la política de almacenamiento del volumen y la etiqueta deseada se
+tipo de sistema de ficheros, la política de almacenamiento del volumen y la etiqueta deseada se 
 leerán de hal y se pasarán a pmount.');
 INSERT INTO potranslation (id, translation) VALUES (292, 'Error: no se pudo ejecutar pmount
 ');
@@ -7582,7 +7582,7 @@ INSERT INTO potranslation (id, translation) VALUES (327, 'Aufruf:
 
 %s [Optionen] <Gerät> [<Label>]
 
-  Bindet <Gerät> unter ein Verzeichnis in %s ein wenn die
+  Bindet <Gerät> unter ein Verzeichnis in %s ein wenn die 
   Richtlinien dies erlauben (siehe pmount(1) für Details).
   Wenn <Label> gegeben ist, wird als Bindungsverzeichnis
   %s<Label> verwendet, ansonsten %s<Gerät>.
@@ -7654,9 +7654,9 @@ INSERT INTO potranslation (id, translation) VALUES (354, 'pmount-hal - führt pm
 
 Aufruf: pmount-hal <hal UDI> [zusätzliche pmount-Optionen]
 
-Dieser Befehl bindet das durch den hal-UDI spezifierte Gerät mit
-pmount ein. Der Dateisystem-Typ, verschiedene Mount-Optionen und
-der bevorzugte Name werden von hal gelesen und pmount als Optionen
+Dieser Befehl bindet das durch den hal-UDI spezifierte Gerät mit 
+pmount ein. Der Dateisystem-Typ, verschiedene Mount-Optionen und 
+der bevorzugte Name werden von hal gelesen und pmount als Optionen 
 überreicht.');
 INSERT INTO potranslation (id, translation) VALUES (355, 'Fehler: konnte pmount nicht ausführen
 ');
@@ -7875,7 +7875,7 @@ INSERT INTO potranslation (id, translation) VALUES (453, 'Utilizzo:
 
 %s [opzioni] <dispositivo> [<etichetta>]
 
-  Monta il <dispositivo> in una directory sotto %s se i requisiti
+  Monta il <dispositivo> in una directory sotto %s se i requisiti 
   sono rispettati (vedere pmount(1) per dettagli). Se è data <etichetta>,
   il punto di mount sarà %s/<etichetta>, altrimenti %s<dispositivo>.
   Se il punto di mount non esiste verrà creato.
@@ -8125,16 +8125,16 @@ INSERT INTO potranslation (id, translation) VALUES (593, 'Aktivér automatisk sp
 INSERT INTO potranslation (id, translation) VALUES (594, 'Denne indstilling giver mulighed for automatisk sprog/regions valg i Mozilla ved hjælp af locale-indstillinger. Det kan være en stor hjælp for system administratorer der har hundredvis af ikke-engelsktalende nybegyndere.');
 INSERT INTO potranslation (id, translation) VALUES (595, 'For at dette skal virke, skal LC_MESSAGE eller LC_ALL miljøvariablerne være sat korrekt.');
 INSERT INTO potranslation (id, translation) VALUES (596, 'Tiedosto /etc/mozilla/prefs.js on asetuksien mukauttamista varten.');
-INSERT INTO potranslation (id, translation) VALUES (597, 'Debianin mozilla lataa tiedoston /etc/mozilla/prefs.js oletusasetukset
+INSERT INTO potranslation (id, translation) VALUES (597, 'Debianin mozilla lataa tiedoston /etc/mozilla/prefs.js oletusasetukset 
 sisältävän skriptin jälkeen.');
-INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tätä tiedostoa muuttaaksesi koko järjestelmää koskevia asetuksia.
+INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tätä tiedostoa muuttaaksesi koko järjestelmää koskevia asetuksia. 
 (esim. kirjasinasetukset)');
 INSERT INTO potranslation (id, translation) VALUES (599, 'auto, esddsp, artsdsp, ei mikään');
 INSERT INTO potranslation (id, translation) VALUES (600, 'Valitse äänenhallinnan taustaprosessin dsp-kääre.');
-INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitännäiset (esim. flashplugin) lukitsevat
-/dev/dsp:n. Ongelman voi välttää käyttämällä dsp-käärettä. "auto" valitsee
-käynnissä olevan äänenhallinnan taustaohjelman mukaisesti oikeat kääreet. Jos
-äänenhallinnan tataustaohjelmaa ei havaita, mozilla ei käytä mitään käärettä.
+INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitännäiset (esim. flashplugin) lukitsevat 
+/dev/dsp:n. Ongelman voi välttää käyttämällä dsp-käärettä. "auto" valitsee 
+käynnissä olevan äänenhallinnan taustaohjelman mukaisesti oikeat kääreet. Jos 
+äänenhallinnan tataustaohjelmaa ei havaita, mozilla ei käytä mitään käärettä. 
 Tämä asetus tallennetaan tiedostoon /etc/mozilla/mozillarc ja sen voi tarvittaessa
 syrjäyttää käyttäjän omassa asetustiedostossa (~/.mozillarc).');
 INSERT INTO potranslation (id, translation) VALUES (602, 'Salli automaattinen kielen/alueen valinta?');
@@ -8144,10 +8144,10 @@ ylläpitäjille, joiden piirissä on satoja muuta kuin englannin kieltä
 puhuvia käyttäjiä.');
 INSERT INTO potranslation (id, translation) VALUES (604, 'Aseta muuttujat LC_MESSAGE ja LC_ALL, jotta automaattinen tunnistus toimisi.');
 INSERT INTO potranslation (id, translation) VALUES (605, 'xprint ei näy olevan asennettu');
-INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. Tästä johtuen Xprint täytyy
-olla asennettuna, jotta tulostaminen toimisi. Ole hyvä ja asenna xprt-xptintorg
+INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. Tästä johtuen Xprint täytyy 
+olla asennettuna, jotta tulostaminen toimisi. Ole hyvä ja asenna xprt-xptintorg 
 -paketti.');
-INSERT INTO potranslation (id, translation) VALUES (607, 'Tämä ei ole ohjelmavirhe. Älä lähetä vikailmoitusta tästä. (Toivomuslista
+INSERT INTO potranslation (id, translation) VALUES (607, 'Tämä ei ole ohjelmavirhe. Älä lähetä vikailmoitusta tästä. (Toivomuslista 
 postscriptin uudelleentukemiseksi on jo lähetetty, Vika#256072.)');
 INSERT INTO potranslation (id, translation) VALUES (608, '/etc/mozilla/prefs.js está dispoñible para actualiza-las preferencias.');
 INSERT INTO potranslation (id, translation) VALUES (609, 'O mozilla de Debian ha cargar /etc/mozilla/prefs.js despois de cargar algúns scripts de preferencia por defecto.');
@@ -8427,7 +8427,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla 2:1.7.4-1
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-08-02 00:08+0200
 Last-Translator: Denis Barbier <barbier@linuxfr.org>
@@ -8474,7 +8474,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-25 16:17-0300
 Last-Translator: André Luís Lopes <andrelop@debian.org>
@@ -8498,7 +8498,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-24 15:24+0200
 Last-Translator: Helge Kreutzmann <kreutzm@itp.uni-hannover.de>
@@ -8513,7 +8513,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
  Mehmet Türker <mturker@innova.com.tr>, 2004.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-04-25 14:47+0300
 Last-Translator: Mehmet Türker <EMAIL>
@@ -8552,7 +8552,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla 2:1.7.1-4
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-31 22:49+0200
 Last-Translator: Morten Brix Pedersen <morten@wtf.dk>
@@ -8569,7 +8569,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
  Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-10-24 14:14+0300
 Last-Translator: Kęstutis Biliūnas <kebil@kaunas.init.lt>
@@ -8594,7 +8594,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-22 17:49+0200
 Last-Translator: Miroslav Kure <kurem@debian.cz>
@@ -8621,7 +8621,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
 
  Matti Pöllä <mpo@iki.fi>, 2004.
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-08-15 22:41+0300
 Last-Translator: Matti Pöllä <mpo@iki.fi>
@@ -8645,7 +8645,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -8669,7 +8669,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-20 02:46+0900
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -8695,7 +8695,7 @@ INSERT INTO pofile (id, potemplate, language, description, topcomment, header, f
  Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>, 2003
 
 ', 'Project-Id-Version: mozilla-browser 1.4-4
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2003-09-20 20:00+0200
 Last-Translator: Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>
