@@ -1499,7 +1499,17 @@ BEGIN
         personal_standing_reason, mail_resumption_date,
         mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
         visibility, verbose_bugnotifications, account)
-        SELECT NEW.*;
+    VALUES (
+        NEW.id, NEW.displayname, NEW.teamowner, NEW.teamdescription,
+        NEW.name, NEW.language, NEW.fti, NEW.defaultmembershipperiod,
+        NEW.defaultrenewalperiod, NEW.subscriptionpolicy, NEW.merged,
+        NEW.datecreated, NEW.homepage_content, NEW.icon, NEW.mugshot,
+        NEW.hide_email_addresses, NEW.creation_rationale,
+        NEW.creation_comment, NEW.registrant, NEW.logo, NEW.renewal_policy,
+        NEW.personal_standing, NEW.personal_standing_reason,
+        NEW.mail_resumption_date, NEW.mailing_list_auto_subscribe_policy,
+        NEW.mailing_list_receive_duplicates, NEW.visibility, NULL,
+        NEW.account);
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1602,7 +1612,7 @@ BEGIN
             = NEW.mailing_list_auto_subscribe_policy,
         mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
         visibility = NEW.visibility,
-        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        verbose_bugnotifications = NULL,
         account = NEW.account
     WHERE id = OLD.id;
     RETURN NULL; -- Ignored for AFTER triggers.
