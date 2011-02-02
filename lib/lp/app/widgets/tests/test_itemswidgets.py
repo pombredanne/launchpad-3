@@ -50,12 +50,19 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
     WIDGET_CLASS = PlainMultiCheckBoxWidget
 
     def test__renderItem_checked(self):
-        # Render item iterpolation is safe.
+        # Render item in checked state.
         expected = (
             '<input class="checkboxType" checked="checked" id="test_field.1" '
             'name="test_field" type="checkbox" value="token-1" />&nbsp;'
             'Safe title ')
         self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
+
+    def test__renderItem_unchecked(self):
+        # Render item in unchecked state.
+        expected = (
+            '<input class="checkboxType" id="test_field.1" name="test_field" '
+            'type="checkbox" value="token-1" />&nbsp;Safe title ')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=False)
 
     def test__renderItem_unsafe_content(self):
         # Render item iterpolation is safe.
