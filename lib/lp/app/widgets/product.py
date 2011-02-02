@@ -15,6 +15,8 @@ __all__ = [
 import cgi
 import math
 
+from lazr.restful.interface import copy_field
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.app.form.browser.textwidgets import TextWidget
@@ -27,23 +29,18 @@ from zope.schema import (
     Text,
     )
 
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lazr.restful.interface import copy_field
-
-from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets.itemswidgets import (
+from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.popup import BugTrackerPickerWidget
-from canonical.widgets.textwidgets import (
+from lp.app.widgets.popup import BugTrackerPickerWidget
+from lp.app.widgets.textwidgets import (
+    DescriptionWidget,
     StrippedTextWidget,
     URIComponentWidget,
     )
