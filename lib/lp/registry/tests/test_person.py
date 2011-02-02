@@ -713,7 +713,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # copied.
         person = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
-        # Disable the recipe owners PPA
+        # Delete the PPA, which is required for the merge to work.
         with person_logged_in(recipe.owner):
             recipe.owner.archive.status = ArchiveStatus.DELETED
         self._do_premerge(recipe.owner, person)
@@ -730,7 +730,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         merge_to = self.factory.makeSourcePackageRecipe(
             name=u'foo', description=u'TO')
         mergee = merge_to.owner
-        # Disable merge_from's PPA
+        # Delete merge_from's PPA, which is required for the merge to work.
         with person_logged_in(merge_from.owner):
             merge_from.owner.archive.status = ArchiveStatus.DELETED
         self._do_premerge(merge_from.owner, mergee)

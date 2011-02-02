@@ -181,6 +181,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -3339,27 +3340,19 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def _mergeBranches(self, cur, from_id, to_id):
-        # Avoid circular imports.
-        from lp.code.model.branch import Branch
-        store = IMasterStore(Branch)
-        branches = store.find(Branch, Branch.owner == from_id)
-        for branch in branches:
-            branch.setOwner(to_id, to_id)
+    def _mergeBranches(self, cur, from_person, to_person):
+        branches = getUtility(IBranchCollection).ownedBy(from_person)
+        for branch in branches.getBranches():
+            removeSecurityProxy(branch).setOwner(to_person, to_person)
 
     def _mergeBranchMergeQueues(self, cur, from_id, to_id):
         cur.execute('''
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
-    def _mergeSourcePackageRecipes(self, cur, from_id, to_id):
-        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        store = IMasterStore(SourcePackageRecipe)
-        recipes = store.find(
-            SourcePackageRecipe, SourcePackageRecipe.owner == from_id)
-        to_recipes = store.find(
-            SourcePackageRecipe, SourcePackageRecipe.owner == to_id)
-        existing_names = [r.name for r in to_recipes]
+    def _mergeSourcePackageRecipes(self, cur, from_person, to_person):
+        recipes = from_person.getRecipes()
+        existing_names = [r.name for r in to_person.getRecipes()]
         for recipe in recipes:
             new_name = recipe.name
             count = 1
@@ -3367,7 +3360,7 @@ class PersonSet:
                 new_name = '%s-%s' % (recipe.name, count)
                 count += 1
             nr = removeSecurityProxy(recipe)
-            nr.owner = to_id
+            nr.owner = to_person
             nr.name = new_name
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
@@ -3870,7 +3863,7 @@ class PersonSet:
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        self._mergeSourcePackageRecipes(cur, from_id, to_id)
+        self._mergeSourcePackageRecipes(cur, from_person, to_person)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
