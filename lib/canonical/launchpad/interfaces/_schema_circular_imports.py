@@ -533,6 +533,7 @@ patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
+patch_collection_property(ISpecification, 'linked_branches', ISpecificationBranch)
 
 # ISpecificationTarget
 patch_entry_return_type(
