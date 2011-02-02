@@ -421,6 +421,21 @@ COMMENT ON FUNCTION valid_regexp(text)
     IS 'Returns true if the input can be compiled as a regular expression.';
 
 
+CREATE OR REPLACE FUNCTION populate_settings() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+    BEGIN
+        IF NEW.teamowner IS NULL THEN
+            INSERT INTO PersonSettings (person) VALUES (NEW.id);
+        END IF;
+        RETURN NULL; 
+    END;
+$$;
+
+COMMENT ON FUNCTION populate_settings() IS
+    'Trigger function to ensure that every person (not team) in the Person table has a corresponding row in the PersonSettings table. This function will also create the TeamSettings entry for teams when that table exists.';
+
+
 CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
