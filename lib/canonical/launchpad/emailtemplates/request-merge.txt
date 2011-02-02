@@ -4,7 +4,7 @@ Hello
 Launchpad: request to merge accounts
 ------------------------------------
 
-Someone has asked us to merge one of your Launchpad 
+Someone has asked us to merge one of your Launchpad
 accounts with another.
 
 If you go ahead, this will merge the account called
@@ -16,7 +16,7 @@ this link:
     %(token_url)s
 
 If you didn't ask to merge these accounts, please
-either ignore this email or report it to the 
+either ignore this email or report it to the
 Launchpad team: feedback@launchpad.net
 
 You can read more about merging accounts in our
