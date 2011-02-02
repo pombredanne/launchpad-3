@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This is a stub to keep canonical.shipit operational. this module
-# can delete when shipit is independent,
+# can delete when shipit is independent.
 
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
