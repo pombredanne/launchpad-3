@@ -3340,7 +3340,7 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def _mergeBranches(self, cur, from_person, to_person):
+    def _mergeBranches(self, from_person, to_person):
         branches = getUtility(IBranchCollection).ownedBy(from_person)
         for branch in branches.getBranches():
             removeSecurityProxy(branch).setOwner(to_person, to_person)
@@ -3350,7 +3350,7 @@ class PersonSet:
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
-    def _mergeSourcePackageRecipes(self, cur, from_person, to_person):
+    def _mergeSourcePackageRecipes(self, from_person, to_person):
         recipes = from_person.getRecipes()
         existing_names = [r.name for r in to_person.getRecipes()]
         for recipe in recipes:
@@ -3857,13 +3857,13 @@ class PersonSet:
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
-        self._mergeBranches(cur, from_person, to_person)
+        self._mergeBranches(from_person, to_person)
         skip.append(('branch', 'owner'))
 
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        self._mergeSourcePackageRecipes(cur, from_person, to_person)
+        self._mergeSourcePackageRecipes(from_person, to_person)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
