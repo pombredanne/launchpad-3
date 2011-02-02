@@ -35,7 +35,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.widgets import DateWidget
+from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.browser.launchpadform import (
     action,

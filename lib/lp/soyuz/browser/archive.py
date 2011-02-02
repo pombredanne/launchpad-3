@@ -79,13 +79,11 @@ from canonical.launchpad.webapp.menu import (
     structured,
     )
 from canonical.lazr.utils import smartquote
-from lp.app.widgets import (
-    LabeledMultiCheckBoxWidget,
-    PlainMultiCheckBoxWidget,
-    )
 from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
+    PlainMultiCheckBoxWidget,
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (

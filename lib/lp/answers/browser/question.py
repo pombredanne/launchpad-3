@@ -80,10 +80,8 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from lp.app.widgets import (
-    LaunchpadRadioWidget,
-    TokensTextWidget,
-    )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView

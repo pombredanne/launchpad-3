@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.publisher import (
     Navigation,
     stepthrough,
     )
-from lp.app.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

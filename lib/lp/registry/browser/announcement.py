@@ -45,7 +45,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.widgets import AnnouncementDateWidget
+from lp.app.widgets.announcementdate import AnnouncementDateWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -132,7 +132,7 @@ attribute:
 
   >>> from zope.app.form.browser import TextWidget
   >>> from canonical.launchpad.webapp import custom_widget
-  >>> from lp.app.widgets import PasswordChangeWidget
+  >>> from lp.app.widgets.password import PasswordChangeWidget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest

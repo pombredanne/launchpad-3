@@ -15,7 +15,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     stepthrough,
     )
-from lp.app.widgets import TokensTextWidget
+from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.answers.interfaces.faq import IFAQ
 from lp.app.browser.launchpadform import (
     action,

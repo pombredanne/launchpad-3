@@ -22,7 +22,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.app.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

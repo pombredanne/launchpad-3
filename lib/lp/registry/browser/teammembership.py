@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.app.widgets import DateWidget
+from lp.app.widgets.date import DateWidget
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 

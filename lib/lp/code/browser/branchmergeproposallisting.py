@@ -33,7 +33,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from lp.app.widgets import LaunchpadDropdownWidget
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
