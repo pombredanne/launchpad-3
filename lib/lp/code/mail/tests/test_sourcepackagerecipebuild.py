@@ -12,6 +12,7 @@ from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -48,7 +49,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     def makeStatusEmail(self, build):
         mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        email = build.requester.preferredemail.email
+        email = removeSecurityProxy(build.requester).preferredemail.email
         return mailer.generateEmail(email, build.requester)
 
     def test_generateEmail(self):
@@ -73,9 +74,9 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         body, footer = ctrl.body.split('\n-- \n')
         self.assertEqual(
             expected_body % build.log.getURL(), body)
+        build_url = canonical_url(build)
         self.assertEqual(
-            'http://code.launchpad.dev/~person/+recipe/recipe/+build/1\n'
-            'You are the requester of the build.\n', footer)
+            '%s\nYou are the requester of the build.\n' % build_url, footer)
         self.assertEqual(
             config.canonical.noreply_from_address, ctrl.from_addr)
         self.assertEqual(
@@ -104,9 +105,9 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             'Build for superseded Source' % (build.id), ctrl.subject)
         body, footer = ctrl.body.split('\n-- \n')
         self.assertEqual(superseded_body, body)
+        build_url = canonical_url(build)
         self.assertEqual(
-            'http://code.launchpad.dev/~person/+recipe/recipe/+build/1\n'
-            'You are the requester of the build.\n', footer)
+            '%s\nYou are the requester of the build.\n' % build_url, footer)
         self.assertEqual(
             config.canonical.noreply_from_address, ctrl.from_addr)
         self.assertEqual(

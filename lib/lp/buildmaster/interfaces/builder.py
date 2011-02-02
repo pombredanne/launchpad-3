@@ -203,7 +203,7 @@ class IBuilder(IHasOwner):
         :param filename: The name of the file to be given to the librarian file
             alias.
         :param private: True if the build is for a private archive.
-        :return: A librarian file alias.
+        :return: A Deferred that calls back with a librarian file alias.
         """
 
     def getBuildQueue():

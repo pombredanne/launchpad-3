@@ -166,18 +166,18 @@ class TestBugScaling(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/attachments?ws.size=75' % self.bug.id
-        #First request
+        # First request.
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(21)))
+        self.assertThat(collector, HasQueryCount(LessThan(22)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
         for i in range(5):
             self.factory.makeBugAttachment(self.bug)
         logout()
-        #Second request
+        # Second request.
         store.flush()
         store.reset()
         response = webservice.get(url)
@@ -202,11 +202,11 @@ class TestBugScaling(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/messages?ws.size=75' % bug.id
-        #First request
+        # First request.
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(21)))
+        self.assertThat(collector, HasQueryCount(LessThan(22)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
@@ -214,7 +214,7 @@ class TestBugScaling(TestCaseWithFactory):
             self.factory.makeBugComment(bug)
         self.factory.makeBugAttachment(bug)
         logout()
-        #Second request
+        # Second request.
         store.flush()
         store.reset()
         response = webservice.get(url)

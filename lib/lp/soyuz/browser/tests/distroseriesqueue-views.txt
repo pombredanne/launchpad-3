@@ -257,8 +257,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
-    >>> from lp.archiveuploader.tests import (
-    ...     datadir, getPolicy, mock_logger_quiet)
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> import_public_test_keys()
     >>> universe = getUtility(IComponentSet)['universe']
@@ -266,9 +265,10 @@ Now that "foo" is published in Hoary, we can upload a new build.
     >>> sync_policy = getPolicy(name='sync', distro='ubuntu',
     ...    distroseries='hoary')
     >>> sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+    >>> from lp.services.log.logger import DevNullLogger
     >>> foo_upload = NascentUpload.from_changesfile_path(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
-    ...    sync_policy, mock_logger_quiet)
+    ...    sync_policy, DevNullLogger())
     >>> foo_upload.process()
     >>> foo_upload.do_accept()
     True
@@ -294,5 +294,5 @@ is_new() method requires to work.
 
 We created librarian files that need cleaning up before leaving the test.
 
-  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()

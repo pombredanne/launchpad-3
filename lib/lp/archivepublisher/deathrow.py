@@ -202,7 +202,6 @@ class DeathRow:
             if pub.scheduleddeletiondate is None:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
-            # See PubConfig.pendingremovalduration value.
             if pub.scheduleddeletiondate > right_now:
                 return False
 

@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import operator
 import time
 
 from pytz import UTC
@@ -34,7 +35,6 @@ from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -72,6 +72,7 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     )
 from lp.services.job.model.job import Job
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -112,7 +113,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = QuietFakeLogger()
+        collector.logger = BufferLogger()
         collector.main()
         return collector
 
@@ -120,7 +121,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = QuietFakeLogger()
+        collector.logger = BufferLogger()
         collector.main()
         return collector
 
@@ -448,6 +449,26 @@ class TestGarbo(TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugMessage_indexer(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        # The garbo sets BugMessage.index - so create a bug with three
+        # messages: 1 indexed and two not indexed. The two should get indexed
+        # when the garbo job runs.
+        bug = self.factory.makeBug()
+        for _ in range(3):
+            self.factory.makeBugComment(bug)
+        messages = list(bug.bug_messages)
+        messages[0].index = 0
+        messages[1].index = None
+        messages[2].index = None
+        indexed_messages = bug.indexed_messages
+        self.runHourly()
+        index_getter = operator.attrgetter('index')
+        indexed_messages = sorted(indexed_messages, key=index_getter)
+        expected = map(index_getter, indexed_messages)
+        actual = map(index_getter, bug.bug_messages)
+        self.assertEqual(expected, actual)
 
     def test_BugNotificationPruner(self):
         # Create some sample data

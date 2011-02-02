@@ -16,8 +16,8 @@ import os.path
 from bzrlib.errors import NotBranchError
 import pytz
 from storm.expr import (
+    And,
     Join,
-    SQL,
     )
 from zope.component import getUtility
 
@@ -27,11 +27,13 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
+from lp.app.enums import ServiceUsage
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
@@ -306,6 +308,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
+        errorlog.globalErrorUtility.configure(self.config_name)
         if self.options.no_fudge:
             self.fudge_factor = timedelta(0)
 
@@ -313,14 +316,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
+            ProductSeries,
+            And(
+                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
         # testing.

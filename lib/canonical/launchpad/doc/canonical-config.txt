@@ -24,14 +24,6 @@ simple configuration).
     'launchpad_main'
     >>> config.librarian.dbuser
     'librarian'
-    >>> config.librarian.upload_host
-    'localhost'
-    >>> config.librarian.upload_port
-    59090
-    >>> config.librarian.download_host
-    'localhost'
-    >>> config.librarian.download_port
-    58000
 
 Configs are kept from the 'configs' directory.
 
@@ -121,58 +113,64 @@ no affect.
 Setting just the instance_name will change the directory from which the
 conf file is loaded.
 
-    >>> config.setInstance('development')
-    >>> config.instance_name
+    >>> from canonical.config import CanonicalConfig
+    >>> test_config = CanonicalConfig('testrunner', 'test')
+    >>> test_config.setInstance('development')
+    >>> test_config.instance_name
     'development'
 
-    >>> config.filename
+    >>> test_config.filename
     '.../configs/development/launchpad-lazr.conf'
-    >>> config.extends.filename
+    >>> test_config.extends.filename
     '.../config/schema-lazr.conf'
 
-    >>> config.answertracker.days_before_expiration
+    >>> test_config.answertracker.days_before_expiration
     15
 
 Changing the instance_name and process_name changes the directory and
 conf file name that is loaded.
 
-    >>> config.setInstance('testrunner')
-    >>> config.instance_name
+    >>> test_config.setInstance('testrunner')
+    >>> test_config.instance_name
     'testrunner'
 
-    >>> config.answertracker.days_before_expiration
+    >>> test_config.answertracker.days_before_expiration
     15
 
-    >>> config.setProcess('test-process')
-    >>> config.process_name
+    >>> test_config.setProcess('test-process')
+    >>> test_config.process_name
     'test-process'
 
-    >>> config.filename
+    >>> test_config.filename
     '.../configs/testrunner/test-process-lazr.conf'
-    >>> config.extends.filename
+    >>> test_config.extends.filename
     '.../configs/testrunner/launchpad-lazr.conf'
 
-    >>> config.answertracker.days_before_expiration
+    >>> test_config.answertracker.days_before_expiration
     300
 
 The default 'launchpad-lazr.conf' is loaded if no conf files match
 the process's name.
 
-    >>> config.setInstance('testrunner')
-    >>> config.instance_name
+    >>> test_config.setInstance('testrunner')
+    >>> test_config.instance_name
     'testrunner'
 
-    >>> config.setProcess('test_no_conf')
-    >>> config.process_name
+    >>> test_config.setProcess('test_no_conf')
+    >>> test_config.process_name
     'test_no_conf'
 
-    >>> config.filename
+    >>> test_config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
-    >>> config.extends.filename
+    >>> test_config.extends.filename
     '.../configs/development/launchpad-lazr.conf'
 
-    >>> config.answertracker.days_before_expiration
+    >>> test_config.answertracker.days_before_expiration
     15
+
+    >>> # setInstance sets the LPCONFIG environment variable, so set it
+    >>> # back to the real value.
+    >>> config.setInstance(config.instance_name)
 
 The initial instance_name is set via the LPCONFIG environment variable.
 Because Config is designed to failover to the default development
@@ -183,7 +181,6 @@ module to test CanonicalConfig's behaviour.
 Alternatively, the instance name and process name can be specified as
 argument to the constructor.
 
-    >>> from canonical.config import CanonicalConfig
     >>> dev_config = CanonicalConfig('development', 'authserver')
     >>> dev_config.instance_name
     'development'

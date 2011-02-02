@@ -11,12 +11,14 @@ __metaclass__ = type
 __all__ = [
     'CachingIterator',
     'decorate_with',
+    'docstring_dedent',
     'iter_split',
     'synchronize',
     'text_delta',
     'value_string',
     ]
 
+from textwrap import dedent
 import itertools
 
 from lazr.enum import BaseItem
@@ -153,3 +155,14 @@ def decorate_with(context_factory, *args, **kwargs):
                 return function(*a, **kw)
         return mergeFunctionMetadata(function, decorated)
     return decorator
+
+
+def docstring_dedent(s):
+    """Remove leading indentation from a doc string.
+
+    Since the first line doesn't have indentation, split it off, dedent, and
+    then reassemble.
+    """
+    # Make sure there is at least one newline so the split works.
+    first, rest = (s+'\n').split('\n', 1)
+    return (first + '\n' + dedent(rest)).strip()

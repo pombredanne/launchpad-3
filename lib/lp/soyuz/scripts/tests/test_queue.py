@@ -24,20 +24,19 @@ from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.testing.server import (
-    cleanupLibrarianFiles,
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    LibrarianLayer,
     )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
     getPolicy,
     insertFakeChangesFileForAllPackageUploads,
-    mock_logger_quiet,
     )
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
@@ -48,6 +47,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -144,7 +144,7 @@ class TestQueueTool(TestQueueBase):
 
     def tearDown(self):
         """Remove test contents from disk."""
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
 
     def uploadPackage(self,
             changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
@@ -154,7 +154,7 @@ class TestQueueTool(TestQueueBase):
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
         bar_src = NascentUpload.from_changesfile_path(
             datadir(changesfile),
-            sync_policy, mock_logger_quiet)
+            sync_policy, DevNullLogger())
         bar_src.process()
         bar_src.do_accept()
         LaunchpadZopelessLayer.txn.commit()
@@ -988,7 +988,7 @@ class TestQueueToolInJail(TestQueueBase):
         directory used as jail.
         """
         os.chdir(self._home)
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
         shutil.rmtree(self._jail)
 
     def _listfiles(self):

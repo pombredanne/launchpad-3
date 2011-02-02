@@ -21,10 +21,13 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1154,19 +1157,19 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             self.archive.getBinaryPackageReleaseByFileName(
                 "this-is-not-real_1.2.3-4_all.deb"))
 
-    def test_returns_none_for_duplicate_file(self):
+    def test_returns_latest_for_duplicate_file(self):
         # In the unlikely case of multiple BPRs in this archive with the same
         # name (hopefully impossible, but it still happens occasionally due
-        # to bugs), None is returned.
+        # to bugs), the latest is returned.
 
         # Publish the same binaries again. Evil.
-        self.publisher.getPubBinaries(
+        new_pubs = self.publisher.getPubBinaries(
             version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertIs(
-            None,
+        self.assertEquals(
+            new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
 
@@ -1445,6 +1448,13 @@ class TestvalidatePPA(TestCaseWithFactory):
         self.assertEqual("You already have a PPA named 'ppa'.",
             Archive.validatePPA(ppa.owner, 'ppa'))
 
+    def test_two_ppas_with_team(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        ppa = self.factory.makeArchive(owner=team, name='ppa')
+        self.assertEqual("%s already has a PPA named 'ppa'." % (
+            team.displayname), Archive.validatePPA(team, 'ppa'))
+
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(None, Archive.validatePPA(ppa_owner, None))
@@ -1463,12 +1473,13 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
 
     def test_series_components_for_primary_archive(self):
         # The primary archive uses the series' defined components.
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
-            0, archive.getComponentsForSeries(self.series).count())
+            0, len(archive.getComponentsForSeries(self.series)))
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
+        clear_property_cache(self.series)
 
         self.assertEquals(
             set((self.comp1, self.comp2)),
@@ -1482,3 +1493,145 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         self.assertEquals(
             [partner_comp],
             list(archive.getComponentsForSeries(self.series)))
+
+    def test_component_for_ppas(self):
+        # PPAs only use 'main'.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        main_comp = getUtility(IComponentSet)['main']
+        self.assertEquals(
+            [main_comp], list(archive.getComponentsForSeries(self.series)))
+
+
+class TestDefaultComponent(TestCaseWithFactory):
+    """Tests for Archive.default_component."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_component_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(None, archive.default_component)
+
+    def test_default_component_for_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(
+            getUtility(IComponentSet)['partner'], archive.default_component)
+
+    def test_default_component_for_ppas(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(
+            getUtility(IComponentSet)['main'], archive.default_component)
+
+
+class TestGetPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPockets_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            list(PackagePublishingPocket.items), archive.getPockets())
+
+    def test_getPockets_for_PPAs(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            [PackagePublishingPocket.RELEASE], archive.getPockets())
+
+
+class TestGetFileByName(TestCaseWithFactory):
+    """Tests for Archive.getFileByName."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetFileByName, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def test_unknown_file_is_not_found(self):
+        # A file with an unsupported extension is not found.
+        self.assertRaises(NotFoundError, self.archive.getFileByName, 'a.bar')
+
+    def test_source_file_is_found(self):
+        # A file from a published source package can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, dsc.filename)
+        pub.sourcepackagerelease.addFile(dsc)
+        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+
+    def test_nonexistent_source_file_is_not_found(self):
+        # Something that looks like a source file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, 'foo_1.0.dsc')
+
+    def test_binary_file_is_found(self):
+        # A file from a published binary package can be retrieved.
+        pub = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive)
+        deb = self.factory.makeLibraryFileAlias(filename='foo_1.0_all.deb')
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, deb.filename)
+        pub.binarypackagerelease.addFile(deb)
+        self.assertEquals(deb, self.archive.getFileByName(deb.filename))
+
+    def test_nonexistent_binary_file_is_not_found(self):
+        # Something that looks like a binary file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, 'foo_1.0_all.deb')
+
+    def test_source_changes_file_is_found(self):
+        # A .changes file from a published source can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pu = self.factory.makePackageUpload(
+            changes_filename='foo_1.0_source.changes')
+        pu.setDone()
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName,
+            pu.changesfile.filename)
+        pu.addSource(pub.sourcepackagerelease)
+        self.assertEquals(
+            pu.changesfile,
+            self.archive.getFileByName(pu.changesfile.filename))
+
+    def test_nonexistent_source_changes_file_is_not_found(self):
+        # Something that looks like a source .changes file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName,
+            'foo_1.0_source.changes')
+
+    def test_package_diff_is_found(self):
+        # A .diff.gz from a package diff can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        diff = self.factory.makePackageDiff(
+            to_source=pub.sourcepackagerelease,
+            diff_filename='foo_1.0.diff.gz')
+        self.assertEquals(
+            diff.diff_content,
+            self.archive.getFileByName(diff.diff_content.filename))
+
+    def test_expired_files_are_skipped(self):
+        # Expired files are ignored.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub.sourcepackagerelease.addFile(dsc)
+
+        # The file is initially found without trouble.
+        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+
+        # But after expiry it is not.
+        removeSecurityProxy(dsc).content = None
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, dsc.filename)
+
+        # It reappears if we create a new one.
+        new_dsc = self.factory.makeLibraryFileAlias(filename=dsc.filename)
+        pub.sourcepackagerelease.addFile(new_dsc)
+        self.assertEquals(new_dsc, self.archive.getFileByName(dsc.filename))

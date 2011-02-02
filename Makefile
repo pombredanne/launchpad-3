@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python
+PYTHON=python2.6
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -139,9 +139,6 @@ inplace: build
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 build: compile apidoc jsbuild css_combine
-	mkdir -p $(CODEHOSTING_ROOT)/mirrors
-	touch $(CODEHOSTING_ROOT)/rewrite.log
-	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
@@ -376,7 +373,7 @@ clean: clean_js clean_buildout
 	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
-	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -rf $(CODEHOSTING_ROOT)
 	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
@@ -386,7 +383,7 @@ clean: clean_js clean_buildout
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
-			  /var/tmp/fatsam.appserver \
+			  /var/tmp/fatsam.test \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \

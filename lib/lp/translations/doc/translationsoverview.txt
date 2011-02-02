@@ -67,6 +67,24 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
 Getting the most translated pillars
 -----------------------------------
 
+Set Up
+......
+
+The following demo assumes the test data has official_translations set.
+Let's set that up.
+
+    >>> from lp.app.enums import ServiceUsage
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+
+Using getMostTranslatedPillars
+..............................
+
 Method getMostTranslatedPillars() returns a list of dicts listing
 pillars with most translations karma so far, along with a relative
 weight for each of the pillars in the range of [overview.MINIMUM_SIZE,

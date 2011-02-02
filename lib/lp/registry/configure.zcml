@@ -10,6 +10,7 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
+    <authorizations module=".security" />
     <include
         file="vocabularies.zcml"/>
     <include
@@ -339,13 +340,13 @@
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
-            interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            interface="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            set_schema="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -449,6 +450,7 @@
                 displayname
                 distribution
                 distro
+                enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
                 getBugCounts
@@ -512,7 +514,9 @@
             permission="launchpad.BugSupervisor"
             set_attributes="
                 bug_reported_acknowledgement
-                bug_reporting_guidelines"/>
+                bug_reporting_guidelines
+                enable_bugfiling_duplicate_search
+                "/>
     </class>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1179,6 +1183,7 @@
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
+                enable_bugfiling_duplicate_search
                 bug_reported_acknowledgement
                 bug_reporting_guidelines
                 bugtracker
@@ -1206,6 +1211,7 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
+                official_rosetta
                 translation_focus
                 translationgroup
                 translationpermission"/>
@@ -1222,13 +1228,6 @@
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
-
-        <!-- Changes to official_rosetta must be available to Launchpad
-                                 Translations admins so we need its own permission. -->
-
-        <require
-            permission="launchpad.TranslationsAdmin"
-            set_attributes="official_rosetta"/>
 
         <!-- IHasAliases -->
 
@@ -1499,7 +1498,6 @@
                 official_answers
                 official_blueprints
                 official_malone
-                official_rosetta
                 owner
                 security_contact
                 summary
@@ -1512,6 +1510,7 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
+                official_rosetta
                 translationgroup
                 translationpermission
                 translation_focus"/>
@@ -1864,10 +1863,13 @@
     <class
         class="lp.registry.model.structuralsubscription.StructuralSubscription">
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
         <require
-            permission="zope.Public"
-            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
     </class>
 
     <!-- PersonNotification -->

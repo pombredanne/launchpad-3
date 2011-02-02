@@ -2,14 +2,34 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['StructuralSubscription',
-           'StructuralSubscriptionTargetMixin']
+__all__ = [
+    'StructuralSubscription',
+    'StructuralSubscriptionTargetMixin',
+    ]
 
-from sqlobject import ForeignKey
+import pytz
+
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
+
+from storm.base import Storm
 from storm.expr import (
+    Alias,
     And,
+    CompoundOper,
+    Except,
+    In,
+    Intersect,
     LeftJoin,
+    NamedFunc,
+    Not,
     Or,
+    Select,
+    SQL,
+    Union,
     )
 from storm.store import Store
 from zope.component import (
@@ -19,12 +39,8 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    )
+from canonical.database.enumcol import DBEnum
+from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
@@ -34,6 +50,7 @@ from lp.bugs.model.bugsubscriptionfilterimportance import (
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
+from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
@@ -61,51 +78,64 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.services.propertycache import cachedproperty
 
 
-class StructuralSubscription(SQLBase):
+class StructuralSubscription(Storm):
     """A subscription to a Launchpad structure."""
 
     implements(IStructuralSubscription)
 
-    _table = 'StructuralSubscription'
+    __storm_table__ = 'StructuralSubscription'
 
-    product = ForeignKey(
-        dbName='product', foreignKey='Product', notNull=False, default=None)
-    productseries = ForeignKey(
-        dbName='productseries', foreignKey='ProductSeries', notNull=False,
-        default=None)
-    project = ForeignKey(
-        dbName='project', foreignKey='ProjectGroup', notNull=False,
-        default=None)
-    milestone = ForeignKey(
-        dbName='milestone', foreignKey='Milestone', notNull=False,
-        default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution', notNull=False,
-        default=None)
-    distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries', notNull=False,
-        default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    subscriber = ForeignKey(
-        dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_person, notNull=True)
-    subscribed_by = ForeignKey(
-        dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    bug_notification_level = EnumCol(
+    id = Int(primary=True)
+
+    productID = Int("product", default=None)
+    product = Reference(productID, "Product.id")
+
+    productseriesID = Int("productseries", default=None)
+    productseries = Reference(productseriesID, "ProductSeries.id")
+
+    projectID = Int("project", default=None)
+    project = Reference(projectID, "ProjectGroup.id")
+
+    milestoneID = Int("milestone", default=None)
+    milestone = Reference(milestoneID, "Milestone.id")
+
+    distributionID = Int("distribution", default=None)
+    distribution = Reference(distributionID, "Distribution.id")
+
+    distroseriesID = Int("distroseries", default=None)
+    distroseries = Reference(distroseriesID, "DistroSeries.id")
+
+    sourcepackagenameID = Int("sourcepackagename", default=None)
+    sourcepackagename = Reference(sourcepackagenameID, "SourcePackageName.id")
+
+    subscriberID = Int("subscriber", allow_none=False,
+                        validator=validate_person)
+    subscriber = Reference(subscriberID, "Person.id")
+
+    subscribed_byID = Int("subscribed_by", allow_none=False,
+                          validator=validate_public_person)
+    subscribed_by = Reference(subscribed_byID, "Person.id")
+
+    bug_notification_level = DBEnum(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
-        notNull=True)
-    blueprint_notification_level = EnumCol(
+        allow_none=False)
+    blueprint_notification_level = DBEnum(
         enum=BlueprintNotificationLevel,
         default=BlueprintNotificationLevel.NOTHING,
-        notNull=True)
-    date_created = UtcDateTimeCol(
-        dbName='date_created', notNull=True, default=UTC_NOW)
-    date_last_updated = UtcDateTimeCol(
-        dbName='date_last_updated', notNull=True, default=UTC_NOW)
+        allow_none=False)
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
+    date_last_updated = DateTime(
+        "date_last_updated", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
+
+    def __init__(self, subscriber, subscribed_by, **kwargs):
+        self.subscriber = subscriber
+        self.subscribed_by = subscribed_by
+        for arg, value in kwargs.iteritems():
+            setattr(self, arg, value)
 
     @property
     def target(self):
@@ -147,6 +177,8 @@ class StructuralSubscription(SQLBase):
         """See `IStructuralSubscription`."""
         bug_filter = BugSubscriptionFilter()
         bug_filter.structural_subscription = self
+        # This flush is needed for the web service API.
+        IStore(StructuralSubscription).flush()
         return bug_filter
 
 
@@ -397,13 +429,9 @@ class StructuralSubscriptionTargetMixin:
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.name, subscriber.name))
 
-        subscription_to_remove = None
-        for subscription in self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA):
-            # Only search for bug subscriptions
-            if subscription.subscriber == subscriber:
-                subscription_to_remove = subscription
-                break
+        subscription_to_remove = self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA,
+            subscriber=subscriber).one()
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
@@ -417,39 +445,44 @@ class StructuralSubscriptionTargetMixin:
                 subscription_to_remove.bug_notification_level = (
                     BugNotificationLevel.NOTHING)
             else:
-                subscription_to_remove.destroySelf()
+                store = Store.of(subscription_to_remove)
+                store.remove(subscription_to_remove)
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
-        all_subscriptions = self.getSubscriptions()
-        for subscription in all_subscriptions:
-            if subscription.subscriber == person:
-                return subscription
-        return None
+        # getSubscriptions returns all subscriptions regardless of
+        # the person for person==None, so we special-case that.
+        if person is None:
+            return None
+        all_subscriptions = self.getSubscriptions(subscriber=person)
+        return all_subscriptions.one()
 
     def getSubscriptions(self,
                          min_bug_notification_level=
                          BugNotificationLevel.NOTHING,
                          min_blueprint_notification_level=
-                         BlueprintNotificationLevel.NOTHING):
+                         BlueprintNotificationLevel.NOTHING,
+                         subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
+        from lp.registry.model.person import Person
         clauses = [
-            "StructuralSubscription.subscriber = Person.id",
-            "StructuralSubscription.bug_notification_level "
-            ">= %s" % quote(min_bug_notification_level),
-            "StructuralSubscription.blueprint_notification_level "
-            ">= %s" % quote(min_blueprint_notification_level),
+            StructuralSubscription.subscriberID==Person.id,
+            (StructuralSubscription.bug_notification_level >=
+             min_bug_notification_level),
+            (StructuralSubscription.blueprint_notification_level >=
+             min_blueprint_notification_level),
             ]
         for key, value in self._target_args.iteritems():
-            if value is None:
-                clauses.append(
-                    "StructuralSubscription.%s IS NULL" % (key,))
-            else:
-                clauses.append(
-                    "StructuralSubscription.%s = %s" % (key, quote(value)))
-        query = " AND ".join(clauses)
-        return StructuralSubscription.select(
-            query, orderBy='Person.displayname', clauseTables=['Person'])
+            clauses.append(
+                getattr(StructuralSubscription, key)==value)
+
+        if subscriber is not None:
+            clauses.append(
+                StructuralSubscription.subscriberID==subscriber.id)
+
+        store = Store.of(self.__helper.pillar)
+        return store.find(
+            StructuralSubscription, *clauses).order_by('Person.displayname')
 
     @property
     def bug_subscriptions(self):
@@ -471,50 +504,242 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        origin = [
-            StructuralSubscription,
-            LeftJoin(
-                BugSubscriptionFilter,
-                BugSubscriptionFilter.structural_subscription_id == (
-                    StructuralSubscription.id)),
-            LeftJoin(
-                BugSubscriptionFilterStatus,
-                BugSubscriptionFilterStatus.filter_id == (
-                    BugSubscriptionFilter.id)),
-            LeftJoin(
-                BugSubscriptionFilterImportance,
-                BugSubscriptionFilterImportance.filter_id == (
-                    BugSubscriptionFilter.id)),
-            ]
+        set_builder = BugFilterSetBuilder(
+            bugtask, level, self.__helper.join)
+        return Store.of(self.__helper.pillar).find(
+            StructuralSubscription, In(
+                StructuralSubscription.id,
+                set_builder.subscriptions))
 
-        if len(bugtask.bug.tags) == 0:
-            tag_conditions = [
-                BugSubscriptionFilter.include_any_tags == False,
-                ]
-        else:
-            tag_conditions = [
-                BugSubscriptionFilter.exclude_any_tags == False,
-                ]
 
-        conditions = [
+class ArrayAgg(NamedFunc):
+    __slots__ = ()
+    name = "ARRAY_AGG"
+
+
+class ArrayContains(CompoundOper):
+    __slots__ = ()
+    oper = "@>"
+
+
+class BugFilterSetBuilder:
+    """A convenience class to build queries for getSubscriptionsForBugTask."""
+
+    def __init__(self, bugtask, level, join_condition):
+        """Initialize a new set builder for bug filters.
+
+        :param bugtask: The `IBugTask` to match against.
+        :param level: A member of `BugNotificationLevel`.
+        :param join_condition: A condition for selecting structural
+            subscriptions. Generally this should limit the subscriptions to a
+            particular target (i.e. project or distribution).
+        """
+        self.status = bugtask.status
+        self.importance = bugtask.importance
+        # The list() gets around some weirdness with security proxies; Storm
+        # does not know how to compile an expression with a proxied list.
+        self.tags = list(bugtask.bug.tags)
+        # Set up common conditions.
+        self.base_conditions = And(
             StructuralSubscription.bug_notification_level >= level,
-            Or(
-                # There's no filter or ...
-                BugSubscriptionFilter.id == None,
-                # There is a filter and ...
-                And(
-                    # There's no status filter, or there is a status filter
-                    # and and it matches.
-                    Or(BugSubscriptionFilterStatus.id == None,
-                       BugSubscriptionFilterStatus.status == bugtask.status),
-                    # There's no importance filter, or there is an importance
-                    # filter and it matches.
-                    Or(BugSubscriptionFilterImportance.id == None,
-                       BugSubscriptionFilterImportance.importance == (
-                            bugtask.importance)),
-                    # Any number of conditions relating to tags.
-                    *tag_conditions)),
-            ]
+            join_condition)
+        # Set up common filter conditions.
+        if len(self.tags) == 0:
+            self.filter_conditions = And(
+                # When the bug has no tags, filters with include_any_tags set
+                # can never match.
+                Not(BugSubscriptionFilter.include_any_tags),
+                self.base_conditions)
+        else:
+            self.filter_conditions = And(
+                # When the bug has tags, filters with exclude_any_tags set can
+                # never match.
+                Not(BugSubscriptionFilter.exclude_any_tags),
+                self.base_conditions)
 
-        return Store.of(self.__helper.pillar).using(*origin).find(
-            StructuralSubscription, self.__helper.join, *conditions)
+    @property
+    def subscriptions_without_filters(self):
+        """Subscriptions without filters."""
+        return Select(
+            StructuralSubscription.id,
+            tables=(
+                StructuralSubscription,
+                LeftJoin(
+                    BugSubscriptionFilter,
+                    BugSubscriptionFilter.structural_subscription_id == (
+                        StructuralSubscription.id))),
+            where=And(
+                BugSubscriptionFilter.id == None,
+                self.base_conditions))
+
+    def _filters_matching_x(self, join, where_condition, **extra):
+        """Return an expression yielding `(subscription_id, filter_id)` rows.
+
+        The expressions returned by this function are used in set (union,
+        intersect, except) operations at the *filter* level. However, the
+        interesting result of these set operations is the structural
+        subscription, hence both columns are included in the expressions
+        generated. Since a structural subscription can have zero or more
+        filters, and a filter can never be associated with more than one
+        subscription, the set operations are unaffected.
+        """
+        return Select(
+            columns=(
+                # Alias this column so it can be selected in
+                # subscriptions_matching.
+                Alias(
+                    BugSubscriptionFilter.structural_subscription_id,
+                    "structural_subscription_id"),
+                BugSubscriptionFilter.id),
+            tables=(
+                StructuralSubscription, BugSubscriptionFilter, join),
+            where=And(
+                BugSubscriptionFilter.structural_subscription_id == (
+                    StructuralSubscription.id),
+                self.filter_conditions,
+                where_condition),
+            **extra)
+
+    @property
+    def filters_matching_status(self):
+        """Filters with the given bugtask's status."""
+        join = LeftJoin(
+            BugSubscriptionFilterStatus,
+            BugSubscriptionFilterStatus.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = Or(
+            BugSubscriptionFilterStatus.id == None,
+            BugSubscriptionFilterStatus.status == self.status)
+        return self._filters_matching_x(join, condition)
+
+    @property
+    def filters_matching_importance(self):
+        """Filters with the given bugtask's importance."""
+        join = LeftJoin(
+            BugSubscriptionFilterImportance,
+            BugSubscriptionFilterImportance.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = Or(
+            BugSubscriptionFilterImportance.id == None,
+            BugSubscriptionFilterImportance.importance == self.importance)
+        return self._filters_matching_x(join, condition)
+
+    @property
+    def filters_without_include_tags(self):
+        """Filters with no tags required."""
+        join = LeftJoin(
+            BugSubscriptionFilterTag,
+            And(BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                BugSubscriptionFilterTag.include))
+        return self._filters_matching_x(
+            join, BugSubscriptionFilterTag.id == None)
+
+    @property
+    def filters_matching_any_include_tags(self):
+        """Filters including any of the bug's tags."""
+        condition = And(
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id),
+            BugSubscriptionFilterTag.include,
+            Not(BugSubscriptionFilter.find_all_tags),
+            In(BugSubscriptionFilterTag.tag, self.tags))
+        return self._filters_matching_x(
+            BugSubscriptionFilterTag, condition)
+
+    @property
+    def filters_matching_any_exclude_tags(self):
+        """Filters excluding any of the bug's tags."""
+        condition = And(
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id),
+            Not(BugSubscriptionFilterTag.include),
+            Not(BugSubscriptionFilter.find_all_tags),
+            In(BugSubscriptionFilterTag.tag, self.tags))
+        return self._filters_matching_x(
+            BugSubscriptionFilterTag, condition)
+
+    def _filters_matching_all_x_tags(self, where_condition):
+        """Return an expression yielding `(subscription_id, filter_id)` rows.
+
+        This joins to `BugSubscriptionFilterTag` and calls up to
+        `_filters_matching_x`, and groups by filter. Conditions are added to
+        ensure that all rows in each group are a subset of the bug's tags.
+        """
+        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
+            quote(tag) for tag in self.tags)
+        return self._filters_matching_x(
+            BugSubscriptionFilterTag,
+            And(
+                BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                BugSubscriptionFilter.find_all_tags,
+                self.filter_conditions,
+                where_condition),
+            group_by=(
+                BugSubscriptionFilter.structural_subscription_id,
+                BugSubscriptionFilter.id),
+            having=ArrayContains(
+                SQL(tags_array), ArrayAgg(
+                    BugSubscriptionFilterTag.tag)))
+
+    @property
+    def filters_matching_all_include_tags(self):
+        """Filters including the bug's tags."""
+        return self._filters_matching_all_x_tags(
+            BugSubscriptionFilterTag.include)
+
+    @property
+    def filters_matching_all_exclude_tags(self):
+        """Filters excluding the bug's tags."""
+        return self._filters_matching_all_x_tags(
+            Not(BugSubscriptionFilterTag.include))
+
+    @property
+    def filters_matching_include_tags(self):
+        """Filters with tag filters including the bug."""
+        return Union(
+            self.filters_matching_any_include_tags,
+            self.filters_matching_all_include_tags)
+
+    @property
+    def filters_matching_exclude_tags(self):
+        """Filters with tag filters excluding the bug."""
+        return Union(
+            self.filters_matching_any_exclude_tags,
+            self.filters_matching_all_exclude_tags)
+
+    @property
+    def filters_matching_tags(self):
+        """Filters with tag filters matching the bug."""
+        if len(self.tags) == 0:
+            # The filter's required tags must be an empty set. The filter's
+            # excluded tags can be anything so no condition is needed.
+            return self.filters_without_include_tags
+        else:
+            return Except(
+                Union(self.filters_without_include_tags,
+                      self.filters_matching_include_tags),
+                self.filters_matching_exclude_tags)
+
+    @property
+    def filters_matching(self):
+        """Filters matching the bug."""
+        return Intersect(
+            self.filters_matching_status,
+            self.filters_matching_importance,
+            self.filters_matching_tags)
+
+    @property
+    def subscriptions_with_matching_filters(self):
+        """Subscriptions with one or more filters matching the bug."""
+        return Select(
+            # I don't know of a more Storm-like way of doing this.
+            SQL("filters_matching.structural_subscription_id"),
+            tables=Alias(self.filters_matching, "filters_matching"))
+
+    @property
+    def subscriptions(self):
+        return Union(
+            self.subscriptions_without_filters,
+            self.subscriptions_with_matching_filters)

@@ -27,6 +27,7 @@ from bzrlib.errors import (
     NotBranchError,
     )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib import trace
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
@@ -41,7 +42,6 @@ from dulwich.repo import Repo as GitRepo
 import pysvn
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tarball import (
@@ -67,6 +67,7 @@ from lp.codehosting.codeimport.worker import (
     ImportWorker,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 
@@ -132,7 +133,10 @@ class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
     def setUp(self):
-        super(TestBazaarBranchStore, self).setUp()
+        WorkerTest.setUp(self)
+        # XXX: JonathanLange 2010-12-24 bug=694140: Avoid spurious "No
+        # handlers for logger 'bzr'" messages.
+        trace._bzr_logger = logging.getLogger('bzr')
         self.temp_dir = self.makeTemporaryDirectory()
         self.arbitrary_branch_id = 10
 
@@ -906,7 +910,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
         time.sleep(1)
-        repo = Repository(source_details.cvs_root, QuietFakeLogger())
+        repo = Repository(source_details.cvs_root, BufferLogger())
         repo.get(source_details.cvs_module, 'working_dir')
         wt = CVSTree('working_dir')
         self.build_tree_contents([('working_dir/README', 'New content')])

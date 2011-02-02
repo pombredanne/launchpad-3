@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -100,13 +100,13 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.suggestion import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
@@ -138,6 +138,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -331,7 +332,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging'
         enabled = (
@@ -409,7 +409,7 @@ class BranchMirrorMixin:
         branch = self.branch
 
         # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
+        if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
         # XXX: Tim Penhey, 2008-05-30
@@ -488,6 +488,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
             self.context.repository_format or
             self.context.control_format or
             self.context.stacked_on)
+
+    @property
+    def is_empty_directory(self):
+        """True if the branch is an empty directory without even a '.bzr'."""
+        return self.context.control_format is None
 
     @property
     def codebrowse_url(self):
@@ -608,6 +613,12 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                 bug for bug in bugs
                 if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
         return bugs
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):

@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -123,7 +122,6 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.product import (
     GhostWidget,
@@ -144,6 +142,7 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
+from lp.app.browser.lazrjs import TextLineEditorWidget
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
@@ -525,7 +524,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
@@ -810,13 +809,19 @@ class DecoratedSeries:
 
     @property
     def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if self.is_development_focus:
-            return 'highlighted'
+            return 'highlight'
         elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
+
+    @cachedproperty
+    def packagings(self):
+        """Convert packagings to list to prevent multiple evaluations."""
+        return list(self.series.packagings)
 
 
 class SeriesWithReleases(DecoratedSeries):
@@ -983,25 +988,21 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, 'title',
-            canonical_url(self.context, view_name='+edit'),
-            id="product-title", title="Edit this title")
+            product, title_field, title, 'h1')
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
         if self.context.programminglang is None:
-            additional_arguments = dict(
+            additional_arguments.update(dict(
                 default_text='Not yet specified',
                 initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, 'programminglang',
-            canonical_url(self.context, view_name='+edit'),
-            id='programminglang', title='Edit programming languages',
-            tag='span', public_attribute='programming_language',
-            accept_empty=True,
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
@@ -1069,14 +1070,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [product for product in self.context.project.products
-                        if product.id != self.context.id]
-
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
@@ -1125,25 +1118,11 @@ class ProductPackagesView(LaunchpadView):
     page_title = label
 
     @cachedproperty
-    def series_packages(self):
-        """A hierarchy of product series, packaging and field data.
-
-        A dict of series and packagings. Each packaging is a dict of the
-        packaging and a hidden HTML field for forms:
-           [{series: <hoary>,
-             packagings: {
-                packaging: <packaging>,
-                field: '<input type=''hidden' ...>},
-                }]
-        """
-        packaged_series = []
-        for series in self.context.series:
-            packagings = []
-            for packaging in series.packagings:
-                packagings.append(packaging)
-            packaged_series.append(dict(
-                series=series, packagings=packagings))
-        return packaged_series
+    def series_batch(self):
+        """A batch of series that are active or have packages."""
+        decorated_series = DecoratedResultSet(
+            self.context.active_or_packaged_series, DecoratedSeries)
+        return BatchNavigator(decorated_series, self.request)
 
     @property
     def distro_packaging(self):
@@ -1155,18 +1134,8 @@ class ProductPackagesView(LaunchpadView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        # First get a list of all relevant packagings.
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # We sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order.
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-
         distros = {}
-        for packaging in all_packagings:
+        for packaging in self.context.packagings:
             distribution = packaging.distroseries.distribution
             if distribution.name in distros:
                 distro = distros[distribution.name]
@@ -1437,13 +1406,6 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 
     label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):

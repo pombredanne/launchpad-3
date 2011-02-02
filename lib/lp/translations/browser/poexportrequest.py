@@ -111,13 +111,9 @@ class BaseExportView(LaunchpadView):
             pofiles_ids = None
         return (translation_templates_ids, pofiles_ids)
 
-    def modifyFormat(self, format):
-        """Optional overridable: return format used to export `format` files.
-
-        :param format: What file format to look up an exportable format for.
-        :returns: The modified format.
-        """
-        return format
+    def getExportFormat(self):
+        """Optional overridable: The requested export format."""
+        return self.request.form.get("format")
 
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
@@ -131,7 +127,7 @@ class BaseExportView(LaunchpadView):
             return
 
         bad_format_message = _("Please select a valid format for download.")
-        format_name = self.modifyFormat(self.request.form.get("format"))
+        format_name = self.getExportFormat()
         if format_name is None:
             self.request.response.addErrorNotification(bad_format_message)
             return

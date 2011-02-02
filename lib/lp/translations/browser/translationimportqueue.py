@@ -14,10 +14,6 @@ __all__ = [
     ]
 
 import os
-from os.path import (
-    basename,
-    splitext,
-    )
 
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
@@ -52,6 +48,9 @@ from lp.translations.browser.hastranslationimports import (
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     IEditTranslationImportQueueEntry,
     ITranslationImportQueue,
@@ -102,11 +101,12 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             return field_values
         # Fill the know values.
         field_values['path'] = self.context.path
-        (fname, fext) = splitext(self.context.path)
-        if fext.lower() == '.po':
-            file_type = TranslationFileType.PO
-        elif fext.lower() == '.pot':
+
+        importer = getUtility(ITranslationImporter)
+        if importer.isTemplateName(self.context.path):
             file_type = TranslationFileType.POT
+        elif importer.isTranslationName(self.context.path):
+            file_type = TranslationFileType.PO
         else:
             file_type = TranslationFileType.UNSPEC
         field_values['file_type'] = file_type
@@ -323,56 +323,59 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 productseries=self.context.productseries)
         return potemplate_subset
 
-    def _validatePath(self, file_type, path):
-        path_changed = False # Flag for change_action
-        if path == None or path.strip() == "":
-            self.setFieldError('path', 'The file name is missing.')
+    def _findObjectionToFilePath(self, file_type, path):
+        """Return textual objection, if any, to setting this file path."""
+        importer = getUtility(ITranslationImporter)
+        if file_type == TranslationFileType.POT:
+            if not importer.isTemplateName(path):
+                return "This filename is not appropriate for a template."
         else:
-            (fname, fext) = splitext(basename(path))
-            if len(fname) == 0:
-                self.setFieldError('path',
-                                   'The file name is incomplete.')
-            if (file_type == TranslationFileType.POT and
-                    fext.lower() != '.pot' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".pot".')
-            if (file_type == TranslationFileType.PO and
-                    fext.lower() != '.po' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".po".')
+            if not importer.isTranslationName(path):
+                return "This filename is not appropriate for a translation."
 
-            if self.context.path != path:
-                # The Rosetta Expert decided to change the path of the file.
-                # Before accepting such change, we should check first whether
-                # there is already another entry with that path in the same
-                # context (sourcepackagename/distroseries or productseries).
-                if file_type == TranslationFileType.POT:
-                    potemplate_set = getUtility(IPOTemplateSet)
-                    existing_file = (
-                        potemplate_set.getPOTemplateByPathAndOrigin(
-                            path, self.context.productseries,
-                            self.context.distroseries,
-                            self.context.sourcepackagename))
-                    already_exists = existing_file is not None
-                else:
-                    pofile_set = getUtility(IPOFileSet)
-                    existing_files = pofile_set.getPOFilesByPathAndOrigin(
-                        path, self.context.productseries,
-                        self.context.distroseries,
-                        self.context.sourcepackagename)
-                    already_exists = not existing_files.is_empty()
+        if path == self.context.path:
+            # No change, so no objections.
+            return None
 
-                if already_exists:
-                    # We already have an IPOFile in this path, let's notify
-                    # the user about that so they choose another path.
-                    self.setFieldError('path',
-                        'There is already a file in the given path.')
-                else:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
+        # The Rosetta Expert decided to change the path of the file.
+        # Before accepting such change, we should check first whether
+        # there is already another entry with that path in the same
+        # context (sourcepackagename/distroseries or productseries).
+        # A duplicate name will confuse the auto-approval
+        # process.
+        if file_type == TranslationFileType.POT:
+            potemplate_set = getUtility(IPOTemplateSet)
+            existing_file = potemplate_set.getPOTemplateByPathAndOrigin(
+                path, self.context.productseries, self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = existing_file is not None
+        else:
+            pofile_set = getUtility(IPOFileSet)
+            existing_files = pofile_set.getPOFilesByPathAndOrigin(
+                path, self.context.productseries,
+                self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = not existing_files.is_empty()
 
-        return path_changed
+        if already_exists:
+            # We already have an IPOFile in this path, let's notify
+            # the user about that so they choose another path.
+            return "There is already a file in the given path."
+
+        return None
+
+    def _validatePath(self, file_type, path):
+        """Should the entry's path be updated?"""
+        if path is None or path.strip() == "":
+            self.setFieldError('path', "The file name is missing.")
+            return False
+
+        objection = self._findObjectionToFilePath(file_type, path)
+        if objection is None:
+            return True
+        else:
+            self.setFieldError('path', objection)
+            return False
 
     def _validatePOT(self, data):
         name = data.get('name')
@@ -509,10 +512,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             self.context.path = path
             # We got a path to store as the new one for the POFile.
             pofile.setPathIfUnique(path)
-        elif self.context.is_published:
-            # This entry comes from upstream, which means that the path we
-            # got is exactly the right one. If it's different from what
-            # pofile has, that would mean that either the entry changed
+        elif self.context.by_maintainer:
+            # This entry was uploaded by the maintainer, which means that the
+            # path we got is exactly the right one. If it's different from
+            # what pofile has, that would mean that either the entry changed
             # its path since previous upload or that we had to guess it
             # and now that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.context.path)

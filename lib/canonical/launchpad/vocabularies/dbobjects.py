@@ -141,6 +141,7 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     """All web and email based external bug trackers."""
     displayname = 'Select a bug tracker'
+    step_title = 'Search'
     implements(IHugeVocabulary)
     _table = BugTracker
     _filter = True
@@ -401,6 +402,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
         Person.q.id == Archive.q.ownerID,
         Archive.q.purpose == ArchivePurpose.PPA)
     displayname = 'Select a PPA'
+    step_title = 'Search'
 
     def toTerm(self, archive):
         """See `IVocabulary`."""

@@ -116,7 +116,7 @@ def start(log, nodes, lag=None):
             "--exec", "/usr/bin/slon",
             "--startas", "/bin/sh",
             "--", "-c",
-            "slon -p %s %s %s '%s' > %s" % (
+            "slon -p %s %s %s '%s' >> %s" % (
                 pidfile, slon_args, replication.helpers.CLUSTERNAME,
                 node.connection_string, logfile)]
         log.debug("Running %s" % repr(cmd))

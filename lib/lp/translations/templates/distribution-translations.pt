@@ -48,6 +48,10 @@
           <tal:target replace="structure target/fmt:link/+translations"
                       >trunk</tal:target>.
         </p>
+        <p tal:condition="view/can_configure_translations">
+          <a tal:replace="structure context/menu:overview/configure_translations/fmt:link"/>
+        </p>
+
       </div>
       <div class="yui-g">
         <div class="yui-u first">

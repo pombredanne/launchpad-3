@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageRelease',
     'BinaryPackageReleaseDownloadCount',
-    'BinaryPackageReleaseSet',
     ]
 
 
@@ -45,7 +44,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     IBinaryPackageReleaseDownloadCount,
-    IBinaryPackageReleaseSet,
     )
 from lp.soyuz.model.files import BinaryPackageFile
 
@@ -165,84 +163,6 @@ class BinaryPackageRelease(SQLBase):
             self.section = section
         if priority is not None:
             self.priority = priority
-
-
-class BinaryPackageReleaseSet:
-    """A Set of BinaryPackageReleases."""
-    implements(IBinaryPackageReleaseSet)
-
-    def findByNameInDistroSeries(self, distroseries, pattern, archtag=None,
-                                  fti=False):
-        """Returns a set of binarypackagereleases that matchs pattern inside a
-        distroseries.
-        """
-        pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distroseries)
-        queries = [query]
-
-        match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
-                       % (quote_like(pattern)))
-        if fti:
-            match_query = ("(%s OR BinaryPackageRelease.fti @@ ftq(%s))"
-                           % (match_query, quote(pattern)))
-        queries.append(match_query)
-
-        if archtag:
-            queries.append('DistroArchSeries.architecturetag=%s'
-                           % sqlvalues(archtag))
-
-        query = " AND ".join(queries)
-
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables,
-                                           orderBy='BinaryPackageName.name')
-
-    def getByNameInDistroSeries(self, distroseries, name=None,
-                                 version=None, archtag=None, orderBy=None):
-        """Get a BinaryPackageRelease in a DistroSeries by its name."""
-        query, clauseTables = self._buildBaseQuery(distroseries)
-        queries = [query]
-
-        if name:
-            queries.append('BinaryPackageName.name = %s'% sqlvalues(name))
-
-        # Look for a specific binarypackage version or if version == None
-        # return the current one
-        if version:
-            queries.append('BinaryPackageRelease.version = %s'
-                         % sqlvalues(version))
-        else:
-            status_published = PackagePublishingStatus.PUBLISHED
-            queries.append('BinaryPackagePublishingHistory.status = %s'
-                         % sqlvalues(status_published))
-
-        if archtag:
-            queries.append('DistroArchSeries.architecturetag = %s'
-                         % sqlvalues(archtag))
-
-        query = " AND ".join(queries)
-        return BinaryPackageRelease.select(query, distinct=True,
-                                           clauseTables=clauseTables,
-                                           orderBy=orderBy)
-
-    def _buildBaseQuery(self, distroseries):
-        query = """
-        BinaryPackagePublishingHistory.binarypackagerelease =
-           BinaryPackageRelease.id AND
-        BinaryPackagePublishingHistory.distroarchseries =
-           DistroArchSeries.id AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        DistroArchSeries.distroseries = %s AND
-        BinaryPackageRelease.binarypackagename =
-           BinaryPackageName.id AND
-        BinaryPackagePublishingHistory.dateremoved is NULL
-        """ % sqlvalues([archive.id for archive in
-                         distroseries.distribution.all_distro_archives],
-                        distroseries)
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName']
-
-        return query, clauseTables
 
 
 class BinaryPackageReleaseDownloadCount(Storm):

@@ -87,7 +87,7 @@ from lp.services.fields import (
     Title,
     URIField,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class ProjectNameField(PillarNameField):
@@ -104,6 +104,15 @@ class IProjectGroupModerate(IPillar):
             title=_('Reviewed'), required=False,
             description=_("Whether or not this project group has been "
                           "reviewed.")))
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                "A unique name, used in URLs, identifying the project "
+                "group.  All lowercase, no special characters. "
+                "Examples: apache, mozilla, gimp."),
+            constraint=name_validator))
 
 
 class IProjectGroupPublic(
@@ -132,16 +141,6 @@ class IProjectGroupPublic(
             vocabulary='ValidPersonOrTeam',
             description=_("Project group registrant. Must be a valid "
                           "Launchpad Person.")))
-
-    name = exported(
-        ProjectNameField(
-            title=_('Name'),
-            required=True,
-            description=_(
-                "A unique name, used in URLs, identifying the project "
-                "group.  All lowercase, no special characters. "
-                "Examples: apache, mozilla, gimp."),
-            constraint=name_validator))
 
     displayname = exported(
         TextLine(
@@ -310,6 +309,10 @@ class IProjectGroupPublic(
                 "to anyone after reporting a bug."),
             required=False,
             max_length=50000))
+
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False, readonly=True)
 
     def getProduct(name):
         """Get a product with name `name`."""

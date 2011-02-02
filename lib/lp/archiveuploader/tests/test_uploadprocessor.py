@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     "MockOptions",
-    "MockLogger",
     "TestUploadProcessorBase",
     ]
 
@@ -14,9 +13,7 @@ from email import message_from_string
 import os
 import shutil
 from StringIO import StringIO
-import sys
 import tempfile
-import traceback
 
 from storm.locals import Store
 from zope.component import (
@@ -39,7 +36,10 @@ from lp.archiveuploader.uploadpolicy import (
     IArchiveUploadPolicy,
     )
 from lp.archiveuploader.uploadprocessor import (
+    BuildUploadHandler,
+    CannotGetBuild,
     parse_build_upload_leaf_name,
+    UploadHandler,
     UploadProcessor,
     )
 from lp.buildmaster.enums import (
@@ -53,6 +53,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -93,26 +94,6 @@ class MockOptions:
     """Use in place of an options object, adding more attributes if needed."""
     keep = False
     dryrun = False
-
-
-class MockLogger:
-    """Pass as a log object. Record debug calls for later checking."""
-
-    def __init__(self):
-        self.lines = []
-
-    def debug(self, s, exc_info=False):
-        self.lines.append(s)
-        if exc_info:
-            for err_msg in traceback.format_exception(*sys.exc_info()):
-                self.lines.append(err_msg)
-
-    info = debug
-    warn = debug
-    error = debug
-
-    def exception(self, s):
-        self.debug(s, exc_info=True)
 
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
@@ -159,18 +140,20 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             "Daniel Silverstone <daniel.silverstone@canonical.com>")
         self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
 
-        self.log = MockLogger()
+        self.log = BufferLogger()
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
         super(TestUploadProcessorBase, self).tearDown()
 
-    def getUploadProcessor(self, txn):
+    def getUploadProcessor(self, txn, builds=None):
+        if builds is None:
+            builds = self.options.builds
 
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
-            if self.options.builds:
+            if builds:
                 policy.distroseries = build.distro_series
                 policy.pocket = build.pocket
                 policy.archive = build.archive
@@ -179,8 +162,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, self.options.builds,
-            self.options.keep, getPolicy, txn, self.log)
+            self.options.nomails, builds, self.options.keep, getPolicy, txn,
+            self.log)
 
     def publishPackage(self, packagename, version, source=True,
                         archive=None):
@@ -199,9 +182,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
-        self.assertTrue(line in self.log.lines,
+        log_lines = self.log.getLogBuffer()
+        self.assertTrue(line in log_lines,
                         "'%s' is not in logged output\n\n%s"
-                        % (line, '\n'.join(self.log.lines)))
+                        % (line, log_lines))
 
     def assertRaisesAndReturnError(self, excClass, callableObj, *args,
                                    **kwargs):
@@ -296,10 +280,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         so that we can debug failing tests effectively.
         """
         results = []
-        changes_files = processor.locateChangesFiles(upload_dir)
+        self.assertEqual(processor.builds, build is not None)
+        handler = UploadHandler.forProcessor(
+            processor, '.', upload_dir, build)
+        changes_files = handler.locateChangesFiles()
         for changes_file in changes_files:
-            result = processor.processChangesFile(
-                upload_dir, changes_file, build=build)
+            result = handler.processChangesFile(changes_file)
             results.append(result)
         return results
 
@@ -423,25 +409,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
-    def testLocateChangesFiles(self):
-        """locateChangesFiles should return the .changes files in a folder.
-
-        'source' changesfiles come first. Files that are not named as
-        changesfiles are ignored.
-        """
-        testdir = tempfile.mkdtemp()
-        try:
-            open("%s/1.changes" % testdir, "w").close()
-            open("%s/2_source.changes" % testdir, "w").close()
-            open("%s/3.not_changes" % testdir, "w").close()
-
-            up = self.getUploadProcessor(None)
-            located_files = up.locateChangesFiles(testdir)
-            self.assertEqual(
-                located_files, ["2_source.changes", "1.changes"])
-        finally:
-            shutil.rmtree(testdir)
-
     def _makeUpload(self, testdir):
         """Create a dummy upload for testing the move/remove methods."""
         upload = tempfile.mkdtemp(dir=testdir)
@@ -464,7 +431,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveUpload(upload, target_name, self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveUpload(target_name, self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
@@ -485,7 +453,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "accepted", self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveProcessedUpload("accepted", self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -508,7 +477,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "rejected", self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.moveProcessedUpload("rejected", self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(testdir,
@@ -531,7 +501,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.removeUpload(upload, self.log)
+            handler = UploadHandler(up, '.', upload)
+            handler.removeUpload(self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -540,13 +511,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
-
-    def testOrderFilenames(self):
-        """orderFilenames sorts _source.changes ahead of other files."""
-        up = self.getUploadProcessor(None)
-
-        self.assertEqual(["d_source.changes", "a", "b", "c"],
-            up.orderFilenames(["b", "a", "d_source.changes", "c"]))
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -696,7 +660,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.layer.txn.commit()
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_original_build)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
@@ -727,12 +693,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
              build=bar_copied_build)
 
         # Make sure the upload succeeded.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.is_rejected, False)
+            build_uploadprocessor.last_processed_upload.is_rejected, False)
 
         # The upload should also be auto-accepted even though there's no
         # ancestry.  This means items should go to ACCEPTED and not NEW.
@@ -798,8 +764,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary")
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.processUpload(
-            uploadprocessor, upload_dir, build=bar_original_build)
+            build_uploadprocessor, upload_dir, build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
@@ -821,7 +789,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         shutil.rmtree(upload_dir)
         self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_copied_build)
         [duplicated_binary_upload] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='bar',
@@ -861,7 +829,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-2_binary")
-        self.processUpload(uploadprocessor, upload_dir,
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
@@ -881,14 +851,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         shutil.rmtree(upload_dir)
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir,
+        self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_copied_build)
 
         # The binary just uploaded is accepted because it's destined for a
         # copy archive and the PRIMARY and the COPY archives are isolated
         # from each other.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.is_rejected, False)
+            build_uploadprocessor.last_processed_upload.is_rejected, False)
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
@@ -1036,8 +1006,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.ubuntu.main_archive)
         self.layer.txn.commit()
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.processUpload(
-            uploadprocessor, upload_dir, build=foocomm_build)
+            build_uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
             "Subject: foocomm_1.0-1_i386.changes rejected",
@@ -1204,9 +1176,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.assertTrue(
+        self.assertIn(
             "Unable to find mandatory field 'Files' "
-            "in the changes file" in error_text)
+            "in the changes file", error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1865,22 +1837,34 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         super(TestBuildUploadProcessor, self).setUp()
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
+
+class TestUploadHandler(TestUploadProcessorBase):
+
+    def setUp(self):
+        super(TestUploadHandler, self).setUp()
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
     def testInvalidLeafName(self):
         # Directories with invalid leaf names should be skipped,
         # and a warning logged.
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="bar")
-        self.uploadprocessor.processBuildUpload(upload_dir, "bar")
-        self.assertLogContains('Unable to extract build id from leaf '
-                               'name bar, skipping.')
+        e = self.assertRaises(
+            CannotGetBuild, BuildUploadHandler, self.uploadprocessor,
+            upload_dir, "bar")
+        self.assertIn(
+            'Unable to extract build id from leaf name bar, skipping.',
+            str(e))
 
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build
         # should be skipped and a warning logged.
         cookie = "%s-%d" % (BuildFarmJobType.PACKAGEBUILD.name, 42)
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry=cookie)
-        self.uploadprocessor.processBuildUpload(upload_dir, cookie)
-        self.assertLogContains(
-            "Unable to find package build job with id 42. Skipping.")
+        e = self.assertRaises(
+            CannotGetBuild,
+            BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
+        self.assertIn(
+            "Unable to find package build job with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
@@ -1903,6 +1887,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.builder = build.buildqueue_record.builder
 
         build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
@@ -1913,18 +1898,17 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.assertEquals(1, len(self.oopses))
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(builder, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
-        self.assertTrue('ERROR: Exception while processing upload '
+        self.assertTrue('ERROR Exception while processing upload '
             in log_contents)
-        self.assertFalse('DEBUG: Moving upload directory '
+        self.assertFalse('DEBUG Moving upload directory '
             in log_contents)
 
     def testBinaryPackageBuilds(self):
@@ -1957,8 +1941,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.builds = True
         last_stub_mail_count = len(stub.test_emails)
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
         # No emails are sent on success
         self.assertEquals(len(stub.test_emails), last_stub_mail_count)
@@ -1966,10 +1950,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
 
-    def testSourcePackageRecipeBuild(self):
-        # Properly uploaded source packages should result in the
-        # build status changing to FULLYBUILT.
-
+    def doSuccessRecipeBuild(self):
         # Upload a source package
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
@@ -1992,19 +1973,32 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
         Store.of(build).flush()
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
+        return build
 
+    def testSourcePackageRecipeBuild(self):
+        # Properly uploaded source packages should result in the
+        # build status changing to FULLYBUILT.
+        build = self.doSuccessRecipeBuild()
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         self.assertEquals(None, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
 
-    def testSourcePackageRecipeBuild_fail(self):
+    def testSourcePackageRecipeBuild_success_mail(self):
+        # When a source package recipe build succeeds, it sends a build-style
+        # email, not user-upload-style one.
+        self.doSuccessRecipeBuild()
+        (mail,) = pop_notifications()
+        subject = mail['Subject'].replace('\n\t', ' ')
+        self.assertIn('Successfully built', subject)
+
+    def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.
 
         # Upload a source package
@@ -2024,14 +2018,90 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # violations later.
         Store.of(build).flush()
         build.status = BuildStatus.UPLOADING
-        self.uploadprocessor.processBuildUpload(
-            self.incoming_folder, leaf_name)
+        build.date_finished = UTC_NOW
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
         self.layer.txn.commit()
+        return build
+
+    def testSourcePackageRecipeBuild_fail(self):
+        build = self.doFailureRecipeBuild()
         self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(None, build.builder)
-        self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
         self.assertIsNot(None, build.upload_log)
+
+    def testSourcePackageRecipeBuild_fail_mail(self):
+        # Failures should generate a message that includes the upload log URL.
+        self.doFailureRecipeBuild()
+        (mail,) = pop_notifications()
+        subject = mail['Subject'].replace('\n\t', ' ')
+        self.assertIn('Failed to upload', subject)
+        body = mail.get_payload(decode=True)
+        self.assertIn('Upload Log: http', body)
+
+    def testBuildWithInvalidStatus(self):
+        # Builds with an invalid (non-UPLOADING) status should trigger
+        # a warning but be left alone.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        source_pub = self.publishPackage('bar', '1.0-1')
+        [build] = source_pub.createMissingBuilds()
+
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1", name="bar")
+        queue_item.setDone()
+
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.status = BuildStatus.BUILDING
+
+        shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", queue_entry=leaf_name)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        last_stub_mail_count = len(stub.test_emails)
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
+        self.layer.txn.commit()
+        # The build status is not changed
+        self.assertTrue(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertEquals(BuildStatus.BUILDING, build.status)
+        self.assertLogContains(
+            "Expected build status to be 'UPLOADING', was BUILDING. "
+            "Ignoring.")
+
+    def testOrderFilenames(self):
+        """orderFilenames sorts _source.changes ahead of other files."""
+        self.assertEqual(["d_source.changes", "a", "b", "c"],
+            UploadHandler.orderFilenames(["b", "a", "d_source.changes", "c"]))
+
+    def testLocateChangesFiles(self):
+        """locateChangesFiles should return the .changes files in a folder.
+
+        'source' changesfiles come first. Files that are not named as
+        changesfiles are ignored.
+        """
+        testdir = tempfile.mkdtemp()
+        try:
+            open("%s/1.changes" % testdir, "w").close()
+            open("%s/2_source.changes" % testdir, "w").close()
+            open("%s/3.not_changes" % testdir, "w").close()
+
+            up = self.getUploadProcessor(None)
+            handler = UploadHandler(up, '.', testdir)
+            located_files = handler.locateChangesFiles()
+            self.assertEqual(
+                located_files, ["2_source.changes", "1.changes"])
+        finally:
+            shutil.rmtree(testdir)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):

@@ -303,7 +303,7 @@ in the order they were added:
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
-    -- 
+    --
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
     http://bugs.launchpad.dev/bugs/1
@@ -582,8 +582,6 @@ makes it write out the emails it sends.
     0
     >>> print err
     DEBUG   ...
-    INFO    Notifying mark@example.com about bug 2.
-    ...
     INFO    Notifying support@ubuntu.com about bug 2.
     ...
     INFO    Notifying test@canonical.com about bug 2.
@@ -727,15 +725,12 @@ X-Launchpad-Bug-Tags header.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'layout-test']
-    [u'layout-test']
 
 If we add a tag to bug three that will also be included in the header.
 The tags will be space-separated to allow the list to be wrapped if it
 gets over-long.
 
     >>> switch_db_to_launchpad()
-
-    >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
 
     >>> switch_db_to_bugnotification()
@@ -756,6 +751,9 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
+    >>> switch_db_to_launchpad()
+    >>> #bug_three.unsubscribe(sample_person, sample_person)
+
 
 The X-Launchpad-Bug-Private header
 ----------------------------------
@@ -769,7 +767,7 @@ private. It can have the value "yes" or "no".
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 Predictably, private bugs are sent with a slightly different header:
 
@@ -780,7 +778,7 @@ Predictably, private bugs are sent with a slightly different header:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
 The X-Launchpad-Bug-Security-Vulnerability header
@@ -796,7 +794,7 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
@@ -809,7 +807,7 @@ simple "yes":
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
 The X-Launchpad-Bug-Commenters header
@@ -872,8 +870,13 @@ with different verbose_bugnotifications settings.
 
     >>> switch_db_to_launchpad()
     >>> bug = factory.makeBug(
-    ...     product=factory.makeProduct(title='Foo'), title='Foo is broken',
-    ...     description='desc')
+    ...     product=factory.makeProduct(title='Foo'),
+    ...     title='In the beginning, the universe was created. This '
+    ...         'has made a lot of people very angry and has been '
+    ...         'widely regarded as a bad move',
+    ...     description="This is a long description of the bug, which "
+    ...         "will be automatically wrapped by the BugNotification "
+    ...         "machinery. Ain't technology great?")
 
     >>> verbose_person = factory.makePerson(
     ...     displayname='Verbose Person', email='verbose@example.com')
@@ -984,7 +987,7 @@ We can see that Concise Person doesn't receive verbose notifications:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1005,7 +1008,7 @@ he wants concise ones.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1025,13 +1028,15 @@ Whereas Verbose Person does get the description and task status:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     Status in Foo:
       New
     <BLANKLINE>
     Bug description:
-      desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/.../+bug/.../+subscribe
@@ -1054,16 +1059,44 @@ And Concise Team Person does too, even though his team doesn't want them:
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
-      Foo is broken
+      In the beginning...
     <BLANKLINE>
     Status in Foo:
       New
     <BLANKLINE>
     Bug description:
-      desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
     ----------------------------------------------------------------------
 
+It's important to note that the bug title and description are wrapped
+and indented correctly in verbose notifications.
+
+    >>> message = collated_messages['conciseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     ...
+     'Bug description:',
+     '  This is a long description of the bug, which will be automatically',
+     "  wrapped by the BugNotification machinery. Ain't technology great?",
+    ...
+
+The title is also wrapped and indented in normal notifications.
+
+    >>> message = collated_messages['verboseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     '']
 
 Notification Recipients
 -----------------------
@@ -1238,7 +1271,7 @@ receives these notifications.
     <BLANKLINE>
     ** Summary changed to: whatever.
     <BLANKLINE>
-    -- 
+    --
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
     ...
@@ -1287,7 +1320,7 @@ no notifications created by addChangeNotification().
     <BLANKLINE>
     ** Summary changed to: something.
     <BLANKLINE>
-    -- 
+    --
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber.
     http://bugs.launchpad.dev/bugs/1

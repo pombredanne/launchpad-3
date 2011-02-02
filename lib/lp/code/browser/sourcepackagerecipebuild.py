@@ -29,6 +29,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -42,6 +43,18 @@ UNEDITABLE_BUILD_STATES = (
     BuildStatus.FAILEDTOBUILD,
     BuildStatus.SUPERSEDED,
     BuildStatus.FAILEDTOUPLOAD,)
+
+
+class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipeBuild objects."""
+
+    _link_summary_template = '%(title)s [%(owner)s/%(archive)s]'
+
+    def _link_summary_values(self):
+        return {'title': self._context.title,
+                'owner': self._context.archive.owner.name,
+                'archive': self._context.archive.name}
+
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
@@ -162,6 +175,13 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
             description=u'The score of the recipe.')
 
     page_title = label = "Rescore build"
+
+    def __call__(self):
+        if self.context.buildqueue_record is not None:
+            return super(SourcePackageRecipeBuildRescoreView, self).__call__()
+        self.request.response.addWarningNotification(
+            'Cannot rescore this build because it is not queued.')
+        self.request.response.redirect(canonical_url(self.context))
 
     @property
     def cancel_url(self):

@@ -26,7 +26,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.base import Storm
 from storm.expr import (
     Desc,
     Not,
@@ -79,6 +78,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.stormbase import StormBase
 
 
 BUG_TRACKER_URL_FORMATS = {
@@ -751,7 +751,7 @@ class BugWatchSet(BugSetBase):
                     result, message, oops_id, bug_watch_ids))
 
 
-class BugWatchActivity(Storm):
+class BugWatchActivity(StormBase):
     """See `IBugWatchActivity`."""
 
     implements(IBugWatchActivity)

@@ -48,11 +48,11 @@ The bug page contains a link to the activity log.
 Some bug activity is show interleaved with comments on a bug's main
 page.
 
-    >>> def print_comments(page):
+    >>> def print_comments(page, subset=slice(-1, None)):
     ...     """Print all the comments on the page."""
     ...     comment_divs = find_tags_by_class(page, 'boardComment')
-    ...     for div_tag in comment_divs:
-    ...         print extract_text(div_tag)
+    ...     for div_tag in comment_divs[subset]:
+    ...         print extract_text(div_tag).replace("&#8594;", "=>")
     ...         print '-' * 8
 
     >>> user_browser.open(
@@ -60,13 +60,13 @@ page.
     >>> user_browser.getControl(name='field.comment').value = (
     ...     "Here's a comment for testing, like.")
     >>> user_browser.getControl('Post Comment').click()
-    >>> print_comments(user_browser.contents)
+    >>> print_comments(user_browser.contents, slice(None))
     In...
     Bug Watch Updater
     on 2007-12-18
     Changed in thunderbird:
     status:
-    Unknown &#8594; New
+    Unknown => New
     --------
     No Privileges Person
     ...
@@ -84,7 +84,7 @@ Alterations to the summary of a bug will show up along with any comments
 that have been added.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(user_browser.contents)
+    >>> print_comments(user_browser.contents, slice(None))
     In...
     Bug
     ...
@@ -105,16 +105,19 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
-    ...
-    --------
-    Foo Bar ... ago
-    visibility: public  &#8594; private
+    Foo Bar
+    ... ago
+    summary:
+    - Nonsensical bugs are useless
+    + A new title for this bug
+    visibility:
+    public => private
     --------
 
-Changes to a bug's security_related field will be displayed as 'security
-vulnerability' changes, with values of 'yes' or 'no'.
+Changes to a bug's security_related field will be displayed as
+'security vulnerability' changes, with values of 'yes' or 'no'. Note
+that changes are grouped together if they occur at similar times, but
+are still shown in the order the changes were made.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
@@ -124,33 +127,12 @@ vulnerability' changes, with values of 'yes' or 'no'.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
+    Foo Bar
+    ... ago
+    summary:
     ...
-    --------
-    Foo Bar ... ago
-    security vulnerability: no  &#8594; yes
-    --------
-
-Changes will be grouped together if they occur at the same time.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl(
-    ...     "This bug is a security vulnerability").selected = False
-    >>> admin_browser.getControl(
-    ...     "This bug report should be private").selected = False
-    >>> admin_browser.getControl("Change").click()
-
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(admin_browser.contents)
-    In...
-    Bug
-    ...
-    --------
-    Foo Bar ... ago
-    security vulnerability: yes &#8594; no
-    visibility: private  &#8594; public
+    security vulnerability:
+    no => yes
     --------
 
 Changes to the bug's description will simply be displayed as 'description:
@@ -164,12 +146,12 @@ updated', since such changes can be quite long.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
+    Foo Bar
+    ... ago
+    summary:
     ...
-    --------
-    Foo Bar ... ago
-    description: updated
+    description:
+    updated
     --------
 
 Changes to the bug's tags will be show in the form tags removed or tags
@@ -183,13 +165,17 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
+    Foo Bar
+    ... ago
+    summary:
     ...
+    tags:
+    added: tag1 tag2 tag3
     --------
-    Foo Bar ... ago
-    tags: added: tag1 tag2 tag3
-    --------
+
+When two similar activities are grouped into the same comment - like
+two sets of tag changes - they are displayed in the order they were
+made.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
@@ -199,13 +185,15 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
+    Foo Bar
+    ... ago
+    summary:
     ...
-    --------
-    Foo Bar ... ago
-    tags: added: tag4
-        removed: tag3
+    tags:
+    added: tag1 tag2 tag3
+    tags:
+    added: tag4
+    removed: tag3
     --------
 
 Changes to a BugTask's attributes will show up listed under the task's
@@ -231,16 +219,19 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> admin_browser.getControl("Save Changes").click()
 
     >>> print_comments(admin_browser.contents)
-    In...
-    Bug
+    Foo Bar
+    ... ago
+    summary:
     ...
-    --------
-    Foo Bar ... ago
     Changed in redfish:
-              assignee: nobody &#8594; Foo Bar (name16)
-            importance: Undecided &#8594; High
-             milestone: none &#8594; foo
-                status: New &#8594; Confirmed
+    assignee:
+    nobody => Foo Bar (name16)
+    importance:
+    Undecided => High
+    milestone:
+    none => foo
+    status:
+    New => Confirmed
     --------
 
 If a change is made to a bug task which is targeted to a distro source
@@ -252,13 +243,11 @@ package, the name of the package and the distro will be displayed.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Sample Person
-    ...
     Foo Bar
-    ...
+    ... ago
     Changed in mozilla-firefox (Ubuntu):
     status:
-    New &#8594; Confirmed
+    New => Confirmed
     --------
 
 If a change has a comment associated with it it will be displayed in the
@@ -273,18 +262,18 @@ bundled with that comment in the UI.
     >>> admin_browser.getControl('Comment').value = "Lookit, a change!"
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Sample Person
-    ...
     Foo Bar
     wrote
-    ...
+    ... ago:
     #2
     Lookit, a change!
     Changed in mozilla-firefox (Ubuntu):
-    importance:
-    Medium &#8594; Low
     status:
-    Confirmed &#8594; New
+    New => Confirmed
+    importance:
+    Medium => Low
+    status:
+    Confirmed => New
     --------
 
 If a target of a bug task is changed the old and new value will be shown.
@@ -296,15 +285,11 @@ If a target of a bug task is changed the old and new value will be shown.
     ...     'Package').value = 'linux-source-2.6.15'
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Sample Person
-    ...
     Foo Bar
     wrote
-    ...
-    --------
-    Foo Bar
+    ... ago:
+    #2
     ...
     affects:
-    mozilla-firefox (Ubuntu) &#8594; linux-source-2.6.15 (Ubuntu)
+    mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
     --------
-

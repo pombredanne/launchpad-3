@@ -17,7 +17,6 @@ from loggerhead.apps.branch import BranchWSGIApp
 
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-from openid.store.memstore import MemoryStore
 
 from paste.fileapp import DataApp
 from paste.request import construct_url, parse_querystring, path_info_pop
@@ -64,7 +63,6 @@ class RootApp:
         self.branchfs = xmlrpclib.ServerProxy(
             config.codehosting.codehosting_endpoint)
         self.session_var = session_var
-        self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
 
     def get_transport(self):
@@ -76,7 +74,10 @@ class RootApp:
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
-        return Consumer(environ[self.session_var], self.store)
+        # Multiple instances need to share a store or not use one at all (in
+        # which case they will use check_authentication). Using no store is
+        # easier, and check_authentication is cheap.
+        return Consumer(environ[self.session_var], None)
 
     def _begin_login(self, environ, start_response):
         """Start the process of authenticating with OpenID.
@@ -257,8 +258,8 @@ _oops_html_template = '''\
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
-<a href="https://bugs.launchpad.net/launchpad-code"
->https://bugs.launchpad.net/launchpad-code</a>
+<a href="https://bugs.launchpad.net/launchpad"
+>https://bugs.launchpad.net/launchpad</a>
 and quote OOPS-ID <strong>%(oopsid)s</strong>
 </p></body></html>'''
 
@@ -271,7 +272,7 @@ class WrappedStartResponse(object):
     """Wraps start_response (from a WSGI request) to keep track of whether
     start_response was called (and whether the callable it returns has been
     called).
-    
+
     Used by oops_middleware.
     """
 
@@ -324,7 +325,7 @@ def report_oops(environ, error_utility):
         [], URL=construct_url(environ))
     error_utility.raising(sys.exc_info(), request)
     return request.oopsid
-        
+
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.

@@ -25,6 +25,8 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    get_feedback_messages,
+    get_radio_button_text_for_field,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
@@ -41,6 +43,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
@@ -49,8 +52,24 @@ from lp.testing import (
     BrowserTestCase,
     login,
     person_logged_in,
+    TestCaseWithFactory,
+    time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.views import create_initialized_view
+
+
+class TestCanonicalUrlForRecipe(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='recipe-owner')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'recipe-name')
+        self.assertEqual(
+            'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
+            canonical_url(recipe))
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -134,15 +153,15 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built daily
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
-            Daily build archive: Secret PPA
+            Daily build archive: Secret PPA Edit
             Distribution series: Secret Squirrel
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -292,7 +311,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+                # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
@@ -412,6 +431,132 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
+    def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
+        # If the user creating a recipe has no existing PPAs, the selector
+        # isn't shown, but the field to enter a new PPA name is.
+        self.user = self.factory.makePerson(password='test')
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has an initial value.
+        self.assertEqual('ppa', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertIs(None, ppa_chooser)
+        # There is a hidden option to say create a new ppa.
+        ppa_options = content.find(attrs={'name': 'field.use_ppa'})
+        self.assertEqual('input', ppa_options.name)
+        self.assertEqual('hidden', ppa_options['type'])
+        self.assertEqual('create-new', ppa_options['value'])
+
+    def test_ppa_selector_shown_if_user_has_ppas(self):
+        # If the user creating a recipe has existing PPAs, the selector is
+        # shown, along with radio buttons to decide whether to use an existing
+        # ppa or to create a new one.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        ppa_name = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', ppa_name.name)
+        self.assertEqual('text', ppa_name['type'])
+        # The new ppa name field has no initial value.
+        self.assertEqual('', ppa_name['value'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertEqual('select', ppa_chooser.name)
+        ppa_options = list(
+            get_radio_button_text_for_field(content, 'use_ppa'))
+        self.assertEqual(
+            ['(*) Use an existing PPA',
+             '( ) Create a new PPA for this recipe'''],
+            ppa_options)
+
+    def test_create_new_ppa(self):
+        # If the user doesn't have any PPAs, a new once can be created.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = self.user.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
+    def test_create_new_ppa_duplicate(self):
+        # If a new PPA is being created, and the user already has a ppa of the
+        # name specifed an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        # Make a PPA called 'ppa' using the default.
+        self.user.createPPA(name='foo')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create a new PPA').click()
+        browser.getControl(name='field.ppa_name').value = 'foo'
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You already have a PPA named 'foo'.")
+
+    def test_create_new_ppa_missing_name(self):
+        # If a new PPA is being created, and the user has not specified a
+        # name, an error is shown.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl(name='field.ppa_name').value = ''
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 2),
+            "You need to specify a name for the PPA.")
+
+    def test_create_new_ppa_owned_by_recipe_owner(self):
+        # The new PPA that is created is owned by the recipe owner.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        team = self.factory.makeTeam(
+            name='vikings', members=[self.user],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        branch = self.factory.makeAnyBranch(owner=team)
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl(name='field.owner').value = ['vikings']
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~vikings/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = team.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
@@ -459,16 +604,16 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            PPA 2
+            PPA 2 Edit
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -519,16 +664,16 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            Secret PPA
+            Secret PPA Edit
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -659,16 +804,16 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
             Daily build archive:
-            Secret PPA
+            Secret PPA Edit
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -710,10 +855,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe information
             Build schedule: Built on request
-            Owner: Master Chef
+            Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
-            Daily build archive: Secret PPA
+            Daily build archive: Secret PPA Edit
             Distribution series: Secret Squirrel
 
             Latest builds
@@ -722,7 +867,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
     def test_index_success_with_buildlog(self):
@@ -752,8 +897,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
-            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
-            source_package_recipe_build=build, version='0+r42')
+            archive=self.ppa, sourcepackagename=package_name,
+            distroseries=self.squirrel, source_package_recipe_build=build,
+            version='0+r42')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release, archive=self.ppa,
+            distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
         binary_build = self.factory.makeBinaryPackageBuild(
             source_package_release=source_package_release,
@@ -779,8 +928,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
-            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
-            source_package_recipe_build=build, version='0+r42')
+            archive=self.ppa, sourcepackagename=package_name,
+            distroseries=self.squirrel, source_package_recipe_build=build,
+            version='0+r42')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release, archive=self.ppa,
+            distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
         binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
             source_package_release=source_package_release,
@@ -817,10 +970,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
-    def makeBuildJob(self, recipe):
+    def makeBuildJob(self, recipe, date_created=None):
         """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa,
+            date_created=date_created)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
@@ -843,32 +997,35 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""
         recipe = self.makeRecipe()
-        build1 = self.makeBuildJob(recipe=recipe)
-        build2 = self.makeBuildJob(recipe=recipe)
-        build3 = self.makeBuildJob(recipe=recipe)
-        build4 = self.makeBuildJob(recipe=recipe)
-        build5 = self.makeBuildJob(recipe=recipe)
-        build6 = self.makeBuildJob(recipe=recipe)
+        date_gen = time_counter(
+            datetime(2010, 03, 16, tzinfo=utc), timedelta(days=-1))
+        build1 = self.makeBuildJob(recipe, date_gen.next())
+        build2 = self.makeBuildJob(recipe, date_gen.next())
+        build3 = self.makeBuildJob(recipe, date_gen.next())
+        build4 = self.makeBuildJob(recipe, date_gen.next())
+        build5 = self.makeBuildJob(recipe, date_gen.next())
+        build6 = self.makeBuildJob(recipe, date_gen.next())
         view = SourcePackageRecipeView(recipe, None)
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
 
-        def set_day(build, day):
+        def set_status(build, status):
             naked_build = removeSecurityProxy(build)
-            naked_build.date_started = datetime(2010, 03, day, tzinfo=utc)
-            naked_build.date_finished = datetime(2010, 03, day, tzinfo=utc)
-        set_day(build1, 16)
-        set_day(build2, 15)
+            naked_build.status = status
+            naked_build.date_started = naked_build.date_created
+            naked_build.date_completed = naked_build.date_created
+        set_status(build1, BuildStatus.FULLYBUILT)
+        set_status(build2, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
-            set([build1, build3, build4, build5, build6]),
+            set([build3, build4, build5, build6, build1]),
             set(view.builds))
-        set_day(build3, 14)
-        set_day(build4, 13)
-        set_day(build5, 12)
-        set_day(build6, 11)
+        set_status(build3, BuildStatus.FULLYBUILT)
+        set_status(build4, BuildStatus.FULLYBUILT)
+        set_status(build5, BuildStatus.FULLYBUILT)
+        set_status(build6, BuildStatus.FULLYBUILT)
         self.assertEqual(
             [build1, build2, build3, build4, build5], view.builds)
 
@@ -908,7 +1065,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser.getControl('Request builds').click()
 
         login(ANONYMOUS)
-        builds = recipe.getBuilds(True)
+        builds = recipe.getPendingBuilds()
         build_distros = [
             build.distroseries.displayname for build in builds]
         build_distros.sort()
@@ -984,6 +1141,44 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIn(
             "An identical build is already pending for ubuntu woody.",
             extract_text(find_main_content(browser.contents)))
+
+    def makeRecipeWithUploadIssues(self):
+        """Make a recipe where the owner can't upload to the PPA."""
+        # This occurs when the PPA that the recipe is being built daily into
+        # is owned by a team, and the owner of the recipe isn't in the team
+        # that owns the PPA.
+        registrant = self.factory.makePerson()
+        owner_team = self.factory.makeTeam(members=[registrant], name='team1')
+        ppa_team = self.factory.makeTeam(members=[registrant], name='team2')
+        ppa = self.factory.makeArchive(owner=ppa_team, name='ppa')
+        return self.factory.makeSourcePackageRecipe(
+            registrant=registrant, owner=owner_team, daily_build_archive=ppa,
+            build_daily=True)
+
+    def test_owner_with_no_ppa_upload_permission(self):
+        # Daily build with upload issues are a problem.
+        recipe = self.makeRecipeWithUploadIssues()
+        view = create_initialized_view(recipe, '+index')
+        self.assertTrue(view.dailyBuildWithoutUploadPermission())
+
+    def test_owner_with_no_ppa_upload_permission_non_daily(self):
+        # Non-daily builds with upload issues are not so much of an issue.
+        recipe = self.makeRecipeWithUploadIssues()
+        with person_logged_in(recipe.registrant):
+            recipe.build_daily = False
+        view = create_initialized_view(recipe, '+index')
+        self.assertFalse(view.dailyBuildWithoutUploadPermission())
+
+    def test_owner_with_no_ppa_upload_permission_message(self):
+        # If there is an issue, a message is shown.
+        recipe = self.makeRecipeWithUploadIssues()
+        browser = self.getViewBrowser(recipe, '+index')
+        messages = get_feedback_messages(browser.contents)
+        self.assertEqual(
+            "Daily builds for this recipe will not occur.\n"
+            "The owner of the recipe (Team1) does not have permission to "
+            "upload packages into the daily build PPA (PPA for Team2)",
+            messages[-1])
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
@@ -1064,8 +1259,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1095,8 +1289,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Code
-            my-recipe
+            Owner PPA named build for Owner
             created .*
             Build status
             Successfully built
@@ -1215,3 +1408,52 @@ class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
         self.assertRaises(
             Unauthorized,
             self.getUserBrowser, recipe_url + '/+delete', user=nopriv_person)
+
+
+class TestBrokenExistingRecipes(BrowserTestCase):
+    """Existing recipes broken by builder updates need to be editable.
+
+    This happened with a 0.2 -> 0.3 release where the nest command was no
+    longer allowed to refer the '.'.  There were already existing recipes that
+    had this text that were not viewable or editable.  This test case captures
+    that and makes sure the views stay visible.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    RECIPE_FIRST_LINE = (
+        "# bzr-builder format 0.2 deb-version {debupstream}+{revno}")
+
+    def makeBrokenRecipe(self):
+        """Make a valid recipe, then break it."""
+        product = self.factory.makeProduct()
+        b1 = self.factory.makeProductBranch(product=product)
+        b2 = self.factory.makeProductBranch(product=product)
+        recipe_text = dedent("""\
+            %s
+            %s
+            nest name %s foo
+            """ % (self.RECIPE_FIRST_LINE, b1.bzr_identity, b2.bzr_identity))
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        naked_data = removeSecurityProxy(recipe)._recipe_data
+        nest_instruction = list(naked_data.instructions)[0]
+        nest_instruction.directory = u'.'
+        return recipe
+
+    def test_recipe_is_broken(self):
+        recipe = self.makeBrokenRecipe()
+        self.assertRaises(Exception, str, recipe.builder_recipe)
+
+    def assertRecipeInText(self, text):
+        """If the first line is shown, that's good enough for us."""
+        self.assertTrue(self.RECIPE_FIRST_LINE in text)
+
+    def test_recipe_index_renderable(self):
+        recipe = self.makeBrokenRecipe()
+        main_text = self.getMainText(recipe, '+index')
+        self.assertRecipeInText(main_text)
+
+    def test_recipe_edit_renderable(self):
+        recipe = self.makeBrokenRecipe()
+        main_text = self.getMainText(recipe, '+edit', user=recipe.owner)
+        self.assertRecipeInText(main_text)

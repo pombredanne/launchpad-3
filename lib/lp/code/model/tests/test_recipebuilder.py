@@ -7,18 +7,19 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+import transaction
+import unittest
+
 from testtools import run_test_with
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-import unittest
-
-import transaction
+from testtools.matchers import StartsWith
 from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
@@ -35,6 +36,7 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -73,8 +75,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage, recipe=recipe, requester=recipe_owner,
-            distroseries=distroseries)
+            sourcepackage=sourcepackage,
+            recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
@@ -103,8 +105,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         logger = BufferLogger()
         job.logStartBuild(logger)
-        self.assertEquals(logger.buffer.getvalue(),
-            "INFO: startBuild(Mydistro, recept, joe)\n")
+        self.assertEquals(logger.getLogBuffer(),
+            "INFO startBuild(Mydistro, recept, joe)\n")
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -114,7 +116,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.setBuilder(builder)
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
-        self.assertEquals("", logger.buffer.getvalue())
+        self.assertEquals("", logger.getLogBuffer())
 
     def test_verifyBuildRequest_non_virtual(self):
         # verifyBuildRequest will raise if a non-virtual builder is proposed.
@@ -161,7 +163,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text':
-               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
                'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
@@ -172,14 +174,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # registrant is used.
         self._setBuilderConfig()
         recipe_registrant = self.factory.makePerson(
-            name='eric', displayname='Eric the Viking', email='eric@vikings.r.us')
+            name='eric', displayname='Eric the Viking',
+            email='eric@vikings.r.us')
         recipe_owner = self.factory.makeTeam(
             name='vikings', members=[recipe_registrant])
 
         job = self.makeJob(recipe_registrant, recipe_owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_team_owner_with_email(self):
@@ -206,7 +210,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob(owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
@@ -229,14 +234,14 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text':
-               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
                'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries, logger))
         self.assertIn(
             "Exception processing bzr_builder_sources_list:",
-            logger.buffer.getvalue())
+            logger.getLogBuffer())
 
     def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
         # Ensure _extraBuildArgs doesn't blow up when
@@ -267,16 +272,14 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.setBuilder(builder)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-        def check_dispatch(ignored):
-            logger.buffer.seek(0)
 
-            self.assertEquals(
-                "INFO: Sending chroot file for recipe build to "
-                "bob-de-bouwer\n",
-                logger.buffer.readline())
-            self.assertEquals(
-                "INFO: Initiating build 1-someid on http://fake:0000\n",
-                logger.buffer.readline())
+        def check_dispatch(ignored):
+            self.assertThat(
+                logger.getLogBuffer(),
+                StartsWith(dedent("""\
+                  INFO Sending chroot file for recipe build to bob-de-bouwer
+                  INFO Initiating build 1-someid on http://fake:0000
+                  """)))
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]
@@ -294,6 +297,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
         job = self.makeJob()
+        test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer", OkSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]

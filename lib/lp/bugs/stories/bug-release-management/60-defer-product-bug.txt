@@ -5,7 +5,7 @@ in the series task.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
     >>> admin_browser.getControl("Trunk").selected = True
-    >>> admin_browser.getControl("Submit").click()
+    >>> admin_browser.getControl("Target").click()
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
     >>> firefox_edit_url = (

@@ -70,7 +70,7 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> from lp.bugs.mail.handler import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def construct_email(raw_mail):
     ...     msg = email.message_from_string(
@@ -1679,7 +1679,7 @@ The user is a package bug supervisor
     >>> helge = getUtility(IPersonSet).getByName('kreutzm')
     >>> mozilla_package = ubuntu.getSourcePackage(mozilla_name)
     >>> mozilla_package.addBugSubscription(helge, helge)
-    <StructuralSubscription ...>
+    <...StructuralSubscription ...>
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
@@ -2298,7 +2298,7 @@ Only mail coming from verified Launchpad users is answered.
 The help text is taken from the Launchpad help wiki as raw text, and
 transformed to be a bit more readable as a plain text document.
 
-    >>> from canonical.launchpad.mail.handlers import reformat_wiki_text
+    >>> from canonical.launchpad.mail.helpers import reformat_wiki_text
     >>> wiki_text = """
     ... = Sample Wiki Text =
     ... # A comment line
