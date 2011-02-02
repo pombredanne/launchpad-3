@@ -25,6 +25,8 @@ from zope.app.form.browser.widget import renderElement
 
 from lazr.enum import IEnumeratedType
 
+from canonical.launchpad.webapp.menu import escape
+
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -52,9 +54,9 @@ class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
             kw['checked'] = 'checked'
         id = '%s.%s' % (name, index)
         element = renderElement(
-            u'input', value=value, name=name, id=id,
+            u'input', value=escape(value), name=name, id=id,
             cssClass=cssClass, type='checkbox', **kw)
-        return self._joinButtonToMessageTemplate % (element, text)
+        return self._joinButtonToMessageTemplate % (element, escape(text))
 
 
 class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
