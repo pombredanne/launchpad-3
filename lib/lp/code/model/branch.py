@@ -15,6 +15,7 @@ import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -1025,7 +1026,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        return self.destroySelf(break_references=True)
+        try:
+            return self.destroySelf(break_references=True)
+        except CannotDeleteBranch, e:
+            # Reraise and expose exception here so that the webservice_error
+            # is propogated.
+            raise expose(CannotDeleteBranch(e.message))
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
