@@ -2,9 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-from select import select
 from StringIO import StringIO
-import subprocess
 
 from storm.expr import (
     Desc,
@@ -24,6 +22,11 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.command_spawner import (
+    CommandSpawner,
+    OutputLineHandler,
+    ReturnCodeReceiver,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
@@ -44,49 +47,6 @@ def safe_mkdir(path):
     """Ensures the path exists, creating it if it doesn't."""
     if not os.path.exists(path):
         os.makedirs(path, 0755)
-
-
-# XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
-# timeout handling and stderr passthrough, could be a single method used for
-# this and the similar requirement in test_on_merge.py.
-
-def run_subprocess_with_logging(process_and_args, log, prefix):
-    """Run a subprocess, gathering the output as it runs and logging it.
-
-    process_and_args is a list containing the process to run and the
-    arguments for it, just as passed in the first argument to
-    subprocess.Popen.
-
-    log is a logger to pass the output we gather.
-
-    prefix is a prefix to attach to each line of output when we log it.
-    """
-    proc = subprocess.Popen(process_and_args,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            close_fds=True)
-    proc.stdin.close()
-    open_readers = set([proc.stdout, proc.stderr])
-    buf = ""
-    while open_readers:
-        rlist, wlist, xlist = select(open_readers, [], [])
-
-        for reader in rlist:
-            chunk = os.read(reader.fileno(), 1024)
-            if chunk == "":
-                open_readers.remove(reader)
-                if buf:
-                    log.debug(buf)
-            else:
-                buf += chunk
-                lines = buf.split("\n")
-                for line in lines[0:-1]:
-                    log.debug("%s%s" % (prefix, line))
-                buf = lines[-1]
-
-    ret = proc.wait()
-    return ret
 
 
 DEFAULT_COMPONENT = "main"
@@ -134,6 +94,10 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 """
 
 
+class AptFTPArchiveFailure(Exception):
+    """Failure while running apt-ftparchive."""
+
+
 class FTPArchiveHandler:
     """Produces Sources and Packages files via apt-ftparchive.
 
@@ -167,16 +131,54 @@ class FTPArchiveHandler:
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
 
+    def _getArchitectureTags(self):
+        """List tags of all architectures enabled in this distro."""
+        archs = set()
+        for series in self.distro.series:
+            archs.update(set([
+                distroarchseries.architecturetag
+                for distroarchseries in series.enabled_architectures]))
+        return archs
+
     def runApt(self, apt_config_filename):
-        """Run apt in a subprocess and verify its return value. """
+        """Run apt-ftparchive in subprocesses.
+
+        :raise: AptFTPArchiveFailure if any of the apt-ftparchive
+            commands failed.
+        """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
-                                           "generate", apt_config_filename],
-                                          self.log, "a-f: ")
-        if ret:
-            raise AssertionError(
-                "Failure from apt-ftparchive. Return code %s" % ret)
-        return ret
+
+        stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
+        stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
+        base_command = [
+            "apt-ftparchive",
+            "--no-contents",
+            "generate",
+            apt_config_filename,
+            ]
+        spawner = CommandSpawner()
+
+        returncodes = {}
+        for arch_tag in self._getArchitectureTags().union(set(["source"])):
+            completion_handler = ReturnCodeReceiver()
+            returncodes[arch_tag] = completion_handler
+            command = base_command + ["--arch", arch_tag]
+            spawner.start(
+                command, stdout_handler=stdout_handler,
+                stderr_handler=stderr_handler,
+                completion_handler=completion_handler)
+
+        spawner.complete()
+        stdout_handler.finalize()
+        stderr_handler.finalize()
+        failures = sorted([
+            (tag, receiver.returncode)
+            for tag, receiver in returncodes.iteritems()
+                if receiver.returncode != 0])
+        if len(failures) > 0:
+            by_arch = ["%s (returned %d)" % failure for failure in failures]
+            raise AptFTPArchiveFailure(
+                "Failure(s) from apt-ftparchive: %s" % ", ".join(by_arch))
 
     #
     # Empty Pocket Requests
