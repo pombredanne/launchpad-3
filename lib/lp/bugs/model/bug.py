@@ -1018,7 +1018,7 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        self.getDirectSubscribers(recipients)
+        self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
