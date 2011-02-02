@@ -1071,8 +1071,6 @@ BugMessage""" % sqlvalues(self.id))
         if when is None:
             when = UTC_NOW
 
-        # Only try to add something to the activity log if we have some
-        # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             getUtility(IBugActivitySet).new(

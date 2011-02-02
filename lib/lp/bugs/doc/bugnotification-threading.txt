@@ -18,12 +18,16 @@ Let's add add change notification and see how it works:
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.adapters.bugchange import BugVisibilityChange
+
     >>> ten_minutes_ago = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_one.addChangeNotification(
-    ...     '** Some change.', sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         False, True))
 
     >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> from lp.bugs.scripts.bugnotification import (
@@ -62,8 +66,10 @@ id:
     >>> bug_one.addCommentNotification(comment)
     >>> bug_one.linkMessage(comment)
     <...>
-    >>> bug_one.addChangeNotification(
-    ...     '** Some other change.', sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         True, False))
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> messages = [emails for dummy, emails in
     ...     get_email_notifications(notifications)]

@@ -178,7 +178,6 @@ Let's define a helper function to do that for all pending notifications:
     ...         notification.date_emailed = utc_now
     ...     flush_database_updates()
 
-
 To every message that gets sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
@@ -219,12 +218,17 @@ subject, though, which is often the case when someone replies via email.
 
 Let's add a few changes and see how it looks like:
 
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
-    >>> bug_one.addChangeNotification(
-    ...     '** Visibility changed to: Private.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> from lp.bugs.adapters.bugchange import (
+    ...     BugTitleChange, BugVisibilityChange)
+
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Old summary", "New summary"))
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         False, True))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -243,9 +247,11 @@ Let's add a few changes and see how it looks like:
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
-    ** Summary changed to: New summary.
+    ** Summary changed:
+    - Old summary
+    + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private.
+    ** Visibility changed to: Private
     <BLANKLINE>
     ...
     You received this bug notification because you are a member of Ubuntu
@@ -266,12 +272,14 @@ the constructed email:
     ...     'subject', 'a new comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: Another summary.', sample_person,
-    ...     when=ten_minutes_ago)
-    >>> bug_one.addChangeNotification(
-    ...     '** Visibility changed to: Public.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "New summary", "Another summary"))
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         True, False))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -295,13 +303,17 @@ in the order they were added:
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
-    ** Summary changed to: New summary.
+    ** Summary changed:
+    - Old summary
+    + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private.
+    ** Visibility changed to: Private
     <BLANKLINE>
-    ** Summary changed to: Another summary.
+    ** Summary changed:
+    - New summary
+    + Another summary
     <BLANKLINE>
-    ** Visibility changed to: Public.
+    ** Visibility changed to: Public
     <BLANKLINE>
     --
     You received this bug notification because you are a member of Ubuntu
@@ -319,9 +331,10 @@ for the last 5 minutes:
 
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> for minutes_ago in reversed(range(10)):
-    ...     bug_one.addChangeNotification(
-    ...         '** Visibility changed to: Private.', sample_person,
-    ...         when=now - timedelta(minutes=minutes_ago))
+    ...     bug_one.addChange(
+    ...         BugVisibilityChange(
+    ...             now - timedelta(minutes=minutes_ago), sample_person,
+    ...             "private", False, True))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -538,25 +551,28 @@ few notifications to show that it works.
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Another summary", "New summary"))
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: Old summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Summary #431", "Summary bleugh I'm going mad"))
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_two.addCommentNotification(comment)
-    >>> bug_two.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_two.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Old summary", "New summary"))
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
@@ -628,7 +644,9 @@ makes it write out the emails it sends.
     <BLANKLINE>
     another comment.
     <BLANKLINE>
-    ** Summary changed to: Old summary.
+    ** Summary changed:
+    - Summary #431
+    + Summary bleugh I'm going mad
     <BLANKLINE>
     -- =
     <BLANKLINE>
@@ -1231,13 +1249,15 @@ no comment notifications.
     ...
     ----------------------------------------------------------------------
 
-The notifications generated by addChangeNotification() are sent only to
-structural subscribers with the notification level METADATA or higher.
-The notification level of Sample Person is currently METADATA, hence he
+The notifications generated by addChange() are sent only to structural
+subscribers with the notification level METADATA or higher. The
+notification level of Sample Person is currently METADATA, hence he
 receives these notifications.
 
-    >>> bug_one.addChangeNotification('** Summary changed to: whatever.',
-    ...     sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "New summary", "Whatever"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
@@ -1269,7 +1289,9 @@ receives these notifications.
     <BLANKLINE>
     no comment for no-priv.
     <BLANKLINE>
-    ** Summary changed to: whatever.
+    ** Summary changed:
+    - New summary
+    + Whatever
     <BLANKLINE>
     --
     You received this bug notification because you are subscribed to Mozilla
@@ -1290,7 +1312,7 @@ receives these notifications.
     ----------------------------------------------------------------------
 
 If Sample Person sets his notification level to LIFECYCLE, he receives
-no notifications created by addChangeNotification().
+no notifications created by addChange().
 
     >>> flush_notifications()
     >>> switch_db_to_launchpad()
@@ -1298,8 +1320,10 @@ no notifications created by addChangeNotification().
     ...     BugNotificationLevel.LIFECYCLE)
     >>> switch_db_to_bugnotification()
 
-    >>> bug_one.addChangeNotification('** Summary changed to: something.',
-    ...     sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Whatever", "Whatever else"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
@@ -1318,7 +1342,9 @@ no notifications created by addChangeNotification().
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins
     <BLANKLINE>
-    ** Summary changed to: something.
+    ** Summary changed:
+    - Whatever
+    + Whatever else
     <BLANKLINE>
     --
     You received this bug notification because you are a member of ShipIt
