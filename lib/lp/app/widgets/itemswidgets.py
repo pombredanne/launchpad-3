@@ -100,6 +100,8 @@ class LaunchpadRadioWidget(RadioWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,

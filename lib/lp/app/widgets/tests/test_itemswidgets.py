@@ -12,8 +12,9 @@ from zope.schema.vocabulary import (
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
-    PlainMultiCheckBoxWidget,
     LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidget,
+    PlainMultiCheckBoxWidget,
     )
 from lp.testing import (
     TestCaseWithFactory,
@@ -103,4 +104,36 @@ class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
             '<input class="checkboxType" id="test_field.1" name="test_field" '
             'type="checkbox" value="token-2" />&nbsp;'
             '&lt;unsafe&gt; &amp;nbsp; title</label> ')
+        self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
+
+
+class TestLaunchpadRadioWidget(ItemWidgetTestCase):
+    """Test the PlainMultiCheckBoxWidget class."""
+
+    WIDGET_CLASS = LaunchpadRadioWidget
+
+    def test__renderItem_checked(self):
+        # Render item in checked state.
+        expected = (
+            '<label style="font-weight: normal">'
+            '<input class="radioType" checked="checked" id="test_field.1" '
+            'name="test_field" type="radio" value="token-1" />&nbsp;'
+            'Safe title</label>')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
+
+    def test__renderItem_unchecked(self):
+        # Render item in unchecked state.
+        expected = (
+            '<label style="font-weight: normal">'
+            '<input class="radioType" id="test_field.1" name="test_field" '
+            'type="radio" value="token-1" />&nbsp;Safe title</label>')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=False)
+
+    def test__renderItem_unsafe_content(self):
+        # Render item iterpolation is safe.
+        expected = (
+            '<label style="font-weight: normal">'
+            '<input class="radioType" id="test_field.1" name="test_field" '
+            'type="radio" value="token-2" />&nbsp;'
+            '&lt;unsafe&gt; &amp;nbsp; title</label>')
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
