@@ -511,13 +511,15 @@ class FormattersAPI:
         # 3. Use <br /> to split logical lines within a paragraph.
         output = []
         paras = list(split_paragraphs(self._stringtoformat))
-        for index, para in zip(range(len(paras)), paras):
+        last_paragraph_index = len(paras) - 1
+        for index, para in enumerate(paras):
             if index > 0:
                 output.append('\n')
-            cls = (
-                ' class="%s"' % last_paragraph_class
-                if last_paragraph_class and index == len(paras) - 1 else "")
-            output.append('<p%s>' % cls)
+            css_class = ''
+            if last_paragraph_class and index == last_paragraph_index:
+                css_class = ' class="%s"' % last_paragraph_class
+            output.append('<p%s>' % css_class)
+
             first_line = True
             for line in para:
                 if not first_line:
