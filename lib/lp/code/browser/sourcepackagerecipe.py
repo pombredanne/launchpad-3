@@ -62,7 +62,6 @@ from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import InlineEditPickerWidget
 from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -72,9 +71,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.tales import (
-    format_link,
-    )
+from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -235,9 +233,8 @@ class SourcePackageRecipeView(LaunchpadView):
     @property
     def person_picker(self):
         return InlineEditPickerWidget(
-            self.context, self.request, ISourcePackageRecipe['owner'],
+            self.context, ISourcePackageRecipe['owner'],
             format_link(self.context.owner),
-            content_box_id='recipe-owner',
             header='Change owner',
             step_title='Select a new owner')
 
@@ -248,11 +245,9 @@ class SourcePackageRecipeView(LaunchpadView):
             initial_html = 'None'
         else:
             initial_html = format_link(ppa)
+        field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, self.request,
-            ISourcePackageAddSchema['daily_build_archive'],
-            initial_html,
-            content_box_id='recipe-ppa',
+            self.context, field, initial_html,
             header='Change daily build archive',
             step_title='Select a PPA')
 

@@ -24,8 +24,6 @@ distribution.
     ...     subscriber=sampleperson, subscribed_by=foobar)
     >>> ff_sub.target
     <Product at ...>
-    >>> ff_sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
     >>> ubuntu_sub = StructuralSubscription(distribution=ubuntu,
     ...     subscriber=sampleperson, subscribed_by=foobar)

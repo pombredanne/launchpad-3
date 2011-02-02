@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugNotificationLevel',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget',
@@ -22,6 +21,7 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     export_read_operation,
     export_write_operation,
@@ -47,7 +47,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PersonChoice,
@@ -76,12 +75,6 @@ class IStructuralSubscriptionPublic(Interface):
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person creating the subscription.")))
-    bug_notification_level = Choice(
-        title=_("Bug notification level"), required=True,
-        vocabulary=BugNotificationLevel,
-        default=BugNotificationLevel.NOTHING,
-        description=_("The volume and type of bug notifications "
-                      "this subscription will generate."))
     date_created = exported(Datetime(
         title=_("The date on which this subscription was created."),
         required=False, readonly=True))
@@ -107,6 +100,10 @@ class IStructuralSubscriptionRestricted(Interface):
     def newBugFilter():
         """Returns a new `BugSubscriptionFilter` for this subscription."""
 
+    @export_destructor_operation()
+    def delete():
+        """Delete this structural subscription filter."""
+
 
 class IStructuralSubscription(
     IStructuralSubscriptionPublic, IStructuralSubscriptionRestricted):
@@ -121,17 +118,11 @@ class IStructuralSubscriptionTargetRead(Interface):
     Read-only parts.
     """
 
-    # We don't really want to expose the level details yet. Only
-    # BugNotificationLevel.COMMENTS is used at this time.
-    @call_with(
-        min_bug_notification_level=BugNotificationLevel.COMMENTS)
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
-    def getSubscriptions(min_bug_notification_level):
+    def getSubscriptions():
         """Return all the subscriptions with the specified levels.
 
-        :min_bug_notification_level: The lowest bug notification level
-          for which subscriptions should be returned.
         :return: A sequence of `IStructuralSubscription`.
         """
 
@@ -172,7 +163,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
         """Add a subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
-        for the target, with no levels set.
+        for the target, without filters.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
@@ -189,20 +180,16 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
-    def addBugSubscription(subscriber, subscribed_by,
-                           bug_notification_level=None):
+    def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
-        for the target with the bug notification level set to
-        COMMENTS, the only level currently in use.
+        for the target.  This initially is without filters, which will
+        mean that all notifications will be sent.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
-        :bug_notification_level: The BugNotificationLevel for the
-            subscription. If omitted, BugNotificationLevel.COMMENTS will be
-            used.
         :return: The new bug subscription.
         """
 
@@ -218,9 +205,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
     def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 
-        If subscription levels for other applications are set,
-        set the subscription's `bug_notification_level` to
-        `NOTHING`, otherwise, destroy the subscription.
+        This will delete all associated filters.
 
         :subscriber: The IPerson who will be unsubscribed. If omitted,
             unsubscribed_by will be used.

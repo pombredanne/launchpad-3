@@ -97,12 +97,14 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugBranchSearch,
+    BugBlueprintSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
@@ -131,7 +133,6 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1422,7 +1423,7 @@ def _build_tag_set_query_any(tags):
     if tags == []:
         return None
     return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
+        "BugTag.bug = Bug.id AND BugTag.tag IN %s)"
         % sqlvalues(sorted(tags)))
 
 
@@ -2066,6 +2067,10 @@ class BugTaskSet:
             # we don't need to add any clause.
             pass
 
+        linked_blueprints_clause = self._buildBlueprintRelatedClause(params)
+        if linked_blueprints_clause is not None:
+            extra_clauses.append(linked_blueprints_clause)
+
         if params.modified_since:
             extra_clauses.append(
                 "Bug.date_last_updated > %s" % (
@@ -2317,6 +2322,20 @@ class BugTaskSet:
         clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
             ', '.join(tables), ' AND '.join(clauses))
         return clause
+
+    def _buildBlueprintRelatedClause(self, params):
+        """Find bugs related to Blueprints, or not."""
+        linked_blueprints = params.linked_blueprints
+        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
+            return "EXISTS (%s)" % (
+                "SELECT 1 FROM SpecificationBug"
+                " WHERE SpecificationBug.bug = Bug.id")
+        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
+            return "NOT EXISTS (%s)" % (
+                "SELECT 1 FROM SpecificationBug"
+                " WHERE SpecificationBug.bug = Bug.id")
+        else:
+            return None
 
     def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
         """Build the parameter list for Store.using().

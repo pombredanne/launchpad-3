@@ -11,6 +11,7 @@ __all__ = [
     'IBugSubscription',
     ]
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -30,8 +31,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice
 
 
@@ -47,14 +48,21 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
-    bugID = Int(title=u"The bug id.", readonly=True)
-    bug_notification_level = Choice(
-        title=_("Bug notification level"), required=True,
-        vocabulary=BugNotificationLevel,
-        default=BugNotificationLevel.COMMENTS,
-        description=_(
-            "The volume and type of bug notifications "
-            "this subscription will generate."))
+    # We mark this as doNotSnapshot() because it's a magically-generated
+    # Storm attribute and it causes Snapshot to break.
+    bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
+    bug_notification_level = exported(
+        Choice(
+            title=_("Bug notification level"), required=True,
+            vocabulary=BugNotificationLevel,
+            default=BugNotificationLevel.COMMENTS,
+            description=_(
+                "The volume and type of bug notifications "
+                "this subscription will generate."),
+            ),
+        # We want this field to be exported in the devel version of the
+        # API only.
+        ('devel', dict(exported=True)), exported=False)
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(

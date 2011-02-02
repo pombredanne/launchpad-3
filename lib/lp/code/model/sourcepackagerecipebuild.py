@@ -10,7 +10,10 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 import sys
 
@@ -259,9 +262,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.datetime.now(utc)
+            _now = datetime.now(utc)
         store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - datetime.timedelta(days=1)
+        old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             BuildFarmJob.date_created > old_threshold,
@@ -282,7 +285,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
-        return datetime.timedelta(minutes=10)
+        return timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None

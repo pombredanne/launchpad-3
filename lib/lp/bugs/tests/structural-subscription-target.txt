@@ -13,23 +13,19 @@ Let's subscribe ubuntu-team.
     >>> target.addBugSubscription(ubuntu_team, foobar)
     <...StructuralSubscription ...>
 
-Trying to remove a bug subscription when notification levels for other
-applications are set, doesn't remove the subscription. Instead the
-notification level for bugs is set to NOTHING.
+We can add and remove these subscriptions.
 
     >>> def print_subscriptions_list(subscriptions):
     ...     for subscription in subscriptions:
-    ...         print '%s %s' % (
-    ...               subscription.subscriber.name,
-    ...               subscription.bug_notification_level.name)
+    ...         print subscription.subscriber.name
 
     >>> subscription = target.addBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
-    name16 COMMENTS
-    ubuntu-team COMMENTS
+    name16
+    ubuntu-team
     >>> target.removeBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
-    ubuntu-team COMMENTS
+    ubuntu-team
 
 To get a user's subscription to the target, use
 IStructuralSubscriptionTarget.getSubscription.
@@ -39,19 +35,14 @@ IStructuralSubscriptionTarget.getSubscription.
     >>> print target.getSubscription(no_priv)
     None
 
-To search for subscriptions with certain level settings on a structure
-we use getSubscriptions.
+To search for all subscriptions on a structure we use getSubscriptions.
 
-    >>> from lp.registry.enum import BugNotificationLevel
-    >>> subscription = target.addSubscription(no_priv, no_priv)
-    >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
     >>> print_subscriptions_list(target.bug_subscriptions)
-    no-priv METADATA
-    ubuntu-team COMMENTS
-    >>> subscriptions = target.getSubscriptions(min_bug_notification_level=
-    ...                         BugNotificationLevel.COMMENTS)
-    >>> print_subscriptions_list(subscriptions)
-    ubuntu-team COMMENTS
+    ubuntu-team
+    >>> subscription = target.addSubscription(no_priv, no_priv)
+    >>> print_subscriptions_list(target.bug_subscriptions)
+    no-priv
+    ubuntu-team
 
 
 Structural subscriptions and indirect bug subscriptions
