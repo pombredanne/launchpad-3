@@ -407,7 +407,7 @@
       for="zope.schema.interfaces.IChoice
         lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />
 

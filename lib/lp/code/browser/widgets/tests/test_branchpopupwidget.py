@@ -15,7 +15,7 @@ from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.widgets import (
+from lp.code.browser.widgets.branch import (
     BranchPopupWidget,
     NoProductError,
     )

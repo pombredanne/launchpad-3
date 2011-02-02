@@ -32,7 +32,6 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.restful.interface import copy_field
 
-from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
@@ -44,6 +43,7 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.popup import BugTrackerPickerWidget
 from lp.app.widgets.textwidgets import (
+    DescriptionWidget,
     StrippedTextWidget,
     URIComponentWidget,
     )

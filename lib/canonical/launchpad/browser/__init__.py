@@ -18,7 +18,6 @@ from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.oauth import *
 from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.temporaryblobstorage import *
-from canonical.launchpad.browser.widgets import *
 from lp.answers.browser.faq import *
 from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *

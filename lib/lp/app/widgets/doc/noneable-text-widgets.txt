@@ -41,7 +41,7 @@ Excess whitespace and newlines are stripped.
 This custom widget is used to normalise the value of meaning less
 text value to None.
 
-    >>> from canonical.launchpad.browser.widgets import (
+    >>> from lp.app.widgets.textwidgets import (
     ...     NoneableDescriptionWidget)
 
 The IMilestone description field cannot be an empty string or a string
