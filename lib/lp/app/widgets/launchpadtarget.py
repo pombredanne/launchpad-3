@@ -1,25 +1,39 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from zope.app.form import CustomWidgetFactory, InputWidget
-from zope.app.form.browser.widget import BrowserWidget, renderElement
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form import (
+    CustomWidgetFactory,
+    InputWidget,
+    )
+from zope.app.form.browser.widget import (
+    BrowserWidget,
+    renderElement,
+    )
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError)
+    ConversionError,
+    IInputWidget,
+    InputErrors,
+    MissingInputError,
+    )
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from z3c.ptcompat import ViewPageTemplateFile
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
-from lp.app.errors import NotFoundError, UnexpectedFormData
+    IAlwaysSubmittedWidget,
+    IMultiLineWidgetLayout,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

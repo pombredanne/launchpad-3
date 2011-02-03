@@ -18,9 +18,6 @@ from datetime import (
 
 import pytz
 from storm.expr import (
-    compile,
-    EXPR,
-    Expr,
     Join,
     Max,
     Select)
@@ -39,6 +36,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.services.database.stormexpr import CountDistinct
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.archive import Archive
@@ -145,24 +143,6 @@ class RecipeBuildRecordSet:
 
         return RecipeBuildRecordResultSet(
             result_set, _makeRecipeBuildRecord)
-
-
-# XXX: wallyworld 2010-11-26 bug=675377: storm's Count() implementation is
-# broken for distinct with > 1 column
-class CountDistinct(Expr):
-
-    __slots__ = ("columns")
-
-    def __init__(self, columns):
-        self.columns = columns
-
-
-@compile.when(CountDistinct)
-def compile_countdistinct(compile, countselect, state):
-    state.push("context", EXPR)
-    col = compile(countselect.columns)
-    state.pop()
-    return "count(distinct(%s))" % col
 
 
 class RecipeBuildRecordResultSet(DecoratedResultSet):

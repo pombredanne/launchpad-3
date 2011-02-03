@@ -1,25 +1,36 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
+
 import pytz
-
-from zope.interface import implements
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
+from zope.app.form.browser.widget import (
+    ISimpleInputWidget,
+    SimpleInputWidget,
+    )
 from zope.app.form.interfaces import (
-    ConversionError, WidgetInputError)
+    ConversionError,
+    WidgetInputError,
+    )
 from zope.formlib import form
-from zope.schema import Choice, Datetime
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import implements
+from zope.schema import (
+    Choice,
+    Datetime,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.date import DateTimeWidget
 from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.app.widgets.date import DateTimeWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.announcement import IAnnouncement
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBranch."""
@@ -18,14 +18,23 @@ from datetime import (
 
 from pytz import utc
 from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import IInputWidget, InputErrors
+from zope.app.form.interfaces import (
+    IInputWidget,
+    InputErrors,
+    )
 from zope.app.form.utility import setUpWidget
-from zope.component import getMultiAdapter, getUtility
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 class SuggestionWidget(LaunchpadRadioWidget):

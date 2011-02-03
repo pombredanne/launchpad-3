@@ -10,7 +10,7 @@ selected.
     >>> from zope.schema import Choice
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.widgets.project import ProjectScopeWidget
+    >>> from lp.app.widgets.project import ProjectScopeWidget
 
     >>> empty_request = LaunchpadTestRequest()
     >>> scope_field = Choice(
