@@ -39,22 +39,24 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+LOGDIR=/srv/launchpad.net/production-logs/nightly
+
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo == Expiring memberships `date` ==
-python -S flag-expired-memberships.py -q
+python -S flag-expired-memberships.py -q --log-file=DEBUG:$LOGDIR/flag-expired-memberships.log
 
 echo == Allocating revision karma `date` ==
-python -S allocate-revision-karma.py -q
+python -S allocate-revision-karma.py -q --log-file=DEBUG:$LOGDIR/allocate-revision-karma.log
 
 echo == Recalculating karma `date` ==
-python -S foaf-update-karma-cache.py -q
+python -S foaf-update-karma-cache.py -q --log-file=INFO:$LOGDIR/foaf-update-karma-cache.log
 
 echo == Updating cached statistics `date` ==
-python -S update-stats.py -q
+python -S update-stats.py -q --log-file=DEBUG:$LOGDIR/update-stats.log
 
 echo == Expiring questions `date` ==
-python -S expire-questions.py
+python -S expire-questions.py -q --log-file=DEBUG:$LOGDIR/expire-questions.log
 
 ### echo == Expiring bugs `date` ==
 ### python -S expire-bugtasks.py
@@ -64,13 +66,13 @@ python -S expire-questions.py
 ### python -S checkwatches.py
 
 echo == Updating bugtask target name caches `date` ==
-python -S update-bugtask-targetnamecaches.py -q
+python -S update-bugtask-targetnamecaches.py -q --log-file=DEBUG:$LOGDIR/update-bugtask-targetnamecaches.log
 
 echo == Updating personal standings `date` ==
-python -S update-standing.py -q
+python -S update-standing.py -q --log-file=DEBUG:$LOGDIR/update-standing.log
 
 echo == Updating CVE database `date` ==
-python -S update-cve.py -q
+python -S update-cve.py -q --log-file=DEBUG:$LOGDIR/update-cve.log
 
 # update-pkgcache.py is scheduled in lp-production-crontabs.
 #echo == Updating package cache `date` ==
