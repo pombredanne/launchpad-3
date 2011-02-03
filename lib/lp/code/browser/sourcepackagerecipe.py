@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -58,11 +58,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget,
-    LaunchpadRadioWidget,
-    )
-from canonical.widgets.suggestion import RecipeOwnerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -73,6 +68,11 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import InlineEditPickerWidget
 from lp.app.browser.tales import format_link
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.suggestion import RecipeOwnerWidget
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,

@@ -56,7 +56,7 @@ contains more than one argument.
 Since the SimpleInputWidget._getFormValue is overriden, it also works
 with the Launchpad widgets extending it:
 
-    >>> from canonical.widgets.textwidgets import StrippedTextWidget
+    >>> from lp.app.widgets.textwidgets import StrippedTextWidget
 
     >>> stripped_text_widget = StrippedTextWidget(text_field, request)
     >>> stripped_text_widget.getInputValue()

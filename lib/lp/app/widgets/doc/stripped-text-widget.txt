@@ -31,7 +31,7 @@ StrippedTextLine Widget
 This custom widget is used to strip leading and trailing whitespaces.
 
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.widgets.textwidgets import StrippedTextWidget
+  >>> from lp.app.widgets.textwidgets import StrippedTextWidget
   >>> from lp.bugs.interfaces.bugtracker import IRemoteBug
 
 We pass a string with leading and trailing whitespaces to the widget

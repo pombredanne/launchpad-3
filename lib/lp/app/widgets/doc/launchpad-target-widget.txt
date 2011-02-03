@@ -5,7 +5,7 @@ and to help with this, the LaunchpadTargetWidget is used.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+    >>> from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
     >>> from lp.bugs.interfaces.bug import IFrontPageBugAddForm
 
     >>> empty_request = LaunchpadTestRequest()

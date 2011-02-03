@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -117,18 +117,6 @@ from canonical.launchpad.webapp.interfaces import (
     UnsafeFormGetSubmissionError,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
-    LaunchpadRadioWidget,
-    )
-from canonical.widgets.popup import PersonPickerWidget
-from canonical.widgets.product import (
-    GhostWidget,
-    LicenseWidget,
-    ProductNameWidget,
-    )
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -147,6 +135,18 @@ from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.product import (
+    GhostWidget,
+    LicenseWidget,
+    ProductNameWidget,
+    )
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
