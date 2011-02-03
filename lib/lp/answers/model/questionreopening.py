@@ -56,6 +56,10 @@ def create_questionreopening(
     A QuestionReopening is created when question with an answer changes back
     to the OPEN state.
     """
+    # XXX jcsackett This guard has to be maintained because reopen can
+    # be called with the question in a bad state.
+    if old_answerer is None:
+        return
     reopening = QuestionReopening(
             question=question,
             reopener=reopen_msg.owner,
@@ -63,6 +67,5 @@ def create_questionreopening(
             answerer=old_answerer,
             date_solved=old_date_solved,
             priorstate=old_status)
-
     reopening = ProxyFactory(reopening)
     notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))
