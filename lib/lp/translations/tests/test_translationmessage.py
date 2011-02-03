@@ -708,7 +708,7 @@ class TestShareIfPossible(TestCaseWithFactory):
         translation.shareIfPossible()
         result = Store.of(translation).find(
             TranslationMessage, TranslationMessage.id==translation.id)
-        return result.one() is None
+        return result.is_empty()
 
     def test_share_success(self):
         """The base case deletes the translation."""
