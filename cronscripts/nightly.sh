@@ -31,16 +31,16 @@ export LPCONFIG=production
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
 
+LOGDIR=/srv/launchpad.net/production-logs/nightly
+LOGFILE=$LOGDIR/nightly.log
+
 LOCK=/var/lock/launchpad_nightly.lock
 lockfile -r0 -l 259200 $LOCK
 if [ $? -ne 0 ]; then
-    echo Unable to grab $LOCK lock - aborting
+    echo `date`: Unable to grab $LOCK lock - aborting | tee -a $LOGFILE
     ps fuxwww
     exit 1
 fi
-
-LOGDIR=/srv/launchpad.net/production-logs/nightly
-LOGFILE=$LOGDIR/nightly.log
 
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
