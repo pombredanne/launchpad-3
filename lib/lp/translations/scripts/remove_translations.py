@@ -313,7 +313,7 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def warn_about_deleting_current_messages(cur, where_text, logger):
+def warn_about_deleting_current_messages(cur, from_text, where_text, logger):
     # Deleting currently used translations is a bit harmful. Log
     # them so that we have a clue which messages might have to be
     # translated again. Note that this script tries to find
@@ -326,10 +326,14 @@ def warn_about_deleting_current_messages(cur, where_text, logger):
     # message.
     if logger is not None and logger.getEffectiveLevel() <= logging.WARN:
         query = """
-            SELECT id, is_current_upstream, is_current_ubuntu
-            FROM TranslationMessage
-            WHERE %s AND (is_current_upstream OR is_current_ubuntu)
-            """ % where_text
+            SELECT
+                TranslationMessage.id, TranslationMessage.is_current_upstream,
+                TranslationMessage.is_current_ubuntu
+            FROM %s
+            WHERE %s AND (
+                TranslationMessage.is_current_upstream OR
+                TranslationMessage.is_current_ubuntu)
+            """ % (from_text, where_text)
         cur.execute(query)
         rows = cur.fetchall()
         if cur.rowcount > 0:
@@ -437,7 +441,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
     from_text = ', '.join(joins)
     where_text = ' AND\n    '.join(conditions)
 
-    warn_about_deleting_current_messages(cur, where_text, logger)
+    warn_about_deleting_current_messages(cur, from_text, where_text, logger)
 
     # Keep track of messages we're going to delete.
     # Don't bother indexing this.  We'd more likely end up optimizing
