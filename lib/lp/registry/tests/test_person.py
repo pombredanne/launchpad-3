@@ -682,37 +682,63 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             test_team,
             target_team)
 
-    def test_merge_deletes_recipes(self):
-        # When person/teams are merged, recipes the from person owned are
-        # deleted.
+    def test_merge_moves_branches(self):
+        # When person/teams are merged, branches owned by the from person
+        # are moved.
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        self._do_premerge(branch.owner, person)
+        login_person(person)
+        self.person_set.merge(branch.owner, person)
+        branches = person.getBranches()
+        self.assertEqual(1, branches.count())
+
+    def test_merge_with_duplicated_branches(self):
+        # If both the from and to people have branches with the same name,
+        # merging renames the duplicate from the from person's side.
+        product = self.factory.makeProduct()
+        from_branch = self.factory.makeBranch(name='foo', product=product)
+        to_branch = self.factory.makeBranch(name='foo', product=product)
+        mergee = to_branch.owner
+        self._do_premerge(from_branch.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(from_branch.owner, mergee)
+        branches = [b.name for b in mergee.getBranches()]
+        self.assertEqual(2, len(branches))
+        self.assertEqual([u'foo', u'foo-1'], branches)
+
+    def test_merge_moves_recipes(self):
+        # When person/teams are merged, recipes owned by the from person are
+        # moved.
         person = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
-        # Disable the recipe owners PPA
+        # Delete the PPA, which is required for the merge to work.
         with person_logged_in(recipe.owner):
             recipe.owner.archive.status = ArchiveStatus.DELETED
         self._do_premerge(recipe.owner, person)
         login_person(person)
         self.person_set.merge(recipe.owner, person)
-        self.assertEqual(0, person.getRecipes().count())
+        self.assertEqual(1, person.getRecipes().count())
 
     def test_merge_with_duplicated_recipes(self):
-        # When person/teams are merged, if the from person has a recipe with
-        # the same name as the to person, the from person's recipes are
-        # deleted.
+        # If both the from and to people have recipes with the same name,
+        # merging renames the duplicate from the from person's side.
         merge_from = self.factory.makeSourcePackageRecipe(
             name=u'foo', description=u'FROM')
         merge_to = self.factory.makeSourcePackageRecipe(
             name=u'foo', description=u'TO')
         mergee = merge_to.owner
-        # Disable merge_from's PPA
+        # Delete merge_from's PPA, which is required for the merge to work.
         with person_logged_in(merge_from.owner):
             merge_from.owner.archive.status = ArchiveStatus.DELETED
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
         self.person_set.merge(merge_from.owner, merge_to.owner)
         recipes = mergee.getRecipes()
-        self.assertEqual(1, recipes.count())
-        self.assertEqual(u'TO', recipes[0].description)
+        self.assertEqual(2, recipes.count())
+        descriptions = [r.description for r in recipes]
+        self.assertEqual([u'TO', u'FROM'], descriptions)
+        self.assertEqual(u'foo-1', recipes[1].name)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
