@@ -67,9 +67,7 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
     def test__renderItem_checked(self):
         # Render item in checked state.
         expected = (
-            '<input class="checkboxType" checked="checked" id="test_field.1" '
-            'name="test_field" type="checkbox" value="token-1" />&nbsp;'
-            'Safe title ')
+            '<input ... checked="checked" ... />&nbsp;Safe title')
         self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
 
     def test__renderItem_unchecked(self):
@@ -81,10 +79,7 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
 
     def test__renderItem_unsafe_content(self):
         # Render item escapes unsafe markup.
-        expected = (
-            '<input class="checkboxType" id="test_field.1" name="test_field" '
-            'type="checkbox" value="token-2" />&nbsp;'
-            '&lt;unsafe&gt; &amp;nbsp; title ')
+        expected = '<input ... />&nbsp;&lt;unsafe&gt; &amp;nbsp; title '
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
 
@@ -96,10 +91,8 @@ class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
     def test__renderItem_checked(self):
         # Render item in checked state.
         expected = (
-            '<label for="field.test_field.1" style="font-weight: normal">'
-            '<input class="checkboxType" checked="checked" id="test_field.1" '
-            'name="test_field" type="checkbox" value="token-1" />&nbsp;'
-            'Safe title</label> ')
+            '<label ...><input ... checked="checked" ... />&nbsp;'
+            'Safe title</label>')
         self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
 
     def test__renderItem_unchecked(self):
@@ -112,11 +105,7 @@ class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
 
     def test__renderItem_unsafe_content(self):
         # Render item escapes unsafe markup.
-        expected = (
-            '<label for="field.test_field.1" style="font-weight: normal">'
-            '<input class="checkboxType" id="test_field.1" name="test_field" '
-            'type="checkbox" value="token-2" />&nbsp;'
-            '&lt;unsafe&gt; &amp;nbsp; title</label> ')
+        expected = '<label .../>&nbsp;&lt;unsafe&gt; &amp;nbsp; title</label>'
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
 
@@ -128,9 +117,7 @@ class TestLaunchpadRadioWidget(ItemWidgetTestCase):
     def test__renderItem_checked(self):
         # Render item in checked state.
         expected = (
-            '<label style="font-weight: normal">'
-            '<input class="radioType" checked="checked" id="test_field.1" '
-            'name="test_field" type="radio" value="token-1" />&nbsp;'
+            '<label ...><input ... checked="checked" ... />&nbsp;'
             'Safe title</label>')
         self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
 
@@ -145,10 +132,8 @@ class TestLaunchpadRadioWidget(ItemWidgetTestCase):
     def test__renderItem_unsafe_content(self):
         # Render item escapes unsafe markup.
         expected = (
-            '<label style="font-weight: normal">'
-            '<input class="radioType" id="test_field.1" name="test_field" '
-            'type="radio" value="token-2" />&nbsp;'
-            '&lt;unsafe&gt; &amp;nbsp; title</label>')
+            '<label ...><input ... />'
+            '&nbsp;&lt;unsafe&gt; &amp;nbsp; title</label>')
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
 
@@ -203,12 +188,7 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
     def test_renderSelectedItem_unsafe_content(self):
         # Render selected item escapes unsafe markup.
         expected = (
-            '<tr> <td rowspan="2">'
-            '<input class="radioType" checked="checked" id="test_field.1" '
-            'name="test_field" type="radio" value="UNSAFE_TERM" /></td> '
-            '<td><label for="test_field.1">item-&lt;2&gt;</label></td> </tr> '
-            '<tr> '
-            '<td class="formHelp">&lt;unsafe&gt; &amp;nbsp; title</td> </tr>')
+            '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected,
             self.widget.renderSelectedItem, self.TestEnum.UNSAFE_TERM)
@@ -216,11 +196,6 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
     def test_renderItem_unsafe_content(self):
         # Render item escapes unsafe markup.
         expected = (
-            '<tr> <td rowspan="2">'
-            '<input class="radioType" id="test_field.1" '
-            'name="test_field" type="radio" value="UNSAFE_TERM" /></td> '
-            '<td><label for="test_field.1">item-&lt;2&gt;</label></td> </tr> '
-            '<tr> '
-            '<td class="formHelp">&lt;unsafe&gt; &amp;nbsp; title</td> </tr>')
+            '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
