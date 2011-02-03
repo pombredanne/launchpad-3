@@ -78,7 +78,7 @@ def find_ubuntu_sharing_info(productseries, templatename=None,
             potemplate_condition)
         result_classes = (DistroSeries, SourcePackageName, POTemplate)
     conditions = [
-        Packaging.productseries == productseries
+        Packaging.productseries == productseries,
         ]
     return IStore(Packaging).using(prejoin).find(
         result_classes, *conditions)
@@ -126,7 +126,7 @@ def find_upstream_sharing_info(distroseries, sourcepackagename,
         result_classes = (ProductSeries, POTemplate)
     conditions = [
         Packaging.distroseries == distroseries,
-        Packaging.sourcepackagename == sourcepackagename
+        Packaging.sourcepackagename == sourcepackagename,
         ]
 
     return IStore(Packaging).using(prejoin).find(

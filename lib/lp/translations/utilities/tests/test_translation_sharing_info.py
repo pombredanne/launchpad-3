@@ -14,6 +14,7 @@ from lp.translations.utilities.translationsharinginfo import (
     has_upstream_template,
     )
 
+
 class TestTranslationSharingInfo(TestCaseWithFactory):
     """Tests for `get_upstream_sharing_info` and `get_ubuntu_sharing_info`"""
 
@@ -34,7 +35,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         sourcepackage.setPackaging(productseries, owner)
         return productseries
 
-    def test_sourcepackage_no_upstream(self):
+    def test_no_upstream(self):
         # With no upstream the sharing information on a source package will
         # be empty.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -44,7 +45,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename))
 
-    def test_sourcepackage_no_upstream_with_name(self):
+    def test_no_upstream_with_name(self):
         # With no upstream the sharing information on a source package will
         # be empty, even when searching for a specific template name.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -56,7 +57,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 sourcepackagename=sourcepackagename,
                 templatename=templatename))
 
-    def test_sourcepackage_upstream_no_template(self):
+    def test_upstream_no_template(self):
         # With an upstream without a template the sharing information on a
         # source package will be empty.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -68,12 +69,13 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename))
 
-    def test_sourcepackage_upstream_no_template_with_name(self):
+    def test_upstream_no_template_with_name(self):
         # With an upstream without a template the sharing information on a
         # source package will be empty, even when searching for a specific
         # template name.
         distroseries, sourcepackagename = self._makeSourcePackage()
-        productseries = self._makeUpstreamProductSeries(distroseries, sourcepackagename)
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
         templatename = self.factory.getUniqueString()
         self.assertEquals(
             [(productseries, None)],
@@ -82,7 +84,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 sourcepackagename=sourcepackagename,
                 templatename=templatename))
 
-    def test_sourcepackage_upstream_one_template(self):
+    def test_upstream_one_template(self):
         # With an upstream template the sharing information on a
         # source package will return that.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -95,7 +97,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename))
 
-    def test_sourcepackage_upstream_one_template_with_name(self):
+    def test_upstream_one_template_with_name(self):
         # With an upstream template the sharing information on a
         # source package will return that, even when searching for a
         # specific template name.
@@ -112,7 +114,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 sourcepackagename=sourcepackagename,
                 templatename=templatename))
 
-    def test_sourcepackage_upstream_one_template_with_different_name(self):
+    def test_upstream_one_template_with_different_name(self):
         # With an upstream template the sharing information on a
         # source package will be empty if a different name is queried.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -129,7 +131,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 sourcepackagename=sourcepackagename,
                 templatename=different_templatename))
 
-    def test_productseries_no_ubuntu(self):
+    def test_no_ubuntu(self):
         # With no sourcepackage the sharing information on a source package
         # will be empty.
         productseries = self.factory.makeProductSeries()
@@ -137,7 +139,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             [],
             get_ubuntu_sharing_info(productseries=productseries))
 
-    def test_productseries_no_ubuntu_with_name(self):
+    def test_no_ubuntu_with_name(self):
         # With no sourcepackage the sharing information on a source package
         # will be empty, even when searching for a specific template name.
         productseries = self.factory.makeProductSeries()
@@ -147,7 +149,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
 
-    def test_productseries_ubuntu_no_template(self):
+    def test_ubuntu_no_template(self):
         # With a sourcepackage without a template the sharing information
         # on a productseries will be empty.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -157,19 +159,20 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             [(distroseries, sourcepackagename, None)],
             get_ubuntu_sharing_info(productseries=productseries))
 
-    def test_productseries_ubuntu_no_template_with_name(self):
+    def test_ubuntu_no_template_with_name(self):
         # With a sourcepackage without a template the sharing information
         # on a productseries will be empty, even when searching for a
         # specific template name.
         distroseries, sourcepackagename = self._makeSourcePackage()
-        productseries = self._makeUpstreamProductSeries(distroseries, sourcepackagename)
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
         templatename = self.factory.getUniqueString()
         self.assertEquals(
             [(distroseries, sourcepackagename, None)],
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
 
-    def test_productseries_ubuntu_one_template(self):
+    def test_ubuntu_one_template(self):
         # With a sourcepackage template the sharing information on a
         # source package will return that.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -182,7 +185,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             get_ubuntu_sharing_info(
                 productseries=productseries))
 
-    def test_productseries_ubuntu_one_template_with_name(self):
+    def test_ubuntu_one_template_with_name(self):
         # With a sourcepackage template the sharing information on a
         # productseries will return that, even when searching for a
         # specific template name.
@@ -198,7 +201,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
 
-    def test_productseries_ubuntu_one_template_with_different_name(self):
+    def test_ubuntu_one_template_with_different_name(self):
         # With a sourcepackage template the sharing information on a
         # productseries will  be empty if a different name is queried.
         distroseries, sourcepackagename = self._makeSourcePackage()
@@ -290,6 +293,6 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             name=templatename)
         different_templatename = self.factory.getUniqueString()
-        
+
         self.assertFalse(
             has_ubuntu_template(productseries, different_templatename))
