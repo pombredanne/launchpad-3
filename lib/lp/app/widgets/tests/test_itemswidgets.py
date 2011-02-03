@@ -3,11 +3,15 @@
 
 __metaclass__ = type
 
+import doctest
+
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+
+from testtools.matchers import DocTestMatches
 
 from lazr.enum import (
     EnumeratedType,
@@ -28,7 +32,7 @@ from lp.testing import (
 
 
 class ItemWidgetTestCase(TestCaseWithFactory):
-    """A test case that sets up an items widget for testing"""
+    """A test case that sets up an items widget for testing."""
 
     layer = DatabaseFunctionalLayer
 
@@ -49,7 +53,10 @@ class ItemWidgetTestCase(TestCaseWithFactory):
         markup = self.widget._renderItem(
             index=1, text=term.title, value=term.token,
             name=self.field.__name__, cssClass=None, checked=checked)
-        self.assertEqual(expected, markup)
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)
 
 
 class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
@@ -166,8 +173,10 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
         markup = method(
             index=1, text=enum_item.title, value=enum_item.name,
             name=self.field.__name__, cssClass=None)
-        markup = ' '.join(markup.split())
-        self.assertEqual(expected, markup)
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)
 
     def test_renderSelectedItem(self):
         # Render checked="checked" item in checked state.
