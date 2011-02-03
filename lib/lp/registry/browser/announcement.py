@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement views."""
@@ -45,12 +45,12 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.widgets import AnnouncementDateWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.announcementdate import AnnouncementDateWidget
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.services.fields import (
     AnnouncementDate,
