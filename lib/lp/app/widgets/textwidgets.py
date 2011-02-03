@@ -2,21 +2,21 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
-import pytz
 import re
 
+import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.datetime import parse, DateTimeError
 from zope.app.form.browser.textwidgets import (
     TextAreaWidget,
     TextWidget,
     )
 from zope.app.form.interfaces import ConversionError
+from zope.datetime import (
+    DateTimeError,
+    parse,
+    )
 
 from lp.app.errors import UnexpectedFormData
-
-# XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
-# this module?
 
 
 class StrippedTextWidget(TextWidget):
@@ -257,3 +257,38 @@ class DelimitedListWidget(TextAreaWidget):
             return value
         else:
             return self.split(value)
+
+
+class TitleWidget(StrippedTextWidget):
+    """A launchpad title widget; a little wider than a normal Textline."""
+    displayWidth = 44
+
+
+class SummaryWidget(TextAreaWidget):
+    """A widget to capture a summary."""
+    width = 44
+    height = 3
+
+
+class DescriptionWidget(TextAreaWidget):
+    """A widget to capture a description."""
+    width = 44
+    height = 5
+
+
+class NoneableDescriptionWidget(DescriptionWidget):
+    """A widget that is None if it's value is empty or whitespace.."""
+
+    def _toFieldValue(self, input):
+        value = super(
+            NoneableDescriptionWidget, self)._toFieldValue(input.strip())
+        if value == '':
+            return None
+        else:
+            return value
+
+
+class WhiteboardWidget(TextAreaWidget):
+    """A widget to capture a whiteboard."""
+    width = 44
+    height = 5

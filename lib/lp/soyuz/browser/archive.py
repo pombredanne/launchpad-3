@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -79,15 +79,6 @@ from canonical.launchpad.webapp.menu import (
     structured,
     )
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    LabeledMultiCheckBoxWidget,
-    PlainMultiCheckBoxWidget,
-    )
-from canonical.widgets.itemswidgets import (
-    LaunchpadDropdownWidget,
-    LaunchpadRadioWidget,
-    )
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -100,6 +91,13 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    PlainMultiCheckBoxWidget,
+    )
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,

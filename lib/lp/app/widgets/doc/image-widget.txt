@@ -45,7 +45,7 @@ image and the 'Keep' radio button will be selected. The
 other radio button allows the user to upload a new image.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.widgets.image import ImageChangeWidget
+    >>> from lp.app.widgets.image import ImageChangeWidget
     >>> add_style = ImageChangeWidget.ADD_STYLE
     >>> edit_style = ImageChangeWidget.EDIT_STYLE
     >>> person_logo = IPerson['logo'].bind(salgado)
@@ -172,7 +172,7 @@ creates a new database object for us.
 #This is a specialized version of the ImageChangeWidget which also returns a
 #resized version of the uploaded image, in case one was uploaded.
 #
-#    >>> from canonical.widgets.image import LogoTiedWithMugshotWidget
+#    >>> from lp.app.widgets.image import LogoTiedWithMugshotWidget
 #    >>> mugshot_file_name = os.path.join(
 #    ...     os.path.dirname(canonical.launchpad.__file__),
 #    ...     'images/nyet-mugshot.png')

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -59,13 +59,15 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
