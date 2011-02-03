@@ -1075,14 +1075,11 @@ BugMessage""" % sqlvalues(self.id))
                 self.followup_subject(), notification_data['text'],
                 owner=change.person, datecreated=when)
             if recipients is None:
-                getUtility(IBugNotificationSet).addNotification(
-                    bug=self, is_comment=False, message=message,
-                    recipients=self.getBugNotificationRecipients(
-                        level=BugNotificationLevel.METADATA))
-            else:
-                getUtility(IBugNotificationSet).addNotification(
-                    bug=self, is_comment=False, message=message,
-                    recipients=recipients)
+                recipients = self.getBugNotificationRecipients(
+                    level=BugNotificationLevel.METADATA)
+            getUtility(IBugNotificationSet).addNotification(
+                bug=self, is_comment=False, message=message,
+                recipients=recipients)
 
         self.updateHeat()
 
