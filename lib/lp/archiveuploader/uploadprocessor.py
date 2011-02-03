@@ -74,6 +74,9 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
@@ -643,11 +646,20 @@ class BuildUploadHandler(UploadHandler):
                 "Expected build status to be 'UPLOADING', was %s. Ignoring." %
                 self.build.status.name)
             return
-        self.processor.log.debug("Build %s found" % self.build.id)
         try:
-            [changes_file] = self.locateChangesFiles()
-            logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(changes_file, logger)
+            # The recipe may have been deleted so we need to flag that here
+            # and will handle below. We check so that we don't go to the
+            # expense of doing an unnecessary upload. We don't just exit here
+            # because we want the standard cleanup to occur.
+            recipe_deleted = (ISourcePackageRecipeBuild.providedBy(self.build)
+                and self.build.recipe is None)
+            if recipe_deleted:
+                result = UploadStatusEnum.FAILED
+            else:
+                self.processor.log.debug("Build %s found" % self.build.id)
+                [changes_file] = self.locateChangesFiles()
+                logger.debug("Considering changefile %s" % changes_file)
+                result = self.processChangesFile(changes_file, logger)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -664,9 +676,16 @@ class BuildUploadHandler(UploadHandler):
             not self.build.verifySuccessfulUpload()):
             self.build.status = BuildStatus.FAILEDTOUPLOAD
         if self.build.status != BuildStatus.FULLYBUILT:
-            self.build.storeUploadLog(logger.getLogBuffer())
-            self.build.notify(extra_info="Uploading build %s failed." %
-                              self.upload)
+            if recipe_deleted:
+                # For a deleted recipe, no need to notify that uploading has
+                # failed - we just log a warning.
+                self.processor.log.warn(
+                    "Recipe for build %s was deleted. Ignoring." %
+                    self.upload)
+            else:
+                self.build.storeUploadLog(logger.getLogBuffer())
+                self.build.notify(extra_info="Uploading build %s failed." %
+                                  self.upload)
         else:
             self.build.notify()
         self.processor.ztm.commit()

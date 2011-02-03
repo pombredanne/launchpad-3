@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -57,18 +57,16 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.widgets import (
-    HiddenUserWidget,
-    LaunchpadRadioWidget,
-    )
-from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.owner import HiddenUserWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
