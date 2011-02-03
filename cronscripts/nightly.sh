@@ -44,6 +44,8 @@ LOGFILE=$LOGDIR/nightly.log
 
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
+echo `date`: Grabbed lock >> $LOGFILE
+
 echo `date`: Expiring memberships >> $LOGFILE
 python -S flag-expired-memberships.py -q --log-file=DEBUG:$LOGDIR/flag-expired-memberships.log
 
@@ -83,5 +85,5 @@ python -S update-cve.py -q --log-file=DEBUG:$LOGDIR/update-cve.log
 #echo == Product Release Finder `date` ==
 #python -S product-release-finder.py -q
 
-
+echo `date`: Removing lock >> $LOGFILE
 rm -f $LOCK
