@@ -79,6 +79,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -503,7 +504,10 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notifications = [self.getAcknowledgementMessage(self.context)]
+        linkified_ack = structured(FormattersAPI(
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
+        notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
             security_related=security_related, private=private,
