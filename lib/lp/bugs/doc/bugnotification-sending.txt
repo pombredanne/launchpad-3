@@ -1098,6 +1098,25 @@ The title is also wrapped and indented in normal notifications.
      '  people very angry and has been widely regarded as a bad move',
      '']
 
+Self-Generated Bug Notifications
+--------------------------------
+
+People (not teams) will have the choice to receive notifications from actions
+they generated.  For now, everyone receives these notifications whether they
+want them or not.  However, we can show that the attribute exists for now.
+
+    >>> flush_notifications()
+    >>> switch_db_to_launchpad()
+    >>> verbose_person.selfgenerated_bugnotifications
+    True
+
+Teams do not implement this attribute.
+
+    >>> verbose_team.selfgenerated_bugnotifications
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Teams do not support this attribute.
+
 Notification Recipients
 -----------------------
 

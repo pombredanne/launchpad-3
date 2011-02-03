@@ -36,6 +36,8 @@ import re
 import subprocess
 import weakref
 
+from lazr.delegates import delegates
+from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
     BoolCol,
@@ -50,6 +52,7 @@ from sqlobject.sqlbuilder import (
     OR,
     SQLConstant,
     )
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -65,6 +68,10 @@ from storm.expr import (
     Upper,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -217,6 +224,7 @@ from lp.registry.interfaces.person import (
     InvalidName,
     IPerson,
     IPersonSet,
+    IPersonSettings,
     ITeam,
     PersonalStanding,
     PersonCreationRationale,
@@ -352,12 +360,51 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+class PersonSettings(Storm):
+
+    implements(IPersonSettings)
+
+    __storm_table__ = 'PersonSettings'
+
+    personID = Int("person", default=None, primary=True)
+    person = Reference(personID, "Person.id")
+
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
+
+
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+
+    def __init__(self, *args, **kwargs):
+        super(Person, self).__init__(*args, **kwargs)
+        # Initialize our PersonSettings object/record.
+        if not self.is_team:
+            # This is a Person, not a team.  Teams may want a TeamSettings
+            # in the future.
+            settings = PersonSettings()
+            settings.person = self
+
+    @cachedproperty
+    def _person_settings(self):
+        if self.is_team:
+            # Hopefully no-one ever encounters this.  If someone does,
+            # that means that the code is trying to look at
+            # person-specific attributes on a team, and we should warn
+            # about that explicitly to give a hint about what is wrong
+            # (rather than merely returning None).
+            raise NotImplementedError(
+                'Teams do not support this attribute.')
+        else:
+            # This is a person.
+            return IStore(PersonSettings).find(
+                PersonSettings,
+                PersonSettings.person == self).one()
+
+    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -3809,6 +3856,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('personsettings', 'person'),
             ('emailaddress', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
