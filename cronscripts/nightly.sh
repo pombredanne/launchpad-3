@@ -59,7 +59,7 @@ python -S expire-questions.py
 ### echo == Expiring bugs `date` ==
 ### python -S expire-bugtasks.py
 
-# checkwatches.py is scheduled in ~launchpad-pqn/lp-production-crontabs.
+# checkwatches.py is scheduled in lp-production-crontabs.
 ### echo == Updating bug watches `date` ==
 ### python -S checkwatches.py
 
@@ -72,10 +72,11 @@ python -S update-standing.py -q
 echo == Updating CVE database `date` ==
 python -S update-cve.py -q
 
-echo == Updating package cache `date` ==
-python -S update-pkgcache.py -q
+# update-pkgcache.py is scheduled in lp-production-crontabs.
+#echo == Updating package cache `date` ==
+#python -S update-pkgcache.py -q
 
-# Release finder is scheduled in ~launchpad-pqn/lp-production-crontabs.
+# Release finder is scheduled in lp-production-crontabs.
 #echo == Product Release Finder `date` ==
 #python -S product-release-finder.py -q
 
