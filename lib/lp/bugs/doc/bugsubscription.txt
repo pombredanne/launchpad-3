@@ -101,7 +101,7 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
     >>> linux_source_bug.getAlsoNotifiedSubscribers()
     [<Person at ...>]
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
@@ -137,7 +137,7 @@ Here are some examples of the three types of indirect subscribers:
     Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Sample Person
@@ -161,7 +161,7 @@ Here are some examples of the three types of indirect subscribers:
     Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
@@ -365,7 +365,7 @@ bug.
     >>> subscription_keybuk = linux_source.addBugSubscription(
     ...     keybuk, keybuk)
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 When a bug is marked private, all its indirect subscribers become direct
 subscribers.
@@ -409,7 +409,7 @@ indirect subscriptions.
     []
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 Direct subscriptions always take precedence over indirect
 subscriptions. So, if we unmark the above bug as private,

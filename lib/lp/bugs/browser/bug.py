@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -76,8 +76,6 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.project import ProjectScopeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -85,6 +83,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -98,7 +98,6 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -425,39 +424,28 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def subscription_info(self):
+        return IBug(self.context).getSubscriptionInfo()
+
+    @property
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
-        if IBug.providedBy(self.context):
-            return set(self.context.getDirectSubscribers())
-        elif IBugTask.providedBy(self.context):
-            return set(self.context.bug.getDirectSubscribers())
-        else:
-            raise NotImplementedError(
-                'direct_subscribers is not provided by %s' % self)
+        return self.subscription_info.direct_subscriptions.subscribers
 
-    @cachedproperty
+    @property
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates.
 
-        Don't use getSubscribersFromDuplicates here because that method
-        omits a user if the user is also a direct or indirect subscriber.
-        getSubscriptionsFromDuplicates doesn't, so find person objects via
-        this method.
+        This includes all subscribers who are also direct or indirect
+        subscribers.
         """
-        if IBug.providedBy(self.context):
-            dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        elif IBugTask.providedBy(self.context):
-            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        else:
-            raise NotImplementedError(
-                'duplicate_subscribers is not implemented for %s' % self)
+        return self.subscription_info.duplicate_subscriptions.subscribers
 
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(
+        subscribers = set().union(
+            self.direct_subscribers,
             self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so

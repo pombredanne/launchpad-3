@@ -466,6 +466,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
 
+    def reindexMessages():
+        """Fill in the `BugMessage`.index column for this bugs messages."""
+
     def isSubscribed(person):
         """Is person subscribed to this bug?
 
@@ -524,6 +527,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """Return the `BugSubscription` for a `Person` to this `Bug`.
 
         If no such `BugSubscription` exists, return None.
+        """
+
+    def getSubscriptionInfo(level):
+        """Return a `BugSubscriptionInfo` at the given `level`.
+
+        :param level: A member of `BugNotificationLevel`.
         """
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,

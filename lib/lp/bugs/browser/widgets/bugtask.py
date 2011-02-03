@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -49,17 +49,17 @@ from zope.schema.interfaces import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.widgets.helpers import get_widget_template
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import VocabularyPickerWidget
-from canonical.widgets.textwidgets import (
-    StrippedTextWidget,
-    URIWidget,
-    )
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
+    )
+from lp.app.widgets.helpers import get_widget_template
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.textwidgets import (
+    StrippedTextWidget,
+    URIWidget,
     )
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,

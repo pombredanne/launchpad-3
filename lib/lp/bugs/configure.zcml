@@ -638,6 +638,31 @@
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
 
+    <!-- BugSubscriptionInfo -->
+
+    <class class=".model.bug.BugSubscriptionInfo">
+      <!-- Instance variables -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              bug
+              level
+              " />
+      <!-- Properties -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              all_assignees
+              all_pillar_owners_without_bug_supervisors
+              also_notified_subscribers
+              direct_subscriptions
+              duplicate_only_subscriptions
+              duplicate_subscriptions
+              indirect_subscribers
+              structural_subscriptions
+              " />
+    </class>
+
     <facet
         facet="bugs">
 
@@ -719,6 +744,7 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
+                    getSubscriptionInfo
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -796,6 +822,7 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
@@ -836,7 +863,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch visible index"/>
     </class>
 
     <!-- BugMessageSet -->
