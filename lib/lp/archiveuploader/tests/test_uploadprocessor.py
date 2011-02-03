@@ -2040,6 +2040,40 @@ class TestUploadHandler(TestUploadProcessorBase):
         body = mail.get_payload(decode=True)
         self.assertIn('Upload Log: http', body)
 
+    def doDeletedRecipeBuild(self):
+        # A source package recipe build will fail if the recipe is deleted.
+
+        # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
+            distroseries=self.breezy, archive=archive)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        Store.of(build).flush()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.jobStarted()
+        build.recipe.destroySelf()
+        # Commit so date_started is recorded and doesn't cause constraint
+        # violations later.
+        Store.of(build).flush()
+        build.status = BuildStatus.UPLOADING
+        build.date_finished = UTC_NOW
+        BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
+            leaf_name).process()
+        self.layer.txn.commit()
+        return build
+
+    def testSourcePackageRecipeBuild_deleted_recipe(self):
+        build = self.doDeletedRecipeBuild()
+        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEquals(None, build.builder)
+        self.assertIsNot(None, build.duration)
+        self.assertIs(None, build.upload_log)
+
     def testBuildWithInvalidStatus(self):
         # Builds with an invalid (non-UPLOADING) status should trigger
         # a warning but be left alone.

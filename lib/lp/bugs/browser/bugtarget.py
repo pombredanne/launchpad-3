@@ -79,6 +79,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -503,7 +504,10 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notifications = [self.getAcknowledgementMessage(self.context)]
+        linkified_ack = structured(FormattersAPI(
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
+        notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
             security_related=security_related, private=private,
@@ -1352,7 +1356,7 @@ class BugTargetBugTagsView(LaunchpadView):
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = self.context.official_bug_tags
+        official_tags = list(self.context.official_bug_tags)
         tags = self.getUsedBugTagsWithURLs()
         other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
         popular_tags = [tag['tag'] for tag in sorted(

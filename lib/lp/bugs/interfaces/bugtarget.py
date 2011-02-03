@@ -35,7 +35,6 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -52,6 +51,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
     IBugTask,
@@ -59,7 +59,8 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.services.fields import Tag
 
-search_tasks_params_for_api_1_0 = {
+
+search_tasks_params_common = {
     "order_by": List(
         title=_('List of fields by which the results are ordered.'),
         value_type=Text(),
@@ -80,7 +81,6 @@ search_tasks_params_for_api_1_0 = {
     "tags": copy_field(IBugTaskSearch['tag']),
     "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
-    "omit_targeted": copy_field(IBugTaskSearch['omit_targeted']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
     "milestone_assignment": copy_field(
         IBugTaskSearch['milestone_assignment']),
@@ -172,9 +172,21 @@ search_tasks_params_for_api_1_0 = {
             "date."),
         required=False),
     }
-search_tasks_params_for_api_devel = search_tasks_params_for_api_1_0.copy()
-search_tasks_params_for_api_devel["omit_targeted"] = copy_field(
-    IBugTaskSearch['omit_targeted'], default=False)
+
+search_tasks_params_for_api_default = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted']))
+
+search_tasks_params_for_api_devel = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted'], default=False),
+    linked_blueprints=Choice(
+        title=_(
+            u"Search for bugs that are linked to blueprints or for "
+            u"bugs that are not linked to blueprints."),
+        vocabulary=BugBlueprintSearch, required=False))
 
 
 class IHasBugs(Interface):
@@ -203,16 +215,21 @@ class IHasBugs(Interface):
     has_bugtasks = Attribute(
         "True if a BugTask has ever been reported for this target.")
 
+    # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+
+    # Pop the *default* version (decorators are run last to first).
     @operation_removed_in_version('devel')
 
+    # searchTasks default API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(**search_tasks_params_for_api_1_0)
+    @operation_parameters(**search_tasks_params_for_api_default)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,
@@ -232,8 +249,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    structural_subscriber=None, modified_since=None,
-                    created_since=None, prejoins=[]):
+                    linked_blueprints=None, structural_subscriber=None,
+                    modified_since=None, created_since=None, prejoins=[]):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object

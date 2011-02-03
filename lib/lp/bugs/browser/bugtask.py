@@ -220,6 +220,7 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
+    BugBlueprintSearch,
     BugTagsSearchCombinator,
     BugTaskImportance,
     BugTaskSearchParams,
@@ -2499,6 +2500,17 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     BugBranchSearch.BUGS_WITHOUT_BRANCHES)
             else:
                 data['linked_branches'] = BugBranchSearch.ALL
+
+            has_blueprints = data.get('has_blueprints', True)
+            has_no_blueprints = data.get('has_no_blueprints', True)
+            if has_blueprints and not has_no_blueprints:
+                data['linked_blueprints'] = (
+                    BugBlueprintSearch.BUGS_WITH_BLUEPRINTS)
+            elif not has_blueprints and has_no_blueprints:
+                data['linked_blueprints'] = (
+                    BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS)
+            else:
+                data['linked_blueprints'] = BugBlueprintSearch.ALL
 
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
