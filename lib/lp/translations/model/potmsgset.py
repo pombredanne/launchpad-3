@@ -739,6 +739,26 @@ class POTMsgSet(SQLBase):
             template.awardKarma(translator, 'translationsuggestionapproved')
             template.awardKarma(reviewer, 'translationreview')
 
+    def acceptAsImported(self, pofile, suggestion,
+                         accept_this_side=True, accept_other_side=False,
+                         lock_timestamp=None):
+        """Accept a suggestion as an imported translation.
+
+        When importing translations, these are first added as a suggestion
+        and only after successful validation they are made current. This is
+        slightly different to approving a suggestion because no reviewer is
+        credited. Also, this method allows to activate the this message on
+        the other side *only*. This is used for package uploads when the
+        upstream project has not yet been created.
+
+        :param pofile: The `POFile` that the suggestion is being approved for.
+        :param suggestion: The `TranslationMessage` being approved.
+        :param accept_this_side: Make the message current on this side.
+        :param accept_other_side: Make the message current on the other side.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
+        """
+
     def _cloneAndDiverge(self, original_message, pofile):
         """Create a diverged clone of a `TranslationMessage`.
 
