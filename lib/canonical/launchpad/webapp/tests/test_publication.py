@@ -9,7 +9,7 @@ import logging
 import sys
 import unittest
 
-from contrib.oauth import (
+from oauth.oauth import (
     OAuthRequest,
     OAuthSignatureMethod_PLAINTEXT,
     )

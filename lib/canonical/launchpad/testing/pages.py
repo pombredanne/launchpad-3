@@ -28,7 +28,7 @@ from BeautifulSoup import (
     SoupStrainer,
     Tag,
     )
-from contrib.oauth import (
+from oauth.oauth import (
     OAuthConsumer,
     OAuthRequest,
     OAuthSignatureMethod_PLAINTEXT,
