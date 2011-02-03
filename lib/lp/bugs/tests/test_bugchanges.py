@@ -173,6 +173,21 @@ class TestBugChanges(unittest.TestCase):
                         for recipient in added_notification.recipients),
                     set(expected_recipients))
 
+    def assertRecipients(self, expected_recipients):
+        bug_notifications = BugNotification.selectBy(
+            bug=self.bug, orderBy='id')
+        new_notifications = [
+            notification for notification in bug_notifications
+            if notification.id not in self.old_notification_ids]
+        recipients = set()
+        for notification in new_notifications:
+            recipients.update(
+                set(recipient.person
+                    for recipient in notification.recipients))
+        self.assertEqual(
+            set(expected_recipients),
+            set(recipients))
+
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
         # but doesn't send an e-mail notification.
@@ -1583,3 +1598,15 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=new_bug)
+
+    def test_description_changed_no_self_email(self):
+        # Changing the description of a Bug adds items to the activity
+        # log
+        bug_owner = self.bug.owner
+        bug_owner.selfgenerated_bugnotifications = False
+
+        old_description = self.changeAttribute(
+            self.bug, 'description', 'Hello, world')
+
+        self.assertRecipients(
+            [self.product_metadata_subscriber])
