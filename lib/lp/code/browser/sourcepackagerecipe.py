@@ -209,7 +209,11 @@ class SourcePackageRecipeView(LaunchpadView):
         """A list of interesting builds.
 
         All pending builds are shown, as well as 1-5 recent builds.
-        Recent builds are ordered by date completed.
+        Recent builds are ordered by date finished (if completed) or
+        date_started (if date finished is not set due to an error building or
+        other circumstance which resulted in the build not being completed).
+        This allows started but unfinished builds to show up in the view but
+        be discarded as more recent builds become available.
         """
         builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():

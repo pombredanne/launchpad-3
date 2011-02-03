@@ -1007,21 +1007,23 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build6 = self.makeBuildJob(recipe, date_gen.next())
         view = SourcePackageRecipeView(recipe, None)
         self.assertEqual(
-            set([build1, build2, build3, build4, build5, build6]),
-            set(view.builds))
+            [build1, build2, build3, build4, build5, build6],
+            view.builds)
 
         def set_status(build, status):
             naked_build = removeSecurityProxy(build)
             naked_build.status = status
             naked_build.date_started = naked_build.date_created
-            naked_build.date_completed = naked_build.date_created
+            if status == BuildStatus.FULLYBUILT:
+                naked_build.date_finished = (
+                    naked_build.date_created + timedelta(minutes=10))
         set_status(build1, BuildStatus.FULLYBUILT)
         set_status(build2, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
-            set([build3, build4, build5, build6, build1]),
-            set(view.builds))
+            [build3, build4, build5, build6, build1],
+            view.builds)
         set_status(build3, BuildStatus.FULLYBUILT)
         set_status(build4, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FULLYBUILT)
