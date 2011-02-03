@@ -575,11 +575,11 @@ class TestRemoveTranslations(TestCase):
 class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
     """Test that `remove_translations` "unmasks" upstream messages.
 
-    When a shared current, non-upstream message is deleted, the deletion
+    When a shared current Ubuntu message is deleted, the deletion
     code checks whether there is also an upstream translation.  If there
-    was, it makes sense to make the upstream message the current one (as
-    it would have been if the deleted message had never been there in the
-    first place).
+    was, it makes sense to make the upstream message the current Ubuntu
+    message (as it would have been if the deleted message had never been
+    there in the first place).
     """
     layer = LaunchpadZopelessLayer
 
