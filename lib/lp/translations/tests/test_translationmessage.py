@@ -11,9 +11,6 @@ from datetime import (
     )
 
 from pytz import UTC
-from sqlobject import (
-    SQLObjectNotFound,
-    )
 from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -675,11 +672,11 @@ class TestShareIfPossible(TestCaseWithFactory):
             clashing_ubuntu=False, is_current_upstream=False,
             clashing_upstream=False, existing_shared=True):
         if different_language:
-            language_code='fr'
+            language = None
         else:
-            language_code='lt'
+            language = self.factory.makeLanguage()
         translation = self.factory.makeCurrentTranslationMessage(
-            language_code=language_code, diverged=not converged)
+            diverged=not converged, language=language)
         translation.is_current_ubuntu = is_current_ubuntu
         translation.is_current_upstream = is_current_upstream
         if different_translations:
@@ -692,31 +689,26 @@ class TestShareIfPossible(TestCaseWithFactory):
             potmsgset = translation.potmsgset
         if existing_shared:
             other_translation = self.factory.makeCurrentTranslationMessage(
-                potmsgset=potmsgset, language_code='lt',
+                potmsgset=potmsgset, language=language,
                 translations=translations)
             other_translation.is_current_upstream = False
         else:
             other_translation = None
         if clashing_upstream:
             self.factory.makeCurrentTranslationMessage(
-                potmsgset=potmsgset, language_code='lt')
+                potmsgset=potmsgset, language=language)
         if clashing_ubuntu:
             self.factory.makeCurrentTranslationMessage(
-                potmsgset=potmsgset, language_code='lt',
+                potmsgset=potmsgset, language=language,
                 side=TranslationSide.UBUNTU)
         return translation, other_translation
 
     @staticmethod
     def shareIfPossibleDeletes(translation):
-        translation_id = translation.id
         translation.shareIfPossible()
-        Store.of(translation).flush()
-        try:
-            TranslationMessage.get(translation_id)
-        except SQLObjectNotFound:
-            return True
-        else:
-            return False
+        result = Store.of(translation).find(
+            TranslationMessage, TranslationMessage.id==translation.id)
+        return result.one() is None
 
     def test_share_success(self):
         """The base case deletes the translation."""

@@ -2500,7 +2500,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 naked_series.product.translations_usage = (
                     ServiceUsage.LAUNCHPAD)
             else:
-                distroseries = self.makeDistroSeries()
+                distroseries = self.makeUbuntuDistroSeries()
                 sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
@@ -2547,7 +2547,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner, side=side)
         else:
-            assert side is None
+            assert side is None, 'Cannot specify both side and potemplate.'
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
@@ -2620,8 +2620,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None,
-                                      language_code=None,
-                                      side=None):
+                                      language=None, side=None):
         """Create a `TranslationMessage` and make it current.
 
         By default the message will only be current on the side (Ubuntu
@@ -2647,15 +2646,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             other translation side?  (Cannot be combined with `diverged`).
         :param date_created: Force a specific creation date instead of 'now'.
         :param date_reviewed: Force a specific review date instead of 'now'.
+        :param language: `Language` to use for the POFile
+        :param side: The `TranslationSide` this translation should be for.
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
-        assert None in (language_code, pofile), (
-            'Cannot specify both language_code and pofile.')
+        assert None in (language, pofile), (
+            'Cannot specify both language and pofile.')
         assert None in (side, pofile), (
-            'Cannot specify both translation_side and pofile.')
+            'Cannot specify both side and pofile.')
         if pofile is None:
-            pofile = self.makePOFile(language_code, side=side)
+            pofile = self.makePOFile(language=language, side=side)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
