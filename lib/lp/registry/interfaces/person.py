@@ -406,6 +406,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         closed. Any user can be a member of the team and no approval is
         required. Subteams can be Open, Delegated, Moderated, or Restricted.
         Open is a good choice for encouraging a community of contributors.
+        Open teams cannot have PPAs.
         """)
 
     DELEGATED = DBItem(4, """
@@ -415,7 +416,8 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         closed. Any user can be a member of the team via a subteam, but team
         administrators approve direct memberships. Subteams can be Open,
         Delegated, Moderated, or Restricted. Delegated is a good choice for
-        managing a large community of contributors.
+        managing a large community of contributors. Delegated teams cannot
+        have PPAs.
         """)
 
     MODERATED = DBItem(1, """
