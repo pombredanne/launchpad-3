@@ -152,7 +152,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
         """Render the table row for the widget depending on description."""
         if form_value != self._missing:
             vocab_term = self.vocabulary.getTermByToken(form_value)
-            description = escape(vocab_term.value.description)
+            description = vocab_term.value.description
         else:
             description = None
 
@@ -160,7 +160,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             return self._labelWithoutDescriptionTemplate % (elem, id, text)
         else:
             return self._labelWithDescriptionTemplate % (
-                elem, id, text, description)
+                elem, id, text, escape(description))
 
     def renderItem(self, index, text, value, name, cssClass):
         """Render an item of the list."""
