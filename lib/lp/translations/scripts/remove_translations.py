@@ -405,6 +405,37 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
     from_text = ', '.join(joins)
     where_text = ' AND\n    '.join(conditions)
 
+    # Deleting currently used translations is a bit harmful. Log
+    # them so that we have a clue which messages might have to be
+    # translated again. Note that this script tries to find
+    # another translation that becomes current -- but only in one
+    # situation: If we delete a shared translation which is current
+    # in Ubuntu, a shared translation which is current in upstream
+    # becomes the current Ubuntu translation. In other cases (deleting
+    # a diverged translation, deleting a shared translation which
+    # is current upstream) we do not attempt to find another current
+    # message.
+    if logger is not None and logger.getEffectiveLevel() <= logging.WARN:
+        query = """
+            SELECT id, is_current_upstream, is_current_ubuntu
+            FROM TranslationMessage
+            WHERE %s AND (is_current_upstream OR is_current_ubuntu)
+            """ % where_text
+        cur.execute(query)
+        rows = cur.fetchall()
+        if cur.rowcount > 0:
+            logger.warn(
+                'Deleting messages currently in use:')
+            for (id, is_current_upstream, is_current_ubuntu) in rows:
+                current = []
+                if is_current_upstream:
+                    current.append('upstream')
+                if is_current_ubuntu:
+                    current.append('Ubuntu')
+                logger.warn(
+                    'Message %i is a current translation in %s'
+                    % (id, ' and '.join(current)))
+
     # Keep track of messages we're going to delete.
     # Don't bother indexing this.  We'd more likely end up optimizing
     # away the operator's "oh-shit-ctrl-c" time than helping anyone.
@@ -416,8 +447,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         """ % (from_text, where_text)
     cur.execute(query)
 
-    # Note which messages are masked by the messages we're going to
-    # delete.  We'll be making those the current ones.
+    # Note which shared messages are masked by the messages we're
+    # going to delete.  We'll be making those the current ones.
     query = """
         UPDATE temp_doomed_message
         SET imported_message = Imported.id
@@ -427,7 +458,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             -- Is alternative for the message we're about to delete.
             Imported.potmsgset = Doomed.potmsgset AND
             Imported.language = Doomed.language AND
-            Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
+            Imported.potemplate IS NULL AND
+            Doomed.potemplate IS NULL AND
             -- Is used upstream.
             Imported.is_current_upstream IS TRUE AND
             -- Was masked by the message we're about to delete.
