@@ -181,6 +181,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -3339,46 +3340,30 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def _mergeBranches(self, cur, from_id, to_id):
-        # XXX MichaelHudson 2010-01-13 bug=506630: This code does not account
-        # for package branches.
-        cur.execute('''
-            SELECT product, name FROM Branch WHERE owner = %(to_id)d
-            ''' % vars())
-        possible_conflicts = set(tuple(r) for r in cur.fetchall())
-        cur.execute('''
-            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
-            ORDER BY id
-            ''' % vars())
-        for id, product, name in list(cur.fetchall()):
-            new_name = name
-            suffix = 1
-            while (product, new_name) in possible_conflicts:
-                new_name = '%s-%d' % (name, suffix)
-                suffix += 1
-            possible_conflicts.add((product, new_name))
-            new_name = new_name.encode('US-ASCII')
-            name = name.encode('US-ASCII')
-            cur.execute('''
-                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
-                WHERE owner = %(from_id)s AND name = %(name)s
-                    AND (%(product)s IS NULL OR product = %(product)s)
-                ''', dict(to_id=to_id, from_id=from_id,
-                          name=name, new_name=new_name, product=product))
+    def _mergeBranches(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
+        branches = getUtility(IBranchCollection).ownedBy(from_person)
+        for branch in branches.getBranches():
+            removeSecurityProxy(branch).setOwner(to_person, to_person)
 
     def _mergeBranchMergeQueues(self, cur, from_id, to_id):
         cur.execute('''
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
 
-    def _mergeSourcePackageRecipes(self, cur, from_id, to_id):
-        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        store = IMasterStore(SourcePackageRecipe)
-        recipes = store.find(
-            SourcePackageRecipe,
-            SourcePackageRecipe.owner == from_id)
+    def _mergeSourcePackageRecipes(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
+        recipes = from_person.getRecipes()
+        existing_names = [r.name for r in to_person.getRecipes()]
         for recipe in recipes:
-            recipe.destroySelf()
+            new_name = recipe.name
+            count = 1
+            while new_name in existing_names:
+                new_name = '%s-%s' % (recipe.name, count)
+                count += 1
+            naked_recipe = removeSecurityProxy(recipe)
+            naked_recipe.owner = to_person
+            naked_recipe.name = new_name
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
@@ -3874,13 +3859,13 @@ class PersonSet:
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
-        self._mergeBranches(cur, from_id, to_id)
+        self._mergeBranches(from_person, to_person)
         skip.append(('branch', 'owner'))
 
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        self._mergeSourcePackageRecipes(cur, from_id, to_id)
+        self._mergeSourcePackageRecipes(from_person, to_person)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)

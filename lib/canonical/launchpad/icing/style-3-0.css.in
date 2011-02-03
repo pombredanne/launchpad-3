@@ -995,6 +995,9 @@ h1 .edit {
 .informational.message::before {
     content: url(/@@/info-large);
     }
+.informational p.last {
+    margin-bottom: 0;
+    }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
     background: #666;

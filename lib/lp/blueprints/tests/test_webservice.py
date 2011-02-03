@@ -155,6 +155,14 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         self.assertEqual(1, spec_webservice.dependencies.total_size)
         self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
 
+    def test_representation_contains_linked_branches(self):
+        spec = self.factory.makeSpecification()
+        branch = self.factory.makeBranch()
+        person = self.factory.makePerson()
+        spec.linkBranch(branch, person)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.linked_branches.total_size)
+
     def test_representation_contains_bug_links(self):
         spec = self.factory.makeSpecification()
         bug = self.factory.makeBug()

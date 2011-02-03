@@ -102,6 +102,7 @@ from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
@@ -1418,12 +1419,13 @@ def _build_tag_set_query_any(tags):
     :param tags: An iterable of valid tags without - or + and not wildcards.
     :return: A string SQL query fragment or None if no tags were provided.
     """
-    tags = list(tags)
+    tags = sorted(tags)
     if tags == []:
         return None
-    return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
-        % sqlvalues(sorted(tags)))
+    return "EXISTS (%s)" % (
+        "SELECT TRUE FROM BugTag"
+        " WHERE BugTag.bug = Bug.id"
+        " AND BugTag.tag IN %s") % sqlvalues(tags)
 
 
 def build_tag_search_clause(tags_spec):
@@ -2066,6 +2068,10 @@ class BugTaskSet:
             # we don't need to add any clause.
             pass
 
+        linked_blueprints_clause = self._buildBlueprintRelatedClause(params)
+        if linked_blueprints_clause is not None:
+            extra_clauses.append(linked_blueprints_clause)
+
         if params.modified_since:
             extra_clauses.append(
                 "Bug.date_last_updated > %s" % (
@@ -2317,6 +2323,20 @@ class BugTaskSet:
         clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
             ', '.join(tables), ' AND '.join(clauses))
         return clause
+
+    def _buildBlueprintRelatedClause(self, params):
+        """Find bugs related to Blueprints, or not."""
+        linked_blueprints = params.linked_blueprints
+        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
+            return "EXISTS (%s)" % (
+                "SELECT 1 FROM SpecificationBug"
+                " WHERE SpecificationBug.bug = Bug.id")
+        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
+            return "NOT EXISTS (%s)" % (
+                "SELECT 1 FROM SpecificationBug"
+                " WHERE SpecificationBug.bug = Bug.id")
+        else:
+            return None
 
     def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
         """Build the parameter list for Store.using().
@@ -2651,7 +2671,7 @@ class BugTaskSet:
                     AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
         expirable_bugtasks = BugTask.select(
-            query +  unconfirmed_bug_condition,
+            query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:
