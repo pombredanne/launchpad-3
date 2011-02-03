@@ -220,7 +220,7 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
                     }
                 }
                 Y.lp.bugs.bugtracker_overlay.attach_widget({
-                    activate_node: Y.get('#%(activator_id)s'),
+                    activate_node: Y.one('#%(activator_id)s'),
                     next_step: next_step
                     });
                 });
