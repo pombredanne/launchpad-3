@@ -1,7 +1,23 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Provide sharing information."""
+"""Provide sharing information.
+
+This module defines two different types of functions that provide
+information about what sharing options are available on the other side of a
+packaging link. Since they perform similar but slightly different complex
+database queries combining them in any way will usually be wrong.
+
+get_ubuntu_sharing_info and get_upstream_sharing_info will give you
+information about the source package or productseries respectively,
+combined with possibly available templates. You can restrict the search
+by specifying a template name.
+
+has_ubuntu_template and has_upstream_template make a direct search for a
+template of the given name on the other side. They do not search for
+source package or productseries but will only return True if an actual
+template exists. That is a significant difference to the get_* functions.
+"""
 
 __metaclass__ = type
 __all__ = [

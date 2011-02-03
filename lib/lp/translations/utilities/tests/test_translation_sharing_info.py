@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0102
-
 __metaclass__ = type
 
 from canonical.testing.layers import ZopelessDatabaseLayer
@@ -219,6 +217,8 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 templatename=different_templatename))
 
     def test_has_upstream_template_no_productseries(self):
+        # Without an upstream project, no upstream templates won't be
+        # available either.
         distroseries, sourcepackagename = self._makeSourcePackage()
         templatename = self.factory.getUniqueString()
 
@@ -227,6 +227,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries, sourcepackagename, templatename))
 
     def test_has_upstream_template_no_template(self):
+        # No template exists on the upstream project.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
@@ -237,6 +238,8 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries, sourcepackagename, templatename))
 
     def test_has_upstream_template_one_template(self):
+        # There is one template on the upstream project that matches the
+        # name.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
@@ -249,6 +252,8 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries, sourcepackagename, templatename))
 
     def test_has_upstream_template_one_template_wrong_name(self):
+        # There is one template on the upstream project but it matches not
+        # the requested name.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
@@ -260,12 +265,15 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
                 distroseries, sourcepackagename, different_templatename))
 
     def test_has_ubuntu_template_no_sourcepackage(self):
+        # There is no Ubuntu source package, so no Ubuntu template can be
+        # found.
         productseries = self.factory.makeProductSeries()
         templatename = self.factory.getUniqueString()
 
         self.assertFalse(has_ubuntu_template(productseries, templatename))
 
     def test_has_ubuntu_template_no_template(self):
+        # The Ubuntu source package has no template.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
@@ -274,6 +282,8 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         self.assertFalse(has_ubuntu_template(productseries, templatename))
 
     def test_has_ubuntu_template_one_template(self):
+        # There is one template on the Ubuntu source package that matches
+        # the name.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
@@ -285,6 +295,8 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         self.assertTrue(has_ubuntu_template(productseries, templatename))
 
     def test_has_ubuntu_template_one_template_wrong_name(self):
+        # There is one template on the Ubuntu source package but it matches
+        # not the requested name.
         distroseries, sourcepackagename = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(
             distroseries, sourcepackagename)
