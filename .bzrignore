@@ -76,3 +76,4 @@ lib/canonical/buildd/launchpad-files/*
 librarian.log
 configs/testrunner_*
 configs/testrunner-appserver_*
+.idea
