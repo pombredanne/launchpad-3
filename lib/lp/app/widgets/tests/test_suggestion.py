@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.widgets.suggestion import TargetBranchWidget
+from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

@@ -168,7 +168,7 @@ A notification was added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
 
 
@@ -229,7 +229,7 @@ Notifications were added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     A comment with additional information was added to the bug report.
     A comment with additional information was added to the bug report.
@@ -307,7 +307,7 @@ Notifications were added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     The file "attachment1" was attached to the bug report.
     The file "attachment2" was attached to the bug report.
 
@@ -489,7 +489,7 @@ subscribed to this bug.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     David Allouche has been subscribed to this bug.
     Sample Person has been subscribed to this bug.
@@ -567,7 +567,7 @@ bug and that the bug has been marked as private.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     Mark Shuttleworth has been subscribed to this bug.
     This bug report has been marked private...

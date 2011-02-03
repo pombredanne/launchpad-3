@@ -8,7 +8,7 @@ LowerCaseTextWidget can be used to automatically convert the input to
 lower case:
 
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
+  >>> from lp.app.widgets.textwidgets import LowerCaseTextWidget
   >>> from lp.bugs.interfaces.bug import IBug
   >>> field = IBug['description']
   >>> request = LaunchpadTestRequest(form={'field.description':'Foo'})

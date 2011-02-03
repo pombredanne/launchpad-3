@@ -1,28 +1,39 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from StringIO import StringIO
 
-from zope.interface import implements
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import FileWidget
+from zope.app.form.browser.widget import SimpleInputWidget
+from zope.app.form.interfaces import (
+    ValidationError,
+    WidgetInputError,
+    )
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.browser import FileWidget
-from zope.app.form.interfaces import ValidationError, WidgetInputError
 from zope.formlib import form
-from zope.schema import Bytes, Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import implements
+from zope.schema import (
+    Bytes,
+    Choice,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAlias, ILibraryFileAliasSet)
-from lp.services.fields import KEEP_SAME_IMAGE
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    )
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.services.fields import KEEP_SAME_IMAGE
 
 
 class LaunchpadFileWidget(FileWidget):
