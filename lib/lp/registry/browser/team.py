@@ -381,8 +381,9 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
-            title = ('The Launchpad mailing list for this team - '
-                     '<strong>%s</strong>' % self.mailinglist_address)
+            title = structured(
+                'The Launchpad mailing list for this team - '
+                '<strong>%s</strong>', self.mailinglist_address)
             hosted_list_term = SimpleTerm(
                 TeamContactMethod.HOSTED_LIST,
                 TeamContactMethod.HOSTED_LIST.name, title)

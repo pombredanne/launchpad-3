@@ -25,6 +25,8 @@ from zope.app.form.browser.widget import renderElement
 
 from lazr.enum import IEnumeratedType
 
+from canonical.launchpad.webapp.menu import escape
+
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -50,6 +52,8 @@ class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         element = renderElement(
             u'input', value=value, name=name, id=id,
@@ -70,6 +74,8 @@ class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -94,6 +100,8 @@ class LaunchpadRadioWidget(RadioWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -152,10 +160,11 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             return self._labelWithoutDescriptionTemplate % (elem, id, text)
         else:
             return self._labelWithDescriptionTemplate % (
-                elem, id, text, description)
+                elem, id, text, escape(description))
 
     def renderItem(self, index, text, value, name, cssClass):
         """Render an item of the list."""
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -167,6 +176,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
         """Render a selected item of the list."""
+        text = escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -190,7 +200,7 @@ class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):
 
     The `LaunchpadRadioWidget` does the rendering. Only the True-False values
     are rendered; a missing value item is not rendered. The default labels
-    are rendered as 'yes' and 'no', but can be changed by setting the widget's 
+    are rendered as 'yes' and 'no', but can be changed by setting the widget's
     true_label and false_label attributes.
     """
 

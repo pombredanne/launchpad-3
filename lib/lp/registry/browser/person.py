@@ -4429,8 +4429,8 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpFields(self):
         terms = []
         for team in self.candidate_teams:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(team), team.displayname)
+            text = structured(
+                '<a href="%s">%s</a>', canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = FormFields(
             List(__name__='teams',
