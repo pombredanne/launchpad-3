@@ -267,9 +267,15 @@ class ITranslationMessage(Interface):
     def approveAsDiverged(pofile, reviewer, lock_timestamp=None):
         """Approve this suggestion, as a diverged translation."""
 
-    def acceptAsImported(pofile, share_with_other_side=False,
-                         sold_style_import=False, lock_timestamp=None):
-        """Accept a suggestion as an imported translation."""
+    def acceptFromImport(pofile, share_with_other_side=False,
+                         lock_timestamp=None):
+        """Accept a suggestion coming from a translation import."""
+
+    def acceptFromUpstreamImportOnPackage(pofile, lock_timestamp=None):
+        """Accept a suggestion coming from a translation import.
+
+        This method allow to store translation as upstream translation
+        even though there is no upstream template."""
 
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):

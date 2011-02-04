@@ -739,68 +739,78 @@ class POTMsgSet(SQLBase):
             template.awardKarma(translator, 'translationsuggestionapproved')
             template.awardKarma(reviewer, 'translationreview')
 
-    def acceptAsImported(self, pofile, suggestion,
-                         share_with_other_side=False, old_style_import=False,
-                         lock_timestamp=None):
-        """Accept a suggestion as an imported translation.
+    def acceptFromImport(self, pofile, suggestion,
+                       share_with_other_side=False, lock_timestamp=None):
+        """Accept a suggestion coming from a translation import.
 
         When importing translations, these are first added as a suggestion
         and only after successful validation they are made current. This is
         slightly different to approving a suggestion because no reviewer is
         credited.
 
-        Also, this method allows to do old style imports that set the flag on
-        the other side to indicate that this message has been imported. In
-        this mode it will replace existing translations only when this is the
-        first import for this message. This is used for package uploads when
-        the upstream project has not yet been created.
-
         :param pofile: The `POFile` that the suggestion is being approved for.
         :param suggestion: The `TranslationMessage` being approved.
         :param share_with_other_side: Policy selector: share this change with
             the other translation side if possible?
-        :param old_style_import: Do an old style import.
         :param lock_timestamp: Timestamp of the original translation state
             that this change is based on.
         """
         template = pofile.potemplate
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
             template.translation_side)
-        if not old_style_import:
-            if traits.getFlag(suggestion):
-                # Message is already current.
-                return
+        if traits.getFlag(suggestion):
+            # Message is already current.
+            return
 
+        translator = suggestion.submitter
+        potranslations = dictify_translations(suggestion.all_msgstrs)
+        self._setTranslation(
+            pofile, translator, suggestion.origin, potranslations,
+            share_with_other_side=share_with_other_side,
+            identical_message=suggestion, lock_timestamp=lock_timestamp)
+
+    def acceptFromUpstreamImportOnPackage(self, pofile, suggestion,
+                                        lock_timestamp=None):
+        """Accept a suggestion coming from a translation import.
+
+        This method allow to store translation as upstream translation
+        even though there is no upstream template. It is similar to
+        acceptFromImport but will make sure not to overwrite existing
+        translations. Rather, it will mark the translation as being current
+        in upstream.
+
+        :param pofile: The `POFile` that the suggestion is being approved for.
+        :param suggestion: The `TranslationMessage` being approved.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
+        """
+        template = pofile.potemplate
+        assert template.translation_side == TranslationSide.UBUNTU, (
+            "Do not use this method for an upstream project.")
+
+        if suggestion.is_current_ubuntu and suggestion.is_current_upstream:
+            # Message is already current.
+            return
+
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
+        other = self.getOtherTranslation(
+            pofile.language, template.translation_side)
+        if other is not None:
+            other.is_current_upstream = False
+        if current is None or other is None:
             translator = suggestion.submitter
             potranslations = dictify_translations(suggestion.all_msgstrs)
             self._setTranslation(
                 pofile, translator, suggestion.origin, potranslations,
-                share_with_other_side=share_with_other_side,
-                identical_message=suggestion, lock_timestamp=lock_timestamp)
+                share_with_other_side=True,
+                identical_message=suggestion,
+                lock_timestamp=lock_timestamp)
         else:
-            if traits.getFlag(suggestion) and (
-                    traits.other_side_traits.getFlag(suggestion)):
-                # Message is already current.
-                return
-            current = self.getCurrentTranslation(
-                template, pofile.language, template.translation_side)
-            other = self.getOtherTranslation(
-                pofile.language, template.translation_side)
-            if other is not None:
-                traits.other_side_traits.setFlag(other, False)
-            if current is None or other is None:
-                translator = suggestion.submitter
-                potranslations = dictify_translations(suggestion.all_msgstrs)
-                self._setTranslation(
-                    pofile, translator, suggestion.origin, potranslations,
-                    share_with_other_side=True,
-                    identical_message=suggestion,
-                    lock_timestamp=lock_timestamp)
-            else:
-                # Make it only current on the other side.
-                traits.other_side_traits.setFlag(suggestion, True)
-                if suggestion != other:
-                    pofile.markChanged(translator=suggestion.submitter)
+            # Make it only current in upstream.
+            suggestion.is_current_upstream = True
+            if suggestion != other:
+                pofile.markChanged(translator=suggestion.submitter)
 
     def _cloneAndDiverge(self, original_message, pofile):
         """Create a diverged clone of a `TranslationMessage`.

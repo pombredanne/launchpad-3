@@ -292,8 +292,8 @@ class TestApprove(TestCaseWithFactory):
         self.assertNotEqual(ubuntu_tm, upstream_tm)
 
 
-class TestAcceptAsImported(TestCaseWithFactory):
-    """Tests for `TranslationMessage.acceptAsImported`.
+class TestAcceptFromImport(TestCaseWithFactory):
+    """Tests for `TranslationMessage.acceptFromImport`.
 
     This method is a lot like `TranslationMessage.approve`, so this test
     mainly exercises what it does differently.
@@ -309,7 +309,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
 
-        suggestion.acceptAsImported(pofile)
+        suggestion.acceptFromImport(pofile)
 
         # By default the suggestion becomes current only on the side
         # (upstream or Ubuntu) that it's being approved on.
@@ -327,7 +327,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
 
-        suggestion.acceptAsImported(pofile, share_with_other_side=True)
+        suggestion.acceptFromImport(pofile, share_with_other_side=True)
 
         self.assertTrue(suggestion.is_current_upstream)
         self.assertTrue(suggestion.is_current_ubuntu)
@@ -341,7 +341,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertIs(None, suggestion.reviewer)
         self.assertIs(None, suggestion.date_reviewed)
 
-        suggestion.acceptAsImported(pofile)
+        suggestion.acceptFromImport(pofile)
 
         self.assertIs(None, suggestion.reviewer)
         self.assertIs(None, suggestion.date_reviewed)
@@ -354,11 +354,20 @@ class TestAcceptAsImported(TestCaseWithFactory):
             pofile=pofile, translator=translator)
 
         karmarecorder = self.installKarmaRecorder(person=translator)
-        suggestion.acceptAsImported(pofile)
+        suggestion.acceptFromImport(pofile)
 
         self.assertEqual([], karmarecorder.karma_events)
 
-    def test_accept_old_style_activates_message_if_untranslated(self):
+class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
+    """Tests for `TranslationMessage.acceptFromUpstreamImportOnPackage`.
+
+    This method is a lot like `TranslationMessage.acceptFromImport`, so this
+    test mainly exercises what it does differently.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def test_accept_activates_message_if_untranslated(self):
         # An untranslated message accepts an imported translation.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
@@ -366,13 +375,13 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
 
-        suggestion.acceptAsImported(pofile, old_style_import=True)
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
         # Messages are always accepted on the other side, too.
         self.assertTrue(suggestion.is_current_upstream)
         self.assertTrue(suggestion.is_current_ubuntu)
 
-    def test_accept_old_style_no_previously_imported(self):
+    def test_accept_no_previously_imported(self):
         # If there was already a current translation, but no previously
         # imported one, it is disabled when a suggestion is accepted.
         pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet()
@@ -384,14 +393,14 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertTrue(incumbent_message.is_current_upstream)
         self.assertFalse(suggestion.is_current_upstream)
 
-        suggestion.acceptAsImported(pofile, old_style_import=True)
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
         self.assertFalse(incumbent_message.is_current_upstream)
         self.assertTrue(suggestion.is_current_upstream)
         # Messages are always accepted on the other side, too.
         self.assertTrue(suggestion.is_current_ubuntu)
 
-    def test_accept_old_style_previously_imported(self):
+    def test_accept_previously_imported(self):
         # If there was already a current translation, and a previously
         # imported one, the current translation is left untouched.
         pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet()
@@ -408,7 +417,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertFalse(suggestion.is_current_upstream)
         self.assertTrue(imported_message.is_current_ubuntu)
 
-        suggestion.acceptAsImported(pofile, old_style_import=True)
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
         self.assertTrue(incumbent_message.is_current_upstream)
         self.assertFalse(suggestion.is_current_upstream)
@@ -416,7 +425,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertFalse(imported_message.is_current_ubuntu)
         self.assertTrue(suggestion.is_current_ubuntu)
 
-    def test_accept_old_style_current_message(self):
+    def test_accept_current_message(self):
         # Accepting a message that's already current does nothing on this
         # side but makes sure the other side's flag is set.
         pofile = self.factory.makePOFile()
@@ -425,12 +434,12 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertTrue(translation.is_current_upstream)
         self.assertFalse(translation.is_current_ubuntu)
 
-        translation.acceptAsImported(pofile, old_style_import=True)
+        translation.acceptFromUpstreamImportOnPackage(pofile)
 
         self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
 
-    def test_accept_old_style_current_and_imported_message(self):
+    def test_accept_current_and_imported_message(self):
         # Accepting a message that's already current and was also imported
         # does nothing.
         pofile = self.factory.makePOFile()
@@ -439,12 +448,12 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
 
-        translation.acceptAsImported(pofile, old_style_import=True)
+        translation.acceptFromUpstreamImportOnPackage(pofile)
 
         self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
 
-    def test_accept_old_style_detects_conflict(self):
+    def test_accept_detects_conflict(self):
         pofile = self.factory.makePOFile()
         current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         potmsgset = current.potmsgset
@@ -454,8 +463,8 @@ class TestAcceptAsImported(TestCaseWithFactory):
 
         self.assertRaises(
             TranslationConflict,
-            suggestion.acceptAsImported,
-            pofile, old_style_import=True, lock_timestamp=old)
+            suggestion.acceptFromUpstreamImportOnPackage,
+            pofile, lock_timestamp=old)
 
 
 class TestApproveAsDiverged(TestCaseWithFactory):
