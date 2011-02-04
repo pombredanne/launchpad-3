@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -58,7 +58,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -72,10 +71,9 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -90,6 +88,8 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )

@@ -527,6 +527,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getSubscriptionInfo(level):
+        """Return a `BugSubscriptionInfo` at the given `level`.
+
+        :param level: A member of `BugNotificationLevel`.
+        """
+
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
