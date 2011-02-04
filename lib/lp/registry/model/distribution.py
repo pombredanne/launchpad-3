@@ -986,7 +986,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status == status)
 
     def _findPublishedBinaryFile(self, filename, archive):
-        """Find file of the given name for the given distro and archive.
+        """Find binary package file of the given name and archive.
 
         :return: A `LibraryFileAlias`, or None.
         """
