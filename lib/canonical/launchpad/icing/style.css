@@ -227,10 +227,6 @@ a.bg-image {
 
 /* --- Overview --- */
 
-.tab-overview #application-footer strong {
-  background: none;
-  color: #83ad23;
-}
 body.tab-overview #description, div#branch-description {
     width: 50em;
 }
@@ -425,16 +421,6 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
-body.tab-branches #actions, body.tab-branches .results {background-color: #ffc;}
-body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
-  background-color: #d18b39;
-}
-.tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong {
-  background: none;
-  color: #d18b39;
-}
-
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -480,13 +466,6 @@ div.diff .attachmentBody {
 }
 div.diff .horizontal {
   margin: 0;
-}
-body.tab-branches table.listing .section-heading {
-  color: #d18b39;
-}
-
-body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
-  color: #666666;
 }
 
 .yui-diff-overlay table.diff {
@@ -542,17 +521,6 @@ dl.reviews dd {
 
 
 /* === Bugs === */
-/* The Launchpad Bugs application uses a maroon color: */
-body.tab-bugs #actions, body.tab-bugs .results {background-color: #fee;}
-body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
-  background-color: #9f2b33;
-}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
-.tab-bugs table.listing thead {
-  background: none;
-  color: #9f2b33;
-}
-
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
@@ -584,35 +552,10 @@ div#sub-unsub-spinner {
   text-align: left;
 }
 
-/* --- Blueprints --- */
 
-body.tab-specifications #actions, body.tab-specifications .results {
-  background-color: #eff;
-}
-body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
-  background-color: #3594bb;
-}
-.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #application-footer strong,
-.tab-specifications table.listing thead {
-  background: none;
-  color: #3594bb;
-}
 
 /* === Translations === */
 
-body.tab-translations #actions, body.tab-translations .results {
-  background-color: #f1d7e6;
-}
-body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
-  background-color: #bb3a84;
-}
-.tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #application-footer strong,
-.tab-translations table.listing thead {
-  background: none;
-  color: #bb3a84;
-}
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */
 .translation samp { /* a leading/trailing space */
   background: url(/@@/translation-space) center center no-repeat;
@@ -622,19 +565,6 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 /* In translation forms, single-line text fields occupy nearly all of the
 available width, just like multi-line fields (see "textarea" above): */
 input.translate {width: 90%; max-width: 60em;}
-
-/* === Answers === */
-
-body.tab-answers #actions, body.tab-answers .results {background-color: #eef;}
-body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
-  background-color: #3840be;
-}
-.tab-answers h1, .tab-answers h2, .tab-answers h3,
-.tab-answers #application-footer strong, .tab-answers table.listing thead {
-  background: none;
-  color: #3840be;
-}
-
 
 /* ====== Content area styles ====== */
 
