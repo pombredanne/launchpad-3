@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests authentication.py"""
@@ -10,7 +10,7 @@ import unittest
 
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from oauth.oauth import OAuthRequest
+from contrib.oauth import OAuthRequest
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
@@ -64,9 +64,6 @@ class TestOAuthParsing(TestCaseWithFactory):
         # OAuth headers are parsed correctly: see bug 314507.
         # This was really a bug in the underlying contrib/oauth.py module, but
         # it has no standalone test case.
-        #
-        # Now we use the separate oauth module (bug 701545), and this has been
-        # fixed upstream, but we might as well keep the test.
         #
         # Note that the 'realm' parameter is not returned, because it's not
         # included in the OAuth calculations.
