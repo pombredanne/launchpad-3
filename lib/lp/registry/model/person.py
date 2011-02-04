@@ -84,10 +84,9 @@ from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
-    directlyProvides,
+    classImplements,
     implementer,
     implements,
-    providedBy,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -362,6 +361,7 @@ def person_sort_key(person):
 
 
 class PersonSettings(Storm):
+    "The relatively rarely used settings for person (not a team)."
 
     implements(IPersonSettings)
 
