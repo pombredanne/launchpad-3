@@ -30,9 +30,20 @@ easier.
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
 
-We'll also import a helper function to help us with database users.
+We'll also define some helper functions to help us with database users.
 
-    >>> from lp.testing.dbuser import lp_dbuser
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
 
 You'll note that we are printing out an X-Launchpad-Message-Rationale
 header. This header is a simple string that allows people to filter
@@ -345,13 +356,16 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> with lp_dbuser():
-    ...     ignored = bug_one.subscribe(shipit_admins, shipit_admins)
-    ...     comment = getUtility(IMessageSet).fromText(
-    ...         'subject', 'a comment.', sample_person,
-    ...         datecreated=ten_minutes_ago)
-    ...     bug_one.addCommentNotification(comment)
+    >>> switch_db_to_launchpad()
+    >>> bug_one.subscribe(shipit_admins, shipit_admins)
+    <...>
 
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+
+    >>> switch_db_to_bugnotification()
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -384,15 +398,17 @@ We will also need a fresh new bug.
     >>> params = CreateBugParams(
     ...     msg=description, owner=sample_person, title='new bug')
 
-    >>> with lp_dbuser():
-    ...     new_bug = ubuntu.createBug(params)
+    >>> switch_db_to_launchpad()
+    >>> new_bug = ubuntu.createBug(params)
+    >>> switch_db_to_bugnotification()
+    >>> flush_notifications()
 
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    >>> flush_notifications()
-    >>> with lp_dbuser():
-    ...     new_bug.markAsDuplicate(bug_one)
+    >>> switch_db_to_launchpad()
+    >>> new_bug.markAsDuplicate(bug_one)
+    >>> switch_db_to_bugnotification()
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
@@ -458,11 +474,12 @@ inserted at the top of the message body.
     ...     'Zero-day on Frobulator', 'Woah.', sample_person,
     ...     datecreated=ten_minutes_ago)
 
-    >>> with lp_dbuser():
-    ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
+    >>> switch_db_to_launchpad()
+    >>> sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
     ...         security_related=True, private=True))
+    >>> switch_db_to_bugnotification()
 
     >>> sec_vuln_bug.security_related
     True
@@ -713,8 +730,10 @@ If we add a tag to bug three that will also be included in the header.
 The tags will be space-separated to allow the list to be wrapped if it
 gets over-long.
 
-    >>> with lp_dbuser():
-    ...     bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
+    >>> switch_db_to_launchpad()
+    >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
+
+    >>> switch_db_to_bugnotification()
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -724,13 +743,15 @@ gets over-long.
 If we remove the tags from the bug, the X-Launchpad-Bug-Tags header
 won't be included.
 
-    >>> with lp_dbuser():
-    ...     bug_three.tags = []
+    >>> switch_db_to_launchpad()
+    >>> bug_three.tags = []
+    >>> switch_db_to_bugnotification()
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
+    >>> switch_db_to_launchpad()
     >>> #bug_three.unsubscribe(sample_person, sample_person)
 
 
@@ -750,8 +771,7 @@ private. It can have the value "yes" or "no".
 
 Predictably, private bugs are sent with a slightly different header:
 
-    >>> with lp_dbuser():
-    ...     bug_three.setPrivate(True, sample_person)
+    >>> bug_three.setPrivate(True, sample_person)
     True
     >>> bug_three.private
     True
@@ -779,8 +799,7 @@ security vulnerability. It can have the value "yes" or "no".
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
-    >>> with lp_dbuser():
-    ...     bug_three.setSecurityRelated(True)
+    >>> bug_three.setSecurityRelated(True)
     True
     >>> bug_three.security_related
     True
@@ -805,9 +824,9 @@ list.
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
     >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
-    >>> with lp_dbuser():
-    ...     ignored = getUtility(IBugMessageSet).createMessage(
-    ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message.get('X-Launchpad-Bug-Commenters')
@@ -816,9 +835,9 @@ list.
 It only lists each user once, no matter how many comments they've
 made.
 
-    >>> with lp_dbuser():
-    ...     ignored = getUtility(IBugMessageSet).createMessage(
-    ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message.get('X-Launchpad-Bug-Commenters')
@@ -849,58 +868,63 @@ some very picky users to it. Verbose Person wants verbose emails, while
 Concise Person does not. We'll also create teams and give them members
 with different verbose_bugnotifications settings.
 
-    >>> with lp_dbuser():
-    ...     bug = factory.makeBug(
-    ...         product=factory.makeProduct(title='Foo'),
-    ...         title='In the beginning, the universe was created. This '
-    ...             'has made a lot of people very angry and has been '
-    ...             'widely regarded as a bad move',
-    ...         description="This is a long description of the bug, which "
-    ...             "will be automatically wrapped by the BugNotification "
-    ...             "machinery. Ain't technology great?")
-    ...     verbose_person = factory.makePerson(
-    ...         displayname='Verbose Person', email='verbose@example.com')
-    ...     verbose_person.verbose_bugnotifications = True
-    ...     ignored = bug.subscribe(verbose_person, verbose_person)
-    ...     concise_person = factory.makePerson(
-    ...         displayname='Concise Person', email='concise@example.com')
-    ...     concise_person.verbose_bugnotifications = False
-    ...     ignored = bug.subscribe(concise_person, concise_person)
+    >>> switch_db_to_launchpad()
+    >>> bug = factory.makeBug(
+    ...     product=factory.makeProduct(title='Foo'),
+    ...     title='In the beginning, the universe was created. This '
+    ...         'has made a lot of people very angry and has been '
+    ...         'widely regarded as a bad move',
+    ...     description="This is a long description of the bug, which "
+    ...         "will be automatically wrapped by the BugNotification "
+    ...         "machinery. Ain't technology great?")
+
+    >>> verbose_person = factory.makePerson(
+    ...     displayname='Verbose Person', email='verbose@example.com')
+    >>> verbose_person.verbose_bugnotifications = True
+    >>> bug.subscribe(verbose_person, verbose_person)
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
+
+    >>> concise_person = factory.makePerson(
+    ...     displayname='Concise Person', email='concise@example.com')
+    >>> concise_person.verbose_bugnotifications = False
+    >>> bug.subscribe(concise_person, concise_person)
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 
 Concise Team doesn't want verbose notifications, while Concise Team
 Person, a member, does.
 
-    >>> with lp_dbuser():
-    ...     concise_team = factory.makeTeam(
-    ...         name='conciseteam', displayname='Concise Team')
-    ...     concise_team.verbose_bugnotifications = False
-    ...     concise_team_person = factory.makePerson(
-    ...         displayname='Concise Team Person',
-    ...         email='conciseteam@example.com')
-    ...     concise_team_person.verbose_bugnotifications = True
-    ...     ignored = concise_team.addMember(
-    ...         concise_team_person, concise_team_person)
-    ...     ignored = bug.subscribe(concise_team, concise_team_person)
+    >>> concise_team = factory.makeTeam(
+    ...     name='conciseteam', displayname='Concise Team')
+    >>> concise_team.verbose_bugnotifications = False
+    >>> concise_team_person = factory.makePerson(
+    ...     displayname='Concise Team Person',
+    ...     email='conciseteam@example.com')
+    >>> concise_team_person.verbose_bugnotifications = True
+    >>> ignored = concise_team.addMember(
+    ...     concise_team_person, concise_team_person)
+    >>> bug.subscribe(concise_team, concise_team_person)
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 Verbose Team wants verbose notifications, while Verbose Team Person, a
 member, does not.
 
-    >>> with lp_dbuser():
-    ...     verbose_team = factory.makeTeam(
-    ...         name='verboseteam', displayname='Verbose Team')
-    ...     verbose_team.verbose_bugnotifications = True
-    ...     verbose_team_person = factory.makePerson(
-    ...         displayname='Verbose Team Person',
-    ...         email='verboseteam@example.com')
-    ...     verbose_team_person.verbose_bugnotifications = False
-    ...     ignored = verbose_team.addMember(
-    ...         verbose_team_person, verbose_team_person)
-    ...     ignored = bug.subscribe(verbose_team, verbose_team_person)
+    >>> verbose_team = factory.makeTeam(
+    ...     name='verboseteam', displayname='Verbose Team')
+    >>> verbose_team.verbose_bugnotifications = True
+    >>> verbose_team_person = factory.makePerson(
+    ...     displayname='Verbose Team Person',
+    ...     email='verboseteam@example.com')
+    >>> verbose_team_person.verbose_bugnotifications = False
+    >>> ignored = verbose_team.addMember(
+    ...     verbose_team_person, verbose_team_person)
+    >>> bug.subscribe(verbose_team, verbose_team_person)
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 We'll expire all existing notifications since we're not interested in
 them:
 
+    >>> switch_db_to_bugnotification()
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
@@ -1081,6 +1105,8 @@ People (not teams) will have the choice to receive notifications from actions
 they generated.  For now, everyone receives these notifications whether they
 want them or not.  However, we can show that the attribute exists for now.
 
+    >>> flush_notifications()
+    >>> switch_db_to_launchpad()
     >>> verbose_person.selfgenerated_bugnotifications
     True
 
@@ -1099,14 +1125,16 @@ structural subscribers. Structural subcribers can select the
 notification level of the subscription.
 
     >>> flush_notifications()
+    >>> switch_db_to_launchpad()
 
     >>> from lp.bugs.enum import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
-    >>> with lp_dbuser():
-    ...     subscription_no_priv = firefox.addBugSubscription(
-    ...         mr_no_privs, mr_no_privs)
+    >>> subscription_no_priv = firefox.addBugSubscription(
+    ...     mr_no_privs, mr_no_privs)
+
+    >>> switch_db_to_bugnotification()
 
 The notifications generated by addCommentNotification() are sent only to
 structural subscribers with no filters, or with the notification level
@@ -1172,9 +1200,10 @@ COMMENTS, he also receives these notifications.
 
 
     >>> flush_notifications()
-    >>> with lp_dbuser():
-    ...     filter = subscription_no_priv.newBugFilter()
-    ...     filter.bug_notification_level = BugNotificationLevel.COMMENTS
+    >>> switch_db_to_launchpad()
+    >>> filter = subscription_no_priv.newBugFilter()
+    >>> filter.bug_notification_level = BugNotificationLevel.COMMENTS
+    >>> switch_db_to_bugnotification()
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
@@ -1232,8 +1261,9 @@ If Sample Person's notification level is set to METADATA, he receives
 no comment notifications.
 
     >>> flush_notifications()
-    >>> with lp_dbuser():
-    ...     filter.bug_notification_level = BugNotificationLevel.METADATA
+    >>> switch_db_to_launchpad()
+    >>> filter.bug_notification_level = BugNotificationLevel.METADATA
+    >>> switch_db_to_bugnotification()
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'no comment for no-priv.', sample_person,
@@ -1343,8 +1373,9 @@ If Sample Person sets his notification level to LIFECYCLE, he receives
 no notifications created by addChangeNotification().
 
     >>> flush_notifications()
-    >>> with lp_dbuser():
-    ...     filter.bug_notification_level = BugNotificationLevel.LIFECYCLE
+    >>> switch_db_to_launchpad()
+    >>> filter.bug_notification_level = BugNotificationLevel.LIFECYCLE
+    >>> switch_db_to_bugnotification()
 
     >>> bug_one.addChangeNotification('** Summary changed to: something.',
     ...     sample_person, when=ten_minutes_ago)
@@ -1402,9 +1433,10 @@ filter that includes metadata then the notification will be sent out
 after all.
 
     >>> flush_notifications()
-    >>> with lp_dbuser():
-    ...     filter2 = subscription_no_priv.newBugFilter()
-    ...     filter2.bug_notification_level = BugNotificationLevel.METADATA
+    >>> switch_db_to_launchpad()
+    >>> filter2 = subscription_no_priv.newBugFilter()
+    >>> filter2.bug_notification_level = BugNotificationLevel.METADATA
+    >>> switch_db_to_bugnotification()
 
     >>> bug_one.addChangeNotification('** Summary changed to: whatever.',
     ...     sample_person, when=ten_minutes_ago)

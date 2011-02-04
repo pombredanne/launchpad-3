@@ -50,7 +50,6 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from lp.testing.dbuser import lp_dbuser
 
 
 class TestPublisherBase(TestNativePublishingBase):
@@ -476,8 +475,7 @@ class TestPublisher(TestPublisherBase):
         # status of DELETING.
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
-        with lp_dbuser():
-            archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive()
         old_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
         archive.status = ArchiveStatus.DELETING
         new_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
@@ -1041,10 +1039,9 @@ class TestPublisher(TestPublisherBase):
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
-        with lp_dbuser():
-            ppa = self.factory.makeArchive(
-                distribution=self.ubuntutest, private=True)
-            ppa.buildd_secret = "geheim"
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, private=True)
+        ppa.buildd_secret = "geheim"
 
         # Setup the publisher for it and publish its repository.
         archive_publisher = getPublisher(ppa, [], self.logger)
