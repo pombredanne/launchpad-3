@@ -198,7 +198,7 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                         self.target, StructuralSubscriptionView)
                     form_data = {
                         'field.subscribe_me': 'on',
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         }
                     harness.submit('save', form_data)
                     self.assertFalse(harness.hasErrors())
@@ -226,7 +226,7 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                     form_data = {
                         'field.subscribe_me': '',
                         'field.subscriptions_team': team.name,
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         }
                     harness.submit('save', form_data)
                     self.assertFalse(harness.hasErrors())

@@ -105,7 +105,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific

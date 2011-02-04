@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -72,11 +72,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.product import (
-    GhostCheckBoxWidget,
-    GhostWidget,
-    ProductBugTrackerWidget,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -84,6 +79,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -93,6 +89,11 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
+    )
+from lp.app.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -503,7 +504,10 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notifications = [self.getAcknowledgementMessage(self.context)]
+        linkified_ack = structured(FormattersAPI(
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
+        notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
             security_related=security_related, private=private,

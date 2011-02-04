@@ -49,6 +49,7 @@ And for every distribution we publish most of its attributes.
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
     title: u'Ubuntu Linux'
+    web_link: u'http://launchpad.../ubuntu'
 
 
 Distribution Custom Operations
@@ -155,6 +156,7 @@ packages matching (substring) the given text.
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: None
 
 "getCountryMirror" returns the country DNS mirror for a given country;
