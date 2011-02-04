@@ -23,7 +23,7 @@ from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potranslation import POTranslation
-from lp.translations.scripts.message_sharing_migration import (
+from lp.translations.translationmerger import (
     MessageSharingMerge,
     TransactionManager,
     TranslationMerger,

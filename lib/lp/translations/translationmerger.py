@@ -282,12 +282,12 @@ class MessageSharingMerge(LaunchpadScript):
 
             if self.options.merge_potmsgsets:
                 log.info("Merging POTMsgSets.")
-                self._mergePOTMsgSets(templates)
+                merger._mergePOTMsgSets()
                 tm._endTransaction(intermediate=True)
 
             if self.options.merge_translationmessages:
                 log.info("Merging TranslationMessages.")
-                self._mergeTranslationMessages(templates)
+                merger._mergeTranslationMessages()
 
             tm._endTransaction()
 
