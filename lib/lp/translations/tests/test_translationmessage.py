@@ -425,7 +425,21 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertTrue(translation.is_current_upstream)
         self.assertFalse(translation.is_current_ubuntu)
 
-        translation.approve(pofile, old_style_import=True)
+        translation.acceptAsImported(pofile, old_style_import=True)
+
+        self.assertTrue(translation.is_current_upstream)
+        self.assertTrue(translation.is_current_ubuntu)
+
+    def test_accept_old_style_current_and_imported_message(self):
+        # Accepting a message that's already current and was also imported
+        # does nothing.
+        pofile = self.factory.makePOFile()
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, current_other=True)
+        self.assertTrue(translation.is_current_upstream)
+        self.assertTrue(translation.is_current_ubuntu)
+
+        translation.acceptAsImported(pofile, old_style_import=True)
 
         self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
