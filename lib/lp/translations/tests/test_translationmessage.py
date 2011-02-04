@@ -359,7 +359,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
         self.assertEqual([], karmarecorder.karma_events)
 
     def test_accept_old_style_activates_message_if_untranslated(self):
-        # An untranslated message receives an imported translation.
+        # An untranslated message accepts an imported translation.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
@@ -370,7 +370,7 @@ class TestAcceptAsImported(TestCaseWithFactory):
 
         # Messages are always accepted on the other side, too.
         self.assertTrue(suggestion.is_current_upstream)
-        self.assertFalse(suggestion.is_current_ubuntu)
+        self.assertTrue(suggestion.is_current_ubuntu)
 
     def test_accept_old_style_no_previously_imported(self):
         # If there was already a current translation, but no previously

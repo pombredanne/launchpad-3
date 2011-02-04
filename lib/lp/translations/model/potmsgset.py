@@ -778,7 +778,27 @@ class POTMsgSet(SQLBase):
                 share_with_other_side=share_with_other_side,
                 identical_message=suggestion, lock_timestamp=lock_timestamp)
         else:
-            pass
+            if traits.getFlag(suggestion) and (
+                    traits.other_side_traits.getFlag(suggestion)):
+                # Message is already current.
+                return
+            current = self.getCurrentTranslation(
+                template, pofile.language, template.translation_side)
+            other = self.getOtherTranslation(
+                pofile.language, template.translation_side)
+            if other is not None:
+                traits.setFlag(other, False)
+            if current is None or other is None:
+                translator = suggestion.submitter
+                potranslations = dictify_translations(suggestion.all_msgstrs)
+                self._setTranslation(
+                    pofile, translator, suggestion.origin, potranslations,
+                    share_with_other_side=True,
+                    identical_message=suggestion, lock_timestamp=lock_timestamp)
+
+
+
+
 
     def _cloneAndDiverge(self, original_message, pofile):
         """Create a diverged clone of a `TranslationMessage`.
