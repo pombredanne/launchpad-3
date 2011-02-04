@@ -343,8 +343,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return self.potmsgset.approveAsDiverged(
             pofile, self, reviewer, lock_timestamp=lock_timestamp)
 
-    def acceptAsImported(self, pofile, accept_this_side=True,
-                         accept_other_side=False, lock_timestamp=None):
+    def acceptAsImported(self, pofile, share_with_other_side=False,
+                         old_style_import=False, lock_timestamp=None):
         """Accept a suggestion as an imported translation."""
 
     def getOnePOFile(self):

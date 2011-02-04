@@ -740,21 +740,26 @@ class POTMsgSet(SQLBase):
             template.awardKarma(reviewer, 'translationreview')
 
     def acceptAsImported(self, pofile, suggestion,
-                         accept_this_side=True, accept_other_side=False,
+                         share_with_other_side=False, old_style_import=False,
                          lock_timestamp=None):
         """Accept a suggestion as an imported translation.
 
         When importing translations, these are first added as a suggestion
         and only after successful validation they are made current. This is
         slightly different to approving a suggestion because no reviewer is
-        credited. Also, this method allows to activate the this message on
-        the other side *only*. This is used for package uploads when the
-        upstream project has not yet been created.
+        credited.
+
+        Also, this method allows to do old style imports that set the flag on
+        the other side to indicate that this message has been imported. In
+        this mode it will replace existing translations only when this is the
+        first import for this message. This is used for package uploads when
+        the upstream project has not yet been created.
 
         :param pofile: The `POFile` that the suggestion is being approved for.
         :param suggestion: The `TranslationMessage` being approved.
-        :param accept_this_side: Make the message current on this side.
-        :param accept_other_side: Make the message current on the other side.
+        :param share_with_other_side: Policy selector: share this change with
+            the other translation side if possible?
+        :param old_style_import: Do an old style import.
         :param lock_timestamp: Timestamp of the original translation state
             that this change is based on.
         """
