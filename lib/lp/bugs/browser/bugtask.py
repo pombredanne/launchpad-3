@@ -219,8 +219,8 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNominationSet,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTagsSearchCombinator,
     BugTaskImportance,
     BugTaskSearchParams,

@@ -217,7 +217,7 @@ class IProductReleaseFilePublic(Interface):
 class IProductReleaseFile(IProductReleaseFileEditRestricted,
                           IProductReleaseFilePublic):
     """A file associated with a ProductRelease."""
-    export_as_webservice_entry("project_release_file")
+    export_as_webservice_entry("project_release_file", publish_web_link=False)
 
 
 class IProductReleaseEditRestricted(Interface):

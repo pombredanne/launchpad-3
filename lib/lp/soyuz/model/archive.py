@@ -37,6 +37,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -1546,6 +1547,31 @@ class Archive(SQLBase):
         notify(ObjectCreatedEvent(subscription))
 
         return subscription
+
+    @property
+    def num_pkgs_building(self):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        base_query = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id)
+        sprs_building = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.BUILDING,
+            *base_query)
+        sprs_waiting = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
+            *base_query)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = sprs_building.count()
+        pkgs_waiting_count = sprs_waiting.difference(sprs_building).count()
+
+        return pkgs_building_count, pkgs_waiting_count
 
     def getSourcePackageReleases(self, build_status=None):
         """See `IArchive`."""
