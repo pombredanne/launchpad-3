@@ -2717,9 +2717,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return potmsgset
 
     def makePOFileAndPOTMsgSet(self, language_code=None, msgid=None,
-                               with_plural=False):
+                               with_plural=False, side=None):
         """Make a `POFile` with a `POTMsgSet`."""
-        pofile = self.makePOFile(language_code)
+        pofile = self.makePOFile(language_code, side=side)
 
         if with_plural:
             if msgid is None:

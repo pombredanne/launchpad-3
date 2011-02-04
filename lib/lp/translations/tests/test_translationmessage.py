@@ -373,92 +373,94 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
 
     def test_accept_activates_message_if_untranslated(self):
         # An untranslated message accepts an imported translation.
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
-        self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
+        self.assertFalse(suggestion.is_current_upstream)
 
         suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
         # Messages are always accepted on the other side, too.
-        self.assertTrue(suggestion.is_current_upstream)
         self.assertTrue(suggestion.is_current_ubuntu)
+        self.assertTrue(suggestion.is_current_upstream)
 
     def test_accept_no_previously_imported(self):
         # If there was already a current translation, but no previously
         # imported one, it is disabled when a suggestion is accepted.
-        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            side=TranslationSide.UBUNTU)
         suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset)
         incumbent_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
-        self.assertTrue(incumbent_message.is_current_upstream)
-        self.assertFalse(suggestion.is_current_upstream)
+        self.assertTrue(incumbent_message.is_current_ubuntu)
+        self.assertFalse(suggestion.is_current_ubuntu)
 
         suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
-        self.assertFalse(incumbent_message.is_current_upstream)
-        self.assertTrue(suggestion.is_current_upstream)
-        # Messages are always accepted on the other side, too.
+        self.assertFalse(incumbent_message.is_current_ubuntu)
         self.assertTrue(suggestion.is_current_ubuntu)
+        # Messages are always accepted on the other side, too.
+        self.assertTrue(suggestion.is_current_upstream)
 
     def test_accept_previously_imported(self):
         # If there was already a current translation, and a previously
         # imported one, the current translation is left untouched.
-        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            side=TranslationSide.UBUNTU)
         imported_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, current_other=True)
-        imported_message.is_current_upstream = False
+        imported_message.is_current_ubuntu = False
 
         suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset)
         incumbent_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
-        self.assertTrue(incumbent_message.is_current_upstream)
-        self.assertFalse(suggestion.is_current_upstream)
-        self.assertTrue(imported_message.is_current_ubuntu)
+        self.assertTrue(incumbent_message.is_current_ubuntu)
+        self.assertFalse(suggestion.is_current_ubuntu)
+        self.assertTrue(imported_message.is_current_upstream)
 
         suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
-        self.assertTrue(incumbent_message.is_current_upstream)
-        self.assertFalse(suggestion.is_current_upstream)
+        self.assertTrue(incumbent_message.is_current_ubuntu)
+        self.assertFalse(suggestion.is_current_ubuntu)
         # Messages are always accepted on the other side, too.
-        self.assertFalse(imported_message.is_current_ubuntu)
-        self.assertTrue(suggestion.is_current_ubuntu)
+        self.assertFalse(imported_message.is_current_upstream)
+        self.assertTrue(suggestion.is_current_upstream)
 
     def test_accept_current_message(self):
         # Accepting a message that's already current does nothing on this
         # side but makes sure the other side's flag is set.
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile)
-        self.assertTrue(translation.is_current_upstream)
-        self.assertFalse(translation.is_current_ubuntu)
+        self.assertTrue(translation.is_current_ubuntu)
+        self.assertFalse(translation.is_current_upstream)
 
         translation.acceptFromUpstreamImportOnPackage(pofile)
 
-        self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
+        self.assertTrue(translation.is_current_upstream)
 
     def test_accept_current_and_imported_message(self):
         # Accepting a message that's already current and was also imported
         # does nothing.
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, current_other=True)
-        self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
+        self.assertTrue(translation.is_current_upstream)
 
         translation.acceptFromUpstreamImportOnPackage(pofile)
 
-        self.assertTrue(translation.is_current_upstream)
         self.assertTrue(translation.is_current_ubuntu)
+        self.assertTrue(translation.is_current_upstream)
 
     def test_accept_detects_conflict(self):
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         potmsgset = current.potmsgset
         suggestion = self.factory.makeSuggestion(
