@@ -1267,6 +1267,9 @@ COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
+COMMENT ON TABLE PersonSettings IS 'Flags and settings corresponding to a Person. These are in a separate table to remove infrequently used data from the Person table itself.';
+COMMENT ON COLUMN PersonSettings.selfgenerated_bugnotifications  IS 'If true, users receive bugnotifications for actions they personally triggered.';
+
 COMMENT ON VIEW ValidPersonCache IS 'A materialized view listing the Person.ids of all valid people (but not teams).';
 
 -- PersonLanguage

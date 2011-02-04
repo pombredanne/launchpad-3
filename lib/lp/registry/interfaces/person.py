@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonSettings',
     'ISoftwareCenterAgentAPI',
     'ISoftwareCenterAgentApplication',
     'IPersonViewRestricted',
@@ -616,10 +617,30 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
+class IPersonSettings(Interface):
+    """Settings for a person (not a team!) that are used relatively rarely.
+
+    We store these attributes on a separate object, PersonSettings, to which
+    the Person class delegates.  This makes it possible to shrink the size of
+    the person record.
+
+    In the future, perhaps we will adapt IPerson to IPersonSettings when
+    we want these attributes instead of delegating, so we can shrink the
+    class, too.
+
+    We also may want TeamSettings and PersonTeamSettings in the future.
+    """
+
+    selfgenerated_bugnotifications = Bool(
+        title=_("Send me bug notifications for changes I make."),
+        required=False, default=True)
+
+
 class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
