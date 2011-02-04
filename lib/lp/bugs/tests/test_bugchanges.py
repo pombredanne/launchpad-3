@@ -184,7 +184,8 @@ class TestBugChanges(TestCaseWithFactory):
         recipients = set(message['to'] for message in messages)
 
         self.assertEqual(
-            set(expected_recipients),
+            set(recipient.preferredemail.email
+                for recipient in expected_recipients),
             recipients)
 
     def test_subscribe(self):
@@ -1623,10 +1624,6 @@ class TestBugChanges(TestCaseWithFactory):
         old_description = self.changeAttribute(
             self.bug, 'description', 'New description')
 
-        notifications = self.getNewNotifications()
-        notifications, messages = construct_email_notifications(notifications)
-        recipients = [message['to'] for message in messages]
-        self.assertContentEqual(
-            [self.product_metadata_subscriber.preferredemail.email,
-             team.teamowner.preferredemail.email],
-            recipients)
+        # self.user is not included among the recipients.
+        self.assertRecipients(
+            [self.product_metadata_subscriber, team.teamowner])
