@@ -340,6 +340,12 @@ def oops_middleware(app):
         # Start processing this request
         try:
             app_iter = iter(app(environ, wrapped.start_response))
+        except httpserver.SocketErrors, e:
+            # The Paste WSGIHandler suppresses these exceptions.
+            # Generally it means something like 'EPIPE' because the
+            # connection was closed. We don't want to generate an OOPS
+            # just because the connection was closed prematurely.
+            return
         except:
             error_page_sent = wrapped.generate_oops(environ, error_utility)
             if error_page_sent:

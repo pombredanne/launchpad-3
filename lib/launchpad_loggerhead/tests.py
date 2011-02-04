@@ -173,7 +173,17 @@ class TestOopsMiddleware(TestCase):
             pass
         return noop_write
 
-    def wrap_and_run(self, app):
+    def success_app(self, environ, start_response):
+        writer = start_response('200 OK', {})
+        writer('Successfull\n')
+        return []
+
+    def failing_start_response(self, status, response_headers, exc_info=None):
+        def fail_write(chunk):
+            raise socket.error(errno.EPIPE, 'Connection closed')
+        return fail_write
+
+    def wrap_and_run(self, app, failing_write=False):
         self.watchForErrorReportEvent()
         app = oops_middleware(app)
         # Just random env data, rather than setting up a whole wsgi stack just
@@ -185,7 +195,10 @@ class TestOopsMiddleware(TestCase):
                    'SERVER_NAME': 'localhost',
                    'SERVER_PORT': '8080',
                   }
-        result = list(app(environ, self.noop_start_response))
+        if failing_write:
+            result = list(app(environ, self.failing_start_response))
+        else:
+            result = list(app(environ, self.noop_start_response))
         return result
 
     def test_exception_triggers_oops(self):
@@ -200,6 +213,10 @@ class TestOopsMiddleware(TestCase):
 
     def test_ignores_socket_exceptions(self):
         res = self.wrap_and_run(self.socket_failing_app)
+        self.assertEqual(0, len(self.error_events))
+
+    def test_ignores_writer_failures(self):
+        res = self.wrap_and_run(self.success_app, failing_write=True)
         self.assertEqual(0, len(self.error_events))
 
 
