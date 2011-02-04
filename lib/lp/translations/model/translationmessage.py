@@ -172,6 +172,14 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         raise NotImplementedError()
 
+    def acceptFromImport(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
+    def acceptFromUpstreamImportOnPackage(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
@@ -405,12 +413,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
-        if not self.is_diverged:
+        if self.potemplate is None:
             # Already converged.
             return
 
         # Existing shared direct equivalent to this message, if any.
         shared = self.getSharedEquivalent()
+
         # Existing shared ubuntu translation for this POTMsgSet, if
         # any.
         ubuntu = self.potmsgset.getCurrentTranslation(
