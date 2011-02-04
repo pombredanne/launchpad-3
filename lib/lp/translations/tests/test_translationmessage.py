@@ -336,7 +336,7 @@ class TestAcceptFromImport(TestCaseWithFactory):
         self.assertTrue(suggestion.is_current_upstream)
         self.assertTrue(suggestion.is_current_ubuntu)
 
-    def test_accept_marks_not_reviewed(self):
+    def test_accept_does_not_set_review_fields(self):
         # Accepting a suggestion does not update its review fields.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
