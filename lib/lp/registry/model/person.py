@@ -372,35 +372,24 @@ class PersonSettings(Storm):
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
 
+def readonly_settings(message, interface):
+    """Make an object that disallows writes to values on the interface.
+    
+    When you write, the message is raised in a NotImplementedError.
+    """
+    def unwritable(self, value):
+        raise NotImplementedError(message)
+    data = {}
+    for name in interface.names(True):
+        closure_f = lambda result: lambda self: result
+        data[name] = property(closure_f(interface[name].default), unwritable)
+    cls = type('Unwritable' + interface.__name__, (), data)
+    classImplements(cls, interface)
+    return cls()
 
-class UnwritableStub:
-
-    def __init__(self, error_msg, *interfaces):
-        self._error_msg = error_msg
-        directlyProvides(self, *interfaces)
-
-    def __getattr__(self, name):
-        # If the attribute doesn't exist, we'll get a None, which will not
-        # have "default" and thus will generate an AttributeError, which is
-        # correct for a __getattr__.  If the attribute does exist but is not
-        # a field with a default (such as a method), we will also get a
-        # contractually-acceptable AttributeError.  Therefore, we can be
-        # simple here.
-        return providedBy(self).get(name).default
-
-    def __setattr__(self, name, value):
-        if name.startswith('_'):
-            # The attributes we want to protect from writing are the ones on
-            # the interface, which should not be "underwear" attributes.  We
-            # need to be able to write these, particularly so that
-            # zope.interface machinery works.
-            self.__dict__[name] = value
-        else:
-            raise NotImplementedError(self._error_msg)
-
-
-_unwritable_person_settings_stub = UnwritableStub(
+_readonly_person_settings = readonly_settings(
     'Teams do not support changing this attribute.', IPersonSettings)
+
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
@@ -425,7 +414,7 @@ class Person(
             # things like snapshots to work, but they are not actually
             # pertinent to teams, so they are not actually implemented for
             # writes.
-            return _unwritable_person_settings_stub
+            return _readonly_person_settings
         else:
             # This is a person.
             return IStore(PersonSettings).find(
