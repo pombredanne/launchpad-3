@@ -346,6 +346,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def acceptAsImported(self, pofile, share_with_other_side=False,
                          old_style_import=False, lock_timestamp=None):
         """Accept a suggestion as an imported translation."""
+        self.potmsgset.acceptAsImported(
+            pofile, self, share_with_other_side=share_with_other_side,
+            old_style_import=old_style_import, lock_timestamp=lock_timestamp)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""

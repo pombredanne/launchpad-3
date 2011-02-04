@@ -763,6 +763,22 @@ class POTMsgSet(SQLBase):
         :param lock_timestamp: Timestamp of the original translation state
             that this change is based on.
         """
+        template = pofile.potemplate
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            template.translation_side)
+        if not old_style_import:
+            if traits.getFlag(suggestion):
+                # Message is already current.
+                return
+
+            translator = suggestion.submitter
+            potranslations = dictify_translations(suggestion.all_msgstrs)
+            self._setTranslation(
+                pofile, translator, suggestion.origin, potranslations,
+                share_with_other_side=share_with_other_side,
+                identical_message=suggestion, lock_timestamp=lock_timestamp)
+        else:
+            pass
 
     def _cloneAndDiverge(self, original_message, pofile):
         """Create a diverged clone of a `TranslationMessage`.
