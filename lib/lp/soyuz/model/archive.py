@@ -37,6 +37,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -80,8 +81,8 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
+    OPEN_TEAM_POLICY,
     PersonVisibility,
-    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -1547,6 +1548,31 @@ class Archive(SQLBase):
 
         return subscription
 
+    @property
+    def num_pkgs_building(self):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        base_query = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id)
+        sprs_building = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.BUILDING,
+            *base_query)
+        sprs_waiting = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
+            *base_query)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = sprs_building.count()
+        pkgs_waiting_count = sprs_waiting.difference(sprs_building).count()
+
+        return pkgs_building_count, pkgs_waiting_count
+
     def getSourcePackageReleases(self, build_status=None):
         """See `IArchive`."""
         store = Store.of(self)
@@ -1704,7 +1730,7 @@ class Archive(SQLBase):
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if person.isTeam() and (
-            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
             return (

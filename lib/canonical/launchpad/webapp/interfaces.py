@@ -854,14 +854,6 @@ class IStoreSelector(Interface):
         """
 
 
-class IWebBrowserOriginatingRequest(Interface):
-    """Marker interface for converting webservice requests into webapp ones.
-
-    It's used in the webservice domain for calculating webapp URLs, for
-    instance, `ProxiedLibraryFileAlias`.
-    """
-
-
 # XXX mars 2010-07-14 bug=598816
 #
 # We need a conditional import of the request events until the real events

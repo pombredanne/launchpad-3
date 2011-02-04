@@ -109,7 +109,7 @@ class IStructuralSubscription(
     IStructuralSubscriptionPublic, IStructuralSubscriptionRestricted):
     """A subscription to a Launchpad structure."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IStructuralSubscriptionTargetRead(Interface):
