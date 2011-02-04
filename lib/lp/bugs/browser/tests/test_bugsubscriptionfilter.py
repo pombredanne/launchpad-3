@@ -470,7 +470,7 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                         "field.importances": ["LOW", "MEDIUM"],
                         "field.tags": u"foo bar",
                         "field.find_all_tags": "on",
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         "field.actions.create": "Create",
                         }
                     view = create_initialized_view(

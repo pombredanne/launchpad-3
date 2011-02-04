@@ -866,7 +866,7 @@ class TestBugChanges(unittest.TestCase):
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
         self.bug_task.transitionToStatus(
-            BugTaskStatus.FIXRELEASED, user=self.user)
+            BugTaskStatus.FIXCOMMITTED, user=self.user)
         notify(ObjectModifiedEvent(
             self.bug_task, bug_task_before_modification, ['status'],
             user=self.user))
@@ -875,13 +875,13 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'whatchanged': '%s: status' % self.bug_task.bugtargetname,
             'oldvalue': 'New',
-            'newvalue': 'Fix Released',
+            'newvalue': 'Fix Committed',
             'message': None,
             }
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n       Status: New => Fix Released' %
+                u'** Changed in: %s\n       Status: New => Fix Committed' %
                 self.bug_task.bugtargetname),
             'person': self.user,
             }
@@ -1540,6 +1540,7 @@ class TestBugChanges(unittest.TestCase):
             'oldvalue': 'New',
             }
 
+
         conversion_notification = {
             'person': self.user,
             'text': (
@@ -1552,6 +1553,8 @@ class TestBugChanges(unittest.TestCase):
                 '       Status: New => Invalid' %
                 self.bug_task.bugtargetname),
             'person': self.user,
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(

@@ -54,7 +54,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                     form_data = {
                         'field.subscription': person.name,
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         }
                     harness.submit('continue', form_data)
 
@@ -63,7 +63,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     level, subscription.bug_notification_level,
                     "Bug notification level of subscription should be %s, is "
                     "actually %s." % (
-                        level.name, subscription.bug_notification_level.name))
+                        level.title, subscription.bug_notification_level.title))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
@@ -77,7 +77,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertTrue(harness.hasErrors())
@@ -102,7 +102,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertFalse(harness.hasErrors())
@@ -112,7 +112,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             BugNotificationLevel.METADATA,
             subscription.bug_notification_level,
             "Bug notification level of subscription should be METADATA, is "
-            "actually %s." % subscription.bug_notification_level.name)
+            "actually %s." % subscription.bug_notification_level.title)
 
     def test_user_can_unsubscribe(self):
         # A user can unsubscribe from a bug using the
@@ -151,7 +151,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
 
