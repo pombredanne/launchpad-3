@@ -17,9 +17,11 @@ PackageUploadCustom object for a meta-data upload:
     >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.model.queue import PackageUploadCustom
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> bat = getUtility(IDistributionSet)['ubuntutest']['breezy-autotest']
-    >>> ppa = factory.makeArchive(distribution=bat.distribution)
+    >>> with lp_dbuser():
+    ...     ppa = factory.makeArchive(distribution=bat.distribution)
     >>> package_upload = bat.createQueueEntry(
     ...     pocket=PackagePublishingPocket.RELEASE, changesfilename="test",
     ...     changesfilecontent="test",

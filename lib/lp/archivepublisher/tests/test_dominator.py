@@ -13,6 +13,7 @@ from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+from lp.testing.dbuser import lp_dbuser
 
 
 class TestDominator(TestNativePublishingBase):
@@ -116,7 +117,8 @@ class TestDominator(TestNativePublishingBase):
         in an AssertionError), and shouldn't be directly considered for
         superseding either.
         """
-        ppa = self.factory.makeArchive()
+        with lp_dbuser():
+            ppa = self.factory.makeArchive()
         foo_10_source, foo_10_binaries = self.createSourceAndBinaries(
             '1.0', with_debug=True, archive=ppa)
         foo_11_source, foo_11_binaries = self.createSourceAndBinaries(
