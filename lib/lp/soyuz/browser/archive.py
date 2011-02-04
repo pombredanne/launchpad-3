@@ -1478,7 +1478,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             if not dependency.is_ppa:
                 continue
             if check_permission('launchpad.View', dependency):
-                dependency_label = '<a href="%s">%s</a>' % (
+                dependency_label = structured(
+                    '<a href="%s">%s</a>',
                     canonical_url(dependency), archive_dependency.title)
             else:
                 dependency_label = archive_dependency.title
