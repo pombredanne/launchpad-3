@@ -698,6 +698,43 @@ class FileImporterSharingTest(TestCaseWithFactory):
             importer.share_with_other_side,
             "Ubuntu import should share with upstream.")
 
+    def test_is_upstream_import_on_sourcepackage_none(self):
+        # To do an upstream import on a sourcepackage, three conditions must
+        # be met.
+        # - It has to be on a sourcepackage.
+        # - The by_maintainer flag must be set.
+        # - There must be no matching template in the upstream project or
+        #   even no upstream project at all.
+        # This case meets none of them.
+        entry = self._makeImportEntry(
+            TranslationSide.UPSTREAM, uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_by_maintainer(self):
+        # This entry is by_maintainer.
+        entry = self._makeImportEntry(
+            TranslationSide.UPSTREAM, by_maintainer=True,
+            uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_upstream_template(self):
+        # This entry is for a sourcepackage with an upstream potemplate.
+        entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
     def test_is_upstream_import_on_sourcepackage(self):
-        # An entry
-        pass
+        # This entry is by_maintainer.
+        entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, by_maintainer=True, no_upstream=True,
+            uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertTrue(importer.is_upstream_import_on_sourcepackage)
+
