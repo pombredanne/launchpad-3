@@ -65,7 +65,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.itemswidgets import (
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
@@ -209,7 +212,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
@@ -889,7 +893,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):

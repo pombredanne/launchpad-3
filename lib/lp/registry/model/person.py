@@ -37,7 +37,6 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
     BoolCol,
@@ -84,7 +83,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
-    directlyProvides,
+    classImplements,
     implementer,
     implements,
     providedBy,
@@ -363,6 +362,7 @@ def person_sort_key(person):
 
 
 class PersonSettings(Storm):
+    "The relatively rarely used settings for person (not a team)."
 
     implements(IPersonSettings)
 
@@ -374,34 +374,52 @@ class PersonSettings(Storm):
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
 
 
-class UnwritableStub:
+def readonly_settings(message, interface):
+    """Make an object that disallows writes to values on the interface.
 
-    def __init__(self, error_msg, *interfaces):
-        self._error_msg = error_msg
-        directlyProvides(self, *interfaces)
+    When you write, the message is raised in a NotImplementedError.
+    """
+    # We will make a class that has properties for each field on the
+    # interface (we expect every name on the interface to correspond to a
+    # zope.schema field).  Each property will have a getter that will
+    # return the interface default for that name; and it will have a
+    # setter that will raise a hopefully helpful error message
+    # explaining why writing is not allowed.
+    # This is the setter we are going to use for every property.
+    def unwritable(self, value):
+        raise NotImplementedError(message)
+    # This will become the dict of the class.
+    data = {}
+    # The interface.names() method returns the names on the interface.  If
+    # "all" is True, then you will also get the names on base
+    # interfaces.  That is unlikely to be needed here, but would be the
+    # expected behavior if it were.
+    for name in interface.names(all=True):
+        # This next line is a work-around for a classic problem of
+        # closures in a loop. Closures are bound (indirectly) to frame
+        # locals, which are a mutable collection. Therefore, if we
+        # naively make closures for each different value within a loop,
+        # each closure will be bound to the value as it is at the *end
+        # of the loop*. That's usually not what we want. To prevent
+        # this, we make a helper function (which has its own locals)
+        # that returns the actual closure we want.
+        closure_maker = lambda result: lambda self: result
+        # Now we make a property with the name-specific getter and the generic
+        # setter, and put it in the dictionary of the class we are making.
+        data[name] = property(
+            closure_maker(interface[name].default), unwritable)
+    # Now we have all the attributes we want.  We will make the class...
+    cls = type('Unwritable' + interface.__name__, (), data)
+    # ...specify that the class implements the interface that we are working
+    # with...
+    classImplements(cls, interface)
+    # ...and return an instance.  We should only need one, since it is
+    # read-only.
+    return cls()
 
-    def __getattr__(self, name):
-        # If the attribute doesn't exist, we'll get a None, which will not
-        # have "default" and thus will generate an AttributeError, which is
-        # correct for a __getattr__.  If the attribute does exist but is not
-        # a field with a default (such as a method), we will also get a
-        # contractually-acceptable AttributeError.  Therefore, we can be
-        # simple here.
-        return providedBy(self).get(name).default
-
-    def __setattr__(self, name, value):
-        if name.startswith('_'):
-            # The attributes we want to protect from writing are the ones on
-            # the interface, which should not be "underwear" attributes.  We
-            # need to be able to write these, particularly so that
-            # zope.interface machinery works.
-            self.__dict__[name] = value
-        else:
-            raise NotImplementedError(self._error_msg)
-
-
-_unwritable_person_settings_stub = UnwritableStub(
+_readonly_person_settings = readonly_settings(
     'Teams do not support changing this attribute.', IPersonSettings)
+
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
@@ -426,7 +444,7 @@ class Person(
             # things like snapshots to work, but they are not actually
             # pertinent to teams, so they are not actually implemented for
             # writes.
-            return _unwritable_person_settings_stub
+            return _readonly_person_settings
         else:
             # This is a person.
             return IStore(PersonSettings).find(
@@ -1349,7 +1367,8 @@ class Person(
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        elif (team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
+            or team.subscriptionpolicy == TeamSubscriptionPolicy.DELEGATED):
             status = proposed
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             status = approved

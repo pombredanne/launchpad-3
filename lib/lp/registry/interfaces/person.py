@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
@@ -28,6 +29,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -393,29 +395,59 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
+    The policies that describe who can be a member and how new memberships
+    are handled. The choice of policy reflects the need to build a community
+    versus the need to control Launchpad assets.
     """
-
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        All subscriptions for this team are subject to approval by one of
-        the team's administrators.
-        """)
 
     OPEN = DBItem(2, """
         Open Team
 
-        Any user can join and no approval is required.
+        Membership is open, no approval required, and subteams can be open or
+        closed. Any user can be a member of the team and no approval is
+        required. Subteams can be Open, Delegated, Moderated, or Restricted.
+        Open is a good choice for encouraging a community of contributors.
+        Open teams cannot have PPAs.
+        """)
+
+    DELEGATED = DBItem(4, """
+        Delegated Team
+
+        Membership is open, requires approval, and subteams can be open or
+        closed. Any user can be a member of the team via a subteam, but team
+        administrators approve direct memberships. Subteams can be Open,
+        Delegated, Moderated, or Restricted. Delegated is a good choice for
+        managing a large community of contributors. Delegated teams cannot
+        have PPAs.
+        """)
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        Membership is closed, requires approval, and subteams must be closed.
+        Any user can propose a new member, but team administrators approve
+        membership. Subteams must be Moderated or Restricted. Moderated is a
+        good choice for teams that manage things that need to be secure, like
+        projects, branches, or PPAs, but want to encourage users to help.
         """)
 
     RESTRICTED = DBItem(3, """
         Restricted Team
 
-        New members can only be added by one of the team's administrators.
+        Membership is closed, requires approval, and subteams must be closed.
+        Only the team's administrators can invite a user to be a member.
+        Subteams must be Moderated or Restricted. Restricted is a good choice
+        for teams that manage things that need to be secure, like projects,
+        branches, or PPAs.
         """)
+
+
+OPEN_TEAM_POLICY = (
+    TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
+
+
+CLOSED_TEAM_POLICY = (
+    TeamSubscriptionPolicy.RESTRICTED, TeamSubscriptionPolicy.MODERATED)
 
 
 class PersonVisibility(DBEnumeratedType):
@@ -504,10 +536,10 @@ def team_subscription_policy_can_transition(team, policy):
     if team is None or policy == team.subscriptionpolicy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif policy == TeamSubscriptionPolicy.OPEN:
+    elif policy in OPEN_TEAM_POLICY:
         # The team can be open if its super teams are open.
         for team in team.super_teams:
-            if team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
+            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
@@ -517,11 +549,11 @@ def team_subscription_policy_can_transition(team, policy):
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
-    elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.
         for member in team.activemembers:
-            if member.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
@@ -1791,10 +1823,7 @@ class ITeamPublic(Interface):
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
-                   "'Moderated' means all subscriptions must be approved. "
-                   "'Open' means any user can join without approval. "
-                   "'Restricted' means new members can be added only by a "
-                   "team administrator.")),
+                TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
 
     renewal_policy = exported(
