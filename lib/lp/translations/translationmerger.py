@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = [
     'MessageSharingMerge',
+    'TransactionManager',
+    'TranslationMerger',
     ]
 
 
