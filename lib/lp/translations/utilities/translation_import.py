@@ -432,6 +432,10 @@ class FileImporter(object):
             purportedly_upstream=from_upstream)
 
     @cachedproperty
+    def is_upstream_import_on_sourcepackage(self):
+        """If True, use TranslationMessage.acceptFromUpstreamImportOnPackage`."""
+
+    @cachedproperty
     def translations_are_msgids(self):
         """Are these English strings instead of translations?
 
