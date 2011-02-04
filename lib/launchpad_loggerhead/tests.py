@@ -1,19 +1,24 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import errno
 import unittest
 import urllib
+import socket
 
 import lazr.uri
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import install_opener, uninstall_opener
 import wsgi_intercept.zope_testbrowser
+from paste import httpserver
 from paste.httpexceptions import HTTPExceptionHandler
+import zope.event
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReport, ErrorReportEvent
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
-from launchpad_loggerhead.app import RootApp
+from launchpad_loggerhead.app import RootApp, oops_middleware
 from launchpad_loggerhead.session import SessionHandler
 from lp.testing import TestCase
 
@@ -140,6 +145,62 @@ class TestLogout(TestCase):
         self.assertEqual(self.browser.url, dummy_root + '+logout')
         self.assertEqual(self.browser.contents,
                          'This is a dummy destination.\n')
+
+
+class TestOopsMiddleware(TestCase):
+
+    def _eventTriggered(self, event):
+        if isinstance(event, ErrorReportEvent):
+            self.error_events.append(event)
+
+    def watchForErrorReportEvent(self):
+        self.error_events = []
+        zope.event.subscribers.append(self._eventTriggered)
+        self.addCleanup(zope.event.subscribers.remove, self._eventTriggered)
+
+    def runtime_failing_app(self, environ, start_response):
+        if False:
+            yield None
+        raise RuntimeError('just a generic runtime error.')
+
+    def socket_failing_app(self, environ, start_response):
+        if False:
+            yield None
+        raise socket.error(errno.EPIPE, 'Connection closed')
+
+    def noop_start_response(self, status, response_headers, exc_info=None):
+        def noop_write(chunk):
+            pass
+        return noop_write
+
+    def wrap_and_run(self, app):
+        self.watchForErrorReportEvent()
+        app = oops_middleware(app)
+        # Just random env data, rather than setting up a whole wsgi stack just
+        # to pass in values for this dict
+        environ = {'wsgi.version': (1, 0),
+                   'wsgi.url_scheme': 'http',
+                   'PATH_INFO': '/test/path',
+                   'REQUEST_METHOD': 'GET',
+                   'SERVER_NAME': 'localhost',
+                   'SERVER_PORT': '8080',
+                  }
+        result = list(app(environ, self.noop_start_response))
+        return result
+
+    def test_exception_triggers_oops(self):
+        res = self.wrap_and_run(self.runtime_failing_app)
+        # After the exception was raised, we should also have gotten an oops
+        # event
+        self.assertEqual(1, len(self.error_events))
+        event = self.error_events[0]
+        self.assertIsInstance(event, ErrorReportEvent)
+        self.assertIsInstance(event.object, ErrorReport)
+        self.assertEqual('RuntimeError', event.object.type)
+
+    def test_ignores_socket_exceptions(self):
+        res = self.wrap_and_run(self.socket_failing_app)
+        self.assertEqual(0, len(self.error_events))
 
 
 def test_suite():

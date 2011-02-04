@@ -18,6 +18,7 @@ from loggerhead.apps.branch import BranchWSGIApp
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
 
+from paste import httpserver
 from paste.fileapp import DataApp
 from paste.request import construct_url, parse_querystring, path_info_pop
 from paste.httpexceptions import (
@@ -350,6 +351,12 @@ def oops_middleware(app):
             try:
                 data = app_iter.next()
             except StopIteration:
+                return
+            except httpserver.SocketErrors, e:
+                # The Paste WSGIHandler suppresses these exceptions.
+                # Generally it means something like 'EPIPE' because the
+                # connection was closed. We don't want to generate an OOPS
+                # just because the connection was closed prematurely.
                 return
             except:
                 error_page_sent = wrapped.generate_oops(environ, error_utility)
