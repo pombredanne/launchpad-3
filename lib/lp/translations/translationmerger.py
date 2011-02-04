@@ -273,23 +273,22 @@ class MessageSharingMerge(LaunchpadScript):
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
                     name, len(templates), number + 1, class_count))
             log.debug("Templates: %s" % str(templates))
-            merger = TranslationMerger(
-                templates, tm)
+            merger = TranslationMerger(templates, tm)
             if self.options.remove_duplicates:
                 log.info("Removing duplicate messages.")
                 merger.removeDuplicateMessages()
-                tm._endTransaction(intermediate=True)
+                tm.endTransaction(intermediate=True)
 
             if self.options.merge_potmsgsets:
                 log.info("Merging POTMsgSets.")
-                merger._mergePOTMsgSets()
-                tm._endTransaction(intermediate=True)
+                merger.mergePOTMsgSets()
+                tm.endTransaction(intermediate=True)
 
             if self.options.merge_translationmessages:
                 log.info("Merging TranslationMessages.")
-                merger._mergeTranslationMessages()
+                merger.mergeTranslationMessages()
 
-            tm._endTransaction()
+            tm.endTransaction()
 
         log.info("Done.")
 
@@ -314,7 +313,7 @@ class TransactionManager:
         self.dry_run = dry_run
         self.commit_count = 0
 
-    def _endTransaction(self, intermediate=False):
+    def endTransaction(self, intermediate=False):
         """End this transaction and start a new one.
 
         :param intermediate: Whether this is an intermediate commit.
@@ -364,12 +363,12 @@ class TranslationMerger:
                 if key not in representatives:
                     representatives[key] = potmsgset.id
 
-        self.tm._endTransaction(intermediate=True)
+        self.tm.endTransaction(intermediate=True)
 
         for representative_id in representatives.itervalues():
             representative = POTMsgSet.get(representative_id)
             self._scrubPOTMsgSetTranslations(representative)
-            self.tm._endTransaction(intermediate=True)
+            self.tm.endTransaction(intermediate=True)
 
     def _mapRepresentatives(self):
         """Map out POTMsgSets' subordinates and templates.
@@ -413,7 +412,7 @@ class TranslationMerger:
 
         return subordinates, representative_templates
 
-    def _mergePOTMsgSets(self):
+    def mergePOTMsgSets(self):
         """Merge POTMsgSets for given sequence of sharing templates."""
         subordinates, representative_templates = self._mapRepresentatives()
 
@@ -477,7 +476,7 @@ class TranslationMerger:
                 removeSecurityProxy(subordinate).destroySelf()
                 potmsgset_deletions += 1
 
-                self.tm._endTransaction(intermediate=True)
+                self.tm.endTransaction(intermediate=True)
 
             report = "Deleted POTMsgSets: %d.  TranslationMessages: %d." % (
                 potmsgset_deletions, tm_deletions)
@@ -493,7 +492,7 @@ class TranslationMerger:
             potmsgset.id
             for potmsgset in template.getPOTMsgSets(False, prefetch=False)]
 
-    def _mergeTranslationMessages(self):
+    def mergeTranslationMessages(self):
         """Share `TranslationMessage`s between templates where possible."""
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template_number, template in enumerate(self.potemplates):
@@ -514,7 +513,7 @@ class TranslationMerger:
                         message = TranslationMessage.get(id)
                         removeSecurityProxy(message).shareIfPossible()
 
-                self.tm._endTransaction(intermediate=True)
+                self.tm.endTransaction(intermediate=True)
 
                 after = potmsgset.getAllTranslationMessages().count()
                 deletions += max(0, before - after)
@@ -578,7 +577,7 @@ class TranslationMerger:
         # migration phase can be scrapped.
         ids_per_language = self._partitionTranslationMessageIds(potmsgset)
 
-        self.tm._endTransaction(intermediate=True)
+        self.tm.endTransaction(intermediate=True)
 
         deletions = 0
 
@@ -610,7 +609,7 @@ class TranslationMerger:
                 else:
                     translations[key] = tm
 
-            self.tm._endTransaction(intermediate=True)
+            self.tm.endTransaction(intermediate=True)
 
         report = "Deleted TranslationMessages: %d" % deletions
         if deletions > 0:

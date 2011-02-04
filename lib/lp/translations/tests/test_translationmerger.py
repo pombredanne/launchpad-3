@@ -80,7 +80,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=1)
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -96,8 +96,8 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=1)
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -112,7 +112,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', context='bar', sequence=1)
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -129,7 +129,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=9)
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         trunk_potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
         stable_potmsgset = self.stable_template.getPOTMsgSetByMsgIDText('foo')
@@ -255,7 +255,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
          * Two templates for the "trunk" and "stable" release series.
          * Matching POTMsgSets for the string "foo" in each.
 
-        The matching POTMsgSets will be merged by the _mergePOTMsgSets
+        The matching POTMsgSets will be merged by the mergePOTMsgSets
         call.
         """
         super(TestPOTMsgSetMergingAndTranslations, self).setUp(
@@ -271,7 +271,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current_upstream = True
         stable_message.is_current_upstream = True
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         self.assertEqual(self._getTranslations(), ('bar', 'splat'))
         self.assertEqual(self._getMessages(), (trunk_message, stable_message))
@@ -285,7 +285,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current_upstream = True
         stable_message.is_current_upstream = True
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         self.assertEqual(self._getTranslations(), ('bar', 'bar'))
 
@@ -298,7 +298,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current_upstream = True
         stable_message.is_current_upstream = True
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         # The POTMsgSets are now merged.
         potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
@@ -321,7 +321,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current_upstream = False
         stable_message.is_current_upstream = False
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         # Having these suggestions does not mean that there are current
         # translations.
@@ -335,7 +335,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current_upstream = True
         stable_message.is_current_upstream = True
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         trunk_message, stable_message = self._getMessages()
         self.assertEqual(trunk_message.potemplate, None)
@@ -360,7 +360,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
 
         self.assertEqual(self._getTranslations(), ('bzo', 'smurf'))
 
-        self.merger._mergePOTMsgSets()
+        self.merger.mergePOTMsgSets()
 
         # The current translations stay as they are.
         self.assertEqual(self._getTranslations(), ('bzo', 'smurf'))
@@ -390,7 +390,7 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
         # be.
         self._makeTranslationMessages('x', 'x')
 
-        self.merger._mergeTranslationMessages()
+        self.merger.mergeTranslationMessages()
 
         trunk_message, stable_message = self._getMessages()
         self.assertNotEqual(trunk_message, stable_message)
@@ -418,8 +418,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'a', 'b', trunk_diverged=True, stable_diverged=True)
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), ('a', 'b'))
@@ -434,8 +434,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'x', 'x', trunk_diverged=True, stable_diverged=True)
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         trunk_message, stable_message = self._getMessages()
         self.assertEqual(trunk_message, stable_message)
@@ -457,8 +457,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         trunk_message.is_current_upstream = False
         stable_message.is_current_upstream = False
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), (None, None))
@@ -474,8 +474,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'ips', 'unq', trunk_diverged=True, stable_diverged=False)
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), ('ips', 'unq'))
@@ -495,8 +495,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
         self.assertEqual(self._getTranslations(), ('n', None))
 
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         # The less-representative POTMsgSet gains a translation, because
         # it now uses the shared translation.
@@ -557,8 +557,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         # Now the migration script runs.  This also carries the
         # POFileTranslator record for stable_message into trunk_pofile.
         # The one for contented_message disappears in the process.
-        self.merger._mergePOTMsgSets()
-        self.merger._mergeTranslationMessages()
+        self.merger.mergePOTMsgSets()
+        self.merger.mergeTranslationMessages()
 
         poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
         self.assertEqual(poft.latest_message, stable_message)
@@ -793,14 +793,14 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
         self.assertNotEqual([], self.templates)
 
         with StormStatementRecorder() as recorder:
-            self.merger._mergePOTMsgSets()
+            self.merger.mergePOTMsgSets()
         self.assertNoStatementsInvolvingTable(
             POMsgID._table, recorder.statements)
         self.assertNoStatementsInvolvingTable(
             POTranslation._table, recorder.statements)
 
         with StormStatementRecorder() as recorder:
-            self.merger._mergeTranslationMessages()
+            self.merger.mergeTranslationMessages()
         self.assertNoStatementsInvolvingTable(
             POMsgID._table, recorder.statements)
         self.assertNoStatementsInvolvingTable(
