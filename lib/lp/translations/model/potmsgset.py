@@ -787,7 +787,7 @@ class POTMsgSet(SQLBase):
             other = self.getOtherTranslation(
                 pofile.language, template.translation_side)
             if other is not None:
-                traits.setFlag(other, False)
+                traits.other_side_traits.setFlag(other, False)
             if current is None or other is None:
                 translator = suggestion.submitter
                 potranslations = dictify_translations(suggestion.all_msgstrs)
@@ -795,6 +795,13 @@ class POTMsgSet(SQLBase):
                     pofile, translator, suggestion.origin, potranslations,
                     share_with_other_side=True,
                     identical_message=suggestion, lock_timestamp=lock_timestamp)
+            else:
+                # Make it only current on the other side.
+                traits.other_side_traits.setFlag(suggestion, True)
+                if suggestion != other:
+                    pofile.markChanged(translator=suggestion.submitter)
+
+
 
 
 
