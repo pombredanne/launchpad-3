@@ -431,7 +431,7 @@ class PersonPruner(TunableLoop):
         for (from_table, from_column, to_table, to_column, uflag, dflag) in (
                 postgresql.listReferences(cursor(), 'person', 'id')):
             # Skip things that don't link to Person.id or that link to it from
-            # TeamParticipation, EmailAddress, as all Person entries will be
+            # TeamParticipation or EmailAddress, as all Person entries will be
             # linked to from these tables.  Similarly, PersonSettings can
             # simply be deleted if it exists, because it has a 1 (or 0) to 1
             # relationship with Person.
