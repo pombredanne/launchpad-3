@@ -34,7 +34,8 @@ class SampleDataTestCase(TestCase):
         """Test the sample data used by the test suite."""
         self.dump_and_restore('launchpad_ftest_template')
 
-    def test_devSampledata(self):
+    # XXX bug 365385
+    def disabled_test_devSampledata(self):
         """Test the sample data used by developers for manual testing."""
         self.dump_and_restore('launchpad_dev_template')
 
