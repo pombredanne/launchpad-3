@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -266,30 +266,53 @@ class MessageSharingMerge(LaunchpadScript):
         class_count = len(equivalence_classes)
         log.info("Merging %d template equivalence classes." % class_count)
 
+        tm = TransactionManager(self.txn, self.options.dry_run)
         for number, name in enumerate(sorted(equivalence_classes.iterkeys())):
             templates = equivalence_classes[name]
             log.info(
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
                     name, len(templates), number + 1, class_count))
             log.debug("Templates: %s" % str(templates))
-
+            merger = TranslationMerger(
+                templates, tm)
             if self.options.remove_duplicates:
                 log.info("Removing duplicate messages.")
-                self._removeDuplicateMessages(templates)
-                self._endTransaction(intermediate=True)
+                merger.removeDuplicateMessages()
+                tm._endTransaction(intermediate=True)
 
             if self.options.merge_potmsgsets:
                 log.info("Merging POTMsgSets.")
                 self._mergePOTMsgSets(templates)
-                self._endTransaction(intermediate=True)
+                tm._endTransaction(intermediate=True)
 
             if self.options.merge_translationmessages:
                 log.info("Merging TranslationMessages.")
                 self._mergeTranslationMessages(templates)
 
-            self._endTransaction()
+            tm._endTransaction()
 
         log.info("Done.")
+
+
+class TransactionManager:
+    """Manage transactions for script runs.
+
+    For normal operation, every tenth intermediate transaction is actually
+    committed.  At the end, the final transaction is committed.
+
+    For dry runs, no transactions are committed and the final transaction is
+    aborted.
+    """
+
+    def __init__(self, txn, dry_run):
+        """Constructor.
+
+        :param txn: The transaction to commit or abort.
+        :param dry_run: If true, this is a dry run.
+        """
+        self.txn = txn
+        self.dry_run = dry_run
+        self.commit_count = 0
 
     def _endTransaction(self, intermediate=False):
         """End this transaction and start a new one.
@@ -308,38 +331,49 @@ class MessageSharingMerge(LaunchpadScript):
         if intermediate and self.commit_count % 10 != 0:
             return
 
-        if self.options.dry_run:
+        if self.dry_run:
             if not intermediate:
                 self.txn.abort()
         else:
             self.txn.commit()
 
-    def _removeDuplicateMessages(self, potemplates):
-        """Get rid of duplicate `TranslationMessages` where needed."""
-        self._setUpUtilities()
 
+class TranslationMerger:
+    """Merge translations across a set of potemplates."""
+
+    def __init__(self, potemplates, tm):
+        """Constructor.
+
+        :param potemplates: The templates to merge across.
+        """
+        self.template_set = getUtility(IPOTemplateSet)
+        self.compare_template_precedence = (
+            self.template_set.compareSharingPrecedence)
+        self.potemplates = potemplates
+        self.tm = tm
+
+    def _removeDuplicateMessages(self):
+        """Get rid of duplicate `TranslationMessages` where needed."""
         representatives = {}
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
 
-        for template in potemplates:
+        for template in self.potemplates:
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset.id
 
-        self._endTransaction(intermediate=True)
+        self.tm._endTransaction(intermediate=True)
 
         for representative_id in representatives.itervalues():
             representative = POTMsgSet.get(representative_id)
             self._scrubPOTMsgSetTranslations(representative)
-            self._endTransaction(intermediate=True)
+            self.tm._endTransaction(intermediate=True)
 
-    def _mapRepresentatives(self, potemplates):
+    def _mapRepresentatives(self):
         """Map out POTMsgSets' subordinates and templates.
 
-        :param potemplates: An equivalence class of `POTemplate`s to
-            sort out.
         :return: A tuple of dicts.  The first maps each `POTMsgSet`'s
             key (as returned by `get_potmsgset_key`) to a list of its
             subordinate `POTMsgSet`s.  The second maps each
@@ -364,7 +398,7 @@ class MessageSharingMerge(LaunchpadScript):
         # key we find, the first POTMsgSet is the representative one.
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
 
-        for template in potemplates:
+        for template in self.potemplates:
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
@@ -379,12 +413,9 @@ class MessageSharingMerge(LaunchpadScript):
 
         return subordinates, representative_templates
 
-    def _mergePOTMsgSets(self, potemplates):
+    def _mergePOTMsgSets(self):
         """Merge POTMsgSets for given sequence of sharing templates."""
-        self._setUpUtilities()
-
-        subordinates, representative_templates = self._mapRepresentatives(
-            potemplates)
+        subordinates, representative_templates = self._mapRepresentatives()
 
         num_representatives = len(subordinates)
         representative_num = 0
@@ -446,7 +477,7 @@ class MessageSharingMerge(LaunchpadScript):
                 removeSecurityProxy(subordinate).destroySelf()
                 potmsgset_deletions += 1
 
-                self._endTransaction(intermediate=True)
+                self.tm._endTransaction(intermediate=True)
 
             report = "Deleted POTMsgSets: %d.  TranslationMessages: %d." % (
                 potmsgset_deletions, tm_deletions)
@@ -455,19 +486,19 @@ class MessageSharingMerge(LaunchpadScript):
             else:
                 log.log(DEBUG2, report)
 
-    def _getPOTMsgSetIds(self, template):
+    @staticmethod
+    def _getPOTMsgSetIds(template):
         """Get list of ids for `template`'s `POTMsgSet`s."""
         return [
             potmsgset.id
             for potmsgset in template.getPOTMsgSets(False, prefetch=False)]
 
-    def _mergeTranslationMessages(self, potemplates):
+    def _mergeTranslationMessages(self):
         """Share `TranslationMessage`s between templates where possible."""
-        self._setUpUtilities()
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
-        for template_number, template in enumerate(potemplates):
+        for template_number, template in enumerate(self.potemplates):
             log.info("Merging template %d/%d." % (
-                template_number + 1, len(potemplates)))
+                template_number + 1, len(self.potemplates)))
             deletions = 0
             order_check.check(template)
             potmsgset_ids = self._getPOTMsgSetIds(template)
@@ -483,7 +514,7 @@ class MessageSharingMerge(LaunchpadScript):
                         message = TranslationMessage.get(id)
                         removeSecurityProxy(message).shareIfPossible()
 
-                self._endTransaction(intermediate=True)
+                self.tm._endTransaction(intermediate=True)
 
                 after = potmsgset.getAllTranslationMessages().count()
                 deletions += max(0, before - after)
@@ -494,7 +525,8 @@ class MessageSharingMerge(LaunchpadScript):
             else:
                 log.log(DEBUG2, report)
 
-    def _getPOTMsgSetTranslationMessageKey(self, tm):
+    @staticmethod
+    def _getPOTMsgSetTranslationMessageKey(tm):
         """Return tuple that identifies a TranslationMessage in a POTMsgSet.
 
         A TranslationMessage is identified by (potemplate, potmsgset,
@@ -509,7 +541,8 @@ class MessageSharingMerge(LaunchpadScript):
 
         return (tm.potemplateID, tm.languageID) + msgstr_ids
 
-    def _partitionTranslationMessageIds(self, potmsgset):
+    @staticmethod
+    def _partitionTranslationMessageIds(potmsgset):
         """Partition `TranslationMessage`s by language.
 
         Only the ids are stored, not the `TranslationMessage` objects
@@ -545,7 +578,7 @@ class MessageSharingMerge(LaunchpadScript):
         # migration phase can be scrapped.
         ids_per_language = self._partitionTranslationMessageIds(potmsgset)
 
-        self._endTransaction(intermediate=True)
+        self.tm._endTransaction(intermediate=True)
 
         deletions = 0
 
@@ -577,7 +610,7 @@ class MessageSharingMerge(LaunchpadScript):
                 else:
                     translations[key] = tm
 
-            self._endTransaction(intermediate=True)
+            self.tm._endTransaction(intermediate=True)
 
         report = "Deleted TranslationMessages: %d" % deletions
         if deletions > 0:
@@ -585,7 +618,8 @@ class MessageSharingMerge(LaunchpadScript):
         else:
             log.log(DEBUG2, report)
 
-    def _findClashes(self, message, target_potmsgset, target_potemplate):
+    @staticmethod
+    def _findClashes(message, target_potmsgset, target_potemplate):
         """What would clash if we moved `message` to the target environment?
 
         A clash can be either `message` being current when the target
@@ -646,7 +680,8 @@ class MessageSharingMerge(LaunchpadScript):
         # have to go.
         return False
 
-    def _divergeTo(self, message, target_potmsgset, target_potemplate):
+    @classmethod
+    def _divergeTo(cls, message, target_potmsgset, target_potemplate):
         """Attempt to save `message` by diverging to `target_potemplate`.
 
         :param message: a TranslationMessage to save by diverging.
@@ -658,7 +693,7 @@ class MessageSharingMerge(LaunchpadScript):
             True, you're done with `message`.  If False, you'll have to
             find another place for it.
         """
-        clashing_current, clashing_imported, twin = self._findClashes(
+        clashing_current, clashing_imported, twin = cls._findClashes(
             message, target_potmsgset, target_potemplate)
 
         if clashing_current is not None or clashing_imported is not None:
