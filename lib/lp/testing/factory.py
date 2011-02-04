@@ -2552,7 +2552,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
-    def makePOFileAndPOTMsgSet(self, language_code, msgid=None,
+    def makePOFileAndPOTMsgSet(self, language_code=None, msgid=None,
                                with_plural=False):
         """Make a `POFile` with a `POTMsgSet`."""
         pofile = self.makePOFile(language_code)
