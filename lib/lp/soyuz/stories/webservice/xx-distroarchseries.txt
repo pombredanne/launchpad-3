@@ -46,4 +46,4 @@ For a distroarchseries we publish a subset of its attributes.
     self_link: u'http://.../ubuntu/hoary/i386'
     supports_virtualized: True
     title: u'The Hoary Hedgehog Release for i386 (x86)'
-
+    web_link: u'http://launchpad.../ubuntu/hoary/i386'

@@ -41,7 +41,8 @@ from lp.services.fields import (
 
 class ICountry(Interface):
     """The country description."""
-    export_as_webservice_entry(plural_name='countries')
+    export_as_webservice_entry(
+        plural_name='countries', publish_web_link=False)
 
     id = Int(
         title=_('Country ID'), required=True, readonly=True,
