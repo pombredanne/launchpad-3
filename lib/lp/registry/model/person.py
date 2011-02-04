@@ -37,7 +37,6 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
     BoolCol,
@@ -372,19 +371,48 @@ class PersonSettings(Storm):
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
 
+
 def readonly_settings(message, interface):
     """Make an object that disallows writes to values on the interface.
-    
+
     When you write, the message is raised in a NotImplementedError.
     """
+    # We will make a class that has properties for each field on the
+    # interface (we expect every name on the interface to correspond to a
+    # zope.schema field).  Each property will have a getter that will
+    # return the interface default for that name; and it will have a
+    # setter that will raise a hopefully helpful error message
+    # explaining why writing is not allowed.
+    # This is the setter we are going to use for every property.
     def unwritable(self, value):
         raise NotImplementedError(message)
+    # This will become the dict of the class.
     data = {}
-    for name in interface.names(True):
-        closure_f = lambda result: lambda self: result
-        data[name] = property(closure_f(interface[name].default), unwritable)
+    # The interface.names() method returns the names on the interface.  If
+    # "all" is True, then you will also get the names on base
+    # interfaces.  That is unlikely to be needed here, but would be the
+    # expected behavior if it were.
+    for name in interface.names(all=True):
+        # This next line is a work-around for a classic problem of
+        # closures in a loop. Closures are bound (indirectly) to frame
+        # locals, which are a mutable collection. Therefore, if we
+        # naively make closures for each different value within a loop,
+        # each closure will be bound to the value as it is at the *end
+        # of the loop*. That's usually not what we want. To prevent
+        # this, we make a helper function (which has its own locals)
+        # that returns the actual closure we want.
+        closure_maker = lambda result: lambda self: result
+        # Now we make a property with the name-specific getter and the generic
+        # setter, and put it in the dictionary of the class we are making.
+        data[name] = property(
+            closure_maker(interface[name].default), unwritable)
+    # Now we have all the attributes we want.  We will make the class...
     cls = type('Unwritable' + interface.__name__, (), data)
+    # ...specify that the class implements the interface that we are working
+    # with...
     classImplements(cls, interface)
+    # ...and return an instance.  We should only need one, since it is
+    # read-only.
     return cls()
 
 _readonly_person_settings = readonly_settings(
