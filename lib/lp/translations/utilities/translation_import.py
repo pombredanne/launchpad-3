@@ -485,12 +485,16 @@ class FileImporter(object):
         message.validation_status = TranslationValidationStatus.OK
         return True
 
-    def _approveMessage(self, potmsgset, message, message_data):
+    def _acceptMessage(self, potmsgset, message, message_data):
         """Try to approve the message, return None on TranslationConflict."""
         try:
-            message.approve(
-                self.pofile, self.last_translator,
-                self.share_with_other_side, self.lock_timestamp)
+            if self.is_upstream_import_on_sourcepackage:
+                message.acceptFromUpstreamImportOnPackage(
+                    self.pofile, self.lock_timestamp)
+            else:
+                message.acceptFromImport(
+                    self.pofile, self.share_with_other_side,
+                    self.lock_timestamp)
         except TranslationConflict:
             self._addConflictError(message_data, potmsgset)
             if self.logger is not None:
@@ -548,7 +552,7 @@ class FileImporter(object):
         validation_ok = self._validateMessage(
             potmsgset, new_message, sanitized_translations, message_data)
         if validation_ok and self.is_editor:
-            return self._approveMessage(potmsgset, new_message, message_data)
+            return self._acceptMessage(potmsgset, new_message, message_data)
 
         return new_message
 

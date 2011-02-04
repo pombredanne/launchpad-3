@@ -730,7 +730,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         self.assertFalse(importer.is_upstream_import_on_sourcepackage)
 
     def test_is_upstream_import_on_sourcepackage_ok(self):
-        # This entry is by_maintainer.
+        # This entry qualifies.
         entry = self._makeImportEntry(
             TranslationSide.UBUNTU, by_maintainer=True, no_upstream=True,
             uploader=self.translator.translator)
