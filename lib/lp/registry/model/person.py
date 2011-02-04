@@ -36,6 +36,8 @@ import re
 import subprocess
 import weakref
 
+from lazr.delegates import delegates
+from lazr.restful.fields import Reference
 import pytz
 from sqlobject import (
     BoolCol,
@@ -50,6 +52,7 @@ from sqlobject.sqlbuilder import (
     OR,
     SQLConstant,
     )
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -65,6 +68,10 @@ from storm.expr import (
     Upper,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -77,6 +84,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
+    classImplements,
     implementer,
     implements,
     )
@@ -217,6 +225,7 @@ from lp.registry.interfaces.person import (
     InvalidName,
     IPerson,
     IPersonSet,
+    IPersonSettings,
     ITeam,
     PersonalStanding,
     PersonCreationRationale,
@@ -352,12 +361,68 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+class PersonSettings(Storm):
+    "The relatively rarely used settings for person (not a team)."
+
+    implements(IPersonSettings)
+
+    __storm_table__ = 'PersonSettings'
+
+    personID = Int("person", default=None, primary=True)
+    person = Reference(personID, "Person.id")
+
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
+
+def readonly_settings(message, interface):
+    """Make an object that disallows writes to values on the interface.
+    
+    When you write, the message is raised in a NotImplementedError.
+    """
+    def unwritable(self, value):
+        raise NotImplementedError(message)
+    data = {}
+    for name in interface.names(True):
+        closure_f = lambda result: lambda self: result
+        data[name] = property(closure_f(interface[name].default), unwritable)
+    cls = type('Unwritable' + interface.__name__, (), data)
+    classImplements(cls, interface)
+    return cls()
+
+_readonly_person_settings = readonly_settings(
+    'Teams do not support changing this attribute.', IPersonSettings)
+
+
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+
+    def __init__(self, *args, **kwargs):
+        super(Person, self).__init__(*args, **kwargs)
+        # Initialize our PersonSettings object/record.
+        if not self.is_team:
+            # This is a Person, not a team.  Teams may want a TeamSettings
+            # in the future.
+            settings = PersonSettings()
+            settings.person = self
+
+    @cachedproperty
+    def _person_settings(self):
+        if self.is_team:
+            # Teams need to provide these attributes for reading in order for
+            # things like snapshots to work, but they are not actually
+            # pertinent to teams, so they are not actually implemented for
+            # writes.
+            return _readonly_person_settings
+        else:
+            # This is a person.
+            return IStore(PersonSettings).find(
+                PersonSettings,
+                PersonSettings.person == self).one()
+
+    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -2065,6 +2130,7 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('personsettings', 'person'),
             ('persontransferjob', 'minor_person'),
             ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
@@ -3810,6 +3876,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('personsettings', 'person'),
             ('emailaddress', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
