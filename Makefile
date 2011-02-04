@@ -71,6 +71,10 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 
 apidoc: compile $(API_INDEX)
 
+# Used to generate HTML developer documentation for Launchpad.
+doc:
+	$(MAKE) -C doc/ html
+
 # Run by PQM.
 check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
@@ -485,7 +489,7 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
 	pagetests check check_merge schema default launchpad.pot \
 	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
