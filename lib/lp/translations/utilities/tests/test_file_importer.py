@@ -729,7 +729,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(importer.is_upstream_import_on_sourcepackage)
 
-    def test_is_upstream_import_on_sourcepackage(self):
+    def test_is_upstream_import_on_sourcepackage_ok(self):
         # This entry is by_maintainer.
         entry = self._makeImportEntry(
             TranslationSide.UBUNTU, by_maintainer=True, no_upstream=True,
@@ -737,4 +737,3 @@ class FileImporterSharingTest(TestCaseWithFactory):
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(importer.is_upstream_import_on_sourcepackage)
-

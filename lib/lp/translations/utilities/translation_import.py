@@ -433,7 +433,22 @@ class FileImporter(object):
 
     @cachedproperty
     def is_upstream_import_on_sourcepackage(self):
-        """If True, use TranslationMessage.acceptFromUpstreamImportOnPackage`."""
+        """Use TranslationMessage.acceptFromUpstreamImportOnPackage`."""
+        if self.pofile is None:
+            return False
+        if not self.translation_import_queue_entry.by_maintainer:
+            return False
+        if self.translation_import_queue_entry.sourcepackagename is None:
+            return False
+        distroseries = self.translation_import_queue_entry.distroseries
+        sourcepackagename = (
+            self.translation_import_queue_entry.sourcepackagename)
+        templatename = self.potemplate.name
+        from lp.translations.utilities.translationsharinginfo import (
+            has_upstream_template)
+        return not has_upstream_template(
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            templatename=templatename)
 
     @cachedproperty
     def translations_are_msgids(self):
