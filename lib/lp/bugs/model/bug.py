@@ -1034,6 +1034,10 @@ BugMessage""" % sqlvalues(self.id))
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
                 level=BugNotificationLevel.METADATA)
+
+        if not person.selfgenerated_bugnotifications and person in recipients:
+            recipients.remove(person)
+
         if when is None:
             when = UTC_NOW
         message = MessageSet().fromText(

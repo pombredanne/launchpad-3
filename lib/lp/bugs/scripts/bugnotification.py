@@ -49,7 +49,11 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for email_person in emailPeople(recipient.person):
+            email_people = emailPeople(recipient.person)
+            if (not person.selfgenerated_bugnotifications and
+                person in email_people):
+                email_people.remove(person)
+            for email_person in email_people:
                 recipients[email_person] = recipient
 
     for notification in bug_notifications:
