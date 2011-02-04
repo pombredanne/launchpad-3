@@ -1760,6 +1760,12 @@ class PublishingSet:
             builds = SourcePackagePublishingHistory._convertBuilds(
                 source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
+            # Thank you, Zope, for security wrapping an abstract data
+            # structure.
+            from zope.security.proxy import removeSecurityProxy
+            summary = removeSecurityProxy(summary)
+            summary['date_published'] = source_pub.datepublished
+            summary['source_package_name'] = source_pub.source_package_name
             source_build_statuses[source_pub.id] = summary
 
             # If:
@@ -1785,6 +1791,8 @@ class PublishingSet:
                 summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': builds,
+                    'date_published': source_pub.datepublished,
+                    'source_package_name': source_pub.source_package_name,
                 }
                 source_build_statuses[source_pub.id] = summary
 
