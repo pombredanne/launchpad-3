@@ -156,7 +156,7 @@ class IHWSubmission(Interface, IPrivacy):
 
     See doc/hwdb.txt for details about the attributes.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     date_created = exported(
         Datetime(
@@ -433,7 +433,7 @@ class IHWSystemFingerprintSet(Interface):
 
 class IHWDriver(Interface):
     """Information about a device driver."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'Driver ID', required=True, readonly=True))
@@ -560,7 +560,7 @@ class IHWDriverSet(Interface):
 class IHWDriverName(Interface):
     """A driver name as appearing in `IHWDriver`.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     name = exported(
         TextLine(
@@ -572,7 +572,7 @@ class IHWDriverName(Interface):
 class IHWDriverPackageName(Interface):
     """A driver name as appearing in `IHWDriver`.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     package_name = exported(
         TextLine(
@@ -659,7 +659,7 @@ class IHWVendorNameSet(Interface):
 class IHWVendorID(Interface):
     """A list of vendor IDs for different busses associated with vendor names.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
     id = exported(
         Int(title=u'The Database ID', required=True, readonly=True))
 
@@ -714,7 +714,7 @@ class IHWVendorIDSet(Interface):
 
 class IHWDeviceClass(Interface):
     """The capabilities of a device."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=u'Device class ID', required=True, readonly=True)
     device = Reference(schema=Interface)
@@ -774,7 +774,7 @@ IDs for other buses may be arbitrary strings.
 
 class IHWDevice(Interface):
     """Core information to identify a device."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'Device ID', required=True, readonly=True))
@@ -1038,7 +1038,7 @@ class IHWDeviceDriverLinkSet(Interface):
 
 class IHWSubmissionDevice(Interface):
     """Link a submission to a IHWDeviceDriver row."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'HWSubmissionDevice ID', required=True, readonly=True))
@@ -1169,7 +1169,7 @@ class IHWSubmissionBugSet(Interface):
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
-    export_as_webservice_entry('hwdb')
+    export_as_webservice_entry('hwdb', publish_web_link=False)
 
     @operation_parameters(
         bus=Choice(
