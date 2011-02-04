@@ -275,6 +275,9 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.side import (
+    TranslationSide,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
@@ -2640,15 +2643,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True):
+                       copy_pofiles=True, side=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
-            # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries(owner=owner)
-            # Make it use Translations, otherwise there's little point
-            # to us creating a template for it.
-            naked_series = removeSecurityProxy(productseries)
-            naked_series.product.translations_usage = ServiceUsage.LAUNCHPAD
+            if side != TranslationSide.UBUNTU:
+                # No context for this template; set up a productseries.
+                productseries = self.makeProductSeries(owner=owner)
+                # Make it use Translations, otherwise there's little point
+                # to us creating a template for it.
+                naked_series = removeSecurityProxy(productseries)
+                naked_series.product.translations_usage = (
+                    ServiceUsage.LAUNCHPAD)
+            else:
+                distroseries = self.makeUbuntuDistroSeries()
+                sourcepackagename = self.makeSourcePackageName()
+
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
@@ -2682,7 +2691,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None):
+                   create_sharing=False, language=None, side=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2691,7 +2700,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 language = self.makeLanguage()
             language_code = language.code
         if potemplate is None:
-            potemplate = self.makePOTemplate(owner=owner)
+            potemplate = self.makePOTemplate(owner=owner, side=side)
+        else:
+            assert side is None, 'Cannot specify both side and potemplate.'
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
@@ -2729,6 +2740,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         If translations is a sequence, it is enumerated into a dict.
         If translations is None, an arbitrary single translation is created.
         """
+        translations = removeSecurityProxy(translations)
         if translations is None:
             return {0: self.getUniqueString()}
         if isinstance(translations, dict):
@@ -2762,7 +2774,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
                                       current_other=False,
-                                      date_created=None, date_reviewed=None):
+                                      date_created=None, date_reviewed=None,
+                                      language=None, side=None):
         """Create a `TranslationMessage` and make it current.
 
         By default the message will only be current on the side (Ubuntu
@@ -2788,23 +2801,27 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             other translation side?  (Cannot be combined with `diverged`).
         :param date_created: Force a specific creation date instead of 'now'.
         :param date_reviewed: Force a specific review date instead of 'now'.
+        :param language: `Language` to use for the POFile
+        :param side: The `TranslationSide` this translation should be for.
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
+        assert None in (language, pofile), (
+            'Cannot specify both language and pofile.')
+        assert None in (side, pofile), (
+            'Cannot specify both side and pofile.')
         if pofile is None:
-            pofile = self.makePOFile()
+            pofile = self.makePOFile(language=language, side=side)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:
             reviewer = self.makePerson()
-        if translations is None:
-            translations = {0: self.getUniqueString()}
-        else:
-            translations = sanitize_translations_from_webui(
-                potmsgset.singular_text, translations,
-                pofile.language.pluralforms)
+        translations = sanitize_translations_from_webui(
+            potmsgset.singular_text,
+            self.makeTranslationsDict(translations),
+            pofile.language.pluralforms)
 
         if diverged:
             message = self.makeDivergedTranslationMessage(
