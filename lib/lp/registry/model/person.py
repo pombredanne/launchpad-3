@@ -86,7 +86,6 @@ from zope.interface import (
     classImplements,
     implementer,
     implements,
-    providedBy,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
