@@ -84,8 +84,10 @@ from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
+    directlyProvides,
     implementer,
     implements,
+    providedBy,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -371,6 +373,35 @@ class PersonSettings(Storm):
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
 
 
+class UnwritableStub:
+
+    def __init__(self, error_msg, *interfaces):
+        self._error_msg = error_msg
+        directlyProvides(self, *interfaces)
+
+    def __getattr__(self, name):
+        # If the attribute doesn't exist, we'll get a None, which will not
+        # have "default" and thus will generate an AttributeError, which is
+        # correct for a __getattr__.  If the attribute does exist but is not
+        # a field with a default (such as a method), we will also get a
+        # contractually-acceptable AttributeError.  Therefore, we can be
+        # simple here.
+        return providedBy(self).get(name).default
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            # The attributes we want to protect from writing are the ones on
+            # the interface, which should not be "underwear" attributes.  We
+            # need to be able to write these, particularly so that
+            # zope.interface machinery works.
+            self.__dict__[name] = value
+        else:
+            raise NotImplementedError(self._error_msg)
+
+
+_unwritable_person_settings_stub = UnwritableStub(
+    'Teams do not support changing this attribute.', IPersonSettings)
+
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
@@ -390,13 +421,11 @@ class Person(
     @cachedproperty
     def _person_settings(self):
         if self.is_team:
-            # Hopefully no-one ever encounters this.  If someone does,
-            # that means that the code is trying to look at
-            # person-specific attributes on a team, and we should warn
-            # about that explicitly to give a hint about what is wrong
-            # (rather than merely returning None).
-            raise NotImplementedError(
-                'Teams do not support this attribute.')
+            # Teams need to provide these attributes for reading in order for
+            # things like snapshots to work, but they are not actually
+            # pertinent to teams, so they are not actually implemented for
+            # writes.
+            return _unwritable_person_settings_stub
         else:
             # This is a person.
             return IStore(PersonSettings).find(
@@ -2110,6 +2139,7 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('personsettings', 'person'),
             ('persontransferjob', 'minor_person'),
             ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
