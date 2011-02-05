@@ -274,8 +274,9 @@ class ITranslationMessage(Interface):
     def acceptFromUpstreamImportOnPackage(pofile, lock_timestamp=None):
         """Accept a suggestion coming from a translation import.
 
-        This method allow to store translation as upstream translation
-        even though there is no upstream template."""
+        This method allows to mark a translation as being current in
+        upstream even though there is no upstream template.
+        """
 
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):
