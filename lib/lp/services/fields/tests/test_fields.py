@@ -6,12 +6,14 @@
 __metaclass__ = type
 
 import datetime
+from StringIO import StringIO
 import time
 import unittest
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.services.fields import (
     FormattableDate,
+    MugshotImageUpload,
     StrippableText,
     )
 from lp.testing import TestCase
@@ -67,5 +69,18 @@ class TestStrippableText(TestCase):
         self.assertIs(None, target.test)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestMugshotImageUpload(TestCase):
+
+    def test_validation_corrupt_image(self):
+        # ValueErrors raised by PIL become LaunchpadValidationErrors.
+        field = MugshotImageUpload(default_image_resource='dummy')
+        image = StringIO(
+            '/* XPM */\n'
+            'static char *pixmap[] = {\n'
+            '"32 32 253 2",\n'
+            '  "00 c #01CAA3",\n'
+            '  ".. s None c None",\n'
+            '};')
+        image.filename = 'foo.xpm'
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, image)

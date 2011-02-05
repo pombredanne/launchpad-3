@@ -714,7 +714,7 @@ class BaseImageUpload(Bytes):
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
             pil_image = PIL.Image.open(StringIO(image))
-        except IOError:
+        except (IOError, ValueError):
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
