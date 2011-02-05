@@ -954,7 +954,8 @@ class IBranchEditableAttributes(Interface):
             trailing_slash=False,
             description=_(
                 "This is the external location where the Bazaar "
-                "branch is hosted.")))
+                "branch is hosted. This is None when the branch is"
+                "Hosted by Launchpad")))
 
     mirror_status_message = exported(
         Text(
