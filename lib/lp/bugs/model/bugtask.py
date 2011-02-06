@@ -9,7 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'BugTaskDelta',
-    'BugTaskResultSet',
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'BugTask',
@@ -424,21 +423,6 @@ class NullBugTask(BugTaskMixin):
         """See `IBugTask`."""
         return 'Bug #%s is not in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
-
-
-class BugTaskResultSet(DecoratedResultSet):
-    """Decorated results with cached assignees."""
-
-    def __iter__(self, *args, **kwargs):
-        """Iter with caching of assignees.
-
-        Assumes none of the decorators will need to access the assignees or
-        there is not benefit.
-        """
-        bugtasks = list(
-            super(BugTaskResultSet, self).__iter__(*args, **kwargs))
-        BugTaskSet._cache_assignees(bugtasks)
-        return iter(bugtasks)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -2371,16 +2355,17 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, params, *args):
+    def _search(self, resultrow, prejoins, pre_iter_hook, params, *args):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
         :param prejoins: A sequence of Storm SQL row instances which are
             pre-joined.
+        :param pre_iter_hook: An optional pre-iteration hook used for eager
+            loading bug targets for list views.
         :param params: A BugTaskSearchParams instance.
         :param args: optional additional BugTaskSearchParams instances,
         """
-
         store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
         has_duplicate_results] = self.buildQuery(params)
@@ -2400,7 +2385,8 @@ class BugTaskSet:
                 decorator = bugtask_decorator
 
             resultset.order_by(orderby)
-            return DecoratedResultSet(resultset, result_decorator=decorator)
+            return DecoratedResultSet(resultset, result_decorator=decorator,
+                pre_iter_hook=pre_iter_hook)
 
         bugtask_fti = SQL('BugTask.fti')
         inner_resultrow = (BugTask, bugtask_fti)
@@ -2439,8 +2425,8 @@ class BugTaskSet:
 
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        return BugTaskResultSet(
-            result, result_decorator=decorator)
+        return DecoratedResultSet(result, result_decorator=decorator,
+            pre_iter_hook=pre_iter_hook)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2459,35 +2445,37 @@ class BugTaskSet:
         if _noprejoins:
             prejoins = []
             resultrow = BugTask
+            eager_load = None
         else:
             requested_joins = kwargs.get('prejoins', [])
+            # NB: We could save later work by predicting what sort of targets
+            # we might be interested in here, but as at any point we're dealing
+            # with relatively few results, this is likely to be a small win.
             prejoins = [
-                (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
-                (Product, LeftJoin(Product, BugTask.product == Product.id)),
-                (SourcePackageName,
-                 LeftJoin(
-                     SourcePackageName,
-                     BugTask.sourcepackagename == SourcePackageName.id)),
+                (Bug, LeftJoin(Bug, BugTask.bug == Bug.id))
                 ] + requested_joins
-            resultrow = (BugTask, Bug, Product, SourcePackageName)
+            def eager_load(results):
+                product_ids = set([row[0].productID for row in results])
+                product_ids.discard(None)
+                pkgname_ids = set(
+                    [row[0].sourcepackagenameID for row in results])
+                pkgname_ids.discard(None)
+                store = IStore(BugTask)
+                if product_ids:
+                    list(store.find(Product, Product.id.is_in(product_ids)))
+                if pkgname_ids:
+                    list(store.find(SourcePackageName,
+                        SourcePackageName.id.is_in(pkgname_ids)))
+            resultrow = (BugTask, Bug)
             additional_result_objects = [
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return self._search(resultrow, prejoins, params, *args)
+        return self._search(resultrow, prejoins, eager_load, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        return self._search(BugTask.bugID, [], params).result_set
-
-    @staticmethod
-    def _cache_assignees(rows):
-        assignee_ids = set(
-            bug_task.assigneeID for bug_task in rows)
-        assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            assignee_ids, need_validity=True)
-        # Execute query to load storm cache.
-        list(assignees)
+        return self._search(BugTask.bugID, [], None, params).result_set
 
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
@@ -2495,10 +2483,7 @@ class BugTaskSet:
             user, milestone=milestone,
             orderby=['status', '-importance', 'id'],
             omit_dupes=True, exclude_conjoined_tasks=True)
-        non_conjoined_slaves = self.search(params)
-
-        return DecoratedResultSet(
-            non_conjoined_slaves, pre_iter_hook=BugTaskSet._cache_assignees)
+        return self.search(params)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
