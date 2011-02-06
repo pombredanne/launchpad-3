@@ -488,7 +488,7 @@ class Archive(SQLBase):
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
         else:
-            order_const = "debversion_sort_key(SourcePackageRelease.version)"
+            order_const = "SourcePackageRelease.version"
             desc_version_order = SQLConstant(order_const+" DESC")
             orderBy.insert(1, desc_version_order)
 
@@ -578,7 +578,7 @@ class Archive(SQLBase):
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        order_const = "SourcePackageRelease.version"
         desc_version_order = SQLConstant(order_const+" DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
@@ -672,7 +672,7 @@ class Archive(SQLBase):
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
         else:
-            order_const = "debversion_sort_key(BinaryPackageRelease.version)"
+            order_const = "BinaryPackageRelease.version"
             desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
 
