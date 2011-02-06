@@ -37,6 +37,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -89,7 +90,10 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import get_property_cache
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -112,6 +116,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     default_name_by_purpose,
     DistroSeriesNotFound,
+    FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
@@ -295,39 +300,6 @@ class Archive(SQLBase):
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
 
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -414,6 +386,16 @@ class Archive(SQLBase):
                 self.distribution, ArchivePurpose.DEBUG)
         else:
             return self
+
+    @cachedproperty
+    def default_component(self):
+        """See `IArchive`."""
+        if self.is_partner:
+            return getUtility(IComponentSet)['partner']
+        elif self.is_ppa:
+            return getUtility(IComponentSet)['main']
+        else:
+            return None
 
     @property
     def archive_url(self):
@@ -841,12 +823,13 @@ class Archive(SQLBase):
         return permission
 
     def getComponentsForSeries(self, distroseries):
-        if self.is_partner:
-            return [getUtility(IComponentSet)['partner']]
-        elif self.is_ppa:
-            return [getUtility(IComponentSet)['main']]
-        else:
+        """See `IArchive`."""
+        # DistroSeries.components and Archive.default_component are
+        # cachedproperties, so this is fairly cheap.
+        if self.purpose in FULL_COMPONENT_SUPPORT:
             return distroseries.components
+        else:
+            return [self.default_component]
 
     def updateArchiveCache(self):
         """See `IArchive`."""
@@ -948,9 +931,10 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the RELEASE pocket.")
             if (component is not None and
-                component.id is not getUtility(IComponentSet)['main'].id):
+                component != dependency.default_component):
                 raise ArchiveDependencyError(
-                    "Non-primary archives only support the 'main' component.")
+                    "Non-primary archives only support the '%s' component." %
+                    dependency.default_component.name)
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
@@ -1086,7 +1070,7 @@ class Archive(SQLBase):
                 # interface will no longer require them because we can
                 # then relax the database constraint on
                 # ArchivePermission.
-                component_or_package = getUtility(IComponentSet)['main']
+                component_or_package = self.default_component
 
         # Flatly refuse uploads to copy archives, at least for now.
         if self.is_copy:
@@ -1210,7 +1194,7 @@ class Archive(SQLBase):
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
-        return permissions.count() > 0
+        return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
         """See `IArchive`."""
@@ -1234,8 +1218,10 @@ class Archive(SQLBase):
             else:
                 name = None
 
-            if name is None or name != 'main':
-                raise InvalidComponent("Component for PPAs should be 'main'")
+            if name != self.default_component.name:
+                raise InvalidComponent(
+                    "Component for PPAs should be '%s'" %
+                    self.default_component.name)
 
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
@@ -1388,7 +1374,7 @@ class Archive(SQLBase):
 
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        return store.find(
             BinaryPackageRelease,
             BinaryPackageFile.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
@@ -1396,10 +1382,8 @@ class Archive(SQLBase):
             LibraryFileAlias.filename == filename,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True)
-        if results.count() > 1:
-            return None
-        return results.one()
+                BinaryPackageRelease.id,
+            ).order_by(Desc(BinaryPackagePublishingHistory.id)).first()
 
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
@@ -1563,6 +1547,31 @@ class Archive(SQLBase):
         notify(ObjectCreatedEvent(subscription))
 
         return subscription
+
+    @property
+    def num_pkgs_building(self):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        base_query = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id)
+        sprs_building = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.BUILDING,
+            *base_query)
+        sprs_waiting = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
+            *base_query)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = sprs_building.count()
+        pkgs_waiting_count = sprs_waiting.difference(sprs_building).count()
+
+        return pkgs_building_count, pkgs_waiting_count
 
     def getSourcePackageReleases(self, build_status=None):
         """See `IArchive`."""

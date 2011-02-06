@@ -83,9 +83,8 @@ class BlueprintNotificationLevel(DBEnumeratedType):
         """)
 
 
-class IStructuralSubscription(Interface):
-    """A subscription to a Launchpad structure."""
-    export_as_webservice_entry()
+class IStructuralSubscriptionPublic(Interface):
+    """The public parts of a subscription to a Launchpad structure."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
     product = Int(title=_('Product'), required=False, readonly=True)
@@ -134,9 +133,20 @@ class IStructuralSubscription(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface)))
 
+
+class IStructuralSubscriptionRestricted(Interface):
+    """The restricted parts of a subscription to a Launchpad structure."""
+
     @export_factory_operation(Interface, [])
     def newBugFilter():
         """Returns a new `BugSubscriptionFilter` for this subscription."""
+
+
+class IStructuralSubscription(
+    IStructuralSubscriptionPublic, IStructuralSubscriptionRestricted):
+    """A subscription to a Launchpad structure."""
+
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IStructuralSubscriptionTargetRead(Interface):

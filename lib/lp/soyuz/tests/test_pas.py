@@ -18,12 +18,18 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.publisher.addFakeChroots()
 
-    def assertArchsForHint(self, hint_string, expected_arch_tags):
+    def assertArchsForHint(self, hint_string, expected_arch_tags,
+                           allowed_arch_tags=None):
         """Assert that the given hint resolves to the expected archtags."""
         pub = self.publisher.getPubSource(architecturehintlist=hint_string)
+        if allowed_arch_tags is None:
+            allowed_archs = self.publisher.breezy_autotest.architectures
+        else:
+            allowed_archs = [
+                arch for arch in self.publisher.breezy_autotest.architectures
+                if arch.architecturetag in allowed_arch_tags]
         architectures = determineArchitecturesToBuild(
-            pub, self.publisher.breezy_autotest.architectures,
-            self.publisher.breezy_autotest)
+            pub, allowed_archs, self.publisher.breezy_autotest)
         self.assertEqual(
             expected_arch_tags, [a.architecturetag for a in architectures])
 
@@ -97,3 +103,10 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         # virtual archs are returned.
         self.publisher.breezy_autotest.main_archive.require_virtualized = True
         self.assertArchsForHint('any', ['i386'])
+
+    def test_no_all_builds_when_nominatedarchindep_not_permitted(self):
+        # Some archives (eg. armel rebuilds) don't want arch-indep
+        # builds. If the nominatedarchindep architecture (normally
+        # i386) is omitted, no builds will be created for arch-indep
+        # sources.
+        self.assertArchsForHint('all', [], allowed_arch_tags=['hppa'])

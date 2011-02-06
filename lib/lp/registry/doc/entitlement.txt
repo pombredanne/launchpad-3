@@ -104,8 +104,11 @@ If the quota is UNLIMITED the exceeded quota test is false even when
 using a really large value for amount used.  The entitlement remains
 valid.
 
+We use math.pow here, since __builtin__.pow is overridden by twisted.conch.
+
+    >>> import math
     >>> entitlement.quota = EntitlementQuota.UNLIMITED
-    >>> entitlement.amount_used = pow(10,9)
+    >>> entitlement.amount_used = math.pow(10,9)
     >>> entitlement.exceeded_quota
     False
     >>> entitlement.is_valid

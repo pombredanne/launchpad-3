@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackageBuild',
     'IBuildRescoreForm',
     'IBinaryPackageBuildSet',
+    'UnparsableDependencies',
     ]
 
 from lazr.enum import (
@@ -50,6 +51,10 @@ class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
     webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
+
+
+class UnparsableDependencies(Exception):
+    """Raised when parsing invalid dependencies on a binary package."""
 
 
 class IBinaryPackageBuildView(IPackageBuild):
@@ -130,6 +135,13 @@ class IBinaryPackageBuildView(IPackageBuild):
         "of the binaries resulted from this build. It's 'None' if it is "
         "a build imported by Gina.")
 
+    api_score = exported(
+        Int(
+            title=_("Score of the related job (if any)"),
+            readonly=True,
+            ),
+        exported_as="score")
+
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
 
@@ -177,6 +189,23 @@ class IBinaryPackageBuildView(IPackageBuild):
 
         :param filename: the filename to look up.
         :return: the corresponding `IBinaryPackageFile` if it was found.
+        """
+
+    def getBinaryPackageNamesForDisplay():
+        """Retrieve the build's binary package names for display purposes.
+
+        :return: a result set of
+            (`IBinaryPackageRelease`, `IBinaryPackageName`) ordered by name
+            and `IBinaryPackageRelease.id`.
+        """
+
+    def getBinaryFilesForDisplay():
+        """Retrieve the build's `IBinaryPackageFile`s for display purposes.
+
+        Also prefetches other related objects needed for display.
+
+        :return: a result set of (`IBinaryPackageRelease`,
+            `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
         """
 
 
@@ -311,6 +340,7 @@ class IBinaryPackageBuildSet(Interface):
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+
     def retryDepWaiting(distroarchseries):
         """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
 

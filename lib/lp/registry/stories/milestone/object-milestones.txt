@@ -129,8 +129,7 @@ the bug and blueprint counts (because they are costly to retrieve).
     GNOME 1.3    A date      This is an inactive milestone
     GNOME 1.2    A date      not yet released
     GNOME 1.1.   A date      not yet released
-    GNOME 1.1    A date      not yet released Bugs targeted: 3 Confirmed
-                                              Blueprints targeted: 2 Unknown
+    GNOME 1.1    A date      not yet released
 
 
 Individual milestones

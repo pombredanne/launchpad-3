@@ -1714,6 +1714,25 @@ class TestPOFileSet(TestCaseWithFactory):
 
         self.assertContentEqual([pofile], found)
 
+    def test_getPOFilesByPathAndOrigin_includes_obsolete_templates(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        self.assertContentEqual(
+            [pofile],
+            self.pofileset.getPOFilesByPathAndOrigin(
+                pofile.path, productseries=template.productseries))
+
+    def test_getPOFilesByPathAndOrigin_can_ignore_obsolete_templates(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        self.assertContentEqual(
+            [],
+            self.pofileset.getPOFilesByPathAndOrigin(
+                pofile.path, productseries=template.productseries,
+                ignore_obsolete=True))
+
 
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
@@ -1836,12 +1855,11 @@ class TestPOFile(TestCaseWithFactory):
 
     def _createMessageSet(self, testmsg):
         # Create a message set from the test data.
-        pomsgset = self.factory.makePOTMsgSet(
+        potmsgset = self.factory.makePOTMsgSet(
             self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
-        pomsgset.updateTranslation(
-            self.pofile, self.pofile.owner,
-            {0: testmsg['string'], },
-            True, None, force_edition_rights=True)
+        translation = self.factory.makeCurrentTranslationMessage(
+            self.pofile, potmsgset=potmsgset, translator=self.pofile.owner,
+            translations={0: testmsg['string'], }, current_other=True)
 
     def test_getTranslationRows_sequence(self):
         # Test for correct sorting of obsolete messages (where sequence=0).

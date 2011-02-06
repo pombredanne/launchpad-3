@@ -561,6 +561,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertContentEqual([stale_daily],
             SourcePackageRecipe.findStaleDailyBuilds())
 
+    def test_findStaleDailyBuildsDistinct(self):
+        # If a recipe has 2 builds due to 2 distroseries, it only returns
+        # one recipe.
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        hoary = self.factory.makeSourcePackageRecipeDistroseries("hoary")
+        recipe.distroseries.add(hoary)
+        for series in recipe.distroseries:
+            build = recipe.requestBuild(
+                recipe.daily_build_archive, recipe.owner,
+                series, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).date_created = (
+                datetime.now(UTC) - timedelta(hours=24, seconds=1))
+        stale_recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        self.assertEqual([recipe], list(stale_recipes))
+
     def test_getMedianBuildDuration(self):
 
         def set_duration(build, minutes):
@@ -584,6 +600,21 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         addBuild(11)
         self.assertEqual(
             timedelta(minutes=11), recipe.getMedianBuildDuration())
+
+    def test_getBuilds(self):
+        # Builds that need building are pending.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        self.assertEqual([], list(recipe.getBuilds()))
+        self.assertEqual([build], list(recipe.getPendingBuilds()))
+
+    def test_getBuilds_cancelled(self):
+        # Cancelled builds are not considered pending.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        build.cancelBuild()
+        self.assertEqual([build], list(recipe.getBuilds()))
+        self.assertEqual([], list(recipe.getPendingBuilds()))
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

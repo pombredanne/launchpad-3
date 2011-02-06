@@ -682,7 +682,7 @@ milestone.
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
     >>> [subscription for subscription in owner.structural_subscriptions]
-    [<StructuralSubscription ...>]
+    [<...StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]

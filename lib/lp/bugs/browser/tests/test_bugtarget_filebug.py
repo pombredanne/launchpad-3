@@ -244,7 +244,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            ["Thank you for your bug report."],
+            ['<p class="last">Thank you for your bug report.</p>'],
             [notification.message
              for notification in view.request.response.notifications])
 
@@ -254,7 +254,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            [u"We really appreciate your bug report"],
+            [u'<p class="last">We really appreciate your bug report</p>'],
             [notification.message
              for notification in view.request.response.notifications])
 

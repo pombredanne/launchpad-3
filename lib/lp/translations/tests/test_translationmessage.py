@@ -18,7 +18,10 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     TranslationConflict,
@@ -77,8 +80,7 @@ class TestApprove(TestCaseWithFactory):
         # There is a suggestion for it.  The suggestion gets approved,
         # and thereby becomes the message's current translation.
         pofile = self.factory.makePOFile('br')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
@@ -94,8 +96,8 @@ class TestApprove(TestCaseWithFactory):
         # If there was already a current translation, it is disabled
         # when a suggestion is approved.
         pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('te')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset)
         incumbent_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
@@ -173,8 +175,7 @@ class TestApprove(TestCaseWithFactory):
         # details) the approval can be made to propagate to the other
         # side, subject to the share_with_other_side parameter.
         pofile = self.factory.makePOFile('ki')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
 
         self.assertFalse(suggestion.is_current_upstream)
@@ -188,8 +189,7 @@ class TestApprove(TestCaseWithFactory):
     def test_approve_marks_reviewed(self):
         # Approving a suggestion updates its review fields.
         pofile = self.factory.makePOFile('ko')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
 
         self.assertIs(None, suggestion.reviewer)
@@ -217,8 +217,7 @@ class TestApprove(TestCaseWithFactory):
         # A reviewer receives karma for approving suggestions.
         reviewer = self.factory.makePerson()
         pofile = self.factory.makePOFile('be')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
 
         karmarecorder = self.installKarmaRecorder(person=reviewer)
         suggestion.approve(pofile, reviewer)
@@ -231,8 +230,8 @@ class TestApprove(TestCaseWithFactory):
         # A translator receives karma for suggestions that are approved.
         translator = self.factory.makePerson()
         pofile = self.factory.makePOFile('ba')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, translator=translator, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, translator=translator)
 
         karmarecorder = self.installKarmaRecorder(person=translator)
         suggestion.approve(pofile, self.factory.makePerson())
@@ -247,8 +246,8 @@ class TestApprove(TestCaseWithFactory):
         # suggestion.
         translator = self.factory.makePerson()
         pofile = self.factory.makePOFile('bi')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, translator=translator, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, translator=translator)
 
         karmarecorder = self.installKarmaRecorder(person=translator)
         suggestion.approve(pofile, translator)
@@ -267,6 +266,28 @@ class TestApprove(TestCaseWithFactory):
             TranslationConflict,
             suggestion.approve,
             pofile, self.factory.makePerson(), lock_timestamp=old)
+
+    def test_approve_clones_message_from_other_side_to_diverge(self):
+        package = self.factory.makeSourcePackage()
+        template=self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        potmsgset = self.factory.makePOTMsgSet(potemplate=template)
+        upstream_pofile = self.factory.makePOFile('nl')
+        ubuntu_pofile = self.factory.makePOFile('nl', potemplate=template)
+        diverged_tm = self.factory.makeDivergedTranslationMessage(
+            pofile=upstream_pofile, potmsgset=potmsgset)
+        ubuntu_tm = self.factory.makeSuggestion(
+            pofile=ubuntu_pofile, potmsgset=potmsgset)
+        ubuntu_tm.is_current_ubuntu = True
+
+        ubuntu_tm.approve(upstream_pofile, self.factory.makePerson())
+
+        upstream_tm = potmsgset.getCurrentTranslation(
+            upstream_pofile.potemplate, upstream_pofile.language,
+            TranslationSide.UPSTREAM)
+        self.assertEqual(ubuntu_tm.all_msgstrs, upstream_tm.all_msgstrs)
+        self.assertNotEqual(ubuntu_tm, upstream_tm)
 
 
 class TestApproveAsDiverged(TestCaseWithFactory):

@@ -912,7 +912,8 @@
         <browser:url
             for="lp.bugs.interfaces.cve.ICve"
             path_expression="sequence"
-            parent_utility="lp.bugs.interfaces.cve.ICveSet"/>
+            parent_utility="lp.bugs.interfaces.cve.ICveSet"
+            rootsite="bugs" />
         <browser:defaultView
             for="lp.bugs.interfaces.cve.ICve"
             name="+index"/>
@@ -1121,14 +1122,16 @@
         <browser:url
             for="lp.bugs.interfaces.bugnomination.IBugNomination"
             path_expression="string:nominations/${id}"
-            attribute_to_parent="bug"/>
+            attribute_to_parent="bug"
+            rootsite="bugs" />
     </facet>
     <facet
         facet="bugs">
         <browser:url
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             path_expression="string:+watch/${id}"
-            attribute_to_parent="bug"/>
+            attribute_to_parent="bug"
+            rootsite="bugs"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             name="+edit"/>
@@ -1192,9 +1195,15 @@
       <browser:page
           for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
           class=".bugsubscriptionfilter.BugSubscriptionFilterEditView"
-          template="../templates/bug-subscription-filter-edit.pt"
+          template="../../app/templates/generic-edit.pt"
           permission="launchpad.Edit"
           name="+edit" />
+      <browser:page
+          for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterCreateView"
+          template="../../app/templates/generic-edit.pt"
+          permission="launchpad.View"
+          name="+new-filter" />
     </facet>
 
     <!-- Widgets -->

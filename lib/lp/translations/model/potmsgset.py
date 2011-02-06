@@ -36,7 +36,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
-    UTC_NOW,
     )
 from canonical.database.sqlbase import (
     cursor,
@@ -46,12 +45,9 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.launchpad.readonly import is_read_only
-from lp.app.errors import UnexpectedFormData
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
-    BrokenTextError,
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
@@ -83,7 +79,6 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
 from lp.translations.utilities.validate import (
-    GettextValidationError,
     validate_translation,
     )
 
@@ -282,54 +277,6 @@ class POTMsgSet(SQLBase):
             current.setPOFile(pofile)
             return current
 
-    def _getUsedTranslationMessage(self, potemplate, language, current=True):
-        """Get a translation message which is either used in
-        Launchpad (current=True) or in an import (current=False).
-
-        Prefers a diverged message if present.
-        """
-        # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
-        # carefully: they need to match condition specified in indexes,
-        # or Postgres may not pick them up (in complicated queries,
-        # Postgres query optimizer sometimes does text-matching of indexes).
-        if current:
-            used_clause = 'is_current_ubuntu IS TRUE'
-        else:
-            used_clause = 'is_current_upstream IS TRUE'
-        if potemplate is None:
-            template_clause = 'TranslationMessage.potemplate IS NULL'
-        else:
-            template_clause = (
-                '(TranslationMessage.potemplate IS NULL OR '
-                ' TranslationMessage.potemplate=%s)' % sqlvalues(potemplate))
-        clauses = [
-            'potmsgset = %s' % sqlvalues(self),
-            used_clause,
-            template_clause,
-            'TranslationMessage.language = %s' % sqlvalues(language)]
-
-        order_by = '-COALESCE(potemplate, -1)'
-
-        # This should find at most two messages: zero or one shared
-        # message, and zero or one diverged one.
-        return TranslationMessage.selectFirst(
-            ' AND '.join(clauses), orderBy=[order_by])
-
-    def getCurrentTranslationMessage(self, potemplate, language):
-        """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, current=True)
-
-    def getImportedTranslationMessage(self, potemplate, language):
-        """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, current=False)
-
-    def getSharedTranslationMessage(self, language):
-        """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            None, language, current=True)
-
     def getOtherTranslation(self, language, side):
         """See `IPOTMsgSet`."""
         traits = getUtility(
@@ -344,7 +291,6 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
-        assert side is not None, "Translation side must be specified."
         traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
         flag = removeSecurityProxy(traits.getFlag(TranslationMessage))
 
@@ -469,7 +415,7 @@ class POTMsgSet(SQLBase):
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = ISlaveStore(TranslationMessage).find(
+        result = IStore(TranslationMessage).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
@@ -516,59 +462,10 @@ class POTMsgSet(SQLBase):
             date_updated = current.date_reviewed
         return (date_updated is not None and date_updated > timestamp)
 
-    def _sanitizeTranslations(self, translations, pluralforms):
-        """Sanitize `translations` using self.applySanityFixes.
-
-        If there is no certain pluralform in `translations`, set it to None.
-        If there are `translations` with greater pluralforms than allowed,
-        sanitize and keep them.
-        """
-        # Strip any trailing or leading whitespace, and normalize empty
-        # translations to None.
-        sanitized_translations = {}
-        for pluralform in range(pluralforms):
-            if pluralform < len(translations):
-                sanitized_translations[pluralform] = self.applySanityFixes(
-                    translations[pluralform])
-            else:
-                sanitized_translations[pluralform] = None
-        # Unneeded plural forms are stored as well (needed since we may
-        # have incorrect plural form data, so we can just reactivate them
-        # once we fix the plural information for the language)
-        for index, value in enumerate(translations):
-            if index not in sanitized_translations:
-                sanitized_translations[index] = self.applySanityFixes(value)
-
-        return sanitized_translations
-
     def validateTranslations(self, translations):
         """See `IPOTMsgSet`."""
         validate_translation(
             self.singular_text, self.plural_text, translations, self.flags)
-
-    def _validate_translations(self, translations, ignore_errors):
-        """Validate all the `translations` and return a validation_status."""
-        # By default all translations are correct.
-        validation_status = TranslationValidationStatus.OK
-
-        # Validate the translation we got from the translation form
-        # to know if gettext is unhappy with the input.
-        try:
-            self.validateTranslations(translations)
-        except GettextValidationError:
-            if ignore_errors:
-                # The translations are stored anyway, but we set them as
-                # broken.
-                validation_status = TranslationValidationStatus.UNKNOWNERROR
-            else:
-                # Check to know if there is any translation.
-                if any(translations.values()):
-                    # Partial translations cannot be stored, the
-                    # exception is raised again and handled outside
-                    # this method.
-                    raise
-
-        return validation_status
 
     def _findPOTranslations(self, translations):
         """Find all POTranslation records for passed `translations`."""
@@ -651,327 +548,6 @@ class POTMsgSet(SQLBase):
             return matches[0]
         else:
             return None
-
-    def _makeTranslationMessageCurrent(self, pofile, new_message,
-                                       upstream_message, is_current_upstream,
-                                       submitter, force_shared=False,
-                                       force_diverged=False):
-        """Make the given translation message the current one."""
-        current_message = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
-
-        # Converging from a diverged to a shared translation:
-        # when the new translation matches a shared one (iscurrent,
-        # potemplate==None), and a current translation is diverged
-        # (potemplate != None), then we want to remove divergence.
-        converge_shared = force_shared
-        if (not force_diverged and
-            (current_message is None or
-             ((new_message.potemplate is None and
-                new_message.is_current_ubuntu) and
-              (current_message.potemplate is not None)))):
-            converge_shared = True
-
-        make_current = False
-
-        if is_current_upstream:
-            # A new imported message is made current
-            # if there is no existing current message
-            # or if there was no previous imported message
-            # or if the current message came from import
-            # or if current message is empty (deactivated translation),
-            # or if current message is the same as new message,
-            # or, if we are forcing a diverged imported translation.
-            # Empty imported translations should not replace
-            # non-empty imported translations.
-            if (current_message is None or
-                upstream_message is None or
-                (current_message.is_current_upstream and
-                 (current_message.is_empty or not new_message.is_empty)) or
-                current_message.is_empty or
-                (current_message == new_message) or
-                (force_diverged and not new_message.is_empty)):
-                make_current = True
-
-                # Don't update the submitter and date changed
-                # if there was no current message and an empty
-                # message is submitted.
-                if (not (current_message is None and
-                         new_message.is_empty)):
-                    pofile.lasttranslator = submitter
-                    pofile.date_changed = UTC_NOW
-
-        else:
-            # Non-imported translations.
-            make_current = True
-            pofile.lasttranslator = submitter
-            pofile.date_changed = UTC_NOW
-
-            if new_message.origin == RosettaTranslationOrigin.ROSETTAWEB:
-                # The submitted translation came from our UI, we give
-                # give karma to the submitter of that translation.
-                new_message.submitter.assignKarma(
-                    'translationsuggestionapproved',
-                    product=pofile.potemplate.product,
-                    distribution=pofile.potemplate.distribution,
-                    sourcepackagename=pofile.potemplate.sourcepackagename)
-
-            # If the current message has been changed, and it was submitted
-            # by a different person than is now doing the review (i.e.
-            # `submitter`), then give this reviewer karma as well.
-            if new_message != current_message:
-                if new_message.submitter != submitter:
-                    submitter.assignKarma(
-                        'translationreview',
-                        product=pofile.potemplate.product,
-                        distribution=pofile.potemplate.distribution,
-                        sourcepackagename=pofile.potemplate.sourcepackagename)
-
-                new_message.markReviewed(submitter, UTC_NOW)
-                pofile.date_changed = UTC_NOW
-                pofile.lasttranslator = submitter
-
-        unmark_upstream = (
-            make_current and
-            upstream_message is not None and (
-                is_current_upstream or upstream_message == new_message))
-        if unmark_upstream:
-            # Unmark previous imported translation as 'imported'.
-            was_diverged_to = upstream_message.potemplate
-            if (was_diverged_to is not None or
-                (was_diverged_to is None and
-                 new_message == current_message and
-                 new_message.potemplate is not None)):
-                # If imported message was diverged,
-                # or if it was shared, but there was
-                # a diverged current message that is
-                # now being imported, previous imported
-                # message is neither imported nor current
-                # anymore.
-                upstream_message.is_current_upstream = False
-                upstream_message.is_current_ubuntu = False
-                upstream_message.potemplate = None
-                if upstream_message != new_message:
-                    Store.of(upstream_message).add_flush_order(
-                        upstream_message, new_message)
-            if not (force_diverged or force_shared):
-                # If there was an imported message, keep the same
-                # divergence/shared state unless something was forced.
-                if (new_message.is_current_upstream and
-                    new_message.potemplate is None):
-                    # If we are reverting imported message to
-                    # a shared imported message, do not
-                    # set it as diverged anymore.
-                    was_diverged_to = None
-                new_message.potemplate = was_diverged_to
-
-        # Change actual is_current_ubuntu flag only if it validates ok.
-        if new_message.validation_status == TranslationValidationStatus.OK:
-            if make_current:
-                if (current_message is not None and
-                    current_message.potemplate is not None):
-                    # Deactivate previous diverged message.
-                    current_message.is_current_ubuntu = False
-                    if current_message != new_message:
-                        Store.of(current_message).add_flush_order(
-                            current_message, new_message)
-
-                    # Do not "converge" a diverged imported message since
-                    # there might be another shared imported message.
-                    if not current_message.is_current_upstream:
-                        current_message.potemplate = None
-                    if not converge_shared:
-                        force_diverged = True
-                if force_diverged:
-                    # Make the message diverged.
-                    new_message.potemplate = pofile.potemplate
-                else:
-                    # Either converge_shared==True, or a new message.
-                    new_message.potemplate = None
-
-                new_message.makeCurrentUbuntu()
-            else:
-                new_message.potemplate = None
-        if is_current_upstream or new_message == upstream_message:
-            new_message.makeCurrentUpstream()
-
-    def _isTranslationMessageASuggestion(self, force_suggestion,
-                                         pofile, submitter,
-                                         force_edition_rights,
-                                         is_current_upstream, lock_timestamp):
-        # Whether a message should be saved as a suggestion and
-        # whether we should display a warning when an older translation is
-        # submitted.
-        # Returns a pair of (just_a_suggestion, warn_about_lock_timestamp).
-
-        if force_suggestion:
-            return True, False
-
-        # Is the submitter allowed to edit translations?
-        is_editor = (force_edition_rights or
-                     pofile.canEditTranslations(submitter))
-
-        if is_read_only():
-            # This can happen if the request was just in time to slip
-            # past the read-only check before the gate closed.  If it
-            # does, that screws up the privileges checks below since
-            # nobody has translation privileges in read-only mode.
-            raise UnexpectedFormData(
-                "Sorry, Launchpad is in read-only mode right now.")
-
-        if is_current_upstream and not is_editor:
-            raise AssertionError(
-                'Only an editor can submit is_current_upstream translations.')
-
-        assert is_editor or pofile.canAddSuggestions(submitter), (
-            '%s cannot add suggestions here.' % submitter.displayname)
-
-        # If not an editor, default to submitting a suggestion only.
-        just_a_suggestion = not is_editor
-        warn_about_lock_timestamp = False
-
-        # Our current submission is newer than 'lock_timestamp'
-        # and we try to change it, so just add a suggestion.
-        if (not just_a_suggestion and not is_current_upstream and
-            self.isTranslationNewerThan(pofile, lock_timestamp)):
-            just_a_suggestion = True
-            warn_about_lock_timestamp = True
-
-        return just_a_suggestion, warn_about_lock_timestamp
-
-    def allTranslationsAreEmpty(self, translations):
-        """Return true if all translations are empty strings or None."""
-        has_translations = False
-        for pluralform in translations:
-            translation = translations[pluralform]
-            if (translation is not None and translation != u""):
-                has_translations = True
-                break
-        return not has_translations
-
-    def updateTranslation(self, pofile, submitter, new_translations,
-                          is_current_upstream, lock_timestamp,
-                          force_shared=False, force_diverged=False,
-                          force_suggestion=False, ignore_errors=False,
-                          force_edition_rights=False, allow_credits=False):
-        """See `IPOTMsgSet`."""
-
-        just_a_suggestion, warn_about_lock_timestamp = (
-            self._isTranslationMessageASuggestion(force_suggestion,
-                                                  pofile, submitter,
-                                                  force_edition_rights,
-                                                  is_current_upstream,
-                                                  lock_timestamp))
-
-        # If the update is on the translation credits message, yet
-        # update is not is_current_upstream, silently return.
-        deny_credits = (not allow_credits and
-                        self.is_translation_credit and
-                        not is_current_upstream)
-        if deny_credits:
-            return None
-
-        # Sanitize translations
-        sanitized_translations = self._sanitizeTranslations(
-            new_translations, pofile.plural_forms)
-        # Check that the translations are correct.
-        validation_status = self._validate_translations(
-            sanitized_translations, ignore_errors)
-
-        # Find all POTranslation records for strings we need.
-        potranslations = self._findPOTranslations(sanitized_translations)
-
-        # Find an existing TranslationMessage with exactly the same set
-        # of translations.  None if there is no such message and needs to be
-        # created.
-        matching_message = self._findMatchingTranslationMessage(
-            pofile, potranslations, prefer_shared=True)
-
-        match_is_upstream = (
-            matching_message is not None and
-            matching_message.is_current_upstream)
-        if is_current_upstream or match_is_upstream:
-            upstream_message = self.getImportedTranslationMessage(
-                pofile.potemplate, pofile.language)
-        else:
-            upstream_message = None
-
-        if matching_message is None:
-            # Creating a new message.
-
-            if is_current_upstream:
-                origin = RosettaTranslationOrigin.SCM
-            else:
-                origin = RosettaTranslationOrigin.ROSETTAWEB
-
-            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-                "Change this code to support %d plural forms."
-                % TranslationConstants.MAX_PLURAL_FORMS)
-
-            if (is_current_upstream and
-                self.allTranslationsAreEmpty(sanitized_translations)):
-                # Don't create empty is_current_upstream translations
-                if upstream_message is not None:
-                    upstream_message.is_current_upstream = False
-                    if upstream_message.is_current_ubuntu:
-                        upstream_message.is_current_ubuntu = False
-                return None
-            else:
-                # The pofile=pofile is only needed until 10.09 rollout.
-                matching_message = TranslationMessage(
-                    potmsgset=self,
-                    potemplate=pofile.potemplate,
-                    language=pofile.language,
-                    origin=origin,
-                    submitter=submitter,
-                    msgstr0=potranslations[0],
-                    msgstr1=potranslations[1],
-                    msgstr2=potranslations[2],
-                    msgstr3=potranslations[3],
-                    msgstr4=potranslations[4],
-                    msgstr5=potranslations[5],
-                    validation_status=validation_status)
-
-                if just_a_suggestion:
-                    # Adds suggestion karma: editors get their translations
-                    # automatically approved, so they get 'reviewer' karma
-                    # instead.
-                    submitter.assignKarma(
-                        'translationsuggestionadded',
-                        product=pofile.potemplate.product,
-                        distribution=pofile.potemplate.distribution,
-                        sourcepackagename=pofile.potemplate.sourcepackagename)
-        else:
-            # There is an existing matching message. Update it as needed.
-            # Also update validation status if needed
-            matching_message.validation_status = validation_status
-
-        if just_a_suggestion:
-            # An existing message is just a suggestion, warn if needed.
-            if warn_about_lock_timestamp:
-                raise TranslationConflict(
-                    'The new translations were saved as suggestions to '
-                    'avoid possible conflicts. Please review them.')
-        else:
-            # Makes the new_message current if needed and also
-            # assigns karma for translation approval.
-            self._makeTranslationMessageCurrent(
-                pofile, matching_message, upstream_message,
-                is_current_upstream, submitter,
-                force_shared=force_shared, force_diverged=force_diverged)
-
-        # We need this sync so we don't set self.isfuzzy to the wrong
-        # value because cache problems. See bug #102382 as an example of what
-        # happened without having this flag + broken code. Our tests were not
-        # able to find the problem.
-        # XXX CarlosPerelloMarin 2007-11-14 Is there any way to avoid the
-        # sync() call and leave it as syncUpdate? Without it we have cache
-        # problems with workflows like the ones in
-        # xx-pofile-translate-gettext-error-middle-page.txt so we don't see
-        # the successful submissions when there are other errors in the same
-        # page.
-        matching_message.sync()
-        return matching_message
 
     def submitSuggestion(self, pofile, submitter, new_translations):
         """See `IPOTMsgSet`."""
@@ -1152,7 +728,7 @@ class POTMsgSet(SQLBase):
             return
 
         translator = suggestion.submitter
-        potranslations = suggestion.all_msgstrs
+        potranslations = dictify_translations(suggestion.all_msgstrs)
         activated_message = self._setTranslation(
             pofile, translator, suggestion.origin, potranslations,
             share_with_other_side=share_with_other_side,
@@ -1250,8 +826,8 @@ class POTMsgSet(SQLBase):
         :param pofile: The `POFile` to set the translation in.
         :param submitter: The `Person` who produced this translation.
         :param origin: The translation's `RosettaTranslationOrigin`.
-        :param potranslations: List of `POTranslation`s, with a None for
-            each untranslated plural-form.
+        :param potranslations: A dict mapping plural-form numbers to the
+            respective `POTranslation`s for those forms.
         :param identical_message: The already existing message, if any,
             that's either shared or diverged for `pofile.potemplate`,
             whose translations are identical to the ones we're setting.
@@ -1396,29 +972,6 @@ class POTMsgSet(SQLBase):
 
         return message
 
-    def old_resetCurrentTranslation(self, pofile, lock_timestamp):
-        """See `POTMsgSet`.
-
-        This message is OBSOLETE in the Recife feature branch.  It's
-        still here only until we replace its one call with the new
-        method.
-        """
-        assert lock_timestamp is not None, "No lock timestamp given."
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
-        if current is None:
-            return
-
-        # Check for translation conflicts and update the required
-        # attributes.
-        self._maybeRaiseTranslationConflict(current, lock_timestamp)
-        current.is_current_ubuntu = False
-        # Converge the current translation only if it is diverged and
-        # not current upstream.
-        if current.is_diverged and not current.is_current_upstream:
-            current.potemplate = None
-        pofile.markChanged()
-
     def resetCurrentTranslation(self, pofile, lock_timestamp=None,
                                 share_with_other_side=False):
         """See `IPOTMsgSet`."""
@@ -1447,120 +1000,6 @@ class POTMsgSet(SQLBase):
             share_with_other_side=share_with_other_side,
             lock_timestamp=lock_timestamp)
         message.markReviewed(submitter)
-
-    def applySanityFixes(self, text):
-        """See `IPOTMsgSet`."""
-        if text is None:
-            return None
-
-        # Fix the visual point that users copy & paste from the web interface.
-        new_text = self.convertDotToSpace(text)
-        # Now, fix the newline chars.
-        new_text = self.normalizeNewLines(new_text)
-        # Finally, set the same whitespaces at the start/end of the string.
-        new_text = self.normalizeWhitespaces(new_text)
-        # Also, if it's an empty string, replace it with None.
-        # XXX CarlosPerelloMarin 2007-11-16: Until we figure out
-        # ResettingTranslations
-        if new_text == '':
-            new_text = None
-
-        return new_text
-
-    def convertDotToSpace(self, text):
-        """See IPOTMsgSet."""
-        if u'\u2022' in self.singular_text or u'\u2022' not in text:
-            return text
-
-        return text.replace(u'\u2022', ' ')
-
-    def normalizeWhitespaces(self, translation_text):
-        """See IPOTMsgSet."""
-        if translation_text is None:
-            return None
-
-        stripped_singular_text = self.singular_text.strip()
-        stripped_translation_text = translation_text.strip()
-        new_translation_text = None
-
-        if (len(stripped_singular_text) > 0 and
-            len(stripped_translation_text) == 0):
-            return ''
-
-        if len(stripped_singular_text) != len(self.singular_text):
-            # There are whitespaces that we should copy to the 'text'
-            # after stripping it.
-            prefix = self.singular_text[:-len(self.singular_text.lstrip())]
-            postfix = self.singular_text[len(self.singular_text.rstrip()):]
-            new_translation_text = '%s%s%s' % (
-                prefix, stripped_translation_text, postfix)
-        elif len(stripped_translation_text) != len(translation_text):
-            # msgid does not have any whitespace, we need to remove
-            # the extra ones added to this text.
-            new_translation_text = stripped_translation_text
-        else:
-            # The text is not changed.
-            new_translation_text = translation_text
-
-        return new_translation_text
-
-    def normalizeNewLines(self, translation_text):
-        """See IPOTMsgSet."""
-        # There are three different kinds of newlines:
-        windows_style = u'\r\n'
-        mac_style = u'\r'
-        unix_style = u'\n'
-        # We need the stripped variables because a 'windows' style will be at
-        # the same time a 'mac' and 'unix' style.
-        stripped_translation_text = translation_text.replace(
-            windows_style, u'')
-        stripped_singular_text = self.singular_text.replace(
-            windows_style, u'')
-
-        # Get the style that uses singular_text.
-        original_style = None
-        if windows_style in self.singular_text:
-            original_style = windows_style
-
-        if mac_style in stripped_singular_text:
-            if original_style is not None:
-                raise BrokenTextError(
-                    "original text (%r) mixes different newline markers" %
-                        self.singular_text)
-            original_style = mac_style
-
-        if unix_style in stripped_singular_text:
-            if original_style is not None:
-                raise BrokenTextError(
-                    "original text (%r) mixes different newline markers" %
-                        self.singular_text)
-            original_style = unix_style
-
-        # Get the style that uses the given text.
-        translation_style = None
-        if windows_style in translation_text:
-            translation_style = windows_style
-
-        if mac_style in stripped_translation_text:
-            if translation_style is not None:
-                raise BrokenTextError(
-                    "translation text (%r) mixes different newline markers" %
-                        translation_text)
-            translation_style = mac_style
-
-        if unix_style in stripped_translation_text:
-            if translation_style is not None:
-                raise BrokenTextError(
-                    "translation text (%r) mixes different newline markers" %
-                        translation_text)
-            translation_style = unix_style
-
-        if original_style is None or translation_style is None:
-            # We don't need to do anything, the text is not changed.
-            return translation_text
-
-        # Fix the newline chars.
-        return translation_text.replace(translation_style, original_style)
 
     @property
     def hide_translations_from_anonymous(self):
