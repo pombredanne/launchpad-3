@@ -17,6 +17,7 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import Person
 from lp.testing import (
     BrowserTestCase,
@@ -60,6 +61,18 @@ class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
         login('no-priv@canonical.com')
         view = create_initialized_view(self.person, "+bugs")
         self.assertEqual([self.active_bugtask], list(view.searchUnbatched()))
+
+    def test_listing_seen_with_permission(self):
+        login('admin@canonical.com')
+        registry_owner = getUtility(
+            ILaunchpadCelebrities).registry_experts.teamowner
+        logout()
+        login_person(registry_owner)
+        view = create_initialized_view(self.person, "+bugs")
+        self.assertEqual(
+            sorted([self.active_bugtask, self.inactive_bugtask]),
+            sorted(list(view.searchUnbatched())))
+
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):
