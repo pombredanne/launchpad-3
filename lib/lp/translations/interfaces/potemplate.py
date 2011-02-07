@@ -388,7 +388,7 @@ class IPOTemplate(IRosettaStats):
     def sharingKey():
         """A key for determining the sharing precedence of a template.
 
-        Active templates have precedence over inacactive ones.
+        Active templates have precedence over inactive ones.
         Development foci have precendence over non-development foci.
         Product development foci have precedence over Package development
         foci.
