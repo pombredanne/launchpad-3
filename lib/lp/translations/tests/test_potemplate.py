@@ -10,10 +10,17 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import (
+    TranslationSide,
+    )
 from lp.translations.model.potemplate import (
     get_pofiles_for,
+    POTemplate,
     POTemplateSet,
     )
 
@@ -414,7 +421,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         """Order templates by precedence."""
         if templates is None:
             templates = self.templates
-        return sorted(templates, cmp=POTemplateSet.compareSharingPrecedence)
+        return sorted(templates, key=POTemplate.sharingKey, reverse=True)
 
     def _getPrimaryTemplate(self, templates=None):
         """Get first template in order of precedence."""
@@ -479,6 +486,75 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         # Age also acts as a tie-breaker between disabled templates.
         self._enableTemplates(False)
         self.test_ageBreaksTie()
+
+
+class TestTranslationFoci(TestCaseWithFactory):
+    """Test the precedence rules for tranlation foci."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertFirst(self, expected, templates):
+        templates = sorted(
+            templates, key=POTemplate.sharingKey)
+        self.assertEqual(expected, templates[0])
+
+    @staticmethod
+    def makeProductFocus(template):
+        with person_logged_in(template.productseries.product.owner):
+            template.productseries.product.translation_focus = (
+                template.productseries)
+
+    @staticmethod
+    def makePackageFocus(template):
+        distribution = template.distroseries.distribution
+        removeSecurityProxy(distribution).translation_focus = (
+        template.distroseries)
+
+    def makeProductPOTemplate(self):
+        """Create a product that is not the translation focus."""
+        # Manually creating a productseries to get one that is not the
+        # translation focus.
+        other_productseries = self.factory.makeProductSeries()
+        other_template = self.factory.makePOTemplate(
+            productseries=other_productseries)
+        product = other_productseries.product
+        productseries = self.factory.makeProductSeries(
+            product=product,
+            owner=product.owner)
+        with person_logged_in(product.owner):
+            product.translation_focus = other_productseries
+            other_productseries.product.translations_usage = (
+                ServiceUsage.LAUNCHPAD)
+            productseries.product.translations_usage = ServiceUsage.LAUNCHPAD
+        return self.factory.makePOTemplate(productseries=productseries)
+
+    def test_product_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.assertFirst(product, [package, product])
+
+    def test_package_focus(self):
+        """Template priority respects package translation focus."""
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        product = self.makeProductPOTemplate()
+        self.assertFirst(product, [package, product])
+        # default ordering is database id.
+        self.makePackageFocus(package)
+        self.assertFirst(package, [package, product])
+
+    def test_product_package_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.makePackageFocus(package)
+        self.assertFirst(product, [package, product])
 
 
 class TestGetPOFilesFor(TestCaseWithFactory):

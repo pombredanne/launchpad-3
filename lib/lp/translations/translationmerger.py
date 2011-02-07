@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 
+from operator import methodcaller
+
 from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -27,6 +29,7 @@ from lp.services.scripts.base import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
 
@@ -205,8 +208,6 @@ class MessageSharingMerge(LaunchpadScript):
         """
         if self.template_set is None:
             self.template_set = getUtility(IPOTemplateSet)
-            self.compare_template_precedence = (
-                self.template_set.compareSharingPrecedence)
 
     def main(self):
         actions = (
@@ -347,16 +348,14 @@ class TranslationMerger:
 
         :param potemplates: The templates to merge across.
         """
-        self.template_set = getUtility(IPOTemplateSet)
-        self.compare_template_precedence = (
-            self.template_set.compareSharingPrecedence)
         self.potemplates = potemplates
         self.tm = tm
 
     def _removeDuplicateMessages(self):
         """Get rid of duplicate `TranslationMessages` where needed."""
         representatives = {}
-        order_check = OrderingCheck(cmp=self.compare_template_precedence)
+        order_check = OrderingCheck(
+            key=methodcaller('sharingKey'), reverse=True)
 
         for template in self.potemplates:
             order_check.check(template)
@@ -397,7 +396,8 @@ class TranslationMerger:
         # through the templates, starting at the most representative and
         # moving towards the least representative.  For any unique potmsgset
         # key we find, the first POTMsgSet is the representative one.
-        order_check = OrderingCheck(cmp=self.compare_template_precedence)
+        order_check = OrderingCheck(
+            key=methodcaller('sharingKey'), reverse=True)
 
         for template in self.potemplates:
             order_check.check(template)
@@ -496,7 +496,8 @@ class TranslationMerger:
 
     def mergeTranslationMessages(self):
         """Share `TranslationMessage`s between templates where possible."""
-        order_check = OrderingCheck(cmp=self.compare_template_precedence)
+        order_check = OrderingCheck(
+            key=methodcaller('sharingKey'), reverse=True)
         for template_number, template in enumerate(self.potemplates):
             log.info("Merging template %d/%d." % (
                 template_number + 1, len(self.potemplates)))
@@ -672,7 +673,7 @@ class TranslationMerger:
             # least one template by making it diverged.
             target_ttis = source_potmsgset.getAllTranslationTemplateItems()
             target_templates = [tti.potemplate for tti in target_ttis]
-            target_templates.sort(self.compare_template_precedence)
+            target_templates.sort(key=methodcaller('sharingKey'), reverse=True)
             for template in target_templates:
                 if self._divergeTo(message, target_potmsgset, template):
                     return True
