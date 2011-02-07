@@ -386,6 +386,7 @@ class ISourcePackageAddSchema(ISourcePackageEditSchema):
             description=_("A new PPA with this name will be created for "
                           "the owner of the recipe ."))
 
+
 class ErrorHandled(Exception):
     """A field error occured and was handled."""
 
@@ -543,7 +544,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         try:
             source_package_recipe = super(
                 SourcePackageRecipeAddView, self).error_handler(
-                    getUtility(ISourcePackageRecipeSource).new, 
+                    getUtility(ISourcePackageRecipeSource).new,
                     self.user, owner, data['name'],
                     data['recipe_text'], data['description'],
                     data['distros'], ppa, data['build_daily'])
