@@ -385,6 +385,15 @@ class IPOTemplate(IRosettaStats):
         """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
+    def sharingKey():
+        """A key for determining the sharing precedence of a template.
+
+        Active templates have precedence over inacactive ones.
+        Development foci have precendence over non-development foci.
+        Product development foci have precedence over Package development
+        foci.
+        """
+
     def getPOTMsgSetByID(id):
         """Return the POTMsgSet object related to this POTemplate with the id.
 
@@ -657,14 +666,6 @@ class IPOTemplateSet(Interface):
            came from the given arguments.
 
         Return None if there is no such `IPOTemplate`.
-        """
-
-    def compareSharingPrecedence(left, right):
-        """Sort comparison: order sharing templates by precedence.
-
-        Sort using this function to order sharing templates from most
-        representative to least representative, as per the message-sharing
-        migration spec.
         """
 
     def wipeSuggestivePOTemplatesCache():
