@@ -635,9 +635,9 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             try:
                 super(SourcePackageRecipeEditView, self).error_handler(
                     self.context.setRecipeText, recipe_text)
+                changed = True
             except ErrorHandled:
                 return
-            changed = True
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:
