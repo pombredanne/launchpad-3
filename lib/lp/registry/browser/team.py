@@ -65,7 +65,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.itemswidgets import (
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
@@ -209,7 +212,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
@@ -381,8 +385,9 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
-            title = ('The Launchpad mailing list for this team - '
-                     '<strong>%s</strong>' % self.mailinglist_address)
+            title = structured(
+                'The Launchpad mailing list for this team - '
+                '<strong>%s</strong>', self.mailinglist_address)
             hosted_list_term = SimpleTerm(
                 TeamContactMethod.HOSTED_LIST,
                 TeamContactMethod.HOSTED_LIST.name, title)
@@ -889,7 +894,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):

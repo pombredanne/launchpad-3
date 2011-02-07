@@ -1971,7 +1971,7 @@ One of the new copy archives will be owned by a team:
     >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(mark, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
     >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...                                        name="team-archive",
     ...                                        owner=team)
@@ -2070,7 +2070,7 @@ included:
 And if the archive is owned by a team, then anyone in the team will also
 be able to view the private team archive:
 
-    >>> cprov.join(team)
+    >>> ignore = team.addMember(cprov, team.teamowner)
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
