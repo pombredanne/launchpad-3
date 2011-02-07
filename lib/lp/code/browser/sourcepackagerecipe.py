@@ -386,6 +386,9 @@ class ISourcePackageAddSchema(ISourcePackageEditSchema):
             description=_("A new PPA with this name will be created for "
                           "the owner of the recipe ."))
 
+class ErrorHandled(Exception):
+    """A field error occured and was handled."""
+
 
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
@@ -402,14 +405,9 @@ class RecipeTextValidatorMixin:
         except RecipeParseError, error:
             self.setFieldError('recipe_text', str(error))
 
-    def error_handler(self, callable, *args):
-        ret = None
+    def error_handler(self, callable, *args, **kwargs):
         try:
-            ret = callable(*args)
-            # So we can tell the difference between an error condition, and
-            # a callable that happens to return nothing.
-            if ret is None:
-                ret = ''
+            return callable(*args)
         except TooNewRecipeFormat:
             self.setFieldError(
                 'recipe_text',
@@ -424,7 +422,8 @@ class RecipeTextValidatorMixin:
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
         except PrivateBranchRecipe, e:
             self.setFieldError('recipe_text', str(e))
-        return ret
+        raise ErrorHandled()
+
 
 class RelatedBranchesWidget(Widget):
     """A widget to render the related branches for a recipe."""
@@ -541,16 +540,16 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             ppa = owner.createPPA(ppa_name)
         else:
             ppa = data['daily_build_archive']
-        source_package_recipe = super(
-            SourcePackageRecipeAddView, self).error_handler(
-                getUtility(ISourcePackageRecipeSource).new, 
-                self.user, owner, data['name'],
-                data['recipe_text'], data['description'], data['distros'],
-                ppa, data['build_daily'])
-        if source_package_recipe is None:
-            return
-        else:
+        try:
+            source_package_recipe = super(
+                SourcePackageRecipeAddView, self).error_handler(
+                    getUtility(ISourcePackageRecipeSource).new, 
+                    self.user, owner, data['name'],
+                    data['recipe_text'], data['description'],
+                    data['distros'], ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
+        except ErrorHandled:
+            return
 
         self.next_url = canonical_url(source_package_recipe)
 
@@ -633,8 +632,10 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
         parser = RecipeParser(recipe_text)
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
-            if super(SourcePackageRecipeEditView, self).error_handler(
-                self.context.setRecipeText, recipe_text) is None:
+            try:
+                super(SourcePackageRecipeEditView, self).error_handler(
+                    self.context.setRecipeText, recipe_text)
+            except ErrorHandled:
                 return
             changed = True
 
