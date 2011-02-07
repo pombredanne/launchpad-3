@@ -542,12 +542,11 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         else:
             ppa = data['daily_build_archive']
         try:
-            source_package_recipe = super(
-                SourcePackageRecipeAddView, self).error_handler(
-                    getUtility(ISourcePackageRecipeSource).new,
-                    self.user, owner, data['name'],
-                    data['recipe_text'], data['description'],
-                    data['distros'], ppa, data['build_daily'])
+            source_package_recipe = self.error_handler(
+                getUtility(ISourcePackageRecipeSource).new,
+                self.user, owner, data['name'],
+                data['recipe_text'], data['description'], data['distros'],
+                ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
         except ErrorHandled:
             return
@@ -634,8 +633,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
             try:
-                super(SourcePackageRecipeEditView, self).error_handler(
-                    self.context.setRecipeText, recipe_text)
+                self.error_handler(self.context.setRecipeText, recipe_text)
                 changed = True
             except ErrorHandled:
                 return
