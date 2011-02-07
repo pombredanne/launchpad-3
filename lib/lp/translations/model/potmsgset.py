@@ -796,9 +796,7 @@ class POTMsgSet(SQLBase):
             template, pofile.language, template.translation_side)
         other = self.getOtherTranslation(
             pofile.language, template.translation_side)
-        if other is not None:
-            other.is_current_upstream = False
-        if current is None or other is None:
+        if current is None or other is None or current == other:
             translator = suggestion.submitter
             potranslations = dictify_translations(suggestion.all_msgstrs)
             self._setTranslation(
@@ -808,8 +806,9 @@ class POTMsgSet(SQLBase):
                 lock_timestamp=lock_timestamp)
         else:
             # Make it only current in upstream.
-            suggestion.is_current_upstream = True
             if suggestion != other:
+                other.is_current_upstream = False
+                suggestion.is_current_upstream = True
                 pofile.markChanged(translator=suggestion.submitter)
 
     def _cloneAndDiverge(self, original_message, pofile):
