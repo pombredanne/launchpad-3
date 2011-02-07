@@ -986,6 +986,19 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             get_message_text(browser, 1),
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
+    def test_edit_recipe_no_branch(self):
+        # If a user tries to set a source package recipe to use a branch
+        # that isn't registred, they will get an error.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
+        no_branch_recipe_text = recipe.recipe_text[:-4]
+        expected_name = recipe.base_branch.unique_name[:-3]
+        browser = self.getViewBrowser(recipe, '+edit')
+        browser.getControl('Recipe text').value = no_branch_recipe_text
+        browser.getControl('Update Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 1),
+            'lp://dev/%s is not a branch on Launchpad.' % expected_name)
+
     def _test_edit_recipe_with_no_related_branches(self, recipe):
         # The Related Branches section should not appear if there are no
         # related branches.

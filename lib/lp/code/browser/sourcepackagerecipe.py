@@ -402,6 +402,29 @@ class RecipeTextValidatorMixin:
         except RecipeParseError, error:
             self.setFieldError('recipe_text', str(error))
 
+    def error_handler(self, callable, *args):
+        ret = None
+        try:
+            ret = callable(*args)
+            # So we can tell the difference between an error condition, and
+            # a callable that happens to return nothing.
+            if ret is None:
+                ret = ''
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+        except ForbiddenInstructionError, e:
+            self.setFieldError(
+                'recipe_text',
+                'The bzr-builder instruction "%s" is not permitted '
+                'here.' % e.instruction_name)
+        except NoSuchBranch, e:
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
+        return ret
 
 class RelatedBranchesWidget(Widget):
     """A widget to render the related branches for a recipe."""
@@ -512,37 +535,22 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
-        try:
-            owner = data['owner']
-            if data['use_ppa'] == CREATE_NEW:
-                ppa_name = data.get('ppa_name', None)
-                ppa = owner.createPPA(ppa_name)
-            else:
-                ppa = data['daily_build_archive']
-            source_package_recipe = getUtility(
-                ISourcePackageRecipeSource).new(
-                    self.user, owner, data['name'],
-                    data['recipe_text'], data['description'], data['distros'],
-                    ppa, data['build_daily'])
+        owner = data['owner']
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            ppa = owner.createPPA(ppa_name)
+        else:
+            ppa = data['daily_build_archive']
+        source_package_recipe = super(
+            SourcePackageRecipeAddView, self).error_handler(
+                getUtility(ISourcePackageRecipeSource).new, 
+                self.user, owner, data['name'],
+                data['recipe_text'], data['description'], data['distros'],
+                ppa, data['build_daily'])
+        if source_package_recipe is None:
+            return
+        else:
             Store.of(source_package_recipe).flush()
-        except TooNewRecipeFormat:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe format version specified is not available.')
-            return
-        except ForbiddenInstructionError:
-            # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-            self.setFieldError(
-                'recipe_text',
-                'The bzr-builder instruction "run" is not permitted here.')
-            return
-        except NoSuchBranch, e:
-            self.setFieldError(
-                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-            return
-        except PrivateBranchRecipe, e:
-            self.setFieldError('recipe_text', str(e))
-            return
 
         self.next_url = canonical_url(source_package_recipe)
 
@@ -625,25 +633,10 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
         parser = RecipeParser(recipe_text)
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
-            try:
-                self.context.setRecipeText(recipe_text)
-                changed = True
-            except TooNewRecipeFormat:
-                self.setFieldError(
-                    'recipe_text',
-                    'The recipe format version specified is not available.')
+            if super(SourcePackageRecipeEditView, self).error_handler(
+                self.context.setRecipeText, recipe_text) is None:
                 return
-            except ForbiddenInstructionError:
-                # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-                self.setFieldError(
-                    'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted'
-                    ' here.')
-                return
-            except PrivateBranchRecipe, e:
-                self.setFieldError('recipe_text', str(e))
-                return
-
+            changed = True
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:
