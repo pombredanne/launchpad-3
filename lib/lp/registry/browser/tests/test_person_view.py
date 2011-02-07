@@ -16,7 +16,6 @@ from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
-    logout,
     )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -29,16 +28,14 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.app.errors import NotFoundError
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView)
-
-
+    TeamInvitationView,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     PersonVisibility,
@@ -48,7 +45,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.soyuz.enums import (
@@ -822,29 +818,6 @@ class TestSubscriptionsView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+subscriptions')
         self.assertTrue(view.canUnsubscribeFromBugTasks())
 
-
-class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(DeactivatedContextBugTaskTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        self.active_product = self.factory.makeProduct()
-        self.inactive_product = self.factory.makeProduct()
-        self.active_bugtask = self.factory.makeBugTask(
-            target=self.active_product)
-        self.inactive_bugtask = self.factory.makeBugTask(
-            target=self.inactive_product)
-        login('admin@canonical.com')
-        self.inactive_product.active = False
-        logout()
-
-    def test_listing_not_seen_without_permission(self):
-        # Someone without permission to see deactiveated projects does
-        # not see bugtasks for deactivated projects.
-        view = create_initialized_view(self.person, "+bugs")
-        self.assertEqual([self.active_bugtask], list(view.searchUnbatched()))
 
 class BugTaskViewsTestBase:
     """A base class for bugtask search related tests."""
