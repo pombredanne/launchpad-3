@@ -3,8 +3,6 @@
 
 """Tests for recording changes done to a bug."""
 
-import unittest
-
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -16,7 +14,6 @@ from zope.interface import providedBy
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.bugs.model.bugnotification import BugNotification
-from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -27,18 +24,20 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing import person_logged_in
+from lp.bugs.scripts.bugnotification import construct_email_notifications
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
-class TestBugChanges(unittest.TestCase):
+class TestBugChanges(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        login('foo.bar@canonical.com')
+        super(TestBugChanges, self).setUp('foo.bar@canonical.com')
         self.admin_user = getUtility(ILaunchBag).user
-        self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
@@ -106,6 +105,16 @@ class TestBugChanges(unittest.TestCase):
 
         return getattr(obj_before_modification, attribute)
 
+    def getNewNotifications(self, bug=None):
+        if bug is None:
+            bug = self.bug
+        bug_notifications = BugNotification.selectBy(
+            bug=bug, orderBy='id')
+        new_notifications = [
+            notification for notification in bug_notifications
+            if notification.id not in self.old_notification_ids]
+        return new_notifications
+
     def assertRecordedChange(self, expected_activity=None,
                              expected_notification=None, bug=None):
         """Assert that things were recorded as expected."""
@@ -114,11 +123,7 @@ class TestBugChanges(unittest.TestCase):
         new_activities = [
             activity for activity in bug.activity
             if activity not in self.old_activities]
-        bug_notifications = BugNotification.selectBy(
-            bug=bug, orderBy='id')
-        new_notifications = [
-            notification for notification in bug_notifications
-            if notification.id not in self.old_notification_ids]
+        new_notifications = self.getNewNotifications(bug)
 
         if expected_activity is None:
             self.assertEqual(len(new_activities), 0)
@@ -172,6 +177,16 @@ class TestBugChanges(unittest.TestCase):
                     set(recipient.person
                         for recipient in added_notification.recipients),
                     set(expected_recipients))
+
+    def assertRecipients(self, expected_recipients):
+        notifications = self.getNewNotifications()
+        notifications, messages = construct_email_notifications(notifications)
+        recipients = set(message['to'] for message in messages)
+
+        self.assertEqual(
+            set(recipient.preferredemail.email
+                for recipient in expected_recipients),
+            recipients)
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
@@ -1586,3 +1601,32 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=new_bug)
+
+    def test_description_changed_no_self_email(self):
+        # Users who have selfgenerated_bugnotifications set to False
+        # do not get any bug email that they generated themselves.
+        self.user.selfgenerated_bugnotifications = False
+
+        old_description = self.changeAttribute(
+            self.bug, 'description', 'New description')
+
+        # self.user is not included among the recipients.
+        self.assertRecipients(
+            [self.product_metadata_subscriber])
+
+    def test_description_changed_no_self_email_indirect(self):
+        # Users who have selfgenerated_bugnotifications set to False
+        # do not get any bug email that they generated themselves,
+        # even if a subscription is through a team membership.
+        team = self.factory.makeTeam()
+        team.addMember(self.user, team.teamowner)
+        self.bug.subscribe(team, self.user)
+
+        self.user.selfgenerated_bugnotifications = False
+
+        old_description = self.changeAttribute(
+            self.bug, 'description', 'New description')
+
+        # self.user is not included among the recipients.
+        self.assertRecipients(
+            [self.product_metadata_subscriber, team.teamowner])

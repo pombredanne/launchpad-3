@@ -87,6 +87,7 @@ from lp.answers.interfaces.questionenums import (
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
+from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.buglink import IBugLinkTarget
@@ -278,15 +279,28 @@ class Question(SQLBase, BugLinkTargetMixin):
             raise InvalidQuestionStateError(
                 "New status is same as the old one.")
 
+
         # If the previous state recorded an answer, clear those
-        # information as well.
+        # information as well, but copy it out for the reopening.
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         self.answerer = None
         self.answer = None
         self.date_solved = None
 
-        return self._newMessage(
+        msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.SETSTATUS, new_status=new_status)
+
+        if new_status == QuestionStatus.OPEN:
+            create_questionreopening(
+                self,
+                msg,
+                old_status,
+                old_answerer,
+                old_date_solved)
+        return msg
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -474,12 +488,24 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
         """See `IQuestion`."""
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         if not self.can_reopen:
             raise InvalidQuestionStateError(
                 "Question status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
-            self.owner, comment, datecreated=datecreated,
-            action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
+            self.owner,
+            comment,
+            datecreated=datecreated,
+            action=QuestionAction.REOPEN,
+            new_status=QuestionStatus.OPEN)
+        create_questionreopening(
+            self,
+            msg,
+            old_status,
+            old_answerer,
+            old_date_solved)
         self.answer = None
         self.answerer = None
         self.date_solved = None
@@ -705,7 +731,6 @@ class QuestionSet:
                 raise AssertionError(
                     'product_id and distribution_id are NULL')
         return projects
-        
 
     @staticmethod
     def new(title=None, description=None, owner=None,

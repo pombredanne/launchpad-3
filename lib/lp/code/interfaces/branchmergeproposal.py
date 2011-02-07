@@ -107,13 +107,13 @@ class IBranchMergeProposal(IPrivacy):
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
-        description=_("The tracking number for this question."))
+        description=_("The tracking number for this merge proposal."))
 
     registrant = exported(
         PublicPersonChoice(
             title=_('Person'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
-            description=_('The person who registered the landing target.')))
+            description=_('The person who registered the merge proposal.')))
 
     source_branch = exported(
         ReferenceChoice(

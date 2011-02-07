@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -34,6 +33,10 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import (
+    escape,
+    structured,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 
 
@@ -84,7 +87,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         return len(self.suggestion_vocab) > 0
 
     def _optionId(self, index):
-        return '%s.%d' % (cgi.escape(self.name), index)
+        return '%s.%d' % (escape(self.name), index)
 
     def _otherId(self):
         """Return the id of the "Other" option."""
@@ -133,8 +136,9 @@ class SuggestionWidget(LaunchpadRadioWidget):
 
     def _renderLabel(self, text, index):
         """Render a label for the option with the specified index."""
-        return u'<label for="%s" style="font-weight: normal">%s</label>' % (
+        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
             self._optionId(index), text)
+        return structured(label)
 
     def _renderSuggestionLabel(self, value, index):
         """Render a label for the option based on a branch."""
@@ -253,12 +257,13 @@ class TargetBranchWidget(SuggestionWidget):
         # button.  It was decided not to have the entire text as a link, but
         # instead to have a separate link to the branch details.
         text = '%s (<a href="%s">branch details</a>)' % (
-            cgi.escape(branch.displayname), cgi.escape(canonical_url(branch)))
+            escape(branch.displayname), escape(canonical_url(branch)))
         # If the branch is the development focus, say so.
         if branch == self.context.context.target.default_merge_target:
             text = text + "&ndash; <em>development focus</em>"
-        return u'<label for="%s" style="font-weight: normal">%s</label>' % (
+        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
             self._optionId(index), text)
+        return structured(label)
 
     def _autoselectOther(self):
         """Select "other" on keypress."""
