@@ -392,13 +392,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
-        if self.potemplate is None:
+        if not self.is_diverged:
             # Already converged.
             return
 
         # Existing shared direct equivalent to this message, if any.
         shared = self.getSharedEquivalent()
-
         # Existing shared ubuntu translation for this POTMsgSet, if
         # any.
         ubuntu = self.potmsgset.getCurrentTranslation(

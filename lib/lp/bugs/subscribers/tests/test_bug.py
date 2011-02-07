@@ -6,6 +6,7 @@ from storm.store import Store
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugtask import BugTaskDelta
 from lp.bugs.model.bugnotification import (
@@ -13,7 +14,6 @@ from lp.bugs.model.bugnotification import (
     BugNotificationRecipient,
     )
 from lp.bugs.subscribers.bug import add_bug_change_notifications
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.model.person import Person
 from lp.testing import TestCaseWithFactory
 
