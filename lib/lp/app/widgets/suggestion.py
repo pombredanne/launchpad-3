@@ -173,7 +173,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         # Lastly render the other option.
         index = len(items)
         other_selection_text = "%s %s" % (
-            self._renderLabel("Other:", index),
+            escape(self._renderLabel("Other:", index)),
             self.other_selection_widget())
         other_selection_onclick = (
             "this.form['%s'].focus()" % self.other_selection_widget.name)
