@@ -14,9 +14,9 @@ from lp.bugs.adapters.bugchange import (
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugtask import BugTaskDelta
-from lp.registry.enum import BugNotificationLevel
 from lp.testing import TestCaseWithFactory
 
 

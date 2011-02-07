@@ -11,7 +11,7 @@ distribution.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-    >>> from lp.registry.model.structuralsubscription import (
+    >>> from lp.bugs.model.structuralsubscription import (
     ...    StructuralSubscription)
 
     >>> person_set = getUtility(IPersonSet)
@@ -24,15 +24,11 @@ distribution.
     ...     subscriber=sampleperson, subscribed_by=foobar)
     >>> ff_sub.target
     <Product at ...>
-    >>> ff_sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
     >>> ubuntu_sub = StructuralSubscription(distribution=ubuntu,
     ...     subscriber=sampleperson, subscribed_by=foobar)
     >>> ubuntu_sub.target
     <Distribution 'Ubuntu' (ubuntu)>
-    >>> ubuntu_sub.blueprint_notification_level
-    <DBItem BlueprintNotificationLevel.NOTHING, (10) Nothing>
 
     >>> evolution = getUtility(ISourcePackageNameSet).getOrCreateByName(
     ...    'evolution')
