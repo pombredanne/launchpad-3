@@ -125,9 +125,10 @@ or breadcrumbs; the template must provide its own h1 element.
 Page Diagnostics
 ----------------
 
-The page includes a comment after the document with diagnostic information.
+The page includes a comment after the body with diagnostic information.
 
-    >>> print html[html.index('</html>') + 7:]
+    >>> print html[html.index('</body>') + 7:]
+    ...
     <!--
       Facet name: overview
       Page type: locationless
@@ -139,6 +140,7 @@ The page includes a comment after the document with diagnostic information.
       in scopes {}
       r...
     -->
+    ...
 
 Page Headings
 -------------

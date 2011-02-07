@@ -169,7 +169,6 @@
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
   </body>
-</html>
 
 <tal:template>
   <tal:comment
@@ -189,4 +188,5 @@
     r${revno}
   --&gt;" />
 </tal:template>
+</html>
 </metal:page>
