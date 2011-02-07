@@ -58,7 +58,7 @@ class TestLaunchpadFormatter(TestCase):
                     Traceback (most recent call last):
                     ...
                     __traceback_info__: Captain Kirk
-                    ZeroDivisionError: integer division or modulo by zero
+                    ZeroDivisionError: ...
                     """))
 
 
