@@ -288,6 +288,13 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     def validate(self, data):
         over_quota_distroseries = []
+        distros = data.get('distros', [])
+        if not len(distros):
+            self.setFieldError(
+                'distros',
+                ("You need to specify at least one distro series for which to"
+                " build."))
+            return
         for distroseries in data['distros']:
             if self.context.isOverQuota(self.user, distroseries):
                 over_quota_distroseries.append(str(distroseries))
@@ -310,7 +317,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                     'An identical build is already pending for %s.' %
                     e.distroseries)
                 return
-        self.next_url = self.cancel_url
+        self.next_url = data.get('next_url', self.cancel_url+"/+builds")
 
 
 class ISourcePackageEditSchema(Interface):
