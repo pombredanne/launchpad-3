@@ -35,12 +35,12 @@ from lp.bugs.adapters.bugchange import (
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
 
 
@@ -219,7 +219,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                 no_dupe_master_recipients = (
                     bug_delta.bug.getBugNotificationRecipients(
                         old_bug=bug_delta.bug_before_modification,
-                        level=BugNotificationLevel.METADATA,
+                        level=change.change_level,
                         include_master_dupe_subscribers=False))
                 bug_delta.bug.addChange(
                     change, recipients=no_dupe_master_recipients)
@@ -231,6 +231,13 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                         recipients.remove(person)
                 bug_delta.bug.addChange(change, recipients=recipients)
             else:
+                if change.change_level == BugNotificationLevel.LIFECYCLE:
+                    change_recipients = (
+                        bug_delta.bug.getBugNotificationRecipients(
+                            old_bug=bug_delta.bug_before_modification,
+                            level=change.change_level,
+                            include_master_dupe_subscribers=False))
+                    recipients.update(change_recipients)
                 bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(

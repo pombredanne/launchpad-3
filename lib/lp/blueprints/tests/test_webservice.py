@@ -52,7 +52,8 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link',
+                         u'web_link']
         self.assertEqual(response.status, 200)
         self.assertContentEqual(expected_keys, response.jsonBody().keys())
 

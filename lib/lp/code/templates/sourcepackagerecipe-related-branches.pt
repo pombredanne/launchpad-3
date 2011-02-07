@@ -4,7 +4,7 @@
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
   <legend>Related Branches</legend>
-  <table>
+  <div class="extra-options">
 
     <div tal:condition="packageBranches" id="related-package-branches">
       <h2>Source package branches</h2>
@@ -71,5 +71,5 @@
         </tbody>
       </table>
     </div>
-  </table>
+  </div>
 </fieldset>

@@ -169,7 +169,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -1207,8 +1207,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
-                description = """<a href="%s">%s</a>""" % (
-                    item_url, escape(package.name))
+                description = structured(
+                    '<a href="%s">%s</a>', item_url, package.name)
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
         # Add an option to represent the user's decision to choose a

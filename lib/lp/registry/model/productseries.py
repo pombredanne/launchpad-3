@@ -69,6 +69,9 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productseries import (
@@ -84,9 +87,6 @@ from lp.registry.model.milestone import (
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
