@@ -82,6 +82,9 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import RegistryEditFormView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
@@ -89,9 +92,6 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,

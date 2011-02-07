@@ -20,7 +20,7 @@ from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 
 class EditBugNominationStatus(AuthorizationBase):
     permission = 'launchpad.Driver'
@@ -192,6 +192,16 @@ class AdminBugWatch(AuthorizationBase):
         return (
             user.in_admin or
             user.in_launchpad_developers)
+
+
+class EditStructuralSubscription(AuthorizationBase):
+    """Edit permissions for `IStructuralSubscription`."""
+    permission = "launchpad.Edit"
+    usedfor = IStructuralSubscription
+
+    def checkAuthenticated(self, user):
+        """Subscribers can edit their own structural subscriptions."""
+        return user.inTeam(self.obj.subscriber)
 
 
 class EditBugSubscriptionFilter(AuthorizationBase):

@@ -55,16 +55,16 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
 from lp.registry.browser.product import ProductDownloadFileMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone,
