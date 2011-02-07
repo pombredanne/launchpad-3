@@ -889,6 +889,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
+    num_pkgs_building = Attribute("Tuple of packages building and waiting to build")
+
     def getSourcePackageReleases(build_status=None):
         """Return the releases for this archive.
 

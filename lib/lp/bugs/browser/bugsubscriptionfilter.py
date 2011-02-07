@@ -16,17 +16,17 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     )
-from lp.services.propertycache import cachedproperty
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.services.propertycache import cachedproperty
 
 
 class BugSubscriptionFilterView(LaunchpadView):

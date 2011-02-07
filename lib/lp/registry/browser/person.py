@@ -205,16 +205,6 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    LaunchpadDropdownWidget,
-    LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription,
-    LocationWidget,
-    PasswordChangeWidget,
-    URIWidget,
-    )
-from canonical.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionenums import QuestionParticipation
@@ -234,6 +224,16 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.widgets.image import ImageChangeWidget
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.app.widgets.location import LocationWidget
+from lp.app.widgets.password import PasswordChangeWidget
+from lp.app.widgets.textwidgets import URIWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -3009,27 +3009,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             profile_url.host = config.launchpad.non_restricted_hostname
         return str(profile_url)
 
-    @property
-    def subscription_policy_description(self):
-        """Return the description of this team's subscription policy."""
-        assert self.team.isTeam(), (
-            'This method can only be called when the context is a team.')
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            description = _(
-                "This is a restricted team; new members can only be added "
-                "by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            description = _(
-                "This is a moderated team; all subscriptions are subjected "
-                "to approval by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            description = _(
-                "This is an open team; any user can join and no approval "
-                "is required.")
-        else:
-            raise AssertionError('Unknown subscription policy.')
-        return description
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -4429,8 +4408,8 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpFields(self):
         terms = []
         for team in self.candidate_teams:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(team), team.displayname)
+            text = structured(
+                '<a href="%s">%s</a>', canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = FormFields(
             List(__name__='teams',

@@ -40,6 +40,8 @@ __all__ = [
     'WrongBranchMergeProposal',
 ]
 
+import httplib
+
 from lazr.restful.declarations import webservice_error
 
 from lp.app.errors import NameLookupFailed
@@ -87,6 +89,7 @@ class BranchTargetError(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class BranchCreationForbidden(BranchCreationException):
