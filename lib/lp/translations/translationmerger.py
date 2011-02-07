@@ -29,7 +29,6 @@ from lp.services.scripts.base import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
 
