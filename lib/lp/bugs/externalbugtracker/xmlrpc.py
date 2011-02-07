@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'UrlLib2Transport',
-    'XMLRPCRedirectHandler'
+    'XMLRPCRedirectHandler',
     ]
 
 
