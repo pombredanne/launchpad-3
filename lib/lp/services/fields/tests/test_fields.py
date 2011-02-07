@@ -8,12 +8,11 @@ __metaclass__ = type
 import datetime
 from StringIO import StringIO
 import time
-import unittest
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.services.fields import (
+    BaseImageUpload,
     FormattableDate,
-    MugshotImageUpload,
     StrippableText,
     )
 from lp.testing import TestCase
@@ -21,8 +20,10 @@ from lp.testing import TestCase
 
 def make_target():
     """Make a trivial object to be a target of the field setting."""
+
     class Simple:
         """A simple class to test setting fields on."""
+
     return Simple()
 
 
@@ -69,11 +70,16 @@ class TestStrippableText(TestCase):
         self.assertIs(None, target.test)
 
 
-class TestMugshotImageUpload(TestCase):
+class TestBaseImageUpload(TestCase):
+    """Test for the BaseImageUpload field."""
+
+    class ExampleImageUpload(BaseImageUpload):
+        dimensions = (192, 192)
+        max_size = 100*1024
 
     def test_validation_corrupt_image(self):
         # ValueErrors raised by PIL become LaunchpadValidationErrors.
-        field = MugshotImageUpload(default_image_resource='dummy')
+        field = self.ExampleImageUpload(default_image_resource='dummy')
         image = StringIO(
             '/* XPM */\n'
             'static char *pixmap[] = {\n'
@@ -82,5 +88,13 @@ class TestMugshotImageUpload(TestCase):
             '  ".. s None c None",\n'
             '};')
         image.filename = 'foo.xpm'
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, image)
+
+    def test_validation_non_image(self):
+        # IOError raised by PIL become LaunchpadValidationErrors.
+        field = self.ExampleImageUpload(default_image_resource='dummy')
+        image = StringIO('foo bar bz')
+        image.filename = 'foo.jpg'
         self.assertRaises(
             LaunchpadValidationError, field.validate, image)

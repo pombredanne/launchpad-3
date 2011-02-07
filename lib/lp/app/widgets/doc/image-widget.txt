@@ -459,24 +459,6 @@ maximum we allow.
                        LaunchpadValidationError(u'\nThis image is not exactly
                                                   193x191\npixels in size.'))
 
-We also won't accept anything that is not an image; that is, we only accept
-what can be parsed by the Python Imaging Library module.
-
-    >>> mugshot = StringIO('foo bar bz')
-    >>> mugshot.filename = 'foo.jpg'
-    >>> form = {'field.mugshot.action': 'change',
-    ...         'field.mugshot.image': mugshot}
-    >>> widget = ImageChangeWidget(
-    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
-    >>> widget.getInputValue()
-    Traceback (most recent call last):
-    ...
-    WidgetInputError: ('field.mugshot', u'Mugshot',
-                       LaunchpadValidationError(u'\nThe file uploaded was not
-                                                  recognized as an image;
-                                                  please\ncheck it and
-                                                  retry.'))
-
 Finally, if the user specifies the 'change' action he must also provide a file
 to be uploaded.
 
