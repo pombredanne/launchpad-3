@@ -10,10 +10,8 @@ This document is about security policy in Launchpad.
 Defining Permissions in Launchpad
 ---------------------------------
 
-**************************************************************************
-NOTE: A new permission should only be defined if absolutely necessary, and
-it should be considered thoroughly in a code review.
-**************************************************************************
+**NOTE: A new permission should only be defined if absolutely necessary, and
+it should be considered thoroughly in a code review.**
 
 Occassionally, you'll find yourself in a situation where the existing
 permissions in Launchpad aren't enough for what you want. For example, as I

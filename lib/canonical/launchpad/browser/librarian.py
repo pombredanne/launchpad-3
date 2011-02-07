@@ -29,9 +29,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IWebBrowserOriginatingRequest,
-    )
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,

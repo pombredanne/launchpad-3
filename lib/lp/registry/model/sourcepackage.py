@@ -355,9 +355,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def releases(self):
         """See `ISourcePackage`."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-            order_by=[SQLConstant(order_const),
+            order_by=["SourcePackageRelease.version",
                       "SourcePackagePublishingHistory.datepublished"])
 
         return [DistributionSourcePackageRelease(
@@ -385,7 +384,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
             SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
-                SQL("debversion_sort_key(SourcePackageRelease.version)")))
+                SourcePackageRelease.version))
 
     @property
     def name(self):
