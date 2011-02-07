@@ -5,7 +5,6 @@ When using XMLRPC for connecting to external bug trackers, we need to
 use a special transport, which processes http cookies correctly, and
 which can connect through an http proxy server.
 
-    >>> import xmlrpclib
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     Urlib2TransportTestHandler)
     >>> from lp.bugs.externalbugtracker.xmlrpc import (
@@ -206,11 +205,14 @@ main Launchpad production environment selects Expat at present.
 Developer's machines could have other packages, python-reportlab-accel
 for example, that cause different response parsers to be chosen.
 
+    >>> import xmlrpclib
+
     >>> def getparser():
     ...     target = xmlrpclib.Unmarshaller(
     ...         use_datetime=transport._use_datetime)
     ...     parser = xmlrpclib.ExpatParser(target)
     ...     return parser, target
+
     >>> transport.getparser = getparser
 
 A malformed response body is included in the traceback:
