@@ -223,7 +223,7 @@ First, update the cache tables for Celso's PPA:
 Then, supersede all pmount publications in warty for pmount (this sets
 us up to demonstrate bug 208233).
 
-  >>> LaunchpadZopelessLayer.switchDbUser('lucille')
+  >>> LaunchpadZopelessLayer.switchDbUser('archivepublisher')
   >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
   >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
   >>> from lp.soyuz.model.distroarchseriesbinarypackage import (

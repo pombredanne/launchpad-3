@@ -21,14 +21,17 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionNavigation,
+    )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionNavigation,
-    )
 from lp.testing import (
+    feature_flags,
+    set_feature_flag,
     anonymous_logged_in,
     login_person,
     normalize_whitespace,
@@ -433,6 +436,88 @@ class TestBugSubscriptionFilterEditView(
             self.assertEqual([], view.errors)
         # The subscription filter has been deleted.
         self.assertEqual([], list(self.subscription.bug_filters))
+
+
+class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
+    """A base class for testing advanced structural subscription features."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterAdvancedFeatures, self).setUp()
+        self.setUpTarget()
+        with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProduct()
+
+    def test_filter_uses_bug_notification_level(self):
+        # When advanced features are turned on for subscriptions a user
+        # can specify a bug_notification_level on the +filter form.
+        with feature_flags():
+            # We don't display BugNotificationLevel.NOTHING as an option.
+            displayed_levels = [
+                level for level in BugNotificationLevel.items
+                if level != BugNotificationLevel.NOTHING]
+            for level in displayed_levels:
+                person = self.factory.makePerson()
+                with person_logged_in(person):
+                    subscription = self.target.addBugSubscription(person, person)
+                    form = {
+                        "field.description": "New description",
+                        "field.statuses": ["NEW", "INCOMPLETE"],
+                        "field.importances": ["LOW", "MEDIUM"],
+                        "field.tags": u"foo bar",
+                        "field.find_all_tags": "on",
+                        'field.bug_notification_level': level.title,
+                        "field.actions.create": "Create",
+                        }
+                    view = create_initialized_view(
+                        subscription, name="+new-filter", form=form)
+
+                filters = subscription.bug_filters
+                self.assertEqual(filters.count(), 1)
+                self.assertEqual(
+                    level, filters[0].bug_notification_level,
+                    "Bug notification level of filter should be %s, "
+                    "is actually %s." % (
+                        level.name, filters[0].bug_notification_level.name))
+
+    def test_nothing_is_not_a_valid_level(self):
+        # BugNotificationLevel.NOTHING isn't considered valid when a
+        # user is subscribing via the web UI.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = self.target.addBugSubscription(person, person)
+            form = {
+                "field.description": "New description",
+                "field.statuses": ["NEW", "INCOMPLETE"],
+                "field.importances": ["LOW", "MEDIUM"],
+                "field.tags": u"foo bar",
+                "field.find_all_tags": "on",
+                'field.bug_notification_level': BugNotificationLevel.NOTHING,
+                "field.actions.create": "Create",
+                }
+            with feature_flags():
+                view = create_initialized_view(
+                    subscription, name="+new-filter", form=form)
+                self.assertTrue(view.errors)
+
+    def test_extra_features_hidden_without_feature_flag(self):
+        # If the malone.advanced-subscriptions.enabled flag is turned
+        # off, the bug_notification_level field doesn't appear on the
+        # form.  This is actually not important for the filter, but when
+        # this test fails because we no longer rely on a feature flag, it
+        # can be a reminder to clean up the rest of this test to get
+        # rid of the feature flag code.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = self.target.addBugSubscription(person, person)
+            view = create_initialized_view(subscription, name="+new-filter")
+            form_fields = view.form_fields
+            self.assertIs(
+                None, form_fields.get('bug_notification_level'))
 
 
 class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):

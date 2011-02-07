@@ -12,6 +12,7 @@ from zope.security.proxy import ProxyFactory
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -42,6 +43,8 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         # Create.
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter.bug_notification_level = (
+            BugNotificationLevel.METADATA)
         bug_subscription_filter.find_all_tags = True
         bug_subscription_filter.include_any_tags = True
         bug_subscription_filter.exclude_any_tags = True
@@ -61,6 +64,9 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(True, bug_subscription_filter.find_all_tags)
         self.assertIs(True, bug_subscription_filter.include_any_tags)
         self.assertIs(True, bug_subscription_filter.exclude_any_tags)
+        self.assertEqual(
+            BugNotificationLevel.METADATA,
+            bug_subscription_filter.bug_notification_level)
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
 
@@ -70,6 +76,9 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.structural_subscription = self.subscription
         # Check.
+        self.assertEqual(
+            BugNotificationLevel.COMMENTS,
+            bug_subscription_filter.bug_notification_level)
         self.assertIs(False, bug_subscription_filter.find_all_tags)
         self.assertIs(False, bug_subscription_filter.include_any_tags)
         self.assertIs(False, bug_subscription_filter.exclude_any_tags)
