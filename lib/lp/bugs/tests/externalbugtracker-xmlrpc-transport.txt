@@ -4,6 +4,7 @@ When using XMLRPC for connecting to external bug trackers, we need to
 use a special transport, which processes http cookies correctly, and
 which can connect through an http proxy server.
 
+    >>> import xmlrpclib
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     Urlib2TransportTestHandler)
     >>> from lp.bugs.externalbugtracker.xmlrpc import (
@@ -189,3 +190,32 @@ request will be a GET request with no payload.
     >>> print redirected_request.data
     None
 
+
+== Debugging when the response cannot be parsed ==
+
+`UrlLib2Transport` annotates the stack such that the response body
+from the remote server ends up, in full, in the stack trace.
+
+We patch the transport to always use the Expat response parser. The
+response parser is chosen at runtime from a number of choices, but the
+main Launchpad production environment selects Expat at present.
+
+Developer's machines could have other packages, python-reportlab-accel
+for example, that cause different response parsers to be chosen.
+
+    >>> def getparser():
+    ...     target = xmlrpclib.Unmarshaller(
+    ...         use_datetime=transport._use_datetime)
+    ...     parser = xmlrpclib.ExpatParser(target)
+    ...     return parser, target
+    >>> transport.getparser = getparser
+
+A malformed response body is included in the traceback:
+
+    >>> test_handler.setResponse("<params><mis></match></params>")
+    >>> transport.request('www.example.com', 'xmlrpc', "<methodCall />")
+    Traceback (most recent call last):
+    ...
+    <params><mis></match></params>
+    ...
+    ExpatError: mismatched tag: ...
