@@ -1161,6 +1161,12 @@ p.search-results {
     top: .5em;
     right: 1.5em;
     }
+#rendertime {
+    float: left;
+    margin: 0.2em 1.2em 0 0;
+    color: #666;
+    font-size: 77%;
+    }
 div.watermark-apps-portlet {
     clear: both;
     margin-bottom: .5em;
