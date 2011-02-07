@@ -18,7 +18,10 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.enum import PersonTransferJobType
-from lp.registry.errors import TeamSubscriptionPolicyError
+from lp.registry.errors import (
+    JoinNotAllowed,
+    TeamSubscriptionPolicyError,
+    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -220,23 +223,31 @@ class TestTeamSubscriptionPolicyError(TestCaseWithFactory):
         self.assertEqual('a message', error.doc())
 
 
-class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
-    """Test `TeamSubsciptionPolicyChoice` constraints."""
+class TeamSubscriptionPolicyBase(TestCaseWithFactory):
+    """`TeamSubsciptionPolicyChoice` base test class."""
 
     layer = DatabaseFunctionalLayer
+    POLICY = None
 
-    def setUpTeams(self, policy, other_policy=None):
+    def setUpTeams(self, other_policy=None):
         if other_policy is None:
-            other_policy = policy
-        self.team = self.factory.makeTeam(subscription_policy=policy)
+            other_policy = self.POLICY
+        self.team = self.factory.makeTeam(subscription_policy=self.POLICY)
         self.other_team = self.factory.makeTeam(
             subscription_policy=other_policy, owner=self.team.teamowner)
         self.field = ITeamPublic['subscriptionpolicy'].bind(self.team)
         login_person(self.team.teamowner)
 
+
+class TestTeamSubscriptionPolicyChoiceCommon(TeamSubscriptionPolicyBase):
+    """Test `TeamSubsciptionPolicyChoice` constraints."""
+
+    # Any policy will work here, so we'll just pick one.
+    POLICY = TeamSubscriptionPolicy.MODERATED
+
     def test___getTeam_with_team(self):
         # _getTeam returns the context team for team updates.
-        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.setUpTeams()
         self.assertEqual(self.team, self.field._getTeam())
 
     def test___getTeam_with_person_set(self):
@@ -245,11 +256,17 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
         field = ITeamPublic['subscriptionpolicy'].bind(person_set)
         self.assertEqual(None, field._getTeam())
 
+
+class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
+    """Test `TeamSubsciptionPolicyChoice` Moderated constraints."""
+
+    POLICY = TeamSubscriptionPolicy.MODERATED
+
     def test_closed_team_with_closed_super_team_cannot_become_open(self):
         # The team cannot compromise the membership of the super team
         # by becoming open. The user must remove his team from the super team
         # first.
-        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.setUpTeams()
         self.other_team.addMember(self.team, self.team.teamowner)
         self.assertFalse(
             self.field.constraint(TeamSubscriptionPolicy.OPEN))
@@ -259,29 +276,16 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
 
     def test_closed_team_with_open_super_team_can_become_open(self):
         # The team can become open if its super teams are open.
-        self.setUpTeams(
-            TeamSubscriptionPolicy.MODERATED, TeamSubscriptionPolicy.OPEN)
+        self.setUpTeams(other_policy=TeamSubscriptionPolicy.OPEN)
         self.other_team.addMember(self.team, self.team.teamowner)
         self.assertTrue(
             self.field.constraint(TeamSubscriptionPolicy.OPEN))
         self.assertEqual(
             None, self.field.validate(TeamSubscriptionPolicy.OPEN))
 
-    def test_open_team_with_open_sub_team_cannot_become_closed(self):
-        # The team cannot become closed if its membership will be
-        # compromised by an open subteam. The user must remove the subteam
-        # first
-        self.setUpTeams(TeamSubscriptionPolicy.OPEN)
-        self.team.addMember(self.other_team, self.team.teamowner)
-        self.assertFalse(
-            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
-        self.assertRaises(
-            TeamSubscriptionPolicyError, self.field.validate,
-            TeamSubscriptionPolicy.MODERATED)
-
     def test_closed_team_can_change_to_another_closed_policy(self):
         # A closed team can change between the two closed polcies.
-        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.setUpTeams()
         self.team.addMember(self.other_team, self.team.teamowner)
         super_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED,
@@ -292,20 +296,10 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
         self.assertEqual(
             None, self.field.validate(TeamSubscriptionPolicy.RESTRICTED))
 
-    def test_open_team_with_closed_sub_team_can_become_closed(self):
-        # The team can become closed.
-        self.setUpTeams(
-            TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.MODERATED)
-        self.team.addMember(self.other_team, self.team.teamowner)
-        self.assertTrue(
-            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
-        self.assertEqual(
-            None, self.field.validate(TeamSubscriptionPolicy.MODERATED))
-
     def test_closed_team_with_active_ppas_cannot_become_open(self):
         # The team cannot become open if it has PPA because it compromises the
         # the control of who can upload.
-        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.setUpTeams()
         self.team.createPPA()
         self.assertFalse(
             self.field.constraint(TeamSubscriptionPolicy.OPEN))
@@ -315,7 +309,7 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
 
     def test_closed_team_without_active_ppas_can_become_open(self):
         # The team can become if it has deleted PPAs.
-        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.setUpTeams(other_policy=TeamSubscriptionPolicy.MODERATED)
         ppa = self.team.createPPA()
         ppa.delete(self.team.teamowner)
         removeSecurityProxy(ppa).status = ArchiveStatus.DELETED
@@ -323,6 +317,47 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
             self.field.constraint(TeamSubscriptionPolicy.OPEN))
         self.assertEqual(
             None, self.field.validate(TeamSubscriptionPolicy.OPEN))
+
+
+class TestTeamSubscriptionPolicyChoiceRestrcted(
+                                   TestTeamSubscriptionPolicyChoiceModerated):
+    """Test `TeamSubsciptionPolicyChoice` Restricted constraints."""
+
+    POLICY = TeamSubscriptionPolicy.RESTRICTED
+
+
+class TestTeamSubscriptionPolicyChoiceOpen(TeamSubscriptionPolicyBase):
+    """Test `TeamSubsciptionPolicyChoice` Open constraints."""
+
+    POLICY = TeamSubscriptionPolicy.OPEN
+
+    def test_open_team_with_open_sub_team_cannot_become_closed(self):
+        # The team cannot become closed if its membership will be
+        # compromised by an open subteam. The user must remove the subteam
+        # first
+        self.setUpTeams()
+        self.team.addMember(self.other_team, self.team.teamowner)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.MODERATED)
+
+    def test_open_team_with_closed_sub_team_can_become_closed(self):
+        # The team can become closed.
+        self.setUpTeams(other_policy=TeamSubscriptionPolicy.MODERATED)
+        self.team.addMember(self.other_team, self.team.teamowner)
+        self.assertTrue(
+            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
+        self.assertEqual(
+            None, self.field.validate(TeamSubscriptionPolicy.MODERATED))
+
+
+class TestTeamSubscriptionPolicyChoiceDelegated(
+                                        TestTeamSubscriptionPolicyChoiceOpen):
+    """Test `TeamSubsciptionPolicyChoice` Delegated constraints."""
+
+    POLICY = TeamSubscriptionPolicy.DELEGATED
 
 
 class TestVisibilityConsistencyWarning(TestCaseWithFactory):
@@ -344,6 +379,52 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         self.assertEqual(
             None,
             self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
+
+
+class TestPersonJoinTeam(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_join_restricted_team_error(self):
+        # Calling join with a Restricted team raises an error.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        user = self.factory.makePerson()
+        login_person(user)
+        self.assertRaises(JoinNotAllowed, user.join, team, user)
+
+    def test_join_moderated_team_proposed(self):
+        # Joining a Moderated team creates a Proposed TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        users = list(team.proposedmembers)
+        self.assertEqual(1, len(users))
+        self.assertEqual(user, users[0])
+
+    def test_join_delegated_team_proposed(self):
+        # Joining a Delegated team creates a Proposed TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        users = list(team.proposedmembers)
+        self.assertEqual(1, len(users))
+        self.assertEqual(user, users[0])
+
+    def test_join_open_team_appoved(self):
+        # Joining an Open team creates an Approved TeamMembership.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        user = self.factory.makePerson()
+        login_person(user)
+        user.join(team, user)
+        members = list(team.approvedmembers)
+        self.assertEqual(1, len(members))
+        self.assertEqual(user, members[0])
 
 
 class TestMembershipManagement(TestCaseWithFactory):

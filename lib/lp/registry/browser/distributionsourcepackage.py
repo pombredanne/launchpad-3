@@ -59,11 +59,11 @@ from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.bugs.interfaces.bug import IBugSet
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )

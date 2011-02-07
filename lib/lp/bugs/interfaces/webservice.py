@@ -29,6 +29,8 @@ __all__ = [
     'ICveSet',
     'IHasBugs',
     'IMaloneApplication',
+    'IStructuralSubscription',
+    'IStructuralSubscriptionTarget',
     'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'NominationError',
@@ -79,6 +81,10 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    )
 
 
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular

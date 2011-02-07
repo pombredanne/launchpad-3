@@ -97,13 +97,14 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
@@ -126,9 +127,12 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -158,12 +162,8 @@ from lp.registry.interfaces.productseries import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -1419,12 +1419,13 @@ def _build_tag_set_query_any(tags):
     :param tags: An iterable of valid tags without - or + and not wildcards.
     :return: A string SQL query fragment or None if no tags were provided.
     """
-    tags = list(tags)
+    tags = sorted(tags)
     if tags == []:
         return None
-    return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
-        % sqlvalues(sorted(tags)))
+    return "EXISTS (%s)" % (
+        "SELECT TRUE FROM BugTag"
+        " WHERE BugTag.bug = Bug.id"
+        " AND BugTag.tag IN %s") % sqlvalues(tags)
 
 
 def build_tag_search_clause(tags_spec):
@@ -2670,7 +2671,7 @@ class BugTaskSet:
                     AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
         expirable_bugtasks = BugTask.select(
-            query +  unconfirmed_bug_condition,
+            query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:

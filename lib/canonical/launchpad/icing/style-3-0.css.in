@@ -813,6 +813,7 @@ button {
     margin-left: 2.6em;
     }
 .formHelp {
+    max-width: 45em;
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;
     }

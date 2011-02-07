@@ -54,11 +54,12 @@ of properties:
     log_url: u'http://.../~cprov/+archive/ppa/+buildjob/26/+files/netapplet-1.0.0.tar.gz'
     pocket: u'Release'
     resource_type_link: u'http://api.launchpad.dev/beta/#build'
-    score: None 
+    score: None
     self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+buildjob/26'
     status: u'Failed to build'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa/+buildjob/26'
 
 Whereas the 1.0 webservice for builds maintains the old property names
 (without underscores):
@@ -85,6 +86,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     self_link: u'http://.../~cprov/+archive/ppa/+buildjob/26'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa/+buildjob/26'
 
 For testing purposes we will set 'buildlog' and 'upload_log' to the
 same library file, so both can be verified.
