@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
-    ZopelessDatabaseLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
@@ -20,7 +20,7 @@ from lp.translations.model.translationmergejob import TranslationMergeJob
 
 class TestTranslationMergeJob(TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def makeTranslationMergeJob(self):
         singular = self.factory.getUniqueString()
@@ -30,17 +30,20 @@ class TestTranslationMergeJob(TestCaseWithFactory):
             upstream_pofile.potemplate, singular, sequence=1)
         upstream = self.factory.makeCurrentTranslationMessage(
             pofile=upstream_pofile, potmsgset=upstream_potmsgset)
-        ubuntu_pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        ubuntu_potemplate = self.factory.makePOTemplate(
+            side=TranslationSide.UBUNTU, name=upstream_pofile.potemplate.name)
+        ubuntu_pofile = self.factory.makePOFile(
+            potemplate=ubuntu_potemplate)
         ubuntu_potmsgset = self.factory.makePOTMsgSet(
             ubuntu_pofile.potemplate, singular, sequence=1)
         ubuntu = self.factory.makeCurrentTranslationMessage(
             pofile=ubuntu_pofile, potmsgset=ubuntu_potmsgset,
             translations=upstream.translations)
-        product = upstream_pofile.potemplate.productseries.product
+        productseries = upstream_pofile.potemplate.productseries
         distroseries = ubuntu_pofile.potemplate.distroseries
         sourcepackagename = ubuntu_pofile.potemplate.sourcepackagename
         return TranslationMergeJob(
-            Job(), product, distroseries, sourcepackagename)
+            Job(), productseries, distroseries, sourcepackagename)
 
     def test_interface(self):
         """TranslationMergeJob must implement IRunnableJob."""
@@ -49,11 +52,11 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_run(self):
         job = self.makeTranslationMergeJob()
+        self.becomeDbUser('rosettaadmin')
         job.run()
         msg_sets = []
-        for product_series in job.product.series:
-            for template in POTemplateSubset(productseries=product_series):
-                msg_sets.extend(template.getPOTMsgSets())
+        for template in POTemplateSubset(productseries=job.productseries):
+            msg_sets.extend(template.getPOTMsgSets())
         (package_template,) = list(POTemplateSubset(
             sourcepackagename=job.sourcepackagename,
             distroseries=job.distroseries))
