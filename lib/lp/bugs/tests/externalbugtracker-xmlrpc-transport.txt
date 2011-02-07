@@ -1,4 +1,5 @@
-= XMLRPC urllib2 transport =
+XMLRPC urllib2 transport
+------------------------
 
 When using XMLRPC for connecting to external bug trackers, we need to
 use a special transport, which processes http cookies correctly, and
@@ -61,7 +62,7 @@ In addition to cookies sent by the server, we can set cookies locally.
                          Cookie(version=0, name='foo', value='bar'...)]>
 
 If an error occurs trying to make the request, an
-`xmlrpclib.ProtocolError` is raised.
+``xmlrpclib.ProtocolError`` is raised.
 
     >>> from urllib2 import HTTPError
     >>> test_handler.setError(
@@ -108,7 +109,8 @@ location.
     ('http://www.example.com/xmlrpc/redirected',)
 
 
-== The XMLRPCRedirectHandler ==
+The XMLRPCRedirectHandler
+=========================
 
 The UrlLib2Transport uses a custom HTTP redirection handler to handle
 redirect responses. This is a subclass of urllib2's HTTPRedirectHandler.
@@ -191,10 +193,11 @@ request will be a GET request with no payload.
     None
 
 
-== Debugging when the response cannot be parsed ==
+Debugging when the response cannot be parsed
+============================================
 
-`UrlLib2Transport` annotates the stack such that the response body
-from the remote server ends up, in full, in the stack trace.
+``UrlLib2Transport`` annotates the stack such that the response body
+from the remote server ends up, in full, in a formatted stack trace.
 
 We patch the transport to always use the Expat response parser. The
 response parser is chosen at runtime from a number of choices, but the
