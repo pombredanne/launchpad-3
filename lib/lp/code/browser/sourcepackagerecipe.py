@@ -269,10 +269,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     class schema(Interface):
         """Schema for requesting a build."""
+        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
         distros = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
-        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
 
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
@@ -303,8 +303,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         for distroseries in data['distros']:
             try:
                 self.context.requestBuild(
-                    data['archive'], self.user, distroseries,
-                    PackagePublishingPocket.RELEASE, manual=True)
+                    data['archive'], self.user, distroseries, manual=True)
             except BuildAlreadyPending, e:
                 self.setFieldError(
                     'distros',

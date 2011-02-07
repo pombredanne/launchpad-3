@@ -161,13 +161,45 @@
         <p tal:condition="not: view/builds">
           This recipe has not been built yet.
         </p>
-        <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
+        <div
+          tal:define="link context/menu:context/request_builds"
+          tal:condition="link/enabled"
+          >
+          <a id="request-builds"
+             class="sprite add"
+             tal:attributes="href link/url"
+             tal:content="link/text" />
+        </div>
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
         <pre tal:content="context/recipe_text" />
       </div>
     </div>
+    <tal:script
+      replace="structure
+      string:&lt;script id='requestbuild-script' type='text/javascript'&gt;" />
+      LPS.use('io-base', 'lp.code.requestbuild_overlay', function(Y) {
+      var recipe_name = '<tal:x replace="context/name"/>';
+      <!--
+        if(Y.UA.ie) {
+            return;
+        }
+
+        Y.on('domready', function() {
+            var logged_in = LP.client.links['me'] !== undefined;
+
+            if (logged_in) {
+                var config = {
+                  recipe_name: recipe_name,
+                  };
+//                Y.lp.code.requestbuild_overlay.aaa(config);
+                Y.lp.code.requestbuild_overlay.connect_requestbuild(config);
+            }
+        });
+      });
+      -->
+    <tal:script replace="structure string:&lt;/script&gt;" />
   </div>
 </body>
 </html>
