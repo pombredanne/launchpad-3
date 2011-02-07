@@ -50,6 +50,16 @@ class SimpleHugeVocabulary(SimpleVocabulary):
     displayname = "Simple objects"
     step_title = "Select something"
 
+    def __call__(self, context):
+        # Allow an instance to be used as a utility.
+        return self
+
+
+class TestSuggestionWidget(TestCaseWithFactory):
+    """Test the SuggestionWidget class."""
+
+    layer = DatabaseFunctionalLayer
+
     SAFE_OBJECT = Simple('token-1', 'Safe title')
     UNSAFE_OBJECT = Simple('token-2', '<unsafe> &nbsp; title')
 
@@ -58,25 +68,11 @@ class SimpleHugeVocabulary(SimpleVocabulary):
     UNSAFE_TERM = SimpleTerm(
         UNSAFE_OBJECT, UNSAFE_OBJECT.name, UNSAFE_OBJECT.displayname)
 
-
-class SimpleHugeVocabularyFactory:
-
-    def __call__(self, context):
-        return SimpleHugeVocabulary(
-            [SimpleHugeVocabulary.SAFE_TERM,
-             SimpleHugeVocabulary.UNSAFE_TERM])
-
-
-class TestSuggestionWidget(TestCaseWithFactory):
-    """Test the SuggestionWidget class."""
-
-    layer = DatabaseFunctionalLayer
-
-    class ExampleSuggestion(SuggestionWidget):
+    class ExampleSuggestionWidget(SuggestionWidget):
 
         @staticmethod
         def _getSuggestions(context):
-            return SimpleVocabulary([SimpleHugeVocabulary.SAFE_TERM])
+            return SimpleVocabulary([TestSuggestionWidget.SAFE_TERM])
 
         def _autoselectOther(self):
             on_key_press = "selectWidget('%s', event);" % self._otherId()
@@ -84,18 +80,17 @@ class TestSuggestionWidget(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSuggestionWidget, self).setUp()
-        self.request = LaunchpadTestRequest()
-        self.vocabulary = SimpleHugeVocabulary(
-            [SimpleHugeVocabulary.SAFE_TERM,
-             SimpleHugeVocabulary.UNSAFE_TERM])
+        request = LaunchpadTestRequest()
+        vocabulary = SimpleHugeVocabulary(
+            [self.SAFE_TERM, self.UNSAFE_TERM])
         provideUtility(
-            SimpleHugeVocabularyFactory(), provides=IVocabularyFactory,
+            vocabulary, provides=IVocabularyFactory,
             name='SimpleHugeVocabulary')
         field = Choice(
             __name__='test_field', vocabulary="SimpleHugeVocabulary")
-        self.field = field.bind(object())
-        self.widget = self.ExampleSuggestion(
-            self.field, self.vocabulary, self.request)
+        field = field.bind(object())
+        self.widget = self.ExampleSuggestionWidget(
+            field, vocabulary, request)
 
     def test_renderItems(self):
         # Render all vocabulary and the other option as items.
