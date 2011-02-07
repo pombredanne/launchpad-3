@@ -441,7 +441,7 @@ class BranchListingItemsMixin:
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self.visible_branches_for_view, self.view_user)
-        return set(bug_branch.branch.id for bug_branch in bug_branches)
+        return set(bug_branch.branchID for bug_branch in bug_branches)
 
     @cachedproperty
     def branch_ids_with_spec_links(self):
