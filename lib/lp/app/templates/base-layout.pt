@@ -188,5 +188,19 @@
     r${revno}
   --&gt;" />
 </tal:template>
+
+<tal:comment
+    tal:condition="request/features/visible_render_time"
+    define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+  var render_time = "${render_time} &amp;bull;";
+  LPS.use("node", function(Y) {
+    Y.on("domready", function() {
+      var node = Y.one("#rendertime");
+      node.set("innerHTML", render_time);
+    });
+  });
+&lt;/script&gt;' />
+
 </html>
 </metal:page>
