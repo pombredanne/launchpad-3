@@ -6,15 +6,19 @@
 __metaclass__ = type
 __all__ = []
 
+import doctest
+from sys import exc_info
 import unittest
 
+from testtools.matchers import DocTestMatches
+
+from canonical.launchpad.scripts.logger import (
+    LaunchpadFormatter,
+    traceback_info,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import BaseLayer
 from lp.testing import TestCase
-from canonical.launchpad.scripts.logger import LaunchpadFormatter
-from sys import exc_info
-from testtools.matchers import DocTestMatches
-import doctest
 
 
 DOCTEST_FLAGS = (
@@ -23,17 +27,24 @@ DOCTEST_FLAGS = (
     doctest.REPORT_NDIFF)
 
 
+class TestTracebackInfo(TestCase):
+    """Tests of `traceback_info`."""
+
+    def test(self):
+        # The local variable __traceback_info__ is set by `traceback_info`.
+        self.assertEqual(None, locals().get("__traceback_info__"))
+        traceback_info("Pugwash")
+        self.assertEqual("Pugwash", locals().get("__traceback_info__"))
+
+
 class TestLaunchpadFormatter(TestCase):
     """Tests of `LaunchpadFormatter`."""
-
-    layer = BaseLayer
 
     def test_traceback_info(self):
         # LaunchpadFormatter inherits from zope.exceptions.log.Formatter, so
         # __traceback_info__ annotations are included in formatted exceptions.
 
-        __traceback_info__ = "Captain Kirk"
-        __traceback_info__
+        traceback_info("Captain Kirk")
 
         try:
             0/0
@@ -53,10 +64,9 @@ class TestLaunchpadFormatter(TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
     suite.addTest(
         LayeredDocFileSuite(
             'test_logger.txt', layer=BaseLayer))
     suite.addTest(
-        loader.loadTestsFromName(__name__))
+        unittest.TestLoader().loadTestsFromName(__name__))
     return suite

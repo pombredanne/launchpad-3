@@ -15,13 +15,20 @@ __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
 __all__ = [
+    'DEBUG2',
+    'DEBUG3',
+    'DEBUG4',
+    'DEBUG5',
+    'DEBUG6',
+    'DEBUG7',
+    'DEBUG8',
+    'DEBUG9',
+    'LaunchpadFormatter',
     'log',
     'logger',
     'logger_options',
     'OopsHandler',
-    'LaunchpadFormatter',
-    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
+    'traceback_info',
     ]
 
 
@@ -66,6 +73,16 @@ DEBUG6 = loglevels.DEBUG6
 DEBUG7 = loglevels.DEBUG7
 DEBUG8 = loglevels.DEBUG8
 DEBUG9 = loglevels.DEBUG9
+
+
+def traceback_info(info):
+    """Set `__traceback_info__` in the caller's locals.
+
+    This is more aesthetically pleasing that assigning to __traceback_info__,
+    but it more importantly avoids spurious lint warnings about unused local
+    variables, and helps to avoid typos.
+    """
+    sys._getframe(1).f_locals["__traceback_info__"] = info
 
 
 class OopsHandler(logging.Handler):
