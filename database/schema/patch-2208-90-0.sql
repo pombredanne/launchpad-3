@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-CREATE TABLE ProductSeriesPackageLinkJob (
+CREATE TABLE PackagingJob (
     id SERIAL PRIMARY KEY,
     job INTEGER NOT NULL CONSTRAINT job_fk REFERENCES Job ON DELETE CASCADE,
     job_type INTEGER NOT NULL,
