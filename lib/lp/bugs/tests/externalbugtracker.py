@@ -1706,11 +1706,6 @@ class Urlib2TransportTestHandler(BaseHandler):
         return response
 
 
-def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler."""
-    transport.opener.add_handler(Urlib2TransportTestHandler())
-
-
 def ensure_response_parser_is_expat(transport):
     """Ensure the transport always selects the Expat-based response parser.
 
