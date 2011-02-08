@@ -29,6 +29,18 @@ from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.services.propertycache import cachedproperty
 
 
+def bug_notification_level_description_mapping(displayname):
+    return {
+        BugNotificationLevel.LIFECYCLE: (
+            "%s is fixed or re-opened." % displayname).capitalize(),
+        BugNotificationLevel.METADATA: (
+            "Any change is made to %s, other than a new "
+            "comment being added." % displayname),
+        BugNotificationLevel.COMMENTS: (
+            "A change is made or a new comment is added to %s."
+            % displayname),
+        }
+
 class BugSubscriptionFilterView(LaunchpadView):
     """View for `IBugSubscriptionFilter`.
 
@@ -44,7 +56,7 @@ class BugSubscriptionFilterView(LaunchpadView):
 
     @property
     def description(self):
-        """Return the bug filter description.
+        """Return the bug subscription filter description.
 
         Leading and trailing whitespace is trimmed. If the description is not
         set the empty string is returned.
@@ -53,9 +65,31 @@ class BugSubscriptionFilterView(LaunchpadView):
         return u"" if description is None else description.strip()
 
     @property
+    def filters_everything(self):
+        """Return a boolean as to whether the filter masks everything.
+        
+        Right now the only thing we check is the bug_notification_level.  We
+        could check more later--in particular, if no importances are checked,
+        or no statuses.
+        """
+        return (self.context.bug_notification_level ==
+                BugNotificationLevel.NOTHING)
+
+    @property
     def conditions(self):
-        """Descriptions of the bug filter's conditions."""
+        """Descriptions of the bug subscription filter's conditions."""
         conditions = []
+        bug_notification_level = self.context.bug_notification_level
+        if bug_notification_level < BugNotificationLevel.COMMENTS:
+            if bug_notification_level == BugNotificationLevel.NOTHING:
+                return conditions # The template should use
+                # filters_everything to determine whether the conditions
+                # should be rendered.
+            else:
+                mapping = bug_notification_level_description_mapping(
+                    'the bug')
+                conditions.append(
+                    mapping[bug_notification_level].lower()[:-1])
         statuses = self.context.statuses
         if len(statuses) > 0:
             conditions.append(
@@ -103,17 +137,8 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
 
     @cachedproperty
     def _bug_notification_level_descriptions(self):
-        displayname = self.target.displayname
-        return {
-            BugNotificationLevel.LIFECYCLE: (
-                "A bug in %s is fixed or re-opened." % displayname),
-            BugNotificationLevel.METADATA: (
-                "Any change is made to a bug in %s, other than a new "
-                "comment being added." % displayname),
-            BugNotificationLevel.COMMENTS: (
-                "A change is made or a new comment is added to a bug in %s."
-                % displayname),
-            }
+        return bug_notification_level_description_mapping(
+            'a bug in %s' % self.target.displayname)
 
     def setUpFields(self):
         """Set up fields for form.
