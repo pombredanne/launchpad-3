@@ -387,6 +387,17 @@ class TestFTPArchiveRunApt(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def _makeMatchingDistroArchSeries(self):
+        """Create two `DistroArchSeries` for the same distro and processor."""
+        distro = self.factory.makeDistribution()
+        processor = self.factory.makeProcessor()
+        return (
+            self.factory.makeDistroArchSeries(
+                distroseries=self.factory.makeDistroSeries(distro),
+                processorfamily=processor.family,
+                architecturetag=processor.name)
+            for counter in (1, 2))
+
     def test_getArchitectureTags_starts_out_empty(self):
         fa = FTPArchiveHandler(
             DevNullLogger(), None, None, self.factory.makeDistribution(),
@@ -423,34 +434,22 @@ class TestFTPArchiveRunApt(TestCaseWithFactory):
         self.assertContentEqual([], fa._getArchitectureTags())
 
     def test_getArchitectureTags_contains_no_duplicates(self):
-        distro = self.factory.makeDistribution()
-        ominous_okapi = self.factory.makeDistroSeries(distribution=distro)
-        pilfering_puppy = self.factory.makeDistroSeries(distribution=distro)
-        ominous_arch = self.factory.makeDistroArchSeries(
-            distroseries=ominous_okapi)
-        pilfering_arch = self.factory.makeDistroArchSeries(
-            distroseries=pilfering_puppy,
-            architecturetag=ominous_arch.architecturetag,
-            processorfamily=ominous_arch.processorfamily)
-        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        ominous_okapi, pilfering_puppy = self._makeMatchingDistroArchSeries()
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            ominous_okapi.distroseries.distribution, None)
         self.assertEqual(1, len(list(fa._getArchitectureTags())))
         self.assertContentEqual(
-            [pilfering_arch.architecturetag], fa._getArchitectureTags())
+            [ominous_okapi.architecturetag], fa._getArchitectureTags())
 
     def test_getArchitectureTags_counts_any_architecture_enabled_once(self):
-        distro = self.factory.makeDistribution()
-        ominous_okapi = self.factory.makeDistroSeries(distribution=distro)
-        pilfering_puppy = self.factory.makeDistroSeries(distribution=distro)
-        ominous_arch = self.factory.makeDistroArchSeries(
-            distroseries=ominous_okapi)
-        pilfering_arch = self.factory.makeDistroArchSeries(
-            distroseries=pilfering_puppy,
-            architecturetag=ominous_arch.architecturetag,
-            processorfamily=ominous_arch.processorfamily)
-        pilfering_arch.enabled = False
-        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        manic_mantis, nervous_nit = self._makeMatchingDistroArchSeries()
+        nervous_nit.enabled = False
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            manic_mantis.distroseries.distribution, None)
         self.assertContentEqual(
-            [pilfering_arch.architecturetag], fa._getArchitectureTags())
+            [manic_mantis.architecturetag], fa._getArchitectureTags())
 
     def test_runApt_reports_failure(self):
         # If we sabotage apt-ftparchive, runApt notices that it failed
