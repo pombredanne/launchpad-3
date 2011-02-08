@@ -7,7 +7,6 @@ import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
-    Equals,
     LessThan,
     )
 from zope.component import getUtility
