@@ -546,12 +546,17 @@ class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
     def initialize(self):
-        if not self.context.publish:
-            edit_url = canonical_url(self.context) + '/+edit'
-            notification = (
-                "Publishing has been disabled for this archive, go to "
-                "the <a href=%s>Change details</a> page if you need to "
-                "re-enable it." % edit_url)
+        # If the archive has publishing disabled, present a warning.  If
+        # the current user has lp.Edit then add a link to +edit to fix
+        # this.
+        if not self.context.publish and self.context.is_active:
+            can_edit = check_permission('launchpad.Edit', self.context)
+            notification = "Publishing has been disabled for this archive"
+            if can_edit:
+                edit_url = canonical_url(self.context) + '/+edit'
+                notification += (
+                    ", go to the <a href=%s>Change details</a> page if you "
+                    "need to re-enable it." % edit_url)
             if self.context.private:
                 notification += (
                     "\nNote: since this archive is private, no builds will "
