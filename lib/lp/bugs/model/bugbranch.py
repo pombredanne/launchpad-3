@@ -13,6 +13,7 @@ __all__ = ["BugBranch",
 from sqlobject import (
     ForeignKey,
     IN,
+    IntCol,
     StringCol,
     )
 from zope.component import getUtility
@@ -39,6 +40,7 @@ class BugBranch(SQLBase):
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
+    branch_id = IntCol(dbName="branch", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
 

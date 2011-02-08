@@ -48,6 +48,7 @@ class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
         BugField(
             title=_("Bug #"),
             required=True, readonly=True))
+    branch_id = Int(title=_("Branch ID"), required=True, readonly=True)
     branch = exported(
         ReferenceChoice(
             title=_("Branch"), schema=IBranch,
