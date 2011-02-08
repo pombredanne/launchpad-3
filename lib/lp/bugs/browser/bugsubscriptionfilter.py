@@ -41,6 +41,7 @@ def bug_notification_level_description_mapping(displayname):
             % displayname),
         }
 
+
 class BugSubscriptionFilterView(LaunchpadView):
     """View for `IBugSubscriptionFilter`.
 
@@ -67,7 +68,7 @@ class BugSubscriptionFilterView(LaunchpadView):
     @property
     def filters_everything(self):
         """Return a boolean as to whether the filter masks everything.
-        
+
         Right now the only thing we check is the bug_notification_level.  We
         could check more later--in particular, if no importances are checked,
         or no statuses.

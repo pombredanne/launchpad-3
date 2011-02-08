@@ -512,7 +512,8 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
             for level in displayed_levels:
                 person = self.factory.makePerson()
                 with person_logged_in(person):
-                    subscription = self.target.addBugSubscription(person, person)
+                    subscription = self.target.addBugSubscription(
+                        person, person)
                     form = {
                         "field.description": "New description",
                         "field.statuses": ["NEW", "INCOMPLETE"],
