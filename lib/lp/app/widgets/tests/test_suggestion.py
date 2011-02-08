@@ -88,9 +88,9 @@ class TestSuggestionWidget(TestCaseWithFactory):
             name='SimpleHugeVocabulary')
         field = Choice(
             __name__='test_field', vocabulary="SimpleHugeVocabulary")
-        self.field = field.bind(object())
+        field = field.bind(object())
         self.widget = self.ExampleSuggestionWidget(
-            self.field, vocabulary, request)
+            field, vocabulary, request)
 
     def test_renderItems(self):
         # Render all vocabulary and the other option as items.
