@@ -102,7 +102,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
+        except xmlrpclib.ResponseError:
             # The server returned an unparsable response.
             return False
         else:
@@ -145,7 +145,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
+        except xmlrpclib.ResponseError:
             # The server returned an unparsable response.
             return False
         else:
