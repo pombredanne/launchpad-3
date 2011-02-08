@@ -28,7 +28,7 @@ from xmlrpclib import (
     Transport,
     )
 
-from canonical.launchpad.scripts.logger import traceback_info
+from lp.services.utils import traceback_info
 
 
 class XMLRPCRedirectHandler(HTTPRedirectHandler):

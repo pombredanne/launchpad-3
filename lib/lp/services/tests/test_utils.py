@@ -14,6 +14,7 @@ from lp.services.utils import (
     decorate_with,
     docstring_dedent,
     iter_split,
+    traceback_info,
     )
 from lp.testing import TestCase
 
@@ -154,6 +155,17 @@ class TestDocstringDedent(TestCase):
         """
         result = 'This is a multiline docstring.\n\nThis is the second line.'
         self.assertEqual(docstring_dedent(docstring), result)
+
+
+class TestTracebackInfo(TestCase):
+    """Tests of `traceback_info`."""
+
+    def test(self):
+        # The local variable __traceback_info__ is set by `traceback_info`.
+        self.assertEqual(None, locals().get("__traceback_info__"))
+        traceback_info("Pugwash")
+        self.assertEqual("Pugwash", locals().get("__traceback_info__"))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

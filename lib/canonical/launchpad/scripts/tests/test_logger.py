@@ -12,12 +12,10 @@ import unittest
 
 from testtools.matchers import DocTestMatches
 
-from canonical.launchpad.scripts.logger import (
-    LaunchpadFormatter,
-    traceback_info,
-    )
+from canonical.launchpad.scripts.logger import LaunchpadFormatter
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import BaseLayer
+from lp.services.utils import traceback_info
 from lp.testing import TestCase
 
 
@@ -25,16 +23,6 @@ DOCTEST_FLAGS = (
     doctest.ELLIPSIS |
     doctest.NORMALIZE_WHITESPACE |
     doctest.REPORT_NDIFF)
-
-
-class TestTracebackInfo(TestCase):
-    """Tests of `traceback_info`."""
-
-    def test(self):
-        # The local variable __traceback_info__ is set by `traceback_info`.
-        self.assertEqual(None, locals().get("__traceback_info__"))
-        traceback_info("Pugwash")
-        self.assertEqual("Pugwash", locals().get("__traceback_info__"))
 
 
 class TestLaunchpadFormatter(TestCase):
