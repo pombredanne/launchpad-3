@@ -48,7 +48,21 @@ YUI().use('node', 'lazr.effects', function(Y) {
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
-                    target.slide = Y.lazr.effects.slide_out(table_name);
+                    // This is wrong on so many levels.  The view should
+                    // set the classes such that the slider is initialized
+                    // properly without requiring we run hiden animations.
+                    //
+                    // That is a largish refactor, so until that can happen,
+                    // hard code the heights.  They cannot be determined with
+                    // 'scrollHeight' because the elements are not visible.
+                    var expanded_height;
+                    if (cfg.which == 'more') {
+                        expanded_height = 120;
+                    } else {
+                        expanded_height = 65;
+                    }
+                    target.slide = Y.lazr.effects.slide_out(
+                        table_name, {to: {height: expanded_height}});
                 }
                 target.slide.stop();
                 target.slide.run();
@@ -73,7 +87,10 @@ YUI().use('node', 'lazr.effects', function(Y) {
             // reverse.
             Y.on('click', function(e) {
                 e.preventDefault();
-                target.slide.set('reverse', !target.slide.get('reverse'));
+                var info_height = target.get(
+                    'nextElementSibling').get('scrollHeight');
+                target.slide.set('to', {height: info_height});
+                target.slide.set('reverse', !target.slide.drawer_closed);
                 target.slide.stop();
                 target.slide.run();
             }, target_name);
