@@ -189,11 +189,12 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Description(
+    description = exported(Description(
         title=_('Description'), required=True,
-        description=_('A short description of the recipe.'))
+        description=_('A short description of the recipe.')))
 
-    date_last_modified = Datetime(required=True, readonly=True)
+    date_last_modified = exported(
+        Datetime(required=True, readonly=True))
 
     is_stale = Bool(title=_('Recipe is stale.'))
 

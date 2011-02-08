@@ -261,6 +261,13 @@ class SourcePackageRecipeView(LaunchpadView):
         return TextAreaEditorWidget(
             self.context, recipe_text, title="Do we want a title")
 
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        description = ISourcePackageRecipe['description']
+        return TextAreaEditorWidget(
+            self.context, description, title="")
+
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     """A view for requesting builds of a SourcePackageRecipe."""
