@@ -454,8 +454,7 @@ class TestFTPArchiveRunApt(TestCaseWithFactory):
     def test_runApt_reports_failure(self):
         # If we sabotage apt-ftparchive, runApt notices that it failed
         # and raises an exception.
-        distroarchseries = self.factory.makeDistroArchSeries(
-            architecturetag="--fail-for-my-test")
+        distroarchseries = self.factory.makeDistroArchSeries()
         distro = distroarchseries.distroseries.distribution
         fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
         self.assertRaises(AptFTPArchiveFailure, fa.runApt, "bogus-config")
