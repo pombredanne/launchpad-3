@@ -550,7 +550,7 @@ class ArchiveViewBase(LaunchpadView):
             edit_url = canonical_url(self.context) + '/+edit'
             notification = (
                 "Publishing has been disabled for this archive, go to "
-                "the <a href=%s>Change Details</a> page if you need to "
+                "the <a href=%s>Change details</a> page if you need to "
                 "re-enable it." % edit_url)
             if self.context.private:
                 notification += (

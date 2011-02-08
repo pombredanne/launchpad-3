@@ -129,7 +129,7 @@ class TestPPAPackages(TestCaseWithFactory):
         notifications = get_feedback_messages(page)
         self.assertIn(
             'Publishing has been disabled for this archive, go to the '
-            'Change Details page if you need to re-enable it.',
+            'Change details page if you need to re-enable it.',
             notifications)
 
     def test_warning_for_disabled_publishing_with_private_ppa(self):
@@ -146,7 +146,7 @@ class TestPPAPackages(TestCaseWithFactory):
         notifications = get_feedback_messages(page)
         self.assertIn(
             'Publishing has been disabled for this archive, go to the '
-            'Change Details page if you need to re-enable it.\nNote: since '
+            'Change details page if you need to re-enable it.\nNote: since '
             'this archive is private, no builds will be dispatched.',
             notifications)
 
