@@ -1709,3 +1709,22 @@ class Urlib2TransportTestHandler(BaseHandler):
 def patch_transport_opener(transport):
     """Patch the transport's opener to use a test handler."""
     transport.opener.add_handler(Urlib2TransportTestHandler())
+
+
+def ensure_response_parser_is_expat(transport):
+    """Ensure the transport always selects the Expat-based response parser.
+
+    The response parser is chosen by xmlrpclib at runtime from a number of
+    choices, but the main Launchpad production environment selects Expat at
+    present.
+
+    Developer's machines could have other packages, `python-reportlab-accel`
+    (which provides the `sgmlop` module) for example, that cause different
+    response parsers to be chosen.
+    """
+    def getparser():
+        target = xmlrpclib.Unmarshaller(
+            use_datetime=transport._use_datetime)
+        parser = xmlrpclib.ExpatParser(target)
+        return parser, target
+    transport.getparser = getparser

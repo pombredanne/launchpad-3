@@ -198,22 +198,11 @@ Debugging when the response cannot be parsed
 ``UrlLib2Transport`` annotates the stack such that the response body
 from the remote server ends up, in full, in a formatted stack trace.
 
-We patch the transport to always use the Expat response parser. The
-response parser is chosen at runtime from a number of choices, but the
-main Launchpad production environment selects Expat at present.
+We first patch the transport to always use the Expat response parser.
 
-Developer's machines could have other packages, python-reportlab-accel
-for example, that cause different response parsers to be chosen.
-
-    >>> import xmlrpclib
-
-    >>> def getparser():
-    ...     target = xmlrpclib.Unmarshaller(
-    ...         use_datetime=transport._use_datetime)
-    ...     parser = xmlrpclib.ExpatParser(target)
-    ...     return parser, target
-
-    >>> transport.getparser = getparser
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     ensure_response_parser_is_expat)
+    >>> ensure_response_parser_is_expat(transport)
 
 A malformed response body is included in the traceback:
 
