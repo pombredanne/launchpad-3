@@ -7,20 +7,32 @@ __metaclass__ = type
 
 import datetime
 import time
-import unittest
 
+from zope.interface import Interface
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.fields import (
+    BlacklistableContentNameField,
     FormattableDate,
     StrippableText,
     )
-from lp.testing import TestCase
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+from lp.testing import (
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 def make_target():
     """Make a trivial object to be a target of the field setting."""
+
     class Simple:
         """A simple class to test setting fields on."""
+
     return Simple()
 
 
@@ -67,5 +79,52 @@ class TestStrippableText(TestCase):
         self.assertIs(None, target.test)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestBlacklistableContentNameField(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBlacklistableContentNameField, self).setUp()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.team = self.factory.makeTeam()
+        admin_exp = name_blacklist_set.create(u'fnord', admin=self.team)
+        IStore(admin_exp).flush()
+
+    def makeTestField(self):
+        """Return testible subclass."""
+
+        class ITestInterface(Interface):
+            pass
+
+        class TestField(BlacklistableContentNameField):
+            _content_iface = ITestInterface
+
+            def _getByName(self, name):
+                return None
+
+        return TestField(__name__='test')
+
+    def test_validate_fails_with_blacklisted_name_anonymous(self):
+        # Anonymous users, processes, cannot create a name that matches
+        # a blacklisted name.
+        field = self.makeTestField()
+        date_value = u'fnord'
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, date_value)
+
+    def test_validate_fails_with_blacklisted_name_not_admin(self):
+        # Users who do not adminster a blacklisted name cannot create
+        # a matching name.
+        field = self.makeTestField()
+        date_value = u'fnord'
+        login_person(self.factory.makePerson())
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, date_value)
+
+    def test_validate_passes_for_admin(self):
+        # Users in the team that adminsters a blacklisted name may create
+        # matching names.
+        field = self.makeTestField()
+        date_value = u'fnord'
+        login_person(self.team.teamowner)
+        self.assertEqual(None, field.validate(date_value))

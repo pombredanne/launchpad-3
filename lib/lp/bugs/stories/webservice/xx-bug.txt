@@ -53,6 +53,7 @@ At the top level we provide a collection of bugs.
   users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
   users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
+  web_link: u'http://bugs.../bugs/11'
   who_made_private_link: None
 
 Bugs are indexed by number beneath the top-level collection.
@@ -239,6 +240,7 @@ Each bug has a collection of messages.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/5/comments/0'
   subject: u'Firefox install instructions should be complete'
+  web_link: u'http://bugs.../firefox/+bug/5/comments/0'
 
 The messages are stored beneath the bug-specific collection. Their
 URLs are based on their position with respect to the
@@ -283,6 +285,7 @@ We can add a new message to a bug by calling the newMessage method.
   resource_type_link: u'http://api.launchpad.dev/beta/#message'
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
+  web_link: u'...'
 
 We don't have to submit a subject when we add a new message.
 
@@ -301,6 +304,7 @@ We don't have to submit a subject when we add a new message.
   ...
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
   subject: u'Re: Firefox install instructions should be complete'
+  web_link: u'...'
 
 
 Bug tasks
@@ -343,6 +347,7 @@ data in a bug task is derived from the bug.
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
+  web_link: u'http://bugs.../debian/+source/mozilla-firefox/+bug/1'
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -676,6 +681,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     target_link: u'http://.../fooix/0.1'
     ---
 
+
 John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
@@ -830,13 +836,14 @@ We can get the collection of subscriptions to a bug.
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
-
+  <BLANKLINE>
   bug_link: u'http://.../bugs/1'
   date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
   subscribed_by_link: u'http://.../~janitor'
+  <BLANKLINE>
 
 Each subscription can be accessed individually.
 
@@ -1072,6 +1079,7 @@ report described by the bugwatch.
   self_link: u'http://.../bugs/1/+watch/2'
   title: u'The Mozilla.org Bug Tracker #2000'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000'
+  web_link: u'http://bugs.../bugs/1/+watch/2'
 
   >>> bug_watch = webservice.get(bug_watch_2000['self_link']).jsonBody()
   >>> bug_watch == bug_watch_2000
@@ -1143,7 +1151,7 @@ Following the redirect, we can see the new bug watch:
   self_link: u'http://.../bugs/1/+watch/13'
   title: u'The Mozilla.org Bug Tracker #9876'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
-
+  web_link: u'http://bugs.../bugs/1/+watch/13'
 
 Bug Trackers
 ------------
@@ -1164,6 +1172,7 @@ Bug Trackers
   summary: u'The Mozilla.org bug tracker is the grand-daddy of bugzillas...'
   title: u'The Mozilla.org Bug Tracker'
   watches_collection_link: u'http://.../bugs/bugtrackers/mozilla.org/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/mozilla.org'
 
 We can change various aspects of bug trackers.
 
@@ -1220,6 +1229,7 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/bob'
 
 Non-admins can't disable a bugtracker through the API.
 
@@ -1284,6 +1294,7 @@ Now, bug 1 has one attachment:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
   ---
 
 The attachment can be fetched directly:
@@ -1297,6 +1308,7 @@ The attachment can be fetched directly:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
 
 Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
@@ -1340,6 +1352,7 @@ attachment. This is where our comment is recorded.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
   subject: u'Re: Firefox does not support SVG'
+  web_link: u'http://bugs.../firefox/+bug/1/comments/2'
 
 The message also links back to the attachments that were uploaded at
 the same time.
@@ -1847,6 +1860,7 @@ The collection of all CVEs is available at the top level.
     status: u'Candidate'
     title: u'CVE-2005-2737 (Candidate)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2005-2737'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/2005-2737'
     ---
     ...
     self_link: u'http://.../bugs/cve/2005-2736'
@@ -1884,6 +1898,7 @@ And for every bug we can look at the CVEs linked to it.
     status: u'Entry'
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/1999-8979'
     ---
 
 For every CVE we can also look at the bugs linked to it.

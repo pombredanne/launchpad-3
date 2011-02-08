@@ -14,6 +14,7 @@ from zope.security.checker import getChecker
 
 from canonical.launchpad.webapp.interfaces import IAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import (
     BugSubscriberSet,
     BugSubscriptionInfo,
@@ -24,7 +25,6 @@ from lp.bugs.model.bug import (
 from lp.bugs.security import (
     PublicToAllOrPrivateToExplicitSubscribersForBugTask,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.model.person import Person
 from lp.testing import (
     person_logged_in,

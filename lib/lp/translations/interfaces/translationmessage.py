@@ -267,6 +267,17 @@ class ITranslationMessage(Interface):
     def approveAsDiverged(pofile, reviewer, lock_timestamp=None):
         """Approve this suggestion, as a diverged translation."""
 
+    def acceptFromImport(pofile, share_with_other_side=False,
+                         lock_timestamp=None):
+        """Accept a suggestion coming from a translation import."""
+
+    def acceptFromUpstreamImportOnPackage(pofile, lock_timestamp=None):
+        """Accept a suggestion coming from a translation import.
+
+        This method allows to mark a translation as being current in
+        upstream even though there is no upstream template.
+        """
+
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):
         """Unique identifier for self, suitable for use in HTML element ids.

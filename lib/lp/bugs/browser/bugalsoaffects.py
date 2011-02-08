@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -44,15 +44,15 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SearchForUpstreamPopupWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.bugs.browser.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget,
     )
