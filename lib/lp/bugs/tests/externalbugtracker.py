@@ -31,14 +31,12 @@ from canonical.database.sqlbase import (
     commit,
     ZopelessTransactionManager,
     )
-from lp.bugs.model.bugtracker import BugTracker
 from canonical.launchpad.ftests import (
     login,
     logout,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -70,7 +68,9 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     UNKNOWN_REMOTE_STATUS,
     )
+from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
 
 
@@ -1644,6 +1644,7 @@ class Urlib2TransportTestHandler(BaseHandler):
     def __init__(self):
         self.redirect_url = None
         self.raise_error = None
+        self.response = None
         self.accessed_urls = []
 
     def setRedirect(self, new_url):
@@ -1654,6 +1655,9 @@ class Urlib2TransportTestHandler(BaseHandler):
         """Raise `error` when `url` is accessed."""
         self.raise_error = error
         self.raise_url = url
+
+    def setResponse(self, response):
+        self.response = response
 
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
@@ -1681,6 +1685,14 @@ class Urlib2TransportTestHandler(BaseHandler):
             self.redirect_url = None
             response = self.parent.error(
                 'http', req, response, 302, 'Moved', headers)
+        elif self.response is not None:
+            response = StringIO(self.response)
+            info = Urlib2TransportTestInfo()
+            response.info = lambda: info
+            response.code = 200
+            response.geturl = lambda: req.get_full_url()
+            response.msg = ''
+            self.response = None
         else:
             xmlrpc_response = xmlrpclib.dumps(
                 (req.get_full_url(), ), methodresponse=True)
@@ -1694,6 +1706,20 @@ class Urlib2TransportTestHandler(BaseHandler):
         return response
 
 
-def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler."""
-    transport.opener.add_handler(Urlib2TransportTestHandler())
+def ensure_response_parser_is_expat(transport):
+    """Ensure the transport always selects the Expat-based response parser.
+
+    The response parser is chosen by xmlrpclib at runtime from a number of
+    choices, but the main Launchpad production environment selects Expat at
+    present.
+
+    Developer's machines could have other packages, `python-reportlab-accel`
+    (which provides the `sgmlop` module) for example, that cause different
+    response parsers to be chosen.
+    """
+    def getparser():
+        target = xmlrpclib.Unmarshaller(
+            use_datetime=transport._use_datetime)
+        parser = xmlrpclib.ExpatParser(target)
+        return parser, target
+    transport.getparser = getparser
