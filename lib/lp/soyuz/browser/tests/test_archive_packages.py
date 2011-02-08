@@ -120,35 +120,51 @@ class TestPPAPackages(TestCaseWithFactory):
         return create_initialized_view(
             ppa, "+packages", query_string=query_string)
 
+    def assertNotifications(self, ppa, notification, person=None):
+        # Assert that while requesting a 'ppa' page as 'person', the
+        # 'notification' appears.
+        if person is not None:
+            login_person(ppa.owner)
+            principal = LaunchpadPrincipal(
+                ppa.owner.account.id, ppa.owner.displayname,
+                ppa.owner.displayname, ppa.owner)
+        else:
+            principal = None
+        page = create_initialized_view(
+            ppa, "+packages", principal=principal).render()
+        notifications = get_feedback_messages(page)
+        self.assertIn(notification, notifications)
+
     def test_warning_for_disabled_publishing(self):
         # Ensure that a notification is shown when archive.publish
         # is False.
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).publish = False
-        page = create_initialized_view(ppa, "+packages").render()
-        notifications = get_feedback_messages(page)
-        self.assertIn(
+        self.assertNotifications(
+            ppa,
             'Publishing has been disabled for this archive, go to the '
             'Change details page if you need to re-enable it.',
-            notifications)
+            person=ppa.owner)
 
     def test_warning_for_disabled_publishing_with_private_ppa(self):
         # Ensure that a notification is shown when archive.publish
         # is False warning that builds won't get dispatched.
         ppa = self.factory.makeArchive(private=True)
         removeSecurityProxy(ppa).publish = False
-        login_person(ppa.owner)
-        principal = LaunchpadPrincipal(
-            ppa.owner.account.id, ppa.owner.displayname,
-            ppa.owner.displayname, ppa.owner)
-        page = create_initialized_view(
-            ppa, "+packages", principal=principal).render()
-        notifications = get_feedback_messages(page)
-        self.assertIn(
+        self.assertNotifications(
+            ppa,
             'Publishing has been disabled for this archive, go to the '
             'Change details page if you need to re-enable it.\nNote: since '
             'this archive is private, no builds will be dispatched.',
-            notifications)
+            person=ppa.owner)
+
+    def test_warning_for_disabled_publishing_with_anonymous_user(self):
+        # The warning notification doesn't mention the Change details
+        # page.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa, 'Publishing has been disabled for this archive')
 
     def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()
