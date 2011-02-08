@@ -62,6 +62,8 @@ class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
         self.assertEqual([self.active_bugtask], list(view.searchUnbatched()))
 
     def test_listing_seen_with_permission(self):
+        # Someone with permission to see deactiveated projects
+        # can see bugtasks for deactivated projects.
         login('admin@canonical.com')
         registry_owner = getUtility(
             ILaunchpadCelebrities).registry_experts.teamowner
