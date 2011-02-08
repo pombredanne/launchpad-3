@@ -1796,10 +1796,11 @@ class BugTaskSet:
 
         user_roles = IPersonRoles(params.user)
         if not user_roles.in_registry_experts:
-            extra_clauses.append("""
-                BugTask.product NOT IN (
-                    SELECT id FROM Product WHERE active is False)
-                """)
+            extra_clauses.append(
+                """NOT EXISTS (SELECT TRUE
+                            FROM Product
+                            WHERE Product.id = BugTask.product
+                            AND Product.active = False)""")
 
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
