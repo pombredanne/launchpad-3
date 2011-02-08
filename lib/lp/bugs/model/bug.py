@@ -899,9 +899,14 @@ BugMessage""" % sqlvalues(self.id))
         if recipients is not None:
             # Pre-load duplicate bugs.
             list(self.duplicates)
+            # Direct subscriptions always take precedence over indirect
+            # subscriptions.  Direct subscribers may have muted a
+            # subscription.
+            direct_subscribers = set(self.getDirectSubscribers())
             for subscription in info.duplicate_only_subscriptions:
-                recipients.addDupeSubscriber(
-                    subscription.person, subscription.bug)
+                if subscription.person not in direct_subscribers:
+                    recipients.addDupeSubscriber(
+                        subscription.person, subscription.bug)
 
         return info.duplicate_only_subscriptions.subscribers.sorted
 
@@ -985,13 +990,24 @@ BugMessage""" % sqlvalues(self.id))
                         recipients.addRegistrant(pillar.owner, pillar)
 
         # Structural subscribers.
+        if recipients is None:
+            temp_recipients = None
+        else:
+            temp_recipients = BugNotificationRecipients(
+                duplicateof=recipients.duplicateof)
         also_notified_subscribers.update(
             getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=recipients, level=level))
+                self.bugtasks, recipients=temp_recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        if recipients is not None:
+            # A direct subscriber may have muted this notification.
+            # Therefore, we want to remove any direct subscribers from the
+            # structural subscription recipients before we merge.
+            temp_recipients.remove(direct_subscribers)
+            recipients.update(temp_recipients)
 
         # Remove security proxy for the sort key, but return
         # the regular proxied object.
