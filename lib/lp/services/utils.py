@@ -18,8 +18,8 @@ __all__ = [
     'value_string',
     ]
 
-from textwrap import dedent
 from itertools import tee
+from textwrap import dedent
 
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
