@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -72,7 +72,6 @@ class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
         self.assertEqual(
             sorted([self.active_bugtask, self.inactive_bugtask]),
             sorted(list(view.searchUnbatched())))
-
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):

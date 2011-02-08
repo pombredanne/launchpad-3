@@ -150,6 +150,7 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
     validate_person,
     validate_public_person,
     )
