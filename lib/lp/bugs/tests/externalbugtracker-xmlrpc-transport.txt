@@ -190,26 +190,3 @@ request will be a GET request with no payload.
 
     >>> print redirected_request.data
     None
-
-
-Debugging when the response cannot be parsed
-============================================
-
-``UrlLib2Transport`` annotates the stack such that the response body
-from the remote server ends up, in full, in a formatted stack trace.
-
-We first patch the transport to always use the Expat response parser.
-
-    >>> from lp.bugs.tests.externalbugtracker import (
-    ...     ensure_response_parser_is_expat)
-    >>> ensure_response_parser_is_expat(transport)
-
-A malformed response body is included in the traceback:
-
-    >>> test_handler.setResponse("<params><mis></match></params>")
-    >>> transport.request('www.example.com', 'xmlrpc', "<methodCall />")
-    Traceback (most recent call last):
-    ...
-    <params><mis></match></params>
-    ...
-    ExpatError: mismatched tag: ...
