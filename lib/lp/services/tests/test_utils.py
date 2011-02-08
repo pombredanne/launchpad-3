@@ -43,35 +43,35 @@ class TestCachingIterator(TestCase):
         # The same iterator can be used multiple times.
         iterator = CachingIterator(itertools.count())
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
 
     def test_more_values(self):
         # If a subsequent call to iter causes more values to be fetched, they
         # are also cached.
         iterator = CachingIterator(itertools.count())
         self.assertEqual(
-            [0,1,2], list(itertools.islice(iterator, 0, 3)))
+            [0, 1, 2], list(itertools.islice(iterator, 0, 3)))
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
 
     def test_limited_iterator(self):
         # Make sure that StopIteration is handled correctly.
-        iterator = CachingIterator(iter([0,1,2,3,4]))
+        iterator = CachingIterator(iter([0, 1, 2, 3, 4]))
         self.assertEqual(
-            [0,1,2], list(itertools.islice(iterator, 0, 3)))
-        self.assertEqual([0,1,2,3,4], list(iterator))
+            [0, 1, 2], list(itertools.islice(iterator, 0, 3)))
+        self.assertEqual([0, 1, 2, 3, 4], list(iterator))
 
     def test_parallel_iteration(self):
         # There can be parallel iterators over the CachingIterator.
-        ci = CachingIterator(iter([0,1,2,3,4]))
+        ci = CachingIterator(iter([0, 1, 2, 3, 4]))
         i1 = iter(ci)
         i2 = iter(ci)
         self.assertEqual(0, i1.next())
         self.assertEqual(0, i2.next())
-        self.assertEqual([1,2,3,4], list(i2))
-        self.assertEqual([1,2,3,4], list(i1))
+        self.assertEqual([1, 2, 3, 4], list(i2))
+        self.assertEqual([1, 2, 3, 4], list(i1))
 
 
 class TestDecorateWith(TestCase):
