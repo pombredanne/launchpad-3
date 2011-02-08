@@ -1437,8 +1437,10 @@ after all.
     ...     filter2 = subscription_no_priv.newBugFilter()
     ...     filter2.bug_notification_level = BugNotificationLevel.METADATA
 
-    >>> bug_one.addChangeNotification('** Summary changed to: whatever.',
-    ...     sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "I'm losing my", "Marbles"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
@@ -1468,7 +1470,9 @@ after all.
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
     <BLANKLINE>
-    ** Summary changed to: whatever.
+    ** Summary changed:
+    - I'm losing my
+    + Marbles
     <BLANKLINE>
     --
     You received this bug notification because you are subscribed to Mozilla
