@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 from textwrap import dedent
-import itertools
+from itertools import tee
 
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
@@ -123,28 +123,12 @@ class CachingIterator:
 
     def __init__(self, iterator):
         self.iterator = iterator
-        self.data = []
 
     def __iter__(self):
-        index = itertools.count()
-        while True:
-            pos = index.next()
-            try:
-                yield self.data[pos]
-            except IndexError:
-                # Defer to the iterator.
-                pass
-            else:
-                continue
-            if self.iterator is None:
-                break
-            try:
-                item = self.iterator.next()
-            except StopIteration:
-                self.iterator = None
-                break
-            self.data.append(item)
-            yield item
+        # Teeing an iterator previously returned by tee won't cause heat
+        # death. See tee_copy in itertoolsmodule.c in the Python source.
+        self.iterator, iterator = tee(self.iterator)
+        return iterator
 
 
 def decorate_with(context_factory, *args, **kwargs):
