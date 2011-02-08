@@ -2452,7 +2452,7 @@ class BugTaskSet:
             # we might be interested in here, but as at any point we're dealing
             # with relatively few results, this is likely to be a small win.
             prejoins = [
-                (Bug, LeftJoin(Bug, BugTask.bug == Bug.id))
+                (Bug, Join(Bug, BugTask.bug == Bug.id))
                 ] + requested_joins
             def eager_load(results):
                 product_ids = set([row[0].productID for row in results])
