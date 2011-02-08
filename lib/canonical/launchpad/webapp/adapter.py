@@ -608,8 +608,11 @@ class LaunchpadStatementTracer:
         if self._debug_sql_extra:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
-        param_strings = Connection.to_database(params)
-        statement_with_values = statement % tuple(param_strings)
+        param_strings = list(Connection.to_database(params))
+        # We need to ensure % symbols used for LIKE statements etc are
+        # properly quoted or else the string format operation will fail.
+        quoted_statement = re.sub('%(\W)', r"%%\1", statement)
+        statement_with_values = quoted_statement % tuple(param_strings)
         if self._debug_sql or self._debug_sql_extra:
             sys.stderr.write(statement_with_values + "\n")
             sys.stderr.write("-" * 70 + "\n")
