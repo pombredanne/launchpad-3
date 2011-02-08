@@ -17,7 +17,6 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import Person
 from lp.testing import (
     BrowserTestCase,
