@@ -19,7 +19,9 @@ from testtools.matchers import (
     MatchesAny,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
@@ -116,6 +118,18 @@ class TestPPAPackages(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         return create_initialized_view(
             ppa, "+packages", query_string=query_string)
+
+    def test_warning_for_disabled_publishing(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        page = create_initialized_view(ppa, "+packages").render()
+        notifications = get_feedback_messages(page)
+        self.assertIn(
+            'Publishing has been disabled for this archive, go to the '
+            'Change Details page if you need to re-enable it.',
+            notifications)
 
     def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()
