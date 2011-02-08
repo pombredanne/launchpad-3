@@ -100,30 +100,24 @@
     <h2>Recipe contents</h2>
     <pre tal:content="context/recipe_text" />
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='requestbuild-script' type='text/javascript'&gt;" />
-    LPS.use('io-base', 'lp.code.requestbuild_overlay', function(Y) {
-    var recipe_name = '<tal:x replace="context/name"/>';
-    <!--
-      if(Y.UA.ie) {
-          return;
-      }
 
-      Y.on('domready', function() {
-          var logged_in = LP.client.links['me'] !== undefined;
+  <tal:script>
+    <script id='requestbuild-script' type="text/javascript" tal:content="string:
+      LPS.use('io-base', 'lp.code.requestbuild_overlay', function(Y) {
+        if(Y.UA.ie) {
+            return;
+        }
 
-          if (logged_in) {
-              var config = {
-                recipe_name: recipe_name,
-                };
-//                Y.lp.code.requestbuild_overlay.aaa(config);
-              Y.lp.code.requestbuild_overlay.connect_requestbuild(config);
-          }
-      });
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
-  </div>
+        Y.on('load', function() {
+            var logged_in = LP.client.links['me'] !== undefined;
+            if (logged_in) {
+                Y.lp.code.requestbuild_overlay.connect_requestbuild();
+            }
+        }, window);
+      });"
+    >
+    </script>
+  </tal:script>
+</div>
 </body>
 </html>
