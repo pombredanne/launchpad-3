@@ -59,6 +59,9 @@ class TestSuggestionWidget(TestCaseWithFactory):
     """Test the SuggestionWidget class."""
 
     layer = DatabaseFunctionalLayer
+    doctest_opts = (
+        doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
+        doctest.ELLIPSIS)
 
     SAFE_OBJECT = Simple('token-1', 'Safe title')
     UNSAFE_OBJECT = Simple('token-2', '<unsafe> &nbsp; title')
@@ -92,18 +95,36 @@ class TestSuggestionWidget(TestCaseWithFactory):
         self.widget = self.ExampleSuggestionWidget(
             field, vocabulary, request)
 
+    def test__renderLabel_unsafe_content(self):
+        # Render label escapes unsafe markup.
+        strutured_string = self.widget._renderLabel(self.UNSAFE_TERM.title, 2)
+        expected_item_0 = (
+            """<label for="field.test_field.2"
+            ...>&lt;unsafe&gt; &amp;nbsp; title</label>""")
+        self.assertThat(
+            strutured_string.escapedtext,
+            DocTestMatches(expected_item_0, self.doctest_opts))
+
+    def test__renderSuggestionLabel_unsafe_content(self):
+        # Render sugestion label escapes unsafe markup.
+        strutured_string = self.widget._renderSuggestionLabel(
+            self.UNSAFE_OBJECT, 2)
+        expected_item_0 = (
+            """<label for="field.test_field.2"
+            ...>&lt;unsafe&gt; &amp;nbsp; title</label>""")
+        self.assertThat(
+            strutured_string.escapedtext,
+            DocTestMatches(expected_item_0, self.doctest_opts))
+
     def test_renderItems(self):
         # Render all vocabulary and the other option as items.
-        doctest_opts = (
-            doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
-            doctest.ELLIPSIS)
         markups = self.widget.renderItems(None)
         self.assertEqual(2, len(markups))
         expected_item_0 = (
             """<input class="radioType" checked="checked" ...
             value="token-1" />&nbsp;<label ...>Safe title</label>""")
         self.assertThat(
-            markups[0], DocTestMatches(expected_item_0, doctest_opts))
+            markups[0], DocTestMatches(expected_item_0, self.doctest_opts))
         expected_item_1 = (
             """<input class="radioType" ...
              onClick="this.form['field.test_field.test_field'].focus()" ...
@@ -112,7 +133,7 @@ class TestSuggestionWidget(TestCaseWithFactory):
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
         self.assertThat(
-            markups[1], DocTestMatches(expected_item_1, doctest_opts))
+            markups[1], DocTestMatches(expected_item_1, self.doctest_opts))
 
 
 def make_target_branch_widget(branch):
