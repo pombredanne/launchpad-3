@@ -18,6 +18,7 @@ from lazr.enum import (
     Item,
     )
 
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
@@ -135,6 +136,13 @@ class TestLaunchpadRadioWidget(ItemWidgetTestCase):
             '<label ...><input ... />'
             '&nbsp;&lt;unsafe&gt; &amp;nbsp; title</label>')
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
+
+    def test__renderItem_without_label(self):
+        # Render item omits a wrapping label if the text contains a label.
+        html_term = SimpleTerm(
+            'object-3', 'token-3', structured('<label>title</label>'))
+        expected = ('<input ... />&nbsp;<label>title</label>')
+        self.assertRenderItem(expected, html_term, checked=False)
 
 
 class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):

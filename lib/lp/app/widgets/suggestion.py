@@ -150,23 +150,6 @@ class SuggestionWidget(LaunchpadRadioWidget):
         """Return the displayname for a value."""
         return value.displayname
 
-    def _renderItem(self, index, text, value, name, cssClass, checked=False):
-        """Render an input element and text without a wrapping label."""
-        kw = {}
-        if checked:
-            kw['checked'] = 'checked'
-        value = escape(value)
-        text = escape(text)
-        id = '%s.%s' % (name, index)
-        elem = renderElement(u'input',
-                             value=value,
-                             name=name,
-                             id=id,
-                             cssClass=cssClass,
-                             type='radio',
-                             **kw)
-        return '%s&nbsp;%s' % (elem, text)
-
     def renderItems(self, value):
         """Render the items for the selector."""
         field = self.context
