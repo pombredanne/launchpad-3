@@ -21,6 +21,7 @@ from testtools.matchers import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -129,6 +130,24 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertIn(
             'Publishing has been disabled for this archive, go to the '
             'Change Details page if you need to re-enable it.',
+            notifications)
+
+    def test_warning_for_disabled_publishing_with_private_ppa(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False warning that builds won't get dispatched.
+        ppa = self.factory.makeArchive(private=True)
+        removeSecurityProxy(ppa).publish = False
+        login_person(ppa.owner)
+        principal = LaunchpadPrincipal(
+            ppa.owner.account.id, ppa.owner.displayname,
+            ppa.owner.displayname, ppa.owner)
+        page = create_initialized_view(
+            ppa, "+packages", principal=principal).render()
+        notifications = get_feedback_messages(page)
+        self.assertIn(
+            'Publishing has been disabled for this archive, go to the '
+            'Change Details page if you need to re-enable it.\nNote: since '
+            'this archive is private, no builds will be dispatched.',
             notifications)
 
     def test_ppa_packages_menu_is_enabled(self):
