@@ -87,10 +87,18 @@ YUI().use('node', 'lazr.effects', function(Y) {
             // reverse.
             Y.on('click', function(e) {
                 e.preventDefault();
-                var info_height = target.get(
-                    'nextElementSibling').get('scrollHeight');
-                target.slide.set('to', {height: info_height});
-                target.slide.set('reverse', !target.slide.drawer_closed);
+                // We have to pass in the height by hand if the tables
+                // are not visible when the page loads.
+                var visible_on_load = !Y.one(
+                    '#launchpad-form-widgets').hasClass('unseen');
+                if (visible_on_load) {
+                    target.slide.set('reverse', !target.slide.get('reverse'));
+                } else {
+                    var info_height = target.get(
+                        'nextElementSibling').get('scrollHeight');
+                    target.slide.set('to', {height: info_height});
+                    target.slide.set('reverse', !target.slide.drawer_closed);
+                }
                 target.slide.stop();
                 target.slide.run();
             }, target_name);
