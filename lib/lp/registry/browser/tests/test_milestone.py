@@ -429,7 +429,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 32
+        query_limit = 33
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)

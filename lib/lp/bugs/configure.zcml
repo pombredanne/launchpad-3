@@ -178,6 +178,7 @@
             <allow
                 attributes="
                     id
+                    assigneeID
                     bug
                     bugID
                     target
