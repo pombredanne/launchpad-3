@@ -38,7 +38,7 @@ from lp.testing import (
 
 
 class Simple:
-    """A simple class to test fields ans widgets."""
+    """A simple class to test fields and widgets."""
 
     def __init__(self, name, displayname):
         self.name = name
@@ -94,26 +94,25 @@ class TestSuggestionWidget(TestCaseWithFactory):
 
     def test_renderItems(self):
         # Render all vocabulary and the other option as items.
+        doctest_opts = (
+            doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
+            doctest.ELLIPSIS)
         markups = self.widget.renderItems(None)
         self.assertEqual(2, len(markups))
-        expected = (
+        expected_item_0 = (
             """<input class="radioType" checked="checked" ...
             value="token-1" />&nbsp;<label ...>Safe title</label>""")
-        expected_matcher = DocTestMatches(
-            expected, (doctest.NORMALIZE_WHITESPACE |
-                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
-        self.assertThat(markups[0], expected_matcher)
-        expected = (
+        self.assertThat(
+            markups[0], DocTestMatches(expected_item_0, doctest_opts))
+        expected_item_1 = (
             """<input class="radioType" ...
              onClick="this.form['field.test_field.test_field'].focus()" ...
              value="other" />&nbsp;<label ...>Other:</label>
              <input type="text" value="" ...
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
-        expected_matcher = DocTestMatches(
-            expected, (doctest.NORMALIZE_WHITESPACE |
-                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
-        self.assertThat(markups[1], expected_matcher)
+        self.assertThat(
+            markups[1], DocTestMatches(expected_item_1, doctest_opts))
 
 
 def make_target_branch_widget(branch):
