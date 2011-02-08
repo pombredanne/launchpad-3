@@ -136,9 +136,10 @@ class SuggestionWidget(LaunchpadRadioWidget):
 
     def _renderLabel(self, text, index):
         """Render a label for the option with the specified index."""
-        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
+        label = structured(
+            u'<label for="%s" style="font-weight: normal">%s</label>',
             self._optionId(index), text)
-        return structured(label)
+        return label
 
     def _renderSuggestionLabel(self, value, index):
         """Render a label for the option based on a branch."""
@@ -148,6 +149,23 @@ class SuggestionWidget(LaunchpadRadioWidget):
     def _valueDisplayname(value):
         """Return the displayname for a value."""
         return value.displayname
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render an input element and text without a wrapping label."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        value = escape(value)
+        text = escape(text)
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio',
+                             **kw)
+        return '%s&nbsp;%s' % (elem, text)
 
     def renderItems(self, value):
         """Render the items for the selector."""

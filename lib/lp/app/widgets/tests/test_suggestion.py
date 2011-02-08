@@ -88,26 +88,59 @@ class TestSuggestionWidget(TestCaseWithFactory):
             name='SimpleHugeVocabulary')
         field = Choice(
             __name__='test_field', vocabulary="SimpleHugeVocabulary")
-        field = field.bind(object())
+        self.field = field.bind(object())
         self.widget = self.ExampleSuggestionWidget(
-            field, vocabulary, request)
+            self.field, vocabulary, request)
+
+    def assertRenderItem(self, expected, term, checked=False):
+        markup = self.widget._renderItem(
+            index=1, text=term.title, value=term.token,
+            name=self.field.__name__, cssClass=None, checked=checked)
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)
+
+    def test__renderItem_checked(self):
+        # Render item in checked state.
+        expected = (
+            '<input ... checked="checked" ... />&nbsp;Safe title')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=True)
+
+    def test__renderItem_unchecked(self):
+        # Render item in unchecked state.
+        expected = (
+            '<input class="radioType" id="test_field.1" name="test_field" '
+            'type="radio" value="token-1" />&nbsp;Safe title ')
+        self.assertRenderItem(expected, self.SAFE_TERM, checked=False)
+
+    def test__renderItem_unsafe_content(self):
+        # Render item escapes unsafe markup.
+        expected = '<input ... />&nbsp;&lt;unsafe&gt; &amp;nbsp; title '
+        self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
     def test_renderItems(self):
         # Render all vocabulary and the other option as items.
+        markups = self.widget.renderItems(None)
+        self.assertEqual(2, len(markups))
         expected = (
-            """<label ...><input class="radioType" checked="checked" ...
-            value="token-1" />&nbsp;<label ...>Safe title</label></label>
-            <input class="radioType" ...
-             onClick="this.form['field.test_field.test_field'].focus()"
-             ... value="other" />&nbsp;<label ...>Other:</label>
+            """<input class="radioType" checked="checked" ...
+            value="token-1" />&nbsp;<label ...>Safe title</label>""")
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markups[0], expected_matcher)
+        expected = (
+            """<input class="radioType" ...
+             onClick="this.form['field.test_field.test_field'].focus()" ...
+             value="other" />&nbsp;<label ...>Other:</label>
              <input type="text" value="" ...
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
         expected_matcher = DocTestMatches(
             expected, (doctest.NORMALIZE_WHITESPACE |
                        doctest.REPORT_NDIFF | doctest.ELLIPSIS))
-        markup = ' '.join(self.widget.renderItems(None))
-        self.assertThat(markup, expected_matcher)
+        self.assertThat(markups[1], expected_matcher)
 
 
 def make_target_branch_widget(branch):
