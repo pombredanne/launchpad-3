@@ -6,7 +6,7 @@ use a special transport, which processes http cookies correctly, and
 which can connect through an http proxy server.
 
     >>> from lp.bugs.tests.externalbugtracker import (
-    ...     Urlib2TransportTestHandler)
+    ...     UrlLib2TransportTestHandler)
     >>> from lp.bugs.externalbugtracker.xmlrpc import (
     ...     UrlLib2Transport)
 
@@ -24,7 +24,7 @@ We patch the opener to return a fixed response without actually opening a
 connection.  The response returns the request-url as an XMLRPC parameter, and
 sets a cookie from the server, 'foo=bar'.
 
-    >>> test_handler = Urlib2TransportTestHandler()
+    >>> test_handler = UrlLib2TransportTestHandler()
     >>> transport.opener.add_handler(test_handler)
 
 Before sending the request, the transport's cookie jar is empty.

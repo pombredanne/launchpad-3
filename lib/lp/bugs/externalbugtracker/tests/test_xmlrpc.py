@@ -10,7 +10,7 @@ from xml.parsers.expat import ExpatError
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.tests.externalbugtracker import (
     ensure_response_parser_is_expat,
-    Urlib2TransportTestHandler,
+    UrlLib2TransportTestHandler,
     )
 from lp.testing import TestCase
 
@@ -20,7 +20,7 @@ class TestUrlLib2Transport(TestCase):
 
     def test_expat_error(self):
         # Malformed XML-RPC responses cause xmlrpclib to raise an ExpatError.
-        handler = Urlib2TransportTestHandler()
+        handler = UrlLib2TransportTestHandler()
         handler.setResponse("<params><mis></match></params>")
         transport = UrlLib2Transport("http://not.real/")
         transport.opener.add_handler(handler)

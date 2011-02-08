@@ -1626,7 +1626,7 @@ class TestDebBugs(DebBugs):
         return bug
 
 
-class Urlib2TransportTestInfo:
+class UrlLib2TransportTestInfo:
     """A url info object for use in the test, returning
     a hard-coded cookie header.
     """
@@ -1638,7 +1638,7 @@ class Urlib2TransportTestInfo:
             return [self.cookies]
 
 
-class Urlib2TransportTestHandler(BaseHandler):
+class UrlLib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
 
     def __init__(self):
@@ -1687,7 +1687,7 @@ class Urlib2TransportTestHandler(BaseHandler):
                 'http', req, response, 302, 'Moved', headers)
         elif self.response is not None:
             response = StringIO(self.response)
-            info = Urlib2TransportTestInfo()
+            info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
             response.geturl = lambda: req.get_full_url()
@@ -1697,7 +1697,7 @@ class Urlib2TransportTestHandler(BaseHandler):
             xmlrpc_response = xmlrpclib.dumps(
                 (req.get_full_url(), ), methodresponse=True)
             response = StringIO(xmlrpc_response)
-            info = Urlib2TransportTestInfo()
+            info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
             response.geturl = lambda: req.get_full_url()
