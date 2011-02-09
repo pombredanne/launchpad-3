@@ -85,7 +85,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
     ContentNameField,
-    NoneableDescription,
+    Description,
     DuplicateBug,
     PublicPersonChoice,
     Tag,
@@ -998,9 +998,9 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = NoneableDescription(
+    comment = Description(
         title=_('Further information'),
-        required=False)
+        strip_text=True, required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")

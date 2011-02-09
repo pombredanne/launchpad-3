@@ -269,11 +269,17 @@ class SummaryWidget(TextAreaWidget):
     width = 44
     height = 3
 
+    def _toFieldValue(self, input):
+        return super(SummaryWidget, self)._toFieldValue(input.strip())
+
 
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     width = 44
     height = 5
+
+    def _toFieldValue(self, input):
+        return super(DescriptionWidget, self)._toFieldValue(input.strip())
 
 
 class NoneableDescriptionWidget(DescriptionWidget):
