@@ -934,11 +934,15 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
         now = datetime.now(tz=pytz.UTC)
-        for result_tuple in result_tuples:
-            source_pub = result_tuple[0]
-            status_summary = source_pub.getStatusSummaryForBuilds()
+        source_ids = [result_tuple[0].id for result_tuple in result_tuples]
+        summaries = getUtility(
+            IPublishingSet).getBuildStatusSummariesForSourceIdsAndArchive(
+                source_ids, self.context)
+        for source_id, status_summary in summaries.items():
+            date_published = status_summary['date_published']
+            source_package_name = status_summary['source_package_name']
             current_status = status_summary['status']
-            duration = now - source_pub.datepublished
+            duration = now - date_published
 
             # We'd like to include the builds in the latest updates
             # iff the build failed.
@@ -947,13 +951,16 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 builds = status_summary['builds']
 
             latest_updates_list.append({
-                'title': source_pub.source_package_name,
+                'date_published' : date_published,
+                'title': source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
                 'builds': builds,
                 })
 
+        latest_updates_list.sort(
+            key=lambda x: x['date_published'], reverse=True)
         return latest_updates_list
 
     def num_updates_over_last_days(self, num_days=30):
