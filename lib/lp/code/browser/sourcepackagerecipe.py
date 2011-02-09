@@ -69,7 +69,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    InlineEditPickerWidget,
+    )
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -259,6 +262,15 @@ class SourcePackageRecipeView(LaunchpadView):
             self.context, field, initial_html,
             header='Change daily build archive',
             step_title='Select a PPA')
+
+    @property
+    def daily_build_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISourcePackageRecipe['build_daily'],
+            tag='span', prefix='',
+            false_text='Built on request',
+            true_text='Built daily',
+            header='Select build frequency')
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
