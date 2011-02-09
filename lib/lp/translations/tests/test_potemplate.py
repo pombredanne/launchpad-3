@@ -20,6 +20,7 @@ from lp.translations.interfaces.side import (
     )
 from lp.translations.model.potemplate import (
     get_pofiles_for,
+    POTemplate,
     )
 
 

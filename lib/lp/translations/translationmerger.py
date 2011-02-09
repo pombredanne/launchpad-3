@@ -672,7 +672,8 @@ class TranslationMerger:
             # least one template by making it diverged.
             target_ttis = source_potmsgset.getAllTranslationTemplateItems()
             target_templates = [tti.potemplate for tti in target_ttis]
-            target_templates.sort(key=methodcaller('sharingKey'), reverse=True)
+            target_templates.sort(
+                key=methodcaller('sharingKey'), reverse=True)
             for template in target_templates:
                 if self._divergeTo(message, target_potmsgset, template):
                     return True
