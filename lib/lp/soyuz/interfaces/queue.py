@@ -99,7 +99,7 @@ class IPackageUploadQueue(Interface):
 class IPackageUpload(Interface):
     """A Queue item for the archive uploader."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(
             title=_("ID"), required=True, readonly=True,

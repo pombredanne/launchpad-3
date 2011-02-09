@@ -17,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -31,7 +27,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -39,6 +38,7 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -47,6 +47,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
@@ -60,11 +61,15 @@ from lp.registry.model.karma import (
     KarmaTotalCache,
     )
 from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    login,
     login_person,
     logout,
     person_logged_in,
@@ -471,6 +476,15 @@ class TestPersonSet(TestCaseWithFactory):
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
 
+    def test_isNameBlacklisted_user_is_admin(self):
+        team = self.factory.makeTeam()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
+        self.store = IStore(self.admin_exp)
+        self.store.flush()
+        user = team.teamowner
+        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
+
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'
         person1 = self.person_set.getByEmail(person1_email)
@@ -680,6 +694,64 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             self._doMerge,
             test_team,
             target_team)
+
+    def test_merge_moves_branches(self):
+        # When person/teams are merged, branches owned by the from person
+        # are moved.
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        self._do_premerge(branch.owner, person)
+        login_person(person)
+        self.person_set.merge(branch.owner, person)
+        branches = person.getBranches()
+        self.assertEqual(1, branches.count())
+
+    def test_merge_with_duplicated_branches(self):
+        # If both the from and to people have branches with the same name,
+        # merging renames the duplicate from the from person's side.
+        product = self.factory.makeProduct()
+        from_branch = self.factory.makeBranch(name='foo', product=product)
+        to_branch = self.factory.makeBranch(name='foo', product=product)
+        mergee = to_branch.owner
+        self._do_premerge(from_branch.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(from_branch.owner, mergee)
+        branches = [b.name for b in mergee.getBranches()]
+        self.assertEqual(2, len(branches))
+        self.assertEqual([u'foo', u'foo-1'], branches)
+
+    def test_merge_moves_recipes(self):
+        # When person/teams are merged, recipes owned by the from person are
+        # moved.
+        person = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        # Delete the PPA, which is required for the merge to work.
+        with person_logged_in(recipe.owner):
+            recipe.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(recipe.owner, person)
+        login_person(person)
+        self.person_set.merge(recipe.owner, person)
+        self.assertEqual(1, person.getRecipes().count())
+
+    def test_merge_with_duplicated_recipes(self):
+        # If both the from and to people have recipes with the same name,
+        # merging renames the duplicate from the from person's side.
+        merge_from = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'FROM')
+        merge_to = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'TO')
+        mergee = merge_to.owner
+        # Delete merge_from's PPA, which is required for the merge to work.
+        with person_logged_in(merge_from.owner):
+            merge_from.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(merge_from.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(merge_from.owner, merge_to.owner)
+        recipes = mergee.getRecipes()
+        self.assertEqual(2, recipes.count())
+        descriptions = [r.description for r in recipes]
+        self.assertEqual([u'TO', u'FROM'], descriptions)
+        self.assertEqual(u'foo-1', recipes[1].name)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

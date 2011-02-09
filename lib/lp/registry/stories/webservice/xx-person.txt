@@ -58,6 +58,7 @@ for teams (as they're defined in the ITeam interface).
     team_owner_link: None
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~salgado'
     wiki_names_collection_link: u'http://.../~salgado/wiki_names'
 
     >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
@@ -120,6 +121,7 @@ for teams (as they're defined in the ITeam interface).
     team_owner_link: u'http://.../~mark'
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~ubuntu-team'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
@@ -292,7 +294,8 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined', u'http_etag',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'resource_type_link', u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link',
+     u'web_link']
 
 Each team membership links to the person who approved the link.
 
@@ -699,6 +702,7 @@ Subscribed packages can be listed with getBugSubscriberPackages:
     self_link: u'...'
     title: u'...'
     upstream_product_link: None
+    web_link: u'...'
     ---
 
 

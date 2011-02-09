@@ -63,6 +63,9 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
     )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -75,9 +78,6 @@ from lp.registry.interfaces.series import (
     SeriesStatus,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     ContentNameField,
     Description,

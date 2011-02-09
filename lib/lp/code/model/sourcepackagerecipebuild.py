@@ -292,6 +292,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
+        # If our recipe has been deleted, any notification will fail.
+        if self.recipe is None:
+            return
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -334,6 +337,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         """See `IPackageBuild`."""
         d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
+
         def uploaded_build(ignored):
             # Base implementation doesn't notify on success.
             if self.status == BuildStatus.FULLYBUILT:

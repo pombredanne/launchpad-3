@@ -66,6 +66,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
@@ -274,7 +275,9 @@ class SourcePackageRecipe(Storm):
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""
         where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_finished), BuildFarmJob.id
+        order_by = Desc(Greatest(
+                BuildFarmJob.date_started,
+                BuildFarmJob.date_finished)), BuildFarmJob.id
         return self._getBuilds(where_clause, order_by)
 
     def getPendingBuilds(self):

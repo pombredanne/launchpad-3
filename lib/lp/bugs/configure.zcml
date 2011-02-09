@@ -638,6 +638,31 @@
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
 
+    <!-- BugSubscriptionInfo -->
+
+    <class class=".model.bug.BugSubscriptionInfo">
+      <!-- Instance variables -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              bug
+              level
+              " />
+      <!-- Properties -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              all_assignees
+              all_pillar_owners_without_bug_supervisors
+              also_notified_subscribers
+              direct_subscriptions
+              duplicate_only_subscriptions
+              duplicate_subscriptions
+              indirect_subscribers
+              structural_subscriptions
+              " />
+    </class>
+
     <facet
         facet="bugs">
 
@@ -719,6 +744,7 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
+                    getSubscriptionInfo
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -1074,6 +1100,41 @@
         mail_header
         recipient"/>
   </class>
+
+    <!-- StructuralSubscription -->
+
+    <class
+        class="lp.bugs.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
+        <require
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
+    </class>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
 
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />

@@ -25,6 +25,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -47,7 +48,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -1413,12 +1413,13 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         subscription = product.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        filter = subscription.newBugFilter()
+        filter.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [subscriber], list(
                 self.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.METADATA)))
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        filter.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [], list(
                 self.getStructuralSubscribers(
