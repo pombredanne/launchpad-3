@@ -298,6 +298,7 @@ class JobRunnerProcess(child.AMPChild):
 
     @classmethod
     def __enter__(cls):
+
         def handler(signum, frame):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
@@ -368,6 +369,7 @@ class TwistedJobRunner(BaseJobRunner):
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
+
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -377,6 +379,7 @@ class TwistedJobRunner(BaseJobRunner):
                 self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
+
         def job_raised(failure):
             self.incomplete_jobs.append(job)
             info = (failure.type, failure.value, failure.tb)
@@ -387,6 +390,7 @@ class TwistedJobRunner(BaseJobRunner):
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
+
         def producer():
             while True:
                 jobs = list(self.job_source.iterReady())
@@ -442,10 +446,18 @@ class JobCronScript(LaunchpadCronScript):
 
     config_name = None
 
-    def __init__(self, runner_class=JobRunner, test_args=None, name=None):
+    def __init__(self, runner_class=JobRunner, test_args=None, name=None,
+                 commandline_config=False):
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
+        if not commandline_config:
+            return
+        self.config_name = self.args[0]
+        source_interface = self.config_section.source_interface
+        source_module, source_class = source_interface.rsplit('.', 1)
+        self.source_interface = getattr(__import__(source_module,
+            fromlist=[source_class]), source_class)
 
     @property
     def dbuser(self):
