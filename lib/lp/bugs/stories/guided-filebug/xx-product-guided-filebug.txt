@@ -46,18 +46,6 @@ the current context.
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
 
-If no description is entered, an error message is displayed.
-
-    >>> user_browser.getControl("Further information").value
-    ''
-    >>> user_browser.getControl("Submit Bug Report").click()
-    >>> print user_browser.url
-    http://bugs.launchpad.dev/firefox/+filebug
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    There is 1 error.
-    Required input is missing.
-
 If the user for some reason would erase the summary, an error message
 will be displayed as well.
 

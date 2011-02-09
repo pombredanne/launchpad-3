@@ -350,7 +350,8 @@ class FileBugViewBase(LaunchpadFormView):
                         'The description is too long. If you have lots '
                         'text to add, attach a file to the bug instead.')
             else:
-                self.setFieldError('comment', "Required input is missing.")
+                self.setFieldError(
+                    'comment', "Provide details about the issue.")
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():

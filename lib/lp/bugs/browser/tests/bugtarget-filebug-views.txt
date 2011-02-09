@@ -723,7 +723,17 @@ When filing a bug, supplying an empty comment causes a validation error:
     >>> filebug_view.setUpWidgets()
     >>> filebug_view.validate(bug_data)
     >>> print filebug_view.getFieldError('comment')
-    Required input is missing.
+    Provide details about the issue.
+
+Comments cannot be whitespace:
+
+    >>> filebug_view = FileBugGuidedView(ubuntu, request)
+    >>> filebug_view.setUpFields()
+    >>> filebug_view.setUpWidgets()
+    >>> filebug_view.validate(bug_data)
+
+    >>> print filebug_view.getFieldError('comment')
+    Provide details about the issue.
 
 Comments can be up to 50000 characters in length:
 
