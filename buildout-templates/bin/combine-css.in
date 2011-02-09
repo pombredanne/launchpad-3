@@ -13,6 +13,7 @@ from lazr.js.combo import combine_files
 
 
 root = os.path.abspath('.')
+root = os.path.normpath(${buildout:directory|path-repr})
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
 target = os.path.join(icing, 'combo.css')
 # It'd probably be nice to have this script find all the CSS files we might
