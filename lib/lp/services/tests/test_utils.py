@@ -161,7 +161,8 @@ class TestTracebackInfo(TestCase):
     """Tests of `traceback_info`."""
 
     def test(self):
-        # The local variable __traceback_info__ is set by `traceback_info`.
+        # `traceback_info` sets the local variable __traceback_info__ in the
+        # caller's frame.
         self.assertEqual(None, locals().get("__traceback_info__"))
         traceback_info("Pugwash")
         self.assertEqual("Pugwash", locals().get("__traceback_info__"))
