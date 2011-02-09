@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -14,6 +14,7 @@ from zope.component import getUtility
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -27,9 +28,16 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.services.database.stormexpr import Concatenate
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 def package_name(filename):
@@ -235,7 +243,6 @@ class FTPArchiveHandler:
         """
         # Avoid cicular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
@@ -284,8 +291,6 @@ class FTPArchiveHandler:
         """
         # Avoid cicular imports.
         from lp.soyuz.model.binarypackagename import BinaryPackageName
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
@@ -565,31 +570,47 @@ class FTPArchiveHandler:
         :return: a `DecoratedResultSet` with the binary files information
             tuples.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackageFilePublishing
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.using(BinaryPackageFilePublishing).find(
-            (BinaryPackageFilePublishing.sourcepackagename,
-             BinaryPackageFilePublishing.libraryfilealiasfilename,
-             BinaryPackageFilePublishing.componentname,
-             BinaryPackageFilePublishing.architecturetag),
-            BinaryPackageFilePublishing.distribution == self.distro,
-            BinaryPackageFilePublishing.archive == self.publisher.archive,
-            BinaryPackageFilePublishing.distroseriesname == distroseries.name,
-            BinaryPackageFilePublishing.pocket == pocket,
-            BinaryPackageFilePublishing.publishingstatus ==
-                PackagePublishingStatus.PUBLISHED)
+
+        columns = (
+            SourcePackageName.name,
+            LibraryFileAlias.filename,
+            Component.name,
+            Concatenate("binary-", DistroArchSeries.architecturetag),
+            )
+        join_conditions = [
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackageFile.binarypackagereleaseID ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+            SourcePackageRelease.id ==
+                BinaryPackageBuild.source_package_release_id,
+            SourcePackageName.id == SourcePackageRelease.sourcepackagenameID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            Component.id == BinaryPackagePublishingHistory.componentID,
+            ]
+        select_conditions = [
+            BinaryPackagePublishingHistory.dateremoved == None,
+            DistroArchSeries.distroseriesID == distroseries.id,
+            BinaryPackagePublishingHistory.archive == self.publisher.archive,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            ]
 
         suite = distroseries.getSuite(pocket)
 
         def add_suite(result):
-            name, filename, component, architecturetag = result
-            architecture = 'binary-' + architecturetag
+            name, filename, component, architecture = result
             return (name, suite, filename, component, architecture)
 
+        result_set = store.find(
+            columns, *(join_conditions + select_conditions))
         result_set.order_by(
-            Desc(BinaryPackageFilePublishing.id))
+            BinaryPackagePublishingHistory.id, BinaryPackageFile.id)
         return DecoratedResultSet(result_set, add_suite)
 
     def generateFileLists(self, fullpublish=False):
@@ -621,12 +642,10 @@ class FTPArchiveHandler:
                             component, sourcepackagename, filename)
             this_file = filelist.setdefault(suite, {})
             this_file.setdefault(component, {})
-            if architecturetag:
-                this_file[component].setdefault(architecturetag, [])
-                this_file[component][architecturetag].append(ondiskname)
-            else:
-                this_file[component].setdefault('source', [])
-                this_file[component]['source'].append(ondiskname)
+            if architecturetag is None:
+                architecturetag = "source"
+            this_file[component].setdefault(architecturetag, [])
+            this_file[component][architecturetag].append(ondiskname)
 
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
@@ -644,20 +663,23 @@ class FTPArchiveHandler:
         process_in_batches(
             binaryfiles, update_binary_filelist, self.log)
 
-        for suite, components in filelist.items():
+        for suite, components in filelist.iteritems():
             self.log.debug("Writing file lists for %s" % suite)
-            for component, architectures in components.items():
-                for architecture, file_names in architectures.items():
+            series, pocket = self.distro.getDistroSeriesAndPocket(suite)
+            for component, architectures in components.iteritems():
+                for architecture, file_names in architectures.iteritems():
                     # XXX wgrant 2010-10-06: There must be a better place to
                     # do this.
-                    series, pocket = (
-                        self.distro.getDistroSeriesAndPocket(suite))
-                    if (architecture != 'source' and
-                        not series.getDistroArchSeries(
-                            architecture[7:]).enabled):
-                        continue
-                    self.writeFileList(architecture, file_names,
-                                       suite, component)
+                    if architecture == "source":
+                        enabled = True
+                    else:
+                        # The "[7:]" strips the "binary-" prefix off the
+                        # architecture names we get here.
+                        das = series.getDistroArchSeries(architecture[7:])
+                        enabled = das.enabled
+                    if enabled:
+                        self.writeFileList(
+                            architecture, file_names, suite, component)
 
     def writeFileList(self, arch, file_names, dr_pocketed, component):
         """Outputs a file list for a series and architecture.

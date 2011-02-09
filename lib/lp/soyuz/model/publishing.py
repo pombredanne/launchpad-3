@@ -244,11 +244,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     implements(IBinaryPackageFilePublishing)
 
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, notNull=True,
-                              immutable=True)
-
     binarypackagepublishing = ForeignKey(
         dbName='binarypackagepublishing',
         foreignKey='BinaryPackagePublishingHistory', immutable=True)
@@ -266,19 +261,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
-
-    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
-                                  notNull=True, immutable=True)
-
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-
-    architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                notNull=True, immutable=True)
-
-    pocket = EnumCol(dbName='pocket', unique=False,
-                     notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
