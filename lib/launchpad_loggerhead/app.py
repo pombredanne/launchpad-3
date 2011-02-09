@@ -337,14 +337,27 @@ def oops_middleware(app):
     error_utility = make_error_utility()
     def wrapped_app(environ, start_response):
         wrapped = WrappedStartResponse(start_response)
-        # Start processing this request
         try:
+            # Start processing this request, build the app
             app_iter = iter(app(environ, wrapped.start_response))
+            # Start yielding the response
+            while True:
+                try:
+                    data = app_iter.next()
+                except StopIteration:
+                    return
+                if not wrapped.body_started:
+                    wrapped.really_start()
+                yield data
         except httpserver.SocketErrors, e:
             # The Paste WSGIHandler suppresses these exceptions.
             # Generally it means something like 'EPIPE' because the
             # connection was closed. We don't want to generate an OOPS
             # just because the connection was closed prematurely.
+            logger = logging.getLogger('lp-loggerhead')
+            logger.info('Caught socket exception from %s: %s %s'
+                         % (environ.get('REMOTE_ADDR', '<unknown>'),
+                            e.__class__, e,))
             return
         except:
             error_page_sent = wrapped.generate_oops(environ, error_utility)
@@ -352,26 +365,4 @@ def oops_middleware(app):
                 return
             # Could not send error page to user, so... just give up.
             raise
-        # Start yielding the response
-        while True:
-            try:
-                data = app_iter.next()
-            except StopIteration:
-                return
-            except httpserver.SocketErrors, e:
-                # The Paste WSGIHandler suppresses these exceptions.
-                # Generally it means something like 'EPIPE' because the
-                # connection was closed. We don't want to generate an OOPS
-                # just because the connection was closed prematurely.
-                return
-            except:
-                error_page_sent = wrapped.generate_oops(environ, error_utility)
-                if error_page_sent:
-                    return
-                # Could not send error page to user, so... just give up.
-                raise
-            else:
-                if not wrapped.body_started:
-                    wrapped.really_start()
-                yield data
     return wrapped_app

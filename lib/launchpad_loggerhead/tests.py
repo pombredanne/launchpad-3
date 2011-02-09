@@ -1,10 +1,13 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import cStringIO
 import errno
+import logging
 import unittest
 import urllib
 import socket
+import re
 
 import lazr.uri
 import wsgi_intercept
@@ -149,6 +152,32 @@ class TestLogout(TestCase):
 
 class TestOopsMiddleware(TestCase):
 
+    def assertContainsRe(self, haystack, needle_re, flags=0):
+        """Assert that a contains something matching a regular expression."""
+        # There is: self.assertTextMatchesExpressionIgnoreWhitespace
+        #           but it does weird things with whitespace, and gives
+        #           unhelpful error messages when it fails, so this is copied
+        #           from bzrlib
+        if not re.search(needle_re, haystack, flags):
+            if '\n' in haystack or len(haystack) > 60:
+                # a long string, format it in a more readable way
+                raise AssertionError(
+                        'pattern "%s" not found in\n"""\\\n%s"""\n'
+                        % (needle_re, haystack))
+            else:
+                raise AssertionError('pattern "%s" not found in "%s"'
+                        % (needle_re, haystack))
+
+    def catchLogEvents(self):
+        """Any log events that are triggered get written to self.log_stream"""
+        logger = logging.getLogger('lp-loggerhead')
+        logger.setLevel(logging.DEBUG)
+        self.log_stream = cStringIO.StringIO()
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
+        self.addCleanup(logger.removeHandler, handler)
+
     def _eventTriggered(self, event):
         if isinstance(event, ErrorReportEvent):
             self.error_events.append(event)
@@ -212,12 +241,18 @@ class TestOopsMiddleware(TestCase):
         self.assertEqual('RuntimeError', event.object.type)
 
     def test_ignores_socket_exceptions(self):
+        self.catchLogEvents()
         res = self.wrap_and_run(self.socket_failing_app)
         self.assertEqual(0, len(self.error_events))
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught socket exception from <unknown>:.*Connection closed')
 
     def test_ignores_writer_failures(self):
+        self.catchLogEvents()
         res = self.wrap_and_run(self.success_app, failing_write=True)
         self.assertEqual(0, len(self.error_events))
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught socket exception from <unknown>:.*Connection closed')
 
 
 def test_suite():
