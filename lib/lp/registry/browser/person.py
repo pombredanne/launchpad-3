@@ -4150,7 +4150,8 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
