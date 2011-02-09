@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -98,6 +98,7 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
+    sourcepackagenameID = Attribute("SourcePackageName id.")
     upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
@@ -194,13 +195,13 @@ class ISourcePackageRelease(Interface):
         argument remains untouched.
         """
 
-    def attachTranslationFiles(tarball_alias, is_published, importer=None):
+    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published
-            by upstream.
+        :by_maintainer: indicates if the imported files where uploaded by
+            the maintainer of the project or package.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from

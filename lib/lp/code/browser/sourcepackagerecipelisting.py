@@ -13,15 +13,13 @@ __all__ = [
     ]
 
 
-from canonical.config import config
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
+    canonical_url,
     LaunchpadView,
     Link,
     )
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
+from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 
 
 class HasRecipesMenuMixin:
@@ -32,7 +30,7 @@ class HasRecipesMenuMixin:
         enabled = False
         if self.context.getRecipes().count():
             enabled = True
-        if not config.build_from_branch.enabled:
+        if not recipes_enabled():
             enabled = False
         return Link(
             '+recipes', text, icon='info', enabled=enabled, site='code')
@@ -49,6 +47,13 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
     def page_title(self):
         return 'Source Package Recipes for %(displayname)s' % {
             'displayname': self.context.displayname}
+
+    def initialize(self):
+        super(RecipeListingView, self).initialize()
+        recipes = self.context.getRecipes()
+        if recipes.count() == 1:
+            recipe = recipes.one()
+            self.request.response.redirect(canonical_url(recipe))
 
 
 class BranchRecipeListingView(RecipeListingView):

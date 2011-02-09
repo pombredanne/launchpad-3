@@ -188,7 +188,7 @@ source in the context distribution, grouped by distroseries.
     Breezy Badger Autotest: i386
 
     >>> print anon_browser.getLink('i386').url
-    http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0/+build/...
+    http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0/+buildjob/...
 
 The 'Downloads' section lists and links to the files for this
 source. Each file links to its normalized download path based on the
@@ -249,7 +249,7 @@ package caches (see doc/package-cache.txt).
     # Update the binary package caches to include the testing publication.
     >>> from zope.component import getUtility
     >>> from canonical.config import config
-    >>> from canonical.launchpad.scripts.logger import BufferLogger
+    >>> from lp.services.log.logger import BufferLogger
     >>> from canonical.testing.layers import reconnect_stores
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')

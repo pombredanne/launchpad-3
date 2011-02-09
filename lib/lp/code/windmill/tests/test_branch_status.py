@@ -41,14 +41,14 @@ class TestBranchStatus(WindmillTestCase):
             windmill.settings['TEST_URL'] + branch.unique_name)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(eric, "test", client)
+        login_person(eric, "eric@example.com", "test", client)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
             id=u'branch-details-status-value', timeout=PAGE_LOAD)
         client.click(id=u'branch-details-status-value')
         client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
 
         # Change the status to experimental.
         client.click(link=u'Experimental')

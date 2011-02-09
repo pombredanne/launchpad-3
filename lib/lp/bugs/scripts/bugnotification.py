@@ -16,23 +16,18 @@ from itertools import groupby
 from operator import itemgetter
 
 import transaction
-from zope.component import getUtility
 
-from canonical.config import config
 from canonical.launchpad.helpers import (
     emailPeople,
     get_email_template,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
     get_bugmail_from_address,
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.mailwrapper import MailWrapper
 
 
@@ -44,7 +39,7 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person = first_notification.message.owner
+    person_causing_change = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
@@ -54,12 +49,17 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for email_person in emailPeople(recipient.person):
+            email_people = emailPeople(recipient.person)
+            if (not person_causing_change.selfgenerated_bugnotifications and
+                person_causing_change in email_people):
+                email_people.remove(person_causing_change)
+            for email_person in email_people:
                 recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person, person.id
+        assert notification.message.owner == person_causing_change, (
+            person_causing_change.id)
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
@@ -104,8 +104,9 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person, bug)
-    bug_notification_builder = BugNotificationBuilder(bug, person)
+    from_address = get_bugmail_from_address(person_causing_change, bug)
+    bug_notification_builder = BugNotificationBuilder(
+        bug, person_causing_change)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:
@@ -124,9 +125,10 @@ def construct_email_notifications(bug_notifications):
         else:
             unsubscribe_notice = ''
 
+        data_wrapper = MailWrapper(width=72, indent='  ')
         body_data = {
             'content': mail_wrapper.format(content),
-            'bug_title': bug.title,
+            'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason)}
@@ -136,9 +138,10 @@ def construct_email_notifications(bug_notifications):
         # footer.
         if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
-            body_data['bug_description'] = bug.description
+            body_data['bug_description'] = data_wrapper.format(
+                bug.description)
 
-            status_base = "Status in %s: %s"
+            status_base = "Status in %s:\n  %s"
             status_strings = []
             for bug_task in bug.bugtasks:
                 status_strings.append(status_base % (bug_task.target.title,

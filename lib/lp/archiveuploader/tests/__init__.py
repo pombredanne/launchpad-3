@@ -3,8 +3,6 @@
 
 """Tests for the archive uploader."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 __all__ = [
@@ -12,13 +10,9 @@ __all__ = [
     'getPolicy',
     'insertFakeChangesFile',
     'insertFakeChangesFileForAllPackageUploads',
-    'mock_logger',
-    'mock_logger_quiet',
     ]
 
 import os
-import sys
-import traceback
 
 from zope.component import getGlobalSiteManager
 
@@ -77,36 +71,6 @@ def getPolicy(name='anything', distro='ubuntu', distroseries=None):
     return policy
 
 
-class MockUploadLogger:
-    """Mock upload logger facility helper"""
-
-    def __init__(self, verbose=True):
-        self.verbose = verbose
-
-    def print_traceback(self, exc_info):
-        if exc_info:
-            for err_msg in traceback.format_exception(*sys.exc_info()):
-                print err_msg
-
-    def debug(self, message, exc_info=False, **kw):
-        if self.verbose is not True:
-            return
-        print 'DEBUG:', message
-        self.print_traceback(exc_info)
-
-    def info(self, message, exc_info=False, **kw):
-        print 'INFO:', message
-        self.print_traceback(exc_info)
-
-    def warn(self, message, exc_info=False, **kw):
-        print 'WARN:', message
-        self.print_traceback(exc_info)
-
-    def error(self, message, exc_info=False, **kw):
-        print 'ERROR:', message
-        self.print_traceback(exc_info)
-
-
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing uploads from the test process.
 
@@ -158,7 +122,3 @@ def register_archive_upload_policy_adapters():
     for policy in policies:
         sm.registerUtility(
             component=policy, provided=IArchiveUploadPolicy, name=policy.name)
-
-
-mock_logger = MockUploadLogger()
-mock_logger_quiet = MockUploadLogger(verbose=False)

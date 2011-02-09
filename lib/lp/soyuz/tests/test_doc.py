@@ -45,7 +45,7 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.database.emailaddress import EmailAddress
     from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
@@ -141,17 +141,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'build-notification.txt': LayeredDocFileSuite(
-        '../doc/build-notification.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'buildd-slavescanner.txt': LayeredDocFileSuite(
-        '../doc/buildd-slavescanner.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
-        ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',
         setUp=builddmasterSetUp,
@@ -200,11 +189,6 @@ special = {
     'manage-chroot.txt': LayeredDocFileSuite(
         '../doc/manage-chroot.txt',
         setUp=manageChrootSetup,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
-        '../doc/build-estimated-dispatch-time.txt',
-        setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
     'package-arch-specific.txt': LayeredDocFileSuite(

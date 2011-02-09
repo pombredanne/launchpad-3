@@ -36,14 +36,14 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.soyuz.enums import ArchivePurpose
 
 
@@ -176,7 +176,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             - The latest distroseries wins
             - updates > security > release
 
-        See https://bugs.edge.launchpad.net/soyuz/+bug/236922 for a plan
+        See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
 

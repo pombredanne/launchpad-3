@@ -23,13 +23,10 @@ demonstrate this:
 
 Run the script (making sure it uses the testrunner configuration).
 
-   >>> env = dict(os.environ)
-   >>> env['LPCONFIG'] = 'testrunner'
    >>> from canonical.config import config
    >>> bin_py = os.path.join(config.root, 'bin', 'py')
    >>> proc = subprocess.Popen([bin_py, script_file.name], 
-   ...                         stdout=subprocess.PIPE, stderr=None,
-   ...                         env=env)
+   ...                         stdout=subprocess.PIPE, stderr=None)
 
 Check that we get the expected output.
 

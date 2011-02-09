@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -38,20 +37,12 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IWebServiceClientRequest,
-    )
 import pytz
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     providedBy,
@@ -60,7 +51,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -71,12 +61,8 @@ from canonical.launchpad.searchbuilder import (
     greater_than,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -90,11 +76,16 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.widgets.bug import BugTagsWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.project import ProjectScopeWidget
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -107,7 +98,6 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -206,11 +196,11 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
-    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog', 'affectsmetoo']
+    links = [
+        'editdescription', 'markduplicate', 'visibility', 'addupstream',
+        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -268,15 +258,15 @@ class BugContextMenu(ContextMenu):
                 'changes'))
 
     def nominate(self):
-        """Return the 'Target/Nominate for release' Link."""
+        """Return the 'Target/Nominate for series' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to release"
+            text = "Target to series"
             return Link('+nominate', text, icon='milestone')
         elif (check_permission("launchpad.BugSupervisor", target) or
             self.user is None):
-            text = 'Nominate for release'
+            text = 'Nominate for series'
             return Link('+nominate', text, icon='milestone')
         else:
             return Link('+nominate', '', enabled=False, icon='milestone')
@@ -305,20 +295,6 @@ class BugContextMenu(ContextMenu):
         enabled = self.context.bug.has_cves
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
-
-    def offermentoring(self):
-        """Return the 'Offer mentorship' Link."""
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = False
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        """Return the 'Retract mentorship' Link."""
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     @property
     def _bug_question(self):
@@ -437,39 +413,28 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def subscription_info(self):
+        return IBug(self.context).getSubscriptionInfo()
+
+    @property
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
-        if IBug.providedBy(self.context):
-            return set(self.context.getDirectSubscribers())
-        elif IBugTask.providedBy(self.context):
-            return set(self.context.bug.getDirectSubscribers())
-        else:
-            raise NotImplementedError(
-                'direct_subscribers is not provided by %s' % self)
+        return self.subscription_info.direct_subscriptions.subscribers
 
-    @cachedproperty
+    @property
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates.
 
-        Don't use getSubscribersFromDuplicates here because that method
-        omits a user if the user is also a direct or indirect subscriber.
-        getSubscriptionsFromDuplicates doesn't, so find person objects via
-        this method.
+        This includes all subscribers who are also direct or indirect
+        subscribers.
         """
-        if IBug.providedBy(self.context):
-            dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        elif IBugTask.providedBy(self.context):
-            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        else:
-            raise NotImplementedError(
-                'duplicate_subscribers is not implemented for %s' % self)
+        return self.subscription_info.duplicate_subscriptions.subscribers
 
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(
+        subscribers = set().union(
+            self.direct_subscribers,
             self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
@@ -517,9 +482,10 @@ class BugViewMixin:
         """Get a dict of attachment type -> attachments list."""
         # Note that this is duplicated with get_comments_for_bugtask
         # if you are looking to consolidate things.
-        result = {BugAttachmentType.PATCH: [],
-                  'other': []
-        }
+        result = {
+            BugAttachmentType.PATCH: [],
+            'other': [],
+            }
         for attachment in self.context.attachments_unpopulated:
             info = {
                 'attachment': attachment,
@@ -647,7 +613,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
-    field_names = ['title', 'description', 'tags', 'name']
+    field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
     next_url = None
@@ -1063,20 +1029,3 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
-
-
-# XXX mars 2009-05-12 bug=372847
-# This will likely have to change or be removed when the bug description
-# changes from IText to IDescription.
-@adapter(IBug, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def bug_description_xhtml_representation(context, field, request):
-    """Render `IBug.description` as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
-
-    return renderer

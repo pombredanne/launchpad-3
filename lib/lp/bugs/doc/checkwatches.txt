@@ -154,8 +154,6 @@ will also be automatically filled from the baseurl OOPS property.
     ...         bug_tracker_names=[example_bug_tracker_name])
     ... finally:
     ...     urllib2.urlopen = urlopen
-    ERROR...Connection timed out when updating ... (OOPS-...)
-
     >>> dump_last_oops()
     Oops-Id: OOPS-...TCW...
     Exception-Type: timeout
@@ -217,7 +215,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
-    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    WARNING...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
     known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
@@ -256,7 +254,7 @@ monkey-patch the Roundup ExternalBugTrackerClass in order to set its
 batch size. We will also monkey-patch urllib2.urlopen again so that no
 requests are actually made.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs import externalbugtracker
 
     >>> transaction.commit()
@@ -275,7 +273,7 @@ requests are actually made.
     ...     urllib2.urlopen = urlopen
     DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
-    ERROR Connection timed out when updating ... (OOPS-...)
+    INFO Connection timed out when updating ... (OOPS-...)
 
 
 Updating all the watches on a bug tracker

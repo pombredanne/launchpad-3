@@ -5,6 +5,9 @@
 #find true path
 #replace all occurences.
 
+import os
+import sys
+
 from find import find_matches
 
 
@@ -228,10 +231,8 @@ def normalize_all_doctest_imports():
             print "    %(lineno)4s: %(text)s" % line
 
 
-def update_multi_python_globs_to_interfaces():
-    root = 'lib'
-    types = r'tests'
-    pattern = r'from canonical\.launchpad\.interfaces import'
+def update_multi_python_globs_to_interfaces(root='lib', types='tests'):
+    pattern=r'from canonical\.launchpad\.interfaces import'
     substitution = True
     for summary in find_matches(
         root, types, pattern, substitution=substitution,
@@ -241,9 +242,8 @@ def update_multi_python_globs_to_interfaces():
             print "    %(lineno)4s: %(text)s" % line
 
 
-def update_python_globs_to_interfaces():
-    root = 'lib'
-    types = r'tests'
+def update_python_globs_to_interfaces(root='lib', types='tests'):
+    update_multi_python_globs_to_interfaces(root=root, types=types)
     globs = r'from \bcanonical\.launchpad\.interfaces import (\w+)$'
     interfaces = get_interfaces(types=types, globs=globs)
     interface_modules = get_interface_modules(interfaces)
@@ -259,8 +259,12 @@ def update_python_globs_to_interfaces():
 
 
 def main():
-    update_multi_python_globs_to_interfaces()
-    update_python_globs_to_interfaces()
+    if len(sys.argv) != 3:
+        print 'Usage: %s root_path file_test', os.path.basename(sys.argv[0])
+        sys.exit(1)
+    root = sys.argv[1]
+    types = sys.argv[2]
+    update_python_globs_to_interfaces(root, types)
 
 
 if __name__ == '__main__':

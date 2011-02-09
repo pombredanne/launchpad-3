@@ -38,8 +38,6 @@ from canonical.launchpad.interfaces.account import (
     IAccountSet,
     )
 from canonical.launchpad.webapp import (
-    action,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -55,6 +53,10 @@ from canonical.launchpad.webapp.publisher import (
     Navigation,
     stepthrough,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.browser.openiddiscovery import (
@@ -62,7 +64,7 @@ from lp.services.openid.browser.openiddiscovery import (
     )
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.testopenid.interfaces.server import (
     get_server_url,
@@ -168,7 +170,7 @@ class OpenIDMixin:
     def restoreRequestFromSession(self):
         """Get the OpenIDRequest from our session."""
         session = self.getSession()
-        cache = IPropertyCache(self)
+        cache = get_property_cache(self)
         try:
             cache.openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
         except KeyError:

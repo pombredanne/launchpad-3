@@ -127,7 +127,6 @@ is used by the decorator.
     ...         print '%s: %s' % (key, badge_dict[key])
     <BugTask ...>
         has_branch: False
-        has_mentoring_offer: False
         has_patch: False
         has_specification: False
 
@@ -171,8 +170,7 @@ Bugtasks are ordered by status (fix released last), and importance
 The view provides a list of StatusCounts that summarise the targeted
 specifications and bugtasks.
 
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
     >>> bugtask.transitionToAssignee(person)
     >>> engineer = factory.makePerson(name='engineer')
@@ -684,7 +682,7 @@ milestone.
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
     >>> [subscription for subscription in owner.structural_subscriptions]
-    [<StructuralSubscription ...>]
+    [<...StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]

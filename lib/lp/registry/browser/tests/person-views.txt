@@ -106,14 +106,16 @@ email addresses and the visible_email_address_description summarises who
 can see them
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
+anyone in Launchpad..
 
+    >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
     u'mark@example.com'
 
     >>> mark.hide_email_addresses
     False
+    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
@@ -330,9 +332,9 @@ progress.
 Assigned specifications that do not display when they are not in an in
 progress state.
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationImplementationStatus
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login(user.preferredemail.email)
+    >>> login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')
@@ -351,7 +353,7 @@ The specification is displayed only when it is in a in progress state
 specifications is a link to show all the specifications that the user is
 working on.
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationDefinitionStatus
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
 
     >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> newstate = spec.updateLifecycleStatus(user)

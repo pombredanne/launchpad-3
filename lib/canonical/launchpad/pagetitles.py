@@ -45,11 +45,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag,
-    IMaloneApplication,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import smartquote
+from lp.bugs.interfaces.malone import IMaloneApplication
 
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -102,16 +100,6 @@ class ViewLabel:
     def __call__(self, context, view):
         return view.label
 
-
-archive_admin = ContextDisplayName('Administer %s')
-
-archive_activate = 'Activate Personal Package Archive'
-
-archive_copy_packages = ContextDisplayName('Copy packages from %s')
-
-archive_delete_packages = ContextDisplayName('Delete packages from %s')
-
-archive_edit = ContextDisplayName('Edit %s')
 
 bazaar_index = 'Launchpad Branches'
 

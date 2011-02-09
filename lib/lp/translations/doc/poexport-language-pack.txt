@@ -22,23 +22,7 @@ Some initialisation tasks:
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 
-    # This is a dummy logger class to capture the export's log messages.
-
-    >>> class FakeLogger:
-    ...     def __init__(self):
-    ...         self.messages = []
-    ...
-    ...     def log(self, *stuff):
-    ...         self.messages.append(' '.join(stuff))
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff)
-    ...
-    ...         for line in traceback.format_exception(*sys.exc_info()):
-    ...             if line.strip():
-    ...                 self.log(line)
+    >>> from lp.services.log.logger import BufferLogger
 
 This is handy for examining the tar files that are generated.
 
@@ -69,7 +53,7 @@ When a new language pack export is requested, you can select to use the
 Librarian to store the language pack. That is noted with output_file set
 to None.
 
-    >>> logger = FakeLogger()
+    >>> logger = BufferLogger()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='hoary',
@@ -81,16 +65,16 @@ to None.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
-    Selecting PO files for export
-    Number of PO files to export: 12
-    Exporting PO file ... (1/12)
-    Exporting PO file ... (2/12)
+    >>> print logger.getLogBuffer()
+    DEBUG Selecting PO files for export
+    INFO  Number of PO files to export: 12
+    DEBUG Exporting PO file ... (1/12)
+    DEBUG Exporting PO file ... (2/12)
     ...
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
+    INFO  Adding timestamp file
+    INFO  Adding mapping file
+    INFO  Done.
+    DEBUG Upload complete, file alias: ...
 
     # Get the generated tarball.
 
@@ -162,8 +146,9 @@ Sample data initialisation
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
 
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.utilities.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
 
@@ -183,9 +168,9 @@ Attach the en-US.xpi (the template) file.
 
     >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
-    >>> published = True
+    >>> by_maintainer = True
     >>> template_entry = translation_import_queue.addOrUpdateEntry(
-    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     firefox_template.path, en_US_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template)
 
@@ -194,7 +179,7 @@ Attach the es.xpi file (the translation) file.
     >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
     >>> firefox_es_translation = firefox_template.newPOFile('es')
     >>> translation_entry = translation_import_queue.addOrUpdateEntry(
-    ...     'es.xpi', es_xpi.read(), published,
+    ...     'es.xpi', es_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template,
     ...     pofile=firefox_es_translation)
@@ -312,9 +297,8 @@ on 2000/01/01.
 
     >>> pofile_es = template.newPOFile('es')
     >>> translations = { 0: u'blah (es)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_es, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, potmsgset, mark, translations=translations)
     >>> pofile_es.date_changed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
@@ -322,9 +306,8 @@ Create a Welsh PO file, with an active translation submission created on
 
     >>> pofile_cy = template.newPOFile('cy')
     >>> translations = { 0: u'blah (cy)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_cy, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_cy, potmsgset, mark, translations=translations)
     >>> pofile_cy.date_changed = d2000_01_03
     >>> transaction.commit()
 
@@ -334,7 +317,7 @@ PO files.
     >>> print series.language_pack_base
     None
 
-    >>> logger = FakeLogger()
+    >>> logger = BufferLogger()
     >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
@@ -347,19 +330,19 @@ PO files.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
-    Selecting PO files for export
-    Number of PO files to export: 4
-    Exporting PO file ... (1/4)
-    Exporting PO file ... (2/4)
-    Exporting PO file ... (3/4)
-    Exporting PO file ... (4/4)
-    Exporting XPI template files.
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
-    Registered the language pack.
+    >>> print logger.getLogBuffer()
+    DEBUG Selecting PO files for export
+    INFO  Number of PO files to export: 4
+    DEBUG Exporting PO file ... (1/4)
+    DEBUG Exporting PO file ... (2/4)
+    DEBUG Exporting PO file ... (3/4)
+    DEBUG Exporting PO file ... (4/4)
+    INFO  Exporting XPI template files.
+    INFO  Adding timestamp file
+    INFO  Adding mapping file
+    INFO  Done.
+    DEBUG Upload complete, file alias: ...
+    INFO  Registered the language pack.
 
     # Get the generated tarball.
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -37,7 +37,6 @@ from zope.schema import (
     Datetime,
     Field,
     Int,
-    Object,
     Text,
     TextLine,
     )
@@ -48,6 +47,10 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.fields import PersonChoice
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.translationcommonformat import (
     TranslationImportExportBaseException,
     )
@@ -63,8 +66,6 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
-    'IHasTranslationImports',
-    'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
     'translation_import_queue_entry_age',
@@ -85,59 +86,6 @@ class UserCannotSetTranslationImportStatus(Unauthorized):
     have the necessary permissions.
     """
     webservice_error(401) # HTTP Error: 'Unauthorized'
-
-
-class RosettaImportStatus(DBEnumeratedType):
-    """Rosetta Import Status
-
-    Define the status of an import on the Import queue. It could have one
-    of the following states: approved, imported, deleted, failed, needs_review
-    or blocked.
-    """
-
-    APPROVED = DBItem(1, """
-        Approved
-
-        The entry has been approved by a Rosetta Expert or was able to be
-        approved by our automatic system and is waiting to be imported.
-        """)
-
-    IMPORTED = DBItem(2, """
-        Imported
-
-        The entry has been imported.
-        """)
-
-    DELETED = DBItem(3, """
-        Deleted
-
-        The entry has been removed before being imported.
-        """)
-
-    FAILED = DBItem(4, """
-        Failed
-
-        The entry import failed.
-        """)
-
-    NEEDS_REVIEW = DBItem(5, """
-        Needs Review
-
-        A Rosetta Expert needs to review this entry to decide whether it will
-        be imported and where it should be imported.
-        """)
-
-    BLOCKED = DBItem(6, """
-        Blocked
-
-        The entry has been blocked to be imported by a Rosetta Expert.
-        """)
-
-    NEEDS_INFORMATION = DBItem(7, """
-        Needs Information
-
-        The reviewer needs more information before this entry can be approved.
-        """)
 
 
 # Some time spans in days.
@@ -170,46 +118,6 @@ class SpecialTranslationImportTargetFilter(DBEnumeratedType):
 
         Any distribution registered in Launchpad.
         """)
-
-
-class IHasTranslationImports(Interface):
-    """An entity on which a translation import queue entry is attached.
-
-    Examples include ProductSeries, SourcePackage, DistroSeries, and
-    Person.
-    """
-    export_as_webservice_entry(
-        singular_name='object_with_translation_imports',
-        plural_name='objects_with_translation_imports')
-
-    def getFirstEntryToImport():
-        """Return the first entry of the queue ready to be imported."""
-
-    @operation_parameters(
-        import_status=Choice(
-            title=_("Status"),
-            description=_("Show only entries with this status"),
-            vocabulary=RosettaImportStatus,
-            required=False),
-        file_extension=TextLine(
-            title=_("Filename extension"),
-            description=_("Show only entries with this filename suffix"),
-            required=False))
-    # Really ITranslationImportQueueEntry.  Fixed up in
-    # _schema_circular_imports.py.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getTranslationImportQueueEntries(import_status=None,
-                                         file_extension=None):
-        """Return entries in the translation import queue for this entity.
-
-        :arg import_status: RosettaImportStatus DB Schema entry.
-        :arg file_extension: String with the file type extension, usually 'po'
-            or 'pot'.
-
-        If one of both of 'import_status' or 'file_extension' are given, the
-        returned entries are filtered based on those values.
-        """
 
 
 class ITranslationImportQueueEntry(Interface):
@@ -246,14 +154,14 @@ class ITranslationImportQueueEntry(Interface):
         exported_as="date_created")
 
     productseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
             schema=IProductSeries))
 
     distroseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
@@ -266,10 +174,13 @@ class ITranslationImportQueueEntry(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    is_published = Bool(
-        title=_("This import comes from a published file"),
+    by_maintainer = Bool(
+        title=_(
+            "This upload was done by the maintainer "
+            "of the project or package."),
         description=_(
-            "If checked, this import will be handled as already published."),
+            "If checked, the translations in this import will be marked "
+            "as is_current_upstream."),
         required=True,
         default=False)
 
@@ -300,7 +211,7 @@ class ITranslationImportQueueEntry(Interface):
         "True if this entry is to be imported into the Ubuntu distribution.")
 
     sourcepackage = exported(
-        Object(
+        Reference(
             schema=ISourcePackage,
             title=_("The sourcepackage associated with this entry."),
             readonly=True))
@@ -399,15 +310,15 @@ class ITranslationImportQueue(Interface):
     def countEntries():
         """Return the number of `TranslationImportQueueEntry` records."""
 
-    def addOrUpdateEntry(path, content, is_published, importer,
+    def addOrUpdateEntry(path, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
-        :arg path: is the path, with the filename, of the file imported.
+        :arg path: is the path, with the filename, of the uploaded file.
         :arg content: is the file content.
-        :arg is_published: indicates if the imported file is already published
-            by upstream.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
@@ -422,14 +333,14 @@ class ITranslationImportQueue(Interface):
         only one of them can be specified.
         """
 
-    def addOrUpdateEntriesFromTarball(content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
-        :arg is_published: indicates if the imported file is already published
-            by upstream.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.

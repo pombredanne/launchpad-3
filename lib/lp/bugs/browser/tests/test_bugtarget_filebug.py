@@ -7,6 +7,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.ftests import login
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import FileBugInlineFormView
@@ -243,7 +244,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            ["Thank you for your bug report."],
+            ['<p class="last">Thank you for your bug report.</p>'],
             [notification.message
              for notification in view.request.response.notifications])
 
@@ -253,9 +254,45 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            [u"We really appreciate your bug report"],
+            [u'<p class="last">We really appreciate your bug report</p>'],
             [notification.message
              for notification in view.request.response.notifications])
+
+    def test_bug_filing_view_with_dupe_search_enabled(self):
+        # When a user files a bug for a product where searching for
+        # duplicate bugs is enabled, he is asked to provide a
+        # summary of the bug. This summary is used to find possible
+        # existing duplicates f this bug.
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        product.official_malone = True
+        product.enable_bugfiling_duplicate_search = True
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(
+            product, name='+filebug', principal=user)
+        html = view.render()
+        self.assertIsNot(None, find_tag_by_id(html, 'filebug-search-form'))
+        # The main bug filing form is not shown.
+        self.assertIs(None, find_tag_by_id(html, 'filebug-form'))
+
+    def test_bug_filing_view_with_dupe_search_disabled(self):
+        # When a user files a bug for a product where searching for
+        # duplicate bugs is disabled, he can directly enter all
+        # details of the bug.
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        product.official_malone = True
+        product.enable_bugfiling_duplicate_search = False
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(
+            product, name='+filebug', principal=user)
+        html = view.render()
+        self.assertIsNot(None, find_tag_by_id(html, 'filebug-form'))
+        # The search form to fing possible duplicates is not shown.
+        self.assertIs(None, find_tag_by_id(html, 'filebug-search-form'))
+
 
 def test_suite():
     suite = unittest.TestSuite()

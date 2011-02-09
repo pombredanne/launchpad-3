@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """People Merge related wiew classes."""
@@ -16,6 +16,7 @@ __all__ = [
 
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
@@ -28,75 +29,54 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.registry.interfaces.mailinglist import (
+    MailingListStatus,
+    PURGE_STATES,
+    )
 from lp.registry.interfaces.person import (
     IAdminPeopleMergeSchema,
     IAdminTeamMergeSchema,
     IPersonSet,
     IRequestPeopleMerge,
     )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
-class RequestPeopleMergeView(LaunchpadFormView):
-    """The view for the page where the user asks a merge of two accounts.
+class ValidatingMergeView(LaunchpadFormView):
 
-    If the dupe account have only one email address we send a message to that
-    address and then redirect the user to other page saying that everything
-    went fine. Otherwise we redirect the user to another page where we list
-    all email addresses owned by the dupe account and the user selects which
-    of those (s)he wants to claim.
-    """
+    def validate(self, data):
+        """Check that user is not attempting to merge a person into itself."""
+        dupe_person = data.get('dupe_person')
+        target_person = data.get('target_person')
 
-    label = 'Merge Launchpad accounts'
-    page_title = label
-    schema = IRequestPeopleMerge
-
-    @property
-    def cancel_url(self):
-        return canonical_url(getUtility(IPersonSet))
-
-    @action('Continue', name='continue')
-    def continue_action(self, action, data):
-        dupeaccount = data['dupe_person']
-        if dupeaccount == self.user:
-            # Please, don't try to merge you into yourself.
-            return
-
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
-        emails_count = emails.count()
-        if emails_count > 1:
-            # The dupe account have more than one email address. Must redirect
-            # the user to another page to ask which of those emails (s)he
-            # wants to claim.
-            self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
-            return
-
-        assert emails_count == 1
-        email = emails[0]
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        # Need to remove the security proxy because the dupe account may have
-        # hidden email addresses.
-        from zope.security.proxy import removeSecurityProxy
-        token = logintokenset.new(
-            self.user, login, removeSecurityProxy(email).email,
-            LoginTokenType.ACCOUNTMERGE)
-
-        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.
-        import canonical.database.sqlbase
-        canonical.database.sqlbase.flush_database_updates()
-        token.sendMergeRequestEmail()
-        self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id
+        if dupe_person == target_person and dupe_person is not None:
+            self.addError(_("You can't merge ${name} into itself.",
+                  mapping=dict(name=dupe_person.name)))
+        # We cannot merge if there is a PPA with published
+        # packages on the duplicate, unless that PPA is removed.
+        if dupe_person is not None:
+            dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
+                dupe_person, statuses=[ArchiveStatus.ACTIVE,
+                                       ArchiveStatus.DELETING])
+            if dupe_person_ppas is not None:
+                self.addError(_(
+                    "${name} has a PPA that must be deleted before it "
+                    "can be merged. It may take ten minutes to remove the "
+                    "deleted PPA's files.",
+                    mapping=dict(name=dupe_person.name)))
 
 
-class AdminMergeBaseView(LaunchpadFormView):
+class AdminMergeBaseView(ValidatingMergeView):
     """Base view for the pages where admins can merge people/teams."""
 
     page_title = 'Merge Launchpad accounts'
@@ -126,6 +106,17 @@ class AdminMergeBaseView(LaunchpadFormView):
         if dupe_person == target_person and dupe_person is not None:
             self.addError(_("You can't merge ${name} into itself.",
                   mapping=dict(name=dupe_person.name)))
+        # We cannot merge the teams if there is a PPA with published
+        # packages on the duplicate person, unless that PPA is removed.
+        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            dupe_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING])
+        if dupe_person_ppas is not None:
+            self.addError(_(
+                "${name} has a PPA that must be deleted before it "
+                "can be merged. It may take ten minutes to remove the "
+                "deleted PPA's files.",
+                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
@@ -147,7 +138,6 @@ class AdminMergeBaseView(LaunchpadFormView):
 
     def doMerge(self, data):
         """Merge the two person/team entries specified in the form."""
-        from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
             email = IMasterObject(email)
             # EmailAddress.person and EmailAddress.account are readonly
@@ -214,9 +204,44 @@ class AdminTeamMergeView(AdminMergeBaseView):
     schema = IAdminTeamMergeSchema
 
     def hasMailingList(self, team):
+        unused_states = [state for state in PURGE_STATES]
+        unused_states.append(MailingListStatus.PURGED)
         return (
             team.mailing_list is not None
-            and team.mailing_list.status != MailingListStatus.PURGED)
+            and team.mailing_list.status not in unused_states)
+
+    @cachedproperty
+    def registry_experts(self):
+        return getUtility(ILaunchpadCelebrities).registry_experts
+
+    def doMerge(self, data):
+        """Purge the non-transferable team data and merge."""
+        # A team cannot have more than one mailing list. The old list will
+        # remain in the archive.
+        purge_list = (self.dupe_person.mailing_list is not None
+            and self.dupe_person.mailing_list.status in PURGE_STATES)
+        if purge_list:
+            self.dupe_person.mailing_list.purge()
+        # Team email addresses are not transferable.
+        self.dupe_person.setContactAddress(None)
+        # The registry experts does not want to acquire super teams from a
+        # merge. This operation requires unrestricted access to ensure
+        # the user who has permission to delete a team can remove the
+        # team from other teams.
+        if self.target_person == self.registry_experts:
+            all_super_teams = set(self.dupe_person.teams_participated_in)
+            indirect_super_teams = set(
+                self.dupe_person.teams_indirectly_participated_in)
+            super_teams = all_super_teams - indirect_super_teams
+            naked_dupe_person = removeSecurityProxy(self.dupe_person)
+            for team in super_teams:
+                naked_dupe_person.retractTeamMembership(team, self.user)
+            del naked_dupe_person
+        # We have sent another series of calls to the db, potentially a long
+        # sequence depending on the merge. We want everything synced up
+        # before proceeding.
+        flush_database_updates()
+        super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
@@ -228,9 +253,14 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
         super(AdminTeamMergeView, self).validate(data)
         dupe_team = data['dupe_person']
-        # Our code doesn't know how to merge a team's superteams, so we
-        # prohibit that here.
-        if dupe_team.super_teams.count() > 0:
+        target_team = data['target_person']
+        # Merge cannot reconcile cyclic membership in super teams.
+        # Super team memberships are automatically removed when merging into
+        # the registry experts team. When merging into any other team, an
+        # error must be raised to explain that the user must remove the teams
+        # himself.
+        super_teams_count = dupe_team.super_teams.count()
+        if target_team != self.registry_experts and super_teams_count > 0:
             self.addError(_(
                 "${name} has super teams, so it can't be merged.",
                 mapping=dict(name=dupe_team.name)))
@@ -330,9 +360,6 @@ class DeleteTeamView(AdminTeamMergeView):
     @action('Delete', name='delete', condition=canDelete)
     def merge_action(self, action, data):
         base = super(DeleteTeamView, self)
-        # Delete is implemented as a merge process, but email addresses should
-        # be deleted because ~registry can never claim them.
-        self.context.setContactAddress(None)
         base.deactivate_members_and_merge_action.success(data)
 
 
@@ -363,7 +390,6 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
         assert result_count == 1
         # Need to remove the security proxy because the dupe account may have
         # hidden email addresses.
-        from zope.security.proxy import removeSecurityProxy
         self.dupe_email = removeSecurityProxy(results[0]).email
 
     def render(self):
@@ -411,7 +437,6 @@ class RequestPeopleMergeMultipleEmailsView:
             # If the email addresses are hidden we must send a merge request
             # to each of them.  But first we've got to remove the security
             # proxy so we can get to them.
-            from zope.security.proxy import removeSecurityProxy
             email_addresses = [removeSecurityProxy(email).email
                                for email in self.dupeemails]
         else:
@@ -454,3 +479,55 @@ class RequestPeopleMergeMultipleEmailsView:
     def email_hidden(self):
         """Does the duplicate account hide email addresses?"""
         return self.dupe.hide_email_addresses
+
+
+class RequestPeopleMergeView(ValidatingMergeView):
+    """The view for the page where the user asks a merge of two accounts.
+
+    If the dupe account have only one email address we send a message to that
+    address and then redirect the user to other page saying that everything
+    went fine. Otherwise we redirect the user to another page where we list
+    all email addresses owned by the dupe account and the user selects which
+    of those (s)he wants to claim.
+    """
+
+    label = 'Merge Launchpad accounts'
+    page_title = label
+    schema = IRequestPeopleMerge
+
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(IPersonSet))
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        dupeaccount = data['dupe_person']
+        if dupeaccount == self.user:
+            # Please, don't try to merge you into yourself.
+            return
+
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails_count = emails.count()
+        if emails_count > 1:
+            # The dupe account have more than one email address. Must redirect
+            # the user to another page to ask which of those emails (s)he
+            # wants to claim.
+            self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
+            return
+
+        assert emails_count == 1
+        email = emails[0]
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        token = logintokenset.new(
+            self.user, login, removeSecurityProxy(email).email,
+            LoginTokenType.ACCOUNTMERGE)
+
+        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
+        #      improves problems with merge people tests.
+        import canonical.database.sqlbase
+        canonical.database.sqlbase.flush_database_updates()
+        token.sendMergeRequestEmail()
+        self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id

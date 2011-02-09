@@ -37,7 +37,7 @@ handle, and register them for some domains:
     ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler(allow_unknown_users=True)
     >>> mail_handlers.add('foo.com', foo_handler)
@@ -50,17 +50,25 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.mail import sendmail as original_sendmail
 
-For these examples, we don't want the Precedence header added.
+For these examples, we don't want the Precedence header added. Domains
+are treated without regard to case: for incoming mail, foo.com and
+FOO.COM are treated equivalently.
 
     >>> def sendmail(msg, to_addrs=None):
     ...     return original_sendmail(msg, to_addrs=to_addrs, bulk=False)
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
-    >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
+    >>> for domain in ('foo.com', 'bar.com', 'FOO.COM', 'baz.com'):
     ...     msg = read_test_message('signed_detached.txt')
     ...     msg.replace_header('To', '123@%s' % domain)
-    ...     msgids[domain].append("<%s>" % sendmail(msg))
+    ...     msgids[domain.lower()].append("<%s>" % sendmail(msg))
+
+handleMail will check the timestamp on signed messages, but the signatures
+on our testdata are old, and in these tests we don't care to be told.
+
+    >>> def accept_any_timestamp(timestamp, context_message):
+    ...     pass
 
 Since the User gets authenticated using OpenPGP signatures we have to
 import the keys before handleMail is called.
@@ -71,6 +79,11 @@ import the keys before handleMail is called.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> zopeless_transaction = LaunchpadZopelessLayer.txn
+
+    >>> handleMailForTest = lambda: handleMail(
+    ...     zopeless_transaction,
+    ...     signature_timestamp_checker=accept_any_timestamp)
+
 
 We temporarily override the error mails' From address, so that they will
 pass through the authentication stage:
@@ -87,7 +100,7 @@ see warnings about missing `X-Launchpad-Original-To`_ headers, which are
 discussed below; this output merely shows that we emit warnings when the
 header is missing.)
 
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
     WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
     WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
@@ -119,7 +132,7 @@ a link to the original message.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-... in the description.
     ...
     From: Sample Person <test@canonical.com>
@@ -139,7 +152,7 @@ most of the time reject the email:
     >>> moin_change = read_test_message('moin-change.txt')
     >>> moin_change['X-Launchpad-Original-To'] = '123@foo.com'
     >>> msgid = "<%s>" % sendmail(moin_change)
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid not in foo_handler.handledMails
     True
 
@@ -154,7 +167,7 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 
     >>> moin_change.replace_header('X-Launchpad-Original-To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid in bar_handler.handledMails
     True
 
@@ -176,13 +189,13 @@ silently rejected.
 
     >>> msg = read_test_message('unsigned_inactive.txt')
     >>> msgid = sendmail(msg, ['edit@malone-domain'])
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid not in foo_handler.handledMails
     True
 
     >>> msg = read_test_message('invalid_signed_inactive.txt')
     >>> msgid = sendmail(msg, ['edit@malone-domain'])
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid not in foo_handler.handledMails
     True
 
@@ -198,7 +211,7 @@ which address the email was sent to:
     >>> msg['CC'] = '123@foo.com'
     >>> msg['X-Launchpad-Original-To'] = '123@bar.com'
     >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid in bar_handler.handledMails
     True
 
@@ -238,7 +251,7 @@ And submit an email to the handler.
     ... doesn't matter
     ... """)
     >>> msgid = sendmail(msg, ['edit@malone-domain'])
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     ERROR:canonical.launchpad.mail:An exception was raised inside the handler:
     ...
     TestOopsException
@@ -256,7 +269,7 @@ to the user, citing the OOPS ID, with the original message attached.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-...TEMAIL... in the description.
     ...
     From: Foo Bar <foo.bar@canonical.com>
@@ -286,7 +299,7 @@ reporting in the web interface, are not ignored in the email interface.
     ... doesn't matter
     ... """)
     >>> msgid = sendmail(msg, ['edit@malone-domain'])
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     ERROR:canonical.launchpad.mail:An exception was raised inside the handler:
     ...
     Unauthorized
@@ -301,7 +314,7 @@ reporting in the web interface, are not ignored in the email interface.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-...TEMAIL... in the description.
     ...
     From: Foo Bar <foo.bar@canonical.com>
@@ -352,7 +365,7 @@ processed as well:
 If we call handleMail(), we'll see some useful error messages printed
 out:
 
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     ERROR:...:An exception was raised inside the handler: http://...
     Traceback (most recent call last):
     ...
@@ -389,7 +402,7 @@ logged.
     >>> len(stub.test_emails)
     2
 
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     ERROR:...:Upload to Librarian failed...
     ...
     UploadFailed: ...Connection refused...
@@ -416,7 +429,7 @@ Emails with an empty Return-Path header should be dropped:
     >>> msg.replace_header('To', '123@foo.com')
     >>> msg['Return-Path'] = '<>'
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid in foo_handler.handledMails
     False
 
@@ -437,7 +450,7 @@ empty Return-Path, but there are some broken mailers out there.
     ...     'multipart/report; report-type=delivery-status;'
     ...     ' boundary="boundary"')
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid in foo_handler.handledMails
     False
 
@@ -452,7 +465,7 @@ another robot. We also drop those.
     >>> msg['Return-Path'] = '<not@empty.com>'
     >>> msg['Precedence'] = 'bulk'
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> handleMail(zopeless_transaction)
+    >>> handleMailForTest()
     >>> msgid in foo_handler.handledMails
     False
 

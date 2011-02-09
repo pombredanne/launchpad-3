@@ -18,7 +18,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.services.propertycache import cachedproperty
 
 

@@ -11,7 +11,7 @@ ProductSeries.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.productseries import IProductSeries
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -191,7 +191,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
     >>> onezero = firefox.getSeries("1.0")
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
@@ -211,7 +211,7 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
-    >>> from lp.blueprints.interfaces.specification import (
+    >>> from lp.blueprints.enums import (
     ...     SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus,
     ...     )

@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes and logic for the checkwatches cronscript."""
-
-from __future__ import with_statement
 
 __metaclass__ = type
 __all__ = [
@@ -38,15 +36,7 @@ from twisted.python.threadpool import ThreadPool
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import (
-    CreateBugParams,
-    IBugTrackerSet,
-    IBugWatchSet,
-    IDistribution,
-    ILaunchpadCelebrities,
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log as default_log
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
@@ -54,6 +44,9 @@ from lp.bugs.externalbugtracker import (
     BugWatchUpdateError,
     UnknownBugTrackerTypeError,
     )
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.scripts.checkwatches.base import (
     commit_before,
     with_interaction,
@@ -62,6 +55,11 @@ from lp.bugs.scripts.checkwatches.base import (
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
     get_bugwatcherrortype_for_error,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
     )
 from lp.services.database.bulk import reload
 from lp.services.scripts.base import LaunchpadCronScript

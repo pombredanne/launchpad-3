@@ -138,16 +138,23 @@
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
-        facet="branches">
-        <browser:page
-            name="+index"
-            template="../templates/bazaar-index.pt"/>
-    </browser:pages>
+        facet="branches"
+        name="+index"
+        template="../templates/bazaar-index.pt" />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        layer="lp.code.publisher.CodeLayer"
+        permission="zope.Public"
+        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
+        facet="branches"
+        name="+daily-builds"
+        template="../templates/daily-builds-listing.pt" />
+
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         layer="lp.code.publisher.CodeLayer"
@@ -1188,16 +1195,19 @@
         rootsite="code" />
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-        attribute_to_parent="recipe"
-        path_expression="string:+build/${id}"
-        rootsite="code" />
+        attribute_to_parent="archive"
+        path_expression="string:+buildjob/${url_id}"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"
         module="lp.code.browser.sourcepackagerecipebuild"/>
 
-    <browser:navigation
-        module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation" />
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipebuild"
         classes="SourcePackageRecipeBuildNavigation" />
@@ -1227,24 +1237,21 @@
         <browser:defaultView
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            />
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
             name="+index"
             template="../templates/sourcepackagerecipebuild-index.pt"
             permission="launchpad.View"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
             template="../../app/templates/generic-edit.pt"
             permission="launchpad.Admin"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
             name="+rescore"
             template="../../app/templates/generic-edit.pt"
@@ -1262,7 +1269,7 @@
             permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
-            template="../../app/templates/generic-edit.pt"/>
+            template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
@@ -1318,6 +1325,24 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+merge-queues"
+            template="../templates/branchmergequeue-listing.pt"/>
+
+        <browser:page
+            for="*"
+            layer="lp.code.publisher.CodeLayer"
+            name="+bmq-macros"
+            permission="zope.Public"
+            template="../templates/branchmergequeue-macros.pt"/>
+
+
     </facet>
 
     <browser:url
@@ -1325,5 +1350,31 @@
         attribute_to_parent="owner"
         path_expression="string:+merge-queues/${name}"
         rootsite="code" />
+
+    <browser:menus
+        classes="BranchMergeQueueContextMenu"
+        module="lp.code.browser.branchmergequeue"/>
+
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            name="+index"
+            layer="lp.code.publisher.CodeLayer" />
+        <browser:page
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
+            name="+index"
+            template="../templates/branchmergequeue-index.pt"
+            permission="zope.Public" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
+            name="+create-queue"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.Edit" />
+
+    </facet>
 
 </configure>

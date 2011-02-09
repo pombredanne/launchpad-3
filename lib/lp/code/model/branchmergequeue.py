@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['BranchMergeQueue']
 
 import simplejson
-
 from storm.locals import (
     Int,
     Reference,
@@ -21,6 +20,7 @@ from zope.interface import (
     )
 
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,
@@ -67,13 +67,22 @@ class BranchMergeQueue(Storm):
 
     @classmethod
     def new(cls, name, owner, registrant, description=None,
-            configuration=None):
+            configuration=None, branches=None):
         """See `IBranchMergeQueueSource`."""
+        store = IMasterStore(BranchMergeQueue)
+
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({}))
+
         queue = cls()
         queue.name = name
         queue.owner = owner
         queue.registrant = registrant
         queue.description = description
         queue.configuration = configuration
+        if branches is not None:
+            for branch in branches:
+                branch.addToQueue(queue)
 
+        store.add(queue)
         return queue

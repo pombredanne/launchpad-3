@@ -3,8 +3,6 @@
 
 """Test team membership changes."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -12,7 +12,9 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translatedlanguage import (
     IPOFilesByPOTemplates,
     ITranslatedLanguage,

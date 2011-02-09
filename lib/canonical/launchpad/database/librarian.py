@@ -30,7 +30,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-import storm.base
 from storm.locals import (
     Date,
     Desc,
@@ -57,20 +56,21 @@ from canonical.database.sqlbase import (
     session_store,
     SQLBase,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias,
     ILibraryFileAliasSet,
     ILibraryFileAliasWithParent,
     ILibraryFileContent,
     ILibraryFileDownloadCount,
-    IMasterStore,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.librarian.interfaces import (
     DownloadFailed,
     ILibrarianClient,
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.database.stormbase import StormBase
 
 
 class LibraryFileContent(SQLBase):
@@ -156,8 +156,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
             raise DownloadFailed(
-                    "Unable to retrieve LibraryFileAlias %d" % self.id
-                    )
+                "Unable to retrieve LibraryFileAlias %d" % self.id)
 
     def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
@@ -255,6 +254,10 @@ class LibraryFileAliasWithParent:
         self.context = libraryfile
         self.__parent__ = parent
 
+    def createToken(self):
+        """See `ILibraryFileAliasWithParent`."""
+        return TimeLimitedToken.allocate(self.private_url)
+
 
 class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
@@ -302,7 +305,7 @@ class LibraryFileDownloadCount(SQLBase):
     country = Reference(country_id, 'Country.id')
 
 
-class TimeLimitedToken(storm.base.Storm):
+class TimeLimitedToken(StormBase):
     """A time limited access token for accessing a private file."""
 
     __storm_table__ = 'TimeLimitedToken'

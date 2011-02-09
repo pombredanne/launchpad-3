@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -15,7 +15,6 @@ __all__ = [
     'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -29,7 +28,7 @@ __all__ = [
     'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSeriesView',
+    'ProductSeriesSetView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -88,6 +87,9 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import (
@@ -114,7 +116,13 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.questiontarget import (
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
@@ -122,29 +130,23 @@ from canonical.launchpad.webapp.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.browser.lazrjs import TextLineEditorWidget
 from lp.app.browser.tales import MenuAPI
-from canonical.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import (
+from lp.app.enums import ServiceUsage
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import PersonPickerWidget
-from canonical.widgets.product import (
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.product import (
     GhostWidget,
     LicenseWidget,
     ProductNameWidget,
     )
-from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin,
-    QuestionTargetTraversalMixin,
-    )
-from lp.app.enums import ServiceUsage
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -167,7 +169,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -473,6 +475,11 @@ class ProductInvolvementView(PillarView):
         undone = scale - done
         return dict(done=done, undone=undone)
 
+    @property
+    def registration_done(self):
+        """A boolean indicating that the services are fully configured."""
+        return (self.registration_completeness['done'] == 100)
+
 
 class ProductNavigationMenu(NavigationMenu):
 
@@ -511,13 +518,13 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def configure_bugtracker(self):
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
@@ -793,7 +800,31 @@ class ProductWithSeries:
             self.release_by_id[release.id] = release_delegate
 
 
-class SeriesWithReleases:
+class DecoratedSeries:
+    """A decorated series that includes helper attributes for templates."""
+    delegates(IProductSeries, 'series')
+
+    def __init__(self, series):
+        self.series = series
+
+    @property
+    def css_class(self):
+        """The highlight, lowlight, or normal CSS class."""
+        if self.is_development_focus:
+            return 'highlight'
+        elif self.status == SeriesStatus.OBSOLETE:
+            return 'lowlight'
+        else:
+            # This is normal presentation.
+            return ''
+
+    @cachedproperty
+    def packagings(self):
+        """Convert packagings to list to prevent multiple evaluations."""
+        return list(self.series.packagings)
+
+
+class SeriesWithReleases(DecoratedSeries):
     """A decorated series that includes releases.
 
     The extra data is included in this class to avoid repeated
@@ -807,10 +838,9 @@ class SeriesWithReleases:
     # raise an AttributeError for self.parent.
     parent = None
     releases = None
-    delegates(IProductSeries, 'series')
 
     def __init__(self, series, parent):
-        self.series = series
+        super(SeriesWithReleases, self).__init__(series)
         self.parent = parent
         self.releases = []
 
@@ -823,16 +853,6 @@ class SeriesWithReleases:
             if len(release.files) > 0:
                 return True
         return False
-
-    @property
-    def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
-        if self.is_development_focus:
-            return 'highlighted'
-        elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
-        else:
-            return 'unhighlighted'
 
 
 class ReleaseWithFiles:
@@ -968,25 +988,21 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, 'title',
-            canonical_url(self.context, view_name='+edit'),
-            id="product-title", title="Edit this title")
+            product, title_field, title, 'h1')
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
         if self.context.programminglang is None:
-            additional_arguments = dict(
+            additional_arguments.update(dict(
                 default_text='Not yet specified',
                 initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, 'programminglang',
-            canonical_url(self.context, view_name='+edit'),
-            id='programminglang', title='Edit programming languages',
-            tag='span', public_attribute='programming_language',
-            accept_empty=True,
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
@@ -1054,14 +1070,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [product for product in self.context.project.products
-                        if product.id != self.context.id]
-
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
@@ -1110,25 +1118,11 @@ class ProductPackagesView(LaunchpadView):
     page_title = label
 
     @cachedproperty
-    def series_packages(self):
-        """A hierarchy of product series, packaging and field data.
-
-        A dict of series and packagings. Each packaging is a dict of the
-        packaging and a hidden HTML field for forms:
-           [{series: <hoary>,
-             packagings: {
-                packaging: <packaging>,
-                field: '<input type=''hidden' ...>},
-                }]
-        """
-        packaged_series = []
-        for series in self.context.series:
-            packagings = []
-            for packaging in series.packagings:
-                packagings.append(packaging)
-            packaged_series.append(dict(
-                series=series, packagings=packagings))
-        return packaged_series
+    def series_batch(self):
+        """A batch of series that are active or have packages."""
+        decorated_series = DecoratedResultSet(
+            self.context.active_or_packaged_series, DecoratedSeries)
+        return BatchNavigator(decorated_series, self.request)
 
     @property
     def distro_packaging(self):
@@ -1140,18 +1134,8 @@ class ProductPackagesView(LaunchpadView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        # First get a list of all relevant packagings.
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # We sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order.
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-
         distros = {}
-        for packaging in all_packagings:
+        for packaging in self.context.packagings:
             distribution = packaging.distroseries.distribution
             if distribution.name in distros:
                 distro = distros[distribution.name]
@@ -1223,8 +1207,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
-                description = """<a href="%s">%s</a>""" % (
-                    item_url, escape(package.name))
+                description = structured(
+                    '<a href="%s">%s</a>', item_url, package.name)
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
         # Add an option to represent the user's decision to choose a
@@ -1422,13 +1406,6 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 
     label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
-
-
-class ProductConfigureTranslationsView(ProductConfigureBase):
-    """View class to configure the Launchpad Translations for a project."""
-
-    label = "Configure translations"
-    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
@@ -1707,11 +1684,17 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class ProductSeriesView(ProductView):
+class ProductSeriesSetView(ProductView):
     """A view for showing a product's series."""
 
     label = 'timeline'
     page_title = label
+
+    @cachedproperty
+    def batched_series(self):
+        decorated_result = DecoratedResultSet(
+            self.context.getVersionSortedSeries(), DecoratedSeries)
+        return BatchNavigator(decorated_result, self.request)
 
 
 class ProductRdfView(BaseRdfView):

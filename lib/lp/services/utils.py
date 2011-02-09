@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Generic Python utilities.
 
 Functions, lists and so forth. Nothing here that does system calls or network
@@ -13,13 +11,15 @@ __metaclass__ = type
 __all__ = [
     'CachingIterator',
     'decorate_with',
+    'docstring_dedent',
     'iter_split',
     'synchronize',
     'text_delta',
     'value_string',
     ]
 
-import itertools
+from itertools import tee
+from textwrap import dedent
 
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
@@ -123,28 +123,12 @@ class CachingIterator:
 
     def __init__(self, iterator):
         self.iterator = iterator
-        self.data = []
 
     def __iter__(self):
-        index = itertools.count()
-        while True:
-            pos = index.next()
-            try:
-                yield self.data[pos]
-            except IndexError:
-                # Defer to the iterator.
-                pass
-            else:
-                continue
-            if self.iterator is None:
-                break
-            try:
-                item = self.iterator.next()
-            except StopIteration:
-                self.iterator = None
-                break
-            self.data.append(item)
-            yield item
+        # Teeing an iterator previously returned by tee won't cause heat
+        # death. See tee_copy in itertoolsmodule.c in the Python source.
+        self.iterator, iterator = tee(self.iterator)
+        return iterator
 
 
 def decorate_with(context_factory, *args, **kwargs):
@@ -155,3 +139,14 @@ def decorate_with(context_factory, *args, **kwargs):
                 return function(*a, **kw)
         return mergeFunctionMetadata(function, decorated)
     return decorator
+
+
+def docstring_dedent(s):
+    """Remove leading indentation from a doc string.
+
+    Since the first line doesn't have indentation, split it off, dedent, and
+    then reassemble.
+    """
+    # Make sure there is at least one newline so the split works.
+    first, rest = (s+'\n').split('\n', 1)
+    return (first + '\n' + dedent(rest)).strip()

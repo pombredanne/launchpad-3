@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
@@ -51,12 +51,8 @@ from canonical.launchpad.helpers import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     Link,
-    safe_action,
     stepthrough,
     stepto,
     urlappend,
@@ -65,7 +61,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -78,8 +73,15 @@ from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup

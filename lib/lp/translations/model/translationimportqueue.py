@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'collect_import_info',
-    'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
     'TranslationImportQueue',
     ]
@@ -29,7 +28,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Like,
     Or,
     )
 from storm.locals import (
@@ -74,6 +72,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -86,10 +85,8 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     translation_import_queue_entry_age,
     TranslationImportQueueConflictError,
@@ -158,7 +155,7 @@ class TranslationImportQueueEntry(SQLBase):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     productseries_id = Int(name='productseries', allow_none=True)
     productseries = Reference(productseries_id, 'ProductSeries.id')
-    is_published = BoolCol(dbName='is_published', notNull=True)
+    by_maintainer = BoolCol(notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
@@ -296,7 +293,8 @@ class TranslationImportQueueEntry(SQLBase):
         return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename).one()
+            sourcepackagename=self.sourcepackagename,
+            ignore_obsolete=True).one()
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
@@ -487,12 +485,12 @@ class TranslationImportQueueEntry(SQLBase):
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
-        if self.is_published:
-            # This entry comes from upstream, which means that the path we got
-            # is exactly the right one. If it's different from what pofile
-            # has, that would mean that either the entry changed its path
-            # since previous upload or that we had to guess it and now that we
-            # got the right path, we should fix it.
+        if self.by_maintainer:
+            # This was uploaded by the maintainer, which means that the path
+            # we got is exactly the right one. If it's different from what
+            # pofile has, that would mean that either the entry changed its
+            # path since previous upload or that we had to guess it and now
+            # that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
@@ -655,6 +653,17 @@ class TranslationImportQueueEntry(SQLBase):
 
             lang_code = re.sub(
                 kde_prefix_pattern, '', self.sourcepackagename.name)
+
+            path_components = os.path.normpath(self.path).split(os.path.sep)
+            # Top-level directory (path_components[0]) is something like
+            # "source" or "messages", and only then comes the
+            # language code: we generalize it so it supports language code
+            # in any part of the path.
+            for path_component in path_components:
+                if path_component.startswith(lang_code + '@'):
+                    # There are language variants inside a language pack.
+                    lang_code = path_component
+                    break
             lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
@@ -914,7 +923,7 @@ class TranslationImportQueue:
         return (
             format, translation_importer.getTranslationFormatImporter(format))
 
-    def addOrUpdateEntry(self, path, content, is_published, importer,
+    def addOrUpdateEntry(self, path, content, by_maintainer, importer,
                          sourcepackagename=None, distroseries=None,
                          productseries=None, potemplate=None, pofile=None,
                          format=None):
@@ -950,13 +959,13 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
+                by_maintainer=by_maintainer, potemplate=potemplate,
                 pofile=pofile, format=format)
         else:
             # It's an update.
             entry.setErrorOutput(None)
             entry.content = alias
-            entry.is_published = is_published
+            entry.by_maintainer = by_maintainer
             if potemplate is not None:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
@@ -995,7 +1004,7 @@ class TranslationImportQueue:
 
     def _makePath(self, name, path_filter):
         """Make the file path from the name stored in the tarball."""
-        path = posixpath.normpath(name)
+        path = posixpath.normpath(name).lstrip('/')
         if path_filter:
             path = path_filter(path)
         return path
@@ -1017,7 +1026,7 @@ class TranslationImportQueue:
 
         return True
 
-    def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
@@ -1058,7 +1067,7 @@ class TranslationImportQueue:
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
-                path, file_content, is_published, importer,
+                path, file_content, by_maintainer, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate))
@@ -1365,7 +1374,7 @@ class TranslationImportQueue:
         deletion_clauses.append(And(
             TranslationImportQueueEntry.distroseries_id != None,
             TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
-            Like(TranslationImportQueueEntry.path, '%.po')))
+            TranslationImportQueueEntry.path.like(u'%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))
@@ -1426,25 +1435,3 @@ class TranslationImportQueue:
     def remove(self, entry):
         """See ITranslationImportQueue."""
         TranslationImportQueueEntry.delete(entry.id)
-
-
-class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
-
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(target=self)
-
-    def getTranslationImportQueueEntries(self, import_status=None,
-                                         file_extension=None):
-        """See `IHasTranslationImports`."""
-        if file_extension is None:
-            extensions = None
-        else:
-            extensions = [file_extension]
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        return translation_import_queue.getAllEntries(
-            target=self, import_status=import_status,
-            file_extensions=extensions)

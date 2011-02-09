@@ -16,7 +16,9 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 
 
 __metaclass__ = type

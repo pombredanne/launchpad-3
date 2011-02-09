@@ -27,8 +27,12 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, IMasterStore
-from lp.code.enums import BranchLifecycleStatus, BranchType
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet

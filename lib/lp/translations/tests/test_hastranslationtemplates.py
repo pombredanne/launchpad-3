@@ -8,7 +8,9 @@ from zope.interface.verify import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )

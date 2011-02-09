@@ -4,7 +4,6 @@
 """Facilities for running Jobs."""
 
 
-from __future__ import with_statement
 __metaclass__ = type
 
 

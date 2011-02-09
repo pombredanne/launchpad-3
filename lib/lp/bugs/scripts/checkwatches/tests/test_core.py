@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
@@ -16,7 +14,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
@@ -47,6 +44,7 @@ from lp.bugs.tests.externalbugtracker import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
@@ -109,7 +107,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # Create an updater with a limited set of syncable gnome
         # products.
         self.updater = checkwatches.CheckwatchesMaster(
-            transaction.manager, QuietFakeLogger(), ['test-product'])
+            transaction.manager, BufferLogger(), ['test-product'])
 
     def tearDown(self):
         checkwatches.externalbugtracker.get_external_bugtracker = (
@@ -191,7 +189,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
             bug_tracker.baseurl, xmlrpc_transport=test_transport)
 
         working_base = WorkingBase()
-        working_base.init(LOGIN, transaction.manager, QuietFakeLogger())
+        working_base.init(LOGIN, transaction.manager, BufferLogger())
 
         for bug_watch in bug_watches:
             updater = NoBugWatchesByRemoteBugUpdater(
@@ -407,7 +405,7 @@ class CheckwatchesMasterForThreads(CheckwatchesMaster):
     """
 
     def __init__(self, output_file):
-        logger = QuietFakeLogger()
+        logger = BufferLogger()
         super(CheckwatchesMasterForThreads, self).__init__(
             transaction.manager, logger)
         self.output_file = output_file

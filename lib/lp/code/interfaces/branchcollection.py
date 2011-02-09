@@ -99,6 +99,14 @@ class IBranchCollection(Interface):
             are returned.
         """
 
+    def getExtendedRevisionDetails(revisions):
+        """Return information about the specified revisions on a branch.
+
+        For each revision, see if the revision resulted from merging in a
+        merge proposal, and if so package up the merge proposal and any linked
+        bugs on the merge proposal's source branch.
+        """
+
     def getTeamsWithBranches(person):
         """Return the teams that person is a member of that have branches."""
 
@@ -180,8 +188,10 @@ class IBranchCollection(Interface):
 
         A branch is targeted by a person if that person has registered a merge
         proposal with the branch as the target.
+
+        :param since: If supplied, ignore merge proposals before this date.
         """
 
 
 class IAllBranches(IBranchCollection):
-    """An `IBranchCollection` representing all branches in Launchpad."""
+    """A `IBranchCollection` representing all branches in Launchpad."""

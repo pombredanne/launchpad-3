@@ -45,14 +45,10 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -67,6 +63,12 @@ from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,
     QuestionTargetFacetMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
@@ -85,7 +87,7 @@ from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet
@@ -162,29 +164,33 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     enable_only = ['overview', 'branches', 'bugs', 'specifications',
                    'answers', 'translations']
 
+    @cachedproperty
+    def has_products(self):
+        return self.context.hasProducts()
+
     def branches(self):
         text = 'Code'
-        return Link('', text, enabled=self.context.hasProducts())
+        return Link('', text, enabled=self.has_products)
 
     def bugs(self):
         site = 'bugs'
         text = 'Bugs'
-        return Link('', text, enabled=self.context.hasProducts(), site=site)
+        return Link('', text, enabled=self.has_products, site=site)
 
     def answers(self):
         site = 'answers'
         text = 'Answers'
-        return Link('', text, enabled=self.context.hasProducts(), site=site)
+        return Link('', text, enabled=self.has_products, site=site)
 
     def specifications(self):
         site = 'blueprints'
         text = 'Blueprints'
-        return Link('', text, enabled=self.context.hasProducts(), site=site)
+        return Link('', text, enabled=self.has_products, site=site)
 
     def translations(self):
         site = 'translations'
         text = 'Translations'
-        return Link('', text, enabled=self.context.hasProducts(), site=site)
+        return Link('', text, enabled=self.has_products, site=site)
 
 
 class ProjectAdminMenuMixin:
@@ -254,7 +260,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download-icon')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
@@ -348,11 +354,11 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
     implements(IProjectGroupEditMenu)
-
     label = "Change project group details"
+    page_title = label
     schema = IProjectGroup
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description',
+        'displayname', 'title', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
@@ -386,8 +392,10 @@ class ProjectReviewView(ProjectEditView):
         self.field_names = self.default_field_names[:]
         admin = check_permission('launchpad.Admin', self.context)
         if not admin:
-            self.field_names.remove('name')
             self.field_names.remove('owner')
+        moderator = check_permission('launchpad.Moderate', self.context)
+        if not moderator:
+            self.field_names.remove('name')
         super(ProjectReviewView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:
@@ -512,17 +520,9 @@ class ProjectSetView(LaunchpadView):
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
         self.form = self.request.form_ng
-        self.soyuz = self.form.getOne('soyuz', None)
-        self.rosetta = self.form.getOne('rosetta', None)
-        self.malone = self.form.getOne('malone', None)
-        self.bazaar = self.form.getOne('bazaar', None)
         self.search_string = self.form.getOne('text', None)
         self.search_requested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if (self.search_string is not None):
             self.search_requested = True
         self.results = None
 
@@ -534,10 +534,6 @@ class ProjectSetView(LaunchpadView):
         """
         self.results = self.context.search(
             text=self.search_string,
-            bazaar=self.bazaar,
-            malone=self.malone,
-            rosetta=self.rosetta,
-            soyuz=self.soyuz,
             search_products=True)
         return self.results
 

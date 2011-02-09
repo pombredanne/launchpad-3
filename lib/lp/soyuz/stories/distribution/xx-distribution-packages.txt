@@ -291,7 +291,9 @@ And if the source has direct packaging linkage, the upstream's description
 is used in another section:
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
-    This package is not linked to an upstream product.
+    Upstream connections
+    Launchpad doesn...t know which project and series this
+    package belongs to...
 
 As can be seen, the packaging is not linked yet.  We can do that now using the
 "Set upstream link" link.
@@ -319,9 +321,11 @@ linked.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
-    Upstream
-    Mozilla Firefox
-    The Mozilla Firefox web browser
+    Upstream connections
+    the Mozilla Project...
+    Mozilla Firefox...
+    trunk...
+    The Mozilla Firefox web browser...
 
     >>> user_browser.getLink('Mozilla Firefox')
     <Link text='Mozilla Firefox' url='http://launchpad.dev/firefox'>
@@ -331,7 +335,7 @@ Distribution source packages side-bar
 -------------------------------------
 
 The page has a side-bar with a global actions menu, a "Get Involved"
-menu, and a "Bug subscriptions" portlet.
+menu, and a "Subscribers" portlet.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'global-actions'))
@@ -348,7 +352,7 @@ menu, and a "Bug subscriptions" portlet.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents,
     ...                    'portlet-structural-subscribers'))
-    Bug subscriptions
+    Subscribers
     ...
 
 (see bugs/stories/structural-subscriptions/xx-bug-subscriptions.txt for more

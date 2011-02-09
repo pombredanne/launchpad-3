@@ -27,7 +27,7 @@
              <p>The
                <tal:desktop replace="structure
                token/consumer/integrated_desktop_type" />
-             called
+             computer called
              <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
              wants access to your Launchpad account. If you allow this,
              every application running

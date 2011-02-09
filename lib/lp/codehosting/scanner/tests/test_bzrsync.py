@@ -5,8 +5,6 @@
 
 # pylint: disable-msg=W0141
 
-from __future__ import with_statement
-
 import datetime
 import os
 import random
@@ -32,16 +30,24 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJobSource,
+    BranchMergeProposalJobType,
+    )
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import (
     Revision,
     RevisionAuthor,
     RevisionParent,
     )
+from lp.code.model.tests.test_diff import commit_file
 from lp.codehosting.bzrutils import write_locked
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory, temp_dir
+from lp.testing import (
+    temp_dir,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -654,6 +660,40 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertIsNot(None, bmp.next_preview_diff_job)
+
+
+class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
+    """Test the scheduling of GenerateIncrementalDiffJobs."""
+
+    def getPending(self):
+        return list(
+            BranchMergeProposalJobSource.iterReady(
+                BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
+                )
+            )
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_create_on_new_revision(self):
+        """When branch tip changes, a job is created."""
+        parent_id = commit_file(self.db_branch, 'foo', 'bar')
+        self.factory.makeBranchRevision(self.db_branch, parent_id,
+                revision_date=self.factory.getUniqueDate())
+        self.db_branch.last_scanned_id = parent_id
+        # Make sure that the merge proposal is created in the past.
+        date_created = (
+            datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=7))
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=self.db_branch,
+            date_created=date_created)
+        revision_id = commit_file(self.db_branch, 'foo', 'baz')
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        self.assertEqual([], self.getPending())
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        (job,) = self.getPending()
+        self.assertEqual(revision_id, job.new_revision_id)
+        self.assertEqual(parent_id, job.old_revision_id)
 
 
 class TestSetRecipeStale(BzrSyncTestCase):

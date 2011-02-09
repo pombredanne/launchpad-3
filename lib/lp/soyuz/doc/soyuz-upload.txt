@@ -535,7 +535,7 @@ Now we process the accepted queue items, one more time.
 
 These packages must now be in the publishing history. Let's check it.
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.publishing import (
   ...    SourcePackagePublishingHistory as SSPPH)
   >>> package_names.sort()
   >>> for name in package_names:
@@ -738,7 +738,7 @@ Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "archive-cruft-check.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-vvn",
+  >>> process = subprocess.Popen([sys.executable, script, "-vn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",
   ...                             "/var/tmp/archive"],

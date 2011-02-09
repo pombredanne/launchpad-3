@@ -31,15 +31,13 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthRequestTokenSet,
     OAUTH_CHALLENGE,
     )
-from canonical.launchpad.webapp import (
-    LaunchpadFormView,
-    LaunchpadView,
-    )
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
     get_oauth_authorization,
     )
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pillar import IPillarNameSet

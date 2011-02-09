@@ -14,7 +14,6 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> from lp.testing.factory import (
@@ -54,7 +53,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> builder = factory.makeBuilder(vm_host=factory.getUniqueString())
     >>> builder.setSlaveForTesting(FakeSlave())
-    >>> builder.startBuild(buildqueue, QuietFakeLogger())
+    >>> buildqueue.markAsBuilding(builder)
 
     >>> builder_page = canonical_url(builder)
     >>> logout()

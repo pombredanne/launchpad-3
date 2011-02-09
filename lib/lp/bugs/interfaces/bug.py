@@ -18,10 +18,11 @@ __all__ = [
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
-    'InvalidBugTargetType',
-    'InvalidDuplicateValue',
     ]
 
+from textwrap import dedent
+
+from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -37,7 +38,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -81,8 +81,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enum import BugNotificationLevel
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
@@ -192,7 +190,7 @@ def optional_message_subject_field():
     return subject_field
 
 
-class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
+class IBug(IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -309,9 +307,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
             readonly=True))
-    tags = exported(
-        List(title=_("Tags"), description=_("Separated by whitespace."),
-             value_type=Tag(), required=False))
+    tags = exported(List(
+        title=_("Tags"),
+        description=_(dedent("""
+            The tags applied to this bug.
+
+            Web service:
+                The list of tags is whitespace delimited.
+
+            Launchpadlib:
+                The list of tags is represented as a sequence of strings.
+            """)),
+            value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
         description=_(
@@ -423,10 +430,14 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # subscription-related methods
-
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
+        person=Reference(IPerson, title=_('Person'), required=True),
+        # level actually uses BugNotificationLevel as its vocabulary,
+        # but due to circular import problems we fix that in
+        # _schema_circular_imports.py rather than here.
+        level=Choice(
+            vocabulary=DBEnumeratedType, required=False,
+            title=_('Level')))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True, level=None):
@@ -452,6 +463,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
+
+    def reindexMessages():
+        """Fill in the `BugMessage`.index column for this bugs messages."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -493,12 +507,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         from duplicates.
         """
 
-    def getStructuralSubscribers(recipients=None, level=None):
-        """Return `IPerson`s subscribed to this bug's targets.
-
-        This takes into account bug subscription filters.
-        """
-
     def getSubscriptionsFromDuplicates():
         """Return IBugSubscriptions subscribed from dupes of this bug."""
 
@@ -511,6 +519,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         This call should be quite cheap to make and performs a single query.
 
         :return: An IResultSet.
+        """
+
+    def getSubscriptionForPerson(person):
+        """Return the `BugSubscription` for a `Person` to this `Bug`.
+
+        If no such `BugSubscription` exists, return None.
+        """
+
+    def getSubscriptionInfo(level):
+        """Return a `BugSubscriptionInfo` at the given `level`.
+
+        :param level: A member of `BugNotificationLevel`.
         """
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
@@ -526,9 +546,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.
         """
-
-    def addChangeNotification(text, person, recipients=None, when=None):
-        """Add a bug change notification."""
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
@@ -899,11 +916,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
 
-class InvalidDuplicateValue(Exception):
-    """A bug cannot be set as the duplicate of another."""
-    webservice_error(417)
-
-
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
@@ -1165,8 +1177,3 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
-
-
-class InvalidBugTargetType(Exception):
-    """Bug target's type is not valid."""
-    webservice_error(400)

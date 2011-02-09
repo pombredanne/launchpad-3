@@ -14,26 +14,24 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces import (
-    IAccount,
-    IBug,
-    IBugTask,
-    IDistribution,
-    IDistroArchSeries,
-    IDistroSeries,
-    ILaunchpadCelebrities,
-    IPerson,
-    IProduct,
-    IProjectGroup,
-    ISourcePackage,
-    ISpecification,
-    )
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     ILoggedInEvent,
     IOpenLaunchBag,
     )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 _utc_tz = pytz.timezone('UTC')

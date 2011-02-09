@@ -10,6 +10,7 @@ __metaclass__ = type
 import os
 import os.path
 import pwd
+from resource import RLIMIT_AS, setrlimit
 import socket
 from subprocess import call
 import sys
@@ -184,6 +185,7 @@ def ensure_virtualized():
 
 
 if __name__ == '__main__':
+    setrlimit(RLIMIT_AS, (1000000000, -1))
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)

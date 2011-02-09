@@ -1,23 +1,18 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-from storm.store import ResultSet
-
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import StartsWith
 
 
 class TestBug(TestCaseWithFactory):
@@ -206,22 +201,16 @@ class TestBug(TestCaseWithFactory):
             # the results retuned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
-        reversed_levels = sorted(
-            BugNotificationLevel.items, reverse=True)
-        subscribers = []
-        for level in reversed_levels:
+        for level in BugNotificationLevel.items:
             subscriber = self.factory.makePerson()
-            subscribers.append(subscriber)
             with person_logged_in(subscriber):
                 duplicate_bug.subscribe(subscriber, subscriber, level=level)
-            duplicate_subscribers = (
-                bug.getSubscribersFromDuplicates(level=level))
-            # All the previous subscribers will be included because
-            # their level of subscription is such that they also receive
-            # notifications at the current level.
+            # Only the most recently subscribed person will be included
+            # because the previous subscribers are subscribed at a lower
+            # level.
             self.assertEqual(
-                set(subscribers), set(duplicate_subscribers),
-                "Number of subscribers did not match expected value.")
+                (subscriber,),
+                bug.getSubscribersFromDuplicates(level=level))
 
     def test_subscribers_from_dupes_overrides_using_level(self):
         # Bug.getSubscribersFromDuplicates() does not return subscribers
@@ -247,83 +236,15 @@ class TestBug(TestCaseWithFactory):
             subscriber not in duplicate_subscribers,
             "Subscriber should not be in duplicate_subscribers.")
 
-
-class TestBugStructuralSubscribers(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getStructuralSubscribers_no_subscribers(self):
-        # If there are no subscribers for any of the bug's targets then no
-        # subscribers will be returned by getStructuralSubscribers().
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        subscribers = bug.getStructuralSubscribers()
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual([], list(subscribers))
-
-    def test_getStructuralSubscribers_single_target(self):
-        # Subscribers for any of the bug's targets are returned.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product = self.factory.makeProduct()
-        product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=product)
-        self.assertEqual([subscriber], list(bug.getStructuralSubscribers()))
-
-    def test_getStructuralSubscribers_multiple_targets(self):
-        # Subscribers for any of the bug's targets are returned.
-        actor = self.factory.makePerson()
-        login_person(actor)
-
-        subscriber1 = self.factory.makePerson()
-        subscriber2 = self.factory.makePerson()
-
-        product1 = self.factory.makeProduct(owner=actor)
-        product1.addBugSubscription(subscriber1, subscriber1)
-        product2 = self.factory.makeProduct(owner=actor)
-        product2.addBugSubscription(subscriber2, subscriber2)
-
-        bug = self.factory.makeBug(product=product1)
-        bug.addTask(actor, product2)
-
-        subscribers = bug.getStructuralSubscribers()
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
-
-    def test_getStructuralSubscribers_recipients(self):
-        # If provided, getStructuralSubscribers() calls the appropriate
-        # methods on a BugNotificationRecipients object.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product = self.factory.makeProduct()
-        product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=product)
-        recipients = BugNotificationRecipients()
-        subscribers = bug.getStructuralSubscribers(recipients=recipients)
-        # The return value is a list only when populating recipients.
-        self.assertIsInstance(subscribers, list)
-        self.assertEqual([subscriber], recipients.getRecipients())
-        reason, header = recipients.getReason(subscriber)
-        self.assertThat(
-            reason, StartsWith(
-                u"You received this bug notification because "
-                u"you are subscribed to "))
-        self.assertThat(header, StartsWith(u"Subscriber "))
-
-    def test_getStructuralSubscribers_level(self):
-        # getStructuralSubscribers() respects the given level.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product = self.factory.makeProduct()
-        subscription = product.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        bug = self.factory.makeBug(product=product)
-        self.assertEqual(
-            [subscriber], list(
-                bug.getStructuralSubscribers(
-                    level=BugNotificationLevel.METADATA)))
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [], list(
-                bug.getStructuralSubscribers(
-                    level=BugNotificationLevel.COMMENTS)))
+    def test_getSubscriptionInfo(self):
+        # getSubscriptionInfo() returns a BugSubscriptionInfo object.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo()
+        self.assertIsInstance(info, BugSubscriptionInfo)
+        self.assertEqual(bug, info.bug)
+        self.assertEqual(BugNotificationLevel.NOTHING, info.level)
+        # A level can also be specified.
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
+        self.assertEqual(BugNotificationLevel.METADATA, info.level)

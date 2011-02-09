@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -66,9 +66,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadFormView,
     Link,
     )
 from canonical.launchpad.webapp.authorization import (
@@ -82,8 +80,12 @@ from canonical.launchpad.webapp.badge import (
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import MenuAPI
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
     )
@@ -94,6 +96,8 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
+from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -532,7 +536,8 @@ class BranchListingBatchNavigator(TableBatchNavigator,
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView, FeedsMixin):
+class BranchListingView(LaunchpadFormView, FeedsMixin,
+                        BranchVisibilityPolicyMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
@@ -847,18 +852,19 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews']
+             'active_reviews', 'mergequeues']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
         'registered_branch_count',
         'show_summary',
         'subscribed_branch_count',
+        'mergequeue_count',
         ]
 
     def _getCountCollection(self):
@@ -912,11 +918,13 @@ class PersonBranchesMenu(ApplicationMenu):
                 self.owned_branch_count, 'owned branch', 'owned branches'))
 
     def registered(self):
+        person_is_individual = (not self.person.is_team)
         return Link(
             '+registeredbranches',
             get_plural_text(
                 self.registered_branch_count,
-                'registered branch', 'registered branches'))
+                'registered branch', 'registered branches'),
+            enabled=person_is_individual)
 
     def subscribed(self):
         return Link(

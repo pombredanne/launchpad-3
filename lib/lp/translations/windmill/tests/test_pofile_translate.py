@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import (
     constants,
@@ -65,26 +66,26 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         self.test_user = lpuser.TRANSLATIONS_ADMIN
 
         # Test the zoom out view for Evolution trunk Spanish (es).
-        start_url = ('http://translations.launchpad.dev:8085/'
-                        'evolution/trunk/+pots/evolution-2.2/es/+translate')
+        start_url = ('%s/evolution/trunk/+pots/evolution-2.2/es/+translate'
+                     % TranslationsWindmillLayer.base_url)
         new_translation_id = u'msgset_1_es_translation_0_new'
         new_translation_select_id = u'msgset_1_es_translation_0_new_select'
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
 
         # Test the zoom in view for Evolution trunk Brazilian (pt_BR).
-        start_url = ('http://translations.launchpad.dev:8085/'
-                        'evolution/trunk/+pots/evolution-2.2/'
-                        'pt_BR/1/+translate')
+        start_url = ('%s/evolution/trunk/+pots/evolution-2.2/'
+                        'pt_BR/1/+translate'
+                        % TranslationsWindmillLayer.base_url )
         new_translation_id = u'msgset_1_pt_BR_translation_0_new'
         new_translation_select_id = u'msgset_1_pt_BR_translation_0_new_select'
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
 
         # Test the zoom out view for Ubuntu Hoary Brazilian (pt_BR).
-        start_url = ('http://translations.launchpad.dev:8085/'
-                        'ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
-                        'pt_BR/1/+translate')
+        start_url = ('%s/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
+                        'pt_BR/1/+translate'
+                        % TranslationsWindmillLayer.base_url)
         new_translation_id = u'msgset_152_pt_BR_translation_0_new'
         new_translation_select_id = (u'msgset_152_pt_BR'
                                        '_translation_0_new_select')
@@ -108,8 +109,8 @@ class POFileTranslationActions(WindmillTestCase):
 
         self.test_user = lpuser.TRANSLATIONS_ADMIN
         # Test the zoom out view for Evolution trunk Spanish (es).
-        url = ('http://translations.launchpad.dev:8085/'
-                        'evolution/trunk/+pots/evolution-2.2/es/5/+translate')
+        url = ('%s/evolution/trunk/+pots/evolution-2.2/es/5/+translate'
+               % TranslationsWindmillLayer.base_url)
         dismiss_id = u'msgset_5_dismiss'
         force_suggestion_id = u'msgset_5_force_suggestion'
 
@@ -155,17 +156,16 @@ class POFileTranslationActions(WindmillTestCase):
         potmsgset.setSequence(potemplate, 1)
         potmsgset_id = potmsgset.id
 
-        current_translation = self.factory.makeTranslationMessage(
+        current_translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=['current'])
         transaction.commit()
-        suggestion = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset,
-            translations=['suggestion'], suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
         transaction.commit()
         logout()
 
-        url = ('http://translations.launchpad.dev:8085/'
-                        '%s/%s/+pots/%s/pt_BR/1/+translate' % (
+        url = ('%s/%s/%s/+pots/%s/pt_BR/1/+translate' % (
+                        TranslationsWindmillLayer.base_url,
                         potemplate.product.name,
                         potemplate.productseries.name,
                         potemplate.name))
@@ -310,9 +310,9 @@ class POFileTranslationActions(WindmillTestCase):
 
         # Go to the zoom in page for a translation with plural forms.
         self.client.open(
-            url='http://translations.launchpad.dev:8085/'
-                'ubuntu/hoary/+source/evolution/+pots/'
-                'evolution-2.2/es/15/+translate')
+            url='%s/ubuntu/hoary/+source/evolution/+pots/'
+                'evolution-2.2/es/15/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         user.ensure_login(self.client)
 
@@ -333,9 +333,9 @@ class POFileTranslationActions(WindmillTestCase):
         # pt_BR is a language code using the same delimiter as HTTP form
         # fields and are prone to errors.
         self.client.open(
-            url='http://translations.launchpad.dev:8085/'
-                'ubuntu/hoary/+source/evolution/+pots/'
-                'evolution-2.2/pt_BR/15/+translate')
+            url='%s/ubuntu/hoary/+source/evolution/+pots/'
+                'evolution-2.2/pt_BR/15/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         checkbox = u'msgset_144_force_suggestion'
@@ -354,9 +354,9 @@ class POFileTranslationActions(WindmillTestCase):
 
         # Go to the zoom in page for a translation without plural forms.
         self.client.open(
-            url='http://translations.launchpad.dev:8085/'
-                'ubuntu/hoary/+source/evolution/+pots/'
-                'evolution-2.2/es/19/+translate')
+            url='%s/ubuntu/hoary/+source/evolution/+pots/'
+                'evolution-2.2/es/19/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         checkbox = u'msgset_148_force_suggestion'
@@ -370,9 +370,9 @@ class POFileTranslationActions(WindmillTestCase):
 
         # Go to the zoom out page for some translations.
         self.client.open(
-            url='http://translations.launchpad.dev:8085/'
-                'ubuntu/hoary/+source/evolution/+pots/'
-                'evolution-2.2/es/+translate')
+            url='%s/ubuntu/hoary/+source/evolution/+pots/'
+                'evolution-2.2/es/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         checkbox = u'msgset_130_force_suggestion'
@@ -426,8 +426,8 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         """
 
         self.client.open(
-            url='http://translations.launchpad.dev:8085/'
-            'evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+            url='%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         self.test_user.ensure_login(self.client)
 
@@ -445,8 +445,8 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         """
 
         self.client.open(
-            url='http://translations.launchpad.dev:8085'
-            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+            url='%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
+                % TranslationsWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         self.test_user.ensure_login(self.client)
 
@@ -491,4 +491,3 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             reviewer and current_is_reviewer or
             translator and not current_is_reviewer)
         assert switch_done is True, "Could not switch working mode."
-

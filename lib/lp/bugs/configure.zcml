@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
@@ -130,7 +131,7 @@
     <xmlrpc:view
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         methods="filebug"
-        class="canonical.launchpad.xmlrpc.FileBugAPI"
+        class="lp.bugs.xmlrpc.bug.FileBugAPI"
         permission="launchpad.AnyPerson"/>
 
     <!-- Global Malone portlets -->
@@ -177,6 +178,7 @@
             <allow
                 attributes="
                     id
+                    assigneeID
                     bug
                     bugID
                     target
@@ -196,8 +198,6 @@
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
-                    isMentor
-                    canMentor
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
@@ -248,20 +248,34 @@
                     transitionToMilestone
                     transitionToTarget"/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    distribution
+                    distroseries
+                    importance
+                    milestone
+                    owner
+                    product
+                    productseries
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    sourcepackagename
+                    statusdisplayhtml
+                    statuselsewhere
+                    statusexplanation
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -276,9 +290,6 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
-        <adapter
-            factory="lp.bugs.browser.bugtask.assignee_renderer"
-            name="assignee"/>
         <adapter
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
@@ -608,8 +619,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
@@ -621,6 +632,31 @@
           permission="launchpad.Edit"
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
+    <!-- BugSubscriptionInfo -->
+
+    <class class=".model.bug.BugSubscriptionInfo">
+      <!-- Instance variables -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              bug
+              level
+              " />
+      <!-- Properties -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              all_assignees
+              all_pillar_owners_without_bug_supervisors
+              also_notified_subscribers
+              direct_subscriptions
+              duplicate_only_subscriptions
+              duplicate_subscriptions
+              indirect_subscribers
+              structural_subscriptions
+              " />
     </class>
 
     <facet
@@ -648,9 +684,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    mentoring_offers
-                    canMentor
-                    isMentor
                     getNullBugTask
                     is_complete
                     official_tags
@@ -706,9 +739,10 @@
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
+                    getSubscriptionForPerson
+                    getSubscriptionInfo
                     indexed_messages
                     getAlsoNotifiedSubscribers
-                    getStructuralSubscribers
                     getBugWatch
                     canBeNominatedFor
                     getNominationFor
@@ -735,7 +769,6 @@
                 attributes="
                     addAttachment
                     addChange
-                    addChangeNotification
                     addCommentNotification
                     addNomination
                     addTask
@@ -782,13 +815,9 @@
                     title description
                     who_made_private"/>
             <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
-            <require
                 permission="launchpad.Admin"
                 attributes="
+                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
@@ -797,9 +826,6 @@
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
             factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
-        <adapter
-            factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
-            name="description"/>
 
         <!-- BugSet -->
 
@@ -832,7 +858,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch visible index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -1069,4 +1095,43 @@
         mail_header
         recipient"/>
   </class>
+
+    <!-- StructuralSubscription -->
+
+    <class
+        class="lp.bugs.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
+        <require
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
+    </class>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
+
+  <webservice:register module="lp.bugs.errors" />
+  <webservice:register module="lp.bugs.interfaces.webservice" />
+
 </configure>

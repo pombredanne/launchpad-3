@@ -23,8 +23,8 @@ COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    import sha
-    return sha.new(args[0]).hexdigest()
+    import hashlib
+    return hashlib.sha1(args[0]).hexdigest()
 $$;
 
 COMMENT ON FUNCTION sha1(text) IS
@@ -741,19 +741,61 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER AS
+EXTERNAL SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
-    if not SD.has_key("select_plan"):
-        SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp FROM NameBlacklist ORDER BY id
-            """)
+    user_id = args[1]
+
+    # Initialize shared storage, shared between invocations.
+    if not SD.has_key("regexp_select_plan"):
+
+        # All the blacklist regexps except the ones we are an admin
+        # for. These we do not check since they are not blacklisted to us.
+        SD["regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL OR admin NOT IN (
+                SELECT team FROM TeamParticipation
+                WHERE person = $1)
+            ORDER BY id
+            """, ["integer"])
+
+        # Storage for compiled regexps
         SD["compiled"] = {}
+
+        # admins is a celebrity and its id is immutable.
+        admins_id = plpy.execute(
+            "SELECT id FROM Person WHERE name='admins'")[0]["id"]
+
+        SD["admin_select_plan"] = plpy.prepare("""
+            SELECT TRUE FROM TeamParticipation
+            WHERE
+                TeamParticipation.team = %d
+                AND TeamParticipation.person = $1
+            LIMIT 1
+            """ % admins_id, ["integer"])
+
+        # All the blacklist regexps except those that have an admin because
+        # members of ~admin can use any name that any other admin can use.
+        SD["admin_regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL
+            ORDER BY id
+            """, ["integer"])
+
+
     compiled = SD["compiled"]
-    for row in plpy.execute(SD["select_plan"]):
+
+    # Names are never blacklisted for Lauchpad admins.
+    if user_id is not None and plpy.execute(
+        SD["admin_select_plan"], [user_id]).nrows() > 0:
+        blacklist_plan = "admin_regexp_select_plan"
+    else:
+        blacklist_plan = "regexp_select_plan"
+
+    for row in plpy.execute(SD[blacklist_plan], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
         if (compiled.get(regexp_id) is None
@@ -769,16 +811,17 @@ $$
     return None
 $$;
 
-COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
+RETURNS boolean
 LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
 $$
-    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+    SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
 
-COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+COMMENT ON FUNCTION is_blacklisted_name(text, integer) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 
 
 CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
@@ -1814,3 +1857,26 @@ LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
 'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
+        return '~' + match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';

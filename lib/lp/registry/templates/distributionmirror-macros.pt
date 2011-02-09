@@ -16,7 +16,7 @@
   <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
-      <tr class="highlighted">
+      <tr class="highlight">
         <th colspan="2" style="text-align: left"
             tal:content="country_and_mirrors/country" />
         <th style="text-align: left"
@@ -59,12 +59,12 @@
         Include a blank row after the last entry of a country to provide
         vertical spacing to separate the next country.
       </tal:comment>
-      <tr class="note">
+      <tr class="lesser">
         <td>&nbsp;</td>
       </tr>
 
     </tal:country_and_mirrors>
-    <tr class="highlighted">
+    <tr class="highlight">
       <th colspan="5" style="text-align: left; font-weight: bold;">Total</th>
     </tr>
     <tr>

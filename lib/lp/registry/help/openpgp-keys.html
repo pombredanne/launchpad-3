@@ -19,8 +19,6 @@
        which you should guard closely. Both are standard text files that make up a digital signature.
     </p>
 
-    <p><a href="https://help.ubuntu.com/community/GnuPrivacyGuardHowto" target="_blank">Read more about OpenPGP keys &gt;</a></p>
-
     <p>
       In Launchpad, you can use your OpenPGP key to identify yourself when using the bug
       tracker's email interface, when uploading distribution packages and when signing a code
@@ -30,18 +28,25 @@
     <h2>Generating your key in Ubuntu</h2>
 
     <p>
-      The easiest way to generate a new OpenPGP key in Ubuntu is to use the <em>Passwords and Encryption Keys</em> tool.
+      The easiest way to generate a new OpenPGP key in Ubuntu is to use the
+      <em>Passwords and Encryption Keys</em> tool. If you are using Ubuntu
+      10.04 or an earlier version, it is located at
+      <em>Applications &gt; Accessories &gt; Passwords and Encryption Keys</em>.
+      In Ubuntu 10.10 and later versions, it is located at
+      <em>System &gt; Preferences &gt; Passwords and Encryption Keys</em>.
     </p>
 
     <p>
-      <strong>Step 1:</strong> Open <em>Applications &gt; Accessories &gt; Passwords and Encryption Keys</em>.
+      <strong>Step 1</strong> open <em>Passwords and Encryption Keys</em>.
     </p>
 
     <p>
-      <strong>Step 2:</strong> Select <em>File &gt; New</em>, select <em>PGP Key</em> and then follow the on-screen instructions.
+      <strong>Step 2</strong> Select <em>File &gt; New</em>, select <em>PGP Key</em> and then follow the on-screen instructions.
     </p>
 
-    <p>Now you'll see your new key listed in the <em>Passwords and Encryption Keys</em> tool.
+    <p>Now you'll see your new key listed in the
+      <em>Passwords and Encryption Keys</em> tool.
+    </p>
 
     <a name="publish"></a>
     <h2>Publishing your key</h2>
@@ -50,28 +55,67 @@
 
     <p>Before you add your key to Launchpad, you need to push it to the Ubuntu keyserver.</p>
 
-    <p><strong>Step 1:</strong> Open a terminal and type:</p>
+    <h3>Using <em>Passwords and Encryption Keys</em></h3>
 
-    <p><code>gpg --list-keys</code></p>
+    <p>
+      <strong>Step 1</strong> Open <em>Passwords and Encryption Keys</em>.
+    </p>
 
-    <p><strong>Step 2:</strong> You'll see a list of OpenPGP keys in your system, including the one you've just created, which look something like this:</p>
+    <p>
+      <strong>Step 2</strong> Select the <em>My Personal Keys</em> tab,
+      select your key.
+    </p>
 
-    <p><code>pub  1024D/12345678 2007-01-26<br />
-             uid  Geoffrey Hayes (My OpenPGP key) &lt;geoffrey@bungle.com&gt;<br />
-             sub  2048g/9ABCDEF1 2007-01-26</code></p>
+    <p>
+      <strong>Step 3</strong> Select <em>Remote &gt; Sync and Publish Keys</em>
+      from the menu. Choose the <em>Sync</em> button. (You may need to add
+      hkp://keyserver.ubuntu.com to your key servers if you are not
+      using Ubuntu.)
+    </p>
 
-    <p>In the example above, <code>1024D/12345678</code> is the key's public id. We need the second part, i.e. <code>12345678</code>. Copy that part of your key's public id.</p>
+    <p>
+      It can take up to thirty minutes before your key is available to
+      Launchpad. After that time, you're ready to
+      <a href="/+help/import-pgp-key.html">import your new key into
+      Launchpad</a>!
+    </p>
 
-    <p><strong>Step 3:</strong> Enter:</p>
+    <h2>Renewing your key</h2>
 
-    <p><code>gpg --send-keys --keyserver keyserver.ubuntu.com 12345678</code></p>
+    <p>
+      You may have set your key to expire. You can update your key and
+      republish it.
+    </p>
 
-    <p><strong>Note:</strong> Replace <em>12345678</em> with the public key id you copied in the step 2.</p>
+    <p>
+      <strong>Step 1</strong> Open <em>Passwords and Encryption Keys</em>.
+    </p>
 
-    <p>If successful, GPG will display a message similar to:</p>
+    <p>
+      <strong>Step 2</strong> Select the <em>My Personal Keys</em> tab,
+      select your key, and open the property window by pressing Space Bar
+      our double clicking with your pointer.
+    </p>
 
-    <p><code>gpg: sending key 12345678 to hkp server keyserver.ubuntu.com</code></p>
+    <p>
+      <strong>Step 3</strong> Set a new expiration date or choose never.
+    </p>
 
-    <p>It can take up to ten minutes before your key is available to Launchpad. After that time, you're ready to <a href="/+help/import-pgp-key.html">import your new key into Launchpad</a>!</p>
+    <p>
+      See the <em>Publishing your key</em> section above.
+    </p>
+
+    <h2>More about GPG</h2>
+
+    <p>
+      <a href="https://help.launchpad.net/YourAccount/ImportingYourPGPKey"
+        target="_blank">Importing Your PGP Key &gt;</a> at Launchpad Help
+      has more information about using OpenPGP with Launchpad and provides
+      examples using the GPG command found on most Linux distributions.
+      Read the
+      <a href="https://help.ubuntu.com/community/GnuPrivacyGuardHowto"
+        target="_blank">Ubuntu community's guide to OpenPGP keys &gt;</a>
+      to learn about how to other uses.
+    </p>
   </body>
 </html>

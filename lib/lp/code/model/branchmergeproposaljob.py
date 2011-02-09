@@ -9,9 +9,6 @@ creating proposals, or diffs relating to the proposals.
 """
 
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 
 
@@ -22,6 +19,8 @@ __all__ = [
     'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
+    'GenerateIncrementalDiffJob',
+    'MergeProposalCreatedJob',
     'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
@@ -43,7 +42,6 @@ from lazr.enum import (
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import (
     And,
     Desc,
@@ -86,6 +84,8 @@ from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
     ICreateMergeProposalJob,
     ICreateMergeProposalJobSource,
+    IGenerateIncrementalDiffJob,
+    IGenerateIncrementalDiffJobSource,
     IMergeProposalNeedsReviewEmailJob,
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJob,
@@ -95,6 +95,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJob,
     IUpdatePreviewDiffJobSource,
     )
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
@@ -109,6 +110,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.database.stormbase import StormBase
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -147,8 +149,13 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         that have been changed on the merge proposal itself.
         """)
 
+    GENERATE_INCREMENTAL_DIFF = DBItem(5, """
+        Generate incremental diff
 
-class BranchMergeProposalJob(Storm):
+        This job generates an incremental diff for a merge proposal.""")
+
+
+class BranchMergeProposalJob(StormBase):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)
@@ -180,7 +187,7 @@ class BranchMergeProposalJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        Storm.__init__(self)
+        super(BranchMergeProposalJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.branch_merge_proposal = branch_merge_proposal
@@ -279,13 +286,12 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 # or if it is hosted but pending a mirror.
                 Branch.revision_count > 0,
                 Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)
-                ))
+                   Branch.branch_type != BranchType.HOSTED)))
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         bmp = self.context.branch_merge_proposal
         vars.extend([
             ('branchmergeproposal_job_id', self.context.id),
@@ -493,7 +499,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('code_review_comment', self.metadata['code_review_comment']),
             ])
@@ -555,7 +561,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('reviewer', self.metadata['reviewer']),
             ('requester', self.metadata['requester']),
@@ -604,7 +610,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
     def getMetadata(delta_text, editor):
         metadata = {'delta_text': delta_text}
         if editor is not None:
-            metadata['editor'] = editor.name;
+            metadata['editor'] = editor.name
         return metadata
 
     @property
@@ -623,7 +629,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('editor', self.metadata.get('editor', '(not set)')),
             ('delta_text', self.metadata['delta_text']),
@@ -641,6 +647,70 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         return 'emailing subscribers about merge proposal changes'
 
 
+class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
+    """A job to generate an incremental diff for a branch merge proposal.
+
+    Provides class methods to create and retrieve such jobs.
+    """
+
+    implements(IGenerateIncrementalDiffJob)
+
+    classProvides(IGenerateIncrementalDiffJobSource)
+
+    class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
+
+    def acquireLease(self, duration=600):
+        return self.job.acquireLease(duration)
+
+    def run(self):
+        revision_set = getUtility(IRevisionSet)
+        old_revision = revision_set.getByRevisionId(self.old_revision_id)
+        new_revision = revision_set.getByRevisionId(self.new_revision_id)
+        diff = self.branch_merge_proposal.generateIncrementalDiff(
+            old_revision, new_revision)
+
+    @classmethod
+    def create(cls, merge_proposal, old_revision_id, new_revision_id):
+        metadata = cls.getMetadata(old_revision_id, new_revision_id)
+        job = BranchMergeProposalJob(
+            merge_proposal, cls.class_job_type, metadata)
+        return cls(job)
+
+    @staticmethod
+    def getMetadata(old_revision_id, new_revision_id):
+        return {
+            'old_revision_id': old_revision_id,
+            'new_revision_id': new_revision_id,
+        }
+
+    @property
+    def old_revision_id(self):
+        """The old revision id for the diff."""
+        return self.metadata['old_revision_id']
+
+    @property
+    def new_revision_id(self):
+        """The new revision id for the diff."""
+        return self.metadata['new_revision_id']
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
+        vars.extend([
+            ('old_revision_id', self.metadata['old_revision_id']),
+            ('new_revision_id', self.metadata['new_revision_id']),
+            ])
+        return vars
+
+    def getOperationDescription(self):
+        return ('generating an incremental diff for a merge proposal')
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        registrant = self.branch_merge_proposal.registrant
+        return format_address_for_person(registrant)
+
+
 class BranchMergeProposalJobFactory:
     """Construct a derived merge proposal job for a BranchMergeProposalJob."""
 
@@ -655,6 +725,8 @@ class BranchMergeProposalJobFactory:
             ReviewRequestedEmailJob,
         BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED:
             MergeProposalUpdatedEmailJob,
+        BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF:
+            GenerateIncrementalDiffJob,
         }
 
     @classmethod
@@ -695,21 +767,24 @@ class BranchMergeProposalJobSource:
         return BranchMergeProposalJobFactory.create(job)
 
     @staticmethod
-    def iterReady():
+    def iterReady(job_type=None):
         from lp.code.model.branch import Branch
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         SourceBranch = ClassAlias(Branch)
         TargetBranch = ClassAlias(Branch)
+        clauses = [
+            BranchMergeProposalJob.job == Job.id,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
+            BranchMergeProposalJob.branch_merge_proposal ==
+            BranchMergeProposal.id, BranchMergeProposal.source_branch ==
+            SourceBranch.id, BranchMergeProposal.target_branch ==
+            TargetBranch.id,
+            ]
+        if job_type is not None:
+            clauses.append(BranchMergeProposalJob.job_type == job_type)
         jobs = store.find(
             (BranchMergeProposalJob, Job, BranchMergeProposal,
-             SourceBranch, TargetBranch),
-            And(BranchMergeProposalJob.job == Job.id,
-                Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
-                BranchMergeProposalJob.branch_merge_proposal
-                    == BranchMergeProposal.id,
-                BranchMergeProposal.source_branch == SourceBranch.id,
-                BranchMergeProposal.target_branch == TargetBranch.id,
-                ))
+             SourceBranch, TargetBranch), And(*clauses))
         # Order by the job status first (to get running before waiting), then
         # the date_created, then job type.  This should give us all creation
         # jobs before comment jobs.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -31,18 +31,18 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.widgets import DateWidget
-from canonical.widgets.popup import PersonPickerWidget
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (

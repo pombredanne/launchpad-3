@@ -23,8 +23,20 @@
       name="code" />
 
   <!-- Branch Merge Queues -->
+  <securedutility
+     component="lp.code.model.branchmergequeue.BranchMergeQueue"
+     provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource">
+    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource"/>
+
+  </securedutility>
+
   <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue" />
+    <require permission="zope.Public"
+             attributes="registrant owner name description configuration
+                         date_created branches" />
+    <require permission="launchpad.Edit"
+             attributes="setMergeQueueConfig"
+             set_attributes="owner name description configuration" />
   </class>
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
@@ -82,6 +94,12 @@
     <allow attributes="browserDefault
                        __call__"/>
   </class>
+  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
+  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
@@ -136,6 +154,11 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
   </securedutility>
+  <securedutility
+      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
+      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
+  </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -179,13 +202,13 @@
 
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
-      class="canonical.launchpad.xmlrpc.BranchSetAPI"
+      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
+      class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
-      class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+      interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
+      class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
 
   <!-- Branch Merge Proposal -->
@@ -221,6 +244,7 @@
                     review_diff
                     next_preview_diff_job
                     preview_diff
+                    getIncrementalDiffs
                     votes
                     all_comments
                     related_bugs
@@ -233,7 +257,8 @@
                     isValidTransition
                     getUnlandedSourceBranchRevisions
                     root_message_id
-                    getUsersVoteReference"/>
+                    getUsersVoteReference
+                    generateIncrementalDiff"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
@@ -258,12 +283,6 @@
         attributes="createComment
                     createCommentFromMessage"/>
   </class>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="commit_message"/>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="description"/>
 
   <!-- Branch Merge Proposal Jobs -->
 
@@ -293,6 +312,11 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJobSource"/>
   </securedutility>
 
+  <class
+  class="lp.code.model.branchmergeproposaljob.GenerateIncrementalDiffJob">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IGenerateIncrementalDiffJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
+  </class>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJob" />
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
@@ -867,6 +891,10 @@
   <class class="lp.code.model.diff.Diff">
     <allow interface="lp.code.interfaces.diff.IDiff" />
   </class>
+  <class class="lp.code.model.diff.IncrementalDiff">
+    <allow interface="lp.code.interfaces.diff.IDiff" />
+    <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
+  </class>
   <class class="lp.code.model.diff.StaticDiff">
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />
   </class>
@@ -968,4 +996,23 @@
         factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
         name="RECIPEBRANCHBUILD"
         permission="zope.Public"/>
+
+  <!-- RecipeBuildRecordSet and related classes-->
+
+  <securedutility
+      class="lp.code.model.recipebuild.RecipeBuildRecordSet"
+      provides="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet">
+    <allow interface="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"/>
+  </securedutility>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecord">
+    <allow attributes="sourcepackagename recipeowner recipe archive
+                        most_recent_build_time distro_source_package"/>
+  </class>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">
+    <allow interface="storm.zope.interfaces.IResultSet" />
+    <allow attributes="__getslice__" />
+  </class>
+
 </configure>

@@ -26,8 +26,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -73,9 +72,9 @@ syntax error.
     ... msgid "foo"
     ... msgstr blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -114,7 +113,7 @@ And the code composed an email with the notification of the error.
     answer or file a question at https://answers.launchpad.net/rosetta/
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -138,9 +137,9 @@ explanatory text.
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -20,6 +20,7 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_choice_parameter_type,
+    patch_choice_vocabulary,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_return_type,
@@ -34,6 +35,11 @@ from canonical.launchpad.interfaces.message import (
     )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -93,7 +99,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
@@ -118,6 +124,12 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -125,7 +137,6 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSubset,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueueEntry,
     )
 
@@ -164,6 +175,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -212,6 +225,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -265,6 +279,9 @@ patch_reference_property(
     IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
     ISourcePackagePublishingHistory, 'archive', IArchive)
+patch_reference_property(
+    ISourcePackagePublishingHistory, 'ancestor',
+    ISourcePackagePublishingHistory)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -380,7 +397,7 @@ patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -408,6 +425,8 @@ patch_reference_property(IPackageUpload, 'archive', IArchive)
 # IStructuralSubscription
 patch_collection_property(
     IStructuralSubscription, 'bug_filters', IBugSubscriptionFilter)
+patch_entry_return_type(
+    IStructuralSubscription, "newBugFilter", IBugSubscriptionFilter)
 patch_reference_property(
     IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
 
@@ -469,6 +488,9 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
+patch_choice_vocabulary(
+    IBug, 'subscribe', 'level', BugNotificationLevel)
+
 
 # IFrontPageBugAddForm
 patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
@@ -487,6 +509,10 @@ patch_reference_property(
     IBugTrackerComponent, "distro_source_package",
     IDistributionSourcePackage)
 
+# IHasTranslationTemplates
+patch_collection_return_type(
+    IHasTranslationTemplates, 'getTranslationTemplates', IPOTemplate)
+
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
 patch_reference_property(IPOTemplate, 'product', IProduct)
@@ -504,3 +530,17 @@ patch_collection_return_type(
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# ISpecification
+patch_collection_property(ISpecification, 'dependencies', ISpecification)
+patch_collection_property(ISpecification, 'linked_branches', ISpecificationBranch)
+
+# ISpecificationTarget
+patch_entry_return_type(
+    ISpecificationTarget, 'getSpecification', ISpecification)
+
+# IHasSpecifications
+patch_collection_property(
+    IHasSpecifications, 'all_specifications', ISpecification)
+patch_collection_property(
+    IHasSpecifications, 'valid_specifications', ISpecification)

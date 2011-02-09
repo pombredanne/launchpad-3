@@ -13,6 +13,17 @@ common external bug tracker.
     ...     )
     >>> projectset = getUtility(IProjectGroupSet)
 
+    # Some setup
+    >>> import transaction
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> transaction.commit()
 
 Creating new projects
 ---------------------
@@ -110,8 +121,9 @@ The products which are part of a given project are given by a project's
 .products property. Note that only active products are included and they're
 ordered by their names.
 
-    >>> [product.name for product in gnome.products]
-    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+    >>> [product.displayname for product in gnome.products]
+    [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'NetApplet',
+     u'gnomebaker']
 
     >>> netapplet = gnome.getProduct('netapplet')
 
@@ -120,8 +132,8 @@ ordered by their names.
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> flush_database_updates()
-    >>> [product.name for product in gnome.products]
-    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+    >>> [product.displayname for product in gnome.products]
+    [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'gnomebaker']
 
     # Re-activate netapplet so that we don't interfere in other tests below.
     >>> netapplet.active = True
@@ -134,7 +146,7 @@ Specification Listings
 We should be able to generate filtered lists of specs on a project.
 
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 

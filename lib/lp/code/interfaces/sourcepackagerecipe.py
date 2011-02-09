@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401
@@ -14,6 +14,7 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
+    'recipes_enabled',
     ]
 
 
@@ -45,13 +46,16 @@ from zope.schema import (
     TextLine,
     )
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.services import features
 from lp.services.fields import (
+    Description,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -59,7 +63,7 @@ from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version 0+{revno}
+    # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
     %s
     ''')
 
@@ -102,12 +106,11 @@ class ISourcePackageRecipeView(Interface):
         :param distroseries: The distroseries to build for.
         """
 
-    def getBuilds(pending=False):
-        """Return a ResultSet of all the builds in the given state.
+    def getBuilds():
+        """Return a ResultSet of all the non-pending builds."""
 
-        :param pending: If True, select all builds that are pending.  If
-            False, select all builds that are not pending.
-        """
+    def getPendingBuilds():
+        """Return a ResultSet of all the pending builds."""
 
     def getLastBuild():
         """Return the the most recent build of this recipe."""
@@ -116,8 +119,7 @@ class ISourcePackageRecipeView(Interface):
     @operation_parameters(
         archive=Reference(schema=IArchive),
         distroseries=Reference(schema=IDistroSeries),
-        pocket=Choice(vocabulary=PackagePublishingPocket,)
-        )
+        pocket=Choice(vocabulary=PackagePublishingPocket,))
     @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
@@ -145,6 +147,7 @@ class ISourcePackageRecipeEdit(Interface):
         references to this object.
         """
 
+
 class ISourcePackageRecipeEditableAttributes(IHasOwner):
     """ISourcePackageRecipe attributes that can be edited.
 
@@ -168,14 +171,15 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             " build a source package for"),
         readonly=False)
     build_daily = exported(Bool(
-        title=_("Build daily")))
+        title=_("Automatically build each day, if the source has changed"),
+        description=_("You can manually request a build at any time.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Text(
+    description = Description(
         title=_('Description'), required=True,
         description=_('A short description of the recipe.'))
 
@@ -208,3 +212,13 @@ class ISourcePackageRecipeSource(Interface):
 
     def exists(owner, name):
         """Check to see if a recipe by the same name and owner exists."""
+
+
+def recipes_enabled():
+    """Return True if recipes are enabled."""
+    # Features win:
+    if features.getFeatureFlag(u'code.recipes_enabled'):
+        return True
+    if not config.build_from_branch.enabled:
+        return False
+    return True

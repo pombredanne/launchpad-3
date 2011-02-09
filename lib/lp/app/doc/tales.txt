@@ -673,8 +673,11 @@ Product series
 Blueprints
 ..........
 
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationPriority)
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> test_tales("specification/fmt:link", specification=specification)
     u'<a...class="sprite blueprint-undefined">...</a>'
 
@@ -682,7 +685,8 @@ Blueprints
 Blueprint branches
 ..................
 
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> branch = factory.makeAnyBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
@@ -802,10 +806,10 @@ Bug Watches
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'/bugs/12/+watch/13'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/13'
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'/bugs/12/+watch/14'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when hiding
 email addresses from users who are not logged in:

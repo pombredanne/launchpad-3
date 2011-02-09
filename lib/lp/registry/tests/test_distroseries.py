@@ -3,8 +3,6 @@
 
 """Tests for distroseries."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import transaction

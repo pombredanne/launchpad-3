@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
@@ -27,7 +28,6 @@ from lp.translations.interfaces.translationexporter import (
     )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.utilities.tests.test_xpi_import import (
     get_en_US_xpi_file_to_import,
@@ -81,9 +81,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
-        published = True
+        by_maintainer = True
         entry = translation_import_queue.addOrUpdateEntry(
-            self.firefox_template.path, en_US_xpi.read(), published,
+            self.firefox_template.path, en_US_xpi.read(), by_maintainer,
             self.importer, productseries=self.firefox_template.productseries,
             potemplate=self.firefox_template)
 

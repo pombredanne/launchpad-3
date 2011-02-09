@@ -3,9 +3,9 @@
 This test covers the use case when a package includes translations and is
 uploaded into the system.
 
-  >>> from canonical.launchpad.database import ProcessorFamily
   >>> from lp.registry.model.gpgkey import GPGKey
   >>> from lp.soyuz.model.component import Component
+  >>> from lp.soyuz.model.processor import ProcessorFamily
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
   ...     SourcePackagePublishingHistory)
@@ -19,8 +19,7 @@ uploaded into the system.
   ...     ISourcePackageNameSet)
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -76,21 +75,22 @@ queue:
   >>> buildd_policy = getPolicy(
   ...     name='buildd', distro='ubuntu', distroseries='dapper')
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> pmount_upload = NascentUpload.from_changesfile_path(
   ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
-  ...     buildd_policy, mock_logger)
-  DEBUG: Changes file can be unsigned.
+  ...     buildd_policy, FakeLogger())
+  DEBUG Changes file can be unsigned.
 
   >>> pmount_upload.process(build=build)
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
-  DEBUG: Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
-  DEBUG: Finding and applying overrides.
-  DEBUG: Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
-  DEBUG: pmount: (binary) NEW
-  DEBUG: Finished checking upload.
+  DEBUG Beginning processing.
+  DEBUG Verifying the changes file.
+  DEBUG Verifying files in upload.
+  DEBUG Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG Finding and applying overrides.
+  DEBUG Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
+  DEBUG pmount: (binary) NEW
+  DEBUG Finished checking upload.
 
   # It was not rejected.
   >>> pmount_upload.is_rejected
@@ -105,7 +105,7 @@ package.
   0
 
   >>> success = pmount_upload.do_accept(build=build)
-  DEBUG: Creating queue entry
+  DEBUG Creating queue entry
   ...
 
   # And all things worked.
@@ -294,9 +294,9 @@ Distribution archives (i.e. PPAs).
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.archive = foobar_archive
 
-  >>> queue_item.customfiles[0].publish(mock_logger)
-  DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
-  DEBUG: Skipping translations since its purpose is not in
+  >>> queue_item.customfiles[0].publish(FakeLogger())
+  DEBUG Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG Skipping translations since its purpose is not in
   MAIN_ARCHIVE_PURPOSES.
 
   # And this time, we see that there are no entries imported in the queue.
@@ -321,9 +321,9 @@ Translations coming from rebuilt packages are also ignored.
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.archive = foobar_archive
 
-  >>> queue_item.customfiles[0].publish(mock_logger)
-  DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
-  DEBUG: Skipping translations since its purpose is not in
+  >>> queue_item.customfiles[0].publish(FakeLogger())
+  DEBUG Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG Skipping translations since its purpose is not in
   MAIN_ARCHIVE_PURPOSES.
 
   # And this time, we see that there are no entries imported in the queue.

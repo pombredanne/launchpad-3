@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Parallel test glue."""
 
 __metaclass__ = type
@@ -24,7 +22,6 @@ from canonical.testing.parallel import (
     find_load_list,
     find_tests,
     ListTestCase,
-    main,
     prepare_argv,
     )
 
@@ -105,13 +102,13 @@ class TestUtilities(TestCase, TestWithFixtures):
             self.assertEqual(
                 ['bin/test', '-vt', 'filter', '--list-tests', '--subunit'],
                 args['args'])
-            return {'stdin': StringIO(), 'stdout': StringIO(u"""
+            return {'stdin': StringIO(), 'stdout': StringIO(u"""\
 test: quux
 successful: quux
 test: glom
 successful: glom
 """)}
-        popen = self.useFixture(PopenFixture(inject_testlist))
+        self.useFixture(PopenFixture(inject_testlist))
         self.assertEqual(
             ['quux', 'glom'],
             find_tests(['bin/test', '-vt', 'filter', '--parallel']))

@@ -15,7 +15,8 @@ no results will be returned.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, '', product=firefox)
     >>> similar_bugs.count()
@@ -137,3 +138,21 @@ has been narrowed - see bug 612384.
     ...     print bugtask.bug.title
     Thunderbird crashes
     >>> #another test bug
+
+== Not returning the same bug ==
+
+findSimilarBugs() does not include the bug of the bugtask upon which
+it is invoked.
+
+    >>> orig_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+
+    >>> dupe_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+    >>> dupe_bug.markAsDuplicate(orig_bug)
+
+    >>> similar_bugs = orig_bug.default_bugtask.findSimilarBugs(firefox.owner)
+    >>> orig_bug in similar_bugs
+    False

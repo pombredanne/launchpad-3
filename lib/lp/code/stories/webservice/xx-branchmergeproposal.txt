@@ -75,6 +75,7 @@ Branch merge proposals can be created through the API.
     target_branch_link: u'http://api.launchpad.dev/devel/~...'
     votes_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../votes'
+    web_link: u'http://code.../~.../+merge/...'
 
 If we try and create the merge proposal again, we should get a ValueError.
 
@@ -109,7 +110,9 @@ Our review request is listed in the votes collection.
 Branch merge proposals can be fetched through the API.
 
     >>> login('admin@canonical.com')
-    >>> fixit_proposal = factory.makeBranchMergeProposal()
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
+    >>> fixit_proposal = make_merge_proposal_without_reviewers(factory)
     >>> fixit_proposal.source_branch.owner.name = 'source'
     >>> fixit_proposal.source_branch.name = 'fix-it'
     >>> fixit_proposal.target_branch.owner.name = 'target'
@@ -168,6 +171,7 @@ We use the webservice as an unrelated, unprivileged user.
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
     votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/...'
 
 
 == Read the comments ==
@@ -190,6 +194,7 @@ The comments on a branch merge proposal are exposed through the API.
     title: u'Comment on proposed merge of lp://dev/~source/fooix/fix-it into lp://dev/~target/fooix/trunk'
     vote: u'Approve'
     vote_tag: u'code'
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
     >>> comment_2 = webservice.named_get(
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
@@ -205,6 +210,7 @@ The comments on a branch merge proposal are exposed through the API.
     title: ...
     vote: u'Abstain'
     vote_tag: None
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
 
 == Check the votes ==
@@ -278,7 +284,7 @@ Now the code review should be made.
     title: ...
     vote: u'Approve'
     vote_tag: u'code'
-
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
 In fact, now that the votes indicate approval, we might as well set the merge
 proposal status to "Approved" as well.

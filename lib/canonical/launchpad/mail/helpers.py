@@ -9,7 +9,7 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
+from lp.bugs.interfaces.bugtask import (
     IDistroBugTask,
     IDistroSeriesBugTask,
     IUpstreamBugTask,
@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.mail import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
@@ -51,7 +51,7 @@ def get_main_body(signed_msg):
 def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the bugtask provides.
 
-        >>> from canonical.launchpad.interfaces import (
+        >>> from lp.bugs.interfaces.bugtask import (
         ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
         >>> from zope.interface import classImplementsOnly
         >>> class BugTask:
@@ -112,11 +112,7 @@ def guess_bugtask(bug, person):
                     # Is the person one of the package subscribers?
                     bug_sub = bugtask.target.getSubscription(person)
                     if bug_sub is not None:
-                        if (bug_sub.bug_notification_level >
-                            BugNotificationLevel.NOTHING):
-                            # The user is subscribed to bug notifications
-                            # for this package
-                            return bugtask
+                        return bugtask
     return None
 
 
@@ -211,7 +207,14 @@ def get_person_or_team(person_name_or_email):
 def ensure_not_weakly_authenticated(signed_msg, context,
                                     error_template='not-signed.txt',
                                     no_key_template='key-not-registered.txt'):
-    """Make sure that the current principal is not weakly authenticated."""
+    """Make sure that the current principal is not weakly authenticated.
+
+    NB: While handling an email, the authentication state is stored partly in
+    properties of the message object, and partly in the current security
+    principal.  As a consequence this function will only work correctly if the
+    message has just been passed through authenticateEmail -- you can't give
+    it an arbitrary message object.
+    """
     cur_principal = get_current_principal()
     # The security machinery doesn't know about
     # IWeaklyAuthenticatedPrincipal yet, so do a manual
@@ -232,7 +235,18 @@ def ensure_not_weakly_authenticated(signed_msg, context,
 
 def ensure_sane_signature_timestamp(timestamp, context,
                                     error_template='old-signature.txt'):
-    """Ensure the signature was generated recently but not in the future."""
+    """Ensure the signature was generated recently but not in the future.
+
+    If the timestamp is wrong, the message is rejected rather than just
+    treated as untrusted, so that the user gets a chance to understand
+    the problem.  Therefore, this raises an error rather than returning
+    a value.
+
+    :param context: Short user-readable description of the place
+        the problem occurred.
+    :raises IncomingEmailError: if the timestamp is stale or implausible,
+        containing a message based on the context and template.
+    """
     fourty_eight_hours = 48 * 60 * 60
     ten_minutes = 10 * 60
     now = time.time()

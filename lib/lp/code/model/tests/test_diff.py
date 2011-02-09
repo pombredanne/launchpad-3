@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
-
-from __future__ import with_statement
 
 __metaclass__ = type
 
@@ -14,6 +12,11 @@ import logging
 from unittest import TestLoader
 
 from bzrlib import trace
+from bzrlib.patches import (
+    InsertLine,
+    parse_patches,
+    RemoveLine,
+    )
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -26,6 +29,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
+    IIncrementalDiff,
     IPreviewDiff,
     IStaticDiff,
     IStaticDiffSource,
@@ -54,37 +58,41 @@ class RecordLister(logging.Handler):
         self.records.append(record)
 
 
+def commit_file(branch, path, contents, merge_parents=None):
+    """Create a commit that updates a file to specified contents.
+
+    This will create or modify the file, as needed.
+    """
+    committer = DirectBranchCommit(
+        removeSecurityProxy(branch), no_race_check=True,
+        merge_parents=merge_parents)
+    committer.writeFile(path, contents)
+    try:
+        return committer.commit('committing')
+    finally:
+        committer.unlock()
+
+
+def create_example_merge(test_case):
+    """Create a merge proposal with conflicts and updates."""
+    bmp = test_case.factory.makeBranchMergeProposal()
+    # Make the branches of the merge proposal look good as far as the
+    # model is concerned.
+    test_case.factory.makeRevisionsForBranch(bmp.source_branch)
+    test_case.factory.makeRevisionsForBranch(bmp.target_branch)
+    bzr_target = test_case.createBzrBranch(bmp.target_branch)
+    commit_file(bmp.target_branch, 'foo', 'a\n')
+    test_case.createBzrBranch(bmp.source_branch, bzr_target)
+    source_rev_id = commit_file(bmp.source_branch, 'foo', 'd\na\nb\n')
+    target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
+    return bmp, source_rev_id, target_rev_id
+
+
 class DiffTestCase(TestCaseWithFactory):
 
-    @staticmethod
-    def commitFile(branch, path, contents, merge_parents=None):
-        """Create a commit that updates a file to specified contents.
-
-        This will create or modify the file, as needed.
-        """
-        committer = DirectBranchCommit(
-            removeSecurityProxy(branch), no_race_check=True,
-            merge_parents=merge_parents)
-        committer.writeFile(path, contents)
-        try:
-            return committer.commit('committing')
-        finally:
-            committer.unlock()
-
     def createExampleMerge(self):
-        """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches(direct_database=True)
-        bmp = self.factory.makeBranchMergeProposal()
-        # Make the branches of the merge proposal look good as far as the
-        # model is concerned.
-        self.factory.makeRevisionsForBranch(bmp.source_branch)
-        self.factory.makeRevisionsForBranch(bmp.target_branch)
-        bzr_target = self.createBzrBranch(bmp.target_branch)
-        self.commitFile(bmp.target_branch, 'foo', 'a\n')
-        self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
-        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
-        return bmp, source_rev_id, target_rev_id
+        return create_example_merge(self)
 
     def checkExampleMerge(self, diff_text):
         """Ensure the diff text matches the values for ExampleMerge."""
@@ -111,12 +119,12 @@ class DiffTestCase(TestCaseWithFactory):
             source = bmp.source_branch
             prerequisite = bmp.prerequisite_branch
         target_bzr = self.createBzrBranch(target)
-        self.commitFile(target, 'file', 'target text\n')
+        commit_file(target, 'file', 'target text\n')
         prerequisite_bzr = self.createBzrBranch(prerequisite, target_bzr)
-        self.commitFile(
+        commit_file(
             prerequisite, 'file', 'target text\nprerequisite text\n')
         source_bzr = self.createBzrBranch(source, prerequisite_bzr)
-        source_rev_id = self.commitFile(
+        source_rev_id = commit_file(
             source, 'file',
             'target text\nprerequisite text\nsource text\n')
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
@@ -243,7 +251,7 @@ class TestDiffInScripts(DiffTestCase):
         # affect the diff.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
-        self.commitFile(
+        commit_file(
             prerequisite, 'file', 'prerequisite text2\n')
         diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
@@ -459,10 +467,10 @@ class TestPreviewDiff(DiffTestCase):
         self.useBzrBranches(direct_database=True)
         bmp = self.factory.makeBranchMergeProposal()
         bzr_target = self.createBzrBranch(bmp.target_branch)
-        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        commit_file(bmp.target_branch, 'foo', 'a\n')
         self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'a\nb\n')
-        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
+        source_rev_id = commit_file(bmp.source_branch, 'foo', 'a\nb\n')
+        target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
@@ -521,6 +529,85 @@ class TestPreviewDiff(DiffTestCase):
         diff = self._createProposalWithPreviewDiff(content='').preview_diff
         self.assertRaises(
             NotFoundError, diff.getFileByName, 'preview.diff')
+
+
+class TestIncrementalDiff(DiffTestCase):
+    """Test that IncrementalDiff objects work."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        incremental_diff = self.factory.makeIncrementalDiff()
+        verifyObject(IIncrementalDiff, incremental_diff)
+
+    @staticmethod
+    def diff_changes(diff_bytes):
+        inserted = []
+        removed = []
+        for patch in parse_patches(diff_bytes.splitlines(True)):
+            for hunk in patch.hunks:
+                for line in hunk.lines:
+                    if isinstance(line, InsertLine):
+                        inserted.append(line.contents)
+                    if isinstance(line, RemoveLine):
+                        removed.append(line.contents)
+        return inserted, removed
+
+    def test_generateIncrementalDiff(self):
+        """generateIncrementalDiff works.
+
+        Changes merged from the prerequisite and target are ignored in the
+        diff.
+
+        We generate an incremental diff from old_revision_id to
+        new_revision_id.
+
+        old_revision_id has:
+        a
+        b
+        e
+
+        new_revision_id has:
+        d
+        a
+        c
+        e
+        f
+
+        Because the prerequisite branch adds "d", this change is ignored.
+        Because the target branch adds "f", this change is ignored.
+        So the incremental diff shows that "c" was added and "b" was removed.
+        """
+        self.useBzrBranches(direct_database=True)
+        prerequisite_branch = self.factory.makeAnyBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        target_branch = self.createBzrBranch(bmp.target_branch)
+        old_revision_id = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\n')
+        old_revision = self.factory.makeRevision(rev_id=old_revision_id)
+        source_branch = self.createBzrBranch(
+            bmp.source_branch, target_branch)
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\n')
+        prerequisite = self.createBzrBranch(
+            bmp.prerequisite_branch, target_branch)
+        prerequisite_revision = commit_file(
+            bmp.prerequisite_branch, 'foo', 'd\na\nb\ne\n')
+        merge_parent = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\nf\n')
+        source_branch.repository.fetch(target_branch.repository,
+            revision_id=merge_parent)
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+        source_branch.repository.fetch(prerequisite.repository,
+            revision_id=prerequisite_revision)
+        new_revision_id = commit_file(
+            bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+            [prerequisite_revision])
+        new_revision = self.factory.makeRevision(rev_id=new_revision_id)
+        incremental_diff = bmp.generateIncrementalDiff(
+            old_revision, new_revision)
+        transaction.commit()
+        inserted, removed = self.diff_changes(incremental_diff.text)
+        self.assertEqual(['c\n'], inserted)
+        self.assertEqual(['b\n'], removed)
 
 
 def test_suite():

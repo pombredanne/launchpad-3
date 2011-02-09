@@ -448,15 +448,15 @@ unique URL, so it too ignores the remote_product parameter.
     bug_filing_url: http://.../issues/entry?summary=Foo&comment=Bar
     bug_search_url: http://.../issues/list?q=Foo
 
-Trac's bug filing form doesn't accept data in the query string, so we don't
-include it.
+Trac's bug filing form also accepts data in the query string, so we include
+it.
 
     >>> example_trac = factory.makeBugTracker(
     ...     'http://trac.example.com', BugTrackerType.TRAC)
     >>> links = example_trac.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Foo&description=Bar
     bug_search_url: http://trac.example.com/search?ticket=on&q=Foo
 
     >>> example_roundup = factory.makeBugTracker(

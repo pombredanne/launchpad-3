@@ -122,8 +122,8 @@ Let's add a few more watches:
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
-    >>> from lp.services.propertycache import IPropertyCache
-    >>> del IPropertyCache(example_ext_bug_tracker).csv_data
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(example_ext_bug_tracker).csv_data
 
     >>> example_ext_bug_tracker.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(

@@ -23,8 +23,8 @@ class TestProductIndexPage(WindmillTestCase):
 
     def test_title_inline_edit(self):
         test = widgets.InlineEditorWidgetTest(
-            url='http://launchpad.dev:8085/firefox',
-            widget_id='product-title',
+            url='%s/firefox' % RegistryWindmillLayer.base_url,
+            widget_id='edit-title',
             expected_value='Mozilla Firefox',
             new_value='The awesome Mozilla Firefox',
             name='test_title_inline_edit',
@@ -34,8 +34,8 @@ class TestProductIndexPage(WindmillTestCase):
 
     def test_programming_languages_edit(self):
         test = widgets.InlineEditorWidgetTest(
-            url='http://launchpad.dev:8085/firefox',
-            widget_id='programminglang',
+            url='%s/firefox' % RegistryWindmillLayer.base_url,
+            widget_id='edit-programminglang',
             widget_tag='span',
             expected_value='Not yet specified',
             new_value='C++',

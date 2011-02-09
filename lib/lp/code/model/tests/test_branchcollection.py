@@ -40,6 +40,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -464,6 +465,19 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branches = self.all_branches.targetedBy(registrant)
         self.assertEqual([target_branch], list(branches.getBranches()))
 
+    def test_targetedBy_since(self):
+        # Ignore proposals created before 'since'.
+        all_branches = self.all_branches
+        bmp = self.factory.makeBranchMergeProposal()
+        date_created = self.factory.getUniqueDate()
+        removeSecurityProxy(bmp).date_created = date_created
+        registrant = bmp.registrant
+        branches = all_branches.targetedBy(registrant, since=date_created)
+        self.assertEqual([bmp.target_branch], list(branches.getBranches()))
+        since = self.factory.getUniqueDate()
+        branches = all_branches.targetedBy(registrant, since=since)
+        self.assertEqual([], list(branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
@@ -589,6 +603,60 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted(branches.getBranches()))
 
 
+class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        self.all_branches = getUtility(IAllBranches)
+
+    def test_empty_revisions(self):
+        rev_details = self.all_branches.getExtendedRevisionDetails([])
+        self.assertEqual([], rev_details)
+        rev_details = self.all_branches.getExtendedRevisionDetails(None)
+        self.assertEqual([], rev_details)
+
+    def test_some_revisions(self):
+        branch = self.factory.makeBranch()
+        merge_proposals = [
+            self.factory.makeBranchMergeProposal(target_branch=branch)
+            for x in range(0, 2)]
+
+        expected_rev_details = []
+        with person_logged_in(branch.owner):
+            self.factory.makeRevisionsForBranch(branch, 3)
+            branch_revisions = branch.revision_history
+            for x in range(0, 3):
+                branch_revision = branch_revisions[x]
+                rev_info = {
+                    'revision': branch_revision,
+                    'linked_bugs': None,
+                    'merge_proposal': None,
+                    }
+                if x < len(merge_proposals):
+                    merge_proposals[x].markAsMerged(
+                            branch_revision.sequence)
+                    rev_info['merge_proposal'] = merge_proposals[x]
+                expected_rev_details.append(rev_info)
+
+        result = self.all_branches.getExtendedRevisionDetails(
+            branch_revisions)
+        self.assertEqual(sorted(expected_rev_details), sorted(result))
+
+        linked_bugs = []
+        with person_logged_in(branch.owner):
+            for x in range(0, 2):
+                bug = self.factory.makeBug()
+                merge_proposals[0].source_branch.linkBug(bug, branch.owner)
+                linked_bugs.append(bug)
+        expected_rev_details[0]['linked_bugs'] = linked_bugs
+        result = self.all_branches.getExtendedRevisionDetails(
+            branch_revisions)
+        self.assertEqual(sorted(expected_rev_details), sorted(result))
+
+
 class TestBranchMergeProposals(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -637,6 +705,24 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_merge_proposals_merging_revno(self):
+        """Specifying merged_revnos selects the correct merge proposals."""
+        target = self.factory.makeBranch()
+        mp1 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp2 = self.factory.makeBranchMergeProposal(target_branch=target)
+        mp3 = self.factory.makeBranchMergeProposal(target_branch=target)
+        with person_logged_in(target.owner):
+            mp1.markAsMerged(123)
+            mp2.markAsMerged(123)
+            mp3.markAsMerged(321)
+        collection = self.all_branches
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123])
+        self.assertEqual(sorted([mp1, mp2]), sorted(result))
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123, 321])
+        self.assertEqual(sorted([mp1, mp2, mp3]), sorted(result))
 
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the

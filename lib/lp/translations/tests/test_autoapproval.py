@@ -8,8 +8,6 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
-from __future__ import with_statement
-
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -36,9 +34,10 @@ from lp.services.worlddata.model.language import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
+    ITranslationImportQueue,
     translation_import_queue_entry_age,
     )
 from lp.translations.model.customlanguagecode import CustomLanguageCode
@@ -538,6 +537,36 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
 
         self.assertEqual(entry1.potemplate, None)
 
+    def test_getGuessedPOFile_ignores_obsolete_POFiles(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        queue = getUtility(ITranslationImportQueue)
+        entry = queue.addOrUpdateEntry(
+            pofile.path, 'contents', False, self.factory.makePerson(),
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.getGuessedPOFile())
+
+    def test_getGuessedPOFile_survives_clashing_obsolete_POFile_path(self):
+        series = self.factory.makeProductSeries()
+        current_template = self.factory.makePOTemplate(productseries=series)
+        current_template.iscurrent = True
+        current_pofile = self.factory.makePOFile(
+            'nl', potemplate=current_template)
+        obsolete_template = self.factory.makePOTemplate(productseries=series)
+        obsolete_template.iscurrent = False
+        obsolete_pofile = self.factory.makePOFile(
+            'nl', potemplate=obsolete_template)
+        obsolete_pofile.path = current_pofile.path
+
+        queue = getUtility(ITranslationImportQueue)
+        entry = queue.addOrUpdateEntry(
+            current_pofile.path, 'contents', False, self.factory.makePerson(),
+            productseries=series)
+
+        self.assertEqual(current_pofile, entry.getGuessedPOFile())
+
     def test_pathless_template_match(self):
         # If an uploaded template has no directory component in its
         # path, and no matching template is found in the database, the
@@ -1034,7 +1063,8 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         entry.getGuessedPOFile()
 
-        credits.getCurrentTranslationMessage(template, self.language)
+        credits.getCurrentTranslation(
+            template, self.language, template.translation_side)
         self.assertNotEqual(None, credits)
 
 

@@ -98,7 +98,7 @@
       </div>
       <div class="yui-g">
         <div class="yui-u first">
-          <div class="portlet">
+          <div class="portlet automatic-synchronization">
             <h3>Automatic synchronization</h3>
             <tal:uses-bzr-sync condition="view/uses_bzr_sync">
               <tal:imports condition="view/has_imports_enabled">

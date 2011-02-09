@@ -3,8 +3,6 @@
 
 """Tests for BranchJobs."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import datetime
@@ -82,9 +80,9 @@ from lp.services.job.model.job import Job
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -519,7 +517,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 revno = None
             if existing is not None:
                 branchrevision = IMasterStore(branch).find(
-                    BranchRevision, BranchRevision.id == existing.id)
+                    BranchRevision,
+                    BranchRevision.branch_id == branch.id,
+                    BranchRevision.revision_id == revision.id)
                 branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 

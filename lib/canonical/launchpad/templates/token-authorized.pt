@@ -15,9 +15,7 @@
         <h1>You decided against desktop integration</h1>
 
         <p>
-          You decided not to give the
-          <tal:desktop replace="structure view/token/consumer/integrated_desktop_type" />
-          called
+          You decided not to give
           <strong tal:content="view/token/consumer/integrated_desktop_name">hostname</strong>
           access to your Launchpad account. You can always change your
           mind later.
@@ -29,7 +27,7 @@
 
         <p>The
           <tal:desktop replace="structure view/token/consumer/integrated_desktop_type" />
-          called
+          computer called
           <strong tal:content="view/token/consumer/integrated_desktop_name">hostname</strong>
           now has access to your Launchpad account. Within a few
           seconds, you should be able to start using its Launchpad
@@ -39,9 +37,7 @@
           The integration you just authorized will expire
           <tal:date
            replace="structure view/token/date_expires/fmt:approximatedate" />.
-          At that time, you'll have to re-authorize the
-          <tal:desktop replace="structure view/token/consumer/integrated_desktop_type" />
-          called
+          At that time, you'll have to re-authorize
           <strong tal:content="view/token/consumer/integrated_desktop_name">hostname</strong>,
           if you want to keep using its Launchpad integration features.
 

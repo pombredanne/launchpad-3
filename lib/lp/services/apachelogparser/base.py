@@ -6,7 +6,10 @@ import gzip
 import os
 
 from contrib import apachelog
-from lazr.uri import URI
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 import pytz
 from zope.component import getUtility
 
@@ -23,18 +26,16 @@ from lp.services.geoip.interfaces import IGeoIP
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
-def get_files_to_parse(root, file_names):
+def get_files_to_parse(file_paths):
     """Return an iterator of file and position where reading should start.
 
     The lines read from that position onwards will be the ones that have not
     been parsed yet.
 
-    :param root: The directory where the files are stored.
-    :param file_names: The names of the files.
+    :param file_paths: The paths to the files.
     """
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    for file_name in file_names:
-        file_path = os.path.join(root, file_name)
+    for file_path in file_paths:
         fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
         parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
@@ -64,13 +65,14 @@ def get_fd_and_file_size(file_path):
     file_path points to a gzipped file.
     """
     if file_path.endswith('.gz'):
+        # The last 4 bytes of the file contains the uncompressed file's
+        # size, modulo 2**32.  This code is somewhat stolen from the gzip
+        # module in Python 2.6.
         fd = gzip.open(file_path)
-        # There doesn't seem to be a better way of figuring out the
-        # uncompressed size of a file, so we'll read the whole file here.
-        file_size = len(fd.read())
-        # Seek back to the beginning of the file as if we had just opened
-        # it.
-        fd.seek(0)
+        fd.fileobj.seek(-4, os.SEEK_END)
+        isize = gzip.read32(fd.fileobj)   # may exceed 2GB
+        file_size = isize & 0xffffffffL
+        fd.fileobj.seek(0)
     else:
         fd = open(file_path)
         file_size = os.path.getsize(file_path)
@@ -204,15 +206,27 @@ def get_host_date_status_and_request(line):
 
 def get_method_and_path(request):
     """Extract the method of the request and path of the requested file."""
-    L = request.split()
-    # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
-    if len(L) == 2:
-        method, path = L
+    method, ignore, rest = request.partition(' ')
+    # In the below, the common case is that `first` is the path and `last` is
+    # the protocol.
+    first, ignore, last = rest.rpartition(' ')
+    if first == '':
+        # HTTP 1.0 requests might omit the HTTP version so we cope with them.
+        path = last
+    elif not last.startswith('HTTP'):
+        # We cope with HTTP 1.0 protocol without HTTP version *and* a
+        # space in the path (see bug 676489 for example).
+        path = rest
     else:
-        method, path, protocol = L
-
+        # This is the common case.
+        path = first
     if path.startswith('http://') or path.startswith('https://'):
-        uri = URI(path)
-        path = uri.path
-
+        try:
+            uri = URI(path)
+            path = uri.path
+        except InvalidURIError:
+            # The URL is not valid, so we can't extract a path. Let it
+            # pass through, where it will probably be skipped when no
+            # download key can be determined.
+            pass
     return method, path

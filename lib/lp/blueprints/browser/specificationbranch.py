@@ -16,13 +16,15 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 
 

@@ -4,6 +4,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
+
+
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
@@ -25,6 +27,7 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'BeautifulSoup',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
@@ -46,14 +49,16 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        # Required for launchpadlib
+        'keyring',
         'manuel',
         'mechanize',
         'meliae',
         'mercurial',
         'mocker',
-        'numpy',
         'oauth',
         'paramiko',
+        'psycopg2',
         'python-memcached',
         'pyasn1',
         'pydkim',
@@ -63,6 +68,7 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
         'testtools',

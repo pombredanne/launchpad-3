@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBlueprintSearch',
     'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
@@ -28,8 +29,6 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -37,13 +36,16 @@ __all__ = [
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
-    'valid_remote_bug_url']
+    'valid_remote_bug_url',
+    ]
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -112,7 +114,6 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -341,7 +342,7 @@ class BugBranchSearch(EnumeratedType):
     """Bug branch search option.
 
     The possible values to search for bugs having branches attached
-    or not having branches attched.
+    or not having branches attached.
     """
 
     ALL = Item("Show all bugs")
@@ -351,13 +352,20 @@ class BugBranchSearch(EnumeratedType):
     BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
-# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
-# semantics of our current reports would break if it were added to the
-# list below.
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
 
-# XXX: matsubara 2006-02-02 bug=4201:
-# I added the INCOMPLETE as a short-term solution.
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
@@ -443,7 +451,7 @@ class IllegalRelatedBugTasksParams(Exception):
     webservice_error(400) #Bad request.
 
 
-class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
+class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -489,6 +497,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
+    assigneeID = Attribute('The assignee ID (for eager loading)')
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -656,20 +665,23 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        this method should be deletable. When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     def isSubscribed(person):
         """Return True if the person is an explicit subscriber to the
         underlying bug for this bugtask.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole
+        reason then this method should be deletable.  When we move to
+        context-less bug presentation (where the bug is at
+        /bugs/n?task=ubuntu) then we can eliminate this if it is no
+        longer useful.
         """
 
     @mutator_for(milestone)
@@ -948,6 +960,12 @@ class IBugTaskSearchBase(Interface):
     has_no_branches = Bool(
         title=_('Show bugs without linked branches'), required=False,
         default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -1142,8 +1160,9 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None):
+                 linked_branches=None, linked_blueprints=None,
+                 structural_subscriber=None, modified_since=None,
+                 created_since=None, exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1186,9 +1205,11 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.linked_blueprints = linked_blueprints
         self.structural_subscriber = structural_subscriber
-        self.modified_since = None
-        self.created_since = None
+        self.modified_since = modified_since
+        self.created_since = created_since
+        self.exclude_conjoined_tasks = exclude_conjoined_tasks
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1261,8 +1282,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None, modified_since=None,
-                       created_since=None):
+                       linked_blueprints=None, structural_subscriber=None,
+                       modified_since=None, created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1328,7 +1349,8 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
-        search_params.linked_branches=linked_branches
+        search_params.linked_branches = linked_branches
+        search_params.linked_blueprints = linked_blueprints
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
@@ -1386,15 +1408,18 @@ class IBugTaskSet(Interface):
         Only BugTasks that the user has access to will be returned.
         """
 
-    def search(params, *args):
+    def search(params, *args, **kwargs):
         """Search IBugTasks with the given search parameters.
 
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
 
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
+        :param search_params: a BugTaskSearchParams object
+        :param args: any number of BugTaskSearchParams objects
+        :param prejoins: (keyword) A sequence of tuples
+            (table, table_join) which should be pre-joined in addition
+            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
@@ -1407,13 +1432,6 @@ class IBugTaskSet(Interface):
         This is a variation on IBugTaskSet.search that returns only bug ids.
 
         :param params: the BugTaskSearchParams to search on.
-        """
-
-    def getAssignedMilestonesFromSearch(search_results):
-        """Returns distinct milestones for the given tasks.
-
-        :param search_results: A result set yielding BugTask objects,
-            typically the result of calling `BugTaskSet.search()`.
         """
 
     def getStatusCountsForProductSeries(user, product_series):
@@ -1441,7 +1459,8 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
+                              limit=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
@@ -1454,6 +1473,7 @@ class IBugTaskSet(Interface):
         :param target: An `IBugTarget`. If a target is provided, only
             bugtasks that belong to the target may be returned. If target
             is None, all bugtargets are searched.
+        :param limit: An int for limiting the number of bugtasks returned.
         :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug
@@ -1523,6 +1543,18 @@ class IBugTaskSet(Interface):
 
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
+
+    def getStructuralSubscribers(bugtasks, recipients=None, level=None):
+        """Return `IPerson`s subscribed to the given bug tasks.
+
+        This takes into account bug subscription filters.
+        """
+
+    def getPrecachedNonConjoinedBugTasks(user, milestone):
+        """List of non-conjoined bugtasks targeted to the milestone.
+
+        The assignee and the assignee's validity are precached.
+        """
 
 
 def valid_remote_bug_url(value):

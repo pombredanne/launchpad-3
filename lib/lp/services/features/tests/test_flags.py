@@ -4,7 +4,6 @@
 """Tests for feature flags."""
 
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import os
@@ -12,7 +11,6 @@ import os
 from canonical.testing import layers
 from lp.services.features import (
     getFeatureFlag,
-    model,
     per_thread,
     )
 from lp.services.features.flags import FeatureController
@@ -44,6 +42,7 @@ class TestFeatureFlags(TestCase):
     def makeControllerInScopes(self, scopes):
         """Make a controller that will report it's in the given scopes."""
         call_log = []
+
         def scope_cb(scope):
             call_log.append(scope)
             return scope in scopes
@@ -205,10 +204,10 @@ flag2   default     0\ton
         self.assertEquals({
             'flag1': [
                 ('beta_user', 200, 'alpha'),
-                ('default', 100, 'gamma with spaces'), 
+                ('default', 100, 'gamma with spaces'),
                 ],
             'flag2': [
                 ('default', 0, 'on'),
                 ],
-            }, 
+            },
             source.getAllRulesAsDict())

@@ -1,5 +1,3 @@
-
-
 Translation Submissions
 =======================
 
@@ -16,6 +14,14 @@ xx-pofile-translate-alternative-language.txt
 xx-pofile-translate-message-filtering.txt
 xx-pofile-translate-newlines-check.txt
 xx-pofile-translate-performance.txt
+
+    >>> from zope.component import getUtility
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
 
 
 Anonymous access
@@ -61,21 +67,6 @@ Rendering the form in read-only mode does not actually stop an anonymous
 visitor (e.g. a spam bot, or a user whose login has expired) from submitting
 data. That part is more convenience than security. The server does not
 remember what form it provided to which requester.
-
-Separately from that, however, the form also rejects anonymous POST
-submissions.
-
-    >>> path = (
-    ...     '/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/'
-    ...     '+translate')
-    >>> print http(r"""
-    ... POST %s HTTP/1.1
-    ... Host: translations.launchpad.dev
-    ... """ % path)
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ...UnexpectedFormData: Anonymous users or users who are not accepting
-    our licensing terms cannot do POST submissions...
 
 
 Translation Admin Access

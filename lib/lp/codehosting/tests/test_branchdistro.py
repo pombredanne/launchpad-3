@@ -4,8 +4,6 @@
 """Tests for making new source package branches just after a distro release.
 """
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import os
@@ -31,10 +29,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import (
-    FakeLogger,
-    QuietFakeLogger,
-    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchjob import IBranchScanJobSource
@@ -44,6 +38,10 @@ from lp.codehosting.branchdistro import (
     )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import (
+    FakeLogger,
+    BufferLogger,
+    )
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 
@@ -310,7 +308,7 @@ class TestDistroBrancher(TestCaseWithFactory):
             distribution=db_branch.distribution)
 
         brancher = DistroBrancher(
-            QuietFakeLogger(), db_branch.distroseries, new_distroseries)
+            BufferLogger(), db_branch.distroseries, new_distroseries)
 
         brancher.makeNewBranches()
 

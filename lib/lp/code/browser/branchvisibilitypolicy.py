@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The view classes for handling branch visibility policies."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AddBranchVisibilityTeamPolicyView',
     'RemoveBranchVisibilityTeamPolicyView',
+    'BranchVisibilityPolicyMixin',
     'BranchVisibilityPolicyView',
     ]
 
@@ -24,13 +25,15 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     )
-from canonical.widgets.itemswidgets import (
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidgetWithDescription,
     )
@@ -155,21 +158,30 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
-class BranchVisibilityPolicyView(LaunchpadView):
+class BranchVisibilityPolicyMixin:
+    """Mixin class providing visibility rules."""
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
+
+    @property
+    def team_policies(self):
+        """The policy items that have a valid team."""
+        return [item for item in self.items if item.team is not None]
+
+    @cachedproperty
+    def items(self):
+        return self.context.getBranchVisibilityTeamPolicies()
+
+
+class BranchVisibilityPolicyView(LaunchpadView,
+                                 BranchVisibilityPolicyMixin):
     """Simple view for displaying branch visibility policies."""
 
     @property
     def page_title(self):
         name = self.context.displayname
         return 'Set branch visibility policy for %s' % name
-
-    @cachedproperty
-    def items(self):
-        return self.context.getBranchVisibilityTeamPolicies()
-
-    @property
-    def base_visibility_rule(self):
-        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):
@@ -178,8 +190,3 @@ class BranchVisibilityPolicyView(LaunchpadView):
         """
         return (len(self.items) > 0 and
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
-
-    @property
-    def team_policies(self):
-        """The policy items that have a valid team."""
-        return [item for item in self.items if item.team is not None]

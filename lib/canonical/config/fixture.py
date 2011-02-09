@@ -1,7 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
 """Fixtures related to configs.
 
 XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
@@ -29,7 +28,6 @@ class ConfigFixture(Fixture):
     _extend_str = dedent("""\
         [meta]
         extends: ../%s/launchpad-lazr.conf
-        
         """)
 
     def __init__(self, instance_name, copy_from_instance):
@@ -41,17 +39,21 @@ class ConfigFixture(Fixture):
         self.instance_name = instance_name
         self.copy_from_instance = copy_from_instance
 
+    def add_section(self, sectioncontent):
+        """Add sectioncontent to the lazy config."""
+        with open(self.absroot + '/launchpad-lazr.conf', 'ab') as out:
+            out.write(sectioncontent)
+
     def setUp(self):
         super(ConfigFixture, self).setUp()
         root = 'configs/' + self.instance_name
         os.mkdir(root)
-        absroot = os.path.abspath(root)
-        self.addCleanup(shutil.rmtree, absroot)
+        self.absroot = os.path.abspath(root)
+        self.addCleanup(shutil.rmtree, self.absroot)
         source = 'configs/' + self.copy_from_instance
         for basename in os.listdir(source):
             if basename == 'launchpad-lazr.conf':
-                with open(root + '/launchpad-lazr.conf', 'wb') as out:
-                    out.write(self._extend_str % self.copy_from_instance)
+                self.add_section(self._extend_str % self.copy_from_instance)
                 continue
             with open(source + '/' + basename, 'rb') as input:
                 with open(root + '/' + basename, 'wb') as out:

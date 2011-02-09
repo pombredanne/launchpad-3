@@ -17,6 +17,7 @@ import tempfile
 
 from launchpadlib.credentials import (
     AccessToken,
+    AnonymousAccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
@@ -26,13 +27,11 @@ from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet,
-    IPersonSet,
-    )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing._login import (
     login,
     logout,
@@ -116,12 +115,12 @@ def launchpadlib_credentials_for(
 
 
 def _clean_up_cache(cache):
-    """"Clean up a temporary launchpadlib cache directory."""
+    """Clean up a temporary launchpadlib cache directory."""
     shutil.rmtree(cache, ignore_errors=True)
 
 
 def launchpadlib_for(
-    consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
+    consumer_name, person=None, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
 
@@ -136,21 +135,26 @@ def launchpadlib_for(
 
     :return: A launchpadlib Launchpad object.
     """
-    credentials = launchpadlib_credentials_for(
-        consumer_name, person, permission, context)
+    if person is None:
+        token = AnonymousAccessToken()
+        credentials = Credentials(consumer_name, access_token=token)
+    else:
+        credentials = launchpadlib_credentials_for(
+            consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
-    return Launchpad(credentials, service_root, version=version, cache=cache)
+    return Launchpad(credentials, None, None, service_root=service_root,
+                     version=version, cache=cache)
 
 
 class QueryCollector:
     """Collect database calls made in web requests.
 
     These are only retrievable at the end of a request, and for tests it is
-    useful to be able to make aassertions about the calls made during a request
-    : this class provides a tool to gather them in a simple fashion.
+    useful to be able to make assertions about the calls made during a
+    request: this class provides a tool to gather them in a simple fashion.
 
     :ivar count: The count of db queries the last web request made.
     :ivar queries: The list of queries made. See

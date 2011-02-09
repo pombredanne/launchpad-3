@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
@@ -81,22 +82,6 @@
         <allow
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageRelease"/>
     </class>
-
-    <!-- BinaryPackageReleaseSet -->
-
-    <class
-        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-        <implements
-            interface="zope.app.container.interfaces.IItemContainer"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseSet"
-        provides="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-    </securedutility>
 
     <!-- SourcePackageRelease -->
 
@@ -899,18 +884,33 @@
       <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
     </class>
 
+    <!-- DistributionJob -->
+    <class class="lp.soyuz.model.distributionjob.DistributionJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
     <!-- InitialiseDistroSeriesJobSource -->
     <securedutility
       component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
       provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
         <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.distributionjob.DistributionJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
-    </class>
     <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
         <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
+
+    <!-- SyncPackageJobSource -->
+    <securedutility
+      component="lp.soyuz.model.syncpackagejob.SyncPackageJob"
+      provides="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource"/>
+    </securedutility>
+    <class class="lp.soyuz.model.syncpackagejob.SyncPackageJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
+   <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

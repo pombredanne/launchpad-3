@@ -359,7 +359,7 @@ If a product is packaged in Ubuntu the links are shown.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages
-    Packages in Ubuntu
+    Packages in Distributions
     “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
 
 A product that has linked packages now displays suggestions and asks
@@ -372,7 +372,7 @@ the user to select the package.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages...
-    Packages in Ubuntu...
+    Packages in Distributions...
     Ubuntu Hoary packages:
     pmount...
 

@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'PackageBuild',
@@ -44,8 +42,10 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuildFarmJobType,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
@@ -94,6 +94,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
+    @property
+    def url_id(self):
+        return self.build_farm_job_id
+
     # The following two properties are part of the IPackageBuild
     # interface, but need to be provided by derived classes.
     distribution = None
@@ -123,6 +127,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         package_build = cls(build_farm_job, archive, pocket, dependencies)
         store.add(package_build)
         return package_build
+
+    def destroySelf(self):
+        build_farm_job = self.build_farm_job
+        store = Store.of(self)
+        store.remove(self)
+        store.remove(build_farm_job)
 
     @property
     def current_component(self):
@@ -165,10 +175,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def getLogFromSlave(package_build):
         """See `IPackageBuild`."""
         builder = package_build.buildqueue_record.builder
-        return builder.transferSlaveFileToLibrarian(
+        d = builder.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME,
             package_build.buildqueue_record.getLogFileName(),
             package_build.is_private)
+        return d
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -177,19 +188,23 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     @staticmethod
     def storeBuildInfo(build, librarian, slave_status):
         """See `IPackageBuild`."""
-        # log, builder and date_finished are read-only, so we must
-        # currently remove the security proxy to set them.
-        naked_build = removeSecurityProxy(build)
-        naked_build.log = build.getLogFromSlave(build)
-        naked_build.builder = build.buildqueue_record.builder
-        # XXX cprov 20060615 bug=120584: Currently buildduration includes
-        # the scanner latency, it should really be asking the slave for
-        # the duration spent building locally.
-        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-        if slave_status.get('dependencies') is not None:
-            build.dependencies = unicode(slave_status.get('dependencies'))
-        else:
-            build.dependencies = None
+        def got_log(lfa_id):
+            # log, builder and date_finished are read-only, so we must
+            # currently remove the security proxy to set them.
+            naked_build = removeSecurityProxy(build)
+            naked_build.log = lfa_id
+            naked_build.builder = build.buildqueue_record.builder
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+            if slave_status.get('dependencies') is not None:
+                build.dependencies = unicode(slave_status.get('dependencies'))
+            else:
+                build.dependencies = None
+
+        d = build.getLogFromSlave(build)
+        return d.addCallback(got_log)
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -211,6 +226,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         if filename is None:
             filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
         file_size = len(content)
         file_content = StringIO(content)
         restricted = self.is_private
@@ -276,7 +293,14 @@ class PackageBuildDerived:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
             return
-        method(librarian, slave_status, logger)
+        d = method(librarian, slave_status, logger)
+        return d
+
+    def _release_builder_and_remove_queue_item(self):
+        # Release the builder for another job.
+        d = self.buildqueue_record.builder.cleanSlave()
+        # Remove BuildQueue record.
+        return d.addCallback(lambda x:self.buildqueue_record.destroySelf())
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
@@ -290,6 +314,15 @@ class PackageBuildDerived:
         logger.info("Processing successful build %s from builder %s" % (
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
+
+        # If this is a binary package build, discard it if its source is
+        # no longer published.
+        if self.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
+            build = self.buildqueue_record.specific_job.build
+            if not build.current_source_publication:
+                build.status = BuildStatus.SUPERSEDED
+                return self._release_builder_and_remove_queue_item()
+
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -316,6 +349,7 @@ class PackageBuildDerived:
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
         successful_copy_from_slave = True
+        filenames_to_download = {}
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
             out_file_name = os.path.join(upload_path, filename)
@@ -328,46 +362,48 @@ class PackageBuildDerived:
                     "A slave tried to upload the file '%s' "
                     "for the build %d." % (filename, self.id))
                 break
-            out_file = open(out_file_name, "wb")
-            slave_file = slave.getFile(filemap[filename])
-            copy_and_close(slave_file, out_file)
+            filenames_to_download[filemap[filename]] = out_file_name
 
+        def build_info_stored(ignored):
+            # We only attempt the upload if we successfully copied all the
+            # files from the slave.
+            if successful_copy_from_slave:
+                logger.info(
+                    "Gathered %s %d completely. Moving %s to uploader queue." % (
+                    self.__class__.__name__, self.id, upload_leaf))
+                target_dir = os.path.join(root, "incoming")
+                self.status = BuildStatus.UPLOADING
+            else:
+                logger.warning(
+                    "Copy from slave for build %s was unsuccessful.", self.id)
+                self.status = BuildStatus.FAILEDTOUPLOAD
+                self.notify(extra_info='Copy from slave was unsuccessful.')
+                target_dir = os.path.join(root, "failed")
+
+            if not os.path.exists(target_dir):
+                os.mkdir(target_dir)
+
+            # Release the builder for another job.
+            d = self._release_builder_and_remove_queue_item()
+
+            # Commit so there are no race conditions with archiveuploader about
+            # self.status.
+            Store.of(self).commit()
+
+            # Move the directory used to grab the binaries into
+            # the incoming directory so the upload processor never
+            # sees half-finished uploads.
+            os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
+
+            return d
+
+        d = slave.getFiles(filenames_to_download)
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(self, librarian, slave_status)
-
-        # We only attempt the upload if we successfully copied all the
-        # files from the slave.
-        if successful_copy_from_slave:
-            logger.info(
-                "Gathered %s %d completely. Moving %s to uploader queue." % (
-                self.__class__.__name__, self.id, upload_leaf))
-            target_dir = os.path.join(root, "incoming")
-            self.status = BuildStatus.UPLOADING
-        else:
-            logger.warning(
-                "Copy from slave for build %s was unsuccessful.", self.id)
-            self.status = BuildStatus.FAILEDTOUPLOAD
-            self.notify(extra_info='Copy from slave was unsuccessful.')
-            target_dir = os.path.join(root, "failed")
-
-        if not os.path.exists(target_dir):
-            os.mkdir(target_dir)
-
-        # Flush so there are no race conditions with archiveuploader about
-        # self.status.
-        Store.of(self).flush()
-
-        # Move the directory used to grab the binaries into
-        # the incoming directory so the upload processor never
-        # sees half-finished uploads.
-        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
-
-        # Release the builder for another job.
-        self.buildqueue_record.builder.cleanSlave()
-
-        # Remove BuildQueue record.
-        self.buildqueue_record.destroySelf()
+        d.addCallback(
+            lambda x: self.storeBuildInfo(self, librarian, slave_status))
+        d.addCallback(build_info_stored)
+        return d
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.
@@ -377,10 +413,14 @@ class PackageBuildDerived:
         remove Buildqueue entry.
         """
         self.status = BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(self, librarian, slave_status)
-        self.buildqueue_record.builder.cleanSlave()
-        self.notify()
-        self.buildqueue_record.destroySelf()
+        def build_info_stored(ignored):
+            self.notify()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
+        d = self.storeBuildInfo(self, librarian, slave_status)
+        return d.addCallback(build_info_stored)
 
     def _handleStatus_DEPFAIL(self, librarian, slave_status, logger):
         """Handle a package that had missing dependencies.
@@ -390,11 +430,15 @@ class PackageBuildDerived:
         entry and release builder slave for another job.
         """
         self.status = BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(self, librarian, slave_status)
-        logger.critical("***** %s is MANUALDEPWAIT *****"
-                        % self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.cleanSlave()
-        self.buildqueue_record.destroySelf()
+        def build_info_stored(ignored):
+            logger.critical("***** %s is MANUALDEPWAIT *****"
+                            % self.buildqueue_record.builder.name)
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
+        d = self.storeBuildInfo(self, librarian, slave_status)
+        return d.addCallback(build_info_stored)
 
     def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed when unpacking the CHROOT.
@@ -404,12 +448,16 @@ class PackageBuildDerived:
         and release the builder.
         """
         self.status = BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(self, librarian, slave_status)
-        logger.critical("***** %s is CHROOTWAIT *****" %
-                        self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.cleanSlave()
-        self.notify()
-        self.buildqueue_record.destroySelf()
+        def build_info_stored(ignored):
+            logger.critical("***** %s is CHROOTWAIT *****" %
+                            self.buildqueue_record.builder.name)
+            self.notify()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
+        d = self.storeBuildInfo(self, librarian, slave_status)
+        return d.addCallback(build_info_stored)
 
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger):
         """Handle builder failures.
@@ -422,9 +470,11 @@ class PackageBuildDerived:
                        % self.buildqueue_record.builder.name)
         self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
-        # simply reset job
-        self.storeBuildInfo(self, librarian, slave_status)
-        self.buildqueue_record.reset()
+        def build_info_stored(ignored):
+            # simply reset job
+            self.buildqueue_record.reset()
+        d = self.storeBuildInfo(self, librarian, slave_status)
+        return d.addCallback(build_info_stored)
 
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
         """Handle automatic retry requested by builder.
@@ -436,13 +486,17 @@ class PackageBuildDerived:
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
-        self.storeBuildInfo(self, librarian, slave_status)
-        # XXX cprov 2006-05-30: Currently this information is not
-        # properly presented in the Web UI. We will discuss it in
-        # the next Paris Summit, infinity has some ideas about how
-        # to use this content. For now we just ensure it's stored.
-        self.buildqueue_record.builder.cleanSlave()
-        self.buildqueue_record.reset()
+        def build_info_stored(ignored):
+            # XXX cprov 2006-05-30: Currently this information is not
+            # properly presented in the Web UI. We will discuss it in
+            # the next Paris Summit, infinity has some ideas about how
+            # to use this content. For now we just ensure it's stored.
+            d = self.buildqueue_record.builder.cleanSlave()
+            self.buildqueue_record.reset()
+            return d
+
+        d = self.storeBuildInfo(self, librarian, slave_status)
+        return d.addCallback(build_info_stored)
 
 
 class PackageBuildSet:

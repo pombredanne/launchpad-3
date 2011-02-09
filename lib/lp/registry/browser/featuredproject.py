@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Featured Project views."""
@@ -17,13 +17,13 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from canonical.launchpad.webapp import canonical_url
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
     custom_widget,
     LaunchpadFormView,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 

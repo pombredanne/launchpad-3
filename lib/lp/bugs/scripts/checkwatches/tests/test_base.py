@@ -3,8 +3,6 @@
 
 """Tests for the `base` module."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from contextlib import contextmanager
@@ -12,7 +10,6 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import (
     endInteraction,
@@ -24,6 +21,7 @@ from lp.bugs.externalbugtracker.isolation import (
     TransactionInProgress,
     )
 from lp.bugs.scripts.checkwatches.base import WorkingBase
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
 
@@ -44,7 +42,7 @@ class TestWorkingBase(TestCaseWithFactory):
         super(TestWorkingBase, self).setUp()
         self.person = self.factory.makePerson()
         self.email = self.person.preferredemail.email
-        self.logger = QuietFakeLogger()
+        self.logger = BufferLogger()
 
     def test_interaction(self):
         # The WorkingBase.interaction context manager will begin an
@@ -153,7 +151,7 @@ class TestWorkingBaseErrorReporting(TestCaseWithFactory):
     def _test_sql_log_cleared_after_x(self):
         person = self.factory.makePerson()
         email = person.preferredemail.email
-        logger = QuietFakeLogger()
+        logger = BufferLogger()
         base = WorkingBase()
         base.init(email, transaction.manager, logger)
         with base.statement_logging:

@@ -5,8 +5,6 @@
 #
 # launchpad-buildd
 #               This file is used to start and stop launchpad buildds
-#
-# Author:       Daniel Silverstone <daniel.silverstone@canonical.com>
 
 ### BEGIN INIT INFO
 # Provides:          launchpad_buildd

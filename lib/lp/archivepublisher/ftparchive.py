@@ -2,13 +2,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-from select import select
 from StringIO import StringIO
-import subprocess
 
 from storm.expr import (
     Desc,
-    In,
     Join,
     )
 from storm.store import EmptyResultSet
@@ -25,6 +22,11 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.command_spawner import (
+    CommandSpawner,
+    OutputLineHandler,
+    ReturnCodeReceiver,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
@@ -45,48 +47,6 @@ def safe_mkdir(path):
     """Ensures the path exists, creating it if it doesn't."""
     if not os.path.exists(path):
         os.makedirs(path, 0755)
-
-
-# XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
-# timeout handling and stderr passthrough, could be a single method used for
-# this and the similar requirement in test_on_merge.py.
-def run_subprocess_with_logging(process_and_args, log, prefix):
-    """Run a subprocess, gathering the output as it runs and logging it.
-
-    process_and_args is a list containing the process to run and the
-    arguments for it, just as passed in the first argument to
-    subprocess.Popen.
-
-    log is a logger to pass the output we gather.
-
-    prefix is a prefix to attach to each line of output when we log it.
-    """
-    proc = subprocess.Popen(process_and_args,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            close_fds=True)
-    proc.stdin.close()
-    open_readers = set([proc.stdout, proc.stderr])
-    buf = ""
-    while open_readers:
-        rlist, wlist, xlist = select(open_readers, [], [])
-
-        for reader in rlist:
-            chunk = os.read(reader.fileno(), 1024)
-            if chunk == "":
-                open_readers.remove(reader)
-                if buf:
-                    log.debug(buf)
-            else:
-                buf += chunk
-                lines = buf.split("\n")
-                for line in lines[0:-1]:
-                    log.debug("%s%s" % (prefix, line))
-                buf = lines[-1]
-
-    ret = proc.wait()
-    return ret
 
 
 DEFAULT_COMPONENT = "main"
@@ -140,19 +100,12 @@ class FTPArchiveHandler:
     Generates file lists and configuration for apt-ftparchive, and kicks
     off generation of the Sources and Releases files.
     """
+
     def __init__(self, log, config, diskpool, distro, publisher):
         self.log = log
         self._config = config
         self._diskpool = diskpool
         self.distro = distro
-        self.distroseries = []
-        for distroseries in self.distro.series:
-            if not distroseries.name in self._config.distroSeriesNames():
-                self.log.warning("Distroseries %s in %s doesn't have "
-                    "a lucille configuration.", distroseries.name,
-                    self.distro.name)
-            else:
-                self.distroseries.append(distroseries)
         self.publisher = publisher
 
         # We need somewhere to note down where the debian-installer
@@ -177,26 +130,45 @@ class FTPArchiveHandler:
     def runApt(self, apt_config_filename):
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
-                                           "generate", apt_config_filename],
-                                          self.log, "a-f: ")
-        if ret:
+        # XXX JeroenVermeulen 2011-02-01 bug=181368: Run parallel
+        # apt-ftparchive processes for the various architectures (plus
+        # source).
+        stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
+        stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
+        completion_handler = ReturnCodeReceiver()
+        command = [
+            "apt-ftparchive",
+            "--no-contents",
+            "generate",
+            apt_config_filename,
+            ]
+        spawner = CommandSpawner()
+        spawner.start(
+            command, stdout_handler=stdout_handler,
+            stderr_handler=stderr_handler,
+            completion_handler=completion_handler)
+        spawner.complete()
+        stdout_handler.finalize()
+        stderr_handler.finalize()
+        if completion_handler.returncode != 0:
             raise AssertionError(
-                "Failure from apt-ftparchive. Return code %s" % ret)
-        return ret
+                "Failure from apt-ftparchive. Return code %s"
+                % completion_handler.returncode)
+        return completion_handler.returncode
 
     #
     # Empty Pocket Requests
     #
-
     def createEmptyPocketRequests(self, fullpublish=False):
         """Write out empty file lists etc for pockets.
 
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        for distroseries in self.distroseries:
-            components = self._config.componentsForSeries(distroseries.name)
+        for distroseries in self.distro.series:
+            components = [
+                comp.name for comp in
+                self.publisher.archive.getComponentsForSeries(distroseries)]
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -239,7 +211,9 @@ class FTPArchiveHandler:
                 "_".join((suite, ) + parts)))
         touch_list(comp, "source")
 
-        for arch in self._config.archTagsForSeries(distroseries.name):
+        arch_tags = [
+            a.architecturetag for a in distroseries.enabled_architectures]
+        for arch in arch_tags:
             # Touch more file lists for the archs.
             touch_list(comp, "binary-" + arch)
             touch_list(comp, "debian-installer", "binary-" + arch)
@@ -247,7 +221,6 @@ class FTPArchiveHandler:
     #
     # Override Generation
     #
-
     def getSourcesForOverrides(self, distroseries, pocket):
         """Fetch override information about all published sources.
 
@@ -288,6 +261,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section = result
             return (name, suite, component, section)
@@ -336,13 +310,14 @@ class FTPArchiveHandler:
             (BinaryPackageName.name, Component.name, Section.name,
              BinaryPackagePublishingHistory.priority),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
-            In(BinaryPackagePublishingHistory.distroarchseriesID,
-               architectures_ids),
+            BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                architectures_ids),
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, component, section, priority = result
             return (name, suite, component, section, priority.title.lower())
@@ -353,7 +328,7 @@ class FTPArchiveHandler:
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -433,12 +408,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source overrides")
+
         def update_source_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
             source_publications, update_source_override, self.log)
 
         self.log.debug("Calculating binary overrides")
+
         def update_binary_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
@@ -485,7 +462,7 @@ class FTPArchiveHandler:
 
         # Start to write the files out
         ef = open(ef_override, "w")
-        f = open(main_override , "w")
+        f = open(main_override, "w")
         for package, priority, section in bin_overrides:
             origin = "\t".join([package, "Origin", "Ubuntu"])
             bugs = "\t".join([package, "Bugs",
@@ -538,7 +515,6 @@ class FTPArchiveHandler:
     #
     # File List Generation
     #
-
     def getSourceFiles(self, distroseries, pocket):
         """Fetch publishing information about all published source files.
 
@@ -568,6 +544,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component = result
             return (name, suite, filename, component)
@@ -605,6 +582,7 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED)
 
         suite = distroseries.getSuite(pocket)
+
         def add_suite(result):
             name, filename, component, architecturetag = result
             architecture = 'binary-' + architecturetag
@@ -616,7 +594,7 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        for distroseries in self.distroseries:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -653,12 +631,14 @@ class FTPArchiveHandler:
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source filelist.")
+
         def update_source_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
             sourcefiles, update_source_filelist, self.log)
 
         self.log.debug("Calculating binary filelist.")
+
         def update_binary_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
@@ -673,7 +653,8 @@ class FTPArchiveHandler:
                     series, pocket = (
                         self.distro.getDistroSeriesAndPocket(suite))
                     if (architecture != 'source' and
-                        not series.getDistroArchSeries(architecture[7:]).enabled):
+                        not series.getDistroArchSeries(
+                            architecture[7:]).enabled):
                         continue
                     self.writeFileList(architecture, file_names,
                                        suite, component)
@@ -719,7 +700,6 @@ class FTPArchiveHandler:
     #
     # Config Generation
     #
-
     def generateConfig(self, fullpublish=False):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
@@ -740,14 +720,13 @@ class FTPArchiveHandler:
 
         # confixtext now contains a basic header. Add a dists entry for
         # each of the distroseries we've touched
-        for distroseries_name in self._config.distroSeriesNames():
-            distroseries = self.distro[distroseries_name]
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
 
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         self.log.debug("Skipping a-f stanza for %s/%s" %
-                                           (distroseries_name, pocket.name))
+                                           (distroseries.name, pocket.name))
                         continue
                     self.publisher.checkDirtySuiteBeforePublishing(
                         distroseries, pocket)
@@ -771,8 +750,11 @@ class FTPArchiveHandler:
         """Generates the config stanza for an individual pocket."""
         suite = distroseries.getSuite(pocket)
 
-        archs = self._config.archTagsForSeries(distroseries.name)
-        comps = self._config.componentsForSeries(distroseries.name)
+        archs = [
+            a.architecturetag for a in distroseries.enabled_architectures]
+        comps = [
+            comp.name for comp in
+            self.publisher.archive.getComponentsForSeries(distroseries)]
 
         self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {

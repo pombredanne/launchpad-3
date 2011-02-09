@@ -8,18 +8,17 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'ProxyWithConnectionTimeout',
     'rescueBuilderIfLost',
     'updateBuilderStatus',
     ]
 
 import gzip
-import httplib
 import logging
 import os
 import socket
-import subprocess
 import tempfile
-import urllib2
+import transaction
 import xmlrpclib
 
 from sqlobject import (
@@ -34,6 +33,14 @@ from storm.expr import (
     Count,
     Sum,
     )
+
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    )
+from twisted.web import xmlrpc
+from twisted.web.client import downloadPage
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -58,7 +65,6 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
-    CannotBuild,
     CannotFetchFile,
     CannotResumeHost,
     CorruptBuildCookie,
@@ -66,9 +72,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import (
@@ -78,9 +81,9 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.xmlrpc import BlockingProxy
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.twistedsupport import cancel_on_timeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -92,25 +95,44 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.model.processor import Processor
 
 
-class TimeoutHTTPConnection(httplib.HTTPConnection):
-
-    def connect(self):
-        """Override the standard connect() methods to set a timeout"""
-        ret = httplib.HTTPConnection.connect(self)
-        self.sock.settimeout(config.builddmaster.socket_timeout)
-        return ret
+class QuietQueryFactory(xmlrpc._QueryFactory):
+    """XMLRPC client factory that doesn't splatter the log with junk."""
+    noisy = False
 
 
-class TimeoutHTTP(httplib.HTTP):
-    _connection_class = TimeoutHTTPConnection
+class ProxyWithConnectionTimeout(xmlrpc.Proxy):
+    """Extend Twisted's Proxy to provide a configurable connection timeout."""
 
+    def __init__(self, url, user=None, password=None, allowNone=False,
+                 useDateTime=False, timeout=None):
+        xmlrpc.Proxy.__init__(
+            self, url, user, password, allowNone, useDateTime)
+        if timeout is None:
+            self.timeout = config.builddmaster.socket_timeout
+        else:
+            self.timeout = timeout
 
-class TimeoutTransport(xmlrpclib.Transport):
-    """XMLRPC Transport to setup a socket with defined timeout"""
+    def callRemote(self, method, *args):
+        """Basically a carbon copy of the parent but passes the timeout
+        to connectTCP."""
 
-    def make_connection(self, host):
-        host, extra_headers, x509 = self.get_host_info(host)
-        return TimeoutHTTP(host)
+        def cancel(d):
+            factory.deferred = None
+            connector.disconnect()
+        factory = self.queryFactory(
+            self.path, self.host, method, self.user,
+            self.password, self.allowNone, args, cancel, self.useDateTime)
+        if self.secure:
+            from twisted.internet import ssl
+            connector = default_reactor.connectSSL(
+                self.host, self.port or 443, factory,
+                ssl.ClientContextFactory(),
+                timeout=self.timeout)
+        else:
+            connector = default_reactor.connectTCP(
+                self.host, self.port or 80, factory,
+                timeout=self.timeout)
+        return factory.deferred
 
 
 class BuilderSlave(object):
@@ -125,24 +147,7 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    # XXX: This (BuilderSlave) should use composition, rather than
-    # inheritance.
-
-    # XXX: Have a documented interface for the XML-RPC server:
-    #  - what methods
-    #  - what return values expected
-    #  - what faults
-    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
-
-    # XXX: Arguably, this interface should be asynchronous
-    # (i.e. Deferred-returning). This would mean that Builder (see below)
-    # would have to expect Deferreds.
-
-    # XXX: Once we have a client object with a defined, tested interface, we
-    # should make a test double that doesn't do any XML-RPC and can be used to
-    # make testing easier & tests faster.
-
-    def __init__(self, proxy, builder_url, vm_host):
+    def __init__(self, proxy, builder_url, vm_host, reactor=None):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
@@ -155,63 +160,110 @@ class BuilderSlave(object):
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
 
+        if reactor is None:
+            self.reactor = default_reactor
+        else:
+            self.reactor = reactor
+
     @classmethod
-    def makeBlockingSlave(cls, builder_url, vm_host):
-        rpc_url = urlappend(builder_url, 'rpc')
-        server_proxy = xmlrpclib.ServerProxy(
-            rpc_url, transport=TimeoutTransport(), allow_none=True)
-        return cls(BlockingProxy(server_proxy), builder_url, vm_host)
+    def makeBuilderSlave(cls, builder_url, vm_host, reactor=None, proxy=None):
+        """Create and return a `BuilderSlave`.
+
+        :param builder_url: The URL of the slave buildd machine,
+            e.g. http://localhost:8221
+        :param vm_host: If the slave is virtual, specify its host machine here.
+        :param reactor: Used by tests to override the Twisted reactor.
+        :param proxy: Used By tests to override the xmlrpc.Proxy.
+        """
+        rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
+        if proxy is None:
+            server_proxy = ProxyWithConnectionTimeout(rpc_url, allowNone=True)
+            server_proxy.queryFactory = QuietQueryFactory
+        else:
+            server_proxy = proxy
+        return cls(server_proxy, builder_url, vm_host, reactor)
+
+    def _with_timeout(self, d):
+        TIMEOUT = config.builddmaster.socket_timeout
+        return cancel_on_timeout(d, TIMEOUT, self.reactor)
 
     def abort(self):
         """Abort the current build."""
-        return self._server.callRemote('abort')
+        return self._with_timeout(self._server.callRemote('abort'))
 
     def clean(self):
         """Clean up the waiting files and reset the slave's internal state."""
-        return self._server.callRemote('clean')
+        return self._with_timeout(self._server.callRemote('clean'))
 
     def echo(self, *args):
         """Echo the arguments back."""
-        return self._server.callRemote('echo', *args)
+        return self._with_timeout(self._server.callRemote('echo', *args))
 
     def info(self):
         """Return the protocol version and the builder methods supported."""
-        return self._server.callRemote('info')
+        return self._with_timeout(self._server.callRemote('info'))
 
     def status(self):
         """Return the status of the build daemon."""
-        return self._server.callRemote('status')
+        return self._with_timeout(self._server.callRemote('status'))
 
     def ensurepresent(self, sha1sum, url, username, password):
+        # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return self._server.callRemote(
-            'ensurepresent', sha1sum, url, username, password)
+        return self._with_timeout(self._server.callRemote(
+            'ensurepresent', sha1sum, url, username, password))
 
-    def getFile(self, sha_sum):
-        """Construct a file-like object to return the named file."""
-        file_url = urlappend(self._file_cache_url, sha_sum)
-        return urllib2.urlopen(file_url)
+    def getFile(self, sha_sum, file_to_write):
+        """Fetch a file from the builder.
 
-    def resume(self):
-        """Resume a virtual builder.
-
-        It uses the configuration command-line (replacing 'vm_host') and
-        return its output.
-
-        :return: a (stdout, stderr, subprocess exitcode) triple
+        :param sha_sum: The sha of the file (which is also its name on the 
+            builder)
+        :param file_to_write: A file name or file-like object to write
+            the file to
+        :return: A Deferred that calls back when the download is done, or
+            errback with the error string.
         """
-        # XXX: This executes the vm_resume_command
-        # synchronously. RecordingSlave does so asynchronously. Since we
-        # always want to do this asynchronously, there's no need for the
-        # duplication.
+        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
+        # If desired we can pass a param "timeout" here but let's leave
+        # it at the default value if it becomes obvious we need to
+        # change it.
+        return downloadPage(file_url, file_to_write, followRedirect=0)
+
+    def getFiles(self, filemap):
+        """Fetch many files from the builder.
+
+        :param filemap: A Dictionary containing key values of the builder
+            file name to retrieve, which maps to a value containing the
+            file name or file object to write the file to.
+
+        :return: A DeferredList that calls back when the download is done.
+        """
+        dl = defer.gatherResults([
+            self.getFile(builder_file, filemap[builder_file])
+            for builder_file in filemap])
+        return dl
+
+    def resume(self, clock=None):
+        """Resume the builder in an asynchronous fashion.
+
+        We use the builddmaster configuration 'socket_timeout' as
+        the process timeout.
+
+        :param clock: An optional twisted.internet.task.Clock to override
+                      the default clock.  For use in tests.
+
+        :return: a Deferred that returns a
+            (stdout, stderr, subprocess exitcode) triple
+        """
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self._vm_host}
-        resume_argv = resume_command.split()
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
-
-        return (stdout, stderr, resume_process.returncode)
+        # Twisted API requires string but the configuration provides unicode.
+        resume_argv = [term.encode('utf-8') for term in resume_command.split()]
+        d = defer.Deferred()
+        p = ProcessWithTimeout(
+            d, config.builddmaster.socket_timeout, clock=clock)
+        p.spawnProcess(resume_argv[0], tuple(resume_argv))
+        return d
 
     def cacheFile(self, logger, libraryfilealias):
         """Make sure that the file at 'libraryfilealias' is on the slave.
@@ -220,17 +272,19 @@ class BuilderSlave(object):
         :param libraryfilealias: An `ILibraryFileAlias`.
         """
         url = libraryfilealias.http_url
-        logger.debug(
+        logger.info(
             "Asking builder on %s to ensure it has file %s (%s, %s)" % (
                 self._file_cache_url, libraryfilealias.filename, url,
                 libraryfilealias.content.sha1))
-        self.sendFileToSlave(libraryfilealias.content.sha1, url)
+        return self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
-        present, info = self.ensurepresent(sha1, url, username, password)
-        if not present:
-            raise CannotFetchFile(url, info)
+        d = self.ensurepresent(sha1, url, username, password)
+        def check_present((present, info)):
+            if not present:
+                raise CannotFetchFile(url, info)
+        return d.addCallback(check_present)
 
     def build(self, buildid, builder_type, chroot_sha1, filemap, args):
         """Build a thing on this build slave.
@@ -243,19 +297,18 @@ class BuilderSlave(object):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        try:
-            return self._server.callRemote(
-                'build', buildid, builder_type, chroot_sha1, filemap, args)
-        except xmlrpclib.Fault, info:
-            raise BuildSlaveFailure(info)
+        d = self._with_timeout(self._server.callRemote(
+            'build', buildid, builder_type, chroot_sha1, filemap, args))
+        def got_fault(failure):
+            failure.trap(xmlrpclib.Fault)
+            raise BuildSlaveFailure(failure.value)
+        return d.addErrback(got_fault)
 
 
 # This is a separate function since MockBuilder needs to use it too.
 # Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
-    status_sentence = builder.slaveStatusSentence()
-
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
     # two status we care about. See see lib/canonical/buildd/slave.py
@@ -265,61 +318,68 @@ def rescueBuilderIfLost(builder, logger=None):
         'BuilderStatus.WAITING': 2
         }
 
-    # Isolate the BuilderStatus string, always the first token in
-    # see lib/canonical/buildd/slave.py and
-    # IBuilder.slaveStatusSentence().
-    status = status_sentence[0]
+    d = builder.slaveStatusSentence()
 
-    # If the cookie test below fails, it will request an abort of the
-    # builder.  This will leave the builder in the aborted state and
-    # with no assigned job, and we should now "clean" the slave which
-    # will reset its state back to IDLE, ready to accept new builds.
-    # This situation is usually caused by a temporary loss of
-    # communications with the slave and the build manager had to reset
-    # the job.
-    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
-        builder.cleanSlave()
-        if logger is not None:
-            logger.info(
-                "Builder '%s' cleaned up from ABORTED" % builder.name)
-        return
+    def got_status(status_sentence):
+        """After we get the status, clean if we have to.
 
-    # If slave is not building nor waiting, it's not in need of rescuing.
-    if status not in ident_position.keys():
-        return
+        Always return status_sentence.
+        """
+        # Isolate the BuilderStatus string, always the first token in
+        # see lib/canonical/buildd/slave.py and
+        # IBuilder.slaveStatusSentence().
+        status = status_sentence[0]
 
-    slave_build_id = status_sentence[ident_position[status]]
-
-    try:
-        builder.verifySlaveBuildCookie(slave_build_id)
-    except CorruptBuildCookie, reason:
-        if status == 'BuilderStatus.WAITING':
-            builder.cleanSlave()
+        # If the cookie test below fails, it will request an abort of the
+        # builder.  This will leave the builder in the aborted state and
+        # with no assigned job, and we should now "clean" the slave which
+        # will reset its state back to IDLE, ready to accept new builds.
+        # This situation is usually caused by a temporary loss of
+        # communications with the slave and the build manager had to reset
+        # the job.
+        if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+            if not builder.virtualized:
+                # We can't reset non-virtual builders reliably as the
+                # abort() function doesn't kill the actual build job,
+                # only the sbuild process!  All we can do here is fail
+                # the builder with a message indicating the problem and
+                # wait for an admin to reboot it.
+                builder.failBuilder(
+                    "Non-virtual builder in ABORTED state, requires admin to "
+                    "restart")
+                return "dummy status"
+            if logger is not None:
+                logger.info(
+                    "Builder '%s' being cleaned up from ABORTED" %
+                    (builder.name,))
+            d = builder.cleanSlave()
+            return d.addCallback(lambda ignored: status_sentence)
         else:
-            builder.requestAbort()
-        if logger:
-            logger.info(
-                "Builder '%s' rescued from '%s': '%s'" %
-                (builder.name, slave_build_id, reason))
+            return status_sentence
 
+    def rescue_slave(status_sentence):
+        # If slave is not building nor waiting, it's not in need of rescuing.
+        status = status_sentence[0]
+        if status not in ident_position.keys():
+            return
+        slave_build_id = status_sentence[ident_position[status]]
+        try:
+            builder.verifySlaveBuildCookie(slave_build_id)
+        except CorruptBuildCookie, reason:
+            if status == 'BuilderStatus.WAITING':
+                d = builder.cleanSlave()
+            else:
+                d = builder.requestAbort()
+            def log_rescue(ignored):
+                if logger:
+                    logger.info(
+                        "Builder '%s' rescued from '%s': '%s'" %
+                        (builder.name, slave_build_id, reason))
+            return d.addCallback(log_rescue)
 
-def _update_builder_status(builder, logger=None):
-    """Really update the builder status."""
-    try:
-        builder.checkSlaveAlive()
-        builder.rescueIfLost(logger)
-    # Catch only known exceptions.
-    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-    # disturbing in this context. We should spend sometime sanitizing the
-    # exceptions raised in the Builder API since we already started the
-    # main refactoring of this area.
-    except (ValueError, TypeError, xmlrpclib.Fault,
-            BuildDaemonError), reason:
-        builder.failBuilder(str(reason))
-        if logger:
-            logger.warn(
-                "%s (%s) marked as failed due to: %s",
-                builder.name, builder.url, builder.failnotes, exc_info=True)
+    d.addCallback(got_status)
+    d.addCallback(rescue_slave)
+    return d
 
 
 def updateBuilderStatus(builder, logger=None):
@@ -327,16 +387,7 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
-    try:
-        return until_no_eintr(
-            MAX_EINTR_RETRIES, _update_builder_status, builder, logger=logger)
-    except socket.error, reason:
-        # In Python 2.6 we can use IOError instead.  It also has
-        # reason.errno but we might be using 2.5 here so use the
-        # index hack.
-        error_message = str(reason)
-        builder.handleTimeout(logger, error_message)
+    return builder.rescueIfLost(logger)
 
 
 class Builder(SQLBase):
@@ -355,7 +406,7 @@ class Builder(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    builderok = BoolCol(dbName='builderok', notNull=True)
+    _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
     speedindex = IntCol(dbName='speedindex')
@@ -363,6 +414,15 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
+
+    # The number of times a builder can consecutively fail before we
+    # give up and mark it builderok=False.
+    FAILURE_THRESHOLD = 5
+
+    def __storm_invalidated__(self):
+        """Clear cached properties."""
+        super(Builder, self).__storm_invalidated__()
+        self._current_build_behavior = None
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
@@ -401,6 +461,16 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
+    def _getBuilderok(self):
+        return self._builderok
+
+    def _setBuilderok(self, value):
+        self._builderok = value
+        if value is True:
+            self.resetFailureCount()
+
+    builderok = property(_getBuilderok, _setBuilderok)
+
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
@@ -409,18 +479,13 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         self.failure_count = 0
 
-    def checkSlaveAlive(self):
-        """See IBuilder."""
-        if self.slave.echo("Test")[0] != "Test":
-            raise BuildDaemonError("Failed to echo OK")
-
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
-        rescueBuilderIfLost(self, logger)
+        return rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
         """See `IBuilder`."""
-        updateBuilderStatus(self, logger)
+        return updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
@@ -440,20 +505,23 @@ class Builder(SQLBase):
     def resumeSlaveHost(self):
         """See IBuilder."""
         if not self.virtualized:
-            raise CannotResumeHost('Builder is not virtualized.')
+            return defer.fail(CannotResumeHost('Builder is not virtualized.'))
 
         if not self.vm_host:
-            raise CannotResumeHost('Undefined vm_host.')
+            return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
         logger = self._getSlaveScannerLogger()
-        logger.debug("Resuming %s (%s)" % (self.name, self.url))
+        logger.info("Resuming %s (%s)" % (self.name, self.url))
 
-        stdout, stderr, returncode = self.slave.resume()
-        if returncode != 0:
+        d = self.slave.resume()
+        def got_resume_ok((stdout, stderr, returncode)):
+            return stdout, stderr
+        def got_resume_bad(failure):
+            stdout, stderr, code = failure.value
             raise CannotResumeHost(
                 "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
 
-        return stdout, stderr
+        return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
     @cachedproperty
     def slave(self):
@@ -462,7 +530,7 @@ class Builder(SQLBase):
         # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        return BuilderSlave.makeBlockingSlave(self.url, self.vm_host)
+        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
@@ -483,30 +551,32 @@ class Builder(SQLBase):
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
-            self.resumeSlaveHost()
+            d = self.resumeSlaveHost()
+        else:
+            d = defer.succeed(None)
 
-        # Do it.
-        build_queue_item.markAsBuilding(self)
-        try:
-            self.current_build_behavior.dispatchBuildToSlave(
+        def ping_done(ignored):
+            return self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
-        except BuildSlaveFailure, e:
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failBuilder(
-                "Exception (%s) when setting up to new job" % (e,))
-        except CannotFetchFile, e:
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (self.name, self.url, e.file_url, e.error_information)
-            raise BuildDaemonError(message)
-        except socket.error, e:
-            error_message = "Exception (%s) when setting up new job" % (e,)
-            self.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+
+        def resume_done(ignored):
+            # Before we try and contact the resumed slave, we're going
+            # to send it a message.  This is to ensure it's accepting
+            # packets from the outside world, because testing has shown
+            # that the first packet will randomly fail for no apparent
+            # reason.  This could be a quirk of the Xen guest, we're not
+            # sure.  We also don't care about the result from this message,
+            # just that it's sent, hence the "addBoth".
+            # See bug 586359.
+            if self.virtualized:
+                d = self.slave.echo("ping")
+            else:
+                d = defer.succeed(None)
+            d.addBoth(ping_done)
+            return d
+
+        d.addCallback(resume_done)
+        return d
 
     def failBuilder(self, reason):
         """See IBuilder"""
@@ -534,22 +604,24 @@ class Builder(SQLBase):
 
     def slaveStatus(self):
         """See IBuilder."""
-        builder_version, builder_arch, mechanisms = self.slave.info()
-        status_sentence = self.slave.status()
+        d = self.slave.status()
+        def got_status(status_sentence):
+            status = {'builder_status': status_sentence[0]}
 
-        status = {'builder_status': status_sentence[0]}
+            # Extract detailed status and log information if present.
+            # Although build_id is also easily extractable here, there is no
+            # valid reason for anything to use it, so we exclude it.
+            if status['builder_status'] == 'BuilderStatus.WAITING':
+                status['build_status'] = status_sentence[1]
+            else:
+                if status['builder_status'] == 'BuilderStatus.BUILDING':
+                    status['logtail'] = status_sentence[2]
 
-        # Extract detailed status and log information if present.
-        # Although build_id is also easily extractable here, there is no
-        # valid reason for anything to use it, so we exclude it.
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            status['build_status'] = status_sentence[1]
-        else:
-            if status['builder_status'] == 'BuilderStatus.BUILDING':
-                status['logtail'] = status_sentence[2]
+            self.current_build_behavior.updateSlaveStatus(
+                status_sentence, status)
+            return status
 
-        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
-        return status
+        return d.addCallback(got_status)
 
     def slaveStatusSentence(self):
         """See IBuilder."""
@@ -562,55 +634,58 @@ class Builder(SQLBase):
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
-        self.current_build_behavior.updateBuild(queueItem)
+        return self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
-        try:
-            slave_file = self.slave.getFile(file_sha1)
-            copy_and_close(slave_file, out_file)
-            # If the requested file is the 'buildlog' compress it using gzip
-            # before storing in Librarian.
-            if file_sha1 == 'buildlog':
+
+        def got_file(ignored, filename, out_file, out_file_name):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
                 out_file = open(out_file_name)
-                filename += '.gz'
-                out_file_name += '.gz'
-                gz_file = gzip.GzipFile(out_file_name, mode='wb')
-                copy_and_close(out_file, gz_file)
-                os.remove(out_file_name.replace('.gz', ''))
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
 
-            # Reopen the file, seek to its end position, count and seek
-            # to beginning, ready for adding to the Librarian.
-            out_file = open(out_file_name)
-            out_file.seek(0, 2)
-            bytes_written = out_file.tell()
-            out_file.seek(0)
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.  getFile() closes the file
+                # object.
+                os.remove(out_file_name)
 
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                filename, bytes_written, out_file,
-                contentType=filenameToContentType(filename),
-                restricted=private)
-        finally:
-            # Finally, remove the temporary file
-            out_file.close()
-            os.remove(out_file_name)
+            return library_file.id
 
-        return library_file.id
+        d = self.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
+        return d
 
-    @property
-    def is_available(self):
+    def isAvailable(self):
         """See `IBuilder`."""
         if not self.builderok:
+            return defer.succeed(False)
+        d = self.slaveStatusSentence()
+        def catch_fault(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
             return False
-        try:
-            slavestatus = self.slaveStatusSentence()
-        except (xmlrpclib.Fault, socket.error):
-            return False
-        if slavestatus[0] != BuilderStatus.IDLE:
-            return False
-        return True
+        def check_available(status):
+            return status[0] == BuilderStatus.IDLE
+        return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""
@@ -620,6 +695,27 @@ class Builder(SQLBase):
         # name argument anymore. See bug 164203.
         logger = logging.getLogger('slave-scanner')
         return logger
+
+    def acquireBuildCandidate(self):
+        """Acquire a build candidate in an atomic fashion.
+
+        When retrieiving a candidate we need to mark it as building
+        immediately so that it is not dispatched by another builder in the
+        build manager.
+
+        We can consider this to be atomic because although the build manager
+        is a Twisted app and gives the appearance of doing lots of things at
+        once, it's still single-threaded so no more than one builder scan
+        can be in this code at the same time.
+
+        If there's ever more than one build manager running at once, then
+        this code will need some sort of mutex.
+        """
+        candidate = self._findBuildCandidate()
+        if candidate is not None:
+            candidate.markAsBuilding(self)
+            transaction.commit()
+        return candidate
 
     def _findBuildCandidate(self):
         """Find a candidate job for dispatch to an idle buildd slave.
@@ -700,52 +796,46 @@ class Builder(SQLBase):
         :param candidate: The job to dispatch.
         """
         logger = self._getSlaveScannerLogger()
-        try:
-            self.startBuild(candidate, logger)
-        except (BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch), err:
-            logger.warn('Could not build: %s' % err)
+        # Using maybeDeferred ensures that any exceptions are also
+        # wrapped up and caught later.
+        d = defer.maybeDeferred(self.startBuild, candidate, logger)
+        return d
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
-        builder_should_be_failed = True
-
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset.
             logger.warn(
                 "Resetting builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            try:
-                self.resumeSlaveHost()
-            except CannotResumeHost, err:
-                # Failed to reset builder.
-                logger.warn(
-                    "Failed to reset builder: %s -- %s" %
-                    (self.url, str(err)), exc_info=True)
-            else:
-                # Builder was reset, do *not* mark it as failed.
-                builder_should_be_failed = False
-
-        if builder_should_be_failed:
+            d = self.resumeSlaveHost()
+            return d
+        else:
+            # XXX: This should really let the failure bubble up to the
+            # scan() method that does the failure counting.
             # Mark builder as 'failed'.
             logger.warn(
-                "Disabling builder: %s -- %s" % (self.url, error_message),
-                exc_info=True)
+                "Disabling builder: %s -- %s" % (self.url, error_message))
             self.failBuilder(error_message)
+            return defer.succeed(None)
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
+        # XXX This method should be removed in favour of two separately
+        # called methods that find and dispatch the job.  It will
+        # require a lot of test fixing.
         logger = self._getSlaveScannerLogger()
-        candidate = self._findBuildCandidate()
+        candidate = self.acquireBuildCandidate()
 
         if candidate is None:
             logger.debug("No build candidates available for builder.")
-            return None
+            return defer.succeed(None)
 
         if buildd_slave is not None:
             self.setSlaveForTesting(buildd_slave)
 
-        self._dispatchBuildCandidate(candidate)
-        return candidate
+        d = self._dispatchBuildCandidate(candidate)
+        return d.addCallback(lambda ignored: candidate)
 
     def getBuildQueue(self):
         """See `IBuilder`."""
@@ -775,11 +865,15 @@ class BuilderSet(object):
     def __iter__(self):
         return iter(Builder.select())
 
-    def __getitem__(self, name):
+    def getByName(self, name):
+        """See IBuilderSet."""
         try:
             return Builder.selectOneBy(name=name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
+
+    def __getitem__(self, name):
+        return self.getByName(name)
 
     def new(self, processor, url, name, title, description, owner,
             active=True, virtualized=False, vm_host=None, manual=True):
@@ -787,7 +881,7 @@ class BuilderSet(object):
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=manual)
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -835,5 +929,5 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(builderok=True, processor=processor,
+        return Builder.selectBy(_builderok=True, processor=processor,
                                 virtualized=virtualized)

@@ -194,8 +194,7 @@ it'll say so.
 
 == Bug Badge Decoration ==
 
-We display bug badges for associated branches, mentorship,
-specifications, patches, etc.
+We display bug badges for associated branches, specifications, patches, etc.
 
     >>> def names_and_branches(contents):
     ...     table = find_tag_by_id(contents, 'buglisting')

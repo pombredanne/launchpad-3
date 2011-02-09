@@ -16,8 +16,6 @@
    the responsibility of handling the results that `LaunchpadTester` gathers.
 """
 
-from __future__ import with_statement
-
 __metatype__ = type
 
 import datetime

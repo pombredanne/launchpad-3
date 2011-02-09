@@ -646,5 +646,5 @@ bug trackers will always be a usable URL.
     >>> product.bugtracker = trac_bugtracker
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Reflow%20...
     bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

@@ -40,6 +40,8 @@ __all__ = [
     'WrongBranchMergeProposal',
 ]
 
+import httplib
+
 from lazr.restful.declarations import webservice_error
 
 from lp.app.errors import NameLookupFailed
@@ -87,6 +89,7 @@ class BranchTargetError(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -134,13 +137,32 @@ class BranchCannotBePrivate(Exception):
     """The branch cannot be made private."""
 
 
-class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to get the linked branch for a thing that can't."""
+class InvalidBranchException(Exception):
+    """Base exception for an error resolving a branch for a component.
+
+    Subclasses should set _msg_template to match their required display
+    message.
+    """
+
+    _msg_template = "Invalid branch for: %s"
 
     def __init__(self, component):
         self.component = component
-        Exception.__init__(
-            self, "%r cannot have linked branches." % (component,))
+        # It's expected that components have a name attribute,
+        # so let's assume they will and deal with any error if it occurs.
+        try:
+            component_name = component.name
+        except AttributeError:
+            component_name = str(component)
+        # The display_message contains something readable for the user.
+        self.display_message = self._msg_template % component_name
+        Exception.__init__(self, self._msg_template % (repr(component),))
+
+
+class CannotHaveLinkedBranch(InvalidBranchException):
+    """Raised when we try to get the linked branch for a thing that can't."""
+
+    _msg_template = "%s cannot have linked branches."
 
 
 class ClaimReviewFailed(Exception):
@@ -163,7 +185,7 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
 
-    By 'bad', we mean that the name is unparseable. It might be too short, too
+    By 'bad', we mean that the name is unparsable. It might be too short, too
     long or malformed in some other way.
     """
 
@@ -173,12 +195,10 @@ class InvalidNamespace(Exception):
             self, "Cannot understand namespace name: '%s'" % (name,))
 
 
-class NoLinkedBranch(Exception):
+class NoLinkedBranch(InvalidBranchException):
     """Raised when there's no linked branch for a thing."""
 
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(self, "%r has no linked branch." % (component,))
+    _msg_template = "%s has no linked branch."
 
 
 class NoSuchBranch(NameLookupFailed):

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -58,7 +58,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -72,30 +71,30 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    render_radio_widget_part,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import MenuAPI
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationImplementationStatus,
-    )
+from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -128,7 +127,7 @@ from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarView,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -915,31 +914,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
-
-        def render(widget, term_value, current_value, label=None):
-            term = widget.vocabulary.getTerm(term_value)
-            if term.value == current_value:
-                render = widget.renderSelectedItem
-            else:
-                render = widget.renderItem
-            if label is None:
-                label = term.title
-            value = term.token
-            return render(index=term.value,
-                          text=label,
-                          value=value,
-                          name=widget.name,
-                          cssClass='')
-
         widget = self.widgets['rcs_type']
         vocab = widget.vocabulary
         current_value = widget._getFormValue()
-        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
-        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
-                                   'SVN')
-        self.rcs_type_git = render(widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render(widget, vocab.HG, current_value)
-        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_cvs = render_radio_widget_part(
+            widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render_radio_widget_part(
+            widget, vocab.BZR_SVN, current_value, 'SVN')
+        self.rcs_type_git = render_radio_widget_part(
+            widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render_radio_widget_part(
+            widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render_radio_widget_part(
+            widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
 
         widget = self.widgets['branch_type']
@@ -949,7 +936,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         (self.branch_type_link,
          self.branch_type_create,
          self.branch_type_import) = [
-            render(widget, value, current_value)
+            render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
 
     def _validateLinkLpBzr(self, data):

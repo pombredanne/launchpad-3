@@ -29,7 +29,7 @@ from zope.tales.interfaces import ITALESExpression
 
 from canonical.base import base
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
 
@@ -103,6 +103,18 @@ class MemcacheExpr:
         else:
             raise SyntaxError("Too many arguments in cache: expression")
 
+        try:
+            self.visibility, modifier = self.visibility.split()
+            if modifier == 'param':
+                self.include_params = True
+            elif modifier == 'noparam':
+                self.include_params = False
+            else:
+                raise SyntaxError(
+                    'visibility modifier must be param or noparam')
+        except ValueError:
+            self.include_params = True
+
         if self.visibility not in (
             'anonymous', 'public', 'private', 'authenticated'):
             raise SyntaxError(
@@ -170,7 +182,9 @@ class MemcacheExpr:
         # We use a sanitized version in the human readable chunk of
         # the key.
         request = econtext.getValue('request')
-        url = str(request.URL) + '?' + str(request.get('QUERY_STRING', ''))
+        url = str(request.URL)
+        if self.include_params:
+            url += '?' + str(request.get('QUERY_STRING', ''))
         url = url.encode('utf8') # Ensure it is a byte string.
         sanitized_url = url.translate(self._key_translate_map)
 
@@ -198,9 +212,9 @@ class MemcacheExpr:
 
         # The extra_key is used to differentiate items inside loops.
         if self.extra_key is not None:
-            # Encode it to base64 to make it memcached key safe.
-            extra_key = unicode(
-                self.extra_key(econtext)).encode('base64').rstrip()
+            # Encode it to to a memcached key safe string. base64
+            # isn't suitable for this because it can contain whitespace.
+            extra_key = unicode(self.extra_key(econtext)).encode('hex')
         else:
             # If no extra_key was specified, we include a counter in the
             # key that is reset at the start of the request. This
@@ -268,13 +282,14 @@ class MemcacheMiss:
     tag contents and invokes this callback, which will store the
     result in memcache against the key calculated by the MemcacheExpr.
     """
+
     def __init__(self, key, max_age, memcache_expr):
         self._key = key
         self._max_age = max_age
         self._memcache_expr = memcache_expr
 
     def __call__(self, value):
-        if not config.launchpad.is_lpnet and not config.launchpad.is_edge:
+        if not config.launchpad.is_lpnet:
             # For debugging and testing purposes, prepend a description of
             # the memcache expression used to the stored value.
             rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
@@ -292,6 +307,7 @@ class MemcacheHit:
     We use a special object so the TALInterpreter knows that this
     information should not be quoted.
     """
+
     def __init__(self, value):
         self.value = value
 
@@ -335,9 +351,13 @@ def do_insertText_tal(self, stuff):
 TALInterpreter.bytecode_handlers_tal["insertText"] = do_insertText_tal
 
 
-# Just like the original, except MemcacheHit and MemcacheMiss
-# instances are also passed through unharmed.
 def evaluateText(self, expr):
+    """Replacement for zope.pagetemplate.engine.ZopeContextBase.evaluateText.
+
+    Just like the original, except MemcacheHit and MemcacheMiss
+    instances are also passed through unharmed.
+    """
+
     text = self.evaluate(expr)
     if (text is None
         or isinstance(text, (basestring, MemcacheHit, MemcacheMiss))
@@ -346,4 +366,3 @@ def evaluateText(self, expr):
     return unicode(text)
 import zope.pagetemplate.engine
 zope.pagetemplate.engine.ZopeContextBase.evaluateText = evaluateText
-

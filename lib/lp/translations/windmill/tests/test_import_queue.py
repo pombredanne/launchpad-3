@@ -78,7 +78,7 @@ class ImportQueueEntryTest(WindmillTestCase):
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/+imports/1'
+        start_url = '%s/+imports/1' % TranslationsWindmillLayer.base_url
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
         user.ensure_login(client)
@@ -235,7 +235,7 @@ class ImportQueueEntryTest(WindmillTestCase):
 
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1
-OPEN_CHOICELIST = u"//div[contains(@class, 'yui-ichoicelist-content')]"
+OPEN_CHOICELIST = u"//div[contains(@class, 'yui3-ichoicelist-content')]"
 
 
 class ImportQueueStatusTest(WindmillTestCase):
@@ -293,7 +293,7 @@ class ImportQueueStatusTest(WindmillTestCase):
         # Go to import queue page logged in as a normal user.
         client.open(url=queue_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(hubert, "test", client)
+        login_person(hubert, "hubert@example.com", "test", client)
 
         # There should be no status picker for entry 1.
         client.waits.forElement(xpath=import_status, timeout=FOR_ELEMENT)

@@ -909,7 +909,7 @@ some string in its finishReadOnlyRequest().
 In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
-    >>> from canonical.launchpad.database import EmailAddress
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from lp.registry.model.person import Person

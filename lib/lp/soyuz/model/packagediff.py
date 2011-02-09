@@ -14,10 +14,7 @@ import subprocess
 import tempfile
 
 from sqlobject import ForeignKey
-from storm.expr import (
-    Desc,
-    In,
-    )
+from storm.expr import Desc
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
@@ -135,16 +132,17 @@ class PackageDiff(SQLBase):
             ancestry_identifier = "%s (in %s)" % (
                 self.from_source.version,
                 ancestry_archive.distribution.name.capitalize())
-        return 'diff from %s to %s' % (ancestry_identifier, self.to_source.version)
+        return 'diff from %s to %s' % (
+            ancestry_identifier, self.to_source.version)
 
     @property
     def private(self):
         """See `IPackageDiff`."""
         return self.to_source.upload_archive.private
 
-    def _countExpiredLFAs(self):
-        """How many files associated with either source package were
-        already expired by the librarian?"""
+    def _countDeletedLFAs(self):
+        """How many files associated with either source package have been
+        deleted from the librarian?"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT COUNT(lfa.id)
@@ -155,7 +153,6 @@ class PackageDiff(SQLBase):
                 spr.id IN %s
                 AND sprf.SourcePackageRelease = spr.id
                 AND sprf.libraryfile = lfa.id
-                AND lfa.expires IS NOT NULL
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source.id, self.to_source.id))
         result = store.execute(query).get_one()
@@ -170,7 +167,7 @@ class PackageDiff(SQLBase):
         """
         # Make sure the files associated with the two source packages are
         # still available in the librarian.
-        if self._countExpiredLFAs() > 0:
+        if self._countDeletedLFAs() > 0:
             self.status = PackageDiffStatus.FAILED
             return
 
@@ -280,7 +277,8 @@ class PackageDiffSet:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
-        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result = store.find(
+            PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
         return result

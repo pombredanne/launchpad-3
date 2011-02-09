@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from debian.deb822 import (
     Changes,
     Deb822Dict,
@@ -23,14 +22,16 @@ from unittest import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.testing.server import (
-    cleanupLibrarianFiles,
     fillLibrarianFile,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
+    )
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
     SyncSource,
     SyncSourceError,
@@ -69,7 +70,7 @@ class TestSyncSource(TestCase):
         """
         super(TestSyncSource, self).tearDown()
         os.chdir(self._home)
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
         shutil.rmtree(self._jail)
 
     def _listFiles(self):
@@ -78,7 +79,7 @@ class TestSyncSource(TestCase):
 
     def get_messages(self):
         """Retrieve the messages sent using the logger."""
-        return self.logger.buffer.getvalue().splitlines()
+        return self.logger.getLogBuffer().splitlines()
 
     def local_downloader(self, url, filename):
         """Store download requests for future inspections."""
@@ -110,7 +111,7 @@ class TestSyncSource(TestCase):
         self.assertEqual(sync_source.origin, origin)
 
         sync_source.logger.debug('opa')
-        self.assertEqual(self.get_messages(), ['DEBUG: opa'])
+        self.assertEqual(self.get_messages(), ['DEBUG opa'])
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
@@ -226,7 +227,7 @@ class TestSyncSource(TestCase):
         self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
             self.get_messages(),
-            ['INFO: netapplet_1.0.0.orig.tar.gz: already in distro '
+            ['INFO netapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
@@ -249,7 +250,7 @@ class TestSyncSource(TestCase):
 
         self.assertEqual(
             self.get_messages(),
-            ['INFO: foobar-1.0.dsc: already in distro '
+            ['INFO foobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
         self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
 
@@ -493,6 +494,14 @@ class TestGenerateChanges(TestCase):
         changes = self.generateChanges(closes=["1232", "4323"])
         self.assertEquals("1232 4323", changes["Closes"])
         self.assertNotIn("Launchpad-bugs-fixed", changes)
+
+    def test_binary_newline(self):
+        # If the Dsc Binary: line contains newlines those are properly
+        # formatted in the new changes file.
+        dsc = self.getBaseDsc()
+        dsc["Binary"] = "binary1\n binary2 \n binary3"
+        changes = self.generateChanges(dsc=dsc)
+        self.assertEquals("binary1\n binary2 \n binary3", changes["Binary"])
 
     def test_lp_closes(self):
         # Launchpad-Bugs-Fixed gets set if any Launchpad bugs to close were

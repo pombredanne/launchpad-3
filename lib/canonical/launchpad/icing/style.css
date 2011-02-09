@@ -25,14 +25,6 @@
 
 /* === Fonts and colors === */
 
-
-
-
-
-.exception {color: #cc0000;}
-.discreet, .lesser, .duplicate-details {font-size: 90%;}
-.extra-discreet {font-size: 75%;}
-.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
@@ -60,17 +52,6 @@ form.primary.search {
 }
 @media screen {
   .notforscreen {display:none;}
-}
-
-.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
-.highlighted {padding: 0.5em;}
-.highlighted h3 {margin-top: 0;}
-.unhighlighted {padding: 0 0.5em;}
-.dimmed {
-  padding: 0 0.5em;
-  opacity: .5;
-  filter: alpha(opacity=50);
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
 .debug {
@@ -162,12 +143,6 @@ form.primary.search {
 .official-tag-error-message-value {
   color: red;
   text-decoration: underline;
-}
-
-.tags-container {
-  width: 45%;
-  text-align: left;
-  float: left;
 }
 
 .tags-show { display: block; }
@@ -263,7 +238,6 @@ div#branch-description {
     margin-top: 1em;
 }
 
-.product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 
@@ -655,21 +629,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.search-box {
-  text-align: left;
-  float: left;
-  border:1px solid #d6d6d6;
-  margin: 0.5em 0 0.5em 0;
-  color: #717171;
-  padding: 8px;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-
-.search-box form.primary.search {
-  margin: 0.5em;
-}
 
 /* ====== Content area styles ====== */
 

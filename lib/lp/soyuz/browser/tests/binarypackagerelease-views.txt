@@ -1,8 +1,8 @@
 = BinaryPackageRelease Pages =
 
   >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.database import BinaryPackageRelease
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
   >>> pmount_bin = BinaryPackageRelease.get(15)
   >>> pmount_bin.name

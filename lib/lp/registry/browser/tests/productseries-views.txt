@@ -82,7 +82,7 @@ update the milestones and releases table.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'lp.registry.milestoneoverlay',
+        LPS.use(... 'lp.registry.milestoneoverlay',
                       'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';

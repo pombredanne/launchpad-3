@@ -11,6 +11,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestBuilderEditView(TestCaseWithFactory):
@@ -21,7 +22,7 @@ class TestBuilderEditView(TestCaseWithFactory):
         super(TestBuilderEditView, self).setUp()
         # Login as an admin to ensure access to the view's context
         # object.
-        login('admin@canonical.com')
+        login(ADMIN_EMAIL)
         self.builder = removeSecurityProxy(self.factory.makeBuilder())
 
     def initialize_view(self):
@@ -34,7 +35,7 @@ class TestBuilderEditView(TestCaseWithFactory):
         return view
 
     def test_posting_form_doesnt_call_slave_xmlrpc(self):
-        # Posting the +edit for should not call is_available, which
+        # Posting the +edit for should not call isAvailable, which
         # would do xmlrpc to a slave builder and is explicitly forbidden
         # in a webapp process.
         view = self.initialize_view()

@@ -64,7 +64,7 @@ example schema:
 A form that handles all fields in the schema needs only set the
 "schema" attribute:
 
-  >>> from canonical.launchpad.webapp import LaunchpadFormView
+  >>> from lp.app.browser.launchpadform import LaunchpadFormView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> class FormTestView1(LaunchpadFormView):
@@ -132,7 +132,7 @@ attribute:
 
   >>> from zope.app.form.browser import TextWidget
   >>> from canonical.launchpad.webapp import custom_widget
-  >>> from canonical.widgets import PasswordChangeWidget
+  >>> from lp.app.widgets.password import PasswordChangeWidget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest

@@ -8,6 +8,8 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
+from collections import defaultdict
+
 from storm.expr import (
     And,
     Count,
@@ -32,6 +34,10 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     InvalidFilter,
     )
+
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugbranch import BugBranch
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
@@ -145,7 +151,7 @@ class GenericBranchCollection:
         return self.store.using(*tables).find(Branch, *expressions)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
-                          target_branch=None):
+                          target_branch=None, merged_revnos=None):
         """See `IBranchCollection`."""
         expressions = [
             BranchMergeProposal.source_branchID.is_in(
@@ -158,6 +164,9 @@ class GenericBranchCollection:
         if target_branch is not None:
             expressions.append(
                 BranchMergeProposal.target_branch == target_branch)
+        if merged_revnos is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revno.is_in(merged_revnos))
         expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(
@@ -204,6 +213,48 @@ class GenericBranchCollection:
         # nor now.
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
+
+    def getExtendedRevisionDetails(self, revisions):
+        """See `IBranchCollection`."""
+
+        if not revisions:
+            return []
+        branch = revisions[0].branch
+
+        def make_rev_info(branch_revision, merge_proposal_revs, linked_bugs):
+            rev_info = {
+                'revision': branch_revision,
+                'linked_bugs': None,
+                'merge_proposal': None,
+                }
+            merge_proposal = merge_proposal_revs.get(branch_revision.sequence)
+            rev_info['merge_proposal'] = merge_proposal
+            if merge_proposal is not None:
+                rev_info['linked_bugs'] = linked_bugs.get(
+                    merge_proposal.source_branch.id)
+            return rev_info
+
+        rev_nos = [revision.sequence for revision in revisions]
+        merge_proposals = self.getMergeProposals(
+                target_branch=branch, merged_revnos=rev_nos,
+                statuses=[BranchMergeProposalStatus.MERGED])
+        merge_proposal_revs = dict(
+                [(mp.merged_revno, mp) for mp in merge_proposals])
+        source_branch_ids = [mp.source_branch.id for mp in merge_proposals]
+
+        filter = [
+            BugBranch.bug == Bug.id,
+            BugBranch.branchID.is_in(
+                source_branch_ids),
+            ]
+        bugs = self.store.find((Bug, BugBranch), filter)
+        linked_bugs = defaultdict(list)
+        for (bug, bugbranch) in bugs:
+            linked_bugs[bugbranch.branchID].append(bug)
+
+        return [make_rev_info(
+                rev, merge_proposal_revs, linked_bugs)
+                for rev in revisions]
 
     def getTeamsWithBranches(self, person):
         """See `IBranchCollection`."""
@@ -361,10 +412,13 @@ class GenericBranchCollection:
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
 
-    def targetedBy(self, person):
+    def targetedBy(self, person, since=None):
         """See `IBranchCollection`."""
+        clauses = [BranchMergeProposal.registrant == person]
+        if since is not None:
+            clauses.append(BranchMergeProposal.date_created >= since)
         return self._filterBy(
-            [BranchMergeProposal.registrant == person],
+            clauses,
             table=BranchMergeProposal,
             join=Join(BranchMergeProposal,
                       BranchMergeProposal.target_branch == Branch.id))

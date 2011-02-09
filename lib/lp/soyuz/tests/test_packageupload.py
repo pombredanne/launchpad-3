@@ -10,13 +10,13 @@ import shutil
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,

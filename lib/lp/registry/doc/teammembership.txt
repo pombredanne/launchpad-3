@@ -131,6 +131,8 @@ requester to the join() method.
     ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
     >>> ubuntu_team in t2.activemembers
     False
+    >>> [m.displayname for m in t2.allmembers]
+    [u'No Privileges Person']
     >>> login(ANONYMOUS)
 
 Another API for adding members is ITeam.addMember(), which ensures the given
@@ -983,8 +985,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from lp.services.propertycache import IPropertyCache
-    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

@@ -39,6 +39,7 @@ from lazr.restful.declarations import (
     exported,
     mutator_for,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -75,6 +76,7 @@ from lp.code.bzr import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -585,6 +587,19 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param review_requests: An optional list of (`Person`, review_type).
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revnos=List(Int(
+            title=_('The target-branch revno of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """Return matching BranchMergeProposals."""
+
     def scheduleDiffUpdates():
         """Create UpdatePreviewDiffJobs for this branch's targets."""
 
@@ -939,7 +954,8 @@ class IBranchEditableAttributes(Interface):
             trailing_slash=False,
             description=_(
                 "This is the external location where the Bazaar "
-                "branch is hosted.")))
+                "branch is hosted. This is None when the branch is"
+                "Hosted by Launchpad")))
 
     mirror_status_message = exported(
         Text(

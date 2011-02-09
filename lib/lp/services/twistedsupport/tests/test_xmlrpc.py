@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-import unittest
-
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from lp.services.twistedsupport import extract_result
 from lp.services.twistedsupport.xmlrpc import (
@@ -17,6 +14,7 @@ from lp.services.twistedsupport.xmlrpc import (
     trap_fault,
     )
 from lp.services.xmlrpc import LaunchpadFault
+from lp.testing import TestCase
 
 
 class TestFaultOne(LaunchpadFault):
@@ -130,8 +128,3 @@ class TestDeferredBlockingProxy(TestCase):
         d = proxy.callRemote('not_ok', 2, 3, c=8)
         error = self.assertRaises(RuntimeError, extract_result, d)
         self.assertEqual(str(error), str((8, 3, 2)))
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

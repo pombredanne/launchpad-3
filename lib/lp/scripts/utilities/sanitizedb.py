@@ -380,7 +380,7 @@ class SanitizeDb(LaunchpadScript):
                 EmailAddress.status == EmailAddressStatus.NEW,
                 EmailAddress.status == EmailAddressStatus.OLD,
                 EmailAddress.email.lower().like(
-                    '%@example.com', case_sensitive=True))).remove()
+                    u'%@example.com', case_sensitive=True))).remove()
         self.store.flush()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)

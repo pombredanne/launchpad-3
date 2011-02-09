@@ -19,10 +19,8 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-
-import paramiko
-
 from devscripts.ec2test.session import EC2SessionName
+import paramiko
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -497,7 +495,7 @@ class EC2Instance:
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
-    def check_bundling_prerequisites(self):
+    def check_bundling_prerequisites(self, name, credentials):
         """Check, as best we can, that all the files we need to bundle exist.
         """
         if subprocess.call(['which', 'ec2-register']):
@@ -518,6 +516,10 @@ class EC2Instance:
             local_ec2_dir, 'cert-*.pem', 'certificate')
         self.local_pk = self._check_single_glob_match(
             local_ec2_dir, 'pk-*.pem', 'private key')
+        # The bucket `name` needs to exist and be accessible. We create it
+        # here to reserve the name. If the bucket already exists and conforms
+        # to the above requirements, this is a no-op.
+        credentials.connect_s3().create_bucket(name)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.

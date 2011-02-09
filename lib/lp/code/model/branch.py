@@ -10,10 +10,12 @@ __all__ = [
     ]
 
 from datetime import datetime
+import operator
 import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -58,6 +60,9 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -129,7 +134,6 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -283,7 +287,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Revision.id == BranchRevision.revision_id,
             BranchRevision.sequence != None)
         result = result.order_by(Desc(BranchRevision.sequence))
-        return prejoin(result, return_slice=slice(0, 1))
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -360,8 +364,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IHasMergeProposals`."""
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """See `IBranch`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
@@ -369,7 +374,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status, target_branch=self)
+        return collection.getMergeProposals(
+            status, target_branch=self, merged_revnos=merged_revnos)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -427,6 +433,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_requests is None:
             review_requests = []
 
+        # If no reviewer is specified, use the default for the branch.
+        if len(review_requests) == 0:
+            review_requests.append((target_branch.code_reviewer, None))
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch,
@@ -467,10 +477,18 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
-        jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets
-                if target.target_branch.last_scanned_id is not None]
+        from lp.code.model.branchmergeproposaljob import (
+                GenerateIncrementalDiffJob,
+                UpdatePreviewDiffJob,
+            )
+        jobs = []
+        for merge_proposal in self.active_landing_targets:
+            if merge_proposal.target_branch.last_scanned_id is None:
+                continue
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+            for old, new in merge_proposal.getMissingIncrementalDiffs():
+                GenerateIncrementalDiffJob.create(
+                    merge_proposal, old.revision_id, new.revision_id)
         return jobs
 
     def addToLaunchBag(self, launchbag):
@@ -579,7 +597,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Revision.revision_date > timestamp)
         result = result.order_by(Desc(BranchRevision.sequence))
         # Return BranchRevision but prejoin Revision as well.
-        return prejoin(result, slice(0, 1))
+        return DecoratedResultSet(result, operator.itemgetter(0))
 
     def canBeDeleted(self):
         """See `IBranch`."""
@@ -912,8 +930,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        columns = (
-            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -921,7 +938,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for branch_revision_id, sequence, revision_id in rows:
+        for sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)
@@ -1009,7 +1026,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        return self.destroySelf(break_references=True)
+        try:
+            return self.destroySelf(break_references=True)
+        except CannotDeleteBranch, e:
+            # Reraise and expose exception here so that the webservice_error
+            # is propogated.
+            raise expose(CannotDeleteBranch(e.message))
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
@@ -1071,12 +1093,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             name = "date_trunc"
 
         results = Store.of(self).find(
-            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            (DateTrunc(u'day', Revision.revision_date), Count(Revision.id)),
             Revision.id == BranchRevision.revision_id,
             Revision.revision_date > since,
             BranchRevision.branch == self)
         results = results.group_by(
-            DateTrunc('day', Revision.revision_date))
+            DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
     @property

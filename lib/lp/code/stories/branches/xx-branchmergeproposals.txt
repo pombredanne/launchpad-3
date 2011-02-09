@@ -10,9 +10,15 @@ In order to test notifications, we need a subscriber for the branch.
     >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (
+    ...     BranchMergeProposalStatus,
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
@@ -41,16 +47,7 @@ is `Propose for merging`.
 Registering a merge proposal
 ----------------------------
 
-Users who are not logged on do not see the link to register.
-
-    >>> anon_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Propose for merging')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Logged in users can.
+Logged in users can register a merge proposal.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(
@@ -62,6 +59,8 @@ Logged in users can.
     >>> nopriv_browser.getControl(
     ...     name='field.prerequisite_branch').value = (
     ...         '~name12/gnome-terminal/pushed')
+    >>> print_tag_with_id(nopriv_browser.contents, 'field.reviewer')
+    <BLANKLINE>
 
 There is a cancel link shown with the buttons.
 
@@ -145,13 +144,16 @@ for the source_branch.
 Requesting reviews
 ------------------
 
-You can request a review of a merge proposal.
-
+Any newly created merge proposal will have the reviewer set if a default
+has been defined or the branch owner will be used.
     >>> sample_browser.open(klingon_proposal)
-    >>> sample_browser.getLink('Request a review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'mark'
-    >>> sample_browser.getControl('Review type').value = 'first'
-    >>> sample_browser.getControl('Request Review').click()
+    >>> pending = find_tag_by_id(
+    ...     sample_browser.contents, 'code-review-votes')
+    >>> print extract_text(pending)
+    Reviewer          Review Type    Date Requested    Status
+    Sample Person                    ... ago           Pending [Review]
+    Review via email: mp+...@code.launchpad.dev
+                                                 Request another review
 
 The status of the merge proposal is updated to "Needs review".
 
@@ -162,14 +164,14 @@ The status of the merge proposal is updated to "Needs review".
 Additional reviews can be requested.
 
     >>> sample_browser.getLink('Request another review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'name12'
+    >>> sample_browser.getControl('Reviewer').value = 'mark'
     >>> sample_browser.getControl('Request Review').click()
 
 You can even re-request the same person to review, so that a new email is
 sent.
 
     >>> sample_browser.getLink('Request another review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'mark'
+    >>> sample_browser.getControl('Reviewer').value = 'name12'
     >>> sample_browser.getControl('Review type').value = 'second'
     >>> sample_browser.getControl('Request Review').click()
 
@@ -179,8 +181,8 @@ Only the last request is listed, showing the last review type.
     ...     sample_browser.contents, 'code-review-votes')
     >>> print extract_text(pending)
     Reviewer          Review Type    Date Requested    Status
-    Sample Person                                      Pending [Review]
-    Mark Shuttleworth second         ... ago           Pending
+    Mark Shuttleworth                ... ago           Pending
+    Sample Person     second         ... ago           Pending [Review]
     Review via email: mp+...@code.launchpad.dev
                                                  Request another review
 
@@ -672,13 +674,21 @@ Merge proposal details shown on the branch page
 -----------------------------------------------
 
 A branch that has a merge proposal, but no requested reviews shows this on the
-branch page.
+branch page. We create a proposal using the factory since we want to force
+one without a reviewer.
 
-    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/feature')
-    >>> nopriv_browser.getLink('Propose for merging').click()
-    >>> nopriv_browser.getControl('Reviewer').value = ''
-    >>> nopriv_browser.getControl('Propose Merge').click()
-    >>> nopriv_browser.getLink('lp://dev/~fred/fooix/feature').click()
+    >>> login('foo.bar@canonical.com')
+    >>> source_branch = getUtility(IBranchLookup).getByUniqueName(
+    ...     '~fred/fooix/feature')
+    >>> fooix = getUtility(IProductSet).getByName('fooix')
+    >>> bmp = make_merge_proposal_without_reviewers(
+    ...     factory, registrant=eric, source_branch=source_branch,
+    ...     target_branch=fooix.development_focus.branch,
+    ...     set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+    >>> bmp_url = canonical_url(bmp)
+    >>> branch_url = canonical_url(bmp.source_branch)
+    >>> logout()
+    >>> nopriv_browser.open(branch_url)
     >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
     Ready for review for merging into lp://dev/fooix
       No reviews requested

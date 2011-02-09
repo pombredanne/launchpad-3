@@ -6,20 +6,18 @@
 """Tests for Branches."""
 
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (
     datetime,
     timedelta,
     )
-import simplejson
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
+import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 import transaction
@@ -37,10 +35,8 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -1581,6 +1577,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
 
         self.user = self.factory.makePerson()
+        self.reviewer = self.factory.makePerson(name='johndoe')
         self.source = self.factory.makeProductBranch(
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
@@ -1591,6 +1588,18 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     def tearDown(self):
         logout()
         super(BranchAddLandingTarget, self).tearDown()
+
+    def assertOnePendingReview(self, proposal, reviewer, review_type=None):
+        # There should be one pending vote for the reviewer with the specified
+        # review type.
+        [vote] = list(proposal.votes)
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual(self.user, vote.registrant)
+        self.assertIs(None, vote.comment)
+        if review_type is None:
+            self.assertIs(None, vote.review_type)
+        else:
+            self.assertEqual(review_type, vote.review_type)
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
@@ -1669,6 +1678,25 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         proposal.rejectBranch(self.user, 'some_revision')
         self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
+
+    def test_default_reviewer(self):
+        """If the target branch has a default reviewer set, this reviewer
+        should be assigned to the merge proposal.
+        """
+        target_with_default_reviewer = self.factory.makeProductBranch(
+            name='target-branch-with-reviewer', owner=self.user,
+            product=self.product, reviewer=self.reviewer)
+        proposal = self.source.addLandingTarget(
+            self.user, target_with_default_reviewer)
+        self.assertOnePendingReview(proposal, self.reviewer)
+
+    def test_default_reviewer_when_owner(self):
+        """If the target branch has a no default reviewer set, the branch
+        owner should be assigned as the reviewer for the merge proposal.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target)
+        self.assertOnePendingReview(proposal, self.source.owner)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
@@ -2728,7 +2756,8 @@ class TestMergeQueue(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         config = simplejson.dumps({
             'path': '/',
-            'test': 'make test',})
+            'test': 'make test',
+            })
 
         with person_logged_in(branch.owner):
             branch.setMergeQueueConfig(config)
@@ -2785,6 +2814,19 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
+        mp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for('test', mp.registrant,
+            service_root="http://api.launchpad.dev:8085")
+        with person_logged_in(mp.registrant):
+            mp.markAsMerged(merged_revno=123)
+            transaction.commit()
+            target = ws_object(launchpad, mp.target_branch)
+            mp = ws_object(launchpad, mp)
+        self.assertEqual([mp], list(target.getMergeProposals(
+            status=['Merged'], merged_revnos=[123])))
 
 
 def test_suite():

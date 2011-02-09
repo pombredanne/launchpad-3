@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-from __future__ import with_statement
 
 __metaclass__ = type
 
@@ -19,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -32,7 +26,11 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     InvalidEmailAddress,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -40,6 +38,7 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -48,6 +47,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
@@ -56,15 +56,24 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.karma import (
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    login,
     login_person,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -79,7 +88,7 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonTeams, self).setUp()
-        self.user = self.factory.makePerson()
+        self.user = self.factory.makePerson(name="test-member")
         self.a_team = self.factory.makeTeam(name='a')
         self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
         self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
@@ -221,6 +230,38 @@ class TestPersonTeams(TestCaseWithFactory):
             {},
             removeSecurityProxy(self.user)._inTeam_cache)
 
+    def test_inTeam_person_string_missing_team(self):
+        # If a check against a string is done, the team lookup is implicit:
+        # treat a missing team as an empty team so that any pages that choose
+        # to do this don't blow up unnecessarily. Similarly feature flags
+        # team: scopes depend on this.
+        self.assertFalse(self.user.inTeam('does-not-exist'))
+
+    def test_inTeam_person_incorrect_archive(self):
+        # If a person has an archive marked incorrectly that person should
+        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PARTNER)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_no_archive(self):
+        # If a person has no archive that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
+    def test_inTeam_person_ppa_archive(self):
+        # If a person has a PPA that person should still be retrieved by
+        # 'all_members_prepopulated'.
+        self.factory.makeArchive(
+            owner=self.user, purpose=ArchivePurpose.PPA)
+        expected_members = sorted([self.user, self.a_team.teamowner])
+        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        self.assertEqual(expected_members, retrieved_members)
+
 
 class TestPerson(TestCaseWithFactory):
 
@@ -250,7 +291,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.guadamen = person_set.getByName('guadamen')
         product_set = getUtility(IProductSet)
         self.bzr = product_set.getByName('bzr')
-        self.now = datetime.now(pytz.timezone('UTC'))
+        self.now = datetime.now(pytz.UTC)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -274,6 +315,25 @@ class TestPersonStates(TestCaseWithFactory):
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
+
+    def test_deactivateAccountReassignsOwnerAndDriver(self):
+        """Product owner and driver are reassigned.
+
+        If a user is a product owner and/or driver, when the user is
+        deactivated the roles are assigned to the registry experts team.  Note
+        a person can have both roles and the method must handle both at once,
+        that's why this is one test.
+        """
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        with person_logged_in(user):
+            product.driver = user
+            user.deactivateAccount("Going off the grid.")
+        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+        self.assertEqual(registry_team, product.owner,
+                         "Owner is not registry team.")
+        self.assertEqual(registry_team, product.driver,
+                         "Driver is not registry team.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
@@ -375,7 +435,8 @@ class TestPersonStates(TestCaseWithFactory):
             'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'unmapped_participants',
+            'proposedmembers', 'unmapped_participants', 'longitude',
+            'latitude', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:
@@ -399,12 +460,12 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(TestCase):
+class TestPersonSet(TestCaseWithFactory):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        super(TestPersonSet, self).setUp()
         login(ANONYMOUS)
         self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
@@ -414,6 +475,15 @@ class TestPersonSet(TestCase):
             "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
+
+    def test_isNameBlacklisted_user_is_admin(self):
+        team = self.factory.makeTeam()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
+        self.store = IStore(self.admin_exp)
+        self.store.flush()
+        user = team.teamowner
+        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
 
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'
@@ -428,8 +498,72 @@ class TestPersonSet(TestCase):
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
 
+    def test_getPrecachedPersonsFromIDs(self):
+        # The getPrecachedPersonsFromIDs() method should only make one
+        # query to load all the extraneous data. Accessing the
+        # attributes should then cause zero queries.
+        person_ids = [
+            self.factory.makePerson().id
+            for i in range(3)]
 
-class TestPersonSetMerge(TestCaseWithFactory):
+        with StormStatementRecorder() as recorder:
+            persons = list(self.person_set.getPrecachedPersonsFromIDs(
+                person_ids, need_karma=True, need_ubuntu_coc=True,
+                need_location=True, need_archive=True,
+                need_preferred_email=True, need_validity=True))
+        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+
+        with StormStatementRecorder() as recorder:
+            for person in persons:
+                person.is_valid_person
+                person.karma
+                person.is_ubuntu_coc_signer
+                person.location
+                person.archive
+                person.preferredemail
+        self.assertThat(recorder, HasQueryCount(LessThan(1)))
+
+
+class KarmaTestMixin:
+    """Helper methods for setting karma."""
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        total = 0
+        # Insert category total for person and project.
+        for category_name, value in category_name_values:
+            category = KarmaCategory.byName(category_name)
+            self.cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
+            total += value
+        # Insert total cache for person and project.
+        self.cache_manager.new(
+            total, person.id, None, product_id=product.id)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+    def _makeKarmaTotalCache(self, person, total):
+        """Create a KarmaTotalCache entry.
+
+        In order to create the KarmaTotalCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        KarmaTotalCache(person=person.id, karma_total=total)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+
+class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
     """Test cases for PersonSet merge."""
 
     layer = DatabaseFunctionalLayer
@@ -476,6 +610,148 @@ class TestPersonSetMerge(TestCaseWithFactory):
 
         self.assertIn(duplicate_identifier, merged_identifiers)
         self.assertIn(person_identifier, merged_identifiers)
+
+    def test_karmacache_transferred_to_user_has_no_karma(self):
+        # Verify that the merged user has no KarmaCache entries,
+        # and the karma total was transfered.
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        product = self.factory.makeProduct()
+        duplicate = self.factory.makePerson()
+        self._makeKarmaCache(
+            duplicate, product, [('bugs', 10)])
+        self._makeKarmaTotalCache(duplicate, 15)
+        # The karma changes invalidated duplicate instance.
+        duplicate = self.person_set.get(duplicate.id)
+        person = self.factory.makePerson()
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual([], duplicate.karma_category_caches)
+        self.assertEqual(0, duplicate.karma)
+        self.assertEqual(15, person.karma)
+
+    def test_karmacache_transferred_to_user_has_karma(self):
+        # Verify that the merged user has no KarmaCache entries,
+        # and the karma total was summed.
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        product = self.factory.makeProduct()
+        duplicate = self.factory.makePerson()
+        self._makeKarmaCache(
+            duplicate, product, [('bugs', 10)])
+        self._makeKarmaTotalCache(duplicate, 15)
+        person = self.factory.makePerson()
+        self._makeKarmaCache(
+            person, product, [('bugs', 9)])
+        self._makeKarmaTotalCache(person, 13)
+        # The karma changes invalidated duplicate and person instances.
+        duplicate = self.person_set.get(duplicate.id)
+        person = self.person_set.get(person.id)
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual([], duplicate.karma_category_caches)
+        self.assertEqual(0, duplicate.karma)
+        self.assertEqual(28, person.karma)
+
+    def test_person_date_created_preserved(self):
+        # Verify that the oldest datecreated is merged.
+        person = self.factory.makePerson()
+        duplicate = self.factory.makePerson()
+        oldest_date = datetime(
+            2005, 11, 25, 0, 0, 0, 0, pytz.timezone('UTC'))
+        removeSecurityProxy(duplicate).datecreated = oldest_date
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(oldest_date, person.datecreated)
+
+    def _doMerge(self, test_team, target_team):
+        test_team.deactivateAllMembers(
+            comment='',
+            reviewer=test_team.teamowner)
+        self.person_set.merge(test_team, target_team)
+
+    def test_team_without_super_teams_is_fine(self):
+        # A team with no members and no super teams
+        # merges without errors.
+        test_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        self._doMerge(test_team, target_team)
+
+    def test_team_with_super_teams_raises_error(self):
+        # A team with no members but with superteams
+        # raises an assertion error.
+        test_team = self.factory.makeTeam()
+        super_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        test_team.join(super_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError,
+            self._doMerge,
+            test_team,
+            target_team)
+
+    def test_merge_moves_branches(self):
+        # When person/teams are merged, branches owned by the from person
+        # are moved.
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        self._do_premerge(branch.owner, person)
+        login_person(person)
+        self.person_set.merge(branch.owner, person)
+        branches = person.getBranches()
+        self.assertEqual(1, branches.count())
+
+    def test_merge_with_duplicated_branches(self):
+        # If both the from and to people have branches with the same name,
+        # merging renames the duplicate from the from person's side.
+        product = self.factory.makeProduct()
+        from_branch = self.factory.makeBranch(name='foo', product=product)
+        to_branch = self.factory.makeBranch(name='foo', product=product)
+        mergee = to_branch.owner
+        self._do_premerge(from_branch.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(from_branch.owner, mergee)
+        branches = [b.name for b in mergee.getBranches()]
+        self.assertEqual(2, len(branches))
+        self.assertEqual([u'foo', u'foo-1'], branches)
+
+    def test_merge_moves_recipes(self):
+        # When person/teams are merged, recipes owned by the from person are
+        # moved.
+        person = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        # Delete the PPA, which is required for the merge to work.
+        with person_logged_in(recipe.owner):
+            recipe.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(recipe.owner, person)
+        login_person(person)
+        self.person_set.merge(recipe.owner, person)
+        self.assertEqual(1, person.getRecipes().count())
+
+    def test_merge_with_duplicated_recipes(self):
+        # If both the from and to people have recipes with the same name,
+        # merging renames the duplicate from the from person's side.
+        merge_from = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'FROM')
+        merge_to = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'TO')
+        mergee = merge_to.owner
+        # Delete merge_from's PPA, which is required for the merge to work.
+        with person_logged_in(merge_from.owner):
+            merge_from.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(merge_from.owner, mergee)
+        login_person(mergee)
+        self.person_set.merge(merge_from.owner, merge_to.owner)
+        recipes = mergee.getRecipes()
+        self.assertEqual(2, recipes.count())
+        descriptions = [r.description for r in recipes]
+        self.assertEqual([u'TO', u'FROM'], descriptions)
+        self.assertEqual(u'foo-1', recipes[1].name)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
@@ -842,7 +1118,7 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             assignee=self.user)
 
 
-class TestPersonKarma(TestCaseWithFactory):
+class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
 
     layer = DatabaseFunctionalLayer
 
@@ -859,28 +1135,6 @@ class TestPersonKarma(TestCaseWithFactory):
             self.person, b_product, [('answers', 50)])
         self._makeKarmaCache(
             self.person, self.c_product, [('code', 100), (('bugs', 50))])
-
-    def _makeKarmaCache(self, person, product, category_name_values):
-        """Create a KarmaCache entry with the given arguments.
-
-        In order to create the KarmaCache record we must switch to the DB
-        user 'karma'. This requires a commit and invalidates the product
-        instance.
-        """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        total = 0
-        # Insert category total for person and project.
-        for category_name, value in category_name_values:
-            category = KarmaCategory.byName(category_name)
-            self.cache_manager.new(
-                value, person.id, category.id, product_id=product.id)
-            total += value
-        # Insert total cache for person and project.
-        self.cache_manager.new(
-            total, person.id, None, product_id=product.id)
-        transaction.commit()
-        reconnect_stores('launchpad')
 
     def test__getProjectsWithTheMostKarma_ordering(self):
         # Verify that pillars are ordered by karma.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -18,7 +18,6 @@ import time
 from psycopg2 import IntegrityError
 import pytz
 from storm.locals import (
-    In,
     Max,
     Min,
     Select,
@@ -43,8 +42,8 @@ from canonical.launchpad.database.librarian import (
     )
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -54,6 +53,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -203,7 +203,8 @@ class RevisionCachePruner(TunableLoop):
 class CodeImportEventPruner(TunableLoop):
     """Prune `CodeImportEvent`s that are more than a month old.
 
-    Events that happened more than 30 days ago are really of no interest to us.
+    Events that happened more than 30 days ago are really of no
+    interest to us.
     """
 
     maximum_chunk_size = 10000
@@ -431,9 +432,12 @@ class PersonPruner(TunableLoop):
                 postgresql.listReferences(cursor(), 'person', 'id')):
             # Skip things that don't link to Person.id or that link to it from
             # TeamParticipation or EmailAddress, as all Person entries will be
-            # linked to from these tables.
+            # linked to from these tables.  Similarly, PersonSettings can
+            # simply be deleted if it exists, because it has a 1 (or 0) to 1
+            # relationship with Person.
             if (to_table != 'person' or to_column != 'id'
-                or from_table in ('teamparticipation', 'emailaddress')):
+                or from_table in ('teamparticipation', 'emailaddress',
+                                  'personsettings')):
                 continue
             self.log.debug(
                 "Populating LinkedPeople from %s.%s"
@@ -509,6 +513,7 @@ class PersonPruner(TunableLoop):
                 UPDATE EmailAddress SET person=NULL
                 WHERE person IN (%s)
                 """ % people_ids)
+            # This cascade deletes any PersonSettings records.
             self.store.execute("""
                 DELETE FROM Person
                 WHERE id IN (%s)
@@ -524,6 +529,31 @@ class PersonPruner(TunableLoop):
             self.log.warning(
                 "Failed to delete %d Person records. Left for next time."
                 % chunk_size)
+
+
+class BugMessageIndexer(TunableLoop):
+    """Index `BugMessage` in the DB to allow smarter queries in future.
+
+    We find bugs with unindexed messages, and ask the bug to index them.
+    """
+    maximum_chunk_size = 10000
+
+    def _to_process(self):
+        return IMasterStore(BugMessage).find(
+            BugMessage.bugID,
+            BugMessage.index==None).config(distinct=True)
+
+    def isDone(self):
+        return self._to_process().any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        bugs_to_index = list(self._to_process()[:chunk_size])
+        bugs = IMasterStore(Bug).find(Bug, Bug.id.is_in(bugs_to_index))
+        for bug in bugs:
+            bug.reindexMessages()
+        transaction.commit()
+        self.log.debug("Indexed %d bugs" % len(bugs_to_index))
 
 
 class BugNotificationPruner(TunableLoop):
@@ -547,7 +577,7 @@ class BugNotificationPruner(TunableLoop):
         ids_to_remove = list(self._to_remove()[:chunk_size])
         num_removed = IMasterStore(BugNotification).find(
             BugNotification,
-            In(BugNotification.id, ids_to_remove)).remove()
+            BugNotification.id.is_in(ids_to_remove)).remove()
         transaction.commit()
         self.log.debug("Removed %d rows" % num_removed)
 
@@ -579,7 +609,7 @@ class BranchJobPruner(TunableLoop):
             # constraint is ON DELETE CASCADE.
             IMasterStore(Job).find(
                 Job,
-                In(Job.id, ids_to_remove)).remove()
+                Job.id.is_in(ids_to_remove)).remove()
         else:
             self._is_done = True
         transaction.commit()
@@ -719,7 +749,7 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._to_remove()[:chunk_size])
         self.store.find(
-            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
+            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
         transaction.commit()
 
 
@@ -867,6 +897,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
+        BugMessageIndexer,
         ]
     experimental_tunable_loops = []
 

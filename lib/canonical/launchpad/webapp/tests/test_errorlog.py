@@ -3,7 +3,6 @@
 
 """Tests for error logging & OOPS reporting."""
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
@@ -31,7 +30,7 @@ from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _is_sensitive,

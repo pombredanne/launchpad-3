@@ -53,6 +53,7 @@ At the top level we provide a collection of bugs.
   users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
   users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
+  web_link: u'http://bugs.../bugs/11'
   who_made_private_link: None
 
 Bugs are indexed by number beneath the top-level collection.
@@ -211,7 +212,7 @@ the web UI. It is impossible, for example, to create circular relationships.
   ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
   ...       dumps(dict(
   ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
-  HTTP/1.1 417 Expectation Failed
+  HTTP/1.1 400 Bad Request
   ...
   Bug 16 is already a duplicate of bug 5. You
   can only mark a bug report as duplicate of one that
@@ -239,6 +240,7 @@ Each bug has a collection of messages.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/5/comments/0'
   subject: u'Firefox install instructions should be complete'
+  web_link: u'http://bugs.../firefox/+bug/5/comments/0'
 
 The messages are stored beneath the bug-specific collection. Their
 URLs are based on their position with respect to the
@@ -283,6 +285,7 @@ We can add a new message to a bug by calling the newMessage method.
   resource_type_link: u'http://api.launchpad.dev/beta/#message'
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
+  web_link: u'...'
 
 We don't have to submit a subject when we add a new message.
 
@@ -301,6 +304,7 @@ We don't have to submit a subject when we add a new message.
   ...
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
   subject: u'Re: Firefox install instructions should be complete'
+  web_link: u'...'
 
 
 Bug tasks
@@ -343,6 +347,7 @@ data in a bug task is derived from the bug.
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
+  web_link: u'http://bugs.../debian/+source/mozilla-firefox/+bug/1'
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -676,6 +681,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     target_link: u'http://.../fooix/0.1'
     ---
 
+
 John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
@@ -830,13 +836,14 @@ We can get the collection of subscriptions to a bug.
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
-
+  <BLANKLINE>
   bug_link: u'http://.../bugs/1'
   date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
   subscribed_by_link: u'http://.../~janitor'
+  <BLANKLINE>
 
 Each subscription can be accessed individually.
 
@@ -873,6 +880,34 @@ uses the calling user.
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
+
+Using the devel api, an individual can subscribe themself at a given
+BugNotificationLevel.
+
+    >>> bug_one_devel = webservice.get(
+    ...     '/bugs/1', api_version='devel').jsonBody()
+    >>> new_subscription = webservice.named_post(
+    ...     bug_one_devel['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'),
+    ...     level=u"Details", api_version="devel").jsonBody()
+    >>> pprint_entry(new_subscription)
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Details'
+    date_created: u'...'
+    person_link: u'...'
+    resource_type_link: u'...'
+    self_link: u'...'
+    subscribed_by_link: u'...'
+
+They can also update the subscription's bug_notification_level directly.
+
+    >>> patch = {u'bug_notification_level': u'Nothing'}
+    >>> pprint_entry(
+    ...     webservice.patch(
+    ...         new_subscription['self_link'], 'application/json',
+    ...         dumps(patch), api_version="devel").jsonBody())
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Nothing'...
 
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
@@ -1044,6 +1079,7 @@ report described by the bugwatch.
   self_link: u'http://.../bugs/1/+watch/2'
   title: u'The Mozilla.org Bug Tracker #2000'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000'
+  web_link: u'http://bugs.../bugs/1/+watch/2'
 
   >>> bug_watch = webservice.get(bug_watch_2000['self_link']).jsonBody()
   >>> bug_watch == bug_watch_2000
@@ -1115,7 +1151,7 @@ Following the redirect, we can see the new bug watch:
   self_link: u'http://.../bugs/1/+watch/13'
   title: u'The Mozilla.org Bug Tracker #9876'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
-
+  web_link: u'http://bugs.../bugs/1/+watch/13'
 
 Bug Trackers
 ------------
@@ -1136,6 +1172,7 @@ Bug Trackers
   summary: u'The Mozilla.org bug tracker is the grand-daddy of bugzillas...'
   title: u'The Mozilla.org Bug Tracker'
   watches_collection_link: u'http://.../bugs/bugtrackers/mozilla.org/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/mozilla.org'
 
 We can change various aspects of bug trackers.
 
@@ -1192,6 +1229,7 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/bob'
 
 Non-admins can't disable a bugtracker through the API.
 
@@ -1256,6 +1294,7 @@ Now, bug 1 has one attachment:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
   ---
 
 The attachment can be fetched directly:
@@ -1269,6 +1308,7 @@ The attachment can be fetched directly:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
 
 Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
@@ -1278,7 +1318,7 @@ we must follow to download the data.
   HTTP/1.1 303 See Other...
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://localhost:58000/.../numbers.txt
+  Location: http://.../numbers.txt
   ...
 
   >>> from urllib2 import urlopen
@@ -1312,6 +1352,7 @@ attachment. This is where our comment is recorded.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
   subject: u'Re: Firefox does not support SVG'
+  web_link: u'http://bugs.../firefox/+bug/1/comments/2'
 
 The message also links back to the attachments that were uploaded at
 the same time.
@@ -1358,46 +1399,6 @@ But we can remove the attachment altogether.
   start: 0
   total_size: 0
   ---
-
-
-Attachments of private bugs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Attachments of private bugs are served by the app server itself.
-
-  >>> print webservice.patch(
-  ...     bug_one['self_link'], 'application/json', dumps(dict(private=True)))
-  HTTP/1.1 209 Content Returned...
-
-  >>> response = webservice.named_post(
-  ...     bug_one['self_link'], 'addAttachment',
-  ...     data="67890", filename="more-numbers.txt", content_type='foo/bar',
-  ...     comment="The numbers you asked for.")
-  >>> attachments = webservice.get(
-  ...     bug_one['attachments_collection_link']).jsonBody()
-  >>> attachment = attachments['entries'][0]
-  >>> pprint_entry(attachment)
-  bug_link:...
-  data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
-  ...
-
-XXX Abel Deuring 2010-09-03, bug=629804: Please note that the http URLs in this
-example are part of a temporary hack.  Please see the comment in
-canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage.
-alias_url for details.
-
-  >>> response = webservice.get(attachment['data_link'])
-  >>> print response
-  HTTP/1.1 303 See Other
-  Status: 303 See Other
-  ...
-  Location: http://localhost:58005/94/more-numbers.txt
-  ...
-
-  >>> # Let's make the bug public again for later tests.
-  >>> print webservice.patch(
-  ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
-  HTTP/1.1 209 Content Returned...
 
 
 Searching for bugs
@@ -1859,6 +1860,7 @@ The collection of all CVEs is available at the top level.
     status: u'Candidate'
     title: u'CVE-2005-2737 (Candidate)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2005-2737'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/2005-2737'
     ---
     ...
     self_link: u'http://.../bugs/cve/2005-2736'
@@ -1896,6 +1898,7 @@ And for every bug we can look at the CVEs linked to it.
     status: u'Entry'
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/1999-8979'
     ---
 
 For every CVE we can also look at the bugs linked to it.
@@ -2133,7 +2136,7 @@ Each bug has a collection of activities that have taken place with it.
   next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
   resource_type_link: u'http://.../#bug_activity-page-resource'
   start: 0
-  total_size: 26
+  total_size: 25
   ...
 
   >>> bug_nine_activity = webservice.get(

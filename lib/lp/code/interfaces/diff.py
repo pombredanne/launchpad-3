@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDiff',
+    'IIncrementalDiff',
     'IPreviewDiff',
     'IStaticDiff',
     'IStaticDiffSource',
@@ -29,6 +30,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.code.interfaces.revision import IRevision
 
 
 class IDiff(Interface):
@@ -60,6 +62,23 @@ class IDiff(Interface):
     removed_lines_count = exported(
         Int(title=_('The number of lines removed in this diff.'),
             readonly=True))
+
+
+class IIncrementalDiff(Interface):
+    """An incremental diff for a merge proposal."""
+
+    diff = Reference(IDiff, title=_('The Diff object.'), readonly=True)
+
+    # The schema for the Reference gets patched in _schema_circular_imports.
+    branch_merge_proposal = Reference(
+        Interface, readonly=True,
+        title=_('The branch merge proposal that diff relates to.'))
+
+    old_revision = Reference(
+        IRevision, readonly=True, title=_('The old revision of the diff.'))
+
+    new_revision = Reference(
+        IRevision, readonly=True, title=_('The new revision of the diff.'))
 
 
 class IStaticDiff(Interface):
@@ -103,7 +122,7 @@ class IPreviewDiff(IDiff):
     trying to determine the effective changes of landing the source branch on
     the target branch.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     source_revision_id = exported(
         TextLine(

@@ -3,8 +3,6 @@
 
 """Model tests for the DistroSeriesDifference class."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest
@@ -13,20 +11,25 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.exceptions import NotADerivedSeriesError
+from lp.registry.errors import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import get_property_cache
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
@@ -62,9 +65,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             NotADerivedSeriesError, distroseriesdifference_factory.new,
-            distro_series, source_package_name,
-            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES,
-            )
+            distro_series, source_package_name)
 
     def test_source_pub(self):
         # The related source pub is returned for the derived series.
@@ -419,10 +420,127 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff.source_pub
         ds_diff.parent_source_pub
 
-        cache = IPropertyCacheManager(ds_diff).cache
+        cache = get_property_cache(ds_diff)
 
         self.assertContentEqual(
             ['source_pub', 'parent_source_pub'], cache)
+
+    def test_base_version_none(self):
+        # The attribute is set to None if there is no common base version.
+        # Publish different versions in the series.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.0deri1',
+            sourcepackagename=source_package_name,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series.parent_series,
+            version='1.0ubu2',
+            sourcepackagename=source_package_name,
+            status=PackagePublishingStatus.PUBLISHED)
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertIs(None, ds_diff.base_version)
+
+    def test_base_version_common(self):
+        # The common base version is set when the difference is created.
+        # Publish v1.0 of foo in both series.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
+
+        self.assertEqual('1.0', ds_diff.base_version)
+
+    def test_base_version_multiple(self):
+        # The latest common base version is set as the base-version.
+        # Publish v1.0 and 1.1 of foo in both series.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        for series in [derived_series, derived_series.parent_series]:
+            for version in ['1.0', '1.1']:
+                self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.SUPERSEDED)
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
+                })
+
+        self.assertEqual('1.1', ds_diff.base_version)
+
+    def test_base_source_pub_none(self):
+        # None is simply returned if there is no base version.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertIs(None, ds_diff.base_version)
+        self.assertIs(None, ds_diff.base_source_pub)
+
+    def test_base_source_pub(self):
+        # The publishing in the derived series with base_version is returned.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
+
+        base_pub = ds_diff.base_source_pub
+        self.assertEqual('1.0', base_pub.source_package_version)
+        self.assertEqual(ds_diff.derived_series, base_pub.distroseries)
+
+    def test_requestPackageDiffs(self):
+        # IPackageDiffs are created for the corresponding versions.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
+
+        with person_logged_in(ds_diff.owner):
+            ds_diff.requestPackageDiffs(ds_diff.owner)
+
+        self.assertEqual(
+            '1.2', ds_diff.package_diff.to_source.version)
+        self.assertEqual(
+            '1.3', ds_diff.parent_package_diff.to_source.version)
+        self.assertEqual(
+            '1.0', ds_diff.package_diff.from_source.version)
+        self.assertEqual(
+            '1.0', ds_diff.parent_package_diff.from_source.version)
+
+    def test_package_diff_urls_none(self):
+        # URLs to the package diffs are only present when the diffs
+        # have been generated.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertEqual(None, ds_diff.package_diff_url)
+        self.assertEqual(None, ds_diff.parent_package_diff_url)
+
+
+class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_package_diff_urls(self):
+        # Only completed package diffs have urls.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        naked_dsdiff = removeSecurityProxy(ds_diff)
+        naked_dsdiff.package_diff = self.factory.makePackageDiff(
+            status=PackageDiffStatus.PENDING)
+        naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
+
+        self.assertEqual(None, ds_diff.package_diff_url)
+        self.assertTrue(ds_diff.parent_package_diff_url is not None)
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
@@ -235,9 +235,10 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
     def test_target_branch_owner(self):
-        # For other people, even the target branch owner, it is other.
+        # For the target branch owner, it is to_do since they are the default
+        # reviewer.
         reviewer = self.bmp.target_branch.owner
-        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.TO_DO)
 
     def test_group_pending_review(self):
         # If the reviewer in user has a pending review request, it is a TO_DO.

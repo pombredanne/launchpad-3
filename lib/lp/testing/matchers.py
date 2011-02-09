@@ -3,17 +3,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'Contains',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
-    'DoesNotStartWith',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
     'ProvidesAndIsProxied',
-    'StartsWith',
     ]
 
+from lazr.lifecycle.snapshot import Snapshot
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
@@ -142,8 +142,8 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
- 
+        return {'queries': Content(UTF8_TEXT, lambda: ['\n'.join(result)])}
+
 
 class IsNotProxied(Mismatch):
     """An object is not proxied."""
@@ -189,42 +189,6 @@ class ProvidesAndIsProxied(Matcher):
         if mismatch is not None:
             return mismatch
         return IsProxied().match(matchee)
-
-
-class DoesNotStartWith(Mismatch):
-
-    def __init__(self, matchee, expected):
-        """Create a DoesNotStartWith Mismatch.
-
-        :param matchee: the string that did not match.
-        :param expected: the string that `matchee` was expected to start
-            with.
-        """
-        self.matchee = matchee
-        self.expected = expected
-
-    def describe(self):
-        return "'%s' does not start with '%s'." % (
-            self.matchee, self.expected)
-
-
-class StartsWith(Matcher):
-    """Checks whether one string starts with another."""
-
-    def __init__(self, expected):
-        """Create a StartsWith Matcher.
-
-        :param expected: the string that matchees should start with.
-        """
-        self.expected = expected
-
-    def __str__(self):
-        return "Starts with '%s'." % self.expected
-
-    def match(self, matchee):
-        if not matchee.startswith(self.expected):
-            return DoesNotStartWith(matchee, self.expected)
-        return None
 
 
 class DoesNotContain(Mismatch):
@@ -301,4 +265,40 @@ class IsConfiguredBatchNavigator(Matcher):
             if mismatch is not None:
                 mismatches.append(mismatch)
         if mismatches:
+            return MismatchesAll(mismatches)
+
+
+class WasSnapshotted(Mismatch):
+
+    def __init__(self, matchee, attribute):
+        self.matchee = matchee
+        self.attribute = attribute
+
+    def describe(self):
+        return "Snapshot of %s should not include %s" % (
+            self.matchee, self.attribute)
+
+
+class DoesNotSnapshot(Matcher):
+    """Checks that certain fields are skipped on Snapshots."""
+
+    def __init__(self, attr_list, interface, error_msg=None):
+        self.attr_list = attr_list
+        self.interface = interface
+        self.error_msg = error_msg
+
+    def __str__(self):
+        return "Does not include %s when Snapshot is provided %s." % (
+            ', '.join(self.attr_list), self.interface)
+
+    def match(self, matchee):
+        snapshot = Snapshot(matchee, providing=self.interface)
+        mismatches = []
+        for attribute in self.attr_list:
+            if hasattr(snapshot, attribute):
+                mismatches.append(WasSnapshotted(matchee, attribute))
+
+        if len(mismatches) == 0:
+            return None
+        else:
             return MismatchesAll(mismatches)

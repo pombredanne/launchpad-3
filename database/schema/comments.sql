@@ -2,7 +2,7 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
@@ -136,6 +136,14 @@ COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked t
 COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
 COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
 
+-- SubunitStream
+
+COMMENT ON TABLE SubunitStream IS 'Raw gz compressed subunit streams.';
+COMMENT ON COLUMN SubunitStream.uploader IS 'The account used to upload the stream.';
+COMMENT ON COLUMN SubunitStream.date_created IS 'The date of the upload.';
+COMMENT ON COLUMN SubunitStream.branch IS 'The branch which the stream was created on/for/with.';
+COMMENT ON COLUMN SubunitStream.stream IS 'The library file alias which contains the stream content.';
+
 -- BranchSubscription
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
@@ -200,6 +208,7 @@ COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifi
 -- BugSubscriptionFilter
 COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
 COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
+COMMENT ON COLUMN BugSubscriptionFilter.bug_notification_level IS 'The volume and type of bug notifications this filter will allow. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
 COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
 COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
@@ -527,6 +536,7 @@ COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matchin
 COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
 COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+COMMENT ON COLUMN DistributionSourcePackage.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- DistributionSourcePackageCache
 
@@ -550,6 +560,7 @@ COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference ca
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
 COMMENT ON COLUMN DistroSeriesDifference.source_version IS 'The version of the package in the derived series.';
 COMMENT ON COLUMN DistroSeriesDifference.parent_source_version IS 'The version of the package in the parent series.';
+COMMENT ON COLUMN DistroSeriesDifference.base_version IS 'The common base version of the package for the derived and parent series.';
 
 -- DistroSeriesDifferenceMessage
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
@@ -710,7 +721,7 @@ COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remot
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-
+COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -970,10 +981,10 @@ COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
 validated this translation. Being 0 the value that says this row has not been
 validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
-COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
-is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
-is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
+is being used in Ubuntu.';
+COMMENT ON COLUMN TranslationMessage.is_current_upstream IS 'Whether this translation
+is being used upstream.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
 
@@ -1052,9 +1063,6 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 
 -- Distribution
 
-COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.mirror_admin IS 'Person or team with privileges to mark a mirror as official.';
 COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distroseries has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distroseries for backporting, for example, or for the current release management team on the current development focus release.';
@@ -1077,9 +1085,6 @@ COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of ack
 
 -- DistroSeries
 
-COMMENT ON COLUMN DistroSeries.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distro release';
 COMMENT ON COLUMN DistroSeries.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distroseries page, above the distroseries description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroSeries.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
 COMMENT ON COLUMN DistroSeries.hide_all_translations IS 'Whether we should hid
@@ -1262,6 +1267,9 @@ COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
+COMMENT ON TABLE PersonSettings IS 'Flags and settings corresponding to a Person. These are in a separate table to remove infrequently used data from the Person table itself.';
+COMMENT ON COLUMN PersonSettings.selfgenerated_bugnotifications  IS 'If true, users receive bugnotifications for actions they personally triggered.';
+
 COMMENT ON VIEW ValidPersonCache IS 'A materialized view listing the Person.ids of all valid people (but not teams).';
 
 -- PersonLanguage
@@ -1438,7 +1446,8 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment fro
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest/nest-part instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.source_directory IS 'The location in the branch to nest, if this is a nest-part instruction.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
 
@@ -1777,7 +1786,8 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time a
 COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2035,7 +2045,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.by_maintainer IS 'Notes whether this upload was done by the maintiner of the package or project.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
@@ -2176,6 +2186,7 @@ translation message.';
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+COMMENT ON COLUMN NameBlacklist.admin IS 'The person who can override the blacklisted name.';
 
 -- ScriptActivity
 COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
@@ -2387,8 +2398,6 @@ COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s ta
 COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
-COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
 COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
 

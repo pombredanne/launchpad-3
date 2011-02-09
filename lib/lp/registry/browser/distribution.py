@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -35,6 +35,7 @@ __all__ = [
     'DistributionView',
     ]
 
+from collections import defaultdict
 import datetime
 
 from zope.component import getUtility
@@ -49,14 +50,11 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -68,17 +66,25 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.widgets.image import ImageChangeWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.image import ImageChangeWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import RegistryEditFormView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
@@ -86,9 +92,6 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -424,11 +427,11 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         summary = 'Enable tracking of feature planning.'
         return Link('+edit', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
-        return Link('+edit', text, summary, icon='edit')
+        return Link('+configure-translations', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -550,7 +553,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             name for name in name_list if match_text in name]
 
         if len(matching_names) > 5:
-            more_than_five = True
             matching_names = matching_names[:5]
             matching_names.append('...')
 
@@ -740,9 +742,9 @@ class DistributionAddView(LaunchpadFormView):
         "domainname",
         "members",
         "official_malone",
-        "official_blueprints",
+        "blueprints_usage",
         "official_rosetta",
-        "official_answers",
+        "answers_usage",
         ]
 
     @property
@@ -786,9 +788,9 @@ class DistributionEditView(RegistryEditFormView):
         'mugshot',
         'official_malone',
         'enable_bug_expiration',
-        'official_blueprints',
+        'blueprints_usage',
         'official_rosetta',
-        'official_answers',
+        'answers_usage',
         'translation_focus',
         ]
 
@@ -828,13 +830,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
@@ -959,10 +962,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -978,7 +981,11 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.archive_mirrors
+        return self.context.archive_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -990,7 +997,11 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.cdimage_mirrors
+        return self.context.cdimage_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

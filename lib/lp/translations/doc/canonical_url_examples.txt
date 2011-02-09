@@ -62,8 +62,8 @@ And we can get a particular PO file for this PO template by its language code.
 Also, we can get the url to a translation message.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/1
@@ -71,8 +71,8 @@ Also, we can get the url to a translation message.
 Even for a dummy one.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
     http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/20
 
@@ -100,8 +100,8 @@ with the distro subset.
 Also, we can get the url to a dummy one
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/1
@@ -109,8 +109,8 @@ Also, we can get the url to a dummy one
 Even for a dummy PO msgset
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/20
 

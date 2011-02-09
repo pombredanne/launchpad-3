@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
@@ -16,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonSettings',
     'ISoftwareCenterAgentAPI',
     'ISoftwareCenterAgentApplication',
     'IPersonViewRestricted',
@@ -27,6 +29,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -114,7 +117,10 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.errors import (
+    PrivatePersonLinkageError,
+    TeamSubscriptionPolicyError,
+    )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -127,7 +133,6 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership,
@@ -147,6 +152,10 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.soyuz.enums import ArchiveStatus
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -386,29 +395,59 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
+    The policies that describe who can be a member and how new memberships
+    are handled. The choice of policy reflects the need to build a community
+    versus the need to control Launchpad assets.
     """
-
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        All subscriptions for this team are subject to approval by one of
-        the team's administrators.
-        """)
 
     OPEN = DBItem(2, """
         Open Team
 
-        Any user can join and no approval is required.
+        Membership is open, no approval required, and subteams can be open or
+        closed. Any user can be a member of the team and no approval is
+        required. Subteams can be Open, Delegated, Moderated, or Restricted.
+        Open is a good choice for encouraging a community of contributors.
+        Open teams cannot have PPAs.
+        """)
+
+    DELEGATED = DBItem(4, """
+        Delegated Team
+
+        Membership is open, requires approval, and subteams can be open or
+        closed. Any user can be a member of the team via a subteam, but team
+        administrators approve direct memberships. Subteams can be Open,
+        Delegated, Moderated, or Restricted. Delegated is a good choice for
+        managing a large community of contributors. Delegated teams cannot
+        have PPAs.
+        """)
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        Membership is closed, requires approval, and subteams must be closed.
+        Any user can propose a new member, but team administrators approve
+        membership. Subteams must be Moderated or Restricted. Moderated is a
+        good choice for teams that manage things that need to be secure, like
+        projects, branches, or PPAs, but want to encourage users to help.
         """)
 
     RESTRICTED = DBItem(3, """
         Restricted Team
 
-        New members can only be added by one of the team's administrators.
+        Membership is closed, requires approval, and subteams must be closed.
+        Only the team's administrators can invite a user to be a member.
+        Subteams must be Moderated or Restricted. Restricted is a good choice
+        for teams that manage things that need to be secure, like projects,
+        branches, or PPAs.
         """)
+
+
+OPEN_TEAM_POLICY = (
+    TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
+
+
+CLOSED_TEAM_POLICY = (
+    TeamSubscriptionPolicy.RESTRICTED, TeamSubscriptionPolicy.MODERATED)
 
 
 class PersonVisibility(DBEnumeratedType):
@@ -481,6 +520,80 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
+def team_subscription_policy_can_transition(team, policy):
+    """Can the team can change its subscription policy
+
+    Returns True when the policy can change. or raises an error. OPEN teams
+    cannot be members of MODERATED or RESTRICTED teams. OPEN teams
+    cannot have PPAs. Changes from between OPEN and the two closed states
+    can be blocked by team membership and team artifacts.
+
+    :param team: The team to change.
+    :param policy: The TeamSubsciptionPolicy to change to.
+    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
+        or a team artifact prevents the policy from being set.
+    """
+    if team is None or policy == team.subscriptionpolicy:
+        # The team is being initialized or the policy is not changing.
+        return True
+    elif policy in OPEN_TEAM_POLICY:
+        # The team can be open if its super teams are open.
+        for team in team.super_teams:
+            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its super teams are not open." % policy)
+        # The team can be open if it has PPAs.
+        for ppa in team.ppas:
+            if ppa.status != ArchiveStatus.DELETED:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because it "
+                    "has one or more active PPAs." % policy)
+    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
+        # The team can become MODERATED or RESTRICTED if its member teams
+        # are not OPEN.
+        for member in team.activemembers:
+            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its member teams are Open." % policy)
+    else:
+        # The policy change is between MODERATED and RESTRICTED.
+        pass
+    return True
+
+
+class TeamSubsciptionPolicyChoice(Choice):
+    """A valid team subscription policy."""
+
+    def _getTeam(self):
+        """Return the context if it is a team or None."""
+        if IPerson.providedBy(self.context):
+            return self.context
+        else:
+            return None
+
+    def constraint(self, value):
+        """See `IField`."""
+        team = self._getTeam()
+        policy = value
+        try:
+            return team_subscription_policy_can_transition(team, policy)
+        except TeamSubscriptionPolicyError:
+            return False
+
+    def _validate(self, value):
+        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
+
+        Returns True if the team can change its subscription policy to the
+        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
+        """
+        team = self._getTeam()
+        policy = value
+        team_subscription_policy_can_transition(team, policy)
+        super(TeamSubsciptionPolicyChoice, self)._validate(value)
+
+
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
@@ -504,10 +617,30 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
+class IPersonSettings(Interface):
+    """Settings for a person (not a team!) that are used relatively rarely.
+
+    We store these attributes on a separate object, PersonSettings, to which
+    the Person class delegates.  This makes it possible to shrink the size of
+    the person record.
+
+    In the future, perhaps we will adapt IPerson to IPersonSettings when
+    we want these attributes instead of delegating, so we can shrink the
+    class, too.
+
+    We also may want TeamSettings and PersonTeamSettings in the future.
+    """
+
+    selfgenerated_bugnotifications = Bool(
+        title=_("Send me bug notifications for changes I make."),
+        required=False, default=True)
+
+
+class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -718,8 +851,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
-    team_mentorships = Attribute(
-        "All the offers of mentoring which are relevant to this team.")
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
@@ -1075,8 +1206,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         since it inherits from `IPerson`) is a member of himself
         (i.e. `person1.inTeam(person1)`).
 
-        :param team: An object providing `IPerson`, the name of a
-            team, or `None` (in which case `False` is returned).
+        :param team: Either an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
+        :return: A bool with the result of the membership lookup. When looking
+            up the team from a string finds nothing or team was `None` then
+            `False` is returned.
         """
 
     def clearInTeamCache():
@@ -1238,6 +1372,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :raises: `NoSuchPPA` if a suitable PPA could not be found.
 
         :return: a PPA `IArchive` record corresponding to the name.
+        """
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False))
+    @export_factory_operation(Interface, []) # Really IArchive.
+    def createPPA(name=None, displayname=None, description=None):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
         """
 
 
@@ -1438,14 +1589,11 @@ class IPersonEditRestricted(Interface):
     def leave(team):
         """Leave the given team.
 
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
+        This is a convenience method for retractTeamMembership() that allows
+        a user to leave the given team, or to cancel a PENDING membership
+        request.
 
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
+        :param team: The team to leave.
         """
 
     @operation_parameters(
@@ -1507,7 +1655,7 @@ class IPersonEditRestricted(Interface):
         :return: A tuple containing a boolean indicating when the
             membership status changed and the current `TeamMembershipStatus`.
             This depends on the desired status passed as an argument, the
-            subscription policy and the user's priveleges.
+            subscription policy and the user's privileges.
         """
 
     @operation_parameters(
@@ -1532,6 +1680,27 @@ class IPersonEditRestricted(Interface):
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text(required=False))
+    @export_write_operation()
+    def retractTeamMembership(team, user, comment=None):
+        """Retract this team's membership in the given team.
+
+        If there's a membership entry for this team on the given team and
+        its status is either APPROVED, ADMIN, PENDING, or INVITED, the status
+        is changed and the relevant entries in TeamParticipation.
+
+        APPROVED and ADMIN status are changed to DEACTIVATED.
+        PENDING status is changed to DECLINED.
+        INVITED status is changes to INVITATION_DECLINED.
+
+        :param team: The team to leave.
+        :param user: The user making the retraction.
+        :param comment: An optional explanation about why the change was made.
         """
 
     def renewTeamMembership(team):
@@ -1650,14 +1819,11 @@ class ITeamPublic(Interface):
         exported_as='team_description')
 
     subscriptionpolicy = exported(
-        Choice(title=_('Subscription policy'),
+        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
-                   "'Moderated' means all subscriptions must be approved. "
-                   "'Open' means any user can join without approval. "
-                   "'Restricted' means new members can be added only by a "
-                   "team administrator.")),
+                TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
 
     renewal_policy = exported(
@@ -1695,9 +1861,22 @@ class ITeamPublic(Interface):
 
 
 class ITeam(IPerson, ITeamPublic):
-    """ITeam extends IPerson.
+    """A group of people and other teams.
 
-    The teamowner should never be None.
+    Launchpadlib example of getting the date a user joined a team::
+
+        def get_join_date(team, user):
+            team = launchpad.people[team]
+            members = team.members_details
+            for member in members:
+                if member.member.name == user:
+                    return member.date_joined
+            return None
+
+    Implementation notes:
+
+    - ITeam extends IPerson.
+    - The teamowner should never be None.
     """
     export_as_webservice_entry('team')
 
@@ -1736,8 +1915,13 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(name):
-        """Is the given name blacklisted by Launchpad Administrators?"""
+    def isNameBlacklisted(name, user=None):
+        """Is the given name blacklisted by Launchpad Administrators?
+
+        :param name: The name to be checked.
+        :param user: The `IPerson` that wants to use the name. If the user
+            is an admin for the nameblacklist expression, he can use the name.
+        """
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -2022,6 +2206,23 @@ class IPersonSet(Interface):
     def cacheBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
 
+    def getPrecachedPersonsFromIDs(
+        person_ids, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
+        """Lookup person objects from ids with optional precaching.
+
+        :param person_ids: List of person ids.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -2192,6 +2393,7 @@ params_to_fix = [
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
     (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['retractTeamMembership'], 'team'),
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(

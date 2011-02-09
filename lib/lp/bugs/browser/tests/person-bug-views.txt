@@ -310,8 +310,8 @@ bug counts, is also available.
 Adding another bug will update the totals returned by
 packagebugs_search_view.total_bug_counts.
 
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     BugTaskImportance)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> import transaction
     >>> bug_params = CreateBugParams(
     ...     owner=name16,

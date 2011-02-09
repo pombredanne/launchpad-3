@@ -13,6 +13,8 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -29,6 +31,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
+    UnparsableDependencies,
     )
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
@@ -47,9 +50,9 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         super(TestBinaryPackageBuild, self).setUp()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
-        gedit_spr = publisher.getPubSource(
-            spr_only=True, sourcename="gedit",
-            status=PackagePublishingStatus.PUBLISHED)
+        gedit_spph = publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        gedit_spr = gedit_spph.sourcepackagerelease
         self.build = gedit_spr.createBuild(
             distro_arch_series=publisher.distroseries['i386'],
             archive=gedit_spr.upload_archive,
@@ -100,7 +103,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.addFakeBuildLog()
         self.failUnlessEqual(
             'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
+            'gedit/666/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.package_build.build_farm_job.id),
             self.build.log_url)
 
@@ -113,7 +116,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             owner=ppa_owner, name="myppa")
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
+            '+archive/myppa/+buildjob/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
             self.build.log_url)
 
@@ -244,22 +247,22 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         # None is not a valid dependency values.
         depwait_build.dependencies = None
         self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+            UnparsableDependencies, depwait_build.updateDependencies)
 
         # Missing 'name'.
         depwait_build.dependencies = u'(>> version)'
         self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+            UnparsableDependencies, depwait_build.updateDependencies)
 
         # Missing 'version'.
         depwait_build.dependencies = u'name (>>)'
         self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+            UnparsableDependencies, depwait_build.updateDependencies)
 
         # Missing comman between dependencies.
         depwait_build.dependencies = u'name1 name2'
         self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+            UnparsableDependencies, depwait_build.updateDependencies)
 
     def testBug378828(self):
         # `IBinaryPackageBuild.updateDependencies` copes with the
@@ -435,7 +438,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
-        self.assertIsNot(None, self.build.date_finished)
 
     def testWithoutDependencies(self):
         """Verify that storeBuildInfo clears the build's dependencies."""
@@ -446,6 +448,12 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
+        self.assertIsNot(None, self.build.date_finished)
+
+    def test_sets_date_finished(self):
+        # storeBuildInfo should set date_finished on the BuildFarmJob.
+        self.assertIs(None, self.build.date_finished)
+        self.build.storeBuildInfo(self.build, None, {})
         self.assertIsNot(None, self.build.date_finished)
 
 
@@ -466,5 +474,5 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 
 
 class TestHandleStatusForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""

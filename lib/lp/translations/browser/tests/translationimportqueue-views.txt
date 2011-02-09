@@ -89,7 +89,7 @@ some errors.
     ...     'name': 'demo-name',
     ...     'translation_domain': 'demo-domain'}
     >>> validate(view, data)
-    The file name must end with ".po".
+    This filename is not appropriate for a translation.
     Please choose a template.
 
 Also, the filename must be given and the template name must be a valid name.
@@ -118,7 +118,7 @@ Specifying po file data for po templates is not a good idea either.
     ...     'potemplate': potemplate,
     ...     'language': language }
     >>> validate(view, data)
-    The file name must end with ".pot".
+    This filename is not appropriate for a template.
     Please specify a name for the template.
     Please specify a translation domain for the template.
 

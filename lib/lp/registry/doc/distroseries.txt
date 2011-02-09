@@ -27,7 +27,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     ...     IDistroSeries,
     ...     IDistroSeriesSet,
     ...     )
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
@@ -903,7 +903,7 @@ informational.
     >>> distroset = getUtility(IDistributionSet)
     >>> kubuntu = distroset.getByName("kubuntu")
     >>> krunch = kubuntu.getSeries("krunch")
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 

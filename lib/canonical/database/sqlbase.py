@@ -71,7 +71,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.interfaces import ISQLBase
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
@@ -183,7 +183,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         We refetch any parameters from different stores from the
         correct master Store.
         """
-        from canonical.launchpad.interfaces import IMasterStore
+        from canonical.launchpad.interfaces.lpstorm import IMasterStore
         # Make it simple to write dumb-invalidators - initialised
         # _cached_properties to a valid list rather than just-in-time creation.
         self._cached_properties = []
@@ -219,7 +219,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @classmethod
     def _get_store(cls):
-        from canonical.launchpad.interfaces import IStore
+        from canonical.launchpad.interfaces.lpstorm import IStore
         return IStore(cls)
 
     def __repr__(self):
@@ -229,7 +229,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
     def destroySelf(self):
-        from canonical.launchpad.interfaces import IMasterObject
+        from canonical.launchpad.interfaces.lpstorm import IMasterObject
         my_master = IMasterObject(self)
         if self is my_master:
             super(SQLBase, self).destroySelf()
@@ -270,7 +270,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
         # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
-        IPropertyCacheManager(self).clear()
+        clear_property_cache(self)
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
@@ -820,7 +820,7 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
         con_str_overrides.append('host=%s' % lp.dbhost)
     if dbname is None:
-        dbname = lp.dbname # Note that lp.dbname may be None.
+        dbname = lp.get_dbname() # Note that lp.dbname may be None.
     if dbname is not None:
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)

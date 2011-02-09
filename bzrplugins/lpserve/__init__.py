@@ -568,6 +568,10 @@ class LPForkingService(object):
                     self.log(client_addr, 'request timeout failure: %s' % (e,))
                     conn.sendall('FAILURE\nrequest timed out\n')
                     conn.close()
+                except Exception, e:
+                    trace.log_exception_quietly()
+                    self.log(client_addr, 'trapped a failure while handling'
+                                          ' connection: %s' % (e,))
             self._poll_children()
 
     def log(self, client_addr, message):
@@ -759,6 +763,8 @@ class cmd_launchpad_forking_service(Command):
                         help="Do/don't preload libraries before startup."),
                      Option('children-timeout', type=int, argname='SEC',
                         help="Only wait SEC seconds for children to exit"),
+                     Option('pid-file', type=unicode,
+                        help='Write the process PID to this file.')
                     ]
 
     def _preload_libraries(self):
@@ -768,8 +774,48 @@ class cmd_launchpad_forking_service(Command):
             except ImportError, e:
                 trace.mutter('failed to preload %s: %s' % (pyname, e))
 
+
+    def _daemonize(self, pid_filename):
+        """Turn this process into a child-of-init daemon.
+
+        Upon request, we relinquish our control and switch to daemon mode,
+        writing out the final pid of the daemon process.
+        """
+        # If fork fails, it will bubble out naturally and be reported by the
+        # cmd logic
+        pid = os.fork()
+        if pid > 0:
+            # Original process exits cleanly
+            os._exit(0)
+
+        # Disconnect from the parent process
+        os.setsid()
+
+        # fork again, to truly become a daemon.
+        pid = os.fork()
+        if pid > 0:
+            os._exit(0)
+
+        # Redirect file handles
+        stdin = open('/dev/null', 'r')
+        os.dup2(stdin.fileno(), sys.stdin.fileno())
+        stdout = open('/dev/null', 'a+')
+        os.dup2(stdout.fileno(), sys.stdout.fileno())
+        stderr = open('/dev/null', 'a+', 0)
+        os.dup2(stderr.fileno(), sys.stderr.fileno())
+
+        # Now that we are a daemon, let people know what pid is running
+        f = open(pid_filename, 'wb')
+        try:
+            f.write('%d\n' % (os.getpid(),))
+        finally:
+            f.close()
+
     def run(self, path=None, perms=None, preload=True,
-            children_timeout=LPForkingService.WAIT_FOR_CHILDREN_TIMEOUT):
+            children_timeout=LPForkingService.WAIT_FOR_CHILDREN_TIMEOUT,
+            pid_file=None):
+        if pid_file is not None:
+            self._daemonize(pid_file)
         if path is None:
             path = LPForkingService.DEFAULT_PATH
         if perms is None:
@@ -781,6 +827,12 @@ class cmd_launchpad_forking_service(Command):
         service = LPForkingService(path, perms)
         service.WAIT_FOR_CHILDREN_TIMEOUT = children_timeout
         service.main_loop()
+        if pid_file is not None:
+            try:
+                os.remove(pid_file)
+            except (OSError, IOError), e:
+                trace.mutter('Failed to cleanup pid_file: %s\n%s'
+                             % (pid_file, e))
 
 register_command(cmd_launchpad_forking_service)
 

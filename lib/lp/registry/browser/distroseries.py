@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -47,10 +47,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -63,21 +59,28 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.registry.browser import MilestoneOverlayMixin
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.registry.browser import MilestoneOverlayMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
-    IDistroSeriesDifferenceSource)
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty

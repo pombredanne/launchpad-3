@@ -18,7 +18,7 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
@@ -172,8 +172,11 @@ The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
     >>> packages = ubuntu.searchSourcePackageCaches("mozilla")
-    >>> print packages.count()
-    1
+    >>> for distro_source_package_cache, source_name, rank in packages:
+    ...     print "%-17s rank:%s" % (
+    ...         distro_source_package_cache.name,
+    ...         type(rank))
+    mozilla-firefox   rank:<type 'float'>
 
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
@@ -183,14 +186,15 @@ and even on substrings:
     1
     >>> packages = ubuntu.searchSourcePackageCaches('a')
     >>> for distro_source_package_cache, source_name, rank in packages:
-    ...     print "%s: %s" % (
+    ...     print "%s: %-17s rank:%s" % (
     ...         distro_source_package_cache.__class__.__name__,
-    ...         distro_source_package_cache.name)
-    DistributionSourcePackageCache: mozilla-firefox
-    DistributionSourcePackageCache: netapplet
-    DistributionSourcePackageCache: alsa-utils
-    DistributionSourcePackageCache: foobar
-    DistributionSourcePackageCache: commercialpackage
+    ...         distro_source_package_cache.name,
+    ...         type(rank))
+    DistributionSourcePackageCache: alsa-utils        rank:<type 'NoneType'>
+    DistributionSourcePackageCache: commercialpackage rank:<type 'NoneType'>
+    DistributionSourcePackageCache: foobar            rank:<type 'NoneType'>
+    DistributionSourcePackageCache: mozilla-firefox   rank:<type 'NoneType'>
+    DistributionSourcePackageCache: netapplet         rank:<type 'NoneType'>
 
 The searchSourcePackages() method just returns a decorated version
 of the results from searchSourcePackageCaches():
@@ -198,11 +202,11 @@ of the results from searchSourcePackageCaches():
     >>> packages = ubuntu.searchSourcePackages('a')
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: commercialpackage
+    DistributionSourcePackage: foobar
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    DistributionSourcePackage: alsa-utils
-    DistributionSourcePackage: foobar
-    DistributionSourcePackage: commercialpackage
 
 searchSourcePackages() also has a has_packaging parameter that
 it just passes on to searchSourcePackageCaches(), and it restricts
@@ -212,14 +216,14 @@ in the Packaging table linking it to an upstream project.
     >>> packages = ubuntu.searchSourcePackages('a', has_packaging=True)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: alsa-utils
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    DistributionSourcePackage: alsa-utils
     >>> packages = ubuntu.searchSourcePackages('a', has_packaging=False)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
-    DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
+    DistributionSourcePackage: foobar
 
 searchSourcePackages() also has a publishing_distroseries parameter that
 it just passes on to searchSourcePackageCaches(), and it restricts the
@@ -230,8 +234,8 @@ SourcePackagePublishingHistory table for the given distroseries.
     ...     'a', publishing_distroseries=ubuntu.currentseries)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
-    DistributionSourcePackage: netapplet
     DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: netapplet
 
 
 Searching for binary packages
@@ -506,7 +510,7 @@ informational.
 
     >>> kubuntu = distroset.getByName("kubuntu")
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
@@ -570,7 +574,7 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationDefinitionStatus
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
     >>> login('mark@example.com')
     >>> for spec in kubuntu.specifications():
     ...     # Do this here, otherwise, the change will be flush before

@@ -3,8 +3,9 @@ Cached Properties in propertycache
 
     >>> from lp.services.propertycache import (
     ...     cachedproperty,
+    ...     clear_property_cache,
+    ...     get_property_cache,
     ...     IPropertyCache,
-    ...     IPropertyCacheManager,
     ...     )
 
 Cached properties are for situations where a property is computed once
@@ -20,9 +21,19 @@ and then returned each time it is asked for.
 
     >>> foo = Foo()
 
-The property cache can be obtained via adaption.
+The property cache can be obtained with `get_property_cache()`.
 
-    >>> cache = IPropertyCache(foo)
+    >>> cache = get_property_cache(foo)
+
+Calling `get_property_cache()` on a cache returns the cache:
+
+    >>> get_property_cache(cache) is cache
+    True
+
+Caches provide the `IPropertyCache` interface.
+
+    >>> IPropertyCache.providedBy(cache)
+    True
 
 Initially it is empty. Caches can be iterated over to reveal the names
 of the values cached within.
@@ -82,25 +93,27 @@ cached.
     >>> del cache.bar
     >>> del cache.bar
 
-A cache manager can be used to empty the cache.
-
-    >>> manager = IPropertyCacheManager(cache)
+The cache can be cleared with `clear_property_cache()`.
 
     >>> cache.bar = 123
     >>> cache.baz = 456
     >>> sorted(cache)
     ['bar', 'baz']
 
-    >>> manager.clear()
+    >>> clear_property_cache(cache)
     >>> list(cache)
     []
 
-A cache manager can be obtained by adaption from non-cache objects
-too.
+For convenience, the property cache for an object can also be cleared
+by passing the object itself into `clear_property_cache()`.
 
-    >>> manager = IPropertyCacheManager(foo)
-    >>> manager.cache is cache
-    True
+    >>> cache.bar = 123
+    >>> list(cache)
+    ['bar']
+
+    >>> clear_property_cache(foo)
+    >>> list(cache)
+    []
 
 
 The cachedproperty decorator
@@ -134,7 +147,7 @@ as "a_in_cache" in the cache.
 
     >>> foo.a
     1234
-    >>> IPropertyCache(foo).a_in_cache
+    >>> get_property_cache(foo).a_in_cache
     1234
 
 `b` was defined without an explicit name so it is known as "b" in the
@@ -149,5 +162,5 @@ cache too.
 
     >>> foo.b
     5678
-    >>> IPropertyCache(foo).b
+    >>> get_property_cache(foo).b
     5678

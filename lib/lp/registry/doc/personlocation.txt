@@ -120,9 +120,9 @@ When we iterate over the mapped_participants in a team, their locations
 have been pre-cached so that we don't hit the database everytime we
 access a person's .location property.
 
-    >>> from lp.services.propertycache import IPropertyCache
+    >>> from lp.services.propertycache import get_property_cache
     >>> for mapped in guadamen.getMappedParticipants():
-    ...     cache = IPropertyCache(mapped)
+    ...     cache = get_property_cache(mapped)
     ...     if ("location" not in cache or
     ...         not verifyObject(IPersonLocation, cache.location)):
     ...         print 'No cached location on %s' % mapped.name

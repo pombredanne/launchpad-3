@@ -10,6 +10,7 @@ Let's do some imports we will need to test this class.
     >>> from lp.translations.interfaces.translationmessage import (
     ...     ITranslationMessage)
     >>> from lp.translations.interfaces.translator import ITranslatorSet
+    >>> from lp.translations.model.pofile import DummyPOFile
 
     >>> login('carlos@canonical.com')
     >>> pofile_es = factory.makePOFile(language_code='es')
@@ -18,16 +19,15 @@ Let's do some imports we will need to test this class.
 
 This class links the translations submitted by a translator with the
 associated POFile and POTMsgSet.  TranslationMessage and
-DummyTranslationMessage both implement ITranslationMessage interface:
+DummyTranslationMessage both implement ITranslationMessage:
 
-    >>> translationmessage = factory.makeTranslationMessage(
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
     ...     potmsgset=potmsgset, pofile=pofile_es)
     >>> verifyObject(ITranslationMessage, translationmessage)
     True
 
-    >>> serbian = getUtility(ILanguageSet)['sr']
-    >>> dummy_message = potmsgset.getCurrentDummyTranslationMessage(
-    ...     potemplate, serbian)
+    >>> dummy_message = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     factory.makePOFile('xh'))
     >>> verifyObject(ITranslationMessage, dummy_message)
     True
 
@@ -48,18 +48,19 @@ Any TranslationMessage for such a POTMsgSet returns a single plural form in
 the translation, no matter the number of plural forms defined for the
 language:
 
+    >>> serbian = getUtility(ILanguageSet)['sr']
     >>> serbian.pluralforms
     3
-    >>> current_sr = potmsgset.getCurrentDummyTranslationMessage(
-    ...     potemplate, serbian)
+    >>> current_sr = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     DummyPOFile(potemplate, serbian))
     >>> current_sr.plural_forms
     1
 
     >>> divehi = getUtility(ILanguageSet)['dv']
     >>> print divehi.pluralforms
     None
-    >>> current_dv = potmsgset.getCurrentDummyTranslationMessage(
-    ...     potemplate, divehi)
+    >>> current_dv = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     DummyPOFile(potemplate, divehi))
     >>> current_dv.plural_forms
     1
 
@@ -73,8 +74,8 @@ forms per language (3 for Serbian, as specified in the language).
     u'plural'
     >>> serbian.pluralforms
     3
-    >>> current_sr = potmsgset_plural.getCurrentDummyTranslationMessage(
-    ...     potemplate, serbian)
+    >>> current_sr = potmsgset_plural.getCurrentTranslationMessageOrDummy(
+    ...     DummyPOFile(potemplate, serbian))
     >>> current_sr.plural_forms
     3
 
@@ -83,8 +84,8 @@ a default of 2, which is the most common number of plural forms:
 
     >>> print divehi.pluralforms
     None
-    >>> current_dv = potmsgset_plural.getCurrentDummyTranslationMessage(
-    ...     potemplate, divehi)
+    >>> current_dv = potmsgset_plural.getCurrentTranslationMessageOrDummy(
+    ...     DummyPOFile(potemplate, divehi))
     >>> current_dv.plural_forms
     2
 
@@ -100,10 +101,6 @@ with different timestamps on messages.
 
     >>> import transaction
 
-    >>> from datetime import datetime
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
-
 We are working with a product with translations being restricted to
 a single translation group.
 
@@ -111,8 +108,7 @@ a single translation group.
     >>> product = productseries.product
     >>> product.translationgroup = factory.makeTranslationGroup(product.owner)
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 
 The only Serbian reviewer in this translation group is 'name16' user.
@@ -134,9 +130,8 @@ hidden.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> login('no-priv@canonical.com')
 
-    >>> new_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'suggestion'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> new_suggestion = potmsgset.submitSuggestion(
+    ...     pofile_sr, nopriv, {0: u'suggestion'})
     >>> transaction.commit()
     >>> new_suggestion.isHidden(pofile_sr)
     False
@@ -147,9 +142,9 @@ hidden.
 
 An imported translation is not hidden when submitted.
 
-    >>> imported_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'foo'},
-    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
+    >>> imported_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=True,
+    ...     translations={ 0: 'imported' })
     >>> transaction.commit()
     >>> imported_translation.isHidden(pofile_sr)
     False
@@ -161,9 +156,9 @@ A previous suggestion is now hidden.
 
 A newly submitted non-imported translation is not hidden either.
 
-    >>> current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'bar'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> current_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=False,
+    ...     translations={ 0: 'current' })
     >>> transaction.commit()
     >>> current_translation.isHidden(pofile_sr)
     False
@@ -175,9 +170,9 @@ However, previous imported translation is not hidden yet.
 
 If a new current translation is submitted, the old one is hidden.
 
-    >>> new_current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {0: u'new'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> new_current_translation = factory.makeCurrentTranslationMessage(
+    ...     pofile_sr, potmsgset, foobar, current_other=False,
+    ...     translations={ 0 : 'new' })
     >>> transaction.commit()
     >>> new_current_translation.isHidden(pofile_sr)
     False
@@ -195,9 +190,8 @@ and last current translation is not hidden either.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> login('no-priv@canonical.com')
 
-    >>> another_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'another suggestion'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> another_suggestion = potmsgset.submitSuggestion(
+    ...     pofile_sr, nopriv, {0: u'another suggestion'})
     >>> transaction.commit()
     >>> another_suggestion.isHidden(pofile_sr)
     False
@@ -214,16 +208,16 @@ for the message, up to and including the last plural form it can have.
 For a regular single-form message, that's always one.
 
     >>> login('foo.bar@canonical.com')
-    >>> message = potmsgset.getCurrentTranslationMessage(potemplate, serbian)
+    >>> message = potmsgset.getCurrentTranslation(
+    ...     potemplate, serbian, potemplate.translation_side)
     >>> message.translations
     [u'new']
 
 If the message has no actual translation, the translations attribute
 contains just a None.
 
-    >>> empty_message = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_imported=False,
-    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message = potmsgset.submitSuggestion(
+    ...     pofile_sr, foobar, {})
     >>> empty_message.translations
     [None]
 
@@ -233,7 +227,7 @@ For a message with plurals, it's the POFile's number of plural forms.
     >>> plural_potmsgset = factory.makePOTMsgSet(potemplate=potemplate,
     ...                                          singular=u"%d contact",
     ...                                          plural=u"%d contacts")
-    >>> plural_message = factory.makeTranslationMessage(
+    >>> plural_message = factory.makeCurrentTranslationMessage(
     ...     potmsgset=plural_potmsgset, pofile=pofile_es,
     ...     translations=[u'%d contacto', u'%d contactos'])
     >>> plural_message.translations
@@ -242,9 +236,8 @@ For a message with plurals, it's the POFile's number of plural forms.
 If the message does not translate all those forms, we get None entries
 in the list.
 
-    >>> empty_message = plural_potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_imported=False,
-    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message = plural_potmsgset.submitSuggestion(
+    ...     pofile_sr, foobar, {})
     >>> empty_message.translations
     [None, None, None]
 

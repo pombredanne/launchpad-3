@@ -164,6 +164,9 @@
               <input id="text" type="text" name="field.text" size="25%" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
+            <script type="text/javascript"><!--
+              setFocusByName('field.text');
+            // --></script>
             <div id="homepage-stats" tal:content="cache:public, 1 hour">
               <strong class="registry-stat"
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
@@ -184,17 +187,17 @@
               <tal:logged_out condition="not:view/user" omit-tag="">
                 <a href="/+login">Creating an account</a> allows you to start
                 working within Launchpad.<br />
-              </tal:logged_out>You can test Launchpad's functionality
-              in our sandbox environment.
-              (<a href="/+help/home-page-staging-help.html" target="help">What's this?</a>)<br />
+              </tal:logged_out>
+              <p>
+                Learn more about Launchpad in the 
+                <a href="https://help.launchpad.net/">user guide</a>
+                or try it for yourself in our 
+                <a href="https://qastaging.launchpad.net/">sandbox environment</a>.
+              </p>
               <tal:logged_in condition="view/user" omit-tag=""
                 tal:content="cache:public">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
-                  <li>
-                    <a class="sprite info"
-                      href="https://help.launchpad.net/">Read the user guide</a>
-                  </li>
                   <li>
                     <a class="sprite add"
                       href="/projects/+new">Register a project</a>
@@ -214,6 +217,10 @@
                   <li>
                     <a class="sprite question"
                       tal:attributes="href apphomes/answers">Find answers</a>
+                  </li>
+                  <li>
+                    <a class="sprite ppa-icon"
+                      href="/ubuntu/+ppas">Browse Ubuntu PPAs</a>
                   </li>
                   <li>
                      <a class="sprite tour" href="/+tour">Take the tour</a>

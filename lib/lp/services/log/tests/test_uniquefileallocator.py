@@ -3,7 +3,6 @@
 
 """Tests for the unique log naming facility."""
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import datetime

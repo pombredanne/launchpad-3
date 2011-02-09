@@ -58,8 +58,7 @@ class ISourcePackageRecipeBuild(IPackageBuild):
         title=_("The person who wants this to be done."))
 
     recipe = Object(
-        schema=ISourcePackageRecipe, required=True,
-        title=_("The recipe being built."))
+        schema=ISourcePackageRecipe, title=_("The recipe being built."))
 
     manifest = Object(
         schema=ISourcePackageRecipeData, title=_(
@@ -99,8 +98,11 @@ class ISourcePackageRecipeBuildSource(Interface):
         :return: `ISourcePackageRecipeBuild`.
         """
 
-    def makeDailyBuilds():
-        """Create and return builds for stale ISourcePackageRecipes."""
+    def makeDailyBuilds(logger=None):
+        """Create and return builds for stale ISourcePackageRecipes.
+
+        :param logger: An optional logger to write debug info to.
+        """
 
     def getById(build_id):
         """Return the `ISourcePackageRecipeBuild` for the given build id.

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Language table."""
@@ -23,21 +23,23 @@ from zope.schema import TextLine
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     NavigationMenu,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import LanguageFormatterAPI
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
@@ -274,9 +276,9 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     @property
     def add_question_url(self):
-        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
+        launchpad = getUtility(ILaunchpadCelebrities).launchpad
         return canonical_url(
-            rosetta,
+            launchpad,
             view_name='+addquestion',
             rootsite='answers')
 

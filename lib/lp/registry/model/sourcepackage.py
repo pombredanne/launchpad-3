@@ -17,7 +17,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
-    In,
     Select,
     SQL,
     Store,
@@ -91,13 +90,13 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
+from lp.translations.model.potemplate import TranslationTemplatesCollection
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -356,9 +355,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def releases(self):
         """See `ISourcePackage`."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-            order_by=[SQLConstant(order_const),
+            order_by=["SourcePackageRelease.version",
                       "SourcePackagePublishingHistory.datepublished"])
 
         return [DistributionSourcePackageRelease(
@@ -380,13 +378,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename ==
                     self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
+                SourcePackagePublishingHistory.archiveID.is_in(
                     self.distribution.all_distro_archive_ids)))
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)).order_by(Desc(
-                SQL("debversion_sort_key(SourcePackageRelease.version)")))
+            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
+                SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -476,6 +474,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def bug_reported_acknowledgement(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return (
+            self.distribution_sourcepackage.enable_bugfiling_duplicate_search)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""

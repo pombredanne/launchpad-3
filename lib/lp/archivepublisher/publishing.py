@@ -15,7 +15,6 @@ import os
 import shutil
 
 from debian.deb822 import Release
-from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.librarian.client import LibrarianClient
@@ -27,6 +26,11 @@ from lp.archivepublisher.config import (
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.ftparchive import FTPArchiveHandler
+from lp.archivepublisher.htaccess import (
+    htpasswd_credentials_for_archive,
+    write_htaccess,
+    write_htpasswd,
+    )
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
@@ -41,7 +45,6 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.component import IComponentSet
 
 
 def reorder_components(components):
@@ -84,6 +87,27 @@ def _getDiskPool(pubconf, log):
     return dp
 
 
+def _setupHtaccess(archive, pubconf, log):
+    """Setup .htaccess/.htpasswd files for an archive.
+    """
+    if not archive.private:
+        # FIXME: JRV 20101108 leftover .htaccess and .htpasswd files
+        # should be removed when support for making existing 3PA's public
+        # is added; bug=376072
+        return
+
+    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+    # After the initial htaccess/htpasswd files
+    # are created generate_ppa_htaccess is responsible for
+    # updating the tokens.
+    if not os.path.exists(htaccess_path):
+        log.debug("Writing htaccess file.")
+        write_htaccess(htaccess_path, pubconf.htaccessroot)
+        passwords = htpasswd_credentials_for_archive(archive)
+        write_htpasswd(htpasswd_path, passwords)
+
+
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
 
@@ -103,6 +127,8 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         raise
 
     disk_pool = _getDiskPool(pubconf, log)
+
+    _setupHtaccess(archive, pubconf, log)
 
     if distsroot is not None:
         log.debug("Overriding dists root with %s." % distsroot)
@@ -188,7 +214,7 @@ class Publisher(object):
         self.log.debug("* Step A: Publishing packages")
 
         for distroseries in self.distro.series:
-            for pocket in PackagePublishingPocket.items:
+            for pocket in self.archive.getPockets():
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
                     self.log.debug(
@@ -228,7 +254,7 @@ class Publisher(object):
 
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.series:
-            for pocket in PackagePublishingPocket.items:
+            for pocket in self.archive.getPockets():
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
@@ -264,14 +290,14 @@ class Publisher(object):
         self.log.debug("* Step B: dominating packages")
         judgejudy = Dominator(self.log, self.archive)
         for distroseries in self.distro.series:
-            for pocket in PackagePublishingPocket.items:
+            for pocket in self.archive.getPockets():
                 if not force_domination:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping domination for %s/%s" %
                                    (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                judgejudy.judgeAndDominate(distroseries, pocket, self._config)
+                judgejudy.judgeAndDominate(distroseries, pocket)
 
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""
@@ -288,7 +314,7 @@ class Publisher(object):
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:
-            for pocket in PackagePublishingPocket.items:
+            for pocket in self.archive.getPockets():
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping index generation for %s/%s" %
@@ -298,12 +324,8 @@ class Publisher(object):
 
                 self.release_files_needed.add((distroseries.name, pocket))
 
-                # Retrieve components from the publisher config because
-                # it gets overridden in getPubConfig to set the
-                # correct components for the archive being used.
-                for component_name in self._config.componentsForSeries(
-                        distroseries.name):
-                    component = getUtility(IComponentSet)[component_name]
+                components = self.archive.getComponentsForSeries(distroseries)
+                for component in components:
                     self._writeComponentIndexes(
                         distroseries, pocket, component)
 
@@ -316,7 +338,7 @@ class Publisher(object):
         """
         self.log.debug("* Step D: Generating Release files.")
         for distroseries in self.distro:
-            for pocket in PackagePublishingPocket.items:
+            for pocket in self.archive.getPockets():
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
@@ -450,8 +472,11 @@ class Publisher(object):
             # and pocket, don't!
             return
 
-        all_components = self._config.componentsForSeries(distroseries.name)
-        all_architectures = self._config.archTagsForSeries(distroseries.name)
+        all_components = [
+            comp.name for comp in
+            self.archive.getComponentsForSeries(distroseries)]
+        all_architectures = [
+            a.architecturetag for a in distroseries.enabled_architectures]
         all_files = set()
         for component in all_components:
             self._writeSuiteSource(

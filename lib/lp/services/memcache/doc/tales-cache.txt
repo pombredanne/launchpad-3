@@ -32,8 +32,7 @@ cause this template to render differently.
 
 We also see some comments showing that we had a cache hit, and what the
 configuration was for it ("public").  These comments are only present
-when Launchpad's config is not configured as edge or production (``is_edge``
-or ``is_lpnet``, respectively).
+when Launchpad's config is not configured as production (``is_lpnet``).
 
 If we clear the cache, it will be rendered as expected.
 
@@ -199,6 +198,54 @@ reuse the authenticated cache. The anonymous section is uncached.
     <!-- End cache hit: memcache expression (authenticated) [0 seconds] -->
 
 
+Visibility Modifiers
+--------------------
+
+An optional modifier can also be applied to the visibility. Only 'param'
+and 'noparam' are supported, with 'param' as the default. Pages that
+differ by only the query string do not share cache.
+
+    >>> default_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request1 = LaunchpadTestRequest(QUERY_STRING='a=1')
+    >>> request2 = LaunchpadTestRequest(QUERY_STRING='a=2')
+    >>> print default_template(arg="First", request=request1)
+    Arg: First
+    >>> print default_template(arg="Second", request=request2)
+    Arg: Second
+
+    >>> param_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public param">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request3 = LaunchpadTestRequest(QUERY_STRING='a=3')
+    >>> request4 = LaunchpadTestRequest(QUERY_STRING='a=4')
+    >>> print param_template(arg="First", request=request3)
+    Arg: First
+    >>> print param_template(arg="Second", request=request4)
+    Arg: Second
+
+If 'noparam' is used, query parameters are ignored and the cache is shared.
+
+    >>> noparam_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public noparam">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request5 = LaunchpadTestRequest(QUERY_STRING='a=5')
+    >>> request6 = LaunchpadTestRequest(QUERY_STRING='a=6')
+    >>> print noparam_template(arg="Third", request=request5)
+    Arg: Third
+    >>> print noparam_template(arg="Fourth", request=request6)
+    <!-- Cache hit: memcache expression (public noparam) [0 seconds] -->
+    Arg: Third
+    <!-- End cache hit: memcache expression (public noparam) [0 seconds] -->
+
+
 Nesting & Loops
 ---------------
 
@@ -300,21 +347,21 @@ that can be cast to a string.
     ...     <body>
     ...         <div tal:omit-tag="" tal:repeat="comment comments">
     ...             <div tal:replace="cache:
-    ...                 public,1 hour,comment/comment_num">
+    ...                 public,1 hour,comment/comment_id">
     ...                 <span tal:replace="comment/comment" />
     ...             </div>
     ...         </div>
     ...     </body>"""))
     >>> comments = [
-    ...     {'comment_num': 42, 'comment': "Today's comment"},
-    ...     {'comment_num': 12, 'comment': "Yesterday's comment"}]
+    ...     {'comment_id': 42, 'comment': "Today's comment"},
+    ...     {'comment_id': 'long!'*40, 'comment': "Yesterday's comment"}]
     >>> print template(comments=comments)
     <body>
     Today's comment
     Yesterday's comment
     </body>
 
-    >>> comments.insert(0, {'comment_num': 'foo', 'comment': 'New comment'})
+    >>> comments.insert(0, {'comment_id': 'foo', 'comment': 'New comment'})
     >>> print template(comments=comments)
     <body>
     New comment
@@ -349,17 +396,9 @@ Disabling
 Memcache in templates can be disabled entirely by setting the memcache flag to
 'disabled'.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features import per_thread
-    >>> from lp.services.features.flags import FeatureController
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> ignore = getFeatureStore().add(FeatureFlag(
-    ...     scope=u'default', flag=u'memcache', value=u'disabled',
-    ...     priority=1))
-    >>> empty_request = LaunchpadTestRequest()
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture({'memcache': 'disabled'})
+    >>> fixture.setUp()
 
 And now what cached before will not cache.
 
@@ -376,3 +415,6 @@ And now what cached before will not cache.
     <div>
         <span>second</span>
     </div>
+
+    # Clean up our custom flag settings.
+    >>> fixture.cleanUp()

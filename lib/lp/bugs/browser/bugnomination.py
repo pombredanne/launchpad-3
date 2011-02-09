@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes related to bug nominations."""
@@ -22,10 +22,7 @@ from zope.publisher.interfaces import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -33,7 +30,12 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IPrimaryContext,
     )
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.interfaces.bugnomination import (
     IBugNomination,
@@ -68,6 +70,12 @@ class BugNominationView(LaunchpadFormView):
             # been reported yet.
             raise NotFound(self.current_bugtask, '+nominate', self.request)
         LaunchpadFormView.initialize(self)
+        # Update the submit label based on the user's permission.
+        submit_action = self.__class__.actions.byname['actions.submit']
+        if self.userIsReleaseManager():
+            submit_action.label = _("Target")
+        else:
+            submit_action.label = _("Nominate")
 
     @property
     def label(self):

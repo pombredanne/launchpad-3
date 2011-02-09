@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -40,13 +40,9 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -63,16 +59,20 @@ from canonical.launchpad.webapp.batching import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    DelimitedListWidget,
-    LaunchpadRadioWidget,
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
+    IBugTrackerComponentGroup,
     IBugTrackerSet,
     IRemoteBug,
-    IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
 

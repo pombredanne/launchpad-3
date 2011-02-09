@@ -7,8 +7,6 @@ lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
 
-from __future__ import with_statement
-
 import logging
 import os
 import unittest
@@ -65,7 +63,7 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.database.emailaddress import EmailAddress
     from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
@@ -282,12 +280,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests = [
-        # XXX gary 2008-12-06 bug=305856: Spurious test failure
-        # discovered on buildbot, build 40.  Note that, to completely
-        # disable the test from running, the filename has been changed
-        # to emailinterface.txt.disabled, so when this test is
-        # reinstated it will be need to be changed back.
-        # '../../../lp/answers/doc/emailinterface.txt',
+        '../../../lp/answers/tests/emailinterface.txt',
         '../../../lp/bugs/tests/bugs-emailinterface.txt',
         '../../../lp/bugs/doc/bugs-email-affects-path.txt',
         '../doc/emailauthentication.txt',
@@ -358,8 +351,6 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            # 'icky way of running doctests with __future__ imports
-            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 

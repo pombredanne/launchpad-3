@@ -33,6 +33,17 @@ and publish them.
     >>> print hoary_i386.enabled
     True
 
+`DistroSeries.enabled_architectures` is a `ResultSet` containing the
+architectures with that flag set.
+
+    >>> hoary_i386 in hoary.enabled_architectures
+    True
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     hoary_i386.enabled = False
+    >>> hoary_i386 in hoary.enabled_architectures
+    False
+
 
 DistroArchSeries can tell you about their published releases
 ============================================================
@@ -356,7 +367,7 @@ The architecture also has a 'chroot_url' attribute directly referencing
 the file.
 
     >>> print hoary.getDistroArchSeries('hppa').chroot_url
-    http://localhost:58000/.../filename...
+    http://.../filename...
     >>> hoary.getDistroArchSeries('hppa').chroot_url == \
     ...     chroot.http_url
     True
