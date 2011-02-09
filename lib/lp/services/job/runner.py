@@ -284,14 +284,19 @@ class RunJobCommand(amp.Command):
     response = [('success', amp.Integer()), ('oops_id', amp.String())]
 
 
+def import_source(job_source_name):
+    """Return the IJobSource specified by its full name."""
+    module, name = job_source_name.rsplit('.', 1)
+    source_module = __import__(module, fromlist=[name])
+    return getattr(source_module, name)
+
+
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
     def __init__(self, job_source_name, dbuser):
         child.AMPChild.__init__(self)
-        module, name = job_source_name.rsplit('.', 1)
-        source_module = __import__(module, fromlist=[name])
-        self.job_source = getattr(source_module, name)
+        self.job_source = import_source(job_source_name)
         self.context_manager = self.job_source.contextManager()
         # icky, but it's really a global value anyhow.
         self.__class__.dbuser = dbuser
@@ -454,10 +459,8 @@ class JobCronScript(LaunchpadCronScript):
         if not commandline_config:
             return
         self.config_name = self.args[0]
-        source_interface = self.config_section.source_interface
-        source_module, source_class = source_interface.rsplit('.', 1)
-        self.source_interface = getattr(__import__(source_module,
-            fromlist=[source_class]), source_class)
+        self.source_interface = import_source(
+            self.config_section.source_interface)
 
     @property
     def dbuser(self):

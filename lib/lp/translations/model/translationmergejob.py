@@ -14,7 +14,10 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
@@ -24,9 +27,14 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.job.interfaces.job import (
+    IRunnableJob,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.translations.interfaces.translationmergejob import (
+    ITranslationMergeJobSource,
+    )
 from lp.translations.model.potemplate import POTemplate, POTemplateSubset
 from lp.translations.translationmerger import (
     TransactionManager,
@@ -48,6 +56,8 @@ class PackagingJobType(DBEnumeratedType):
 
 class TranslationMergeJob(StormBase, BaseRunnableJob):
     """Job for merging translations between a product and sourcepackage."""
+
+    classProvides(ITranslationMergeJobSource)
 
     implements(IRunnableJob)
 

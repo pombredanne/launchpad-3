@@ -14,6 +14,9 @@ from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import TranslationSide
+from lp.translations.interfaces.translationmergejob import (
+    ITranslationMergeJobSource,
+    )
 from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.translationmergejob import TranslationMergeJob
 
@@ -76,7 +79,8 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_interface(self):
-        """TranslationMergeJob must implement IRunnableJob."""
+        """TranslationMergeJob must implement its interfaces."""
+        verifyObject(ITranslationMergeJobSource, TranslationMergeJob)
         job = make_translation_merge_job(self.factory)
         verifyObject(IRunnableJob, job)
 
