@@ -1634,7 +1634,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_no_lifecycle_email_despite_structural_subscription(self):
         # If a person has a structural METADATA subscription,
         # and a direct LIFECYCLE subscription, they should
-        # get no emails (bug 713382).
+        # get no emails for a non-LIFECYCLE change (bug 713382).
         self.bug.subscribe(self.product_metadata_subscriber,
                            self.product_metadata_subscriber,
                            level=BugNotificationLevel.LIFECYCLE)

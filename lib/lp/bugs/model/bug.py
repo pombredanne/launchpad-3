@@ -899,14 +899,9 @@ BugMessage""" % sqlvalues(self.id))
         if recipients is not None:
             # Pre-load duplicate bugs.
             list(self.duplicates)
-            # Direct subscriptions always take precedence over indirect
-            # subscriptions.  Direct subscribers may have muted a
-            # subscription.
-            direct_subscribers = set(self.getDirectSubscribers())
             for subscription in info.duplicate_only_subscriptions:
-                if subscription.person not in direct_subscribers:
-                    recipients.addDupeSubscriber(
-                        subscription.person, subscription.bug)
+                recipients.addDupeSubscriber(
+                    subscription.person, subscription.bug)
 
         return info.duplicate_only_subscriptions.subscribers.sorted
 
