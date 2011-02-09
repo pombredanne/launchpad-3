@@ -569,8 +569,8 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(product.displayname))
+            description = structured(
+                '<a href="%s">%s</a>', item_url, product.displayname)
             vocab_terms.append(SimpleTerm(product, product.name, description))
         # Add an option to represent the user's decision to choose a
         # different project. Note that project names cannot be uppercase.

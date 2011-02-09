@@ -13,7 +13,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionAddView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
     person_logged_in,

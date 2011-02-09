@@ -51,6 +51,9 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -66,9 +69,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
-    )
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
