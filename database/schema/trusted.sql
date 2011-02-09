@@ -205,6 +205,106 @@ COMMENT ON FUNCTION update_database_stats() IS
 'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
 
+CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
+LANGUAGE sql VOLATILE SECURITY DEFINER AS
+$$
+    INSERT INTO DatabaseDiskUtilization
+    SELECT
+        CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+        namespace, name,
+        sub_namespace, sub_name,
+        kind,
+        (namespace || '.' ||  name || COALESCE(
+                '/' || sub_namespace || '.' || sub_name, '')) AS sort,
+        (stat).table_len,
+        (stat).tuple_count,
+        (stat).tuple_len,
+        (stat).tuple_percent,
+        (stat).dead_tuple_count,
+        (stat).dead_tuple_len,
+        (stat).dead_tuple_percent,
+        (stat).free_space,
+        (stat).free_percent
+    FROM (
+        SELECT
+            pg_namespace.nspname AS namespace,
+            pg_class.relname AS name,
+            NULL AS sub_namespace,
+            NULL AS sub_name,
+            pg_class.relkind AS kind,
+            pgstattuple(pg_class.oid) AS stat
+        FROM pg_class, pg_namespace
+        WHERE
+            pg_class.relnamespace = pg_namespace.oid
+            AND pg_class.relkind = 'r'
+
+        UNION ALL
+        
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_index
+        WHERE
+            pg_class_index.relkind = 'i'
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_index.indexrelid = pg_class_index.oid
+            AND pg_index.indrelid = pg_class_table.oid
+
+        UNION ALL
+
+        -- TOAST tables
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_toast.nspname AS sub_namespace,
+            pg_class_toast.relname AS sub_name,
+            pg_class_toast.relkind AS kind,
+            pgstattuple(pg_class_toast.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_toast,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_toast.relnamespace = pg_namespace_toast.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_toast.oid = pg_class_table.reltoastrelid
+
+        UNION ALL
+
+        -- TOAST indexes
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.reltoastrelid = pg_class_toast.oid
+            AND pg_class_index.oid = pg_class_toast.reltoastidxid
+        ) AS whatever;
+$$;
+
+
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
 LANGUAGE plpgsql STABLE SECURITY DEFINER AS
 $$
