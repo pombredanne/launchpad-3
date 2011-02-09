@@ -68,7 +68,9 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
         Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.bugtask_set.search(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        # 1 query for the tasks, 1 query for the product (target) eager
+        # loading.
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -162,7 +164,9 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
         Store.of(self.projectgroup).flush()
         with StormStatementRecorder() as recorder:
             list(self.bugtask_set.search(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        # 1 query for the tasks, 1 query for the product (target) eager
+        # loading.
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to

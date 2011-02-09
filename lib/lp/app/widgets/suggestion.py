@@ -136,9 +136,10 @@ class SuggestionWidget(LaunchpadRadioWidget):
 
     def _renderLabel(self, text, index):
         """Render a label for the option with the specified index."""
-        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
+        label = structured(
+            u'<label for="%s" style="font-weight: normal">%s</label>',
             self._optionId(index), text)
-        return structured(label)
+        return label
 
     def _renderSuggestionLabel(self, value, index):
         """Render a label for the option based on a branch."""
@@ -173,7 +174,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         # Lastly render the other option.
         index = len(items)
         other_selection_text = "%s %s" % (
-            self._renderLabel("Other:", index),
+            escape(self._renderLabel("Other:", index)),
             self.other_selection_widget())
         other_selection_onclick = (
             "this.form['%s'].focus()" % self.other_selection_widget.name)
