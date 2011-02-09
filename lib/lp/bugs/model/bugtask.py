@@ -1778,13 +1778,14 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
-        user_roles = IPersonRoles(params.user)
-        if not user_roles.in_registry_experts:
-            extra_clauses.append(
-                """NOT EXISTS (SELECT TRUE
-                            FROM Product
-                            WHERE Product.id = BugTask.product
-                            AND Product.active = False)""")
+        if params.user is not None:
+            user_roles = IPersonRoles(params.user)
+            if not user_roles.in_registry_experts:
+                extra_clauses.append(
+                    """NOT EXISTS (SELECT TRUE
+                                FROM Product
+                                WHERE Product.id = BugTask.product
+                                AND Product.active = False)""")
 
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
