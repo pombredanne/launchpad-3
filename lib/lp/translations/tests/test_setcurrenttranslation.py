@@ -175,10 +175,15 @@ class SetCurrentTranslationTestMixin:
             new_translations, share_with_other_side=follows)
 
         # We end up with a shared current translation.
-        # Current for other context one stays the same.
+        # Current for other context one stays the same, if the
+        # other side does not follow this side.
         self.assertTrue(tm is not None)
+        if follows:
+            expected_other = tm
+        else:
+            expected_other = tm_other
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
+            tm, None, expected_other, [])
 
     def test_c_None__n_None__o_shared__follows(self):
         # There is no current translation, though there is a shared one
@@ -318,14 +323,13 @@ class SetCurrentTranslationTestMixin:
             new_translations, share_with_other_side=True)
 
         # tm_suggestion becomes current.
-        # Current for other context one stays the same.
+        # Current for other context is changed too.
         self.assertTrue(tm is not None)
         self.assertEquals(tm_suggestion, tm)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
+            tm, None, tm, [])
 
-    def test_c_None__n_shared__o_shared__identical(self,
-                                                               follows=False):
+    def test_c_None__n_shared__o_shared__identical(self, follows=False):
         # Current translation is None, and we have found a
         # shared existing TM matching new translations and it's
         # also a current translation in "other" context.

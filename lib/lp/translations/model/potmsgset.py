@@ -955,6 +955,14 @@ class POTMsgSet(SQLBase):
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
                         traits.other_side_traits.setFlag(message, True)
+                    elif incumbent_message is None:
+                        # If this is the first translation, we
+                        # override the existing translation for the
+                        # other side.
+                        if other_incumbent is not None:
+                            traits.other_side_traits.setFlag(
+                                other_incumbent, False)
+                        traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
                     traits.other_side_traits.setFlag(incumbent_message, False)
