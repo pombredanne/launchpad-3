@@ -142,8 +142,8 @@ class TestPPAPackages(TestCaseWithFactory):
         removeSecurityProxy(ppa).publish = False
         self.assertNotifications(
             ppa,
-            'Publishing has been disabled for this archive, go to the '
-            'Change details page if you need to re-enable it.',
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing)",
             person=ppa.owner)
 
     def test_warning_for_disabled_publishing_with_private_ppa(self):
@@ -153,9 +153,9 @@ class TestPPAPackages(TestCaseWithFactory):
         removeSecurityProxy(ppa).publish = False
         self.assertNotifications(
             ppa,
-            'Publishing has been disabled for this archive, go to the '
-            'Change details page if you need to re-enable it.\nNote: since '
-            'this archive is private, no builds will be dispatched.',
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing) Since this archive is private, no builds are being "
+            "dispatched.",
             person=ppa.owner)
 
     def test_warning_for_disabled_publishing_with_anonymous_user(self):
@@ -164,7 +164,7 @@ class TestPPAPackages(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).publish = False
         self.assertNotifications(
-            ppa, 'Publishing has been disabled for this archive')
+            ppa, 'Publishing has been disabled for this archive.')
 
     def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()

@@ -551,16 +551,15 @@ class ArchiveViewBase(LaunchpadView):
         # this.
         if not self.context.publish and self.context.is_active:
             can_edit = check_permission('launchpad.Edit', self.context)
-            notification = "Publishing has been disabled for this archive"
+            notification = "Publishing has been disabled for this archive."
             if can_edit:
                 edit_url = canonical_url(self.context) + '/+edit'
                 notification += (
-                    ", go to the <a href=%s>Change details</a> page if you "
-                    "need to re-enable it." % edit_url)
+                    " <a href=%s>(re-enable publishing)</a>" % edit_url)
             if self.context.private:
                 notification += (
-                    "\nNote: since this archive is private, no builds will "
-                    "be dispatched.")
+                    " Since this archive is private, no builds are "
+                    "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
 
