@@ -601,32 +601,33 @@ class RevisionSet:
         store.find(RevisionCache, RevisionCache.id.is_in(subquery)).remove()
 
     @staticmethod
-    def fetchAuthorsForDisplay(revisions):
+    def fetchAuthorsForDisplay(revision_authors):
         """See `IRevisionSet`."""
-        author_ids = [revision.revision_author_id for revision in revisions]
-        if author_ids == []:
+        person_ids = set([
+            revision_author.personID
+            for revision_author in revision_authors])
+        person_ids.discard(None)
+        if len(person_ids) == 0:
             return []
         store = IStore(RevisionAuthor)
         source = store.using(
-            RevisionAuthor,
-            LeftJoin(Person, Person.id == RevisionAuthor.personID),
+            Person,
             LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Person.iconID),
             LeftJoin(
                 LibraryFileContent,
                 LibraryFileContent.id == LibraryFileAlias.contentID))
         columns = (
-            RevisionAuthor,
             Person,
             ValidPersonCache,
             LibraryFileAlias,
             LibraryFileContent,
             )
         prejoined_authors = source.find(
-            columns, RevisionAuthor.id.is_in(author_ids))
+            columns, Person.id.is_in(person_ids))
         return [
             person
-            for author, person, cache, alias, content in prejoined_authors]
+            for person, cache, alias, content in prejoined_authors]
 
 
 def revision_time_limit(day_limit):
