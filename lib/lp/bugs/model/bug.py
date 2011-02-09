@@ -123,6 +123,7 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -149,6 +150,9 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
@@ -166,7 +170,6 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -177,9 +180,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -1029,19 +1029,6 @@ BugMessage""" % sqlvalues(self.id))
         # original `Bug`.
         return recipients
 
-    def addChangeNotification(self, text, person, recipients=None, when=None):
-        """See `IBug`."""
-        if recipients is None:
-            recipients = self.getBugNotificationRecipients(
-                level=BugNotificationLevel.METADATA)
-        if when is None:
-            when = UTC_NOW
-        message = MessageSet().fromText(
-            self.followup_subject(), text, owner=person, datecreated=when)
-        getUtility(IBugNotificationSet).addNotification(
-             bug=self, is_comment=False,
-             message=message, recipients=recipients)
-
     def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
         if recipients is None:
@@ -1057,8 +1044,6 @@ BugMessage""" % sqlvalues(self.id))
         if when is None:
             when = UTC_NOW
 
-        # Only try to add something to the activity log if we have some
-        # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             getUtility(IBugActivitySet).new(
@@ -1072,10 +1057,15 @@ BugMessage""" % sqlvalues(self.id))
         if notification_data is not None:
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
-
-            self.addChangeNotification(
-                notification_data['text'], change.person, recipients,
-                when)
+            message = MessageSet().fromText(
+                self.followup_subject(), notification_data['text'],
+                owner=change.person, datecreated=when)
+            if recipients is None:
+                recipients = self.getBugNotificationRecipients(
+                    level=BugNotificationLevel.METADATA)
+            getUtility(IBugNotificationSet).addNotification(
+                bug=self, is_comment=False, message=message,
+                recipients=recipients)
 
         self.updateHeat()
 

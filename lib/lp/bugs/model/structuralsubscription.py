@@ -39,7 +39,6 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -51,7 +50,6 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
@@ -69,8 +67,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel,
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
@@ -116,14 +113,6 @@ class StructuralSubscription(Storm):
                           validator=validate_public_person)
     subscribed_by = Reference(subscribed_byID, "Person.id")
 
-    bug_notification_level = DBEnum(
-        enum=BugNotificationLevel,
-        default=BugNotificationLevel.NOTHING,
-        allow_none=False)
-    blueprint_notification_level = DBEnum(
-        enum=BlueprintNotificationLevel,
-        default=BlueprintNotificationLevel.NOTHING,
-        allow_none=False)
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
@@ -181,6 +170,12 @@ class StructuralSubscription(Storm):
         IStore(StructuralSubscription).flush()
         return bug_filter
 
+    def delete(self):
+        store = Store.of(self)
+        store.find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.structural_subscription == self).remove()
+        store.remove(self)
 
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
@@ -400,24 +395,18 @@ class StructuralSubscriptionTargetMixin:
                 return False
         return True
 
-    def addBugSubscription(self, subscriber, subscribed_by,
-                           bug_notification_level=None):
+    def addBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
-        # subscription and immediately giving it a full
-        # bug notification level. It is useful so long as
-        # subscriptions are mainly used to implement bug contacts.
+        # subscription. It is useful so long as subscriptions are mainly
+        # used to implement bug contacts.
 
         if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s' % (
                     subscribed_by.name, subscriber.name))
 
-        sub = self.addSubscription(subscriber, subscribed_by)
-        if bug_notification_level is None:
-            bug_notification_level = BugNotificationLevel.COMMENTS
-        sub.bug_notification_level = bug_notification_level
-        return sub
+        return self.addSubscription(subscriber, subscribed_by)
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):
         """See `IStructuralSubscriptionTarget`."""
@@ -430,23 +419,13 @@ class StructuralSubscriptionTargetMixin:
                     unsubscribed_by.name, subscriber.name))
 
         subscription_to_remove = self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA,
             subscriber=subscriber).one()
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
                 "%s is not subscribed to %s." % (
                 subscriber.name, self.displayname))
-        else:
-            if (subscription_to_remove.blueprint_notification_level >
-                BlueprintNotificationLevel.NOTHING):
-                # This is a subscription to other application too
-                # so only set the bug notification level
-                subscription_to_remove.bug_notification_level = (
-                    BugNotificationLevel.NOTHING)
-            else:
-                store = Store.of(subscription_to_remove)
-                store.remove(subscription_to_remove)
+        subscription_to_remove.delete()
 
     def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
@@ -457,21 +436,10 @@ class StructuralSubscriptionTargetMixin:
         all_subscriptions = self.getSubscriptions(subscriber=person)
         return all_subscriptions.one()
 
-    def getSubscriptions(self,
-                         min_bug_notification_level=
-                         BugNotificationLevel.NOTHING,
-                         min_blueprint_notification_level=
-                         BlueprintNotificationLevel.NOTHING,
-                         subscriber=None):
+    def getSubscriptions(self, subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
         from lp.registry.model.person import Person
-        clauses = [
-            StructuralSubscription.subscriberID==Person.id,
-            (StructuralSubscription.bug_notification_level >=
-             min_bug_notification_level),
-            (StructuralSubscription.blueprint_notification_level >=
-             min_blueprint_notification_level),
-            ]
+        clauses = [StructuralSubscription.subscriberID==Person.id]
         for key, value in self._target_args.iteritems():
             clauses.append(
                 getattr(StructuralSubscription, key)==value)
@@ -487,13 +455,11 @@ class StructuralSubscriptionTargetMixin:
     @property
     def bug_subscriptions(self):
         """See `IStructuralSubscriptionTarget`."""
-        return self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA)
+        return self.getSubscriptions()
 
     def userHasBugSubscriptions(self, user):
         """See `IStructuralSubscriptionTarget`."""
-        bug_subscriptions = self.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.METADATA)
+        bug_subscriptions = self.getSubscriptions()
         if user is not None:
             for subscription in bug_subscriptions:
                 if (subscription.subscriber == user or
@@ -540,22 +506,23 @@ class BugFilterSetBuilder:
         # does not know how to compile an expression with a proxied list.
         self.tags = list(bugtask.bug.tags)
         # Set up common conditions.
-        self.base_conditions = And(
-            StructuralSubscription.bug_notification_level >= level,
-            join_condition)
+        self.base_conditions = join_condition
         # Set up common filter conditions.
+        self.filter_conditions = And(
+            BugSubscriptionFilter.bug_notification_level >= level,
+            self.base_conditions)
         if len(self.tags) == 0:
             self.filter_conditions = And(
                 # When the bug has no tags, filters with include_any_tags set
                 # can never match.
                 Not(BugSubscriptionFilter.include_any_tags),
-                self.base_conditions)
+                self.filter_conditions)
         else:
             self.filter_conditions = And(
                 # When the bug has tags, filters with exclude_any_tags set can
                 # never match.
                 Not(BugSubscriptionFilter.exclude_any_tags),
-                self.base_conditions)
+                self.filter_conditions)
 
     @property
     def subscriptions_without_filters(self):

@@ -36,6 +36,7 @@ from storm.expr import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1760,6 +1761,11 @@ class PublishingSet:
             builds = SourcePackagePublishingHistory._convertBuilds(
                 source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
+            # Thank you, Zope, for security wrapping an abstract data
+            # structure.
+            summary = removeSecurityProxy(summary)
+            summary['date_published'] = source_pub.datepublished
+            summary['source_package_name'] = source_pub.source_package_name
             source_build_statuses[source_pub.id] = summary
 
             # If:
@@ -1785,6 +1791,8 @@ class PublishingSet:
                 summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': builds,
+                    'date_published': source_pub.datepublished,
+                    'source_package_name': source_pub.source_package_name,
                 }
                 source_build_statuses[source_pub.id] = summary
 
