@@ -3,3 +3,4 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+Make sure the foreign-key attrs are hooked up to their references correctly!

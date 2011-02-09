@@ -33,6 +33,7 @@ from storm.expr import (
     Asc,
     Desc,
     Join,
+    LeftJoin,
     Not,
     Or,
     Select,
@@ -81,6 +82,10 @@ from lp.code.interfaces.revision import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.person import (
+    Person,
+    ValidPersonCache,
+    )
 
 
 class Revision(SQLBase):
@@ -92,8 +97,9 @@ class Revision(SQLBase):
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
 
-    revision_author = ForeignKey(
-        dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
+    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
+
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
@@ -430,7 +436,6 @@ class RevisionSet:
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
-        from lp.registry.model.person import ValidPersonCache
 
         store = IStore(Revision)
         results_with_dupes = store.find(
@@ -590,6 +595,22 @@ class RevisionSet:
             RevisionCache.revision_date < epoch,
             limit=limit)
         store.find(RevisionCache, RevisionCache.id.is_in(subquery)).remove()
+
+    @staticmethod
+    def fetchAuthorsForDisplay(revisions):
+        """See `IRevisionSet`."""
+        author_ids = [revision.revision_author_id for revision in revisions]
+        if author_ids == []:
+            return []
+        store = IStore(RevisionAuthor)
+        source = store.using(
+            RevisionAuthor,
+            LeftJoin(Person, Person.id == RevisionAuthor.personID),
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
+        prejoined_authors = source.find(
+            (RevisionAuthor, Person, ValidPersonCache),
+            RevisionAuthor.id.is_in(author_ids))
+        return [person for author, person, cache in prejoined_authors]
 
 
 def revision_time_limit(day_limit):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -34,7 +34,10 @@ class IRevision(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
     log_body = Attribute("The revision log message.")
+
+    revision_author_id = Attribute("Revision author identifier id.")
     revision_author = Attribute("The revision author identifier.")
+
     gpgkey = Attribute("The OpenPGP key used to sign the revision.")
     revision_id = Attribute("The globally unique revision identifier.")
     revision_date = Datetime(
@@ -223,4 +226,14 @@ class IRevisionSet(Interface):
         removed.
 
         :param limit: Remove at most `limit` rows at once.
+        """
+
+    def fetchAuthorsForDisplay(revisions):
+        """Retrieve `RevisionAuthor`s for `revisions`.
+
+        Also prefetches information that will be needed in order to show
+        the authors in the user interface.
+
+        :param revisions: A sequence of `IRevision`s.
+        :return: A list of `RevisionAuthor`s.
         """

@@ -262,6 +262,24 @@ class TestRevisionSet(TestCaseWithFactory):
         found = self.revision_set.getByRevisionId('nonexistent')
         self.assertIs(None, found)
 
+    def test_fetchAuthorsForDisplay_finds_nothing_for_empty_list(self):
+        self.assertContentEqual(
+            [], self.revision_set.fetchAuthorsForDisplay([]))
+
+    def test_fetchAuthorsForDisplay_finds_revision_author(self):
+        author = self.factory.makePerson()
+        revision = self.factory.makeRevision(author=author)
+        self.assertContentEqual(
+            [author], self.revision_set.fetchAuthorsForDisplay([revision]))
+
+    def test_fetchAuthorsForDisplay_does_not_repeat_authors(self):
+        author = self.factory.makePerson()
+        revisions = [
+            self.factory.makeRevision(author=author)
+            for counter in xrange(3)]
+        self.assertContentEqual(
+            [author], self.revision_set.fetchAuthorsForDisplay(revisions))
+
 
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
