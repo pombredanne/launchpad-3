@@ -9,7 +9,10 @@ import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import ResultSet
-from testtools.matchers import StartsWith
+from testtools.matchers import (
+    Equals,
+    StartsWith,
+    )
 from zope.component import getUtility
 from zope.interface import providedBy
 
@@ -61,6 +64,7 @@ from lp.testing import (
     login_person,
     logout,
     normalize_whitespace,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -68,6 +72,7 @@ from lp.testing.factory import (
     is_security_proxied_or_harmless,
     LaunchpadObjectFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -947,21 +952,26 @@ class TestBugTaskSearch(TestCaseWithFactory):
         person = self.login()
         self.factory.makeBug(product=target, private=True, owner=person)
         self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, private=True, owner=person)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.
         login_person(person)
         tasks = target.searchTasks(BugTaskSearchParams(
             person, omit_dupes=True, orderby=['status', '-importance', 'id']))
-        # We must be finding the bugs.
-        self.assertEqual(2, tasks.count())
+        # We must have found the bugs.
+        self.assertEqual(3, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
         # distorting what we're testing.
         IPerson(person.account, None)
-        # One query and only one should be issued to get the tasks, bugs and
-        # allow access to getConjoinedMaster attribute - an attribute that
-        # triggers a permission check (nb: id does not trigger such a check)
-        self.assertStatementCount(1,
-            lambda: [task.getConjoinedMaster for task in tasks])
+        # The should take 2 queries - one for the tasks, one for the related
+        # products (eager loaded targets).
+        has_expected_queries = HasQueryCount(Equals(2))
+        # No extra queries should be issued to access a regular attribute
+        # on the bug that would normally trigger lazy evaluation for security
+        # checking.  Note that the 'id' attribute does not trigger a check.
+        with StormStatementRecorder() as recorder:
+            [task.getConjoinedMaster for task in tasks]
+            self.assertThat(recorder, has_expected_queries)
 
     def test_omit_targeted_default_is_false(self):
         # The default value of omit_targeted is false so bugs targeted
