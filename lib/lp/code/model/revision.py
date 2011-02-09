@@ -55,6 +55,10 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.database.sqlbase import (
     quote,
     SQLBase,
@@ -606,11 +610,23 @@ class RevisionSet:
         source = store.using(
             RevisionAuthor,
             LeftJoin(Person, Person.id == RevisionAuthor.personID),
-            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
+            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Person.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID))
+        columns = (
+            RevisionAuthor,
+            Person,
+            ValidPersonCache,
+            LibraryFileAlias,
+            LibraryFileContent,
+            )
         prejoined_authors = source.find(
-            (RevisionAuthor, Person, ValidPersonCache),
-            RevisionAuthor.id.is_in(author_ids))
-        return [person for author, person, cache in prejoined_authors]
+            columns, RevisionAuthor.id.is_in(author_ids))
+        return [
+            person
+            for author, person, cache, alias, content in prejoined_authors]
 
 
 def revision_time_limit(day_limit):
