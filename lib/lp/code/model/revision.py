@@ -612,22 +612,18 @@ class RevisionSet:
         store = IStore(RevisionAuthor)
         source = store.using(
             Person,
-            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Person.iconID),
             LeftJoin(
                 LibraryFileContent,
                 LibraryFileContent.id == LibraryFileAlias.contentID))
         columns = (
             Person,
-            ValidPersonCache,
             LibraryFileAlias,
             LibraryFileContent,
             )
         prejoined_authors = source.find(
             columns, Person.id.is_in(person_ids))
-        return [
-            person
-            for person, cache, alias, content in prejoined_authors]
+        return [person for person, alias, content in prejoined_authors]
 
 
 def revision_time_limit(day_limit):

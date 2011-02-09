@@ -228,12 +228,12 @@ class IRevisionSet(Interface):
         :param limit: Remove at most `limit` rows at once.
         """
 
-    def fetchAuthorsForDisplay(revisions):
-        """Retrieve `RevisionAuthor`s for `revisions`.
+    def fetchAuthorsForDisplay(revision_authors):
+        """Retrieve `Person`s associated with a bunch of `RevisionAuthor`s.
 
         Also prefetches information that will be needed in order to show
         the authors in the user interface.
 
-        :param revisions: A sequence of `IRevision`s.
-        :return: A list of `RevisionAuthor`s.
+        :param revision_authors: A sequence of `IRevisionAuthor`s.
+        :return: A list of `Person`s.
         """
