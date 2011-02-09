@@ -55,7 +55,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
@@ -89,7 +88,6 @@ from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -546,6 +544,24 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
+
+    def initialize(self):
+        # If the archive has publishing disabled, present a warning.  If
+        # the current user has lp.Edit then add a link to +edit to fix
+        # this.
+        if not self.context.publish and self.context.is_active:
+            can_edit = check_permission('launchpad.Edit', self.context)
+            notification = "Publishing has been disabled for this archive."
+            if can_edit:
+                edit_url = canonical_url(self.context) + '/+edit'
+                notification += (
+                    " <a href=%s>(re-enable publishing)</a>" % edit_url)
+            if self.context.private:
+                notification += (
+                    " Since this archive is private, no builds are "
+                    "being dispatched.")
+            self.request.response.addNotification(structured(notification))
+        super(ArchiveViewBase, self).initialize()
 
     @cachedproperty
     def private(self):
