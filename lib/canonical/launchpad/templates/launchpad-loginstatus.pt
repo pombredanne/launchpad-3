@@ -9,6 +9,7 @@
 <div id="logincontrol" tal:condition="view/logged_in">
   <form action="+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
+    <div id="rendertime" tal:condition="request/features/visible_render_time">Loading... &bull;</div>
     <a tal:replace="structure request/lp:person/fmt:name_link" /> &bull;
     <input type="submit" name="logout" value="Log Out" />
   </form>

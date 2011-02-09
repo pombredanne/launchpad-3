@@ -40,6 +40,10 @@ flag_info = sorted([
      '[on|off]',
      'redirect to private URLs instead of proxying',
      'off'),
+    ('visible_render_time',
+     'empty|nonempty',
+     'enables showing the page render overheads in the login widget',
+     ''),
     ])
 
 # The set of all flag names that are documented.
