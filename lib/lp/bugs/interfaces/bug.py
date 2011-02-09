@@ -22,6 +22,7 @@ __all__ = [
 
 from textwrap import dedent
 
+from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -429,10 +430,14 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # subscription-related methods
-
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
+        person=Reference(IPerson, title=_('Person'), required=True),
+        # level actually uses BugNotificationLevel as its vocabulary,
+        # but due to circular import problems we fix that in
+        # _schema_circular_imports.py rather than here.
+        level=Choice(
+            vocabulary=DBEnumeratedType, required=False,
+            title=_('Level')))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True, level=None):
@@ -458,6 +463,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
+
+    def reindexMessages():
+        """Fill in the `BugMessage`.index column for this bugs messages."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -519,6 +527,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getSubscriptionInfo(level):
+        """Return a `BugSubscriptionInfo` at the given `level`.
+
+        :param level: A member of `BugNotificationLevel`.
+        """
+
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
@@ -532,9 +546,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.
         """
-
-    def addChangeNotification(text, person, recipients=None, when=None):
-        """Add a bug change notification."""
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""

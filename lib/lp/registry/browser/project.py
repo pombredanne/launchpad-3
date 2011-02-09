@@ -87,7 +87,7 @@ from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet

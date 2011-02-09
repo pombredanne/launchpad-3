@@ -17,6 +17,7 @@ from unittest import TestLoader
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from zope.testing.loghandler import Handler
 
 from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -432,11 +433,28 @@ class TestRemoveTranslations(TestCase):
             "translate", "vertalen", "uebersetzen")
         self.nl_message.is_current_upstream = False
 
-        ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current_upstream=True)
+        messages_to_delete = [self.nl_message, new_nl_message, new_de_message]
+        current_upstream_messages = [
+            message for message in messages_to_delete
+            if message.is_current_upstream]
+        ids = [message.id for message in messages_to_delete]
+        logger = logging.getLogger('test_remove_translations')
+        logger.setLevel(logging.WARN)
+        loghandler = Handler(self)
+        loghandler.add(logger.name)
+        self._removeMessages(ids=ids, is_current_upstream=True, logger=logger)
 
         self.nl_message.is_current_upstream = True
         self._checkInvariant()
+        loghandler.assertLogsMessage(
+            'Deleting messages currently in use:', level=logging.WARN)
+        for message in current_upstream_messages:
+            loghandler.assertLogsMessage(
+                'Message %i is a current translation in upstream'
+                % message.id,
+                level=logging.WARN)
+        self.assertEqual(
+            1 + len(current_upstream_messages), len(loghandler.records))
 
     def test_RemoveNotCurrent(self):
         # Remove current messages, but not non-current messages.
@@ -557,11 +575,11 @@ class TestRemoveTranslations(TestCase):
 class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
     """Test that `remove_translations` "unmasks" upstream messages.
 
-    When a current, non-upstream message is deleted, the deletion code
-    checks whether there is also an upstream translation.  If there was,
-    it makes sense to make the upstream message the current one (as it
-    would have been if the deleted message had never been there in the
-    first place).
+    When a shared current Ubuntu message is deleted, the deletion
+    code checks whether there is also an upstream translation.  If there
+    was, it makes sense to make the upstream message the current Ubuntu
+    message (as it would have been if the deleted message had never been
+    there in the first place).
     """
     layer = LaunchpadZopelessLayer
 
