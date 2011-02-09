@@ -437,6 +437,12 @@ class Bug(SQLBase):
     def reindexMessages(self):
         """See `IBug`."""
         indexed_messages = self._indexed_messages(include_bugmessage=True)
+        # First reset the ones that have changed, so that we don't run into
+        # IntegrityError due to having two temporarily hold the same index.
+        for indexed_message, bugmessage in indexed_messages:
+            if bugmessage.index != indexed_message.index:
+                bugmessage.index = None
+        Store.of(self).flush()
         for indexed_message, bugmessage in indexed_messages:
             if bugmessage.index != indexed_message.index:
                 bugmessage.index = indexed_message.index
