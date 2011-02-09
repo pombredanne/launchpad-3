@@ -136,8 +136,8 @@ The page includes a comment after the body with diagnostic information.
       Has application tabs: False
       Has side portlets: False
       At least ... queries... issued in ... seconds
-      Features: {}
-      in scopes {}
+      Features: {...}
+      in scopes {...}
       r...
     -->
     ...
