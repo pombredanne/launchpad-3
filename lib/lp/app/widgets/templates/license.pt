@@ -21,9 +21,12 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
-// Don't use the global LPS object in this one
-// case because we need fetchCSS true for this to work.
-YUI().use('node', 'lazr.effects', function(Y) {
+// XXX: deryck 2011-02-09 bug=715892
+// This stuff really needs a rewrite.  It is fragile
+// and breaks with every YUI/lazr-js upgrade.
+// Tread carefully, or else please make this better
+// and add tests, too (preferably in reverse order there.)
+LPS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
