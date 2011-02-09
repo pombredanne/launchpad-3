@@ -11,7 +11,7 @@ import xmlrpclib
 
 import transaction
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker.base import UnparsableBugData
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.testing import (
@@ -23,7 +23,8 @@ from lp.testing.fakemethod import FakeMethod
 
 class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
     """Test POSTs to Bugzilla's bug-search page."""
-    layer = DatabaseFunctionalLayer
+
+    layer = ZopelessLayer
 
     base_url = "http://example.com/"
 
@@ -67,7 +68,7 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
 class TestBugzillaSniffing(TestCase):
     """Tests for sniffing remote Bugzilla capabilities."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessLayer
 
     def test_expat_error(self):
         # If an `ExpatError` is raised when sniffing for XML-RPC capabilities,
