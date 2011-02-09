@@ -951,6 +951,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 builds = status_summary['builds']
 
             latest_updates_list.append({
+                'date_published' : date_published,
                 'title': source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
@@ -958,6 +959,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 'builds': builds,
                 })
 
+        latest_updates_list.sort(
+            key=lambda x: x['date_published'], reverse=True)
         return latest_updates_list
 
     def num_updates_over_last_days(self, num_days=30):
