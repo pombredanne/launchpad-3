@@ -727,11 +727,19 @@ When filing a bug, supplying an empty comment causes a validation error:
 
 Comments cannot be whitespace:
 
+    >>> from zope.formlib import form as z_form
+    >>> form = {
+    ...     'field.title': 'Test Title',
+    ...     'field.comment': ' ',
+    ...     'field.actions.submit_bug': 'Submit Bug Request',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=form)
     >>> filebug_view = FileBugGuidedView(ubuntu, request)
     >>> filebug_view.setUpFields()
     >>> filebug_view.setUpWidgets()
-    >>> filebug_view.validate(bug_data)
-
+    >>> data = {}
+    >>> errors, action = z_form.handleSubmit(
+    ...     filebug_view.actions, data, filebug_view._validate)
     >>> print filebug_view.getFieldError('comment')
     Provide details about the issue.
 
