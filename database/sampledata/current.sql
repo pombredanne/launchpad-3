@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.6
+-- Created using pg_dump (PostgreSQL) 8.4.7
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,9 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
 
 
 
@@ -6265,6 +6268,13 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagingjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagingjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;
