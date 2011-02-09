@@ -26,11 +26,6 @@
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
 
-    <class class="lp.bugs.model.bugtask.BugTaskResultSet">
-        <allow interface="storm.zope.interfaces.IResultSet" />
-        <allow attributes="__getslice__" />
-    </class>
-
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
         <allow
@@ -183,6 +178,7 @@
             <allow
                 attributes="
                     id
+                    assigneeID
                     bug
                     bugID
                     target
@@ -773,7 +769,6 @@
                 attributes="
                     addAttachment
                     addChange
-                    addChangeNotification
                     addCommentNotification
                     addNomination
                     addTask

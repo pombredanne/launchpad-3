@@ -11,7 +11,6 @@ __all__ = [
 
 from contextlib import contextmanager
 
-from canonical.database.sqlbase import commit
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 @contextmanager
@@ -24,12 +23,12 @@ def dbuser(temporary_name):
     code in the "with" block.
     """
     restore_name = LaunchpadZopelessLayer.txn._dbuser
-    commit()
+    LaunchpadZopelessLayer.txn.commit()
     # Note that this will raise an assertion error if the
     # LaunchpadZopelessLayer is not already set up.
     LaunchpadZopelessLayer.switchDbUser(temporary_name)
     yield
-    commit()
+    LaunchpadZopelessLayer.txn.commit()
     LaunchpadZopelessLayer.switchDbUser(restore_name)
 
 def lp_dbuser():
