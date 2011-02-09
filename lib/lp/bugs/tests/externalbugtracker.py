@@ -1679,7 +1679,7 @@ class UrlLib2TransportTestHandler(BaseHandler):
             headers['location'] = self.redirect_url
             response = StringIO()
             response.info = lambda: headers
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
             response.code = 302
             response.msg = 'Moved'
             self.redirect_url = None
@@ -1690,7 +1690,7 @@ class UrlLib2TransportTestHandler(BaseHandler):
             info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
             response.msg = ''
             self.response = None
         else:
@@ -1700,7 +1700,7 @@ class UrlLib2TransportTestHandler(BaseHandler):
             info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
             response.msg = ''
 
         return response
