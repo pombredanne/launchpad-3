@@ -15,10 +15,14 @@ import hashlib
 from lazr.delegates import delegates
 import pytz
 from storm.expr import (
+    And,
     Coalesce,
     Desc,
+    In,
     LeftJoin,
     Or,
+    Select,
+    Union,
     )
 from storm.locals import (
     Bool,
@@ -400,19 +404,60 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        origin = [BuildFarmJob]
-        left_join_archive = [
+        origin = [
+            BuildFarmJob,
             LeftJoin(
                 PackageBuild,
                 PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(
-                Archive, PackageBuild.archive == Archive.id),
             ]
+
+        public_archive_query = (
+            Select(
+                Archive.id,
+                tables=(Archive,),
+                where=(Archive.private == False)
+                )
+            )
+
+        inner_privacy_query = (
+            Union(
+                Select(
+                    Archive.id,
+                    tables=(Archive,),
+                    where=(Archive.private == False)
+                    ),
+                Select(
+                    Archive.id,
+                    tables=(Archive, TeamParticipation),
+                    where=And(
+                        Archive.Private == True,
+                        In(
+                            Archive.owner,
+                            Select(
+                                TeamParticipation.team,
+                                TeamParticipation.person == user
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        # STORM syntax has totally obfuscated this query and wasted an
+        # hour of my time converting perfectly good SQL syntax.  I'm
+        # really sorry if you're the poor sap who has to maintain this.
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            origin.extend(left_join_archive)
-            extra_clauses.append(Coalesce(Archive.private, False) == False)
+            extra_clauses.append(
+                Or(
+                    PackageBuild.id == None,
+                    In(
+                        PackageBuild.archive,
+                        *public_archive_query
+                        )
+                    )
+                )
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             # Admins get to see everything.
@@ -420,13 +465,15 @@ class BuildFarmJobSet:
         else:
             # Everyone else sees all public builds and the
             # specific private builds to which they have access.
-            origin.extend(left_join_archive)
-            origin.append(LeftJoin(
-                TeamParticipation,
-                TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
-                Or(Coalesce(Archive.private, False) == False,
-                   TeamParticipation.person == user))
+                Or(
+                    PackageBuild.id == None,
+                    In(
+                        PackageBuild.archive,
+                        *inner_privacy_query
+                        )
+                    )
+                )
 
         filtered_builds = IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *extra_clauses)
