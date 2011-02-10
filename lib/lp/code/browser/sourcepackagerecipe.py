@@ -268,9 +268,9 @@ class SourcePackageRecipeView(LaunchpadView):
         return BooleanChoiceWidget(
             self.context, ISourcePackageRecipe['build_daily'],
             tag='span', prefix='',
-            false_text='Built on request',
-            true_text='Built daily',
-            header='Select build frequency')
+            false_text='Build on request',
+            true_text='Build daily',
+            header='Change build schedule')
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
