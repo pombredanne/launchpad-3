@@ -22,7 +22,7 @@
                  class="delete-buglink"
                  tal:attributes="href string:+bug/${bug/id}/+delete;
                                  id string:delete-buglink-${bug/id}">
-                <img src="/@@/remove"/>
+                <img src="/@@/remove" alt="Remove"/>
               </a>
             </tal:buglink-edit>
           </li>

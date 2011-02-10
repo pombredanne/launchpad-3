@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'Concatenate',
     'CountDistinct',
     'Greatest',
     ]
 
 from storm.expr import (
+    BinaryOper,
     compile,
     EXPR,
     Expr,
@@ -15,17 +17,18 @@ from storm.expr import (
     )
 
 
-# XXX wallyworld 2011-01-31 bug=710466:
-# We need to use a Postgres greatest() function call but Storm doesn't
-# support that yet.
 class Greatest(NamedFunc):
+    # XXX wallyworld 2011-01-31 bug=710466:
+    # We need to use a Postgres greatest() function call but Storm
+    # doesn't support that yet.
     __slots__ = ()
     name = "GREATEST"
 
 
-# XXX: wallyworld 2010-11-26 bug=675377:
-# storm's Count() implementation is broken for distinct with > 1 column
 class CountDistinct(Expr):
+    # XXX: wallyworld 2010-11-26 bug=675377:
+    # storm's Count() implementation is broken for distinct with > 1
+    # column.
 
     __slots__ = ("columns")
 
@@ -39,3 +42,9 @@ def compile_countdistinct(compile, countselect, state):
     col = compile(countselect.columns)
     state.pop()
     return "count(distinct(%s))" % col
+
+
+class Concatenate(BinaryOper):
+    """Storm operator for string concatenation."""
+    __slots__ = ()
+    oper = " || "

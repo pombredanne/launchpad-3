@@ -15,11 +15,13 @@ __all__ = [
     'iter_split',
     'synchronize',
     'text_delta',
+    'traceback_info',
     'value_string',
     ]
 
+from itertools import tee
+import sys
 from textwrap import dedent
-import itertools
 
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
@@ -123,28 +125,12 @@ class CachingIterator:
 
     def __init__(self, iterator):
         self.iterator = iterator
-        self.data = []
 
     def __iter__(self):
-        index = itertools.count()
-        while True:
-            pos = index.next()
-            try:
-                yield self.data[pos]
-            except IndexError:
-                # Defer to the iterator.
-                pass
-            else:
-                continue
-            if self.iterator is None:
-                break
-            try:
-                item = self.iterator.next()
-            except StopIteration:
-                self.iterator = None
-                break
-            self.data.append(item)
-            yield item
+        # Teeing an iterator previously returned by tee won't cause heat
+        # death. See tee_copy in itertoolsmodule.c in the Python source.
+        self.iterator, iterator = tee(self.iterator)
+        return iterator
 
 
 def decorate_with(context_factory, *args, **kwargs):
@@ -166,3 +152,13 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+def traceback_info(info):
+    """Set `__traceback_info__` in the caller's locals.
+
+    This is more aesthetically pleasing that assigning to __traceback_info__,
+    but it more importantly avoids spurious lint warnings about unused local
+    variables, and helps to avoid typos.
+    """
+    sys._getframe(1).f_locals["__traceback_info__"] = info

@@ -239,7 +239,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         #  4. Load links to branches.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=5)
+            self.milestone, bugtask_count, query_limit=6)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -424,12 +424,12 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  7. Load links to branches.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=8)
+            self.milestone, bugtask_count, query_limit=9)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 32
+        query_limit = 33
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)
