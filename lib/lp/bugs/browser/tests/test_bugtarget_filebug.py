@@ -4,6 +4,11 @@
 __metaclass__ = type
 
 
+from zope.schema.interfaces import (
+    TooLong,
+    TooShort,
+    )
+
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -328,10 +333,37 @@ class TestFileBugViewBase(TestCaseWithFactory):
         view.initialize()
         return view
 
-    def test_submit_empty_comment_error(self):
+    def test_submit_comment_empty_error(self):
         # The comment cannot be an empty string.
         form = self.get_form(comment='')
         view = self.create_initialized_view(form=form)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'Provide details about the issue.', view.getFieldError('comment'))
+
+    def test_submit_comment_whitespace_only_error(self):
+        # The comment cannot be a whitespace only string.
+        form = self.get_form(comment=' ')
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(2, len(view.errors))
+        self.assertIsInstance(view.errors[0].errors, TooShort)
+        self.assertEqual(
+            'Provide details about the issue.', view.errors[1])
+
+    def test_submit_comment_too_large_error(self):
+        # The comment cannot exceed the max length of 50000.
+        comment = 'x' * 50001
+        form = self.get_form(comment=comment)
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(2, len(view.errors))
+        self.assertIsInstance(view.errors[0].errors, TooLong)
+        message_start = 'The description is too long'
+        self.assertTrue(
+            view.getFieldError('comment').startswith(message_start))
+
+    def test_submit_comment_max(self):
+        # The comment can be as large as 50000.
+        form = self.get_form(comment='x' * 50000)
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(0, len(view.errors))
+        self.assertTrue(view.added_bug is not None)

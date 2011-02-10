@@ -47,6 +47,7 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
@@ -105,7 +106,6 @@ from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
-    IBug,
     IBugAddForm,
     IBugSet,
     IProjectGroupBugAddForm,
@@ -344,14 +344,19 @@ class FileBugViewBase(LaunchpadFormView):
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
-            if comment:
-                if len(comment) > IBug['description'].max_length:
-                    self.setFieldError('comment',
-                        'The description is too long. If you have lots '
-                        'text to add, attach a file to the bug instead.')
-            else:
+            # The widget only exposes the error message. The private
+            # attr contains the real error.
+            widget_error = self.widgets.get('comment')._error
+            if widget_error and isinstance(widget_error.errors, TooLong):
+                self.setFieldError('comment',
+                    'The description is too long. If you have lots '
+                    'text to add, attach a file to the bug instead.')
+            elif not comment or widget_error is not None:
                 self.setFieldError(
                     'comment', "Provide details about the issue.")
+            else:
+                # The comment is fine.
+                pass
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
