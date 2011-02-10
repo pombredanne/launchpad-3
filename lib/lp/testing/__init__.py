@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -114,7 +116,6 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
     WebServiceTestRequest,
     )
-from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
@@ -157,6 +158,7 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
+from lp.testing.windmill import constants
 
 
 class FakeTime:

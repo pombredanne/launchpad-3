@@ -6,13 +6,15 @@ from zope.component import getUtility
 import transaction
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.windmill.testing import constants
-from canonical.launchpad.windmill.testing import lpuser
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.services.features.model import FeatureFlag, getFeatureStore
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):

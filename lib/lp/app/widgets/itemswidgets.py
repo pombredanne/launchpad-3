@@ -110,9 +110,12 @@ class LaunchpadRadioWidget(RadioWidget):
                              cssClass=cssClass,
                              type='radio',
                              **kw)
-        return renderElement(u'label',
-                             contents='%s&nbsp;%s' % (elem, text),
-                             **{'style': 'font-weight: normal'})
+        if '<label' in text:
+            return '%s&nbsp;%s' % (elem, text)
+        else:
+            return renderElement(u'label',
+                                 contents='%s&nbsp;%s' % (elem, text),
+                                 **{'style': 'font-weight: normal'})
 
     def _div(self, cssClass, contents, **kw):
         return contents

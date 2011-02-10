@@ -432,8 +432,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # subscription-related methods
-
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
         # level actually uses BugNotificationLevel as its vocabulary,
@@ -550,9 +548,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.
         """
-
-    def addChangeNotification(text, person, recipients=None, when=None):
-        """Add a bug change notification."""
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
