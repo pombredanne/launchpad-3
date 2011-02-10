@@ -36,6 +36,7 @@ from storm.expr import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -243,11 +244,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     implements(IBinaryPackageFilePublishing)
 
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, notNull=True,
-                              immutable=True)
-
     binarypackagepublishing = ForeignKey(
         dbName='binarypackagepublishing',
         foreignKey='BinaryPackagePublishingHistory', immutable=True)
@@ -265,19 +261,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
-
-    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
-                                  notNull=True, immutable=True)
-
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-
-    architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                notNull=True, immutable=True)
-
-    pocket = EnumCol(dbName='pocket', unique=False,
-                     notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -1760,6 +1743,11 @@ class PublishingSet:
             builds = SourcePackagePublishingHistory._convertBuilds(
                 source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
+            # Thank you, Zope, for security wrapping an abstract data
+            # structure.
+            summary = removeSecurityProxy(summary)
+            summary['date_published'] = source_pub.datepublished
+            summary['source_package_name'] = source_pub.source_package_name
             source_build_statuses[source_pub.id] = summary
 
             # If:
@@ -1785,6 +1773,8 @@ class PublishingSet:
                 summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': builds,
+                    'date_published': source_pub.datepublished,
+                    'source_package_name': source_pub.source_package_name,
                 }
                 source_build_statuses[source_pub.id] = summary
 
