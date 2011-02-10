@@ -359,6 +359,8 @@ class SourcePackageRecipeRequestBuildsAjaxView(
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
         errors = self.requestBuild(data)
+        # If there are errors we return a json data snippet containing the
+        # errors instead of rendering the form.
         if errors:
             return self._process_error(data, errors, "Request Build")
 
