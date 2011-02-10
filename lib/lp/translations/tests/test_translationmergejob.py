@@ -6,6 +6,9 @@
 __metaclass__ = type
 
 
+from storm.locals import Store
+import transaction
+
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
@@ -107,3 +110,26 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertEqual(2, count_translations(job))
         job.run()
         self.assertEqual(1, count_translations(job))
+
+    @staticmethod
+    def findJobs(productseries, sourcepackage):
+        store = Store.of(productseries)
+        result = store.find(
+            TranslationMergeJob,
+            TranslationMergeJob.productseries_id == productseries.id,
+            TranslationMergeJob.sourcepackagename_id ==
+            sourcepackage.sourcepackagename.id,
+            TranslationMergeJob.distroseries_id ==
+            sourcepackage.distroseries.id,
+            )
+        return list(result)
+
+    def test_create_packaging_makes_job(self):
+        """Creating a Packaging should make a TranslationMergeJob."""
+        productseries = self.factory.makeProductSeries()
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertEqual([], self.findJobs(productseries, sourcepackage))
+        sourcepackage.setPackaging(productseries, productseries.owner)
+        self.assertNotEqual([], self.findJobs(productseries, sourcepackage))
+        # Ensure no constraints were violated.
+        transaction.commit()

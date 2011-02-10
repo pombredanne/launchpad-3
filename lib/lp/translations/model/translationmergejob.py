@@ -54,6 +54,15 @@ class PackagingJobType(DBEnumeratedType):
         """)
 
 
+def schedule_merge(packaging, event):
+    """Event subscriber to create a TranslationMergeJob on new packagings.
+
+    :param packaging: The `Packaging` to create a `TranslationMergeJob` for.
+    :param event: The event itself.
+    """
+    return TranslationMergeJob.forPackaging(packaging)
+
+
 class TranslationMergeJob(StormBase, BaseRunnableJob):
     """Job for merging translations between a product and sourcepackage."""
 
@@ -96,6 +105,17 @@ class TranslationMergeJob(StormBase, BaseRunnableJob):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
         self.productseries = productseries
+
+    @classmethod
+    def forPackaging(cls, packaging):
+        """Create a TranslationMergeJob for a Packaging.
+
+        :param packaging: The `Packaging` to create the job for.
+        :return: A `TranslationMergeJob`.
+        """
+        return cls(
+            Job(), packaging.productseries, packaging.distroseries,
+            packaging.sourcepackagename)
 
     @classmethod
     def iterReady(cls):
