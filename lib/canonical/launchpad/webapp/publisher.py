@@ -474,9 +474,9 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken
-    from the root_url given in launchpad.conf.
-
+    :param request: The web request; if not provided, canonical_url attempts
+        to guess at the current request, using the protocol, host, and port
+        taken from the root_url given in launchpad.conf.
     :param path_only_if_possible: If the protocol and hostname can be omitted
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,

@@ -669,7 +669,7 @@ class LaunchpadRootNavigation(Navigation):
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
                 return self.redirectSubTree(
-                    canonical_url(pillar), status=301)
+                    canonical_url(pillar, self.request), status=301)
             return pillar
         return None
 
