@@ -3,11 +3,11 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.soyuz.windmill.testing import SoyuzWindmillLayer
+from lp.testing.windmill import (
     lpuser,
     widgets,
     )
-from lp.soyuz.windmill.testing import SoyuzWindmillLayer
 
 
 class TestPPAInlineEditing(unittest.TestCase):
