@@ -9,7 +9,7 @@ import unittest
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import FileBugInlineFormView
 from lp.testing import (
     login_person,
@@ -20,7 +20,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTargetFileBugConfirmationMessage, self).setUp()
