@@ -4,13 +4,15 @@
 __metaclass__ = type
 
 
-import unittest
-
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.browser.bugtarget import FileBugInlineFormView
+from lp.bugs.browser.bugtarget import (
+    FileBugInlineFormView,
+    FileBugViewBase,
+    )
+from lp.bugs.interfaces.bug import IBugAddForm
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -294,11 +296,42 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIs(None, find_tag_by_id(html, 'filebug-search-form'))
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTargetFileBugConfirmationMessage))
-    return suite
+class TestFileBugViewBase(TestCaseWithFactory):
 
+    layer = DatabaseFunctionalLayer
 
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
+    class FileBugTestView(FileBugViewBase):
+        """A simple subclass."""
+        schema = IBugAddForm
+
+        def showFileBugForm(self):
+            # Disable redirects on validation failure.
+            pass
+
+    def setUp(self):
+        super(TestFileBugViewBase, self).setUp()
+        self.target = self.factory.makeProduct()
+        login_person(self.target.owner)
+        self.target.official_malone = True
+
+    def get_form(self, title='Test title', comment='Test comment'):
+        return {
+            'field.title': title,
+            'field.comment': comment,
+            'field.actions.submit_bug': 'Submit Bug Request',
+            }
+
+    def create_initialized_view(self, form=None):
+        """Create and initialize the class without adaption."""
+        request = LaunchpadTestRequest(form=form, method='POST')
+        view = self.FileBugTestView(self.target, request)
+        view.initialize()
+        return view
+
+    def test_submit_empty_comment_error(self):
+        # The comment cannot be an empty string.
+        form = self.get_form(comment='')
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'Provide details about the issue.', view.getFieldError('comment'))
