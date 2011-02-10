@@ -17,7 +17,7 @@ __all__ = [
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import (
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
