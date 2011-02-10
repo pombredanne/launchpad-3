@@ -411,14 +411,6 @@ class BuildFarmJobSet:
                 PackageBuild.build_farm_job == BuildFarmJob.id),
             ]
 
-        public_archive_query = (
-            Select(
-                Archive.id,
-                tables=(Archive,),
-                where=(Archive.private == False)
-                )
-            )
-
         inner_privacy_query = (
             Union(
                 Select(
@@ -430,11 +422,10 @@ class BuildFarmJobSet:
                     Archive.id,
                     tables=(Archive, TeamParticipation),
                     where=And(
-                        Archive.Private == True,
-                        In(
-                            Archive.owner,
+                        Archive.private == True,
+                        Archive.ownerID.is_in(
                             Select(
-                                TeamParticipation.team,
+                                TeamParticipation.teamID,
                                 TeamParticipation.person == user
                             )
                         )
@@ -452,9 +443,12 @@ class BuildFarmJobSet:
             extra_clauses.append(
                 Or(
                     PackageBuild.id == None,
-                    In(
-                        PackageBuild.archive,
-                        *public_archive_query
+                    PackageBuild.archive_id.is_in(
+                        Select(
+                            Archive.id,
+                            tables=(Archive,),
+                            where=(Archive.private == False)
+                            )
                         )
                     )
                 )
@@ -468,9 +462,8 @@ class BuildFarmJobSet:
             extra_clauses.append(
                 Or(
                     PackageBuild.id == None,
-                    In(
-                        PackageBuild.archive,
-                        *inner_privacy_query
+                    PackageBuild.archive_id.is_in(
+                        inner_privacy_query
                         )
                     )
                 )
