@@ -27,7 +27,7 @@ class TestProductAlias(TestCaseWithFactory):
         removeSecurityProxy(product).setAliases(['monkey'])
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        response = webservice.get('/1.0/monkey')
+        response = webservice.get('/monkey')
         self.assertEqual(
-            'http://api.launchpad.dev/lemur',
+            'http://api.launchpad.dev/beta/lemur',
             response.getheader('location'))
