@@ -1,0 +1,33 @@
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
+from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.ftests import login
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    TestCaseWithFactory,
+    person_logged_in,
+    )
+
+
+class TestProductAlias(TestCaseWithFactory):
+    """Aliases should behave well with the webservice."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_alias_redirects_in_webservice(self):
+        # When a redirect occurs for a product, it should remain in the
+        # webservice.
+        product = self.factory.makeProduct(name='lemur')
+        removeSecurityProxy(product).setAliases(['monkey'])
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        response = webservice.get('/1.0/monkey')
+        self.assertEqual(
+            'http://api.launchpad.dev/lemur',
+            response.getheader('location'))
