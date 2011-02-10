@@ -16,9 +16,7 @@ from lazr.delegates import delegates
 import pytz
 from storm.expr import (
     And,
-    Coalesce,
     Desc,
-    In,
     LeftJoin,
     Or,
     Select,
@@ -411,6 +409,10 @@ class BuildFarmJobSet:
                 PackageBuild.build_farm_job == BuildFarmJob.id),
             ]
 
+        # STORM syntax has totally obfuscated this query and wasted
+        # THREE hours of my time converting perfectly good SQL syntax.  I'm
+        # really sorry if you're the poor sap who has to maintain this.
+
         inner_privacy_query = (
             Union(
                 Select(
@@ -420,23 +422,20 @@ class BuildFarmJobSet:
                     ),
                 Select(
                     Archive.id,
-                    tables=(Archive, TeamParticipation),
+                    tables=(Archive,),
                     where=And(
                         Archive.private == True,
                         Archive.ownerID.is_in(
                             Select(
                                 TeamParticipation.teamID,
-                                TeamParticipation.person == user
+                                where=(TeamParticipation.person == user),
+                                distinct=True
                             )
                         )
                     )
                 )
             )
         )
-
-        # STORM syntax has totally obfuscated this query and wasted an
-        # hour of my time converting perfectly good SQL syntax.  I'm
-        # really sorry if you're the poor sap who has to maintain this.
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
@@ -462,9 +461,7 @@ class BuildFarmJobSet:
             extra_clauses.append(
                 Or(
                     PackageBuild.id == None,
-                    PackageBuild.archive_id.is_in(
-                        inner_privacy_query
-                        )
+                    PackageBuild.archive_id.is_in(inner_privacy_query)
                     )
                 )
 
