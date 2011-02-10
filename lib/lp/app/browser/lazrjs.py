@@ -355,7 +355,7 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
     __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
 
     def __init__(self, context, exported_field,
-                 tag, prefix, false_text, true_text,
+                 tag, false_text, true_text, prefix=None,
                  edit_view="+edit", edit_url=None,
                  content_box_id=None, header='Select an item'):
         """Create a widget wrapper.
@@ -363,8 +363,17 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
         :param context: The object that is being edited.
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
-
-            TODO: add other fields...
+        :param tag: The HTML tag to use.
+        :param false_text: The string to show for a false value.
+        :param true_text: The string to show for a true value.
+        :param prefix: Optional text to show before the value.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param header: The large text at the top of the choice popup.
         """
         super(BooleanChoiceWidget, self).__init__(
             context, exported_field, content_box_id, edit_view, edit_url)

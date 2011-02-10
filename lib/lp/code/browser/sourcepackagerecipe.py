@@ -267,7 +267,7 @@ class SourcePackageRecipeView(LaunchpadView):
     def daily_build_widget(self):
         return BooleanChoiceWidget(
             self.context, ISourcePackageRecipe['build_daily'],
-            tag='span', prefix='',
+            tag='span',
             false_text='Build on request',
             true_text='Build daily',
             header='Change build schedule')
