@@ -205,6 +205,9 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
+from lp.translations.utilities.translationsharinginfo import (
+    has_upstream_template,
+    )
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -1845,11 +1848,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        sharing_productseries = sourcepackage.productseries
-        if sharing_productseries is None:
-            # There is no known upstream series.  Take the uploader's
-            # word for whether these are upstream translations (in which
-            # case they're shared) or not.
+        if not has_upstream_template(
+                sourcepackage.distroseries, sourcepackage.sourcepackagename):
+            # There is no known upstream template or series.  Take the
+            # uploader's word for whether these are upstream translations
+            # (in which case they're shared) or not.
             # What are the consequences if that value is incorrect?  In
             # the case where translations from upstream are purportedly
             # from Ubuntu, we miss a chance at sharing when the package
@@ -1861,7 +1864,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # translations for upstream.
             return purportedly_upstream
 
-        upstream_product = sharing_productseries.product
+        upstream_product = sourcepackage.productseries.product
         return upstream_product.invitesTranslationEdits(person, language)
 
 
