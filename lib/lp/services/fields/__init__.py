@@ -259,7 +259,7 @@ class StrippableText(Text):
         self.strip_text = strip_text
         self.trailing_only = trailing_only
 
-    def parse_value(self, value):
+    def normalize(self, value):
         """Strip the leading and trailing whitespace."""
         if self.strip_text and value is not None:
             if self.trailing_only:
@@ -270,12 +270,12 @@ class StrippableText(Text):
 
     def set(self, object, value):
         """Strip the value and pass up."""
-        value = self.parse_value(value)
+        value = self.normalize(value)
         super(StrippableText, self).set(object, value)
 
     def validate(self, value):
         """See `IField`."""
-        value = self.parse_value(value)
+        value = self.normalize(value)
         return super(StrippableText, self).validate(value)
 
 
