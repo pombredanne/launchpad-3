@@ -9,7 +9,7 @@ __all__ = ['Packaging', 'PackagingUtil']
 from sqlobject import ForeignKey
 from zope.event import notify
 from zope.interface import implements
-from zope.lifecycleevent import ObjectCreatedEvent
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import (
     DEFAULT,

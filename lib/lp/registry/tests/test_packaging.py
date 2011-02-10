@@ -8,7 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
-from zope.lifecycleevent import ObjectCreatedEvent
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet

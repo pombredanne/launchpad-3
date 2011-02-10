@@ -132,7 +132,7 @@ class TranslationMergeJob(StormBase, BaseRunnableJob):
 
     def run(self):
         """See `IRunnableJob`."""
-        if self.distroseries.distribution.name != 'ubuntu':
+        if not self.distroseries.distribution.full_functionality:
             return
         template_map = dict()
         tm = TransactionManager(None, False)
