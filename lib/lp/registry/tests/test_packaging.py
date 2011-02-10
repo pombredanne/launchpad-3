@@ -8,6 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.lifecycleevent import ObjectCreatedEvent
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -17,10 +18,28 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.packaging import (
+    Packaging,
+    )
 from lp.testing import (
+    EventRecorder,
     login,
     TestCaseWithFactory,
     )
+
+
+class TestPackaging(TestCaseWithFactory):
+    """Test Packaging object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init_notifies(self):
+        """Creating a Packaging should generate an event."""
+        with EventRecorder() as recorder:
+            packaging = Packaging()
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectCreatedEvent)
+        self.assertIs(packaging, event.object)
 
 
 class PackagingUtilMixin:
