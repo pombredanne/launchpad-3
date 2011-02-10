@@ -21,18 +21,21 @@ function unset_licenses() {
 </script>
 <script type="text/javascript">
 //<![CDATA[
-// Don't use the global LPS object in this one
-// case because we need fetchCSS true for this to work.
-YUI().use('node', 'lazr.effects', function(Y) {
+// XXX: deryck 2011-02-09 bug=715892
+// This stuff really needs a rewrite.  It is fragile
+// and breaks with every YUI/lazr-js upgrade.
+// Tread carefully, or else please make this better
+// and add tests, too (preferably in reverse order there.)
+LPS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
             var target_name = table_name + '-expand';
             var arrow_name = target_name + '-arrow';
-            var target = Y.get(target_name);
+            var target = Y.one(target_name);
 
             // Initialize the slider state.
-            var table = Y.get(table_name);
+            var table = Y.one(table_name);
             if (Y.Lang.isValue(table)) {
                 // 2009-06-15 BarryWarsaw: For some reason nobody can explain,
                 // this is required for animations to work properly.  Without
@@ -43,12 +46,26 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 // animation lives on the link target.  The initial state of
                 // the slider depends on whether there are any checked
                 // licenses in that category.  A '0' means 'no'.
-                var arrow = Y.get(arrow_name);
+                var arrow = Y.one(arrow_name);
                 if (arrow.getAttribute('start_expanded') == '0') {
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
-                    target.slide = Y.lazr.effects.slide_out(table_name);
+                    // This is wrong on so many levels.  The view should
+                    // set the classes such that the slider is initialized
+                    // properly without requiring we run hiden animations.
+                    //
+                    // That is a largish refactor, so until that can happen,
+                    // hard code the heights.  They cannot be determined with
+                    // 'scrollHeight' because the elements are not visible.
+                    var expanded_height;
+                    if (cfg.which == 'more') {
+                        expanded_height = 120;
+                    } else {
+                        expanded_height = 65;
+                    }
+                    target.slide = Y.lazr.effects.slide_out(
+                        table_name, {to: {height: expanded_height}});
                 }
                 target.slide.stop();
                 target.slide.run();
@@ -64,7 +81,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                     else {
                         src = '/@@/treeExpanded';
                     }
-                    Y.get(arrow_name).setAttribute('src', src);
+                    Y.one(arrow_name).setAttribute('src', src);
                 });
             }
 
@@ -73,7 +90,18 @@ YUI().use('node', 'lazr.effects', function(Y) {
             // reverse.
             Y.on('click', function(e) {
                 e.preventDefault();
-                target.slide.set('reverse', !target.slide.get('reverse'));
+                // We have to pass in the height by hand if the tables
+                // are not visible when the page loads.
+                var visible_on_load = !Y.one(
+                    '#launchpad-form-widgets').hasClass('unseen');
+                if (visible_on_load) {
+                    target.slide.set('reverse', !target.slide.get('reverse'));
+                } else {
+                    var info_height = target.get(
+                        'nextElementSibling').get('scrollHeight');
+                    target.slide.set('to', {height: info_height});
+                    target.slide.set('reverse', !target.slide.drawer_closed);
+                }
                 target.slide.stop();
                 target.slide.run();
             }, target_name);
@@ -91,11 +119,11 @@ YUI().use('node', 'lazr.effects', function(Y) {
         // that the pending-div only shows up if the project has never
         // selected a license.  In other cases, there's an "I don't know yet"
         // choice in the "Other choices" license section.
-        var license_pending = Y.get('#license_pending');
+        var license_pending = Y.one('#license_pending');
         if (Y.Lang.isValue(license_pending)) {
             license_pending.on('click', reveal_details);
 
-            var div = Y.get('#pending-div');
+            var div = Y.one('#pending-div');
             if (Y.Lang.isValue(div)) {
                 div.on('click', license_chosen);
             }
@@ -103,10 +131,10 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.get('input[value=OTHER_PROPRIETARY]');
-        var other_os = Y.get('input[value=OTHER_OPEN_SOURCE]');
-        var details = Y.get('#license-details');
-        var proprietary = Y.get('#proprietary');
+        var other_com = Y.one('input[value=OTHER_PROPRIETARY]');
+        var other_os = Y.one('input[value=OTHER_OPEN_SOURCE]');
+        var details = Y.one('#license-details');
+        var proprietary = Y.one('#proprietary');
 
         function reveal_details(e) {
             if (other_com.get('checked') || other_os.get('checked')) {
