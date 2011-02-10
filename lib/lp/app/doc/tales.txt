@@ -806,10 +806,10 @@ Bug Watches
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'/bugs/12/+watch/13'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/13'
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'/bugs/12/+watch/14'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when hiding
 email addresses from users who are not logged in:

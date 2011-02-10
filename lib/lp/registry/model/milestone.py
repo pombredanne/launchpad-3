@@ -47,6 +47,9 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -54,9 +57,6 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.model.productrelease import ProductRelease
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 
 
 FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)

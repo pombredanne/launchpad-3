@@ -516,7 +516,7 @@ If the original scheme is https the redirect URL should be https too.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    https://localhost:58000/.../foo.txt
+    https://.../foo.txt
 
 However if the original scheme is http then the redirect URL should be
 over http.
@@ -528,7 +528,7 @@ over http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
 When 'use_https' is False the result will always be http.
 
@@ -548,7 +548,7 @@ When 'use_https' is False the result will always be http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
     >>> redirect_resp = http(dedent("""\
     ...     GET %s HTTP/1.1
@@ -557,7 +557,7 @@ When 'use_https' is False the result will always be http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
 Return 'use_https' to its original value to not mess up future tests.
 

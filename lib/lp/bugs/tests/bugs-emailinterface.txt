@@ -1236,22 +1236,20 @@ If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     # The script's default user doesn't have permission to change the driver.
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail(
-    ...     sampledata.USER_EMAIL)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = getUtility(IPersonSet).getByEmail(
+    ...         sampledata.USER_EMAIL)
+
     >>> login(sampledata.USER_EMAIL)
     >>> sync(bug)
 
-Now a new bugtask for the series will be create directly.
+Now a new bugtask for the series will be created directly.
 
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
@@ -1294,13 +1292,11 @@ task, and the series specific task.
 As with the example with no source package above; if the user isn't a
 driver of the series, only a nomination will be created.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = None
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = None
+
     >>> login(sampledata.USER_EMAIL)
 
     >>> bug = new_firefox_bug()
@@ -1398,12 +1394,10 @@ Restricted bug statuses
 
 Bug supervisors can set some restricted statuses:
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(email_user, email_user)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
+
     >>> sync(bug_four)
     >>> login_person(email_user)
 
@@ -1422,12 +1416,10 @@ Everyone else gets an explanatory error message:
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(None, None)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(None, None)
+
     >>> login('no-priv@canonical.com')
 
     >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
@@ -1672,16 +1664,12 @@ The user is a package bug supervisor
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
-    >>> mozilla_package = ubuntu.getSourcePackage(mozilla_name)
-    >>> mozilla_package.addBugSubscription(helge, helge)
-    <StructuralSubscription ...>
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    ...     helge = getUtility(IPersonSet).getByName('kreutzm')
+    ...     mozilla_package = ubuntu.getSourcePackage(mozilla_name)
+    ...     ignore = mozilla_package.addBugSubscription(helge, helge)
 
     >>> login('kreutzm@itp.uni-hannover.de')
 
@@ -2931,16 +2919,14 @@ set the datecreated field of the bug's initial message (see bug
     ...     msg=initial_bug_message, datecreated=creation_date))
     >>> commit()
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
-    >>> bug_watch = bug_with_watch.addWatch(
-    ...     bug_tracker, '12345', getUtility(ILaunchpadCelebrities).janitor)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     from canonical.launchpad.interfaces.launchpad import (
+    ...         ILaunchpadCelebrities)
+    ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    ...     bug_watch = bug_with_watch.addWatch(
+    ...         bug_tracker,
+    ...         '12345',
+    ...         getUtility(ILaunchpadCelebrities).janitor)
 
 Someone comments on the remote bug and that bug is imported into
 Launchpad. We'll simulate this locally rather than using the bug

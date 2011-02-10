@@ -1330,14 +1330,14 @@
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IMilestone"
-        class="lp.registry.browser.milestone.MilestonesView"
+        class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
-        class="lp.registry.browser.milestone.MilestoneView"
+        class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
@@ -2279,29 +2279,6 @@
         facet="overview"
         template="../templates/sourcepackage-remove-packaging.pt"
         />
-
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+subscribe"
-        permission="launchpad.AnyPerson"
-        facet="bugs"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
-        template="../templates/structural-subscriptions-manage.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+portlet-structural-subscribers"
-        facet="bugs"
-        permission="zope.Public"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
-        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
-
-    <browser:url
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
-        path_expression="string:+subscription/${subscriber/name}"
-        attribute_to_parent="target"/>
-    <browser:navigation
-        module="lp.registry.browser.structuralsubscription"
-        classes="StructuralSubscriptionNavigation"/>
 
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"

@@ -293,7 +293,7 @@ class ImportQueueStatusTest(WindmillTestCase):
         # Go to import queue page logged in as a normal user.
         client.open(url=queue_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(hubert, "test", client)
+        login_person(hubert, "hubert@example.com", "test", client)
 
         # There should be no status picker for entry 1.
         client.waits.forElement(xpath=import_status, timeout=FOR_ELEMENT)

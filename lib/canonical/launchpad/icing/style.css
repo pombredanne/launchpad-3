@@ -145,12 +145,6 @@ form.primary.search {
   text-decoration: underline;
 }
 
-.tags-container {
-  width: 45%;
-  text-align: left;
-  float: left;
-}
-
 .tags-show { display: block; }
 
 .tags-hide { display: none; }

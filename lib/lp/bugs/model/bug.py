@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -26,6 +26,7 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
+from itertools import chain
 import operator
 import re
 
@@ -90,6 +91,7 @@ from canonical.launchpad.database.message import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
     ILaunchpadCelebrities,
     IPersonRoles,
     )
@@ -121,12 +123,13 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
+from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
     IBugSet,
     IFileBugData,
-    InvalidDuplicateValue,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -147,6 +150,9 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
@@ -164,7 +170,6 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -175,9 +180,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -432,12 +434,20 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
 
+    def reindexMessages(self):
+        """See `IBug`."""
+        indexed_messages = self._indexed_messages(include_bugmessage=True)
+        for indexed_message, bugmessage in indexed_messages:
+            if bugmessage.index != indexed_message.index:
+                bugmessage.index = indexed_message.index
+
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=True):
+    def _indexed_messages(self, include_content=False, include_parents=True,
+        include_bugmessage=False):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
@@ -445,12 +455,14 @@ class Bug(SQLBase):
         :param include_parents: If True retrieve the object for parent
             messages too. If False the parent attribute will be *forced* to
             None to reduce database lookups.
+        :param include_bugmessage: If True returns tuples (message,
+            bugmessage). This exists for the indexMessages API.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        if include_parents:
+        if include_parents or include_bugmessage:
             to_messages = lambda rows: [row[0] for row in rows]
         else:
             to_messages = lambda rows: rows
@@ -495,18 +507,26 @@ class Bug(SQLBase):
         def index_message(row, index):
             # convert row to an IndexedMessage
             if include_parents:
-                message, parent = row
+                if include_bugmessage:
+                    message, parent, bugmessage = row
+                else:
+                    message, parent = row
                 if parent is not None:
                     # If there is an IndexedMessage available as parent, use
                     # that to reduce on-demand parent lookups.
                     parent = message_by_id.get(parent.id, parent)
             else:
-                message = row
+                if include_bugmessage:
+                    message, bugmessage = row
+                else:
+                    message = row
                 parent = None # parent attribute is not going to be accessed.
             result = IndexedMessage(message, inside, index, parent)
             # This message may be the parent for another: stash it to permit
             # use.
             message_by_id[message.id] = result
+            if include_bugmessage:
+                result = result, bugmessage
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
@@ -519,13 +539,19 @@ message as parent_message on (
     parent_message.id in (
         select bugmessage.message from bugmessage where bugmessage.bug=%s)),
 BugMessage""" % sqlvalues(self.id))
+            lookup = Message, ParentMessage
+            if include_bugmessage:
+                lookup = lookup + (BugMessage,)
             results = store.using(tables).find(
-                (Message, ParentMessage),
+                lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
         else:
-            results = store.find(Message,
+            lookup = Message
+            if include_bugmessage:
+                lookup = lookup, BugMessage
+            results = store.find(lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
@@ -798,10 +824,13 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
+    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+        """See `IBug`."""
+        return BugSubscriptionInfo(self, level)
+
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscriptionInfo(
-            self, BugNotificationLevel.NOTHING).direct_subscriptions
+        return self.getSubscriptionInfo().direct_subscriptions
 
     def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -813,7 +842,7 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.NOTHING
-        subscriptions = BugSubscriptionInfo(self, level).direct_subscriptions
+        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
@@ -827,8 +856,8 @@ BugMessage""" % sqlvalues(self.id))
         """
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
-        indirect_subscribers = (
-            self.getAlsoNotifiedSubscribers(recipients, level) +
+        indirect_subscribers = chain(
+            self.getAlsoNotifiedSubscribers(recipients, level),
             self.getSubscribersFromDuplicates(recipients, level))
 
         # Remove security proxy for the sort key, but return
@@ -863,37 +892,18 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            return []
-
         if level is None:
-            notification_level = BugNotificationLevel.NOTHING
-        else:
-            notification_level = level
-
-        dupe_details = dict(
-            Store.of(self).find(
-                (Person, Bug),
-                BugSubscription.person == Person.id,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.bug_notification_level >= notification_level,
-                Bug.duplicateof == self.id))
-
-        dupe_subscribers = set(dupe_details)
-
-        # Direct and "also notified" subscribers take precedence over
-        # subscribers from dupes. Note that we don't supply recipients
-        # here because we are doing this to /remove/ subscribers.
-        dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+            level = BugNotificationLevel.NOTHING
+        info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
-            for subscriber in dupe_subscribers:
+            # Pre-load duplicate bugs.
+            list(self.duplicates)
+            for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
-                    subscriber, dupe_details[subscriber])
+                    subscription.person, subscription.bug)
 
-        return sorted(
-            dupe_subscribers, key=operator.attrgetter("displayname"))
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -994,7 +1004,7 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        self.getDirectSubscribers(recipients)
+        self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
@@ -1019,19 +1029,6 @@ BugMessage""" % sqlvalues(self.id))
         # original `Bug`.
         return recipients
 
-    def addChangeNotification(self, text, person, recipients=None, when=None):
-        """See `IBug`."""
-        if recipients is None:
-            recipients = self.getBugNotificationRecipients(
-                level=BugNotificationLevel.METADATA)
-        if when is None:
-            when = UTC_NOW
-        message = MessageSet().fromText(
-            self.followup_subject(), text, owner=person, datecreated=when)
-        getUtility(IBugNotificationSet).addNotification(
-             bug=self, is_comment=False,
-             message=message, recipients=recipients)
-
     def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
         if recipients is None:
@@ -1047,8 +1044,6 @@ BugMessage""" % sqlvalues(self.id))
         if when is None:
             when = UTC_NOW
 
-        # Only try to add something to the activity log if we have some
-        # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             getUtility(IBugActivitySet).new(
@@ -1062,10 +1057,15 @@ BugMessage""" % sqlvalues(self.id))
         if notification_data is not None:
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
-
-            self.addChangeNotification(
-                notification_data['text'], change.person, recipients,
-                when)
+            message = MessageSet().fromText(
+                self.followup_subject(), notification_data['text'],
+                owner=change.person, datecreated=when)
+            if recipients is None:
+                recipients = self.getBugNotificationRecipients(
+                    level=BugNotificationLevel.METADATA)
+            getUtility(IBugNotificationSet).addNotification(
+                bug=self, is_comment=False, message=message,
+                recipients=recipients)
 
         self.updateHeat()
 
@@ -1773,17 +1773,24 @@ BugMessage""" % sqlvalues(self.id))
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
-        Seed it by including the list of all owners of bugtasks for the bug.
+        Seed it by including the list of all owners of pillars for bugtasks
+        for the bug.
         """
-        bugtask_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(bugtask_owners)
+        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
+        return set(pillar_owners)
 
     def userCanView(self, user):
         """See `IBug`.
 
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
+
+        If bug privacy rights are changed here, corresponding changes need
+        to be made to the queries which screen for privacy.  See
+        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
+        assert user is not None, "User may not be None"
+
         if user.id in self._known_viewers:
             return True
         if not self.private:
@@ -1793,7 +1800,15 @@ BugMessage""" % sqlvalues(self.id))
             # Admins can view all bugs.
             return True
         else:
-            # This is a private bug. Only explicit subscribers may view it.
+            # At this point we know the bug is private and the user is
+            # unprivileged.
+
+            # Assignees to bugtasks can see the private bug.
+            for bugtask in self.bugtasks:
+                if user.inTeam(bugtask.assignee):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Explicit subscribers may also view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
                     self._known_viewers.add(user.id)
@@ -2052,10 +2067,34 @@ def freeze(factory):
 
 
 class BugSubscriptionInfo:
-    """Represents bug subscription sets."""
+    """Represents bug subscription sets.
+
+    The intention for this class is to encapsulate all calculations of
+    subscriptions and subscribers for a bug. Some design considerations:
+
+    * Immutable.
+
+    * Set-based.
+
+    * Sets are cached.
+
+    * Usable with a *snapshot* of a bug. This is interesting for two reasons:
+
+      - Event subscribers commonly deal with snapshots. An instance of this
+        class could be added to a custom snapshot so that multiple subscribers
+        can share the information it contains.
+
+      - Use outside of the web request. A serialized snapshot could be used to
+        calculate subscribers for a particular bug state. This could help us
+        to move even more bug mail processing out of the web request.
+
+    """
+
+    implements(IHasBug)
 
     def __init__(self, bug, level):
         self.bug = bug
+        assert level is not None
         self.level = level
 
     @cachedproperty
@@ -2081,6 +2120,22 @@ class BugSubscriptionInfo:
                 Bug.duplicateof == self.bug)
 
     @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def duplicate_only_subscriptions(self):
+        """Subscripitions to duplicates of the bug.
+
+        Excludes subscriptions for people who have a direct subscription or
+        are also notified for another reason.
+        """
+        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        higher_precedence = (
+            self.direct_subscriptions.subscribers.union(
+                self.also_notified_subscribers))
+        return (
+            subscription for subscription in self.duplicate_subscriptions
+            if subscription.person not in higher_precedence)
+
+    @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
@@ -2099,13 +2154,14 @@ class BugSubscriptionInfo:
             if bugtask.milestone is not None:
                 query_arguments.append((bugtask.milestone, bugtask))
         # Build the query.
+        empty = EmptyResultSet()
         union = lambda left, right: (
             removeSecurityProxy(left).union(
                 removeSecurityProxy(right)))
         queries = (
             target.getSubscriptionsForBugTask(bugtask, self.level)
             for target, bugtask in query_arguments)
-        return reduce(union, queries)
+        return reduce(union, queries, empty)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
@@ -2185,13 +2241,23 @@ class BugSet:
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
-                     Bug.id in (
-                         SELECT Bug.id
-                         FROM Bug, BugSubscription, TeamParticipation
-                         WHERE Bug.id = BugSubscription.bug AND
+                      Bug.id in (
+                         -- Users who have a subscription to this bug.
+                         SELECT BugSubscription.bug
+                           FROM BugSubscription, TeamParticipation
+                           WHERE
                              TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team))
-                             """ % sqlvalues(personid=user.id))
+                             BugSubscription.person = TeamParticipation.team
+                         UNION
+                         -- Users who are the assignee for one of the bug's
+                         -- bugtasks.
+                         SELECT BugTask.bug
+                           FROM BugTask, TeamParticipation
+                           WHERE
+                             TeamParticipation.person = %(personid)s AND
+                             TeamParticipation.team = BugTask.assignee
+                      )
+                    )""" % sqlvalues(personid=user.id))
         else:
             # Anonymous user; filter to include only public bugs in
             # the search results.

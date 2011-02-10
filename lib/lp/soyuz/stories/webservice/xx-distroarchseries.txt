@@ -34,7 +34,7 @@ For a distroarchseries we publish a subset of its attributes.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(distroarchseries)
     architecture_tag: u'i386'
-    chroot_url: u'http://localhost:58000/.../filename...'
+    chroot_url: u'http://.../.../filename...'
     display_name: u'Ubuntu Hoary i386'
     distroseries_link: u'http://.../ubuntu/hoary'
     is_nominated_arch_indep: True
@@ -46,4 +46,4 @@ For a distroarchseries we publish a subset of its attributes.
     self_link: u'http://.../ubuntu/hoary/i386'
     supports_virtualized: True
     title: u'The Hoary Hedgehog Release for i386 (x86)'
-
+    web_link: u'http://launchpad.../ubuntu/hoary/i386'

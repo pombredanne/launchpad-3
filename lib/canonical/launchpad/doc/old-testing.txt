@@ -138,22 +138,23 @@ u'statistician'
 >>> lpsetup.tearDown()
 
 
-LibrarianTestSetup
-------------------
+LibrarianServerFixture
+----------------------
 
 Code that needs to access the Librarian can do so easily. Note that
-LibrarianTestSetup requires the Launchpad database to be available, and
+LibrarianServerFixture requires the Launchpad database to be available, and
 thus requires LaunchpadTestSetup or similar to be used in tandam.
 You probably really want LaunchpadFunctionalLayer so you can access
 the Librarian as a Utility.
 
->>> from canonical.librarian.testing.server import LibrarianTestSetup
+>>> from canonical.librarian.testing.server import LibrarianServerFixture
 >>> from canonical.launchpad.ftests import login, ANONYMOUS
 >>> from zope.app import zapi
 >>> from canonical.librarian.interfaces import ILibrarianClient
 >>> from StringIO import StringIO
 
->>> librarian = LibrarianTestSetup()
+>>> from canonical.testing.layers import BaseLayer
+>>> librarian = LibrarianServerFixture(BaseLayer.config_fixture)
 >>> librarian.setUp()
 >>> login(ANONYMOUS)
 

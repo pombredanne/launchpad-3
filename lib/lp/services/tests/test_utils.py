@@ -12,7 +12,9 @@ import unittest
 from lp.services.utils import (
     CachingIterator,
     decorate_with,
+    docstring_dedent,
     iter_split,
+    traceback_info,
     )
 from lp.testing import TestCase
 
@@ -41,35 +43,35 @@ class TestCachingIterator(TestCase):
         # The same iterator can be used multiple times.
         iterator = CachingIterator(itertools.count())
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
 
     def test_more_values(self):
         # If a subsequent call to iter causes more values to be fetched, they
         # are also cached.
         iterator = CachingIterator(itertools.count())
         self.assertEqual(
-            [0,1,2], list(itertools.islice(iterator, 0, 3)))
+            [0, 1, 2], list(itertools.islice(iterator, 0, 3)))
         self.assertEqual(
-            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+            [0, 1, 2, 3, 4], list(itertools.islice(iterator, 0, 5)))
 
     def test_limited_iterator(self):
         # Make sure that StopIteration is handled correctly.
-        iterator = CachingIterator(iter([0,1,2,3,4]))
+        iterator = CachingIterator(iter([0, 1, 2, 3, 4]))
         self.assertEqual(
-            [0,1,2], list(itertools.islice(iterator, 0, 3)))
-        self.assertEqual([0,1,2,3,4], list(iterator))
+            [0, 1, 2], list(itertools.islice(iterator, 0, 3)))
+        self.assertEqual([0, 1, 2, 3, 4], list(iterator))
 
     def test_parallel_iteration(self):
         # There can be parallel iterators over the CachingIterator.
-        ci = CachingIterator(iter([0,1,2,3,4]))
+        ci = CachingIterator(iter([0, 1, 2, 3, 4]))
         i1 = iter(ci)
         i2 = iter(ci)
         self.assertEqual(0, i1.next())
         self.assertEqual(0, i2.next())
-        self.assertEqual([1,2,3,4], list(i2))
-        self.assertEqual([1,2,3,4], list(i1))
+        self.assertEqual([1, 2, 3, 4], list(i2))
+        self.assertEqual([1, 2, 3, 4], list(i1))
 
 
 class TestDecorateWith(TestCase):
@@ -138,6 +140,32 @@ class TestDecorateWith(TestCase):
         arbitrary_value = self.getUniqueString()
         result = decorator(lambda: arbitrary_value)()
         self.assertEqual(arbitrary_value, result)
+
+
+class TestDocstringDedent(TestCase):
+    """Tests for `docstring_dedent`."""
+
+    def test_single_line(self):
+        self.assertEqual(docstring_dedent('docstring'), 'docstring')
+
+    def test_multi_line(self):
+        docstring = """This is a multiline docstring.
+
+        This is the second line.
+        """
+        result = 'This is a multiline docstring.\n\nThis is the second line.'
+        self.assertEqual(docstring_dedent(docstring), result)
+
+
+class TestTracebackInfo(TestCase):
+    """Tests of `traceback_info`."""
+
+    def test(self):
+        # `traceback_info` sets the local variable __traceback_info__ in the
+        # caller's frame.
+        self.assertEqual(None, locals().get("__traceback_info__"))
+        traceback_info("Pugwash")
+        self.assertEqual("Pugwash", locals().get("__traceback_info__"))
 
 
 def test_suite():

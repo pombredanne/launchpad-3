@@ -172,6 +172,14 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         raise NotImplementedError()
 
+    def acceptFromImport(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
+    def acceptFromUpstreamImportOnPackage(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
@@ -189,14 +197,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
         return
-
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_upstream = new_value
 
     def getSharedEquivalent(self):
         """See `ITranslationMessage`."""
@@ -351,6 +351,19 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return self.potmsgset.approveAsDiverged(
             pofile, self, reviewer, lock_timestamp=lock_timestamp)
 
+    def acceptFromImport(self, pofile, share_with_other_side=False,
+                         lock_timestamp=None):
+        """See `ITranslationMessage`."""
+        self.potmsgset.acceptFromImport(
+            pofile, self, share_with_other_side=share_with_other_side,
+            lock_timestamp=lock_timestamp)
+
+    def acceptFromUpstreamImportOnPackage(self, pofile,
+                                          lock_timestamp=None):
+        """See `ITranslationMessage`."""
+        self.potmsgset.acceptFromUpstreamImportOnPackage(
+            pofile, self, lock_timestamp=lock_timestamp)
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         from lp.translations.model.pofile import POFile
@@ -471,36 +484,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             forms_match))
 
         return twins.order_by(TranslationMessage.id).first()
-
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_ubuntu = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getImportedTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_upstream = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_upstream = new_value
 
 
 class TranslationMessageSet:

@@ -21,22 +21,25 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionNavigation,
+    )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionNavigation,
-    )
 from lp.testing import (
+    feature_flags,
+    set_feature_flag,
+    anonymous_logged_in,
+    login_person,
     normalize_whitespace,
     person_logged_in,
-    login_person,
     TestCaseWithFactory,
     ws_object,
     )
 from lp.testing.views import create_initialized_view
-from lp.bugs.publisher import BugsLayer
 
 
 class TestBugSubscriptionFilterBase:
@@ -247,6 +250,45 @@ class TestBugSubscriptionFilterView(
         # If nothing is set the conditions list is empty.
         self.assertEqual([], self.view.conditions)
 
+    def test_conditions_with_no_events_subscribed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.assertEqual([], self.view.conditions)
+
+    def test_filters_everything_with_no_events_subscribed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.failUnless(self.view.filters_everything)
+
+    def test_not_filters_everything_normally(self):
+        self.failIf(self.view.filters_everything)
+
+    def test_conditions_for_COMMENTS_events(self):
+        # If we are subscribed to comments, that is all-inclusive: no
+        # conditions are returned.
+        self.assertEqual(BugNotificationLevel.COMMENTS,
+                         self.subscription_filter.bug_notification_level)
+        self.assertEqual([], self.view.conditions)
+
+    def test_conditions_for_METADATA_events(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.METADATA)
+        self.assertEqual(
+            [u'any change is made to the bug, other than a new comment being '
+              'added'],
+            self.view.conditions)
+
+    def test_conditions_for_LIFECYCLE_events(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.LIFECYCLE)
+        self.assertEqual(
+            [u'the bug is fixed or re-opened'],
+            self.view.conditions)
+
     def test_conditions_for_statuses(self):
         # If no statuses have been specified nothing is returned.
         self.assertEqual([], self.view.conditions)
@@ -307,13 +349,15 @@ class TestBugSubscriptionFilterView(
         # description is very simple, and there's a short message describing
         # the absense of conditions.
         self.assertRender(
-            u"This filter does not allow mail through.",
-            u"There are no filter conditions! (edit)")
+            u"This filter allows all mail through.",
+            u"There are no filter conditions!")
 
     def test_render_with_no_description_and_conditions(self):
         # If conditions are set but no description, the rendered description
         # is very simple, and the conditions are described.
         with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.METADATA)
             self.subscription_filter.statuses = [
                 BugTaskStatus.NEW,
                 BugTaskStatus.CONFIRMED,
@@ -327,7 +371,7 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo", u"bar"]
         self.assertRender(
             u"This filter allows mail through when:",
-            u" and ".join(self.view.conditions) + u" (edit)")
+            u" and ".join(self.view.conditions))
 
     def test_render_with_description_and_no_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -335,8 +379,16 @@ class TestBugSubscriptionFilterView(
         with person_logged_in(self.owner):
             self.subscription_filter.description = u"The Wait"
         self.assertRender(
-            u"\u201cThe Wait\u201d does not allow mail through.",
-            u"There are no filter conditions! (edit)")
+            u"\u201cThe Wait\u201d allows all mail through.",
+            u"There are no filter conditions!")
+
+    def test_render_with_no_events_allowed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.assertRender(
+            u"This filter allows no mail through.",
+            u"")
 
     def test_render_with_description_and_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -346,7 +398,34 @@ class TestBugSubscriptionFilterView(
             self.subscription_filter.tags = [u"foo"]
         self.assertRender(
             u"\u201cThe Wait\u201d allows mail through when:",
-            u" and ".join(self.view.conditions) + u" (edit)")
+            u" and ".join(self.view.conditions))
+
+    def findEditLinks(self, view):
+        root = html.fromstring(view.render())
+        return [
+            node for node in root.findall("dd//a")
+            if node.get("href").endswith("/+edit")]
+
+    def test_edit_link_for_subscriber(self):
+        # A link to edit the filter is rendered for the subscriber.
+        with person_logged_in(self.subscription.subscriber):
+            subscriber_view = create_initialized_view(
+                self.subscription_filter, "+definition")
+            self.assertNotEqual([], self.findEditLinks(subscriber_view))
+
+    def test_edit_link_for_non_subscriber(self):
+        # A link to edit the filter is *not* rendered for anyone but the
+        # subscriber.
+        with person_logged_in(self.factory.makePerson()):
+            non_subscriber_view = create_initialized_view(
+                self.subscription_filter, "+definition")
+            self.assertEqual([], self.findEditLinks(non_subscriber_view))
+
+    def test_edit_link_for_anonymous(self):
+        # A link to edit the filter is *not* rendered for anyone but the
+        # subscriber.
+        with anonymous_logged_in():
+            self.assertEqual([], self.findEditLinks(self.view))
 
 
 class TestBugSubscriptionFilterEditView(
@@ -359,8 +438,7 @@ class TestBugSubscriptionFilterEditView(
         # subscription overview page.
         login_person(self.owner)
         view = create_initialized_view(
-            self.subscription_filter, name="+edit",
-            layer=BugsLayer, principal=self.owner)
+            self.subscription_filter, name="+edit")
         self.assertEqual([], view.errors)
         path = "/~%s/+structural-subscriptions" % self.owner.name
         self.assertEqual(path, urlparse(view.cancel_url).path)
@@ -378,8 +456,7 @@ class TestBugSubscriptionFilterEditView(
             }
         with person_logged_in(self.owner):
             view = create_initialized_view(
-                self.subscription_filter, name="+edit",
-                form=form, layer=BugsLayer, principal=self.owner)
+                self.subscription_filter, name="+edit", form=form)
             self.assertEqual([], view.errors)
         # The subscription filter has been updated.
         self.assertEqual(
@@ -396,3 +473,155 @@ class TestBugSubscriptionFilterEditView(
             self.subscription_filter.tags)
         self.assertTrue(
             self.subscription_filter.find_all_tags)
+
+    def test_delete(self):
+        # The filter can be deleted by using the delete action.
+        form = {
+            "field.actions.delete": "Delete",
+            }
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.subscription_filter, name="+edit", form=form)
+            self.assertEqual([], view.errors)
+        # The subscription filter has been deleted.
+        self.assertEqual([], list(self.subscription.bug_filters))
+
+
+class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
+    """A base class for testing advanced structural subscription features."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterAdvancedFeatures, self).setUp()
+        self.setUpTarget()
+        with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProduct()
+
+    def test_filter_uses_bug_notification_level(self):
+        # When advanced features are turned on for subscriptions a user
+        # can specify a bug_notification_level on the +filter form.
+        with feature_flags():
+            # We don't display BugNotificationLevel.NOTHING as an option.
+            displayed_levels = [
+                level for level in BugNotificationLevel.items
+                if level != BugNotificationLevel.NOTHING]
+            for level in displayed_levels:
+                person = self.factory.makePerson()
+                with person_logged_in(person):
+                    subscription = self.target.addBugSubscription(
+                        person, person)
+                    form = {
+                        "field.description": "New description",
+                        "field.statuses": ["NEW", "INCOMPLETE"],
+                        "field.importances": ["LOW", "MEDIUM"],
+                        "field.tags": u"foo bar",
+                        "field.find_all_tags": "on",
+                        'field.bug_notification_level': level.title,
+                        "field.actions.create": "Create",
+                        }
+                    view = create_initialized_view(
+                        subscription, name="+new-filter", form=form)
+
+                filters = subscription.bug_filters
+                self.assertEqual(filters.count(), 1)
+                self.assertEqual(
+                    level, filters[0].bug_notification_level,
+                    "Bug notification level of filter should be %s, "
+                    "is actually %s." % (
+                        level.name, filters[0].bug_notification_level.name))
+
+    def test_nothing_is_not_a_valid_level(self):
+        # BugNotificationLevel.NOTHING isn't considered valid when a
+        # user is subscribing via the web UI.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = self.target.addBugSubscription(person, person)
+            form = {
+                "field.description": "New description",
+                "field.statuses": ["NEW", "INCOMPLETE"],
+                "field.importances": ["LOW", "MEDIUM"],
+                "field.tags": u"foo bar",
+                "field.find_all_tags": "on",
+                'field.bug_notification_level': BugNotificationLevel.NOTHING,
+                "field.actions.create": "Create",
+                }
+            with feature_flags():
+                view = create_initialized_view(
+                    subscription, name="+new-filter", form=form)
+                self.assertTrue(view.errors)
+
+    def test_extra_features_hidden_without_feature_flag(self):
+        # If the malone.advanced-subscriptions.enabled flag is turned
+        # off, the bug_notification_level field doesn't appear on the
+        # form.  This is actually not important for the filter, but when
+        # this test fails because we no longer rely on a feature flag, it
+        # can be a reminder to clean up the rest of this test to get
+        # rid of the feature flag code.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = self.target.addBugSubscription(person, person)
+            view = create_initialized_view(subscription, name="+new-filter")
+            form_fields = view.form_fields
+            self.assertIs(
+                None, form_fields.get('bug_notification_level'))
+
+
+class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterCreateView, self).setUp()
+        self.owner = self.factory.makePerson(name=u"foo")
+        self.structure = self.factory.makeProduct(
+            owner=self.owner, name=u"bar")
+        with person_logged_in(self.owner):
+            self.subscription = self.structure.addBugSubscription(
+                self.owner, self.owner)
+
+    def test_view_properties(self):
+        # The cancel url and next url will both point to the user's structural
+        # subscription overview page.
+        login_person(self.owner)
+        view = create_initialized_view(
+            self.subscription, name="+new-filter")
+        self.assertEqual([], view.errors)
+        path = "/~%s/+structural-subscriptions" % self.owner.name
+        self.assertEqual(path, urlparse(view.cancel_url).path)
+        self.assertEqual(path, urlparse(view.next_url).path)
+
+    def test_create(self):
+        # New filters can be created with +new-filter.
+        self.assertEqual([], list(self.subscription.bug_filters))
+        form = {
+            "field.description": "New description",
+            "field.statuses": ["NEW", "INCOMPLETE"],
+            "field.importances": ["LOW", "MEDIUM"],
+            "field.tags": u"foo bar",
+            "field.find_all_tags": "on",
+            "field.actions.create": "Create",
+            }
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.subscription, name="+new-filter", form=form)
+            self.assertEqual([], view.errors)
+        # The subscription filter has been created.
+        subscription_filter = self.subscription.bug_filters.one()
+        self.assertEqual(
+            u"New description",
+            subscription_filter.description)
+        self.assertEqual(
+            frozenset([BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]),
+            subscription_filter.statuses)
+        self.assertEqual(
+            frozenset([BugTaskImportance.LOW, BugTaskImportance.MEDIUM]),
+            subscription_filter.importances)
+        self.assertEqual(
+            frozenset([u"foo", u"bar"]),
+            subscription_filter.tags)
+        self.assertTrue(
+            subscription_filter.find_all_tags)

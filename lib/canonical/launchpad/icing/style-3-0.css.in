@@ -253,9 +253,6 @@ div.hide_reveal_profiling {
    Universal presentation
    Inline elements.
 */
-a {
-    outline: none;
-    }
 :link, :visited {
     /* Links are blue, brighter when clicked, and greyer once visited. */
     color: #03a;
@@ -824,6 +821,7 @@ button {
     margin-left: 2.6em;
     }
 .formHelp {
+    max-width: 45em;
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;
     }
@@ -1006,6 +1004,9 @@ h1 .edit {
 .informational.message::before {
     content: url(/@@/info-large);
     }
+.informational p.last {
+    margin-bottom: 0;
+    }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
     background: #666;
@@ -1168,6 +1169,12 @@ p.search-results {
     position: absolute;
     top: .5em;
     right: 1.5em;
+    }
+#rendertime {
+    float: left;
+    margin: 0.2em 1.2em 0 0;
+    color: #666;
+    font-size: 77%;
     }
 div.watermark-apps-portlet {
     clear: both;

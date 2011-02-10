@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,16 +7,17 @@ from datetime import (
     datetime,
     timedelta,
     )
-from new import classobj
-import sys
-from testtools.matchers import Equals
 import unittest
 
 import pytz
-from zope.component import getUtility
-
 from storm.expr import Join
 from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    Not,
+    )
+from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import (
     all,
@@ -26,6 +27,7 @@ from canonical.launchpad.searchbuilder import (
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
@@ -87,15 +89,23 @@ class SearchTestBase:
         # If the user is subscribed to the bug, it is included in the
         # search result.
         user = self.factory.makePerson()
-        with person_logged_in(self.owner):
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        with person_logged_in(admin):
             bug = self.bugtasks[-1].bug
             bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
         # Private bugs are included in search results for admins.
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
+        self.assertSearchFinds(params, self.bugtasks)
+
+        # Private bugs are included in search results for the assignee.
+        user = self.factory.makePerson()
+        bugtask = self.bugtasks[-1]
+        with person_logged_in(admin):
+            bugtask.transitionToAssignee(user)
+        params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
     def test_search_by_bug_reporter(self):
@@ -433,6 +443,21 @@ class SearchTestBase:
             user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
         self.assertSearchFinds(params, self.bugtasks[1:])
 
+    def test_blueprints_linked(self):
+        # Search results can be limited to bugs with or without linked
+        # blueprints.
+        with person_logged_in(self.owner):
+            blueprint = self.factory.makeSpecification()
+            blueprint.linkBug(self.bugtasks[0].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITH_BLUEPRINTS))
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS))
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
     def test_limit_search_to_one_bug(self):
         # Search results can be limited to a given bug.
         params = self.getBugTaskSearchParams(
@@ -636,7 +661,6 @@ class ProductSeriesTarget(BugTargetTestBase):
         # product are returned, including bug tasks for the main product
         # of the series. Hence we must set the status for all products
         # in order to avoid a failure of test_upstream_status().
-        bug = bugtask.bug
         for other_task in bugtask.related_tasks:
             other_target = other_task.target
             if IProduct.providedBy(other_target):
@@ -910,9 +934,6 @@ class MultipleParams:
 class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
-    def setUp(self):
-        super(PreloadBugtaskTargets, self).setUp()
-
     def runSearch(self, params, *args, **kw):
         """Run BugTaskSet.search() and preload bugtask target objects."""
         return list(self.bugtask_set.search(
@@ -944,15 +965,15 @@ class PreloadBugtaskTargets(MultipleParams):
             found_tasks = self.runSearch(
                 params,
                 prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
+            # More than one query may have been performed
+            search_count = recorder.count
+            # Accessing the owner does not trigger more queries.
             found_tasks[0].owner
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+            self.assertThat(recorder, HasQueryCount(Equals(search_count)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
     """Do not preload bug targets during a BugTaskSet.search() query."""
-
-    def setUp(self):
-        super(NoPreloadBugtaskTargets, self).setUp()
 
     def runSearch(self, params, *args):
         """Run BugTaskSet.search() without preloading bugtask targets."""
@@ -965,9 +986,6 @@ class NoPreloadBugtaskTargets(MultipleParams):
 class QueryBugIDs:
     """Search bug IDs."""
 
-    def setUp(self):
-        super(QueryBugIDs, self).setUp()
-
     def runSearch(self, params, *args):
         """Run BugTaskSet.searchBugIds()."""
         return list(self.bugtask_set.searchBugIds(params))
@@ -977,23 +995,22 @@ class QueryBugIDs:
 
 
 def test_suite():
-    module = sys.modules[__name__]
+    suite = unittest.TestSuite()
+    loader = unittest.TestLoader()
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
                 bug_target_search_type_class.__name__,
                 target_mixin.__name__)
+            class_bases = (
+                target_mixin, bug_target_search_type_class,
+                SearchTestBase, TestCaseWithFactory)
             # Dynamically build a test class from the target mixin class,
             # from the search type mixin class, from the mixin class
             # having all tests and from a unit test base class.
-            test_class = classobj(
-                class_name,
-                (target_mixin, bug_target_search_type_class, SearchTestBase,
-                 TestCaseWithFactory),
-                {})
-            # Add the new unit test class to the module.
-            module.__dict__[class_name] = test_class
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+            test_class = type(class_name, class_bases, {})
+            # Add the new unit test class to the suite.
+            suite.addTest(loader.loadTestsFromTestCase(test_class))
+    suite.addTest(loader.loadTestsFromName(__name__))
     return suite
