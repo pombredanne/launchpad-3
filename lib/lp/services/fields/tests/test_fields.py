@@ -63,6 +63,15 @@ class TestStrippableText(TestCase):
         field.set(target, '  testing  ')
         self.assertEqual('testing', target.test)
 
+    def test_strips_text_trailing_only(self):
+        # The set method strips the trailing whitespace.
+        target = make_target()
+        field = StrippableText(
+            __name__='test', strip_text=True, trailing_only=True)
+        self.assertTrue(field.trailing_only)
+        field.set(target, '  testing  ')
+        self.assertEqual('  testing', target.test)
+
     def test_default_constructor(self):
         # If strip_text is not set, or set to false, then the text is not
         # stripped when set.

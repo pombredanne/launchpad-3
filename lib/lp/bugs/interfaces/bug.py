@@ -216,7 +216,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Description(title=_('Description'), required=True,
              description=_("""A detailed description of the problem,
                  including the steps required to reproduce it."""),
-             strip_text=True, min_length=1, max_length=50000))
+             strip_text=True, trailing_only=True,
+             min_length=1, max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
@@ -1000,7 +1001,8 @@ class IBugAddForm(IBug):
     owner = Int(title=_("Owner"), required=True)
     comment = Description(
         title=_('Further information'),
-        strip_text=True, min_length=1, max_length=50000, required=False)
+        strip_text=True, trailing_only=True,
+        min_length=1, max_length=50000, required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
