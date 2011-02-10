@@ -213,10 +213,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Title(title=_('Summary'), required=True,
               description=_("""A one-line summary of the problem.""")))
     description = exported(
-        Text(title=_('Description'), required=True,
+        Description(title=_('Description'), required=True,
              description=_("""A detailed description of the problem,
                  including the steps required to reproduce it."""),
-             min_length=1, max_length=50000))
+             strip_text=True, min_length=1, max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
