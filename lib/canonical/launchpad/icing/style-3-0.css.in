@@ -44,6 +44,7 @@
       * Header, footer, side, help
       * Colors
       * Sprites
+      * Global notifications
       * Application or page specifc styles that do not belong in this file.
 */
 
@@ -1088,7 +1089,7 @@ span.see-all {
     font-size: 72%;
     text-decoration: underline;
     }
-.unseen {
+.unseen, .hidden {
     display: none;
     }
 .invisible-link {
@@ -1302,8 +1303,14 @@ div.watermark-apps-portlet span img {
     background: #fbfbfb;
     }
 #privacy.private {
-      background: url(/@@/private-bg) top left repeat-x; /* 8px high */
-      padding-top: 12px; /* = 8px + the usual 4px top padding */
+    background: url(/@@/private-bg) top left repeat-x; /* 8px high */
+    padding-top: 12px; /* = 8px + the usual 4px top padding */
+    }
+/* Override for when the feature flag is active */
+.feature-flag-private_object_notification #privacy.private {
+    background-image: none;
+    background-color: #FBFBFB;
+    padding-top: 0.5em;
     }
 .downloads li {
     margin: 0;
@@ -2156,6 +2163,10 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/private.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+/* Override for when the feature flag is active */
+.feature-flag-private_object_notification.private {
+    background-image: none;
+    }
 .meeting {
     background-image: url(/@@/meeting.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2382,6 +2393,72 @@ body.tab-bugs #duplicate-actions .sprite {
 .logo-trash {
     background-image: url(/@@/trash-logo.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
+    }
+.notification-private {
+    background-image: url(/@@/notification-private.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.notification-close {
+    background-image: url(/@@/notification-close.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+
+
+/* ====================
+   Global notifications
+*/
+/* Move the content down so the notification banner doesn't hide any content. */
+body.global-notification-visible {
+    padding-top: 40px;
+    }
+body.global-notification-visible .login-logout {
+    top: 45px;
+    }
+.global-notification {
+    position: fixed;
+    z-index: 10;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #8d1f1f;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(125,0,0,0.9);
+    color: #fff;
+    text-shadow: 0 -1px 0 #631616;
+    font-weight: bold;
+    -moz-box-shadow: 0 0 5px #333;
+    -webkit-box-shadow: 0 0 5px #333;
+    box-shadow: 0 0 5px #333;
+    }
+.global-notification .sprite.notification-private {
+    float: left;
+    display: inline-block;
+    height: 21px;
+    width: 20px;
+    margin-right: 10px;
+    padding: 0;
+    }
+.global-notification-close, .global-notification-close:active,
+.global-notification-close:visited {
+    color: #e47a7a;
+    }
+.global-notification-close {
+    display: block;
+    position: absolute;
+    top: 11px;
+    right: 20px;
+    font-size: 85%;
+    font-weight: normal;
+    }
+.global-notification-close .sprite.notification-close {
+    float: right;
+    display: block;
+    height: 9px;
+    width: 8px;
+    margin: 3px 0 0 7px;
+    padding: 0;
     }
 
 

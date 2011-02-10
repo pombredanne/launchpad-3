@@ -83,7 +83,7 @@
     ], 
     "../images/trash-logo.png": [
         0, 
-        -20358
+        -20176
     ], 
     "../images/warning.png": [
         0, 
@@ -107,7 +107,7 @@
     ], 
     "../images/private-large.png": [
         0, 
-        -18250
+        -18068
     ], 
     "../images/launchpad-large.png": [
         0, 
@@ -123,7 +123,7 @@
     ], 
     "../images/project-logo.png": [
         0, 
-        -18860
+        -18678
     ], 
     "../images/bug-medium.png": [
         0, 
@@ -173,17 +173,13 @@
         0, 
         -3768
     ], 
-    "../images/stop.png": [
-        0, 
-        -11310
-    ], 
     "../images/person-logo.png": [
         0, 
-        -19288
+        -19106
     ], 
     "../images/distribution-logo.png": [
         0, 
-        -18646
+        -18464
     ], 
     "../images/retry.png": [
         0, 
@@ -245,6 +241,10 @@
         0, 
         -6228
     ], 
+    "../images/stop.png": [
+        0, 
+        -11310
+    ], 
     "../images/flame-large.png": [
         0, 
         -16976
@@ -279,7 +279,7 @@
     ], 
     "../images/team-logo.png": [
         0, 
-        -19716
+        -19534
     ], 
     "../images/arrowRight.png": [
         0, 
@@ -351,7 +351,7 @@
     ], 
     "../images/product-logo.png": [
         0, 
-        -19074
+        -18892
     ], 
     "../images/blueprint-medium.png": [
         0, 
@@ -367,11 +367,11 @@
     ], 
     "../images/launchpad-logo.png": [
         0, 
-        -18432
+        -18250
     ], 
     "../images/flame-logo.png": [
         0, 
-        -20144
+        -19962
     ], 
     "../images/translation-template.png": [
         0, 
@@ -383,7 +383,7 @@
     ], 
     "../images/meeting-logo.png": [
         0, 
-        -19930
+        -19748
     ], 
     "../images/treeCollapsed.png": [
         0, 
@@ -399,7 +399,7 @@
     ], 
     "../images/trash-large.png": [
         0, 
-        -18068
+        -17886
     ], 
     "../images/red-bar.png": [
         0, 
@@ -415,7 +415,7 @@
     ], 
     "../images/person-inactive-logo.png": [
         0, 
-        -19502
+        -19320
     ], 
     "../images/edit.png": [
         0, 
@@ -437,9 +437,13 @@
         0, 
         -4096
     ], 
+    "../images/notification-close.png": [
+        0, 
+        -20561
+    ], 
     "../images/merge-proposal-large.png": [
         0, 
-        -17886
+        -17704
     ], 
     "../images/branch.png": [
         0, 
@@ -448,6 +452,10 @@
     "../images/person-badge.png": [
         0, 
         -1968
+    ], 
+    "../images/notification-private.png": [
+        0, 
+        -20390
     ], 
     "../images/bug.png": [
         0, 

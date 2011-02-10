@@ -55,6 +55,73 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+      <tal:if condition="context/bug/private">
+        <tal:if condition="request/features/private_object_notification">
+            <script type="text/javascript">
+                LPS.use('anim-base', function(Y) {
+                  Y.on('domready', function() {
+                      /* Set a temporary class on the body for the feature flag,
+                         this is because we have no way to use feature flags in
+                         css directly. This should be remove if the feature
+                         is accepted. */
+                      Y.one('body').addClass('feature-flag-private_object_notification');
+                      /* Set the visible flag so that the content moves down. */
+                      Y.one('body').addClass('global-notification-visible');
+                      var fade_out = new Y.Anim({
+                          node: '.global-notification',
+                          to: {opacity: 0},
+                          duration: 0.3
+                      });
+                      var body_space = new Y.Anim({
+                          node: 'body',
+                          to: {'padding-top': 0},
+                          duration: 0.2,
+                          easing: Y.Easing.easeOut
+                      });
+                      var login_space = new Y.Anim({
+                          node: '.login-logout',
+                          to: {'top': '6px'},
+                          duration: 0.2,
+                          easing: Y.Easing.easeOut
+                      });
+                      var portlet = Y.one('.portlet.private');
+                      var portlet_colour = new Y.Anim({
+                          node: portlet,
+                          from: {
+                              color: portlet.getStyle('color'),
+                              backgroundColor:portlet.getStyle('backgroundColor')
+                          },
+                          to: {
+                              color: '#fff',
+                              backgroundColor:'#8d1f1f'
+                          },
+                          duration: 0.8,
+                          iterations: '2',
+                          direction: 'alternate'
+                      });
+                      fade_out.on('end', function() {
+                          fade_out.get('node').addClass('hidden');
+                      });
+                      Y.on('click', function(e) {
+                          e.halt();
+                          fade_out.run();
+                          body_space.run();
+                          login_space.run();
+                          portlet_colour.run();
+                      }, '.global-notification-close');
+                  });
+                });
+            </script>
+            <div class="global-notification" tal:condition="request/features/private_object_notification">
+              <span class="sprite notification-private"></span>
+              This bug is private
+              <a href="#" class="global-notification-close">
+                <span class="sprite notification-close"></span>
+                Hide
+              </a>
+            </div>
+        </tal:if>
+      </tal:if>
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
