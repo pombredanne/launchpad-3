@@ -52,6 +52,7 @@ from canonical.launchpad.components.storm_operators import (
     Match,
     RANK,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
@@ -169,6 +170,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
@@ -193,7 +195,6 @@ from lp.soyuz.model.distroarchseries import (
     )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
-    BinaryPackageFilePublishing,
     BinaryPackagePublishingHistory,
     SourcePackageFilePublishing,
     SourcePackagePublishingHistory,
@@ -481,7 +482,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
             source_mirrors = list(Store.of(self).find(
                 (MirrorDistroSeriesSource.distribution_mirrorID,
-                 Max(MirrorDistroSeriesSource.freshness)), 
+                 Max(MirrorDistroSeriesSource.freshness)),
                 MirrorDistroSeriesSource.distribution_mirrorID.is_in(
                     [mirror.id for mirror in mirrors])).group_by(
                         MirrorDistroSeriesSource.distribution_mirrorID))
@@ -492,8 +493,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
             for mirror in mirrors:
                 cache = get_property_cache(mirror)
-                cache.arch_mirror_freshness = arch_mirror_freshness.get(mirror.id, None)
-                cache.source_mirror_freshness = source_mirror_freshness.get(mirror.id, None)
+                cache.arch_mirror_freshness = arch_mirror_freshness.get(
+                    mirror.id, None)
+                cache.source_mirror_freshness = source_mirror_freshness.get(
+                    mirror.id, None)
         return mirrors
 
     @property
@@ -982,6 +985,25 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.distribution == self,
             DistroSeries.status == status)
 
+    def _findPublishedBinaryFile(self, filename, archive):
+        """Find binary package file of the given name and archive.
+
+        :return: A `LibraryFileAlias`, or None.
+        """
+        search = Store.of(self).find(
+            LibraryFileAlias,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageFile.binarypackagereleaseID,
+            DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            DistroSeries.id == DistroArchSeries.distroseriesID,
+            BinaryPackagePublishingHistory.dateremoved == None,
+            DistroSeries.distribution == self,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            LibraryFileAlias.filename == filename)
+        return search.order_by(Desc(LibraryFileAlias.id)).first()
+
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""
         assert (source or binary), "searching in an explicitly empty " \
@@ -989,21 +1011,22 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if archive is None:
             archive = self.main_archive
 
-        if source:
-            candidate = SourcePackageFilePublishing.selectFirstBy(
+        if binary:
+            candidate = self._findPublishedBinaryFile(filename, archive)
+        else:
+            candidate = None
+
+        if source and candidate is None:
+            spfp = SourcePackageFilePublishing.selectFirstBy(
                 distribution=self, libraryfilealiasfilename=filename,
                 archive=archive, orderBy=['id'])
+            if spfp is not None:
+                candidate = spfp.libraryfilealias
 
-        if binary:
-            candidate = BinaryPackageFilePublishing.selectFirstBy(
-                distribution=self,
-                libraryfilealiasfilename=filename,
-                archive=archive, orderBy=["-id"])
-
-        if candidate is not None:
-            return candidate.libraryfilealias
-
-        raise NotFoundError(filename)
+        if candidate is None:
+            raise NotFoundError(filename)
+        else:
+            return candidate
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):

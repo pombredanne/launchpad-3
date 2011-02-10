@@ -985,13 +985,24 @@ BugMessage""" % sqlvalues(self.id))
                         recipients.addRegistrant(pillar.owner, pillar)
 
         # Structural subscribers.
+        if recipients is None:
+            temp_recipients = None
+        else:
+            temp_recipients = BugNotificationRecipients(
+                duplicateof=recipients.duplicateof)
         also_notified_subscribers.update(
             getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=recipients, level=level))
+                self.bugtasks, recipients=temp_recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        if recipients is not None:
+            # A direct subscriber may have muted this notification.
+            # Therefore, we want to remove any direct subscribers from the
+            # structural subscription recipients before we merge.
+            temp_recipients.remove(direct_subscribers)
+            recipients.update(temp_recipients)
 
         # Remove security proxy for the sort key, but return
         # the regular proxied object.

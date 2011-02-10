@@ -15,10 +15,12 @@ __all__ = [
     'iter_split',
     'synchronize',
     'text_delta',
+    'traceback_info',
     'value_string',
     ]
 
 from itertools import tee
+import sys
 from textwrap import dedent
 
 from lazr.enum import BaseItem
@@ -150,3 +152,13 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+def traceback_info(info):
+    """Set `__traceback_info__` in the caller's locals.
+
+    This is more aesthetically pleasing that assigning to __traceback_info__,
+    but it more importantly avoids spurious lint warnings about unused local
+    variables, and helps to avoid typos.
+    """
+    sys._getframe(1).f_locals["__traceback_info__"] = info

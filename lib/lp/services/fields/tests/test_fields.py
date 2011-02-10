@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import datetime
+from StringIO import StringIO
 import time
 
 from zope.interface import Interface
@@ -15,6 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.fields import (
+    BaseImageUpload,
     BlacklistableContentNameField,
     FormattableDate,
     StrippableText,
@@ -128,3 +130,33 @@ class TestBlacklistableContentNameField(TestCaseWithFactory):
         date_value = u'fnord'
         login_person(self.team.teamowner)
         self.assertEqual(None, field.validate(date_value))
+
+
+class TestBaseImageUpload(TestCase):
+    """Test for the BaseImageUpload field."""
+
+    class ExampleImageUpload(BaseImageUpload):
+        dimensions = (192, 192)
+        max_size = 100*1024
+
+    def test_validation_corrupt_image(self):
+        # ValueErrors raised by PIL become LaunchpadValidationErrors.
+        field = self.ExampleImageUpload(default_image_resource='dummy')
+        image = StringIO(
+            '/* XPM */\n'
+            'static char *pixmap[] = {\n'
+            '"32 32 253 2",\n'
+            '  "00 c #01CAA3",\n'
+            '  ".. s None c None",\n'
+            '};')
+        image.filename = 'foo.xpm'
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, image)
+
+    def test_validation_non_image(self):
+        # IOError raised by PIL become LaunchpadValidationErrors.
+        field = self.ExampleImageUpload(default_image_resource='dummy')
+        image = StringIO('foo bar bz')
+        image.filename = 'foo.jpg'
+        self.assertRaises(
+            LaunchpadValidationError, field.validate, image)
