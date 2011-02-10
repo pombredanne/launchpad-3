@@ -226,6 +226,7 @@ class UserAttributeCache:
         return self._user
 
     _is_beta = None
+
     @property
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
@@ -550,8 +551,7 @@ def canonical_url(
     if ((path_only_if_possible and
          request is not None and
          root_url.startswith(request.getApplicationURL()))
-        or force_local_path
-        ):
+        or force_local_path):
         return unicode('/' + path)
     return unicode(root_url + path)
 
@@ -651,7 +651,6 @@ class Navigation:
         return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
-
     def publishTraverse(self, request, name):
         """Shim, to set objects in the launchbag when traversing them.
 
