@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from operator import methodcaller
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -420,7 +422,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         """Order templates by precedence."""
         if templates is None:
             templates = self.templates
-        return sorted(templates, key=POTemplate.sharingKey, reverse=True)
+        return sorted(templates, key=methodcaller('sharingKey'), reverse=True)
 
     def _getPrimaryTemplate(self, templates=None):
         """Get first template in order of precedence."""
@@ -494,7 +496,7 @@ class TestTranslationFoci(TestCaseWithFactory):
 
     def assertFirst(self, expected, templates):
         templates = sorted(
-            templates, key=POTemplate.sharingKey)
+            templates, key=methodcaller('sharingKey'), reverse=True)
         self.assertEqual(expected, templates[0])
 
     @staticmethod
