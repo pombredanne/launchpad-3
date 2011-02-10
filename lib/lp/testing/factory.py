@@ -2656,7 +2656,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     ServiceUsage.LAUNCHPAD)
             else:
                 distroseries = self.makeUbuntuDistroSeries()
-                sourcepackagename = self.makeSourcePackageName()
+        if distroseries is not None and sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(

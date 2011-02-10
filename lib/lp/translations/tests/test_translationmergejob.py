@@ -24,25 +24,29 @@ from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.translationmergejob import TranslationMergeJob
 
 
-def make_translation_merge_job(factory):
+def make_translation_merge_job(factory, not_ubuntu=False):
     singular = factory.getUniqueString()
     upstream_pofile = factory.makePOFile(side=TranslationSide.UPSTREAM)
     upstream_potmsgset = factory.makePOTMsgSet(
         upstream_pofile.potemplate, singular, sequence=1)
     upstream = factory.makeCurrentTranslationMessage(
         pofile=upstream_pofile, potmsgset=upstream_potmsgset)
-    ubuntu_potemplate = factory.makePOTemplate(
-        side=TranslationSide.UBUNTU, name=upstream_pofile.potemplate.name)
-    ubuntu_pofile = factory.makePOFile(
-        potemplate=ubuntu_potemplate, language=upstream_pofile.language)
-    ubuntu_potmsgset = factory.makePOTMsgSet(
-        ubuntu_pofile.potemplate, singular, sequence=1)
-    ubuntu = factory.makeCurrentTranslationMessage(
-        pofile=ubuntu_pofile, potmsgset=ubuntu_potmsgset,
+    if not_ubuntu:
+        distroseries = factory.makeDistroSeries()
+    else:
+        distroseries = factory.makeUbuntuDistroSeries()
+    package_potemplate = factory.makePOTemplate(
+        distroseries=distroseries, name=upstream_pofile.potemplate.name)
+    package_pofile = factory.makePOFile(
+        potemplate=package_potemplate, language=upstream_pofile.language)
+    package_potmsgset = factory.makePOTMsgSet(
+        package_pofile.potemplate, singular, sequence=1)
+    package = factory.makeCurrentTranslationMessage(
+        pofile=package_pofile, potmsgset=package_potmsgset,
         translations=upstream.translations)
     productseries = upstream_pofile.potemplate.productseries
-    distroseries = ubuntu_pofile.potemplate.distroseries
-    sourcepackagename = ubuntu_pofile.potemplate.sourcepackagename
+    distroseries = package_pofile.potemplate.distroseries
+    sourcepackagename = package_pofile.potemplate.sourcepackagename
     return TranslationMergeJob(
         job=Job(), productseries=productseries, distroseries=distroseries,
         sourcepackagename=sourcepackagename)
@@ -110,6 +114,14 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertEqual(2, count_translations(job))
         job.run()
         self.assertEqual(1, count_translations(job))
+
+    def test_skips_non_ubuntu_distros(self):
+        """Run should ignore non-Ubuntu distributions."""
+        job = make_translation_merge_job(self.factory, not_ubuntu=True)
+        self.becomeDbUser('rosettaadmin')
+        self.assertEqual(2, count_translations(job))
+        job.run()
+        self.assertEqual(2, count_translations(job))
 
     @staticmethod
     def findJobs(productseries, sourcepackage):
