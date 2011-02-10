@@ -437,6 +437,9 @@ class Bug(SQLBase):
     def reindexMessages(self):
         """See `IBug`."""
         store = Store.of(self)
+        if store is None:
+            # Bug hasn't been flushed yet, so use the store policy instead.
+            store = IStore(BugMessage)
         if (store.find(BugMessage, BugMessage.bugID==self.id,
             BugMessage.index == None).count() == 0):
             # Fully indexed
