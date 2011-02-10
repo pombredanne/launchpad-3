@@ -120,13 +120,15 @@ allowed length. These shouldn't be wrapped.
 Let's see how it behaves when it contains words that can't fit on a
 single line, such as URLs.
 
-    >>> long_word = """\
-    ... This paragraph includes a long URL, https://launchpad.net/products/malone/+bug/1733/+viewstatus. Even though it's longer than 56 characters, it stays on a single line.
-    ... """
+    >>> long_word = (
+    ...     "This paragraph includes a long URL, "
+    ...     "https://launchpad.net/greenishballoon/+bug/1733/+viewstatus. "
+    ...     "Even though it's longer than 56 characters, it stays on a "
+    ...     "single line.")
     >>> wrapped_text = mailwrapper.format(long_word)
     >>> print wrapped_text #doctest: -NORMALIZE_WHITESPACE
     This paragraph includes a long URL,
-    https://launchpad.net/products/malone/+bug/1733/+viewstatus.
+    https://launchpad.net/greenishballoon/+bug/1733/+viewstatus.
     Even though it's longer than 56 characters, it stays on
     a single line.
 
