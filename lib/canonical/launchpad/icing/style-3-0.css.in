@@ -1465,7 +1465,11 @@ span.help {
    Colors and fonts
 */
 
-h1, h2, h3, table.listing thead, #homepage-stats strong, #application-footer strong, #application-summary strong {
+h1, h2, h3, 
+table.listing thead, 
+#homepage-stats strong, 
+#application-footer strong, 
+#application-summary strong {
     color: #5a5a5a;
 }
 
@@ -1481,12 +1485,6 @@ h1, h2, h3, table.listing thead, #homepage-stats strong, #application-footer str
   filter: alpha(opacity=50);
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
-
-/* Not sure if this required. The only references to "tab-overview"
-   appear to be in tests. */
-.tab-overview #application-footer strong {
-    color: #83ad23;
-    }
 
 
 .questionstatusOPEN {
