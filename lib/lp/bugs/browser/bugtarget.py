@@ -354,9 +354,6 @@ class FileBugViewBase(LaunchpadFormView):
             elif not comment or widget_error is not None:
                 self.setFieldError(
                     'comment', "Provide details about the issue.")
-            else:
-                # The comment is fine.
-                pass
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
