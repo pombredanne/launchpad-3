@@ -11,10 +11,16 @@ __all__ = [
 
 from operator import methodcaller
 
-from storm.locals import Store
+from storm.locals import (
+    ClassAlias,
+    Store,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
+    )
 from canonical.launchpad.scripts.logger import (
     DEBUG2,
     log,
@@ -22,6 +28,10 @@ from canonical.launchpad.scripts.logger import (
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -31,6 +41,7 @@ from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.potemplate import POTemplate
 
 
 def get_potmsgset_key(potmsgset):
@@ -341,6 +352,20 @@ class TransactionManager:
 
 class TranslationMerger:
     """Merge translations across a set of potemplates."""
+
+    @staticmethod
+    def findMergeablePackagings():
+        store = IStore(Packaging)
+        PackageTemplate = ClassAlias(POTemplate)
+        return store.find(
+            Packaging,
+            Packaging.productseries == ProductSeries.id,
+            Packaging.sourcepackagename == SourcePackageName.id,
+            Packaging.distroseries == DistroSeries.id,
+            POTemplate.productseries == ProductSeries.id,
+            PackageTemplate.distroseries == DistroSeries.id,
+            PackageTemplate.sourcepackagename == SourcePackageName.id,
+            )
 
     def __init__(self, potemplates, tm):
         """Constructor.

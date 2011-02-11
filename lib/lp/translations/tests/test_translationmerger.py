@@ -807,5 +807,23 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
             POTranslation._table, recorder.statements)
 
 
+class TestFindMergablePackagings(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_no_templates(self):
+        packaging = self.factory.makePackagingLink()
+        self.assertContentEqual(
+            [], TranslationMerger.findMergeablePackagings())
+
+    def test_both_templates(self):
+        packaging = self.factory.makePackagingLink()
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.assertContentEqual(
+            [packaging], TranslationMerger.findMergeablePackagings())
+
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

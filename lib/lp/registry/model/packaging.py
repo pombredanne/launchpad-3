@@ -71,11 +71,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        Packaging(productseries=productseries,
-                  sourcepackagename=sourcepackagename,
-                  distroseries=distroseries,
-                  packaging=packaging,
-                  owner=owner)
+        return Packaging(productseries=productseries,
+                         sourcepackagename=sourcepackagename,
+                         distroseries=distroseries,
+                         packaging=packaging,
+                         owner=owner)
 
     def deletePackaging(self, productseries, sourcepackagename, distroseries):
         """See `IPackaging`."""
