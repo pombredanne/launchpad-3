@@ -34,6 +34,11 @@ class IBugNotification(IHasOwner):
     message = Attribute(
         "The message containing the text representation of the changes"
         " to the bug.")
+    bugactivity = Attribute(
+        "The bug activity object corresponding to this notification.  Will "
+        "be None for older notification objects, and will be None if the "
+        "bugchange object that provides the data for the change returns None "
+        "for getBugActivity.")
     bug = BugField(title=u"The bug this notification is for.",
                    required=True)
     is_comment = Bool(
