@@ -49,6 +49,10 @@ class BugMessage(SQLBase):
     # we migrate all data. Bug 704446 has info about the migration.
     index = IntCol(default=None)
 
+    def __repr__(self):
+        return "<BugMessage at 0x%x message=%s index=%s>" % (
+            id(self), self.message, self.index)
+
 
 class BugMessageSet:
     """See canonical.launchpad.interfaces.IBugMessageSet."""
@@ -61,7 +65,9 @@ class BugMessageSet:
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        bugmsg = BugMessage(bug=bug, message=msg)
+        bug.reindexMessages()
+        bugmsg = BugMessage(bug=bug, message=msg,
+            index=bug.bug_messages.count())
 
         # XXX 2008-05-27 jamesh:
         # Ensure that BugMessages get flushed in same order as they
