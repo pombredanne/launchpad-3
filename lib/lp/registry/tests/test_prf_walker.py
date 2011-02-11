@@ -171,6 +171,32 @@ class WalkerBase_walk(TestCase):
             "Unicode error parsing http://example.org/foo page '/foo/'\n",
             log_output.getvalue())
 
+    def test_walk_open_fail(self):
+        # The walker handles an exception raised during open().
+
+        class TestWalker(WalkerBase):
+
+            def list(self, sub_dir):
+                pass
+
+            def open(self):
+                raise IOError("Test failure.")
+
+            def close(self):
+                pass
+
+        log_output = StringIO.StringIO()
+        logger = logging.getLogger()
+        self.addCleanup(logger.setLevel, logger.level)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(logging.StreamHandler(log_output))
+        walker = TestWalker('ftp://example.org/foo', logger)
+        for dummy in walker:
+            pass
+        self.assertEqual(
+            "Could not connect to ftp://example.org/foo\n",
+            log_output.getvalue())
+
 
 class FTPWalker_Base(TestCase):
 

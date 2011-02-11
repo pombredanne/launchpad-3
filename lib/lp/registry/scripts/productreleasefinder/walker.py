@@ -123,7 +123,11 @@ class WalkerBase:
         Yields (dirpath, dirnames, filenames) for each path under the base;
         dirnames can be modified as with os.walk.
         """
-        self.open()
+        try:
+            self.open()
+        except (IOError, socket.error):
+            self.log.info("Could not connect to %s" % self.base)
+            return
 
         subdirs = [self.path]
         while len(subdirs):
