@@ -12,7 +12,8 @@ __all__ = [
 from operator import methodcaller
 
 from storm.locals import (
-    ClassAlias,
+    And,
+    Select,
     Store,
     )
 from zope.component import getUtility
@@ -356,16 +357,26 @@ class TranslationMerger:
     @staticmethod
     def findMergeablePackagings():
         store = IStore(Packaging)
-        PackageTemplate = ClassAlias(POTemplate)
-        return store.find(
-            Packaging,
-            Packaging.productseries == ProductSeries.id,
-            Packaging.sourcepackagename == SourcePackageName.id,
-            Packaging.distroseries == DistroSeries.id,
-            POTemplate.productseries == ProductSeries.id,
-            PackageTemplate.distroseries == DistroSeries.id,
-            PackageTemplate.sourcepackagename == SourcePackageName.id,
+        upstream_translated = Select(
+            Packaging.id,
+            Packaging.productseries == POTemplate.productseriesID,
             )
+        result = store.find(
+            Packaging, Packaging.id.is_in(upstream_translated),
+            Packaging.distroseries == POTemplate.distroseriesID,
+            Packaging.sourcepackagename == POTemplate.sourcepackagenameID,
+            )
+        # This should be as simple as the following, but apparently Storm
+        # ClassAlias doesn't work properly:
+        # PackageTemplate = ClassAlias(POTemplate)
+        # result = store.find(
+        #     Packaging,
+        #     Packaging.productseries == POTemplate.productseries,
+        #     Packaging.distroseries == PackageTemplate.distroseries,
+        #     Packaging.sourcepackagename == PackageTemplate.sourcepackagename,
+        #     )
+        result.config(distinct=True)
+        return result
 
     def __init__(self, potemplates, tm):
         """Constructor.
