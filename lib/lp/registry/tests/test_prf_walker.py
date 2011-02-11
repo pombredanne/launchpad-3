@@ -165,8 +165,7 @@ class WalkerBase_walk(TestCase):
         logger.setLevel(logging.DEBUG)
         logger.addHandler(logging.StreamHandler(log_output))
         walker = TestWalker('http://example.org/foo', logger)
-        for dummy in walker:
-            pass
+        list(walker)
         self.assertEqual(
             "Unicode error parsing http://example.org/foo page '/foo/'\n",
             log_output.getvalue())
@@ -191,8 +190,7 @@ class WalkerBase_walk(TestCase):
         logger.setLevel(logging.DEBUG)
         logger.addHandler(logging.StreamHandler(log_output))
         walker = TestWalker('ftp://example.org/foo', logger)
-        for dummy in walker:
-            pass
+        list(walker)
         self.assertEqual(
             "Could not connect to ftp://example.org/foo\n",
             log_output.getvalue())
