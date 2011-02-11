@@ -92,7 +92,7 @@ class WalkerBase:
         (scheme, netloc, path, query, fragment) \
                  = urlsplit(base, self.URL_SCHEMES[0], self.FRAGMENTS)
         if scheme not in self.URL_SCHEMES:
-            raise WalkerError, "Can't handle %s scheme" % scheme
+            raise WalkerError("Can't handle %s scheme" % scheme)
         self.scheme = scheme
         self.full_netloc = netloc
 
@@ -427,7 +427,8 @@ def walk(url, log_parent=None):
     elif scheme in ["file"]:
         return os.walk(path)
     else:
-        raise WalkerError, "Unknown scheme: %s" % scheme
+        raise WalkerError("Unknown scheme: %s" % scheme)
+
 
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""
