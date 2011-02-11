@@ -45,9 +45,25 @@ class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):
         self.assertRaises(
             UnexpectedFormData, getattr, view, 'current_package')
 
+    def test_current_package_unknown_distribution(self):
+        # UnexpectedFormData is raised if the distribution is not known.
+        form = self.make_form(self.spn.name, 'unknown-distribution')
+        view = create_initialized_view(
+            self.person, name='+packagebugs-search', form=form)
+        self.assertRaises(
+            UnexpectedFormData, getattr, view, 'current_package')
+
     def test_current_package_missing_sourcepackagename(self):
         # UnexpectedFormData is raised if the package name is not provided.
         form = self.make_form('', self.distribution.name)
+        view = create_initialized_view(
+            self.person, name='+packagebugs-search', form=form)
+        self.assertRaises(
+            UnexpectedFormData, getattr, view, 'current_package')
+
+    def test_current_package_unknown_sourcepackagename(self):
+        # UnexpectedFormData is raised if the package name is not known.
+        form = self.make_form('unknown-package', self.distribution.name)
         view = create_initialized_view(
             self.person, name='+packagebugs-search', form=form)
         self.assertRaises(
