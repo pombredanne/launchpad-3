@@ -49,9 +49,7 @@
                 &nbsp;<span class="invisible-link">Tag help</span>
               </a>
             </dt>
-            <dd>
-              <tal:widget replace="structure view/daily_build_widget"/>
-            </dd>
+            <dd tal:content="structure view/daily_build_widget"/>
           </dl>
 
           <dl id="owner">
