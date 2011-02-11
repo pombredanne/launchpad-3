@@ -36,6 +36,7 @@ from lp.services.scripts.base import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.potemplate import POTemplate
@@ -374,6 +375,22 @@ class TranslationMerger:
         #     )
         result.config(distinct=True)
         return result
+
+    @classmethod
+    def mergePackagingTemplates(cls, productseries, sourcepackagename,
+                                distroseries, tm):
+        template_map = dict()
+        all_templates = list(POTemplateSubset(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries))
+        all_templates.extend(POTemplateSubset(
+            productseries=productseries))
+        for template in all_templates:
+            template_map.setdefault(template.name, []).append(template)
+        for name, templates in template_map.iteritems():
+            templates.sort(key=POTemplate.sharingKey, reverse=True)
+            merger = cls(templates, tm)
+            merger.mergePOTMsgSets()
 
     def __init__(self, potemplates, tm):
         """Constructor.
@@ -746,3 +763,13 @@ class TranslationMerger:
             bequeathe_flags(message, twin)
 
         return True
+
+
+class MergeExistingPackagings(LaunchpadScript):
+
+    def main(self):
+        tm = TransactionManager(self.txn, False)
+        for packaging in TranslationMerger.findMergeablePackagings():
+            TranslationMerger.mergePackagingTemplates(
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries, tm)

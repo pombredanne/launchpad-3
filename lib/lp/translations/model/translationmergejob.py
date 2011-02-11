@@ -39,16 +39,6 @@ class TranslationMergeJob(BaseRunnableJob):
 
     def run(self):
         """See `IRunnableJob`."""
-        template_map = dict()
         tm = TransactionManager(None, False)
-        all_templates = list(POTemplateSubset(
-            sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries))
-        all_templates.extend(POTemplateSubset(
-            productseries=self.productseries))
-        for template in all_templates:
-            template_map.setdefault(template.name, []).append(template)
-        for name, templates in template_map.iteritems():
-            templates.sort(key=POTemplate.sharingKey, reverse=True)
-            merger = TranslationMerger(templates, tm)
-            merger.mergePOTMsgSets()
+        TranslationMerger.mergePackagingTemplates(
+            self.productseries, self.sourcepackagename, self.distroseries, tm)
