@@ -668,7 +668,8 @@ class LaunchpadRootNavigation(Navigation):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
-                return self.redirectSubTree(canonical_url(pillar), status=301)
+                return self.redirectSubTree(
+                    canonical_url(pillar, self.request), status=301)
             return pillar
         return None
 
