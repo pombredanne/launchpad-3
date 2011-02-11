@@ -25,9 +25,11 @@ from canonical.launchpad.scripts.logger import (
     DEBUG2,
     log,
     )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -358,9 +360,12 @@ class TranslationMerger:
             Packaging.id,
             Packaging.productseries == POTemplate.productseriesID,
             )
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         result = store.find(
             Packaging, Packaging.id.is_in(upstream_translated),
             Packaging.distroseries == POTemplate.distroseriesID,
+            Packaging.distroseries == DistroSeries.id,
+            DistroSeries.distribution == ubuntu.id,
             Packaging.sourcepackagename == POTemplate.sourcepackagenameID,
             )
         # This should be as simple as the following, but apparently Storm
