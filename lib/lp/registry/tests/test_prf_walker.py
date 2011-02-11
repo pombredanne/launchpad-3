@@ -144,7 +144,6 @@ class WalkerBase_walk(TestCase):
 
     def test_walk_UnicodeEncodeError(self):
         """Verify that a UnicodeEncodeError is logged."""
-        
 
         class TestWalker(WalkerBase):
 
