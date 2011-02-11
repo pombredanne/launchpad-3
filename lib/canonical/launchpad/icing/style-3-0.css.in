@@ -942,8 +942,8 @@ h1 .edit {
 .yui3-ieditor {
     padding-right: 288px;
     }
-.yui3-ieditor-errors {
-    font-size: 100%;
+h1 .yui3-ieditor-errors {
+    font-size: 0.5em;
     }
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
