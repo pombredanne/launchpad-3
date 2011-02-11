@@ -11,16 +11,15 @@ import unittest
 import transaction
 import windmill
 
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
-from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person,
-    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
-from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import (
     login_person,
     WindmillTestCase,
+    )
+from lp.testing.windmill.constants import PAGE_LOAD
+from lp.testing.windmill.lpuser import (
+    login_person as windmill_login_person,
     )
 
 
