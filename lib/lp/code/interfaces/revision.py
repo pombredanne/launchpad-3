@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -226,14 +226,4 @@ class IRevisionSet(Interface):
         removed.
 
         :param limit: Remove at most `limit` rows at once.
-        """
-
-    def fetchAuthorsForDisplay(revision_authors):
-        """Retrieve `Person`s associated with a bunch of `RevisionAuthor`s.
-
-        Also prefetches information that will be needed in order to show
-        the authors in the user interface.
-
-        :param revision_authors: A sequence of `IRevisionAuthor`s.
-        :return: A list of `Person`s.
         """

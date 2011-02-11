@@ -477,8 +477,9 @@ class BranchListingItemsMixin:
 
         # Cache display information for authors of branches' respective
         # last revisions.
-        revisionset.fetchAuthorsForDisplay(
-            [revision.revision_author for revision in revisions])
+        getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [revision.revision_author for revision in revisions],
+            need_icon=True)
 
         # Return a dict keyed on branch id.
         return dict(

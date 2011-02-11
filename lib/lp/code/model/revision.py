@@ -33,7 +33,6 @@ from storm.expr import (
     Asc,
     Desc,
     Join,
-    LeftJoin,
     Not,
     Or,
     Select,
@@ -55,10 +54,6 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
 from canonical.database.sqlbase import (
     quote,
     SQLBase,
@@ -86,10 +81,7 @@ from lp.code.interfaces.revision import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.model.person import (
-    Person,
-    ValidPersonCache,
-    )
+from lp.registry.model.person import ValidPersonCache
 
 
 class Revision(SQLBase):
@@ -599,31 +591,6 @@ class RevisionSet:
             RevisionCache.revision_date < epoch,
             limit=limit)
         store.find(RevisionCache, RevisionCache.id.is_in(subquery)).remove()
-
-    @staticmethod
-    def fetchAuthorsForDisplay(revision_authors):
-        """See `IRevisionSet`."""
-        person_ids = set([
-            revision_author.personID
-            for revision_author in revision_authors])
-        person_ids.discard(None)
-        if len(person_ids) == 0:
-            return []
-        store = IStore(RevisionAuthor)
-        source = store.using(
-            Person,
-            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Person.iconID),
-            LeftJoin(
-                LibraryFileContent,
-                LibraryFileContent.id == LibraryFileAlias.contentID))
-        columns = (
-            Person,
-            LibraryFileAlias,
-            LibraryFileContent,
-            )
-        prejoined_authors = source.find(
-            columns, Person.id.is_in(person_ids))
-        return [person for person, alias, content in prejoined_authors]
 
 
 def revision_time_limit(day_limit):
