@@ -799,6 +799,9 @@ class POTMsgSet(SQLBase):
         if current is None or other is None or current == other:
             translator = suggestion.submitter
             potranslations = dictify_translations(suggestion.all_msgstrs)
+            if other is not None:
+                # Steal flag beforehand.
+                other.is_current_upstream = False
             self._setTranslation(
                 pofile, translator, suggestion.origin, potranslations,
                 share_with_other_side=True,

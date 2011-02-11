@@ -458,7 +458,7 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
 
     def test_accept_upstream_no_ubuntu(self):
         # If there was already an upstream translation, but no ubuntu
-        # one, The suggestion replaces both.
+        # one, the suggestion replaces both.
         pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         (suggestion, upstream_message) = self._makeMessages(
             pofile, identical_upstream=False)
