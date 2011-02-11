@@ -456,6 +456,19 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
             [(True, True), (False, False)],
             self._getStates(suggestion, incumbent_message))
 
+    def test_accept_upstream_no_ubuntu(self):
+        # If there was already an upstream translation, but no ubuntu
+        # one, The suggestion replaces both.
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        (suggestion, upstream_message) = self._makeMessages(
+            pofile, identical_upstream=False)
+
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
+
+        self.assertEqual(
+            [(True, True), (False, False)],
+            self._getStates(suggestion, upstream_message))
+
     def test_accept_previously_imported(self):
         # If there was already an ubuntu translation, and an upstream
         # one, the ubuntu translation is left untouched.
@@ -470,9 +483,49 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
             [(False, True), (True, False), (False, False)],
             self._getStates(suggestion, ubuntu_message, upstream_message))
 
+    def test_accept_previously_imported_tracking(self):
+        # If there was already an ubuntu translation, and an identical
+        # upstream one, the new suggestion replaces both.
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        (suggestion, ubuntu_message, upstream_message) = self._makeMessages(
+            pofile, identical_ubuntu=False, identical_upstream=False,
+            is_tracking=True)
+
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
+
+        self.assertEqual(
+            [(True, True), (False, False), (False, False)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_different_upstream(self):
+        # If there was already an identcal ubuntu translation, and a
+        # different upstream one, the new suggestion will become both.
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        (suggestion, ubuntu_message, upstream_message) = self._makeMessages(
+            pofile, identical_ubuntu=True, identical_upstream=False)
+
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True), (False, False)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_different_ubuntu(self):
+        # If there was already an identcal upstream translation, and a
+        # different ubuntu one, the ubuntu translation is not touched.
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        (suggestion, ubuntu_message, upstream_message) = self._makeMessages(
+            pofile, identical_ubuntu=False, identical_upstream=True)
+
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
+
+        self.assertEqual(
+            [(False, True), (True, False), (False, True)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
     def test_accept_ubuntu_message(self):
-        # Accepting a message that's already current does nothing on this
-        # side but makes sure the other side's flag is set.
+        # Accepting a message that's identical to the ubuntu message makes
+        # sure that the message also becomes current upstream.
         pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
         (suggestion, ubuntu_message) = self._makeMessages(
             pofile, identical_ubuntu=True)
@@ -482,6 +535,19 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
         self.assertEqual(
             [(True, True), (True, True)],
             self._getStates(suggestion, ubuntu_message))
+
+    def test_accept_upstream_message(self):
+        # Accepting a message that's identical to the upstream message makes
+        # sure that the message also becomes current in ubuntu.
+        pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        (suggestion, upstream_message) = self._makeMessages(
+            pofile, identical_upstream=True)
+
+        suggestion.acceptFromUpstreamImportOnPackage(pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True)],
+            self._getStates(suggestion, upstream_message))
 
     def test_accept_ubuntu_and_upstream_message(self):
         # Accepting a message that's already current and was also imported
