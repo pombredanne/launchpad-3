@@ -729,6 +729,31 @@ class FileImporterSharingTest(TestCaseWithFactory):
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(importer.is_upstream_import_on_sourcepackage)
 
+    def test_is_upstream_import_on_sourcepackage_upstream_any_template(self):
+        # Actually any upstream potemplate will disallow upstream imports.
+
+        # Use _makeImportEntry to create upstream template and packaging
+        # link.
+        unused_entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, uploader=self.translator.translator)
+
+        sourcepackagename = unused_entry.sourcepackagename
+        distroseries = unused_entry.distroseries
+        other_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        entry = self.factory.makeTranslationImportQueueEntry(
+            potemplate=other_potemplate, by_maintainer=True,
+            uploader=self.translator.translator, content=self.POFILE)
+        entry.potemplate = other_potemplate
+        entry.pofile = self.factory.makePOFile(potemplate=other_potemplate)
+        transaction.commit()
+
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
     def test_is_upstream_import_on_sourcepackage_ok(self):
         # This entry qualifies.
         entry = self._makeImportEntry(
@@ -737,3 +762,4 @@ class FileImporterSharingTest(TestCaseWithFactory):
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(importer.is_upstream_import_on_sourcepackage)
+
