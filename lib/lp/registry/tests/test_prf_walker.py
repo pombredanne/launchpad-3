@@ -8,8 +8,10 @@ import StringIO
 import unittest
 import urlparse
 
+
 from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
+from lp.registry.scripts.productreleasefinder.walker import WalkerBase
 from lp.testing import TestCase
 
 
@@ -17,16 +19,12 @@ class WalkerBase_Logging(TestCase):
 
     def testCreatesDefaultLogger(self):
         """WalkerBase creates a default logger."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         from logging import Logger
         w = WalkerBase("/")
         self.failUnless(isinstance(w.log, Logger))
 
     def testCreatesChildLogger(self):
         """WalkerBase creates a child logger if given a parent."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         from logging import getLogger
         parent = getLogger("foo")
         w = WalkerBase("/", log_parent=parent)
@@ -37,29 +35,21 @@ class WalkerBase_Base(TestCase):
 
     def testSetsBase(self):
         """WalkerBase sets the base property."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/")
         self.assertEquals(w.base, "ftp://localhost/")
 
     def testSetsScheme(self):
         """WalkerBase sets the scheme property."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/")
         self.assertEquals(w.scheme, "ftp")
 
     def testSetsHost(self):
         """WalkerBase sets the host property."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/")
         self.assertEquals(w.host, "localhost")
 
     def testNoScheme(self):
         """WalkerBase works when given a URL with no scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("/")
         self.assertEquals(w.host, "")
 
@@ -71,45 +61,33 @@ class WalkerBase_Base(TestCase):
 
     def testUnescapesHost(self):
         """WalkerBase unescapes the host portion."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://local%40host/")
         self.assertEquals(w.host, "local@host")
 
     def testNoUsername(self):
         """WalkerBase stores None when there is no username."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/")
         self.assertEquals(w.user, None)
 
     def testUsername(self):
         """WalkerBase splits out the username from the host portion."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://scott@localhost/")
         self.assertEquals(w.user, "scott")
         self.assertEquals(w.host, "localhost")
 
     def testUnescapesUsername(self):
         """WalkerBase unescapes the username portion."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://scott%3awibble@localhost/")
         self.assertEquals(w.user, "scott:wibble")
         self.assertEquals(w.host, "localhost")
 
     def testNoPassword(self):
         """WalkerBase stores None when there is no password."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://scott@localhost/")
         self.assertEquals(w.passwd, None)
 
     def testPassword(self):
         """WalkerBase splits out the password from the username."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://scott:wibble@localhost/")
         self.assertEquals(w.user, "scott")
         self.assertEquals(w.passwd, "wibble")
@@ -117,8 +95,6 @@ class WalkerBase_Base(TestCase):
 
     def testUnescapesPassword(self):
         """WalkerBase unescapes the password portion."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://scott:wibble%20wobble@localhost/")
         self.assertEquals(w.user, "scott")
         self.assertEquals(w.passwd, "wibble wobble")
@@ -126,43 +102,31 @@ class WalkerBase_Base(TestCase):
 
     def testPathOnly(self):
         """WalkerBase stores the path if that's all there is."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("/path/to/something/")
         self.assertEquals(w.path, "/path/to/something/")
 
     def testPathInUrl(self):
         """WalkerBase stores the path portion of a complete URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/path/to/something/")
         self.assertEquals(w.path, "/path/to/something/")
 
     def testAddsSlashToPath(self):
         """WalkerBase adds a trailing slash to path if ommitted."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/path/to/something")
         self.assertEquals(w.path, "/path/to/something/")
 
     def testUnescapesPath(self):
         """WalkerBase leaves the path escaped."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("ftp://localhost/some%20thing/")
         self.assertEquals(w.path, "/some%20thing/")
 
     def testStoresQuery(self):
         """WalkerBase stores the query portion of a supporting URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         w = WalkerBase("http://localhost/?foo")
         self.assertEquals(w.query, "foo")
 
     def testStoresFragment(self):
         """WalkerBase stores the fragment portion of a supporting URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
         WalkerBase.FRAGMENTS = True
         try:
             w = WalkerBase("http://localhost/#foo")
@@ -180,8 +144,7 @@ class WalkerBase_walk(TestCase):
 
     def test_walk_UnicodeEncodeError(self):
         """Verify that a UnicodeEncodeError is logged."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase)
+        
 
         class TestWalker(WalkerBase):
 
