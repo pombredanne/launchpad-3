@@ -132,6 +132,9 @@ class Message(SQLBase):
                      default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
 
+    def __repr__(self):
+        return "<Message at 0x%x id=%s>" % (id(self), self.id)
+
     def __iter__(self):
         """See IMessage.__iter__"""
         return iter(self.chunks)
