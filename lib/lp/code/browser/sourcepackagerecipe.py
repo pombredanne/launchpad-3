@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
-import simplejson
 
 __metaclass__ = type
 
@@ -14,6 +13,8 @@ __all__ = [
     'SourcePackageRecipeRequestBuildsView',
     'SourcePackageRecipeView',
     ]
+
+import simplejson
 
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
@@ -89,7 +90,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -319,6 +319,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                     "for %s." % e.distroseries)
         return errors
 
+
 class SourcePackageRecipeRequestBuildsHtmlView(
         SourcePackageRecipeRequestBuildsView):
     """Supports HTML form recipe build requests."""
@@ -353,7 +354,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         return simplejson.dumps(errors)
 
     def failure(self, action, data, errors):
-        return self._process_error(data,self.widget_errors, "Validation")
+        return self._process_error(data, self.widget_errors, "Validation")
 
     @action('Request builds', name='request', failure=failure)
     def request_action(self, action, data):
