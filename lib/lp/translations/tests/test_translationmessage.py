@@ -371,19 +371,77 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def _getStates(self, *messages):
+        """Get is_current_* states for messages.
+
+        :param messages: A list of messages to get state for.
+        :returns: List of tuples of two boolean values for the
+            values of (is_current_ubuntu, is_current_upstream) for each
+            message.
+        """
+        return [
+            (message.is_current_ubuntu, message.is_current_upstream)
+            for message in messages
+            ]
+
+
+    def _makeMessages(self, pofile,
+                      identical_ubuntu=None, identical_upstream=None,
+                      is_tracking=False):
+        """ Create a suggestion and possible pre-existing translations.
+
+        The two identical_* parameters are tri-state:
+        - If None, do not create such a message.
+        - If True, the suggestion is identical to this message.
+        - If False, the suggestion is different from this message.
+
+        :param pofile: The pofile to create messages in.
+        :param identical_ubuntu: If and how to create the ubuntu message.
+        :param identical upstream: If and how to create the upstream
+            message.
+        :param is_trackging: Used if both messages are created to indicate
+            that they should be identical to each other.
+        :returns: One, two or three messages, as requested.
+        """
+        ubuntu = None
+        upstream = None
+
+        potmsgset = self.factory.makePOTMsgSet(potemplate=pofile.potemplate)
+
+        if identical_upstream is not None:
+            upstream = self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, pofile=potmsgset, current_other=True)
+            upstream.is_current_ubuntu = False
+        if identical_ubuntu is not None:
+            if is_tracking or (identical_ubuntu and identical_upstream):
+                assert upstream is not None, (
+                    "Don't use is_tracking without identical_upstream")
+                upstream.is_current_ubuntu = True
+                ubuntu = upstream
+            else:
+                ubuntu = self.factory.makeCurrentTranslationMessage(
+                        potmsgset=potmsgset, pofile=potmsgset)
+        if identical_upstream:
+            translations = upstream.translations
+        elif identical_ubuntu:
+            translations = ubuntu.translations
+        else:
+            translations = None
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=translations)
+
+        return [message for message in (suggestion, ubuntu, upstream)
+                        if message is not None]
+
     def test_accept_activates_message_if_untranslated(self):
         # An untranslated message accepts an imported translation.
         pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
-        suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
-        self.assertFalse(suggestion.is_current_ubuntu)
-        self.assertFalse(suggestion.is_current_upstream)
+        suggestion = self._makeMessages(pofile)[0]
 
         suggestion.acceptFromUpstreamImportOnPackage(pofile)
 
         # Messages are always accepted on the other side, too.
-        self.assertTrue(suggestion.is_current_ubuntu)
-        self.assertTrue(suggestion.is_current_upstream)
+        self.assertEqual([(True, True)], self._getStates(suggestion))
 
     def test_accept_no_previously_imported(self):
         # If there was already a current translation, but no previously
