@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E1002
 
@@ -35,7 +35,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -43,6 +42,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.enums import service_uses_launchpad
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.propertycache import cachedproperty

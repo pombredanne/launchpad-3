@@ -40,6 +40,13 @@ class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Object(schema=IBug, title=u"The bug.")
+    # The index field is being populated in the DB; once complete it will be
+    # made required. Whether to make it readonly or not is dependent on UI
+    # considerations. If, once populated, it becomes read-write, we probably
+    # want to ensure that only actions like bug import or spam hiding can
+    # change it, rather than arbitrary API scripts.
+    index = Int(title=u'The comment number', required=False, readonly=False,
+        default=None)
     messageID = Int(title=u"The message id.", readonly=True)
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,

@@ -635,7 +635,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A source package publishing history record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 #
@@ -653,10 +653,6 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
     binarypackagepublishing = Int(
             title=_('Binary Package publishing record id'), required=True,
-            readonly=True,
-            )
-    architecturetag = TextLine(
-            title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
             )
 
@@ -855,7 +851,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A binary package publishing record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPublishingSet(Interface):

@@ -11,9 +11,20 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
 from lazr.restful.error import expose
+from pytz import utc
+from storm.expr import (
+    And,
+    Join,
+    RightJoin,
+    )
 from storm.locals import (
     Bool,
     Desc,
@@ -57,8 +68,8 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.component import IComponentSet
 
 
 def get_buildable_distroseries_set(user):
@@ -188,8 +199,22 @@ class SourcePackageRecipe(Storm):
 
     @classmethod
     def findStaleDailyBuilds(cls):
-        store = IStore(cls)
-        return store.find(cls, cls.is_stale == True, cls.build_daily == True)
+        one_day_ago = datetime.now(utc) - timedelta(hours=23, minutes=50)
+        joins = RightJoin(
+            Join(
+                Join(SourcePackageRecipeBuild, PackageBuild,
+                    PackageBuild.id ==
+                    SourcePackageRecipeBuild.package_build_id),
+                BuildFarmJob,
+                And(BuildFarmJob.id == PackageBuild.build_farm_job_id,
+                    BuildFarmJob.date_created > one_day_ago)),
+            SourcePackageRecipe,
+            And(SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id,
+                SourcePackageRecipe.daily_build_archive_id ==
+                    PackageBuild.archive_id))
+        return IStore(cls).using(joins).find(
+            cls, cls.is_stale == True, cls.build_daily == True,
+            BuildFarmJob.date_created == None).config(distinct=True)
 
     @staticmethod
     def exists(owner, name):
@@ -226,14 +251,14 @@ class SourcePackageRecipe(Storm):
             raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
-        component = getUtility(IComponentSet)["multiverse"]
 
         buildable_distros = get_buildable_distroseries_set(archive.owner)
         if distroseries not in buildable_distros:
             raise BuildNotAllowedForDistro(self, distroseries)
 
         reject_reason = archive.checkUpload(
-            requester, self.distroseries, None, component, pocket)
+            requester, self.distroseries, None, archive.default_component,
+            pocket)
         if reject_reason is not None:
             raise reject_reason
         if self.isOverQuota(requester, distroseries):
@@ -259,7 +284,9 @@ class SourcePackageRecipe(Storm):
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""
         where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_finished), BuildFarmJob.id
+        order_by = Desc(Greatest(
+                BuildFarmJob.date_started,
+                BuildFarmJob.date_finished)), BuildFarmJob.id
         return self._getBuilds(where_clause, order_by)
 
     def getPendingBuilds(self):
@@ -281,14 +308,8 @@ class SourcePackageRecipe(Storm):
 
     def getLastBuild(self):
         """See `ISourcePackageRecipeBuild`."""
-        store = Store.of(self)
-        result = store.find(
-            (SourcePackageRecipeBuild),
-            SourcePackageRecipeBuild.recipe == self,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == BuildFarmJob.id)
-        result.order_by(Desc(BuildFarmJob.date_finished))
-        return result.first()
+        return self._getBuilds(
+            True, Desc(BuildFarmJob.date_finished)).first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""

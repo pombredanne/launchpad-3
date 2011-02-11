@@ -62,7 +62,7 @@ class DuplicatePackagesetName(Exception):
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -244,7 +244,7 @@ class IPackagesetViewOnly(IHasOwner):
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     def add(data):
         """Add source package names or other package sets to this one.
@@ -349,7 +349,7 @@ class IPackagesetEdit(Interface):
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPackagesetSet(Interface):

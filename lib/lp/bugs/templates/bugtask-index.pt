@@ -10,12 +10,25 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
+      <tal:subscriptions-js
+          define="enabled features/malone.advanced-subscriptions.enabled">
+        <script type="text/javascript" id="use-advanced-subscriptions"
+            tal:condition="enabled">
+          use_advanced_subscriptions = true;
+        </script>
+        <script type="text/javascript" id="use-advanced-subscriptions"
+            tal:condition="not:enabled">
+          use_advanced_subscriptions = false;
+        </script>
+      </tal:subscriptions-js>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.code.branchmergeproposal.diff', function(Y) {
+            Y.lp.bugs.bugtask_index.use_advanced_subscriptions =
+                use_advanced_subscriptions;
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
         });
       </script>
@@ -111,9 +124,8 @@
         </div>
 
           <div id="bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (context.bug.tags and
-                                               'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (context.bug.tags and
+                                             'tags-show' or 'tags-hide')">
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
@@ -163,9 +175,8 @@
              <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (not(context.bug.tags) and
-                                              'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (not(context.bug.tags) and
+                                             'tags-show' or 'tags-hide')">
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>

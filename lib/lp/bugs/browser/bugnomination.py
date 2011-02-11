@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes related to bug nominations."""
@@ -30,12 +30,12 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IPrimaryContext,
     )
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.interfaces.bugnomination import (
     IBugNomination,

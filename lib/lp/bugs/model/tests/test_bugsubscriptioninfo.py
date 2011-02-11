@@ -9,8 +9,12 @@ from contextlib import contextmanager
 
 from storm.store import Store
 from testtools.matchers import Equals
+from zope.component import queryAdapter
+from zope.security.checker import getChecker
 
+from canonical.launchpad.webapp.interfaces import IAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import (
     BugSubscriberSet,
     BugSubscriptionInfo,
@@ -18,7 +22,9 @@ from lp.bugs.model.bug import (
     load_people,
     StructuralSubscriptionSet,
     )
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.security import (
+    PublicToAllOrPrivateToExplicitSubscribersForBugTask,
+    )
 from lp.registry.model.person import Person
 from lp.testing import (
     person_logged_in,
@@ -182,6 +188,28 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(set(), found_subscriptions.subscribers)
         self.assertEqual((), found_subscriptions.subscribers.sorted)
 
+    def test_duplicate_only(self):
+        # The set of duplicate subscriptions where the subscriber has no other
+        # subscriptions.
+        duplicate_bug = self.factory.makeBug(product=self.target)
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(self.bug)
+            duplicate_bug_subscription = (
+                duplicate_bug.getSubscriptionForPerson(
+                    duplicate_bug.owner))
+        found_subscriptions = self.getInfo().duplicate_only_subscriptions
+        self.assertEqual(
+            set([duplicate_bug_subscription]),
+            found_subscriptions)
+        # If a user is subscribed to a duplicate bug and is a bugtask
+        # assignee, for example, their duplicate subscription will not be
+        # included.
+        with person_logged_in(self.target.owner):
+            self.bug.default_bugtask.transitionToAssignee(
+                duplicate_bug_subscription.person)
+        found_subscriptions = self.getInfo().duplicate_only_subscriptions
+        self.assertEqual(set(), found_subscriptions)
+
     def test_structural(self):
         # The set of structural subscribers.
         subscribers = (
@@ -307,6 +335,30 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             (assignee, duplicate_bug.owner),
             found_subscribers.sorted)
+
+
+class TestBugSubscriptionInfoPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test(self):
+        bug = self.factory.makeBug()
+        info = bug.getSubscriptionInfo()
+        checker = getChecker(info)
+
+        # BugSubscriptionInfo objects are immutable.
+        self.assertEqual({}, checker.set_permissions)
+
+        # All attributes require launchpad.View.
+        permissions = set(checker.get_permissions.itervalues())
+        self.assertEqual(set(["launchpad.View"]), permissions)
+
+        # The security adapter for launchpad.View lets anyone reference the
+        # attributes unless the bug is private, in which case only explicit
+        # subscribers are permitted.
+        adapter = queryAdapter(info, IAuthorization, "launchpad.View")
+        self.assertIsInstance(
+            adapter, PublicToAllOrPrivateToExplicitSubscribersForBugTask)
 
 
 class TestBugSubscriptionInfoQueries(TestCaseWithFactory):

@@ -813,6 +813,7 @@ button {
     margin-left: 2.6em;
     }
 .formHelp {
+    max-width: 45em;
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;
     }
@@ -962,6 +963,12 @@ h1 .edit {
 .widget-hd.js-action:hover {
     text-decoration: underline;
     }
+
+.yui3-ichoicesource-content .value:hover {
+    text-decoration: underline;
+    cursor:pointer;
+    }
+
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
@@ -997,6 +1004,9 @@ h1 .edit {
     }
 .informational.message::before {
     content: url(/@@/info-large);
+    }
+.informational p.last {
+    margin-bottom: 0;
     }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
@@ -1160,6 +1170,12 @@ p.search-results {
     position: absolute;
     top: .5em;
     right: 1.5em;
+    }
+#rendertime {
+    float: left;
+    margin: 0.2em 1.2em 0 0;
+    color: #666;
+    font-size: 77%;
     }
 div.watermark-apps-portlet {
     clear: both;

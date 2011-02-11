@@ -40,6 +40,8 @@ __all__ = [
     'WrongBranchMergeProposal',
 ]
 
+import httplib
+
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.restful.declarations import (
     error_status,
@@ -94,6 +96,7 @@ class BranchTargetError(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class BranchCreationForbidden(BranchCreationException):
