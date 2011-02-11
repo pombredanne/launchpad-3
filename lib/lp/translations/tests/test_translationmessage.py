@@ -362,6 +362,7 @@ class TestAcceptFromImport(TestCaseWithFactory):
 
         self.assertEqual([], karmarecorder.karma_events)
 
+
 class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
     """Tests for `TranslationMessage.acceptFromUpstreamImportOnPackage`.
 
@@ -381,9 +382,7 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
         """
         return [
             (message.is_current_ubuntu, message.is_current_upstream)
-            for message in messages
-            ]
-
+            for message in messages]
 
     def _makeMessages(self, pofile,
                       identical_ubuntu=None, identical_upstream=None,

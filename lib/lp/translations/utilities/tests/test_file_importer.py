@@ -702,7 +702,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         # To do an upstream import on a sourcepackage, three conditions must
         # be met.
         # - It has to be on a sourcepackage.
-        # - The by_maintainer flag must be set.
+        # - The by_maintainer flag must be set on the queue entry.
         # - There must be no matching template in the upstream project or
         #   even no upstream project at all.
         # This case meets none of them.
