@@ -12,7 +12,6 @@ __all__ = [
 from operator import methodcaller
 
 from storm.locals import (
-    And,
     Select,
     Store,
     )
@@ -29,10 +28,7 @@ from canonical.launchpad.scripts.logger import (
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -373,7 +369,8 @@ class TranslationMerger:
         #     Packaging,
         #     Packaging.productseries == POTemplate.productseries,
         #     Packaging.distroseries == PackageTemplate.distroseries,
-        #     Packaging.sourcepackagename == PackageTemplate.sourcepackagename,
+        #     Packaging.sourcepackagename ==
+        #         PackageTemplate.sourcepackagename,
         #     )
         result.config(distinct=True)
         return result
