@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch statuses."""
@@ -12,7 +12,6 @@ import unittest
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill.constants import (
-    FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
@@ -36,22 +35,14 @@ class TestRecipeSetDaily(WindmillTestCase):
 
         client, start_url = self.getClientFor(recipe, user=eric)
         client.click(xpath=self.BUILD_DAILY_TEXT)
-        # Make sure there is a popup.
         client.waits.forElement(xpath=self.BUILD_DAILY_POPUP)
-        # Change the flag to build daily.
-
         client.click(link=u'Build daily')
         client.waits.sleep(milliseconds=SLEEP)
-
         client.asserts.assertText(
             xpath=self.BUILD_DAILY_TEXT, validator=u'Build daily')
 
-        # Reload the page and make sure the change sticks.
+        # Reload the page and make sure the change has stuck.
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=self.BUILD_DAILY_TEXT, validator=u'Build daily')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
