@@ -443,12 +443,10 @@ class FileImporter(object):
         distroseries = self.translation_import_queue_entry.distroseries
         sourcepackagename = (
             self.translation_import_queue_entry.sourcepackagename)
-        templatename = self.potemplate.name
         from lp.translations.utilities.translationsharinginfo import (
             has_upstream_template)
         return not has_upstream_template(
-            distroseries=distroseries, sourcepackagename=sourcepackagename,
-            templatename=templatename)
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
 
     @cachedproperty
     def translations_are_msgids(self):
