@@ -10,7 +10,6 @@ from zope.interface import implements
 
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
-from lp.translations.model.potemplate import POTemplate, POTemplateSubset
 from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
