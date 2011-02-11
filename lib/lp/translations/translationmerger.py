@@ -770,6 +770,12 @@ class MergeExistingPackagings(LaunchpadScript):
     def main(self):
         tm = TransactionManager(self.txn, False)
         for packaging in TranslationMerger.findMergeablePackagings():
+            log.info('Merging %s/%s and %s/%s.' % (
+                packaging.productseries.product.name,
+                packaging.productseries.name,
+                packaging.sourcepackagename.name,
+                packaging.distroseries.name))
             TranslationMerger.mergePackagingTemplates(
                 packaging.productseries, packaging.sourcepackagename,
                 packaging.distroseries, tm)
+            tm.endTransaction(False)

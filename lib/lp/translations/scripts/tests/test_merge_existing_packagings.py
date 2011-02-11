@@ -4,8 +4,6 @@
 """Test the merge_translations script."""
 
 
-from textwrap import dedent
-
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
@@ -26,10 +24,20 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
         for packaging in set(TranslationMerger.findMergeablePackagings()):
             packaging.destroySelf()
         job = TestTranslationMergeJob.makeTranslationMergeJob(self.factory)
+        packaging = self.factory.makePackagingLink(job.productseries,
+                job.sourcepackagename, job.distroseries)
+        self.assertEqual(2, TestTranslationMergeJob.countTranslations(job))
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'scripts/rosetta/merge-existing-packagings.py', [],
             expect_returncode=0)
-        self.assertEqual('', stderr)
+        merge_message = 'INFO    Merging %s/%s and %s/%s.\n' % (
+            packaging.productseries.product.name,
+            packaging.productseries.name,
+            packaging.sourcepackagename.name, packaging.distroseries.name)
+        self.assertEqual(
+            merge_message +
+            'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n',
+            stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, TestTranslationMergeJob.countTranslations(job))
