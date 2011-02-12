@@ -125,8 +125,9 @@ class WalkerBase:
         """
         try:
             self.open()
-        except (IOError, socket.error):
+        except (IOError, socket.error), e:
             self.log.info("Could not connect to %s" % self.base)
+            self.log.info("Failure: %s" % e)
             return
 
         subdirs = [self.path]

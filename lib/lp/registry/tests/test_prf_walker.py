@@ -191,7 +191,8 @@ class WalkerBase_walk(TestCase):
         walker = TestWalker('ftp://example.org/foo', logger)
         list(walker)
         self.assertEqual(
-            "Could not connect to ftp://example.org/foo\n",
+            "Could not connect to ftp://example.org/foo\n"
+            "Failure: Test failure.\n",
             log_output.getvalue())
 
 
