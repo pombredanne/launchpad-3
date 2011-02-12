@@ -34,7 +34,7 @@ class IBugNotification(IHasOwner):
     message = Attribute(
         "The message containing the text representation of the changes"
         " to the bug.")
-    bugactivity = Attribute(
+    activity = Attribute(
         "The bug activity object corresponding to this notification.  Will "
         "be None for older notification objects, and will be None if the "
         "bugchange object that provides the data for the change returns None "
@@ -59,7 +59,7 @@ class IBugNotificationSet(Interface):
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
 
-    def addNotification(self, bug, is_comment, message, recipients):
+    def addNotification(self, bug, is_comment, message, recipients, activity):
         """Create a new `BugNotification`.
 
         Create a new `BugNotification` object and the corresponding
