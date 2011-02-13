@@ -78,6 +78,9 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.interfaces.launchpad import (
+    IPersonRoles,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -1775,6 +1778,15 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
+        if params.user is not None:
+            user_roles = IPersonRoles(params.user)
+            if not user_roles.in_registry_experts:
+                extra_clauses.append(
+                    """NOT EXISTS (SELECT TRUE
+                                FROM Product
+                                WHERE Product.id = BugTask.product
+                                AND Product.active = False)""")
+
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
@@ -1986,12 +1998,7 @@ class BugTaskSet:
                 WHERE Message.owner = %(bug_commenter)s
                     AND Message.id = BugMessage.message
                     AND BugTask.bug = BugMessage.bug
-                    AND Message.id NOT IN (
-                        SELECT BugMessage.message FROM BugMessage
-                        WHERE BugMessage.bug = BugTask.bug
-                        ORDER BY BugMessage.id
-                        LIMIT 1
-                    )
+                    AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)

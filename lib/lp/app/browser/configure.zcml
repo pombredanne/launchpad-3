@@ -499,6 +499,12 @@
       name="fmt"
       />
   <adapter
+      for="lp.code.interfaces.revision.IRevisionAuthor"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.RevisionAuthorFormatterAPI"
+      name="fmt"
+      />
+  <adapter
       for="lp.translations.interfaces.translationgroup.ITranslationGroup"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.TranslationGroupFormatterAPI"

@@ -925,7 +925,8 @@ class TestWebservice(TestCaseWithFactory):
         e = self.assertRaises(Exception, recipe.requestBuild,
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
-        self.assertIn('BuildAlreadyPending', str(e))
+        self.assertIn(
+            'An identical build of this recipe is already pending.', str(e))
 
     def test_requestBuildRejectOverQuota(self):
         """Build requests are rejected if they exceed quota."""
@@ -945,7 +946,7 @@ class TestWebservice(TestCaseWithFactory):
         e = self.assertRaises(Exception, recipe.requestBuild,
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
-        self.assertIn('TooManyBuilds', str(e))
+        self.assertIn('You have exceeded your quota', str(e))
 
     def test_requestBuildRejectUnsupportedDistroSeries(self):
         """Build requests are rejected if they have a bad distroseries."""
