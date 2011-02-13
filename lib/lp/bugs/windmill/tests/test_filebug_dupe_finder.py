@@ -116,7 +116,7 @@ class TestDupeFinder(WindmillTestCase):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertText(
             xpath=u'//div[@class="message"]',
-            validator="Required input is missing.")
+            validator="Provide details about the issue.")
 
 
 def test_suite():

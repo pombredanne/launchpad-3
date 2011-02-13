@@ -11,6 +11,7 @@ import time
 
 from zope.interface import Interface
 from zope.component import getUtility
+from zope.schema.interfaces import TooShort
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -64,6 +65,15 @@ class TestStrippableText(TestCase):
         field.set(target, '  testing  ')
         self.assertEqual('testing', target.test)
 
+    def test_strips_text_trailing_only(self):
+        # The set method strips the trailing whitespace.
+        target = make_target()
+        field = StrippableText(
+            __name__='test', strip_text=True, trailing_only=True)
+        self.assertTrue(field.trailing_only)
+        field.set(target, '  testing  ')
+        self.assertEqual('  testing', target.test)
+
     def test_default_constructor(self):
         # If strip_text is not set, or set to false, then the text is not
         # stripped when set.
@@ -79,6 +89,18 @@ class TestStrippableText(TestCase):
         field = StrippableText(__name__='test', strip_text=True)
         field.set(target, None)
         self.assertIs(None, target.test)
+
+    def test_validate_min_contraints(self):
+        # The minimum length constraint tests the stripped string.
+        field = StrippableText(
+            __name__='test', strip_text=True, min_length=1)
+        self.assertRaises(TooShort, field.validate, u'  ')
+
+    def test_validate_max_contraints(self):
+        # The minimum length constraint tests the stripped string.
+        field = StrippableText(
+            __name__='test', strip_text=True, max_length=2)
+        self.assertEqual(None, field.validate(u'  a  '))
 
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):
