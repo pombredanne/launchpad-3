@@ -24,7 +24,7 @@ then
 fi
 
 
-export LPCONFIG=production
+export LPCONFIG=distromirror
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
 

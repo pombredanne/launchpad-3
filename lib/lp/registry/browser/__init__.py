@@ -123,7 +123,7 @@ class MilestoneOverlayMixin:
                 var milestone_rows_id = '#milestone-rows';
 
                 Y.on('domready', function () {
-                    var create_milestone_link = Y.get(
+                    var create_milestone_link = Y.one(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
                     var milestone_table = Y.lp.registry.milestonetable;

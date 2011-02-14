@@ -8,7 +8,7 @@ __all__ = []
 
 import windmill
 
-from canonical.launchpad.windmill.testing import constants
+from lp.testing.windmill import constants
 
 
 class LaunchpadUser:

@@ -6,8 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 

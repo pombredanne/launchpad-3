@@ -655,10 +655,6 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             title=_('Binary Package publishing record id'), required=True,
             readonly=True,
             )
-    architecturetag = TextLine(
-            title=_("Architecture tag. As per dpkg's use"), required=True,
-            readonly=True,
-            )
 
 
 class IBinaryPackagePublishingHistoryPublic(IPublishingView):
