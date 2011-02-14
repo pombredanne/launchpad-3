@@ -128,6 +128,7 @@ list of emails to send:
     Title:
       Firefox does not support SVG
     <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
 
 You can see that the message above contains the bug's initial comment's
@@ -343,7 +344,7 @@ a trailing space.
      'http://bugs.launchpad.dev/bugs/1',
      '',
      'Title:',
-     '  Firefox does not support SVG']
+     '  Firefox does not support SVG'...]
 
     >>> flush_notifications()
 
@@ -429,13 +430,15 @@ top of the email:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
+    -- 
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
     http://bugs.launchpad.dev/bugs/16
     <BLANKLINE>
     Title:
       new bug
+    <BLANKLINE>
+    <BLANKLINE>
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -448,13 +451,16 @@ top of the email:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
+    -- 
     You received this bug notification because you are a direct subscriber
     of the bug.
     http://bugs.launchpad.dev/bugs/16
     <BLANKLINE>
     Title:
       new bug
+    <BLANKLINE>
+    To unsubscribe from this bug, go to:
+    http://bugs.launchpad.dev/ubuntu/+bug/16/+subscribe
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -985,6 +991,14 @@ We can see that Concise Person doesn't receive verbose notifications:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
+However, Concise Person does get an unsubscribe link.
+
+    >>> print_notification(collated_messages['concise@example.com'][0])
+    To: concise@example.com
+    ...
+    To unsubscribe from this bug, go to:...
+
+
 Neither does Verbose Team Person - while the team wants verbose emails,
 he wants concise ones.
 
@@ -1085,12 +1099,11 @@ The title is also wrapped and indented in normal notifications.
 
     >>> message = collated_messages['verboseteam@example.com'][0]
     >>> payload = message.get_payload(decode=True)
-    >>> print payload.split('\n')
+    >>> print payload.strip().split('\n')
     [...
      'Title:',
      '  In the beginning, the universe was created. This has made a lot of',
-     '  people very angry and has been widely regarded as a bad move',
-     '']
+     '  people very angry and has been widely regarded as a bad move']
 
 Self-Generated Bug Notifications
 --------------------------------
