@@ -26,4 +26,4 @@ SELECT * FROM DatabaseDiskUtilization
 WHERE date_created = (SELECT max(date_created) FROM DatabaseDiskUtilization);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 41, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 43, 0);
