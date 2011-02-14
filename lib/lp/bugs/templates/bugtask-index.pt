@@ -87,17 +87,11 @@
                       var portlet = Y.one('.portlet.private');
                       var portlet_colour = new Y.Anim({
                           node: portlet,
-                          from: {
-                              color: portlet.getStyle('color'),
-                              backgroundColor:portlet.getStyle('backgroundColor')
-                          },
                           to: {
                               color: '#fff',
                               backgroundColor:'#8d1f1f'
                           },
-                          duration: 0.8,
-                          iterations: '2',
-                          direction: 'alternate'
+                          duration: 0.4,
                       });
                       fade_out.on('end', function() {
                           fade_out.get('node').addClass('hidden');
