@@ -732,6 +732,7 @@
                     messages
                     getBugNotificationRecipients
                     hasBranch
+                    reindexMessages
                     security_related
                     tags
                     getMessageChunks
@@ -817,7 +818,6 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    reindexMessages
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
