@@ -56,7 +56,7 @@ done
 > "$MISCROOT/more-extra.override.$suite.main.new"
 
 germinate_components=main,universe,restricted,multiverse
-for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
+for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu netbook; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   for arch in i386 amd64 powerpc armel; do
