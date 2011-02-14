@@ -89,12 +89,21 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
         self.transaction.begin()
         store = IMasterStore(BugTask)
+
+        # Rotate the target rows into lists of object IDs to retrieve.
+        # This way we can issue just one query of each type for each batch.
+        ids_to_cache = zip(*(target for (target, names) in chunk))
+        for index, cls in enumerate(target_classes):
+            ids = (id for id in ids_to_cache[index] if id is not None)
+            list(store.find(cls, cls.id.is_in(ids)))
+
         for target_bits, cached_names in chunk:
             self.offset += 1
             # Resolve the IDs to objects, and get the actual IBugTarget.
+            # If the ID is None, don't even try to get an object.
             target_objects = (
-                store.get(cls, id) for cls, id in
-                zip(target_classes, target_bits))
+                (store.get(cls, id) if id is not None else None)
+                for cls, id in zip(target_classes, target_bits))
             target = determine_target(*target_objects)
             new_name = target.bugtargetdisplayname
             cached_names.discard(new_name)
