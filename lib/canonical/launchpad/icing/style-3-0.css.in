@@ -963,7 +963,7 @@ h1 .edit {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer;
+    cursor: pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
@@ -971,7 +971,7 @@ h1 .edit {
 
 .yui3-ichoicesource-content .value:hover {
     text-decoration: underline;
-    cursor:pointer;
+    cursor: pointer;
     }
 
 .error.message, .warning.message, .informational.message {
