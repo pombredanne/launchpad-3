@@ -7,16 +7,15 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.windmill.testing import (
-    constants,
-    lpuser,
-    )
 from lp.testing import (
     login,
     logout,
     WindmillTestCase,
+    )
+from lp.testing.windmill import (
+    constants,
+    lpuser,
     )
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
