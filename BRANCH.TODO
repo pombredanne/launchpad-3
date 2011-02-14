@@ -3,8 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* Reintroduce tests
-
 * Modify python path to incorporate this query:
 DISTINCT ON (BugTask.id) BugTask.*
 FROM BugTask left join product on (bugtask.product = product.id and product.active), Bug, BugMessage, Message
