@@ -33,12 +33,12 @@ class TestRecipeSetDaily(WindmillTestCase):
         client.click(id=u'edit-build_daily')
         client.waits.forElement(
             classname=u'yui3-ichoicelist-content', timeout=FOR_ELEMENT)
-        client.click(link=u'Build daily')
+        client.click(link=u'Built daily')
         client.waits.forElement(
             jquery=u'("div#edit-build_daily a.editicon.sprite.edit")',
             timeout=FOR_ELEMENT)
         client.asserts.assertTextIn(
-            id=u'edit-build_daily', validator=u'Build daily')
+            id=u'edit-build_daily', validator=u'Built daily')
 
         transaction.commit()
         freshly_fetched_recipe = Store.of(recipe).find(

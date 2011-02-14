@@ -268,8 +268,8 @@ class SourcePackageRecipeView(LaunchpadView):
         return BooleanChoiceWidget(
             self.context, ISourcePackageRecipe['build_daily'],
             tag='span',
-            false_text='Build on request',
-            true_text='Build daily',
+            false_text='Built on request',
+            true_text='Built daily',
             header='Change build schedule')
 
 
