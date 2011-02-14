@@ -58,8 +58,7 @@ class BugTaskTargetNameCachesTunableLoop(object):
         """Find all distinct BugTask targets with their cached names.
 
         Returns a list of (target, set_of_cached_names) pairs, where target is
-        (Product ID, ProductSeries ID, Distribution ID, DistroSeries ID,
-        SourcePackageName ID).
+        a tuple of IDs from the columns in target_columns.
         """
         store = ISlaveStore(BugTask)
         candidate_set = store.find(target_columns).config(distinct=True)
