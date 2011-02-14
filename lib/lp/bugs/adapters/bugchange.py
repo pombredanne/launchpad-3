@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
+    'BugAttachmentChange',
     'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugDuplicateChange',
