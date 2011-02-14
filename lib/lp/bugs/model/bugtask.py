@@ -163,6 +163,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -2205,9 +2206,14 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-                searchtext_like_quoted)]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted
+            ]
+        no_targetnamesearch = bool(features.getFeatureFlag(
+            'malone.disable_targetnamesearch'))
+        if not no_targetnamesearch:
+            text_search_clauses.append(
+                "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted))
         # Due to performance problems, whether to search in comments is
         # controlled by a config option.
         if config.malone.search_comments:
