@@ -105,8 +105,10 @@ from canonical.launchpad.validators.name import (
     name_validator,
     valid_name,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.registry.interfaces.pillar import IPillarNameSet
+
 
 # Marker object to tell BaseImageUpload to keep the existing image.
 KEEP_SAME_IMAGE = object()
@@ -506,7 +508,8 @@ class BlacklistableContentNameField(ContentNameField):
 
         # Need a local import because of circular dependencies.
         from lp.registry.interfaces.person import IPersonSet
-        if getUtility(IPersonSet).isNameBlacklisted(input):
+        user = getUtility(ILaunchBag).user
+        if getUtility(IPersonSet).isNameBlacklisted(input, user):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
                 "administrators." % input)
@@ -714,7 +717,7 @@ class BaseImageUpload(Bytes):
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
             pil_image = PIL.Image.open(StringIO(image))
-        except IOError:
+        except (IOError, ValueError):
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))

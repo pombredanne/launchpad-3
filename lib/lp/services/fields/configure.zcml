@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -14,7 +14,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.ITitle"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.TitleWidget"
+        factory="lp.app.widgets.textwidgets.TitleWidget"
         permission="zope.Public"
         />
 
@@ -22,7 +22,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.ISummary"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.SummaryWidget"
+        factory="lp.app.widgets.textwidgets.SummaryWidget"
         permission="zope.Public"
         />
 
@@ -30,7 +30,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IDescription"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.DescriptionWidget"
+        factory="lp.app.widgets.textwidgets.DescriptionWidget"
         permission="zope.Public"
         />
 
@@ -38,7 +38,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.INoneableDescription"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.NoneableDescriptionWidget"
+        factory="lp.app.widgets.textwidgets.NoneableDescriptionWidget"
         permission="zope.Public"
         />
 
@@ -46,7 +46,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IWhiteboard"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.WhiteboardWidget"
+        factory="lp.app.widgets.textwidgets.WhiteboardWidget"
         permission="zope.Public"
         />
 
@@ -54,7 +54,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IStrippedTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.StrippedTextWidget"
+        factory="lp.app.widgets.textwidgets.StrippedTextWidget"
         permission="zope.Public"
         />
 
@@ -62,7 +62,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.INoneableTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.NoneableTextWidget"
+        factory="lp.app.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
         />
 
@@ -70,7 +70,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.IURIField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.URIWidget"
+        factory="lp.app.widgets.textwidgets.URIWidget"
         permission="zope.Public"
         />
 
@@ -78,7 +78,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.ContentNameField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
+        factory="lp.app.widgets.textwidgets.LowerCaseTextWidget"
         permission="zope.Public"
         />
 
@@ -86,7 +86,7 @@
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="lp.services.fields.FormattableDate"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.DateWidget"
+        factory="lp.app.widgets.date.DateWidget"
         permission="zope.Public"
         />
 </configure>

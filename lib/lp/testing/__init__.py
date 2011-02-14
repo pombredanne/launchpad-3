@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -87,10 +89,6 @@ import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 import transaction
-# zope.exception demands more of frame objects than twisted.python.failure
-# provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.launchpad.net/bugs/425113.
-from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
 from zope.component import (
     adapter,
@@ -118,7 +116,6 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
     WebServiceTestRequest,
     )
-from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
@@ -161,9 +158,7 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-
-
-_Frame.f_locals = property(lambda self: {})
+from lp.testing.windmill import constants, lpuser
 
 
 class FakeTime:
@@ -776,6 +771,23 @@ class WindmillTestCase(TestCaseWithFactory):
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=self.layer.appserver_root_url())
+
+    def getClientFor(self, obj, user=None, password='test', view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if user is not None:
+            email = removeSecurityProxy(user).preferredemail.email
+            client.open(url=lpuser.get_basic_login_url(email, password))
+            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
+                obj, view_name=view_name, force_local_path=True)
+        obj_url = self.layer.base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
 
 
 class YUIUnitTestCase(WindmillTestCase):

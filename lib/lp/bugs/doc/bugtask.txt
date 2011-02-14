@@ -1138,6 +1138,10 @@ targetnamecache updated.
     >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
     ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
 
+    The first message of a new bug has index 0.
+    >>> new_bug.bug_messages[0].index
+    0
+
     >>> bugtaskset.createTask(
     ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,

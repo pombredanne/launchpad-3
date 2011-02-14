@@ -94,7 +94,8 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the

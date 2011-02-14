@@ -11,6 +11,7 @@ from email.Utils import make_msgid
 from sqlobject import (
     BoolCol,
     ForeignKey,
+    IntCol,
     StringCol,
     )
 from storm.store import Store
@@ -44,8 +45,13 @@ class BugMessage(SQLBase):
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
-    # -- Uncomment when deployed.
-    # index = IntCol()
+    # -- The index of the message is cached in the DB. Currently optional until
+    # we migrate all data. Bug 704446 has info about the migration.
+    index = IntCol(default=None)
+
+    def __repr__(self):
+        return "<BugMessage at 0x%x message=%s index=%s>" % (
+            id(self), self.message, self.index)
 
 
 class BugMessageSet:
@@ -59,7 +65,9 @@ class BugMessageSet:
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        bugmsg = BugMessage(bug=bug, message=msg)
+        bug.reindexMessages()
+        bugmsg = BugMessage(bug=bug, message=msg,
+            index=bug.bug_messages.count())
 
         # XXX 2008-05-27 jamesh:
         # Ensure that BugMessages get flushed in same order as they

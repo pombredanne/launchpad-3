@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -98,8 +98,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.suggestion import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -108,6 +106,8 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -138,6 +138,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -612,6 +613,12 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                 bug for bug in bugs
                 if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
         return bugs
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):

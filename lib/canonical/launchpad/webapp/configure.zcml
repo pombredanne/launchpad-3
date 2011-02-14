@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -55,7 +55,7 @@
         />
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
-        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        provides="lazr.restful.interfaces.IWebBrowserOriginatingRequest"
         factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
 
@@ -387,7 +387,7 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.VocabularyPickerWidget"
+      factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 
@@ -397,7 +397,7 @@
       for="lp.services.fields.PublicPersonChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.PersonPickerWidget"
+      factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
 
@@ -407,7 +407,7 @@
       for="zope.schema.interfaces.IChoice
         lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />
 

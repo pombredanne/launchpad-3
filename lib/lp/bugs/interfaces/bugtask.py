@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBlueprintSearch',
     'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
@@ -28,8 +29,6 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -37,13 +36,16 @@ __all__ = [
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
-    'valid_remote_bug_url']
+    'valid_remote_bug_url',
+    ]
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -340,7 +342,7 @@ class BugBranchSearch(EnumeratedType):
     """Bug branch search option.
 
     The possible values to search for bugs having branches attached
-    or not having branches attched.
+    or not having branches attached.
     """
 
     ALL = Item("Show all bugs")
@@ -350,13 +352,20 @@ class BugBranchSearch(EnumeratedType):
     BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
-# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
-# semantics of our current reports would break if it were added to the
-# list below.
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
 
-# XXX: matsubara 2006-02-02 bug=4201:
-# I added the INCOMPLETE as a short-term solution.
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
@@ -488,6 +497,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
+    assigneeID = Attribute('The assignee ID (for eager loading)')
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -950,6 +960,12 @@ class IBugTaskSearchBase(Interface):
     has_no_branches = Bool(
         title=_('Show bugs without linked branches'), required=False,
         default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -1144,9 +1160,9 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None,
-                 exclude_conjoined_tasks=False):
+                 linked_branches=None, linked_blueprints=None,
+                 structural_subscriber=None, modified_since=None,
+                 created_since=None, exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1189,6 +1205,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.linked_blueprints = linked_blueprints
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
@@ -1265,8 +1282,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None, modified_since=None,
-                       created_since=None):
+                       linked_blueprints=None, structural_subscriber=None,
+                       modified_since=None, created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1332,7 +1349,8 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
-        search_params.linked_branches=linked_branches
+        search_params.linked_branches = linked_branches
+        search_params.linked_blueprints = linked_blueprints
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since

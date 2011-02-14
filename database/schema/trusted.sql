@@ -741,19 +741,61 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER AS
+EXTERNAL SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
-    if not SD.has_key("select_plan"):
-        SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp FROM NameBlacklist ORDER BY id
-            """)
+    user_id = args[1]
+
+    # Initialize shared storage, shared between invocations.
+    if not SD.has_key("regexp_select_plan"):
+
+        # All the blacklist regexps except the ones we are an admin
+        # for. These we do not check since they are not blacklisted to us.
+        SD["regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL OR admin NOT IN (
+                SELECT team FROM TeamParticipation
+                WHERE person = $1)
+            ORDER BY id
+            """, ["integer"])
+
+        # Storage for compiled regexps
         SD["compiled"] = {}
+
+        # admins is a celebrity and its id is immutable.
+        admins_id = plpy.execute(
+            "SELECT id FROM Person WHERE name='admins'")[0]["id"]
+
+        SD["admin_select_plan"] = plpy.prepare("""
+            SELECT TRUE FROM TeamParticipation
+            WHERE
+                TeamParticipation.team = %d
+                AND TeamParticipation.person = $1
+            LIMIT 1
+            """ % admins_id, ["integer"])
+
+        # All the blacklist regexps except those that have an admin because
+        # members of ~admin can use any name that any other admin can use.
+        SD["admin_regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL
+            ORDER BY id
+            """, ["integer"])
+
+
     compiled = SD["compiled"]
-    for row in plpy.execute(SD["select_plan"]):
+
+    # Names are never blacklisted for Lauchpad admins.
+    if user_id is not None and plpy.execute(
+        SD["admin_select_plan"], [user_id]).nrows() > 0:
+        blacklist_plan = "admin_regexp_select_plan"
+    else:
+        blacklist_plan = "regexp_select_plan"
+
+    for row in plpy.execute(SD[blacklist_plan], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
         if (compiled.get(regexp_id) is None
@@ -769,16 +811,17 @@ $$
     return None
 $$;
 
-COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
+RETURNS boolean
 LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
 $$
-    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+    SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
 
-COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+COMMENT ON FUNCTION is_blacklisted_name(text, integer) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 
 
 CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger

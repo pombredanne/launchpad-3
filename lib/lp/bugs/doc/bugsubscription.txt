@@ -101,7 +101,7 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
     >>> linux_source_bug.getAlsoNotifiedSubscribers()
     [<Person at ...>]
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
@@ -137,7 +137,7 @@ Here are some examples of the three types of indirect subscribers:
     Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Sample Person
@@ -161,7 +161,7 @@ Here are some examples of the three types of indirect subscribers:
     Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
@@ -250,16 +250,19 @@ BugNotificationLevel for structural subscriptions.  Only subscribers who
 have a bug notification level greater than or equal to the value passed
 in the `level` parameter are returned.
 
-The bug notification level of No Privileges Person's structural
-subscription is currently set to COMMENTS.
+Structural subscriptions control their bug notification levels via zero
+or more filters.  If there are no filters, the subscription is
+interpreted to mean that the subscriber wants all notifications.  In the
+case of bug notification levels, that is equivalent to
+BugNotificationLevel.COMMENTS.
 
-    >>> print subscription_no_priv.bug_notification_level.name
-    COMMENTS
+    >>> print subscription_no_priv.bug_filters.count()
+    0
 
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.registry.enum import BugNotificationLevel
+    >>> from lp.bugs.enum import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
@@ -288,11 +291,15 @@ parameter values of level.
     Sample Person
     Ubuntu Team
 
-If No Privileges Person sets his notification level to LIFECYCLE, he will
-not be included, if the parameter `level` is METADATA or COMMENTS.
+If No Privileges Person created a single filter with a notification
+level set to LIFECYCLE, he will not be included, if the parameter
+`level` is METADATA or COMMENTS.
 
-    >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.LIFECYCLE)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(mr_no_privs):
+    ...     filter_no_priv = subscription_no_priv.newBugFilter()
+    ...     filter_no_priv.bug_notification_level = (
+    ...         BugNotificationLevel.LIFECYCLE)
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
@@ -365,7 +372,7 @@ bug.
     >>> subscription_keybuk = linux_source.addBugSubscription(
     ...     keybuk, keybuk)
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 When a bug is marked private, all its indirect subscribers become direct
 subscribers.
@@ -409,7 +416,7 @@ indirect subscriptions.
     []
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 Direct subscriptions always take precedence over indirect
 subscriptions. So, if we unmark the above bug as private,

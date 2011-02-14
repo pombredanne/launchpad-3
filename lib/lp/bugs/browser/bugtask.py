@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -162,8 +162,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpadform import (
     action,
@@ -186,6 +184,8 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,
@@ -219,6 +219,7 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNominationSet,
     )
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
     BugTaskImportance,
@@ -2500,6 +2501,17 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             else:
                 data['linked_branches'] = BugBranchSearch.ALL
 
+            has_blueprints = data.get('has_blueprints', True)
+            has_no_blueprints = data.get('has_no_blueprints', True)
+            if has_blueprints and not has_no_blueprints:
+                data['linked_blueprints'] = (
+                    BugBlueprintSearch.BUGS_WITH_BLUEPRINTS)
+            elif not has_blueprints and has_no_blueprints:
+                data['linked_blueprints'] = (
+                    BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS)
+            else:
+                data['linked_blueprints'] = BugBlueprintSearch.ALL
+
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
             has_no_package = data.pop("has_no_package", False)
@@ -3789,46 +3801,8 @@ class BugActivityItem:
     """A decorated BugActivity."""
     delegates(IBugActivity, 'activity')
 
-    # The regular expression we use for matching bug task changes.
-    bugtask_change_re = re.compile(
-        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
-        '(?P<attribute>assignee|importance|milestone|status)')
-
     def __init__(self, activity):
         self.activity = activity
-
-    @property
-    def target(self):
-        """Return the target of this BugActivityItem.
-
-        `target` is determined based on the `whatchanged` string of the
-        original BugAcitivity.
-
-        :return: The target name of the item if `whatchanged` is of the
-        form <target_name>: <attribute>. Otherwise, return None.
-        """
-        match = self.bugtask_change_re.match(self.whatchanged)
-        if match is None:
-            return None
-        else:
-            return match.groupdict()['target']
-
-    @property
-    def attribute(self):
-        """Return the attribute changed in this BugActivityItem.
-
-        `attribute` is determined based on the `whatchanged` string of the
-        original BugAcitivity.
-
-        :return: The attribute name of the item if `whatchanged` is of
-            the form <target_name>: <attribute>. Otherwise, return the
-            original `whatchanged` string.
-        """
-        match = self.bugtask_change_re.match(self.whatchanged)
-        if match is None:
-            return self.whatchanged
-        else:
-            return match.groupdict()['attribute']
 
     @property
     def change_summary(self):
