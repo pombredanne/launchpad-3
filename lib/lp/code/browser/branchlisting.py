@@ -439,9 +439,8 @@ class BranchListingItemsMixin:
     @cachedproperty
     def branch_ids_with_bug_links(self):
         """Return a set of branch ids that should show bug badges."""
-        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.visible_branches_for_view, self.view_user)
-        return set(bug_branch.branch.id for bug_branch in bug_branches)
+        return set(getUtility(IBugBranchSet).getBranchesWithVisibleBugs(
+            self.visible_branches_for_view, self.view_user))
 
     @cachedproperty
     def branch_ids_with_spec_links(self):
@@ -466,17 +465,26 @@ class BranchListingItemsMixin:
     @cachedproperty
     def tip_revisions(self):
         """Return a set of branch ids that should show blueprint badges."""
-        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
+        revisionset = getUtility(IRevisionSet)
+        revisions = revisionset.getTipRevisionsForBranches(
             self.visible_branches_for_view)
         if revisions is None:
-            revision_map = {}
-        else:
-            # Key the revisions by revision id.
-            revision_map = dict((revision.revision_id, revision)
-                                for revision in revisions)
+            revisions = []
+
+        # Key the revisions by revision id.
+        revision_map = dict(
+            (revision.revision_id, revision) for revision in revisions)
+
+        # Cache display information for authors of branches' respective
+        # last revisions.
+        getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [revision.revision_author.personID for revision in revisions],
+            need_icon=True)
+
         # Return a dict keyed on branch id.
-        return dict((branch.id, revision_map.get(branch.last_scanned_id))
-                     for branch in self.visible_branches_for_view)
+        return dict(
+            (branch.id, revision_map.get(branch.last_scanned_id))
+            for branch in self.visible_branches_for_view)
 
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
