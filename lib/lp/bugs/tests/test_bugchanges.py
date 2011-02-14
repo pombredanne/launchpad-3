@@ -1630,3 +1630,17 @@ class TestBugChanges(TestCaseWithFactory):
         # self.user is not included among the recipients.
         self.assertRecipients(
             [self.product_metadata_subscriber, team.teamowner])
+
+    def test_no_lifecycle_email_despite_structural_subscription(self):
+        # If a person has a structural METADATA subscription,
+        # and a direct LIFECYCLE subscription, they should
+        # get no emails for a non-LIFECYCLE change (bug 713382).
+        self.bug.subscribe(self.product_metadata_subscriber,
+                           self.product_metadata_subscriber,
+                           level=BugNotificationLevel.LIFECYCLE)
+        old_description = self.changeAttribute(
+            self.bug, 'description', 'New description')
+
+        # self.product_metadata_subscriber is not included among the
+        # recipients.
+        self.assertRecipients([self.user])
