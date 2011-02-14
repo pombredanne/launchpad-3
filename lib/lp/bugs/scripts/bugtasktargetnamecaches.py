@@ -29,9 +29,10 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 
 target_classes = (
     Product, ProductSeries, Distribution, DistroSeries, SourcePackageName)
-target_column_names = (
-    'productID', 'productseriesID', 'distributionID', 'distroseriesID',
-    'sourcepackagenameID')
+target_columns = (
+    BugTask.productID, BugTask.productseriesID, BugTask.distributionID,
+    BugTask.distroseriesID, BugTask.sourcepackagenameID,
+    BugTask.targetnamecache)
 
 
 class BugTaskTargetNameCachesTunableLoop(object):
@@ -59,11 +60,7 @@ class BugTaskTargetNameCachesTunableLoop(object):
         SourcePackageName ID).
         """
         store = ISlaveStore(BugTask)
-        candidate_set = store.find(
-            (BugTask.productID, BugTask.productseriesID,
-             BugTask.distributionID, BugTask.distroseriesID,
-             BugTask.sourcepackagenameID, BugTask.targetnamecache,
-            )).config(distinct=True)
+        candidate_set = store.find(target_columns).config(distinct=True)
         candidates = defaultdict(set)
         for p, ps, d, ds, spn, cache in candidate_set:
             candidates[(p, ps, d, ds, spn)].add(cache)
@@ -107,10 +104,12 @@ class BugTaskTargetNameCachesTunableLoop(object):
                 self.logger.info(
                     "Updating %r to '%s'." % (tuple(cached_names), new_name))
                 self.total_updated += len(cached_names)
+                conditions = (
+                    col == id for col, id in zip(target_columns, target_bits))
                 to_update = store.find(
                     BugTask,
                     BugTask.targetnamecache.is_in(cached_names),
-                    **dict(zip(target_column_names, target_bits)))
+                    *conditions)
                 to_update.set(targetnamecache=new_name)
 
         self.logger.info("Checked %i targets." % len(chunk))
