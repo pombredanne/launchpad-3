@@ -464,9 +464,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
 
-    def reindexMessages():
-        """Fill in the `BugMessage`.index column for this bugs messages."""
-
     def isSubscribed(person):
         """Is person subscribed to this bug?
 
