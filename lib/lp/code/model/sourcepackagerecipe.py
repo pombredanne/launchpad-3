@@ -164,10 +164,6 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
-    def _setRecipeText(self, recipe_text):
-        """Write operation delegates to mutator."""
-        return self.setRecipeText(recipe_text)
-
     def setRecipeText(self, recipe_text):
         try:
             parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)

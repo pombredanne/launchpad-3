@@ -26,6 +26,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_removed_in_version,
     REQUEST_USER,
@@ -143,9 +144,7 @@ class ISourcePackageRecipeEdit(Interface):
         recipe_text=copy_field(
             ISourcePackageRecipeView['recipe_text']))
     @export_write_operation()
-    def _setRecipeText(recipe_text):
-        """Set the text of the recipe."""
-
+    @operation_for_version("devel")
     @operation_removed_in_version("devel")
     @operation_parameters(recipe_text=Text())
     @export_write_operation()
