@@ -179,7 +179,9 @@ class SetCurrentTranslationTestMixin:
         # other side does not follow this side.
         self.assertTrue(tm is not None)
         if follows:
-            expected_other = tm
+            # Even if the other side is supposed to follow this side,
+            # we ovverride the other only if the current side is Ubuntu.
+            expected_other = self.selectUpstreamTranslation(tm, tm_other)
         else:
             expected_other = tm_other
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -323,11 +325,15 @@ class SetCurrentTranslationTestMixin:
             new_translations, share_with_other_side=True)
 
         # tm_suggestion becomes current.
-        # Current for other context is changed too.
         self.assertTrue(tm is not None)
         self.assertEquals(tm_suggestion, tm)
+        # If a translation is set for the first time in upstream,
+        # this translation becomes current in Ubuntu too, but if the
+        # translation is set for the first time in Ubuntu, this does
+        # not affect the upstream translation.
+        expected_other = self.selectUpstreamTranslation(tm, tm_other)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
+            tm, None, expected_other, [])
 
     def test_c_None__n_shared__o_shared__identical(self, follows=False):
         # Current translation is None, and we have found a
@@ -1151,6 +1157,12 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
         self.potmsgset = self.factory.makePOTMsgSet(
             potemplate=potemplate, sequence=1)
 
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # Return the upstream translation.
+        # :param tm: A translation for this side.
+        # :param tm: A translation for the other side.
+        return tm_other
+
 
 class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
                                          TestCaseWithFactory):
@@ -1186,3 +1198,9 @@ class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
 
         self.potmsgset = self.factory.makePOTMsgSet(
             potemplate=potemplate, sequence=1)
+
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # Return the upstream translation.
+        # :param tm: A translation for this side.
+        # :param tm: A translation for the other side.
+        return tm
