@@ -6,12 +6,32 @@
 __metaclass__ = type
 __all__ = ['BugTaskTargetNameCacheUpdater']
 
-from zope.component import getUtility
+from collections import defaultdict
+
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.model.bugtask import (
+    BugTask,
+    determine_target,
+    )
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
+
+
+target_classes = (
+    Product, ProductSeries, Distribution, DistroSeries, SourcePackageName)
+target_column_names = (
+    'productID', 'productseriesID', 'distributionID', 'distroseriesID',
+    'sourcepackagenameID')
 
 
 class BugTaskTargetNameCachesTunableLoop(object):
@@ -19,23 +39,42 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
     implements(ITunableLoop)
 
-    total_updated = 0
-
     def __init__(self, transaction, logger, offset=0):
         self.transaction = transaction
         self.logger = logger
         self.offset = offset
         self.total_updated = 0
 
+        self.logger.info("Calculating targets.")
+        self.transaction.begin()
+        self.candidates = self.determineCandidates()
+        self.transaction.abort()
+        self.logger.info("Will check %i targets." % len(self.candidates))
+
+    def determineCandidates(self):
+        """Find all distinct BugTask targets with their cached names.
+
+        Returns a list of (target, set_of_cached_names) pairs, where target is
+        (Product ID, ProductSeries ID, Distribution ID, DistroSeries ID,
+        SourcePackageName ID).
+        """
+        store = ISlaveStore(BugTask)
+        candidate_set = store.find(
+            (BugTask.productID, BugTask.productseriesID,
+             BugTask.distributionID, BugTask.distroseriesID,
+             BugTask.sourcepackagenameID, BugTask.targetnamecache,
+            )).config(distinct=True)
+        candidates = defaultdict(set)
+        for p, ps, d, ds, spn, cache in candidate_set:
+            candidates[(p, ps, d, ds, spn)].add(cache)
+        return list(candidates.iteritems())
+
     def isDone(self):
         """See `ITunableLoop`."""
-        # When the main loop has no more BugTasks to process it sets
-        # offset to None. Until then, it always has a numerical
-        # value.
-        return self.offset is None
+        return self.offset >= len(self.candidates)
 
     def __call__(self, chunk_size):
-        """Retrieve a batch of BugTasks and update their targetname caches.
+        """Take a batch of targets and update their BugTasks' name caches.
 
         See `ITunableLoop`.
         """
@@ -49,30 +88,32 @@ class BugTaskTargetNameCachesTunableLoop(object):
         start = self.offset
         end = self.offset + chunk_size
 
+        chunk = self.candidates[start:end]
+
         self.transaction.begin()
-        # XXX: kiko 2006-03-23:
-        # We use a special API here, which is kinda klunky, but which
-        # allows us to return all bug tasks (even private ones); this should
-        # eventually be changed to a more elaborate permissions scheme,
-        # pending the infrastructure to do so. See bug #198778.
-        bugtasks = list(
-            getUtility(IBugTaskSet).dangerousGetAllTasks()[start:end])
+        store = IMasterStore(BugTask)
+        for target_bits, cached_names in chunk:
+            self.offset += 1
+            # Resolve the IDs to objects, and get the actual IBugTarget.
+            target_objects = (
+                store.get(cls, id) for cls, id in
+                zip(target_classes, target_bits))
+            target = determine_target(*target_objects)
+            new_name = target.bugtargetdisplayname
+            cached_names.discard(new_name)
+            # If there are any outdated names cached, update them all in
+            # a single query.
+            if len(cached_names) > 0:
+                self.logger.info(
+                    "Updating %r to '%s'." % (tuple(cached_names), new_name))
+                self.total_updated += len(cached_names)
+                to_update = store.find(
+                    BugTask,
+                    BugTask.targetnamecache.is_in(cached_names),
+                    **dict(zip(target_column_names, target_bits)))
+                to_update.set(targetnamecache=new_name)
 
-        self.offset = None
-        if bugtasks:
-            starting_id = bugtasks[0].id
-            self.logger.info("Updating %i BugTasks (starting id: %i)." %
-                (len(bugtasks), starting_id))
-
-        for bugtask in bugtasks:
-            # We set the starting point of the next batch to the BugTask
-            # id after the one we're looking at now. If there aren't any
-            # bugtasks this loop will run for 0 iterations and start_id
-            # will remain set to None.
-            start += 1
-            self.offset = start
-            bugtask.updateTargetNameCache()
-            self.total_updated += 1
+        self.logger.info("Checked %i targets." % len(chunk))
 
         self.transaction.commit()
 
@@ -96,7 +137,5 @@ class BugTaskTargetNameCacheUpdater:
         loop_tuner = LoopTuner(loop, 2)
         loop_tuner.run()
 
-        self.logger.info("Updated %i bugtask targetname caches." %
-            loop.total_updated)
+        self.logger.info("Updated %i target names." % loop.total_updated)
         self.logger.info("Finished updating targetname cache of bugtasks.")
-
