@@ -2926,10 +2926,6 @@ class BugTaskSet:
 
         return tuple(orderby_arg)
 
-    def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select(orderBy='id')
-
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""
         distributions = sorted(
