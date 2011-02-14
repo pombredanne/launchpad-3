@@ -27,12 +27,14 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 
 
-target_classes = (
-    Product, ProductSeries, Distribution, DistroSeries, SourcePackageName)
+# These two tuples must be in the same order. They specify the ID
+# columns to get from BugTask, and the classes that they correspond to.
 target_columns = (
     BugTask.productID, BugTask.productseriesID, BugTask.distributionID,
     BugTask.distroseriesID, BugTask.sourcepackagenameID,
     BugTask.targetnamecache)
+target_classes = (
+    Product, ProductSeries, Distribution, DistroSeries, SourcePackageName)
 
 
 class BugTaskTargetNameCachesTunableLoop(object):
@@ -62,8 +64,8 @@ class BugTaskTargetNameCachesTunableLoop(object):
         store = ISlaveStore(BugTask)
         candidate_set = store.find(target_columns).config(distinct=True)
         candidates = defaultdict(set)
-        for p, ps, d, ds, spn, cache in candidate_set:
-            candidates[(p, ps, d, ds, spn)].add(cache)
+        for candidate in candidate_set:
+            candidates[candidate[:-1]].add(candidate[-1])
         return list(candidates.iteritems())
 
     def isDone(self):
@@ -90,12 +92,11 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.transaction.begin()
         store = IMasterStore(BugTask)
 
-        # Rotate the target rows into lists of object IDs to retrieve.
-        # This way we can issue just one query of each type for each batch.
+        # Transpose the target rows into lists of object IDs to retrieve.
         ids_to_cache = zip(*(target for (target, names) in chunk))
         for index, cls in enumerate(target_classes):
-            ids = (id for id in ids_to_cache[index] if id is not None)
-            list(store.find(cls, cls.id.is_in(ids)))
+            # Get all of the objects that we will need into the cache.
+            list(store.find(cls, cls.id.is_in(set(ids_to_cache[index]))))
 
         for target_bits, cached_names in chunk:
             self.offset += 1
