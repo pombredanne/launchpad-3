@@ -12,6 +12,10 @@
     .binary-build .indent {
       padding-left: 2em;
     }
+    #edit-recipe_text {
+      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin-top: -15px;
+    }
   </style>
 </metal:block>
 
@@ -164,11 +168,7 @@
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
-        <pre tal:content="context/recipe_text" />
-
-        <div id="edit-recipe-text" class="lazr-multiline-edit"
-             tal:content="structure view/recipe_text_edit_html"/>
-
+        <tal:widget replace="structure view/recipe_text_widget"/>
       </div>
     </div>
   </div>

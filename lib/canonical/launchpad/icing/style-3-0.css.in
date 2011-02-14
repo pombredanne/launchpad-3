@@ -951,9 +951,6 @@ h1 .yui3-ieditor-errors {
 .lazr-multiline-edit textarea {
     max-width: inherit;
     }
-.lazr-multiline-edit .yui3-ieditor-input {
-    padding-right: 5px !important;
-    }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
@@ -1845,8 +1842,8 @@ div#edit-commit_message {
     font-size: 93%;
     margin: 1em 0;
     }
-div#edit-description .yui3-ieditor-input,
-div#edit-commit_message .yui3-ieditor-input {
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
     top: 0;
     }
 

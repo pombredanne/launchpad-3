@@ -265,11 +265,10 @@ class SourcePackageRecipeView(LaunchpadView):
             step_title='Select a PPA')
 
     @property
-    def recipe_text_edit_html(self):
+    def recipe_text_widget(self):
         """The recipe text as widget HTML."""
         recipe_text = ISourcePackageRecipe['recipe_text']
-        return TextAreaEditorWidget(
-            self.context, recipe_text, title="Do we want a title")
+        return TextAreaEditorWidget(self.context, recipe_text, title="")
 
     @property
     def daily_build_widget(self):
