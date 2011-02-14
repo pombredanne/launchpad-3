@@ -355,6 +355,7 @@ class TranslationMerger:
 
     @staticmethod
     def findMergeablePackagings():
+        """Find packagings where both product and package have templates."""
         store = IStore(Packaging)
         upstream_translated = Select(
             Packaging.id,
@@ -771,6 +772,7 @@ class TranslationMerger:
 
 
 class MergeExistingPackagings(LaunchpadScript):
+    """Script to perform translation on existing packagings."""
 
     def main(self):
         tm = TransactionManager(self.txn, False)

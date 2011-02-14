@@ -17,6 +17,7 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def test_merge_translations(self):
+        """Running the script performs a translation merge."""
         from lp.translations.tests.test_translationmergejob import (
             TestTranslationMergeJob,
             )
