@@ -17,6 +17,7 @@ from operator import itemgetter
 
 import transaction
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import (
     emailPeople,
     get_email_template,
@@ -39,31 +40,51 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person_causing_change = first_notification.message.owner
+    actor = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
     references = []
     text_notifications = []
-
-    recipients = {}
-    for notification in bug_notifications:
-        for recipient in notification.recipients:
-            email_people = emailPeople(recipient.person)
-            if (not person_causing_change.selfgenerated_bugnotifications and
-                person_causing_change in email_people):
-                email_people.remove(person_causing_change)
-            for email_person in email_people:
-                recipients[email_person] = recipient
+    changes = {}
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person_causing_change, (
-            person_causing_change.id)
+        assert notification.message.owner == actor, actor.id
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
+        else:
+            activity = notification.activity
+            if activity is not None:
+                if activity.whatchanged not in changes:
+                    changes[activity.whatchanged] = {'old': activity.oldvalue}
+                changes[activity.whatchanged]['new'] = activity.newvalue
+
+    recipients = {}
+    filtered_notifications = []
+    for notification in bug_notifications:
+        activity = notification.activity
+        change = changes.get(activity.whatchanged) if activity else None
+        if (notification.is_comment or
+            change is None or
+            change['old'] != change['new']):
+            # We will report this notification.
+            filtered_notifications.append(notification)
+            for recipient in notification.recipients:
+                email_people = emailPeople(recipient.person)
+                if (not actor.selfgenerated_bugnotifications and
+                    actor in email_people):
+                    email_people.remove(actor)
+                for email_person in email_people:
+                    recipients[email_person] = recipient
+        else:
+            # We are discarding this notification, because it was undone.
+            # Mark it as sent so it is not processed again.
+            notification.date_emailed = UTC_NOW
+            # XXX Set a flag so we know it was consciously discarded, for
+            # debugging.
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -88,7 +109,7 @@ def construct_email_notifications(bug_notifications):
         msgid = first_notification.message.rfc822msgid
         email_date = first_notification.message.datecreated
 
-    for notification in bug_notifications:
+    for notification in filtered_notifications:
         if notification.message == comment:
             # Comments were just handled in the previous if block.
             continue
@@ -104,9 +125,8 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person_causing_change, bug)
-    bug_notification_builder = BugNotificationBuilder(
-        bug, person_causing_change)
+    from_address = get_bugmail_from_address(actor, bug)
+    bug_notification_builder = BugNotificationBuilder(bug, actor)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:
@@ -157,7 +177,7 @@ def construct_email_notifications(bug_notifications):
             rationale, references, msgid)
         messages.append(msg)
 
-    return bug_notifications, messages
+    return filtered_notifications, messages
 
 
 def notification_comment_batches(notifications):

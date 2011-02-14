@@ -296,13 +296,9 @@ in the order they were added:
     - Old summary
     + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private
-    <BLANKLINE>
     ** Summary changed:
     - New summary
     + Another summary
-    <BLANKLINE>
-    ** Visibility changed to: Public
     <BLANKLINE>
     --
     You received this bug notification because you are a member of Ubuntu
@@ -314,6 +310,29 @@ in the order they were added:
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
+
+If you look carefully, there's a surprise in that output: the visibility
+changes are not reported.  This is because they are done and then undone
+within the same notification.  Undone changes like that are omitted.
+moreover, if the email only would have reported done/undone changes, it
+is not sent at all.  This is tested elsewhere (see
+lp/bugs/tests/test_bugnotification.py), and not demonstrated here.
+
+Another thing worth noting is that there's a blank line before the
+signature, and the signature marker has a trailing space.
+
+    >>> message.get_payload(decode=True).splitlines()
+    [...,
+     '',
+     '-- ',
+     'You received this bug notification because you are a direct subscriber',
+     'of the bug.',
+     'http://bugs.launchpad.dev/bugs/1',
+     '',
+     'Title:',
+     '  Firefox does not support SVG']
+
+    >>> flush_notifications()
 
 We send the notification only if the user hasn't done any other changes
 for the last 5 minutes:
@@ -328,22 +347,6 @@ for the last 5 minutes:
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
     0
-
-    >>> flush_notifications()
-
-There's a blank line before the signature, and the signature marker has
-a trailing space.
-
-    >>> message.get_payload(decode=True).splitlines()
-    [...,
-     '',
-     '-- ',
-     'You received this bug notification because you are a direct subscriber',
-     'of the bug.',
-     'http://bugs.launchpad.dev/bugs/1',
-     '',
-     'Title:',
-     '  Firefox does not support SVG']
 
     >>> flush_notifications()
 
@@ -381,7 +384,6 @@ notification will be sent to all members individually.
     test@canonical.com
 
     >>> flush_notifications()
-
 
 Duplicates
 ----------

@@ -5,23 +5,35 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 from itertools import chain
 import unittest
+import pytz
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Not
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.message import MessageSet
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.ftests import login
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.adapters.bugchange import (
+    BugTitleChange,
+    BugVisibilityChange,
+    )
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IUpstreamBugTask,
@@ -30,6 +42,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationSet,
     )
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -315,3 +328,97 @@ class TestNotificationsForRegistrantsForProducts(
         return self.factory.makeBug(
             product=self.pillar,
             owner=self.bug_owner)
+
+
+class TestUndoneNotifications(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestUndoneNotifications, self).setUp()
+        login('test@canonical.com')
+        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        self.now = datetime.now(pytz.timezone('UTC'))
+        self.ten_minutes_ago = self.now - timedelta(minutes=10)
+        self.notification_set = getUtility(IBugNotificationSet)
+        self.bug_one = getUtility(IBugSet).get(1)
+        self.sample_person = getUtility(ILaunchBag).user
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.date_emailed = self.now
+        flush_database_updates()
+
+    def tearDown(self):
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.date_emailed = self.now
+        flush_database_updates()
+        super(TestUndoneNotifications, self).tearDown()
+
+    def add_comment(self):
+        comment = getUtility(IMessageSet).fromText(
+            'subject', 'a comment.', self.sample_person,
+            datecreated=self.ten_minutes_ago)
+        self.bug_one.addCommentNotification(comment)
+
+    def get_messages(self):
+        notifications = self.notification_set.getNotificationsToSend()
+        email_notifications = get_email_notifications(notifications)
+        for bug_notifications, messages in email_notifications:
+            for message in messages:
+                yield message, message.get_payload(decode=True)
+
+    def assert_headers(self, email_notification, recipient=None, sender=None,
+                      subject=None, rationale=None):
+        if recipient is not None:
+            self.assertEqual(recipient, email_notification['To'])
+        if sender is not None:
+            self.assertEqual(sender, email_notification['From'])
+        if subject is not None:
+            self.assertEqual(subject, email_notification['Subject'])
+        if rationale is not None:
+            self.assertEqual(rationale, email_notification['Rationale'])
+
+    def test_title_change_seen(self):
+        # This is a simple smoke test to give some confidence that our other
+        # tests in this suite are valid.
+        self.bug_one.addChange(
+            BugTitleChange(
+                self.ten_minutes_ago, self.sample_person, "title",
+                "Old summary", "New summary"))
+        message, body = self.get_messages().next()
+        self.assertThat(
+            body,
+            Contains('** Summary changed:\n\n- Old summary\n+ New summary'))
+
+    def test_undone_title_change_sends_no_emails(self):
+        self.bug_one.addChange(
+            BugTitleChange(
+                self.ten_minutes_ago, self.sample_person, "title",
+                "Old summary", "New summary"))
+        self.bug_one.addChange(
+            BugTitleChange(
+                self.ten_minutes_ago, self.sample_person, "title",
+                "New summary", "Old summary"))
+        self.assertEqual(list(self.get_messages()), [])
+        # This makes sure we have cleaned out the unsent messages.
+        self.assertEqual(
+            list(self.notification_set.getNotificationsToSend()), [])
+
+    def test_undone_title_change_is_invisible(self):
+        self.bug_one.addChange(
+            BugTitleChange(
+                self.ten_minutes_ago, self.sample_person, "title",
+                "Old summary", "New summary"))
+        self.bug_one.addChange(
+            BugTitleChange(
+                self.ten_minutes_ago, self.sample_person, "title",
+                "New summary", "Old summary"))
+        self.bug_one.addChange(
+            BugVisibilityChange(
+                self.ten_minutes_ago, self.sample_person, "private",
+                False, True))
+        message, body = self.get_messages().next()
+        self.assertThat(body, Not(Contains('** Summary changed:')))
+        self.assertThat(body, Contains('** Visibility changed to: Private'))
+        # This makes sure we have cleaned out the unsent messages.
+        self.assertEqual(
+            list(self.notification_set.getNotificationsToSend()), [])
