@@ -64,9 +64,9 @@ correctly, especially for the case of LIKE which uses % characters.
     ...     print statement
     SELECT 1
     SELECT 2
-    SELECT * FROM person where name = fred
+    SELECT * FROM person where name = u'fred'
     SELECT * FROM person where id = 2
-    SELECT * FROM person where name like '%%' || fred
+    SELECT * FROM person where name like '%%' || u'fred'
     SELECT * FROM person where name like 'fred'||'%%'
 
 A timeline is created too:
@@ -78,9 +78,9 @@ A timeline is created too:
     ...    print action.detail
     SELECT 1
     SELECT 2
-    SELECT * FROM person where name = fred
+    SELECT * FROM person where name = u'fred'
     SELECT * FROM person where id = 2
-    SELECT * FROM person where name like '%%' || fred
+    SELECT * FROM person where name like '%%' || u'fred'
     SELECT * FROM person where name like 'fred'||'%%'
 
 After we complete the request, the statement log is cleared:
