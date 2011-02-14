@@ -211,10 +211,14 @@ class NoLinkedBranch(InvalidBranchException):
 class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
+    webservice_error(400)
+
     _message_prefix = "No such branch"
 
 
 class PrivateBranchRecipe(Exception):
+
+    webservice_error(400)
 
     def __init__(self, branch):
         message = (
@@ -272,6 +276,8 @@ class CodeImportAlreadyRunning(Exception):
 class TooNewRecipeFormat(Exception):
     """The format of the recipe supplied was too new."""
 
+    webservice_error(400)
+
     def __init__(self, supplied_format, newest_supported):
         super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
@@ -279,6 +285,8 @@ class TooNewRecipeFormat(Exception):
 
 
 class RecipeBuildException(Exception):
+
+    webservice_error(400)
 
     def __init__(self, recipe, distroseries, template):
         self.recipe = recipe
@@ -290,8 +298,6 @@ class RecipeBuildException(Exception):
 class TooManyBuilds(RecipeBuildException):
     """A build was requested that exceeded the quota."""
 
-    webservice_error(400)
-
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
@@ -302,8 +308,6 @@ class TooManyBuilds(RecipeBuildException):
 class BuildAlreadyPending(RecipeBuildException):
     """A build was requested when an identical build was already pending."""
 
-    webservice_error(400)
-
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
@@ -312,8 +316,6 @@ class BuildAlreadyPending(RecipeBuildException):
 
 class BuildNotAllowedForDistro(RecipeBuildException):
     """A build was requested against an unsupported distroseries."""
-
-    webservice_error(400)
 
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(

@@ -53,7 +53,10 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
+    NoSuchBranch,
+    PrivateBranchRecipe,
     TooManyBuilds,
+    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -169,7 +172,8 @@ class SourcePackageRecipe(Storm):
         try:
             parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
             self._recipe_data.setRecipe(parsed)
-        except RecipeParseError as e:
+        except (RecipeParseError, NoSuchBranch, PrivateBranchRecipe,
+                TooNewRecipeFormat) as e:
             expose(e)
             raise
 
