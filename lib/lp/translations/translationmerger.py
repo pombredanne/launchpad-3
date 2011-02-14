@@ -369,8 +369,9 @@ class TranslationMerger:
             DistroSeries.distribution == ubuntu.id,
             Packaging.sourcepackagename == POTemplate.sourcepackagenameID,
             )
-        # This should be as simple as the following, but apparently Storm
-        # ClassAlias doesn't work properly:
+        # XXX: AaronBentley 2011-02-14 bug=718864: this should be possible
+        # without using a subselect, but a Storm ClassAlias bug prevents us
+        # from doing it this way:
         # PackageTemplate = ClassAlias(POTemplate)
         # result = store.find(
         #     Packaging,
