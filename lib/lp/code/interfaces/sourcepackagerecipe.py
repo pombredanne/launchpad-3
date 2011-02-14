@@ -181,8 +181,8 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             " build a source package for"),
         readonly=False)
     build_daily = exported(Bool(
-        title=_("Automatically build each day, if the source has changed"),
-        description=_("You can manually request a build at any time.")))
+        title=_("Built daily"),
+        description=_("Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,

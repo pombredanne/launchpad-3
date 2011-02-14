@@ -165,7 +165,6 @@ h2 {
     margin-bottom: 0.3em;
     margin-top: 0.3em;
     font-size: 123.1%;
-    color: #5a5a5a;
     }
 h3 {
     font-size: 108%;
@@ -751,7 +750,16 @@ div.centered table {
     text-align: left;
     vertical-align: top;
     }
-
+.results {
+    background-color: #f4f4f4;
+    padding: 2px 10px 5px 10px;
+    -webkit-border-bottom-right-radius: 4px;
+    -webkit-border-bottom-left-radius: 4px;
+    -moz-border-radius-bottomright: 4px;
+    -moz-border-radius-bottomleft: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    }
 
 /* =========================
    Universal presentation
@@ -955,7 +963,7 @@ h1 .yui3-ieditor-errors {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer;
+    cursor: pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
@@ -963,7 +971,7 @@ h1 .yui3-ieditor-errors {
 
 .yui3-ichoicesource-content .value:hover {
     text-decoration: underline;
-    cursor:pointer;
+    cursor: pointer;
     }
 
 .error.message, .warning.message, .informational.message {
@@ -1380,25 +1388,8 @@ div.watermark-apps-portlet span img {
     padding-top: 0.3em;
     padding-bottom: 0.3em;
     }
-.involvement a.bugs {
-    color: #b9413e;
-    background: url(/@@/bugs-arrow-right.png) right center no-repeat;
-    }
-.involvement a.answers {
-    color: #5265b2;
+.involvement a.bugs, .involvement a.answers, .involvement a.translations, .involvement a.code, .involvement a.blueprints {
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
-    }
-.involvement a.translations {
-    color: #c5458e;
-    background: url(/@@/translations-arrow-right.png) right center no-repeat;
-    }
-.involvement a.code {
-    color: #d39f57;
-    background: url(/@@/code-arrow-right.png) right center no-repeat;
-    }
-.involvement a.blueprints {
-    color: #5ba4c6;
-    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 .involvement a:hover {
     text-decoration: none;
@@ -1480,6 +1471,14 @@ span.help {
    Colors and fonts
 */
 
+h1, h2, h3, 
+table.listing thead, 
+#homepage-stats strong, 
+#application-footer strong, 
+#application-summary strong {
+    color: #5a5a5a;
+}
+
 .exception {
     color: #cc0000;
     }
@@ -1493,9 +1492,7 @@ span.help {
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
-.answers-stat {
-    color: #3840BE;
-    }
+
 .questionstatusOPEN {
     color: #000;
     }
@@ -1518,9 +1515,6 @@ span.help {
     }
 
 
-.blueprints-stat {
-    color: #3594BB;
-    }
 .specstatusAPPROVED {
     color: green;
     }
@@ -1584,9 +1578,6 @@ span.help {
     }
 
 
-.bugs-stat {
-    color: #9F2B33;
-    }
 .bug-activity {
     color: #555;
     }
@@ -1642,9 +1633,6 @@ a.unofficial-tag {
     }
 
 
-.code-stat {
-    color: #D18B39;
-    }
 .vcsimportSUCCESS {
     /* inherited text color */
     }
@@ -1725,9 +1713,6 @@ a.unofficial-tag {
     }
 
 
-.translations-stat {
-    color: #BB3A84;
-    }
 .translationimportstatusAPPROVED,
 .translationimportstatusAPPROVED a {
     color: #050;
@@ -1758,9 +1743,7 @@ a.unofficial-tag {
     }
 
 
-.registry-stat {
-    /* default */
-    }
+
 .distromirrorstatusUP,
 .distromirrorstatusONEHOURBEHIND,
 .distromirrorstatusTWOHOURSBEHIND,

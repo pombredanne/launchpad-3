@@ -1,20 +1,19 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for branch statuses."""
+"""Tests for recipe index pages."""
 
 __metaclass__ = type
 __all__ = []
 
 import transaction
-import unittest
 
+from storm.store import Store
+
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
-from lp.testing.windmill.constants import (
-    PAGE_LOAD,
-    SLEEP,
-    )
+from lp.testing.windmill.constants import FOR_ELEMENT
 
 
 class TestRecipeSetDaily(WindmillTestCase):
@@ -22,9 +21,6 @@ class TestRecipeSetDaily(WindmillTestCase):
 
     layer = CodeWindmillLayer
     suite_name = "Recipe daily build flag setting"
-
-    BUILD_DAILY_TEXT = u'//span[@id="edit-build_daily"]/span[@class="value"]'
-    BUILD_DAILY_POPUP = u'//div[contains(@class, "yui3-ichoicelist-content")]'
 
     def test_inline_recipe_daily_build(self):
         eric = self.factory.makePerson(
@@ -34,15 +30,17 @@ class TestRecipeSetDaily(WindmillTestCase):
         transaction.commit()
 
         client, start_url = self.getClientFor(recipe, user=eric)
-        client.click(xpath=self.BUILD_DAILY_TEXT)
-        client.waits.forElement(xpath=self.BUILD_DAILY_POPUP)
-        client.click(link=u'Build daily')
-        client.waits.sleep(milliseconds=SLEEP)
-        client.asserts.assertText(
-            xpath=self.BUILD_DAILY_TEXT, validator=u'Build daily')
+        client.click(id=u'edit-build_daily')
+        client.waits.forElement(
+            classname=u'yui3-ichoicelist-content', timeout=FOR_ELEMENT)
+        client.click(link=u'Built daily')
+        client.waits.forElement(
+            jquery=u'("div#edit-build_daily a.editicon.sprite.edit")',
+            timeout=FOR_ELEMENT)
+        client.asserts.assertTextIn(
+            id=u'edit-build_daily', validator=u'Built daily')
 
-        # Reload the page and make sure the change has stuck.
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        client.asserts.assertText(
-            xpath=self.BUILD_DAILY_TEXT, validator=u'Build daily')
+        transaction.commit()
+        freshly_fetched_recipe = Store.of(recipe).find(
+            SourcePackageRecipe, SourcePackageRecipe.id == recipe.id).one()
+        self.assertTrue(freshly_fetched_recipe.build_daily)
