@@ -721,9 +721,9 @@ class POTMsgSet(SQLBase):
             that this change is based on.
         """
         template = pofile.potemplate
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            template.translation_side)
-        if traits.getFlag(suggestion):
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
+        if current == suggestion:
             # Message is already current.
             return
 
