@@ -645,12 +645,38 @@ class TestEmailNotificationsCVE(
                 CveUnlinkedFromBug(
                     self.ten_minutes_ago, self.person, item))
 
-# I believe attachment change notifications are broken.  I'll be writing a
-# test to prove it in another branch.
 
-#     def test_attachment_added_removed_sends_no_emails(self):
-#     def test_attachment_removed_added_sends_no_emails(self):
-#     def test_attachment_added_another_removed_sends_emails(self):
+class TestEmailNotificationsAttachments(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** Attachment added:'
+    removed_message = '** Attachment removed:'
+
+    def _attachment(self):
+        with lp_dbuser():
+            # This actually creates a notification all by itself, via an
+            # event subscriber.  However, it won't be sent out for
+            # another five minutes.  Therefore, we send out separate
+            # change notifications.
+            return self.bug.addAttachment(
+                self.person, 'content', 'a comment', 'stuff.txt')
+
+    old = cachedproperty('old')(_attachment)
+    new = cachedproperty('new')(_attachment)
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugAttachmentChange(
+                    self.ten_minutes_ago, self.person, 'attachment',
+                    None, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugAttachmentChange(
+                    self.ten_minutes_ago, self.person, 'attachment',
+                    item, None))
 
 #  XXX This also still needs to be dealt with properly.
 #     def test_unsent_email_marks_notifications_properly(self):
