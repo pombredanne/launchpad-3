@@ -34,7 +34,7 @@ flag_info = sorted([
      'off'),
     ('malone.disable_targetnamesearch',
      '[empty|nonempty]',
-     'If nonempty targetnames are not consulted during text search.'
+     'If nonempty targetnames are not consulted during text search.',
      ''),
     ('memcache',
      '[enabled|disabled]',
