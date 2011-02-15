@@ -161,6 +161,12 @@ class SetCurrentTranslationTestMixin:
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [])
 
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # Return the upstream translation.
+        # :param tm: A translation for this side.
+        # :param tm_other: A translation for the other side.
+        raise NotImplementedError
+
     def test_c_None__n_None__o_shared(self, follows=False):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
@@ -1158,9 +1164,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
             potemplate=potemplate, sequence=1)
 
     def selectUpstreamTranslation(self, tm, tm_other):
-        # Return the upstream translation.
-        # :param tm: A translation for this side.
-        # :param tm: A translation for the other side.
+        # See `SetCurrentTranslationTestMixin`
         return tm_other
 
 
@@ -1200,7 +1204,5 @@ class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
             potemplate=potemplate, sequence=1)
 
     def selectUpstreamTranslation(self, tm, tm_other):
-        # Return the upstream translation.
-        # :param tm: A translation for this side.
-        # :param tm: A translation for the other side.
+        # See `SetCurrentTranslationTestMixin`
         return tm
