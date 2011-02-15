@@ -458,6 +458,8 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        # Note that this is a decorated result set, so will cache its value (in
+        # the absence of slices)
         return self._indexed_messages(include_content=True)
 
     def _indexed_messages(self, include_content=False, include_parents=True,

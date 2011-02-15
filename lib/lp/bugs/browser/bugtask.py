@@ -293,12 +293,18 @@ def unique_title(title):
     return title.strip()
 
 
-def get_comments_for_bugtask(bugtask, truncate=False):
+def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
+    slice_info=None):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
     requiring only two database queries. It removes the titles
     for those comments which do not have a "new" subject line
+
+    :param for_display: If true, the zeroth comment is given an empty body so
+        that it will be filtered by get_visible_comments.
+    :param slice_info: If not None, defines a slice of the comments to
+        retrieve.
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
@@ -321,6 +327,12 @@ def get_comments_for_bugtask(bugtask, truncate=False):
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
+    if for_display and comments and comments[0].index==0:
+        # We show the text of the first comment as the bug description,
+        # or via the special link "View original description", but we want
+        # to display attachments filed together with the bug in the
+        # comment list.
+        comments[0].text_for_display = ''
     return comments
 
 
@@ -686,7 +698,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         #     This line of code keeps the view's query count down,
         #     possibly using witchcraft. It should be rewritten to be
         #     useful or removed in favour of making other queries more
-        #     efficient.
+        #     efficient. The witchcraft is because the subscribers are accessed
+        #     in the initial page load, so the data is actually used.
         if self.user is not None:
             list(bug.getSubscribersForPerson(self.user))
 
@@ -789,14 +802,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
-        comments = get_comments_for_bugtask(self.context, truncate=True)
-        # We show the text of the first comment as the bug description,
-        # or via the special link "View original description", but we want
-        # to display attachments filed together with the bug in the
-        # comment list.
-        comments[0].text_for_display = ''
-        assert len(comments) > 0, "A bug should have at least one comment."
-        return comments
+        return get_comments_for_bugtask(self.context, truncate=True,
+            for_display=True)
 
     @cachedproperty
     def interesting_activity(self):
@@ -923,7 +930,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             return self.visible_comments
         else:
             oldest_count = config.malone.comments_list_truncate_oldest_to
-            return self.visible_comments[:oldest_count]
+            return get_visible_comments(get_comments_for_bugtask(
+                self.context, truncate=True, for_display=True,
+                slice_info=slice(None, oldest_count))
 
     @cachedproperty
     def visible_recent_comments_for_display(self):
