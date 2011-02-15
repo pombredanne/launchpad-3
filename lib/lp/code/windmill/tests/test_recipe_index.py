@@ -59,7 +59,6 @@ class TestRecipeSetDaily(WindmillTestCase):
         client.waits.forElement(
             jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-input")',
             timeout=FOR_ELEMENT)
-        import pdb; pdb.set_trace()
         client.type(
             text=recipe_text,
             jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-input")[0]')
@@ -70,6 +69,4 @@ class TestRecipeSetDaily(WindmillTestCase):
             timeout=FOR_ELEMENT)
         client.asserts.assertTextIn(
             jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-errors")[0]',
-            validator=(u'Error parsing recipe:3:11: '
-                       'End of line while looking for the branch url. '
-                       'Usage: merge NAME BRANCH [REVISION]'))
+            validator=u'End of line while looking for the branch url.')
