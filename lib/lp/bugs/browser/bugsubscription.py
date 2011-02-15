@@ -9,6 +9,7 @@ __all__ = [
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
+    'BugSubscriptionListView',
     ]
 
 import cgi
@@ -542,3 +543,14 @@ class SubscriptionAttrDecorator:
     @property
     def css_name(self):
         return 'subscriber-%s' % self.subscription.person.id
+
+
+class BugSubscriptionListView(LaunchpadView):
+    """A view to show all a person's subscriptions to a bug."""
+
+    @property
+    def label(self):
+        return "%s's subscriptions to bug %d" % (
+            self.user.displayname, self.context.bug.id)
+
+    page_title = label

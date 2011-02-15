@@ -158,7 +158,7 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-from lp.testing.windmill import constants
+from lp.testing.windmill import constants, lpuser
 
 
 class FakeTime:
@@ -771,6 +771,23 @@ class WindmillTestCase(TestCaseWithFactory):
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=self.layer.appserver_root_url())
+
+    def getClientFor(self, obj, user=None, password='test', view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if user is not None:
+            email = removeSecurityProxy(user).preferredemail.email
+            client.open(url=lpuser.get_basic_login_url(email, password))
+            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
+                obj, view_name=view_name, force_local_path=True)
+        obj_url = self.layer.base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
 
 
 class YUIUnitTestCase(WindmillTestCase):
