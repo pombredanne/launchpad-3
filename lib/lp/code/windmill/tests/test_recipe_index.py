@@ -44,3 +44,32 @@ class TestRecipeSetDaily(WindmillTestCase):
         freshly_fetched_recipe = Store.of(recipe).find(
             SourcePackageRecipe, SourcePackageRecipe.id == recipe.id).one()
         self.assertTrue(freshly_fetched_recipe.build_daily)
+
+    def test_inline_recipe_text_errors(self):
+        eric = self.factory.makePerson(
+            name="eric", displayname="Eric the Viking", password="test",
+            email="eric@example.com")
+        recipe = self.factory.makeSourcePackageRecipe(owner=eric)
+        recipe_text = recipe.recipe_text + 'merge WTF?'
+        transaction.commit()
+
+        client, start_url = self.getClientFor(recipe, user=eric)
+        client.click(
+            jquery=u'("div#edit-recipe_text a.yui3-editable_text-trigger")[0]')
+        client.waits.forElement(
+            jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-input")',
+            timeout=FOR_ELEMENT)
+        import pdb; pdb.set_trace()
+        client.type(
+            text=recipe_text,
+            jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-input")[0]')
+        client.click(
+            jquery=u'("div#edit-recipe_text button.yui3-ieditor-submit_button")[0]')
+        client.waits.forElement(
+            jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-errors")',
+            timeout=FOR_ELEMENT)
+        client.asserts.assertTextIn(
+            jquery=u'("div#edit-recipe_text textarea.yui3-ieditor-errors")[0]',
+            validator=(u'Error parsing recipe:3:11: '
+                       'End of line while looking for the branch url. '
+                       'Usage: merge NAME BRANCH [REVISION]'))
