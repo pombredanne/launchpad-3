@@ -21,12 +21,12 @@ __metaclass__ = type
 # generate the web-visible feature flag documentation.
 flag_info = sorted([
     ('code.branchmergequeue',
-     '[empty|nonempty]',
-     'shows branch merge queues if non-empty',
+     '[true|]',
+     'enables merge queues pages and lists them on branch pages',
      ''),
     ('code.incremental_diffs.enabled',
-     '[empty|nonempty]',
-     'shows incremental diffs on merge proposals if non-empty',
+     '[true|]',
+     'shows incremental diffs on merge proposals',
      ''),
     ('code.recipes_enabled',
      '[on|off]',
@@ -41,8 +41,8 @@ flag_info = sorted([
      'enables advanced subscriptions features',
      'off'),
     ('malone.disable_targetnamesearch',
-     '[empty|nonempty]',
-     'disables consultation of target names during text search if non-empty',
+     '[true|]',
+     'if true, disables consultation of target names during text search',
      ''),
     ('memcache',
      '[enabled|disabled]',
@@ -53,8 +53,8 @@ flag_info = sorted([
      'redirects to private URLs instead of proxying',
      'off'),
     ('visible_render_time',
-     '[empty|nonempty]',
-     'shows the page render time in the login widget if non-empty',
+     '[true|]',
+     'shows the page render time in the login widget',
      ''),
     ])
 
