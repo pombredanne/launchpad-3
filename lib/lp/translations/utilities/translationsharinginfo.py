@@ -161,14 +161,14 @@ def get_upstream_sharing_info(distroseries, sourcepackagename,
         distroseries, sourcepackagename, templatename))
 
 
-def has_ubuntu_template(productseries, templatename):
+def has_ubuntu_template(productseries, templatename=None):
     """Check for existence of ubuntu template."""
     result = find_ubuntu_sharing_info(
         productseries, templatename, template_only=True)
     return not result.is_empty()
 
 
-def has_upstream_template(distroseries, sourcepackagename, templatename):
+def has_upstream_template(distroseries, sourcepackagename, templatename=None):
     """Check for existence of upstream template."""
     result = find_upstream_sharing_info(
             distroseries, sourcepackagename, templatename,
