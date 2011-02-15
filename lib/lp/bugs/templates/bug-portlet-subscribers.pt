@@ -25,7 +25,7 @@
     <img src="/@@/spinner" />
   </div>
   <script type="text/javascript">
-    LPS.use('io-base', 'node', 'lp.bugs.bugtask_index.portlet', function(Y) {
+    LPS.use('io-base', 'node', 'lp.bugs.bugtask_index.portlets', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.
         var subscription_link = Y.one('.menu-link-subscription');
