@@ -677,18 +677,3 @@ class TestEmailNotificationsAttachments(
                 BugAttachmentChange(
                     self.ten_minutes_ago, self.person, 'attachment',
                     item, None))
-
-#  XXX This also still needs to be dealt with properly.
-#     def test_unsent_email_marks_notifications_properly(self):
-#         self.bug.addChange(
-#             BugTitleChange(
-#                 self.ten_minutes_ago, self.person, "title",
-#                 "Old summary", "New summary"))
-#         self.bug.addChange(
-#             BugTitleChange(
-#                 self.ten_minutes_ago, self.person, "title",
-#                 "New summary", "Old summary"))
-#         discarded = list(self.get_messages())
-#         # This makes sure we have cleaned out the unsent messages.
-#         self.assertEqual(
-#             list(self.notification_set.getNotificationsToSend()), [])
