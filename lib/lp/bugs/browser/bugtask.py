@@ -927,28 +927,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 prev_comment = comment
                 index += 1
         return events
-        if False:
-            oldest_recent_comment = visible_comments[0]
-            for index, event in enumerate(events):
-                if event.get("comment") is oldest_recent_comment:
-                    num_hidden = (total_comments - len(visible_comments))
-                    separator = {
-                        'date': oldest_recent_comment.datecreated,
-                        'num_hidden': num_hidden,
-                        }
-                    events.insert(index, separator)
-
-        return events
-
-    @cachedproperty
-    def visible_comments(self):
-        """All visible comments.
-
-        See `get_visible_comments` for the definition of a "visible"
-        comment.
-        """
-        import pdb;pdb.set_trace()
-        return get_visible_comments(self.comments)
 
     @property
     def visible_initial_comments(self):

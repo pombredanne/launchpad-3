@@ -1413,7 +1413,6 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         # Note that this function and indexed_messages have significant overlap
         # and could stand to be refactored.
-        import pdb;pdb.set_trace()
         slices = []
         if slice_info is not None:
             # NB: This isn't a full implementation of the slice protocol,
