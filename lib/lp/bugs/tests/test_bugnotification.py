@@ -54,6 +54,7 @@ from lp.bugs.model.bugnotification import (
     BugNotificationSet,
     )
 from lp.bugs.scripts.bugnotification import get_email_notifications
+from lp.services.propertycache import cachedproperty
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import lp_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
@@ -342,12 +343,12 @@ class TestNotificationsForRegistrantsForProducts(
             owner=self.bug_owner)
 
 
-class TestUndoneNotifications(TestCaseWithFactory):
+class EmailNotificationTestBase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestUndoneNotifications, self).setUp()
+        super(EmailNotificationTestBase, self).setUp()
         login('foo.bar@canonical.com')
         self.product_owner = self.factory.makePerson(name="product-owner")
         self.person = self.factory.makePerson(name="sample-person")
@@ -377,7 +378,7 @@ class TestUndoneNotifications(TestCaseWithFactory):
         for notification in self.notification_set.getNotificationsToSend():
             notification.date_emailed = self.now
         flush_database_updates()
-        super(TestUndoneNotifications, self).tearDown()
+        super(EmailNotificationTestBase, self).tearDown()
 
     def get_messages(self):
         notifications = self.notification_set.getNotificationsToSend()
@@ -386,116 +387,282 @@ class TestUndoneNotifications(TestCaseWithFactory):
             for message in messages:
                 yield message, message.get_payload(decode=True)
 
-    def test_title_change_seen(self):
-        # This is a simple smoke test to give some confidence that our other
-        # tests in this suite are valid.
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Old summary", "New summary"))
-        message, body = self.get_messages().next()
-        self.assertThat(
-            body,
-            Contains('** Summary changed:\n\n- Old summary\n+ New summary'))
 
-    def test_unsent_email_marks_notifications_properly(self):
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Old summary", "New summary"))
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "New summary", "Old summary"))
-        discarded = list(self.get_messages())
-        # This makes sure we have cleaned out the unsent messages.
-        self.assertEqual(
-            list(self.notification_set.getNotificationsToSend()), [])
+class EmailNotificationsBugMixin:
 
-    def test_undone_title_change_sends_no_emails(self):
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Old summary", "New summary"))
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "New summary", "Old summary"))
-        self.assertEqual(list(self.get_messages()), [])
+    change_class = change_name = old = new = alt = unexpected_text = None
 
-    def test_undone_title_change_is_invisible(self):
+    def change(self, old, new):
         self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Old summary", "New summary"))
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "New summary", "Old summary"))
+            self.change_class(
+                self.ten_minutes_ago, self.person, self.change_name,
+                old, new))
+
+    def change_other(self):
         self.bug.addChange(
             BugVisibilityChange(
                 self.ten_minutes_ago, self.person, "private",
                 False, True))
+
+    def test_change_seen(self):
+        # A smoketest.
+        self.change(self.old, self.new)
         message, body = self.get_messages().next()
-        self.assertThat(body, Not(Contains('** Summary changed:')))
-        self.assertThat(body, Contains('** Visibility changed to: Private'))
+        self.assertThat(body, Contains(self.unexpected_text))
 
-    def test_multiple_undone_title_change_sends_no_emails(self):
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Old summary", "New summary"))
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "New summary", "Another summary"))
-        self.bug.addChange(
-            BugTitleChange(
-                self.ten_minutes_ago, self.person, "title",
-                "Another summary", "Old summary"))
+    def test_undone_change_sends_no_emails(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.old)
         self.assertEqual(list(self.get_messages()), [])
 
-    def test_undone_tags_sends_no_email(self):
-        # Tags use ordered sets to generate change descriptions, which we
-        # demonstrate here.
-        self.bug.addChange(
-            BugTagsChange(
-                self.ten_minutes_ago, self.person, "tags",
-                ['foo', 'bar', 'baz'], ['foo', 'bar']))
-        self.bug.addChange(
-            BugTagsChange(
-                self.ten_minutes_ago, self.person, "tags",
-                ['foo', 'bar'], ['baz', 'bar', 'foo', 'bar']))
+    def test_undone_change_is_not_included(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.old)
+        self.change_other()
+        message, body = self.get_messages().next()
+        self.assertThat(body, Not(Contains(self.unexpected_text)))
+
+    def test_multiple_undone_changes_sends_no_emails(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.alt)
+        self.change(self.alt, self.old)
         self.assertEqual(list(self.get_messages()), [])
 
-    def test_undone_status_sends_no_email(self):
-        self.bug.addChange(
-            BugTaskStatusChange(
-                self.bug.bugtasks[0], self.ten_minutes_ago,
-                self.person, "status",
-                BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS))
-        self.bug.addChange(
-            BugTaskStatusChange(
-                self.bug.bugtasks[0], self.ten_minutes_ago,
-                self.person, "status",
-                BugTaskStatus.INPROGRESS, BugTaskStatus.TRIAGED))
+
+class EmailNotificationsBugNotRequiredMixin(EmailNotificationsBugMixin):
+    # This test collection is for attributes that can be None.
+
+    def test_added_removed_sends_no_emails(self):
+        self.change(None, self.old)
+        self.change(self.old, None)
         self.assertEqual(list(self.get_messages()), [])
 
-    def test_changing_status_on_different_bugtasks_is_not_undoing(self):
+    def test_removed_added_sends_no_emails(self):
+        self.change(self.old, None)
+        self.change(None, self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_duplicate_marked_changed_removed_sends_no_emails(self):
+        self.change(None, self.old)
+        self.change(self.old, self.new)
+        self.change(self.new, None)
+        self.assertEqual(list(self.get_messages()), [])
+
+
+class EmailNotificationsBugTaskMixin(EmailNotificationsBugMixin):
+
+    def change(self, old, new, index=0):
+        self.bug.addChange(
+            self.change_class(
+                self.bug.bugtasks[index], self.ten_minutes_ago,
+                self.person, self.change_name, old, new))
+
+    def test_changing_on_different_bugtasks_is_not_undoing(self):
         with lp_dbuser():
             product2 = self.factory.makeProduct(owner=self.product_owner)
             self.bug.addTask(self.product_owner, product2)
-        self.bug.addChange(
-            BugTaskStatusChange(
-                self.bug.bugtasks[0], self.ten_minutes_ago,
-                self.person, "status",
-                BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS))
-        self.bug.addChange(
-            BugTaskStatusChange(
-                self.bug.bugtasks[1], self.ten_minutes_ago,
-                self.person, "status",
-                BugTaskStatus.INPROGRESS, BugTaskStatus.TRIAGED))
+        self.change(self.old, self.new, index=0)
+        self.change(self.new, self.old, index=1)
         message, body = self.get_messages().next()
-        self.assertThat(body, Contains('Status: Triaged => In Progress'))
-        self.assertThat(body, Contains('Status: In Progress => Triaged'))
+        self.assertThat(body, Contains(self.unexpected_text))
 
+
+class EmailNotificationsAddedRemovedMixin:
+
+    old = new = added_message = removed_message = None
+    def add(self, item):
+        raise NotImplementedError
+    remove = add
+
+    def test_added_seen(self):
+        self.add(self.old)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.added_message))
+
+    def test_added_removed_sends_no_emails(self):
+        self.add(self.old)
+        self.remove(self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_removed_added_sends_no_emails(self):
+        self.remove(self.old)
+        self.add(self.old)
+        self.assertEqual(list(self.get_messages()), [])
+        
+    def test_added_another_removed_sends_emails(self):
+        self.add(self.old)
+        self.remove(self.new)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.added_message))
+        self.assertThat(body, Contains(self.removed_message))
+
+
+class TestEmailNotificationsBugTitle(
+    EmailNotificationsBugMixin, EmailNotificationTestBase):
+
+    change_class = BugTitleChange
+    change_name = "title"
+    old = "Old summary"
+    new = "New summary"
+    alt = "Another summary"
+    unexpected_text = '** Summary changed:'
+
+
+class TestEmailNotificationsBugTags(
+    EmailNotificationsBugMixin, EmailNotificationTestBase):
+
+    change_class = BugTagsChange
+    change_name = "tags"
+    old = ['foo', 'bar', 'baz']
+    new = ['foo', 'bar']
+    alt = ['bing', 'shazam']
+    unexpected_text = '** Tags'
+
+    def test_undone_ordered_set_sends_no_email(self):
+        # Tags use ordered sets to generate change descriptions, which we
+        # demonstrate here.
+        self.change(['foo', 'bar', 'baz'], ['foo', 'bar'])
+        self.change(['foo', 'bar'], ['baz', 'bar', 'foo', 'bar'])
+        self.assertEqual(list(self.get_messages()), [])
+
+
+class TestEmailNotificationsBugDuplicate(
+    EmailNotificationsBugNotRequiredMixin, EmailNotificationTestBase):
+
+    change_class = BugDuplicateChange
+    change_name = "duplicateof"
+    unexpected_text = 'duplicate'
+
+    def _bug(self):
+        with lp_dbuser():
+            return self.factory.makeBug()
+
+    old = cachedproperty('old')(_bug)
+    new = cachedproperty('new')(_bug)
+    alt = cachedproperty('alt')(_bug)
+
+
+class TestEmailNotificationsBugTaskStatus(
+    EmailNotificationsBugTaskMixin, EmailNotificationTestBase):
+
+    change_class = BugTaskStatusChange
+    change_name = "status"
+    old = BugTaskStatus.TRIAGED
+    new = BugTaskStatus.INPROGRESS
+    alt = BugTaskStatus.INVALID
+    unexpected_text = 'Status: '
+
+
+class TestEmailNotificationsBugWatch(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    # Note that this is for bugwatches added to bugs.  Bugwatches added
+    # to bugtasks are separate animals AIUI, and we don't try to combine
+    # them here for notifications.  Bugtasks have only zero or one
+    # bugwatch, so they can be handled just as a simple bugtask attribute
+    # change, like status.
+
+    added_message = '** Bug watch added:'
+    removed_message = '** Bug watch removed:'
+
+    @cachedproperty
+    def tracker(self):
+        with lp_dbuser():
+            return self.factory.makeBugTracker()
+
+    def _watch(self, identifier='123'):
+        with lp_dbuser():
+            # This actually creates a notification all by itself.  However,
+            # it won't be sent out for another five minutes.  Therefore,
+            # we send out separate change notifications.
+            return self.bug.addWatch(
+                self.tracker, identifier, self.product_owner)
+
+    old = cachedproperty('old')(_watch)
+    new = cachedproperty('new')(lambda self: self._watch('456'))
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugWatchAdded(
+                    self.ten_minutes_ago, self.product_owner, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugWatchRemoved(
+                    self.ten_minutes_ago, self.product_owner, item))
+
+
+class TestEmailNotificationsBranch(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** Branch linked:'
+    removed_message = '** Branch unlinked:'
+
+    def _branch(self):
+        with lp_dbuser():
+            return self.factory.makeBranch()
+
+    old = cachedproperty('old')(_branch)
+    new = cachedproperty('new')(_branch)
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BranchLinkedToBug(
+                    self.ten_minutes_ago, self.person, item, self.bug))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BranchUnlinkedFromBug(
+                    self.ten_minutes_ago, self.person, item, self.bug))
+
+
+class TestEmailNotificationsCVE(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** CVE added:'
+    removed_message = '** CVE removed:'
+
+    def _cve(self, sequence):
+        with lp_dbuser():
+            return self.factory.makeCVE(sequence)
+
+    old = cachedproperty('old')(lambda self: self._cve('2020-1234'))
+    new = cachedproperty('new')(lambda self: self._cve('2020-5678'))
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                CveLinkedToBug(
+                    self.ten_minutes_ago, self.person, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                CveUnlinkedFromBug(
+                    self.ten_minutes_ago, self.person, item))
+
+# I believe attachment change notifications are broken.  I'll be writing a
+# test to prove it in another branch.
+
+#     def test_attachment_added_removed_sends_no_emails(self):
+#     def test_attachment_removed_added_sends_no_emails(self):
+#     def test_attachment_added_another_removed_sends_emails(self):
+
+#  XXX This also still needs to be dealt with properly.
+#     def test_unsent_email_marks_notifications_properly(self):
+#         self.bug.addChange(
+#             BugTitleChange(
+#                 self.ten_minutes_ago, self.person, "title",
+#                 "Old summary", "New summary"))
+#         self.bug.addChange(
+#             BugTitleChange(
+#                 self.ten_minutes_ago, self.person, "title",
+#                 "New summary", "Old summary"))
+#         discarded = list(self.get_messages())
+#         # This makes sure we have cleaned out the unsent messages.
+#         self.assertEqual(
+#             list(self.notification_set.getNotificationsToSend()), [])

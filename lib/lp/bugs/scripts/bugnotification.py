@@ -17,7 +17,6 @@ from operator import itemgetter
 
 import transaction
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import (
     emailPeople,
     get_email_template,
@@ -31,6 +30,23 @@ from lp.bugs.mail.bugnotificationbuilder import (
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.services.mail.mailwrapper import MailWrapper
 
+def get_key(notification):
+    activity = notification.activity
+    if activity is not None:
+        key = activity.whatchanged
+        if key in ('changed duplicate marker',
+                   'marked as duplicate',
+                   'removed duplicate marker'):
+            key = 'duplicate'
+        elif key.endswith(' added'):
+            key = key[:-len('added')] + activity.newvalue
+        elif key.endswith(' removed'):
+            key = key[:-len('removed')] + activity.oldvalue
+        elif key.endswith(' linked'):
+            key = key[:-len('linked')] + activity.newvalue
+        elif key.endswith(' unlinked'):
+            key = key[:-len('unlinked')] + activity.oldvalue
+        return key
 
 def construct_email_notifications(bug_notifications):
     """Construct an email from a list of related bug notifications.
@@ -46,7 +62,8 @@ def construct_email_notifications(bug_notifications):
     comment = None
     references = []
     text_notifications = []
-    changes = {}
+    old_values = {}
+    new_values = {}
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -56,20 +73,20 @@ def construct_email_notifications(bug_notifications):
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
         else:
-            activity = notification.activity
-            if activity is not None:
-                if activity.whatchanged not in changes:
-                    changes[activity.whatchanged] = {'old': activity.oldvalue}
-                changes[activity.whatchanged]['new'] = activity.newvalue
+            key = get_key(notification)
+            if key is not None:
+                if key not in old_values:
+                    old_values[key] = notification.activity.oldvalue
+                new_values[key] = notification.activity.newvalue
 
     recipients = {}
     filtered_notifications = []
+    omitted_notifications = []
     for notification in bug_notifications:
-        activity = notification.activity
-        change = changes.get(activity.whatchanged) if activity else None
+        key = get_key(notification)
         if (notification.is_comment or
-            change is None or
-            change['old'] != change['new']):
+            key is None or
+            old_values[key] != new_values[key]):
             # We will report this notification.
             filtered_notifications.append(notification)
             for recipient in notification.recipients:
@@ -80,11 +97,7 @@ def construct_email_notifications(bug_notifications):
                 for email_person in email_people:
                     recipients[email_person] = recipient
         else:
-            # We are discarding this notification, because it was undone.
-            # Mark it as sent so it is not processed again.
-            notification.date_emailed = UTC_NOW
-            # XXX Set a flag so we know it was consciously discarded, for
-            # debugging.
+            omitted_notifications.append(notification)
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -177,7 +190,7 @@ def construct_email_notifications(bug_notifications):
             rationale, references, msgid)
         messages.append(msg)
 
-    return filtered_notifications, messages
+    return filtered_notifications, messages # XXX omitted_notifications
 
 
 def notification_comment_batches(notifications):
