@@ -12,7 +12,7 @@
     .binary-build .indent {
       padding-left: 2em;
     }
-    #edit-recipe_text {
+    div#edit-recipe_text, div#edit-description {
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
       margin-top: -15px;
     }
