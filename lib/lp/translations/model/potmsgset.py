@@ -1028,6 +1028,16 @@ class POTMsgSet(SQLBase):
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
                         traits.other_side_traits.setFlag(message, True)
+                    elif (incumbent_message is None and
+                          traits.side == TranslationSide.UPSTREAM):
+                        # If this is the first upstream translation, we
+                        # we use it as the current Ubuntu translation
+                        # too, overriding a possibly existing current
+                        # Ubuntu translation.
+                        if other_incumbent is not None:
+                            traits.other_side_traits.setFlag(
+                                other_incumbent, False)
+                        traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
                     traits.other_side_traits.setFlag(incumbent_message, False)
