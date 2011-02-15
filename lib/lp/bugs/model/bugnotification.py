@@ -49,6 +49,7 @@ class BugNotification(SQLBase):
     bug = ForeignKey(dbName='bug', notNull=True, foreignKey='Bug')
     is_comment = BoolCol(notNull=True)
     date_emailed = UtcDateTimeCol(notNull=False)
+    is_omitted = BoolCol(notNull=True)
 
     @property
     def recipients(self):
