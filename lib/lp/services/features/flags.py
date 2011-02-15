@@ -6,6 +6,7 @@ __all__ = [
     'flag_info',
     'NullFeatureController',
     'undocumented_flags',
+    'value_domain_info',
     ]
 
 
@@ -16,6 +17,14 @@ from lp.services.features.rulesource import (
 
 
 __metaclass__ = type
+
+
+value_domain_info = sorted([
+    ('boolean',
+     'Any non-empty value enables the flag; an empty value disables it.'),
+    ('float',
+     'The flag value is set to the given floating point number.'),
+    ])
 
 # This table of flag name, value domain, and prose documentation is used to
 # generate the web-visible feature flag documentation.
