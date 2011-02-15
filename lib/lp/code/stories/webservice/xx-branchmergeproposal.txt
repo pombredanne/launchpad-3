@@ -85,9 +85,10 @@ If we try and create the merge proposal again, we should get a ValueError.
     ...     initial_comment='Merge\nit!', needs_review=True,
     ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
     ...     review_types=['green'])
-    HTTP/1.1 400 Bad Request ...
-    BranchMergeProposalExists: There is already a branch merge proposal
-    registered for branch ... to land on ... that is still active.
+    HTTP/1.1 400 Bad Request
+    ...
+    There is already a branch merge proposal registered for branch
+    ... to land on ... that is still active.
 
 Our review request is listed in the votes collection.
 

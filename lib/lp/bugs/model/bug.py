@@ -318,7 +318,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug', orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='index')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -436,7 +436,21 @@ class Bug(SQLBase):
 
     def reindexMessages(self):
         """See `IBug`."""
+        store = Store.of(self)
+        if store is None:
+            # Bug hasn't been flushed yet, so use the store policy instead.
+            store = IStore(BugMessage)
+        if (store.find(BugMessage, BugMessage.bugID==self.id,
+            BugMessage.index == None).count() == 0):
+            # Fully indexed
+            return
         indexed_messages = self._indexed_messages(include_bugmessage=True)
+        # First reset the ones that have changed, so that we don't run into
+        # IntegrityError due to having two temporarily hold the same index.
+        for indexed_message, bugmessage in indexed_messages:
+            if bugmessage.index != indexed_message.index:
+                bugmessage.index = None
+        Store.of(self).flush()
         for indexed_message, bugmessage in indexed_messages:
             if bugmessage.index != indexed_message.index:
                 bugmessage.index = indexed_message.index
@@ -985,13 +999,24 @@ BugMessage""" % sqlvalues(self.id))
                         recipients.addRegistrant(pillar.owner, pillar)
 
         # Structural subscribers.
+        if recipients is None:
+            temp_recipients = None
+        else:
+            temp_recipients = BugNotificationRecipients(
+                duplicateof=recipients.duplicateof)
         also_notified_subscribers.update(
             getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=recipients, level=level))
+                self.bugtasks, recipients=temp_recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        if recipients is not None:
+            # A direct subscriber may have muted this notification.
+            # Therefore, we want to remove any direct subscribers from the
+            # structural subscription recipients before we merge.
+            temp_recipients.remove(direct_subscribers)
+            recipients.update(temp_recipients)
 
         # Remove security proxy for the sort key, but return
         # the regular proxied object.
@@ -1102,9 +1127,10 @@ BugMessage""" % sqlvalues(self.id))
         if message not in self.messages:
             if user is None:
                 user = message.owner
-
+            self.reindexMessages()
             result = BugMessage(bug=self, message=message,
-                bugwatch=bugwatch, remote_comment_id=remote_comment_id)
+                bugwatch=bugwatch, remote_comment_id=remote_comment_id,
+                index=self.bug_messages.count())
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
@@ -2408,7 +2434,7 @@ class BugSet:
             bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
-        BugMessage(bug=bug, message=params.msg)
+        BugMessage(bug=bug, message=params.msg, index=0)
 
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)

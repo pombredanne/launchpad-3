@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -413,11 +413,11 @@ class FileImporter(object):
         :param message: The message.
         :return: The POTMsgSet instance, existing or new.
         """
-        potmsgset = (
-            self.potemplate.getOrCreateSharedPOTMsgSet(
-                message.msgid_singular, plural_text=message.msgid_plural,
-                context=message.context))
-        return potmsgset
+        return self.potemplate.getOrCreateSharedPOTMsgSet(
+            message.msgid_singular, plural_text=message.msgid_plural,
+            context=message.context,
+            initial_file_references=message.file_references,
+            initial_source_comment=message.source_comment)
 
     @cachedproperty
     def share_with_other_side(self):
@@ -602,9 +602,6 @@ class FileImporter(object):
         :param potmsgset: The current messageset for this message id.
         :param errormsg: The errormessage returned by updateTranslation.
         """
-# XXX: henninge 2008-11-05: The error should contain an ID of some sort
-#  to provide an explicit identification in tests. Until then error messages
-#  must not be rephrased without changing the test as well.
         self.errors.append({
             'potmsgset': potmsgset,
             'pofile': self.pofile,
@@ -822,11 +819,6 @@ class POFileImporter(FileImporter):
             return
 
         potmsgset = self.getOrCreatePOTMsgSet(message)
-        if potmsgset.getSequence(self.potemplate) == 0:
-            # We are importing a message that does not exist in
-            # latest translation template so we can update its values.
-            potmsgset.sourcecomment = message.source_comment
-            potmsgset.filereferences = message.file_references
 
         if 'fuzzy' in message.flags:
             message.flags.remove('fuzzy')
