@@ -23,11 +23,12 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    export_operation_as,
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
+    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -139,12 +140,12 @@ class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
     @mutator_for(ISourcePackageRecipeView['recipe_text'])
-    @operation_parameters(recipe_text=copy_field(
+    @operation_parameters(
+        recipe_text=copy_field(
             ISourcePackageRecipeView['recipe_text']))
     @export_write_operation()
-    def _setRecipeText(recipe_text):
-        """Set the text of the recipe."""
-
+    @operation_for_version("devel")
+    @operation_removed_in_version("devel")
     @operation_parameters(recipe_text=Text())
     @export_write_operation()
     def setRecipeText(recipe_text):
