@@ -10,12 +10,12 @@ import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.windmill.testing.constants import (
+from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
-from canonical.launchpad.windmill.testing.lpuser import login_person
+from lp.testing.windmill.lpuser import login_person
 from lp.app.browser.tales import PPAFormatterAPI
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.soyuz.model.processor import ProcessorFamily
@@ -64,14 +64,12 @@ class TestRecipeBuild(WindmillTestCase):
 
         client = self.client
         client.open(url=canonical_url(self.recipe))
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'request-builds', timeout=PAGE_LOAD)
 
         # Request a new build.
         client.click(id=u'request-builds')
         client.waits.forElement(id=u'field.archive')
-        client.click(id=u'field.distros.1')
         client.click(name=u'field.actions.request')
 
         # Ensure it shows up.
@@ -83,7 +81,6 @@ class TestRecipeBuild(WindmillTestCase):
         # And try the same one again.
         client.click(id=u'request-builds')
         client.waits.forElement(id=u'field.archive')
-        client.click(id=u'field.distros.1')
         client.click(name=u'field.actions.request')
 
         # And check that there's an error.
