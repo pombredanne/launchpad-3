@@ -54,10 +54,10 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.services.fields import (
     ContentNameField,
     FormattableDate,

@@ -142,8 +142,8 @@ time goes on.
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
-
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.

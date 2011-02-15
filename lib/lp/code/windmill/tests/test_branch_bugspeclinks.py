@@ -10,9 +10,9 @@ import unittest
 
 import windmill
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 class TestBranchBugLinks(WindmillTestCase):

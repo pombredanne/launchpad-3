@@ -9,6 +9,7 @@ __all__ = [
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
+    'BugSubscriptionListView',
     ]
 
 import cgi
@@ -37,8 +38,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -542,3 +543,14 @@ class SubscriptionAttrDecorator:
     @property
     def css_name(self):
         return 'subscriber-%s' % self.subscription.person.id
+
+
+class BugSubscriptionListView(LaunchpadView):
+    """A view to show all a person's subscriptions to a bug."""
+
+    @property
+    def label(self):
+        return "%s's subscriptions to bug %d" % (
+            self.user.displayname, self.context.bug.id)
+
+    page_title = label

@@ -35,7 +35,7 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.registry.interfaces.distributionsourcepackage import (

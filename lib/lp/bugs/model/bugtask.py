@@ -9,13 +9,13 @@ __metaclass__ = type
 
 __all__ = [
     'BugTaskDelta',
-    'BugTaskResultSet',
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'BugTask',
     'BugTaskSet',
     'NullBugTask',
     'bugtask_sort_key',
+    'determine_target',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -97,13 +97,14 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
@@ -126,9 +127,12 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -143,7 +147,6 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -158,12 +161,9 @@ from lp.registry.interfaces.productseries import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -268,6 +268,29 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
+def determine_target(product, productseries, distribution, distroseries,
+                     sourcepackagename):
+    """Returns the IBugTarget defined by the given arguments."""
+    if product:
+        return product
+    elif productseries:
+        return productseries
+    elif distribution:
+        if sourcepackagename:
+            return distribution.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distribution
+    elif distroseries:
+        if sourcepackagename:
+            return distroseries.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distroseries
+    else:
+        raise AssertionError("Unable to determine bugtask target.")
+
+
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
 
@@ -313,24 +336,9 @@ class BugTaskMixin:
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
-        if self.product:
-            return self.product
-        elif self.productseries:
-            return self.productseries
-        elif self.distribution:
-            if self.sourcepackagename:
-                return self.distribution.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distribution
-        elif self.distroseries:
-            if self.sourcepackagename:
-                return self.distroseries.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distroseries
-        else:
-            raise AssertionError("Unable to determine bugtask target.")
+        return determine_target(
+            self.product, self.productseries, self.distribution,
+            self.distroseries, self.sourcepackagename)
 
     @property
     def related_tasks(self):
@@ -424,21 +432,6 @@ class NullBugTask(BugTaskMixin):
         """See `IBugTask`."""
         return 'Bug #%s is not in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
-
-
-class BugTaskResultSet(DecoratedResultSet):
-    """Decorated results with cached assignees."""
-
-    def __iter__(self, *args, **kwargs):
-        """Iter with caching of assignees.
-
-        Assumes none of the decorators will need to access the assignees or
-        there is not benefit.
-        """
-        bugtasks = list(
-            super(BugTaskResultSet, self).__iter__(*args, **kwargs))
-        BugTaskSet._cache_assignees(bugtasks)
-        return iter(bugtasks)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -1419,12 +1412,13 @@ def _build_tag_set_query_any(tags):
     :param tags: An iterable of valid tags without - or + and not wildcards.
     :return: A string SQL query fragment or None if no tags were provided.
     """
-    tags = list(tags)
+    tags = sorted(tags)
     if tags == []:
         return None
-    return ("EXISTS (SELECT TRUE FROM BugTag WHERE "
-        "BugTag.bug = Bug.id AND BugTag.tag IN %s)" 
-        % sqlvalues(sorted(tags)))
+    return "EXISTS (%s)" % (
+        "SELECT TRUE FROM BugTag"
+        " WHERE BugTag.bug = Bug.id"
+        " AND BugTag.tag IN %s") % sqlvalues(tags)
 
 
 def build_tag_search_clause(tags_spec):
@@ -2001,12 +1995,7 @@ class BugTaskSet:
                 WHERE Message.owner = %(bug_commenter)s
                     AND Message.id = BugMessage.message
                     AND BugTask.bug = BugMessage.bug
-                    AND Message.id NOT IN (
-                        SELECT BugMessage.message FROM BugMessage
-                        WHERE BugMessage.bug = BugTask.bug
-                        ORDER BY BugMessage.id
-                        LIMIT 1
-                    )
+                    AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
@@ -2225,9 +2214,14 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-                searchtext_like_quoted)]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted
+            ]
+        no_targetnamesearch = bool(features.getFeatureFlag(
+            'malone.disable_targetnamesearch'))
+        if not no_targetnamesearch:
+            text_search_clauses.append(
+                "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted))
         # Due to performance problems, whether to search in comments is
         # controlled by a config option.
         if config.malone.search_comments:
@@ -2370,16 +2364,17 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, params, *args):
+    def _search(self, resultrow, prejoins, pre_iter_hook, params, *args):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
         :param prejoins: A sequence of Storm SQL row instances which are
             pre-joined.
+        :param pre_iter_hook: An optional pre-iteration hook used for eager
+            loading bug targets for list views.
         :param params: A BugTaskSearchParams instance.
         :param args: optional additional BugTaskSearchParams instances,
         """
-
         store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
         has_duplicate_results] = self.buildQuery(params)
@@ -2399,7 +2394,8 @@ class BugTaskSet:
                 decorator = bugtask_decorator
 
             resultset.order_by(orderby)
-            return DecoratedResultSet(resultset, result_decorator=decorator)
+            return DecoratedResultSet(resultset, result_decorator=decorator,
+                pre_iter_hook=pre_iter_hook)
 
         bugtask_fti = SQL('BugTask.fti')
         inner_resultrow = (BugTask, bugtask_fti)
@@ -2438,8 +2434,8 @@ class BugTaskSet:
 
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        return BugTaskResultSet(
-            result, result_decorator=decorator)
+        return DecoratedResultSet(result, result_decorator=decorator,
+            pre_iter_hook=pre_iter_hook)
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
@@ -2458,35 +2454,37 @@ class BugTaskSet:
         if _noprejoins:
             prejoins = []
             resultrow = BugTask
+            eager_load = None
         else:
             requested_joins = kwargs.get('prejoins', [])
+            # NB: We could save later work by predicting what sort of targets
+            # we might be interested in here, but as at any point we're dealing
+            # with relatively few results, this is likely to be a small win.
             prejoins = [
-                (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
-                (Product, LeftJoin(Product, BugTask.product == Product.id)),
-                (SourcePackageName,
-                 LeftJoin(
-                     SourcePackageName,
-                     BugTask.sourcepackagename == SourcePackageName.id)),
+                (Bug, Join(Bug, BugTask.bug == Bug.id))
                 ] + requested_joins
-            resultrow = (BugTask, Bug, Product, SourcePackageName)
+            def eager_load(results):
+                product_ids = set([row[0].productID for row in results])
+                product_ids.discard(None)
+                pkgname_ids = set(
+                    [row[0].sourcepackagenameID for row in results])
+                pkgname_ids.discard(None)
+                store = IStore(BugTask)
+                if product_ids:
+                    list(store.find(Product, Product.id.is_in(product_ids)))
+                if pkgname_ids:
+                    list(store.find(SourcePackageName,
+                        SourcePackageName.id.is_in(pkgname_ids)))
+            resultrow = (BugTask, Bug)
             additional_result_objects = [
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return self._search(resultrow, prejoins, params, *args)
+        return self._search(resultrow, prejoins, eager_load, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        return self._search(BugTask.bugID, [], params).result_set
-
-    @staticmethod
-    def _cache_assignees(rows):
-        assignee_ids = set(
-            bug_task.assigneeID for bug_task in rows)
-        assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            assignee_ids, need_validity=True)
-        # Execute query to load storm cache.
-        list(assignees)
+        return self._search(BugTask.bugID, [], None, params).result_set
 
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
@@ -2494,10 +2492,7 @@ class BugTaskSet:
             user, milestone=milestone,
             orderby=['status', '-importance', 'id'],
             omit_dupes=True, exclude_conjoined_tasks=True)
-        non_conjoined_slaves = self.search(params)
-
-        return DecoratedResultSet(
-            non_conjoined_slaves, pre_iter_hook=BugTaskSet._cache_assignees)
+        return self.search(params)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
@@ -2670,7 +2665,7 @@ class BugTaskSet:
                     AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
         expirable_bugtasks = BugTask.select(
-            query +  unconfirmed_bug_condition,
+            query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
         if limit is not None:
@@ -2936,10 +2931,6 @@ class BugTaskSet:
                 orderby_arg.append(BugTask.id)
 
         return tuple(orderby_arg)
-
-    def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select(orderBy='id')
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

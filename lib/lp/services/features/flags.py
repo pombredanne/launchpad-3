@@ -32,6 +32,10 @@ flag_info = sorted([
      '[on|off]',
      'enables advanced subscriptions features',
      'off'),
+    ('malone.disable_targetnamesearch',
+     '[empty|nonempty]',
+     'If nonempty targetnames are not consulted during text search.',
+     ''),
     ('memcache',
      '[enabled|disabled]',
      'enables/disables memcache',
@@ -40,6 +44,10 @@ flag_info = sorted([
      '[on|off]',
      'redirect to private URLs instead of proxying',
      'off'),
+    ('visible_render_time',
+     'empty|nonempty',
+     'enables showing the page render overheads in the login widget',
+     ''),
     ])
 
 # The set of all flag names that are documented.

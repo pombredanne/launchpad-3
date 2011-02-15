@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -268,6 +268,22 @@ class POTemplate(SQLBase, RosettaStats):
             raise NotFoundError(key)
         else:
             return potmsgset
+
+    def sharingKey(self):
+        """See `IPOTemplate.`"""
+        if self.productseries is not None:
+            product_focus = (
+                self.productseries ==
+                self.productseries.product.primary_translatable)
+        else:
+            product_focus = False
+        if self.distroseries is not None:
+            distro_focus = (
+                self.distroseries ==
+                self.distroseries.distribution.translation_focus)
+        else:
+            distro_focus = False
+        return self.iscurrent, product_focus, distro_focus, self.id
 
     @property
     def displayname(self):
@@ -865,7 +881,8 @@ class POTemplate(SQLBase, RosettaStats):
                                               context, sequence)
 
     def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
-                                   context=None):
+                                   context=None, initial_file_references=None,
+                                   initial_source_comment=None):
         """See `IPOTemplate`."""
         msgid_singular = self.getOrCreatePOMsgID(singular_text)
         if plural_text is None:
@@ -875,8 +892,10 @@ class POTemplate(SQLBase, RosettaStats):
         potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
                                          context, sharing_templates=True)
         if potmsgset is None:
-            potmsgset = self.createMessageSetFromText(
-                singular_text, plural_text, context, sequence=0)
+            potmsgset = self.createPOTMsgSetFromMsgIDs(
+                msgid_singular, msgid_plural, context, sequence=0)
+            potmsgset.filereferences = initial_file_references
+            potmsgset.sourcecomment = initial_source_comment
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
@@ -1347,42 +1366,6 @@ class POTemplateSet:
                     len(preferred_matches))
                 return None
 
-    @staticmethod
-    def compareSharingPrecedence(left, right):
-        """See `IPOTemplateSet`."""
-        if left == right:
-            return 0
-
-        # Current templates always have precedence over non-current ones.
-        if left.iscurrent != right.iscurrent:
-            if left.iscurrent:
-                return -1
-            else:
-                return 1
-
-        if left.productseries:
-            left_series = left.productseries
-            right_series = right.productseries
-            assert left_series.product == right_series.product
-            focus = left_series.product.primary_translatable
-        else:
-            left_series = left.distroseries
-            right_series = right.distroseries
-            assert left_series.distribution == right_series.distribution
-            focus = left_series.distribution.translation_focus
-
-        # Translation focus has precedence.  In case of a tie, newest
-        # template wins.
-        if left_series == focus:
-            return -1
-        elif right_series == focus:
-            return 1
-        elif left.id > right.id:
-            return -1
-        else:
-            assert left.id < right.id, "Got unordered ids."
-            return 1
-
     def wipeSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
         return IMasterStore(POTemplate).execute(
@@ -1576,7 +1559,7 @@ class POTemplateSharingSubset(object):
         for equivalence_list in equivalents.itervalues():
             # Sort potemplates from "most representative" to "least
             # representative."
-            equivalence_list.sort(cmp=POTemplateSet.compareSharingPrecedence)
+            equivalence_list.sort(key=POTemplate.sharingKey, reverse=True)
 
         return equivalents
 

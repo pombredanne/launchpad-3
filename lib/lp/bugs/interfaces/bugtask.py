@@ -497,6 +497,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
+    assigneeID = Attribute('The assignee ID (for eager loading)')
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -1509,19 +1510,6 @@ class IBugTaskSet(Interface):
         """Get the database name for col_name.
 
         If the col_name is unrecognized, a KeyError is raised.
-        """
-
-    # XXX kiko 2006-03-23:
-    # get rid of this kludge when we have proper security for scripts.
-    def dangerousGetAllTasks():
-        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
-
-        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
-        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
-
-        This method exists solely for the purpose of scripts that need
-        to do gardening over all bug tasks; the current example is
-        update-bugtask-targetnamecaches.
         """
 
     def getBugCountsForPackages(user, packages):

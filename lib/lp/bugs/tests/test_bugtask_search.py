@@ -7,20 +7,17 @@ from datetime import (
     datetime,
     timedelta,
     )
-from new import classobj
-import sys
+import unittest
+
+import pytz
+from storm.expr import Join
+from storm.store import Store
 from testtools.matchers import (
     Equals,
     LessThan,
     Not,
     )
-import unittest
-
-import pytz
 from zope.component import getUtility
-
-from storm.expr import Join
-from storm.store import Store
 
 from canonical.launchpad.searchbuilder import (
     all,
@@ -30,14 +27,14 @@ from canonical.launchpad.searchbuilder import (
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.model.bugtask import BugTask, BugTaskResultSet
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -47,6 +44,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -664,7 +662,6 @@ class ProductSeriesTarget(BugTargetTestBase):
         # product are returned, including bug tasks for the main product
         # of the series. Hence we must set the status for all products
         # in order to avoid a failure of test_upstream_status().
-        bug = bugtask.bug
         for other_task in bugtask.related_tasks:
             other_target = other_task.target
             if IProduct.providedBy(other_target):
@@ -758,6 +755,25 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             self.bugtasks[0].target.addSubscription(
                 subscriber, subscribed_by=subscriber)
         return subscriber
+
+    def test_disable_targetnames_search(self):
+        # searching in the target name is contentious and arguably a bug. To
+        # permit incremental changes we allow it to be disabled via a feature
+        # flag.
+        with person_logged_in(self.owner):
+            product1 = self.factory.makeProduct(name='product-foo',
+                owner=self.owner, project=self.searchtarget)
+            product2 = self.factory.makeProduct(name='product-bar',
+                owner=self.owner, project=self.searchtarget)
+            bug1 = self.factory.makeBug(product=product1)
+            bug1.default_bugtask.updateTargetNameCache()
+            bug2 = self.factory.makeBug(product=product2)
+        params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
+        # With no flag, we find the first bug.
+        self.assertSearchFinds(params, [bug1.default_bugtask])
+        with FeatureFixture({'malone.disable_targetnamesearch': u'on'}):
+            # With a flag set, no bugs are found.
+            self.assertSearchFinds(params, [])
 
 
 class MilestoneTarget(BugTargetTestBase):
@@ -938,9 +954,6 @@ class MultipleParams:
 class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
-    def setUp(self):
-        super(PreloadBugtaskTargets, self).setUp()
-
     def runSearch(self, params, *args, **kw):
         """Run BugTaskSet.search() and preload bugtask target objects."""
         return list(self.bugtask_set.search(
@@ -972,15 +985,15 @@ class PreloadBugtaskTargets(MultipleParams):
             found_tasks = self.runSearch(
                 params,
                 prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
+            # More than one query may have been performed
+            search_count = recorder.count
+            # Accessing the owner does not trigger more queries.
             found_tasks[0].owner
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+            self.assertThat(recorder, HasQueryCount(Equals(search_count)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
     """Do not preload bug targets during a BugTaskSet.search() query."""
-
-    def setUp(self):
-        super(NoPreloadBugtaskTargets, self).setUp()
 
     def runSearch(self, params, *args):
         """Run BugTaskSet.search() without preloading bugtask targets."""
@@ -993,9 +1006,6 @@ class NoPreloadBugtaskTargets(MultipleParams):
 class QueryBugIDs:
     """Search bug IDs."""
 
-    def setUp(self):
-        super(QueryBugIDs, self).setUp()
-
     def runSearch(self, params, *args):
         """Run BugTaskSet.searchBugIds()."""
         return list(self.bugtask_set.searchBugIds(params))
@@ -1004,83 +1014,23 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
-class TestCachingAssignees(TestCaseWithFactory):
-    """Searching bug tasks should pre-cache the bugtask assignees."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestCachingAssignees, self).setUp()
-        self.owner = self.factory.makePerson(name="bug-owner")
-        with person_logged_in(self.owner):
-            # Create some bugs with assigned bugtasks.
-            self.bug = self.factory.makeBug(
-                owner=self.owner)
-            self.bug.default_bugtask.transitionToAssignee(
-                self.factory.makePerson())
-
-            for i in xrange(9):
-                bugtask = self.factory.makeBugTask(
-                    bug=self.bug)
-                bugtask.transitionToAssignee(
-                    self.factory.makePerson())
-            self.bug.setPrivate(True, self.owner)
-
-    def _get_bug_tasks(self):
-        """Get the bugtasks for a bug.
-
-        This method is used rather than Bug.bugtasks since the later does
-        prejoining which would spoil the test.
-        """
-        store = Store.of(self.bug)
-        return store.find(
-            BugTask, BugTask.bug == self.bug)
-
-    def test_no_precaching(self):
-        bugtasks = self._get_bug_tasks()
-        Store.of(self.bug).invalidate()
-        with person_logged_in(self.owner):
-            with StormStatementRecorder() as recorder:
-                # Access the assignees to trigger a query.
-                names = [bugtask.assignee.name for bugtask in bugtasks]
-                # With no caching, the number of queries is roughly twice the
-                # number of bugtasks.
-                query_count_floor = len(names) * 2
-                self.assertThat(
-                    recorder, HasQueryCount(Not(LessThan(query_count_floor))))
-
-    def test_precaching(self):
-        bugtasks = self._get_bug_tasks()
-        Store.of(self.bug).invalidate()
-        with person_logged_in(self.owner):
-            with StormStatementRecorder() as recorder:
-                bugtasks = BugTaskResultSet(bugtasks)
-                # Access the assignees to trigger a query if not properly
-                # cached.
-                names = [bugtask.assignee.name for bugtask in bugtasks]
-                # With caching the number of queries is two, one for the
-                # bugtask and one for all of the assignees at once.
-                self.assertThat(recorder, HasQueryCount(Equals(2)))
-
-
 def test_suite():
-    module = sys.modules[__name__]
+    suite = unittest.TestSuite()
+    loader = unittest.TestLoader()
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
                 bug_target_search_type_class.__name__,
                 target_mixin.__name__)
+            class_bases = (
+                target_mixin, bug_target_search_type_class,
+                SearchTestBase, TestCaseWithFactory)
             # Dynamically build a test class from the target mixin class,
             # from the search type mixin class, from the mixin class
             # having all tests and from a unit test base class.
-            test_class = classobj(
-                class_name,
-                (target_mixin, bug_target_search_type_class, SearchTestBase,
-                 TestCaseWithFactory),
-                {})
-            # Add the new unit test class to the module.
-            module.__dict__[class_name] = test_class
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+            test_class = type(class_name, class_bases, {})
+            # Add the new unit test class to the suite.
+            suite.addTest(loader.loadTestsFromTestCase(test_class))
+    suite.addTest(loader.loadTestsFromName(__name__))
     return suite
