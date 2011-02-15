@@ -37,6 +37,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -44,7 +45,6 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.product import IProduct
 
 

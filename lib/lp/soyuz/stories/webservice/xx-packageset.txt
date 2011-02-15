@@ -74,8 +74,6 @@ When a `PackageSet` cannot be found, an error is returned.
     HTTP/1.1 400 Bad Request
     ...
     No such package set (in the specified distro series): 'not-found'.
-    ...
-    <BLANKLINE>
 
 Here's an example with a funny URL concoted by a "smart" user.
 
@@ -488,7 +486,6 @@ If a non-existing source package name is passed it returns an error.
     HTTP/1.1 400 Bad Request
     ...
     No such source package: 'does-not-exist'.
-    ...
 
 What source packages are shared by the 'firefox' and the 'thunderbird'
 package sets?

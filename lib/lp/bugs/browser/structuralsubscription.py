@@ -37,18 +37,16 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionForm,
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    IStructuralSubscriptionForm,
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.propertycache import cachedproperty
 
 
@@ -65,8 +63,7 @@ class StructuralSubscriptionNavigation(Navigation):
         return None
 
 
-class StructuralSubscriptionView(LaunchpadFormView,
-                                 AdvancedSubscriptionMixin):
+class StructuralSubscriptionView(LaunchpadFormView):
 
     """View class for structural subscriptions."""
 
@@ -76,21 +73,6 @@ class StructuralSubscriptionView(LaunchpadFormView,
     custom_widget('remove_other_subscriptions', LabeledMultiCheckBoxWidget)
 
     override_title_breadcrumbs = True
-
-    @cachedproperty
-    def _bug_notification_level_descriptions(self):
-        return {
-            BugNotificationLevel.LIFECYCLE: (
-                "A bug in %s is fixed or re-opened." %
-                self.context.displayname),
-            BugNotificationLevel.METADATA: (
-                "Any change is made to a bug in %s, other than a new "
-                "comment being added." %
-                self.context.displayname),
-            BugNotificationLevel.COMMENTS: (
-                "A change is made or a new comment is added to a bug in %s."
-                % self.context.displayname),
-            }
 
     @property
     def page_title(self):
@@ -116,7 +98,6 @@ class StructuralSubscriptionView(LaunchpadFormView,
             remove_other = self._createRemoveOtherSubscriptionsField()
             if remove_other:
                 self.form_fields += form.Fields(remove_other)
-        self._setUpBugNotificationLevelField()
 
     def _createTeamSubscriptionsField(self):
         """Create field with a list of the teams the user is a member of.
@@ -204,20 +185,11 @@ class StructuralSubscriptionView(LaunchpadFormView,
         for the context target.
         """
         subscription = self.context.getSubscription(person)
-        if subscription is not None:
-            return (subscription.bug_notification_level >
-                    BugNotificationLevel.NOTHING)
-        else:
-            return False
+        return subscription is not None
 
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
         return self.isSubscribed(self.user)
-
-    @cachedproperty
-    def current_user_subscription(self):
-        """Return the subscription of the current user."""
-        return self.context.getSubscription(self.user)
 
     def userCanAlter(self):
         if self.context.userCanAlterBugSubscription(self.user, self.user):
@@ -240,9 +212,7 @@ class StructuralSubscriptionView(LaunchpadFormView,
         is_subscribed = self.isSubscribed(self.user)
         subscribe = data['subscribe_me']
         if (not is_subscribed) and subscribe:
-            target.addBugSubscription(
-                self.user, self.user,
-                data.get('bug_notification_level', None))
+            target.addBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have subscribed to "%s". You will now receive an '
                 'e-mail each time someone reports or changes one of '
@@ -271,8 +241,7 @@ class StructuralSubscriptionView(LaunchpadFormView,
             team for team in teams if self.isSubscribed(team))
 
         for team in form_selected_teams - subscriptions:
-            target.addBugSubscription(
-                team, self.user, data.get('bug_notification_level', None))
+            target.addBugSubscription(team, self.user)
             self.request.response.addNotification(
                 'The %s team will now receive an e-mail each time '
                 'someone reports or changes a public bug in "%s".' % (
@@ -310,16 +279,9 @@ class StructuralSubscriptionView(LaunchpadFormView,
 
     def userIsDriver(self):
         """Has the current user driver permissions?"""
-        # XXX Tom Berger 2008-01-30 spec=subscription-invitation:
-        # The semantics of this method are actually a bit vague,
-        # since when we talk about driver permissions, we're talking
-        # about something different for each structure. For now,
-        # we only want to look at this if the target is a
+        # We only want to look at this if the target is a
         # distribution source package, in order to maintain
-        # compatibility with the bug contacts feature. We want
-        # to enable this for other targets, but probably only
-        # after implementing
-        # https://launchpad.net/malone/+spec/subscription-invitation
+        # compatibility with the bug contacts feature.
         if IDistributionSourcePackage.providedBy(self.context):
             return check_permission(
                 "launchpad.Driver", self.context.distribution)

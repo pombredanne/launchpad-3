@@ -218,7 +218,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -229,7 +229,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build schedule: Built daily
+            Build schedule: Tag help Built daily
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
@@ -281,7 +281,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Other').click()
         browser.getControl(name='field.owner.owner').displayValue = [
             'Good Chefs']
@@ -427,7 +427,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
 
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             'You must specify at least one series for daily builds.',
@@ -755,7 +755,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -815,7 +815,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -955,7 +955,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -1111,7 +1111,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}

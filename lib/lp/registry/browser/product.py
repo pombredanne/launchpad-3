@@ -169,7 +169,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )

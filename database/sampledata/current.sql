@@ -3333,42 +3333,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, 6);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, 6);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3694,10 +3694,10 @@ ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
@@ -5995,8 +5995,8 @@ ALTER TABLE mirrorsourcecontent ENABLE TRIGGER ALL;
 
 ALTER TABLE nameblacklist DISABLE TRIGGER ALL;
 
-INSERT INTO nameblacklist (id, regexp, comment) VALUES (1, 'blacklist', 'For testing purposes');
-INSERT INTO nameblacklist (id, regexp, comment) VALUES (2, '^admin', NULL);
+INSERT INTO nameblacklist (id, regexp, comment, admin) VALUES (1, 'blacklist', 'For testing purposes', NULL);
+INSERT INTO nameblacklist (id, regexp, comment, admin) VALUES (2, '^admin', NULL, NULL);
 
 
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
@@ -6309,6 +6309,112 @@ ALTER TABLE personnotification DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personnotification ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personsettings DISABLE TRIGGER ALL;
+
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (1, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (2, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (3, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (4, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (5, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (6, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (7, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (8, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (9, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (10, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (11, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (12, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (13, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (14, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (16, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (17, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (18, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (19, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (20, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (21, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (22, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (23, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (24, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (25, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (26, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (27, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (28, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (29, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (30, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (31, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (32, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (33, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (34, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (35, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (36, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (37, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (38, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (39, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (40, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (41, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (42, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (43, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (44, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (45, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (46, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (47, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (48, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (49, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (50, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (51, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (52, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (53, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (55, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (56, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (57, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (58, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (59, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (60, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (61, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (62, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (63, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (64, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (65, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (66, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (67, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (68, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (69, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (70, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243601, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243602, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243603, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243604, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243606, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243607, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243608, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243609, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243610, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243611, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243612, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243613, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243614, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243615, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243616, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243617, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243618, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243620, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243621, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243622, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243623, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243624, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243625, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243626, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243627, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243628, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243629, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243630, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243631, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243632, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243651, true);
+
+
+ALTER TABLE personsettings ENABLE TRIGGER ALL;
 
 
 ALTER TABLE persontransferjob DISABLE TRIGGER ALL;

@@ -288,8 +288,7 @@ class PackageCloner:
                 secsrc.sourcepackagerelease = spr.id AND
                 spr.sourcepackagename = spn.id AND
                 spn.name = mcd.sourcepackagename AND
-                debversion_sort_key(spr.version) >
-                debversion_sort_key(mcd.t_version)
+                spr.version > mcd.t_version
         """ % sqlvalues(
                 origin.archive,
                 PackagePublishingStatus.PENDING,
@@ -357,7 +356,7 @@ class PackageCloner:
                 -- will be copied.
                 s_sspph integer,
                 s_sourcepackagerelease integer,
-                s_version text,
+                s_version debversion,
                 s_status integer,
                 s_component integer,
                 s_section integer,
@@ -365,7 +364,7 @@ class PackageCloner:
                 -- pending packages.
                 t_sspph integer,
                 t_sourcepackagerelease integer,
-                t_version text,
+                t_version debversion,
                 -- Whether a target package became obsolete due to a more
                 -- recent source package.
                 obsoleted boolean DEFAULT false NOT NULL,

@@ -8,7 +8,15 @@ __all__ = []
 
 import windmill
 
-from canonical.launchpad.windmill.testing import constants
+from lp.testing.windmill import constants
+
+
+def get_basic_login_url(email, password):
+    """Return the constructed url to login a user."""
+    base_url = windmill.settings['TEST_URL']
+    basic_auth_url = base_url.replace('http://', 'http://%s:%s@')
+    basic_auth_url = basic_auth_url + '+basiclogin'
+    return basic_auth_url % (email, password)
 
 
 class LaunchpadUser:
@@ -32,10 +40,7 @@ class LaunchpadUser:
 
         current_url = client.commands.execJS(
             code='windmill.testWin().location;')['result']['href']
-        base_url = windmill.settings['TEST_URL']
-        basic_auth_url = base_url.replace('http://', 'http://%s:%s@')
-        basic_auth_url = basic_auth_url + '+basiclogin'
-        client.open(url=basic_auth_url % (self.email, self.password))
+        client.open(url=get_basic_login_url(self.email, self.password))
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.open(url=current_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
@@ -63,8 +68,7 @@ class AnonymousUser:
 
 def login_person(person, email, password, client):
     """Create a LaunchpadUser for a person and password."""
-    user = LaunchpadUser(
-        person.displayname, email, password)
+    user = LaunchpadUser(person.displayname, email, password)
     user.ensure_login(client)
 
 

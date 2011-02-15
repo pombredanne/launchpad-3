@@ -3009,27 +3009,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             profile_url.host = config.launchpad.non_restricted_hostname
         return str(profile_url)
 
-    @property
-    def subscription_policy_description(self):
-        """Return the description of this team's subscription policy."""
-        assert self.team.isTeam(), (
-            'This method can only be called when the context is a team.')
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            description = _(
-                "This is a restricted team; new members can only be added "
-                "by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            description = _(
-                "This is a moderated team; all subscriptions are subjected "
-                "to approval by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            description = _(
-                "This is an open team; any user can join and no approval "
-                "is required.")
-        else:
-            raise AssertionError('Unknown subscription policy.')
-        return description
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -4171,7 +4150,8 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)

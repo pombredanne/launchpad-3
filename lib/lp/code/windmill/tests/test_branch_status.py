@@ -11,14 +11,14 @@ import unittest
 import transaction
 import windmill
 
-from canonical.launchpad.windmill.testing.constants import (
+from lp.code.windmill.testing import CodeWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
-from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase
+from lp.testing.windmill.lpuser import login_person
 
 
 class TestBranchStatus(WindmillTestCase):
