@@ -12,6 +12,7 @@ import os
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -51,8 +52,8 @@ class UploadPackageTranslations(LaunchpadScript):
 
         for filename in self.args:
             if not os.access(filename, os.R_OK):
-                self.logger.info("Skipping: %s" % filename)
-                continue
+                raise LaunchpadScriptFailure(
+                    "File not readable: %s" % filename)
             self.logger.info("Uploading: %s." % filename)
             content = open(filename).read()
             queue.addOrUpdateEntry(
@@ -73,9 +74,6 @@ class UploadPackageTranslations(LaunchpadScript):
 
     def _setDistroDetails(self):
         """Figure out the `Distribution`/`DistroSeries` to act upon."""
-        # Avoid circular imports.
-        from lp.registry.interfaces.distribution import IDistributionSet
-
         distroset = getUtility(IDistributionSet)
         self.distro = distroset.getByName(self.options.distro)
 
@@ -87,7 +85,6 @@ class UploadPackageTranslations(LaunchpadScript):
 
     def _setPackage(self):
         """Find `SourcePackage` of given name."""
-        # Avoid circular imports.
         if not self.options.package:
             raise LaunchpadScriptFailure("No package specified.")
 
