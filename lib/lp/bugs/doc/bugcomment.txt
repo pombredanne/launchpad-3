@@ -284,12 +284,6 @@ visible, and we can see that the list has not been truncated.
     >>> bug_view.visible_comments_truncated_for_display
     False
 
-When comments aren't being truncated and empty set will be returned by
-visible_recent_comments_for_display.
-
-    >>> len(bug_view.visible_recent_comments_for_display)
-    0
-
 Add two more comments, and the list will be truncated to only 8 total.
 
     >>> add_comments(bug, 2)

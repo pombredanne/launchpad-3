@@ -303,16 +303,20 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
 
     :param for_display: If true, the zeroth comment is given an empty body so
         that it will be filtered by get_visible_comments.
-    :param slice_info: If not None, defines a slice of the comments to
+    :param slice_info: If not None, defines a list of slices of the comments to
         retrieve.
     """
-    chunks = bugtask.bug.getMessageChunks()
-    comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
+    comments = build_comments_from_chunks(bugtask, truncate=truncate,
+        slice_info=slice_info)
+    # TODO: further fat can be shaved off here by limiting the attachments we
+    # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
-        assert message_id in comments, message_id
+        if message_id not in comments:
+            # We are not showing this message.
+            break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         else:
@@ -356,7 +360,8 @@ def get_visible_comments(comments):
 
     # These two lines are here to fill the ValidPersonOrTeamCache cache,
     # so that checking owner.is_valid_person, when rendering the link,
-    # won't issue a DB query.
+    # won't issue a DB query. Note that this should be obsolete now with
+    # getMessagesForView improvements.
     commenters = set(comment.owner for comment in visible_comments)
     getUtility(IPersonSet).getValidPersons(commenters)
 
@@ -841,11 +846,19 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                + config.malone.comments_list_truncate_newest_to
                < config.malone.comments_list_max_length)
 
-        recent_comments = self.visible_recent_comments_for_display
-        oldest_comments = self.visible_oldest_comments_for_display
+        if not self.visible_comments_truncated_for_display:
+            comments=self.comments
+        else:
+            oldest_count = self.visible_initial_comments
+            new_count = self.total_comments-self.visible_recent_comments
+            comments = get_comments_for_bugtask(
+                self.context, truncate=True, for_display=True,
+                slice_info=[
+                    slice(None, oldest_count), slice(new_count, None)])
+        visible_comments = get_visible_comments(comments)
 
         event_groups = group_comments_with_activity(
-            comments=chain(oldest_comments, recent_comments),
+            comments=visible_comments,
             activities=self.interesting_activity)
 
         def group_activities_by_target(activities):
@@ -888,22 +901,42 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         events = map(event_dict, event_groups)
 
-        # Insert blank if we're showing only a subset of the comment list.
-        if len(recent_comments) > 0:
+        # Insert blanks if we're showing only a subset of the comment list.
+        if self.visible_comments_truncated_for_display:
             # Find the oldest recent comment in the event list.
-            oldest_recent_comment = recent_comments[0]
+            index = 0
+            prev_comment = None
+            while index < len(events):
+                event = events[index]
+                comment = event.get("comment")
+                if prev_comment is None:
+                    prev_comment = comment
+                    index += 1
+                    continue
+                if comment is None:
+                    index += 1
+                    continue
+                if prev_comment.index + 1 != comment.index:
+                    # There is a gap here, record it.
+                    separator = {
+                        'date': prev_comment.datecreated,
+                        'num_hidden': comment.index - prev_comment.index
+                        }
+                    events.insert(index, separator)
+                    index += 1
+                prev_comment = comment
+                index += 1
+        return events
+        if False:
+            oldest_recent_comment = visible_comments[0]
             for index, event in enumerate(events):
                 if event.get("comment") is oldest_recent_comment:
-                    num_hidden = (
-                        len(self.visible_comments)
-                        - len(oldest_comments)
-                        - len(recent_comments))
+                    num_hidden = (total_comments - len(visible_comments))
                     separator = {
                         'date': oldest_recent_comment.datecreated,
                         'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
-                    break
 
         return events
 
@@ -914,53 +947,37 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         See `get_visible_comments` for the definition of a "visible"
         comment.
         """
+        import pdb;pdb.set_trace()
         return get_visible_comments(self.comments)
 
-    @cachedproperty
-    def visible_oldest_comments_for_display(self):
-        """The list of oldest visible comments to be rendered.
-
-        This considers truncating the comment list if there are tons
-        of comments, but also obeys any explicitly requested ways to
-        display comments (currently only "all" is recognised).
-        """
-        show_all = (self.request.form_ng.getOne('comments') == 'all')
-        max_comments = config.malone.comments_list_max_length
-        if show_all or len(self.visible_comments) <= max_comments:
-            return self.visible_comments
-        else:
-            oldest_count = config.malone.comments_list_truncate_oldest_to
-            return get_visible_comments(get_comments_for_bugtask(
-                self.context, truncate=True, for_display=True,
-                slice_info=slice(None, oldest_count))
-
-    @cachedproperty
-    def visible_recent_comments_for_display(self):
-        """The list of recent visible comments to be rendered.
-
-        If the number of comments is beyond the maximum threshold, this
-        returns the most recent few comments. If we're under the threshold,
-        then visible_oldest_comments_for_display will be returning the bugs,
-        so this routine will return an empty set to avoid duplication.
-        """
-        show_all = (self.request.form_ng.getOne('comments') == 'all')
-        max_comments = config.malone.comments_list_max_length
-        total = len(self.visible_comments)
-        if show_all or total <= max_comments:
-            return []
-        else:
-            start = total - config.malone.comments_list_truncate_newest_to
-            return self.visible_comments[start:total]
+    @property
+    def visible_initial_comments(self):
+        """How many initial comments are being shown."""
+        return config.malone.comments_list_truncate_oldest_to
 
     @property
+    def visible_recent_comments(self):
+        """How many recent comments are being shown."""
+        return config.malone.comments_list_truncate_newest_to
+
+    @cachedproperty
     def visible_comments_truncated_for_display(self):
         """Whether the visible comment list is truncated for display."""
-        return (len(self.visible_comments) >
-                len(self.visible_oldest_comments_for_display))
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        if show_all:
+            return False
+        max_comments = config.malone.comments_list_max_length
+        return self.total_comments > max_comments
+
+    @cachedproperty
+    def total_comments(self):
+        """We count all comments because the db cannot do visibility yet."""
+        return self.context.bug.bug_messages.count()
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
-        return self.comments[0].text_contents != self.context.bug.description
+        return (self.context.bug.indexed_messages[0].text_contents !=
+            self.context.bug.description)
 
     @cachedproperty
     def linked_branches(self):

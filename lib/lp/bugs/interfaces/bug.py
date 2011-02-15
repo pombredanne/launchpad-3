@@ -698,8 +698,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
                 remote bug tracker, if it's an imported comment.
         """
 
-    def getMessageChunks():
-        """Return MessageChunks corresponding to comments made on this bug"""
+    def getMessagesForView(slice_info):
+        """Return BugMessage,Message,MessageChunks for renderinger.
+        
+        This eager loads message.owner validity associated with the
+        bugmessages.
+
+        :param slice_info: Either None or a list of slices to constraint the
+            returned rows. The step parameter in each slice is ignored.
+        """
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,

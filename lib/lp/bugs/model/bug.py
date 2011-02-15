@@ -1409,39 +1409,67 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self._question_from_bug
 
-    def getMessageChunks(self):
+    def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        query = """
-            Message.id = MessageChunk.message AND
-            BugMessage.message = Message.id AND
-            BugMessage.bug = %s
-            """ % sqlvalues(self)
-
-        chunks = MessageChunk.select(query,
-            clauseTables=["BugMessage", "Message"],
-            # XXX: kiko 2006-09-16 bug=60745:
-            # There is an issue that presents itself
-            # here if we prejoin message.owner: because Message is
-            # already in the clauseTables, the SQL generated joins
-            # against message twice and that causes the results to
-            # break.
-            prejoinClauseTables=["Message"],
-            # Note the ordering by Message.id here; while datecreated in
-            # production is never the same, it can be in the test suite.
-            orderBy=["Message.datecreated", "Message.id",
-                     "MessageChunk.sequence"])
-        chunks = list(chunks)
-
-        # Since we can't prejoin, cache all people at once so we don't
-        # have to do it while rendering, which is a big deal for bugs
-        # with a million comments.
-        owner_ids = set()
-        for chunk in chunks:
-            if chunk.message.ownerID:
-                owner_ids.add(str(chunk.message.ownerID))
-        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
-
-        return chunks
+        # Note that this function and indexed_messages have significant overlap
+        # and could stand to be refactored.
+        import pdb;pdb.set_trace()
+        slices = []
+        if slice_info is not None:
+            # NB: This isn't a full implementation of the slice protocol,
+            # merely the bits needed by BugTask:+index.
+            for slice in slice_info:
+                if not slice.start:
+                    assert slice.stop > 0, slice.stop
+                    slices.append(BugMessage.index < slice.stop)
+                elif not slice.stop:
+                    if slice.start < 0:
+                        slices.append(BugMessage.index >= SQL(
+                            "(select max(index) from "
+                            "bugmessage where bug=%s) - %s" % (
+                            sqlvalues(self.id), sqlvalues(slice.start))))
+                    else:
+                        slices.append(BugMessage.index >= slice.start)
+                else:
+                    slices.append(BugMessage.index >= slice.start)
+                    slices.append(BugMessage.index < slice.stop)
+        if slices:
+            ranges = [Or(*slices)]
+        else:
+            ranges = []
+        # We expect:
+        # 1 bugmessage -> 1 message -> small N chunks. For now, using a wide
+        # query seems fine as we have to join out from bugmessage anyway.
+        result = Store.of(self).find((BugMessage, Message, MessageChunk),
+            Message.id==MessageChunk.messageID,
+            BugMessage.messageID==Message.id,
+            BugMessage.bug==self.id,
+            *ranges)
+        result.order_by(BugMessage.index, MessageChunk.sequence)
+        def eager_load_owners(rows):
+            owners = set()
+            for row in rows:
+                owners.add(row[1].ownerID)
+            owners.discard(None)
+            if not owners:
+                return
+            PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True)
+        def eager_load_watches(rows):
+            watches = set()
+            for row in rows:
+                watches.add(row[0].bugwatchID)
+            watches.discard(None)
+            if not watches:
+                return
+            list(Store.of(self).find(BugWatch, BugWatch.id.is_in(watches)))
+        def eager_load(rows):
+            # We eager load owner validity to permit rendering in the Web UI.
+            eager_load_owners(rows)
+            # The web UI shows imported comments differently, but loading the
+            # bug eager loads all bug watches.
+            # eager_load_watches(rows)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,

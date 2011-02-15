@@ -1116,15 +1116,15 @@ Bug Comments
 ------------
 
 A bug comment is actually made up of a number of chunks. The
-IBug.getMessageChunks() method allows you to retreive these chunks in a
-single shot.
+IBug.getMessagesForView() method allows you to get all the data needed to
+show messages in the bugtask index template in one shot.
 
     >>> from canonical.ftests.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
-    >>> chunks = bug_two.getMessageChunks()
-    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    >>> chunks = bug_two.getMessagesForView()
+    >>> for _, _1, chunk in sorted(chunks, key=lambda x:x[2].id):
     ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
     ...     chunk.content[:30])
     (4, 1, 16, u'Problem exists between chair a')
