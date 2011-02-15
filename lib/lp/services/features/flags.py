@@ -58,7 +58,7 @@ flag_info = sorted([
      'enables memcache',
      'enabled'),
     ('publicrestrictedlibrarian',
-     '[on|off]',
+     'boolean',
      'redirects to private URLs instead of proxying',
      'off'),
     ('visible_render_time',
