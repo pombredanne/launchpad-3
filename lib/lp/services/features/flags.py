@@ -21,7 +21,7 @@ __metaclass__ = type
 
 value_domain_info = sorted([
     ('boolean',
-     'Any non-empty value enables the flag; an empty value disables it.'),
+     'Any non-empty value is true; an empty value is false.'),
     ('float',
      'The flag value is set to the given floating point number.'),
     ])
@@ -30,11 +30,11 @@ value_domain_info = sorted([
 # generate the web-visible feature flag documentation.
 flag_info = sorted([
     ('code.branchmergequeue',
-     '[true|]',
+     'boolean',
      'enables merge queues pages and lists them on branch pages',
      ''),
     ('code.incremental_diffs.enabled',
-     '[true|]',
+     'boolean',
      'shows incremental diffs on merge proposals',
      ''),
     ('code.recipes_enabled',
@@ -50,7 +50,7 @@ flag_info = sorted([
      'enables advanced subscriptions features',
      'off'),
     ('malone.disable_targetnamesearch',
-     '[true|]',
+     'boolean',
      'if true, disables consultation of target names during text search',
      ''),
     ('memcache',
@@ -62,7 +62,7 @@ flag_info = sorted([
      'redirects to private URLs instead of proxying',
      'off'),
     ('visible_render_time',
-     '[true|]',
+     'boolean',
      'shows the page render time in the login widget',
      ''),
     ])
