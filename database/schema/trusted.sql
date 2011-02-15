@@ -204,7 +204,7 @@ $$;
 COMMENT ON FUNCTION update_database_stats() IS
 'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
-
+SET check_function_bodies=false; -- Handle forward references
 CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
 LANGUAGE sql VOLATILE SECURITY DEFINER AS
 $$
@@ -303,7 +303,7 @@ $$
             AND pg_class_index.oid = pg_class_toast.reltoastidxid
         ) AS whatever;
 $$;
-
+SET check_function_bodies=true; -- Handle forward references
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
 LANGUAGE plpgsql STABLE SECURITY DEFINER AS
