@@ -43,7 +43,7 @@ flag_info = sorted([
      ''),
     ('hard_timeout',
      'float',
-     'Sets the hard request timeout in seconds.',
+     'Sets the hard request timeout in milliseconds.',
      ''),
     ('malone.advanced-subscriptions.enabled',
      'boolean',
