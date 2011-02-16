@@ -661,7 +661,7 @@ makes it write out the emails it sends.
 Note that the message omitted the undone visibility change.
 
 The cronscript has to be sure to mark all notifications, omitted and
-otherwise, as sent.  It also marks the omitted notifications with a flag,
+otherwise, as sent.  It also marks the omitted notifications with a status,
 so if there are any problems we can identify which notifications were omitted
 during analysis.  We'll commit a transaction to synchronize the database,
 and then look at the notifications available.
@@ -674,24 +674,25 @@ and then look at the notifications available.
     0
 
 They have all been marked as sent, including the omitted ones.  Let's look
-more carefully at the notifications just to see that the is_omitted flag has
+more carefully at the notifications just to see that the status has
 been set properly.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.bugs.enum import BugNotificationStatus
     >>> for notification in BugNotification.select(orderBy='id')[-8:]:
     ...     if notification.is_comment:
     ...         identifier = 'comment'
     ...     else:
     ...         identifier = notification.activity.whatchanged
-    ...     print identifier, notification.is_omitted
-    comment False
-    summary False
-    comment False
-    summary False
-    comment False
-    summary False
-    visibility True
-    visibility True
+    ...     print identifier, notification.status.title
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    visibility Omitted
+    visibility Omitted
 
 
 The X-Launchpad-Bug header

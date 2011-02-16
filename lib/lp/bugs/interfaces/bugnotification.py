@@ -18,11 +18,13 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Datetime,
     TextLine,
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationStatus
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import BugField
 
@@ -51,12 +53,13 @@ class IBugNotification(IHasOwner):
         required=False)
     recipients = Attribute(
         "The people to which this notification should be sent.")
-    is_omitted = Bool(
-        title=u"Omitted", description=(
-            u"Was this notification omitted when emails were sent?  Ignore "
-             "if date_emailed is not yet set.  Only intended to be useful "
-             "for debugging purposes."),
-        required=True)
+    status = Choice(
+            title=_("Status"), required=True,
+            vocabulary=BugNotificationStatus,
+            default=BugNotificationStatus.PENDING,
+            description=_(
+                "The status of this bug notification."),
+            )
 
 
 class IBugNotificationSet(Interface):

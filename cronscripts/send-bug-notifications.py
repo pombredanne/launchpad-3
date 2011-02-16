@@ -20,6 +20,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.mail import sendmail
+from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.services.scripts.base import LaunchpadCronScript
@@ -40,9 +41,10 @@ class SendBugNotifications(LaunchpadCronScript):
                 self.logger.debug(message.as_string())
             for notification in bug_notifications:
                 notification.date_emailed = UTC_NOW
+                notification.status = BugNotificationStatus.SENT
             for notification in omitted_notifications:
                 notification.date_emailed = UTC_NOW
-                notification.is_omitted = True
+                notification.status = BugNotificationStatus.OMITTED
             notifications_sent = True
             # Commit after each batch of email sent, so that we won't
             # re-mail the notifications in case of something going wrong

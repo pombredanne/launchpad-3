@@ -281,7 +281,7 @@ COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textu
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 COMMENT ON COLUMN BugNotification.activity IS 'The BugActivity record corresponding to this notification, if any.';
-COMMENT ON COLUMN BugNotification.is_omitted IS 'Was this notification omitted when emails were sent?  Ignore if date_emailed is not yet set.  This is only intended to be useful for debugging purposes.';
+COMMENT ON COLUMN BugNotification.status IS 'The status of this bug notification: pending, omitted, or sent.';
 
 
 -- BugNotificationAttachment

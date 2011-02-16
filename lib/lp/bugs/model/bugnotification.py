@@ -28,10 +28,12 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
     IBugNotificationRecipient,
@@ -49,7 +51,10 @@ class BugNotification(SQLBase):
     bug = ForeignKey(dbName='bug', notNull=True, foreignKey='Bug')
     is_comment = BoolCol(notNull=True)
     date_emailed = UtcDateTimeCol(notNull=False)
-    is_omitted = BoolCol(notNull=True)
+    status = EnumCol(
+        dbName='status',
+        schema=BugNotificationStatus, default=BugNotificationStatus.PENDING,
+        notNull=True)
 
     @property
     def recipients(self):

@@ -2,7 +2,9 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
+-- The default value for status can be found in the
+-- BugNotificationStatus DBEnum in lib/lp/bugs/enum.py.
 ALTER TABLE BugNotification
-    ADD COLUMN is_omitted BOOLEAN NOT NULL DEFAULT False;
+    ADD COLUMN status INTEGER NOT NULL DEFAULT 10;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 1);
