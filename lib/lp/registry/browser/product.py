@@ -577,7 +577,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe')
+    links = ('edit', 'review_license', 'administer')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,

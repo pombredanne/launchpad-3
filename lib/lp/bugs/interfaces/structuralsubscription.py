@@ -146,6 +146,8 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     target_type_display = Attribute("The type of the target, for display.")
 
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
