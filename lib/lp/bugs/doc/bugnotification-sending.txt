@@ -877,7 +877,8 @@ with different verbose_bugnotifications settings.
     ...             "will be automatically wrapped by the BugNotification "
     ...             "machinery. Ain't technology great?")
     ...     verbose_person = factory.makePerson(
-    ...         displayname='Verbose Person', email='verbose@example.com')
+    ...         displayname='Verbose Person', email='verbose@example.com',
+    ...         selfgenerated_bugnotifications=True)
     ...     verbose_person.verbose_bugnotifications = True
     ...     ignored = bug.subscribe(verbose_person, verbose_person)
     ...     concise_person = factory.makePerson(
@@ -1099,17 +1100,21 @@ People (not teams) will have the choice to receive notifications from actions
 they generated.  For now, everyone receives these notifications whether they
 want them or not.
 
-    >>> verbose_person.selfgenerated_bugnotifications
+    >>> with lp_dbuser():
+    ...     person = factory.makePerson()
+    >>> person.selfgenerated_bugnotifications
     False
     >>> with lp_dbuser():
-    ...     verbose_person.selfgenerated_bugnotifications = True
+    ...     person.selfgenerated_bugnotifications = True
 
 Teams provide this attribute read-only.
 
-    >>> verbose_team.selfgenerated_bugnotifications
+    >>> with lp_dbuser():
+    ...     team = factory.makeTeam()
+    >>> team.selfgenerated_bugnotifications
     False
     >>> with lp_dbuser():
-    ...     verbose_team.selfgenerated_bugnotifications = True
+    ...     team.selfgenerated_bugnotifications = True
     Traceback (most recent call last):
     ...
     NotImplementedError: Teams do not support changing this attribute.
