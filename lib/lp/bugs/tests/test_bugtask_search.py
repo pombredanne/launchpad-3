@@ -24,7 +24,10 @@ from canonical.launchpad.searchbuilder import (
     any,
     greater_than,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
@@ -517,6 +520,41 @@ class SearchTestBase:
             self.bugtasks[0].bug.linkCVE(cve, self.owner)
         params = self.getBugTaskSearchParams(user=None, has_cve=True)
         self.assertSearchFinds(params, self.bugtasks[:1])
+
+
+class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DeactivatedContextBugTaskTestCase, self).setUp()
+        self.person = self.factory.makePerson()
+        self.active_product = self.factory.makeProduct()
+        self.inactive_product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=self.active_product,
+            description="Monkeys are bad.")
+        self.active_bugtask = self.factory.makeBugTask(
+            bug=bug,
+            target=self.active_product)
+        self.inactive_bugtask = self.factory.makeBugTask(
+            bug=bug,
+            target=self.inactive_product)
+        with person_logged_in(self.person):
+            self.active_bugtask.transitionToAssignee(self.person)
+            self.inactive_bugtask.transitionToAssignee(self.person)
+        admin = getUtility(IPersonSet).getByEmail('admin@canonical.com')
+        with person_logged_in(admin):
+            self.inactive_product.active = False
+
+    def test_deactivated_listings_not_seen(self):
+        # Someone without permission to see deactiveated projects does
+        # not see bugtasks for deactivated projects.
+        nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        bugtask_set = getUtility(IBugTaskSet)
+        param = BugTaskSearchParams(user=None, searchtext='Monkeys')
+        results = bugtask_set.search(param) 
+        self.assertEqual([self.active_bugtask], list(results))
 
 
 class ProductAndDistributionTests:
