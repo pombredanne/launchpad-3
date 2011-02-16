@@ -705,10 +705,7 @@ Attempting to access it as a normal users is unauthorized.
     ...     licenses=["Other/Proprietary"])
     HTTP/1.1 401 Unauthorized
     ...
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (...)
-    <BLANKLINE>
+    (<...>, 'forReview', 'launchpad.Moderate')
 
 The project collection has a method for creating a new project.
 
@@ -1025,7 +1022,7 @@ Only one product release can be created per milestone.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    MultipleProductReleases: A milestone can only have one ProductRelease.
+    A milestone can only have one ProductRelease.
 
 
 Project release entries

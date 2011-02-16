@@ -279,16 +279,9 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     def userIsDriver(self):
         """Has the current user driver permissions?"""
-        # XXX Tom Berger 2008-01-30 spec=subscription-invitation:
-        # The semantics of this method are actually a bit vague,
-        # since when we talk about driver permissions, we're talking
-        # about something different for each structure. For now,
-        # we only want to look at this if the target is a
+        # We only want to look at this if the target is a
         # distribution source package, in order to maintain
-        # compatibility with the bug contacts feature. We want
-        # to enable this for other targets, but probably only
-        # after implementing
-        # https://launchpad.net/malone/+spec/subscription-invitation
+        # compatibility with the bug contacts feature.
         if IDistributionSourcePackage.providedBy(self.context):
             return check_permission(
                 "launchpad.Driver", self.context.distribution)

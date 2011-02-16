@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -881,7 +881,8 @@ class POTemplate(SQLBase, RosettaStats):
                                               context, sequence)
 
     def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
-                                   context=None):
+                                   context=None, initial_file_references=None,
+                                   initial_source_comment=None):
         """See `IPOTemplate`."""
         msgid_singular = self.getOrCreatePOMsgID(singular_text)
         if plural_text is None:
@@ -891,8 +892,10 @@ class POTemplate(SQLBase, RosettaStats):
         potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
                                          context, sharing_templates=True)
         if potmsgset is None:
-            potmsgset = self.createMessageSetFromText(
-                singular_text, plural_text, context, sequence=0)
+            potmsgset = self.createPOTMsgSetFromMsgIDs(
+                msgid_singular, msgid_plural, context, sequence=0)
+            potmsgset.filereferences = initial_file_references
+            potmsgset.sourcecomment = initial_source_comment
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
