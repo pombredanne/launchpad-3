@@ -1798,7 +1798,9 @@ class BugTaskSet:
             extra_clauses.append(
                 "(Bugtask.product IS NULL OR Product.active)")
             join_tables.append(
-                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active == True))))
 
 
         if params.status is not None:
