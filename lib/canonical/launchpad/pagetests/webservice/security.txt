@@ -24,7 +24,6 @@ But the 'no-priv' user can't see bug number 14, which is private.
   HTTP/1.1 401 Unauthorized
   ...
   Bug 14 is private
-  ...
 
   >>> nopriv_output = user_webservice.get(
   ...     "/bugs?ws.size=100").jsonBody()
@@ -41,7 +40,6 @@ operating on public data.
   HTTP/1.1 401 Unauthorized
   ...
   Bug 14 is private
-  ...
 
   >>> public_output = public_webservice.get(
   ...     "/bugs?ws.size=50").jsonBody()

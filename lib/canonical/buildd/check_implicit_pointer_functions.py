@@ -1,0 +1,1 @@
+check-implicit-pointer-functions

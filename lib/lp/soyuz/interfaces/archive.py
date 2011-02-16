@@ -282,7 +282,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     publish = Bool(
         title=_("Publish"), required=False,
-        description=_("Update the APT archive."))
+        description=_("Whether or not to update the APT repository.  If "
+            "disabled, nothing will be published.  If the archive is "
+            "private then additionally no builds will be dispatched."))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
