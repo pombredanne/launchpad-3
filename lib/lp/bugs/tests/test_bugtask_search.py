@@ -520,12 +520,12 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks[:1])
 
 
-class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
+class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(DeactivatedContextBugTaskTestCase, self).setUp()
+        super(DeactivatedProductBugTaskTestCase, self).setUp()
         self.person = self.factory.makePerson()
         self.active_product = self.factory.makeProduct()
         self.inactive_product = self.factory.makeProduct()
