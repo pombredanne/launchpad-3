@@ -2234,7 +2234,7 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
             ]
         no_targetnamesearch = bool(features.getFeatureFlag(
             'malone.disable_targetnamesearch'))
@@ -2478,10 +2478,11 @@ class BugTaskSet:
         else:
             requested_joins = kwargs.get('prejoins', [])
             # NB: We could save later work by predicting what sort of targets
-            # we might be interested in here, but as at any point we're dealing
-            # with relatively few results, this is likely to be a small win.
+            # we might be interested in here, but as at any point we're
+            # dealing with relatively few results, this is likely to be a
+            # small win.
             prejoins = [
-                (Bug, Join(Bug, BugTask.bug == Bug.id))
+                (Bug, Join(Bug, BugTask.bug == Bug.id)),
                 ] + requested_joins
             def eager_load(results):
                 product_ids = set([row[0].productID for row in results])
