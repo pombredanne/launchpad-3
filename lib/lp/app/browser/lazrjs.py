@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BooleanChoiceWidget',
     'InlineEditPickerWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
@@ -61,6 +62,7 @@ class WidgetBase:
             if mutator_info is not None:
                 mutator_method, mutator_extra = mutator_info
                 self.mutator_method_name = mutator_method.__name__
+        self.json_attribute = simplejson.dumps(self.api_attribute)
 
     @property
     def resource_uri(self):
@@ -90,19 +92,27 @@ class WidgetBase:
             return False
 
 
-class TextWidgetBase(WidgetBase):
+class EditableWidgetBase(WidgetBase):
+    """Adds an edit_url property to WidgetBase."""
+
+    def __init__(self, context, exported_field, content_box_id,
+                 edit_view, edit_url):
+        super(EditableWidgetBase, self).__init__(
+            context, exported_field, content_box_id)
+        if edit_url is None:
+            edit_url = canonical_url(self.context, view_name=edit_view)
+        self.edit_url = edit_url
+
+
+class TextWidgetBase(EditableWidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, title, content_box_id,
                  edit_view, edit_url):
         super(TextWidgetBase, self).__init__(
-            context, exported_field, content_box_id)
-        if edit_url is None:
-            edit_url = canonical_url(self.context, view_name=edit_view)
-        self.edit_url = edit_url
+            context, exported_field, content_box_id, edit_view, edit_url)
         self.accept_empty = simplejson.dumps(self.optional_field)
         self.title = title
-        self.json_attribute = simplejson.dumps(self.api_attribute)
         self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
 
     @property
@@ -110,7 +120,19 @@ class TextWidgetBase(WidgetBase):
         return simplejson.dumps(self.resource_uri + '/' + self.api_attribute)
 
 
-class TextLineEditorWidget(TextWidgetBase):
+class DefinedTagMixin:
+    """Mixin class to define open and closing tags."""
+
+    @property
+    def open_tag(self):
+        return '<%s id="%s">' % (self.tag, self.content_box_id)
+
+    @property
+    def close_tag(self):
+        return '</%s>' % self.tag
+
+
+class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
     """Wrapper for the lazr-js inlineedit/editor.js widget."""
 
     __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
@@ -144,14 +166,6 @@ class TextLineEditorWidget(TextWidgetBase):
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
         self.width = simplejson.dumps(width)
-
-    @property
-    def open_tag(self):
-        return '<%s id="%s">' % (self.tag, self.content_box_id)
-
-    @property
-    def close_tag(self):
-        return '</%s>' % self.tag
 
     @property
     def value(self):
@@ -333,3 +347,62 @@ def standard_text_html_representation(value, linkify_text=True):
         return ''
     nomail = FormattersAPI(value).obfuscate_email()
     return FormattersAPI(nomail).text_to_html(linkify_text=linkify_text)
+
+
+class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
+    """A ChoiceEdit for a boolean field."""
+
+    __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
+
+    def __init__(self, context, exported_field,
+                 tag, false_text, true_text, prefix=None,
+                 edit_view="+edit", edit_url=None,
+                 content_box_id=None, header='Select an item'):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param tag: The HTML tag to use.
+        :param false_text: The string to show for a false value.
+        :param true_text: The string to show for a true value.
+        :param prefix: Optional text to show before the value.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param header: The large text at the top of the choice popup.
+        """
+        super(BooleanChoiceWidget, self).__init__(
+            context, exported_field, content_box_id, edit_view, edit_url)
+        self.header = header
+        self.tag = tag
+        self.prefix = prefix
+        self.true_text = true_text
+        self.false_text = false_text
+        self.current_value = getattr(self.context, self.attribute_name)
+
+    @property
+    def value(self):
+        if self.current_value:
+            return self.true_text
+        else:
+            return self.false_text
+
+    @property
+    def config(self):
+        return dict(
+            contentBox='#'+self.content_box_id,
+            value=self.current_value,
+            title=self.header,
+            items=[
+                dict(name=self.true_text, value=True, style='', help='',
+                     disabled=False),
+                dict(name=self.false_text, value=False, style='', help='',
+                     disabled=False)])
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
