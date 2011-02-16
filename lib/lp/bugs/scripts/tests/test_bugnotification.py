@@ -4,24 +4,43 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import unittest
 
 import pytz
+from testtools.matchers import Not
+from transaction import commit
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import commit
-from lp.bugs.model.bugtask import BugTask
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import login
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.adapters.bugchange import (
+    BranchLinkedToBug,
+    BranchUnlinkedFromBug,
+    BugAttachmentChange,
+    BugDuplicateChange,
+    BugTagsChange,
+    BugTaskStatusChange,
+    BugTitleChange,
+    BugVisibilityChange,
+    BugWatchAdded,
+    BugWatchRemoved,
+    CveLinkedToBug,
+    CveUnlinkedFromBug,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
     )
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications,
     notification_batches,
@@ -29,6 +48,10 @@ from lp.bugs.scripts.bugnotification import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import lp_dbuser
+from lp.testing.matchers import Contains
 
 
 class MockBug:
@@ -252,6 +275,7 @@ class FakeNotification:
         self.bug = bug
         self.message = self.Message()
         self.message.owner = owner
+        self.activity = None
 
 
 class TestNotificationCommentBatches(unittest.TestCase):
@@ -459,5 +483,339 @@ class TestNotificationBatches(unittest.TestCase):
         self.assertEquals(expected, observed)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class EmailNotificationTestBase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(EmailNotificationTestBase, self).setUp()
+        login('foo.bar@canonical.com')
+        self.product_owner = self.factory.makePerson(name="product-owner")
+        self.person = self.factory.makePerson(name="sample-person")
+        self.product = self.factory.makeProduct(owner=self.product_owner)
+        self.product_subscriber = self.factory.makePerson(
+            name="product-subscriber")
+        self.product.addBugSubscription(
+            self.product_subscriber, self.product_subscriber)
+        self.bug_subscriber = self.factory.makePerson(name="bug-subscriber")
+        self.bug_owner = self.factory.makePerson(name="bug-owner")
+        self.bug = self.factory.makeBug(
+            product=self.product, private=False, owner=self.bug_owner)
+        self.reporter = self.bug.owner
+        self.bug.subscribe(self.bug_subscriber, self.reporter)
+        [self.product_bugtask] = self.bug.bugtasks
+        commit()
+        login('test@canonical.com')
+        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        self.now = datetime.now(pytz.timezone('UTC'))
+        self.ten_minutes_ago = self.now - timedelta(minutes=10)
+        self.notification_set = getUtility(IBugNotificationSet)
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.date_emailed = self.now
+        flush_database_updates()
+
+    def tearDown(self):
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.date_emailed = self.now
+        flush_database_updates()
+        super(EmailNotificationTestBase, self).tearDown()
+
+    def get_messages(self):
+        notifications = self.notification_set.getNotificationsToSend()
+        email_notifications = get_email_notifications(notifications)
+        for (bug_notifications,
+             omitted_notifications,
+             messages) in email_notifications:
+            for message in messages:
+                yield message, message.get_payload(decode=True)
+
+
+class EmailNotificationsBugMixin:
+
+    change_class = change_name = old = new = alt = unexpected_text = None
+
+    def change(self, old, new):
+        self.bug.addChange(
+            self.change_class(
+                self.ten_minutes_ago, self.person, self.change_name,
+                old, new))
+
+    def change_other(self):
+        self.bug.addChange(
+            BugVisibilityChange(
+                self.ten_minutes_ago, self.person, "private",
+                False, True))
+
+    def test_change_seen(self):
+        # A smoketest.
+        self.change(self.old, self.new)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.unexpected_text))
+
+    def test_undone_change_sends_no_emails(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_undone_change_is_not_included(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.old)
+        self.change_other()
+        message, body = self.get_messages().next()
+        self.assertThat(body, Not(Contains(self.unexpected_text)))
+
+    def test_multiple_undone_changes_sends_no_emails(self):
+        self.change(self.old, self.new)
+        self.change(self.new, self.alt)
+        self.change(self.alt, self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+
+class EmailNotificationsBugNotRequiredMixin(EmailNotificationsBugMixin):
+    # This test collection is for attributes that can be None.
+    def test_added_removed_sends_no_emails(self):
+        self.change(None, self.old)
+        self.change(self.old, None)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_removed_added_sends_no_emails(self):
+        self.change(self.old, None)
+        self.change(None, self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_duplicate_marked_changed_removed_sends_no_emails(self):
+        self.change(None, self.old)
+        self.change(self.old, self.new)
+        self.change(self.new, None)
+        self.assertEqual(list(self.get_messages()), [])
+
+
+class EmailNotificationsBugTaskMixin(EmailNotificationsBugMixin):
+
+    def change(self, old, new, index=0):
+        self.bug.addChange(
+            self.change_class(
+                self.bug.bugtasks[index], self.ten_minutes_ago,
+                self.person, self.change_name, old, new))
+
+    def test_changing_on_different_bugtasks_is_not_undoing(self):
+        with lp_dbuser():
+            product2 = self.factory.makeProduct(owner=self.product_owner)
+            self.bug.addTask(self.product_owner, product2)
+        self.change(self.old, self.new, index=0)
+        self.change(self.new, self.old, index=1)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.unexpected_text))
+
+
+class EmailNotificationsAddedRemovedMixin:
+
+    old = new = added_message = removed_message = None
+
+    def add(self, item):
+        raise NotImplementedError
+    remove = add
+
+    def test_added_seen(self):
+        self.add(self.old)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.added_message))
+
+    def test_added_removed_sends_no_emails(self):
+        self.add(self.old)
+        self.remove(self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_removed_added_sends_no_emails(self):
+        self.remove(self.old)
+        self.add(self.old)
+        self.assertEqual(list(self.get_messages()), [])
+
+    def test_added_another_removed_sends_emails(self):
+        self.add(self.old)
+        self.remove(self.new)
+        message, body = self.get_messages().next()
+        self.assertThat(body, Contains(self.added_message))
+        self.assertThat(body, Contains(self.removed_message))
+
+
+class TestEmailNotificationsBugTitle(
+    EmailNotificationsBugMixin, EmailNotificationTestBase):
+
+    change_class = BugTitleChange
+    change_name = "title"
+    old = "Old summary"
+    new = "New summary"
+    alt = "Another summary"
+    unexpected_text = '** Summary changed:'
+
+
+class TestEmailNotificationsBugTags(
+    EmailNotificationsBugMixin, EmailNotificationTestBase):
+
+    change_class = BugTagsChange
+    change_name = "tags"
+    old = ['foo', 'bar', 'baz']
+    new = ['foo', 'bar']
+    alt = ['bing', 'shazam']
+    unexpected_text = '** Tags'
+
+    def test_undone_ordered_set_sends_no_email(self):
+        # Tags use ordered sets to generate change descriptions, which we
+        # demonstrate here.
+        self.change(['foo', 'bar', 'baz'], ['foo', 'bar'])
+        self.change(['foo', 'bar'], ['baz', 'bar', 'foo', 'bar'])
+        self.assertEqual(list(self.get_messages()), [])
+
+
+class TestEmailNotificationsBugDuplicate(
+    EmailNotificationsBugNotRequiredMixin, EmailNotificationTestBase):
+
+    change_class = BugDuplicateChange
+    change_name = "duplicateof"
+    unexpected_text = 'duplicate'
+
+    def _bug(self):
+        with lp_dbuser():
+            return self.factory.makeBug()
+
+    old = cachedproperty('old')(_bug)
+    new = cachedproperty('new')(_bug)
+    alt = cachedproperty('alt')(_bug)
+
+
+class TestEmailNotificationsBugTaskStatus(
+    EmailNotificationsBugTaskMixin, EmailNotificationTestBase):
+
+    change_class = BugTaskStatusChange
+    change_name = "status"
+    old = BugTaskStatus.TRIAGED
+    new = BugTaskStatus.INPROGRESS
+    alt = BugTaskStatus.INVALID
+    unexpected_text = 'Status: '
+
+
+class TestEmailNotificationsBugWatch(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    # Note that this is for bugwatches added to bugs.  Bugwatches added
+    # to bugtasks are separate animals AIUI, and we don't try to combine
+    # them here for notifications.  Bugtasks have only zero or one
+    # bugwatch, so they can be handled just as a simple bugtask attribute
+    # change, like status.
+
+    added_message = '** Bug watch added:'
+    removed_message = '** Bug watch removed:'
+
+    @cachedproperty
+    def tracker(self):
+        with lp_dbuser():
+            return self.factory.makeBugTracker()
+
+    def _watch(self, identifier='123'):
+        with lp_dbuser():
+            # This actually creates a notification all by itself.  However,
+            # it won't be sent out for another five minutes.  Therefore,
+            # we send out separate change notifications.
+            return self.bug.addWatch(
+                self.tracker, identifier, self.product_owner)
+
+    old = cachedproperty('old')(_watch)
+    new = cachedproperty('new')(lambda self: self._watch('456'))
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugWatchAdded(
+                    self.ten_minutes_ago, self.product_owner, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugWatchRemoved(
+                    self.ten_minutes_ago, self.product_owner, item))
+
+
+class TestEmailNotificationsBranch(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** Branch linked:'
+    removed_message = '** Branch unlinked:'
+
+    def _branch(self):
+        with lp_dbuser():
+            return self.factory.makeBranch()
+
+    old = cachedproperty('old')(_branch)
+    new = cachedproperty('new')(_branch)
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BranchLinkedToBug(
+                    self.ten_minutes_ago, self.person, item, self.bug))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BranchUnlinkedFromBug(
+                    self.ten_minutes_ago, self.person, item, self.bug))
+
+
+class TestEmailNotificationsCVE(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** CVE added:'
+    removed_message = '** CVE removed:'
+
+    def _cve(self, sequence):
+        with lp_dbuser():
+            return self.factory.makeCVE(sequence)
+
+    old = cachedproperty('old')(lambda self: self._cve('2020-1234'))
+    new = cachedproperty('new')(lambda self: self._cve('2020-5678'))
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                CveLinkedToBug(
+                    self.ten_minutes_ago, self.person, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                CveUnlinkedFromBug(
+                    self.ten_minutes_ago, self.person, item))
+
+
+class TestEmailNotificationsAttachments(
+    EmailNotificationsAddedRemovedMixin, EmailNotificationTestBase):
+
+    added_message = '** Attachment added:'
+    removed_message = '** Attachment removed:'
+
+    def _attachment(self):
+        with lp_dbuser():
+            # This actually creates a notification all by itself, via an
+            # event subscriber.  However, it won't be sent out for
+            # another five minutes.  Therefore, we send out separate
+            # change notifications.
+            return self.bug.addAttachment(
+                self.person, 'content', 'a comment', 'stuff.txt')
+
+    old = cachedproperty('old')(_attachment)
+    new = cachedproperty('new')(_attachment)
+
+    def add(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugAttachmentChange(
+                    self.ten_minutes_ago, self.person, 'attachment',
+                    None, item))
+
+    def remove(self, item):
+        with lp_dbuser():
+            self.bug.addChange(
+                BugAttachmentChange(
+                    self.ten_minutes_ago, self.person, 'attachment',
+                    item, None))
