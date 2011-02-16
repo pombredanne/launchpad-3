@@ -46,7 +46,7 @@ class BugMessage(SQLBase):
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     # -- The index of the message is cached in the DB.
-    index = IntCol(default=None, notNull=True)
+    index = IntCol(notNull=True)
 
     def __repr__(self):
         return "<BugMessage at 0x%x message=%s index=%s>" % (
