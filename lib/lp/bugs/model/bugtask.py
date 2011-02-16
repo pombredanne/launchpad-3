@@ -1781,6 +1781,19 @@ class BugTaskSet:
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
+        # Remove bugtasks from deactivated products, if necessary.
+        # We don't have to do this if
+        # 1) We're searching on bugtasks for a specific product
+        # 2) We're searching on bugtasks for a specific productseries
+        # 3) We're searching on bugtasks for a distribution
+        # 4) We're searching for bugtasks for a distroseries
+        # because in those instances we don't have arbitrary products which
+        # may be deactivated showing up in our search.
+        if params.product is None and params.distribution is None and
+           params.productseries is None and params.distroseries is None:
+            pass
+
+
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
