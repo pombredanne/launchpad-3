@@ -133,6 +133,30 @@ class cmd_launchpad_server(Command):
 register_command(cmd_launchpad_server)
 
 
+def _handle_sigusr1(signum, frame):
+    """This is used by _wake_me_up_in_a_few to just ignore the signal"""
+    # We only want to handle the signal one time
+    signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+    return
+
+
+def _wake_me_up_in_a_few(sleep_time, sig_handler=_handle_sigusr1):
+    """Start a thread that will send a signal to the current process.
+
+    :param sleep_time: The number of seconds to wait before firing SIGUSR1.
+    :return: cancel() A callable which will cancel the signal.
+    """
+    # Set up the signal handler
+    timer = threading.Timer(sleep_time, os.kill,
+                            args=(os.getpid(), signal.SIGUSR1))
+    signal.signal(signal.SIGUSR1, sig_handler)
+    timer.start()
+    def cancel():
+        timer.cancel()
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+    return cancel
+
+
 class LPForkingService(object):
     """A service that can be asked to start a new bzr subprocess via fork.
 
