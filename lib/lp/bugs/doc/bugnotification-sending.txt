@@ -1100,16 +1100,16 @@ they generated.  For now, everyone receives these notifications whether they
 want them or not.
 
     >>> verbose_person.selfgenerated_bugnotifications
-    True
+    False
     >>> with lp_dbuser():
-    ...     verbose_person.selfgenerated_bugnotifications = False
+    ...     verbose_person.selfgenerated_bugnotifications = True
 
 Teams provide this attribute read-only.
 
     >>> verbose_team.selfgenerated_bugnotifications
-    True
+    False
     >>> with lp_dbuser():
-    ...     verbose_team.selfgenerated_bugnotifications = False
+    ...     verbose_team.selfgenerated_bugnotifications = True
     Traceback (most recent call last):
     ...
     NotImplementedError: Teams do not support changing this attribute.
