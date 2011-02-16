@@ -13,17 +13,6 @@
       padding-left: 2em;
     }
   </style>
-  <!-- If we have javascript, we want to show the "Build now" link.
-       Do it here so it's made visible as soon as possible.
-  -->
-  <!--<script type="text/javascript">-->
-    <!--build_link = document.getElementById('request-daily-build');-->
-    <!--alert("bb: " + build_link);-->
-    <!--if( build_link != null ) {-->
-      <!--alert('aa');-->
-      <!--build_link.setStyle('display', 'block');-->
-    <!--}-->
-  <!--</script>-->
 </metal:block>
 
 <body>
