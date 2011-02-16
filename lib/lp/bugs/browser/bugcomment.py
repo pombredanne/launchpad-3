@@ -70,6 +70,10 @@ def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
             bug_comment = BugComment(bugmessage.index, message, bugtask,
                 visible=bugmessage.visible)
             comments[message.id] = bug_comment
+            # This code path is currently only used from BugTask view which
+            # have already loaded all the bug watches. If we start lazy loading
+            # those, or not needing them we will need to batch lookup watches
+            # here.
             if bugmessage.bugwatchID is not None:
                 bug_comment.bugwatch = bugmessage.bugwatch
                 bug_comment.synchronized = (

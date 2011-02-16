@@ -1423,15 +1423,18 @@ BugMessage""" % sqlvalues(self.id))
                     slices.append(BugMessage.index < slice.stop)
                 elif not slice.stop:
                     if slice.start < 0:
+                        # If the high index is N, a slice of -1: should
+                        # return index N - so we need to add one to the
+                        # range.
                         slices.append(BugMessage.index >= SQL(
                             "(select max(index) from "
-                            "bugmessage where bug=%s) - %s" % (
-                            sqlvalues(self.id), sqlvalues(slice.start))))
+                            "bugmessage where bug=%s) + 1 - %s" % (
+                            sqlvalues(self.id, -slice.start))))
                     else:
                         slices.append(BugMessage.index >= slice.start)
                 else:
-                    slices.append(BugMessage.index >= slice.start)
-                    slices.append(BugMessage.index < slice.stop)
+                    slices.append(And(BugMessage.index >= slice.start,
+                        BugMessage.index < slice.stop))
         if slices:
             ranges = [Or(*slices)]
         else:
@@ -1454,21 +1457,7 @@ BugMessage""" % sqlvalues(self.id))
                 return
             PersonSet().getPrecachedPersonsFromIDs(owners,
                 need_validity=True)
-        def eager_load_watches(rows):
-            watches = set()
-            for row in rows:
-                watches.add(row[0].bugwatchID)
-            watches.discard(None)
-            if not watches:
-                return
-            list(Store.of(self).find(BugWatch, BugWatch.id.is_in(watches)))
-        def eager_load(rows):
-            # We eager load owner validity to permit rendering in the Web UI.
-            eager_load_owners(rows)
-            # The web UI shows imported comments differently, but loading the
-            # bug eager loads all bug watches.
-            # eager_load_watches(rows)
-        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
