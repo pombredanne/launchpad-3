@@ -21,14 +21,12 @@ from zope.interface import providedBy
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.message import MessageSet
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.ftests import login
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -43,7 +41,6 @@ from lp.bugs.adapters.bugchange import (
     CveLinkedToBug,
     CveUnlinkedFromBug,
     )
-from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -431,7 +428,6 @@ class EmailNotificationsBugMixin:
 
 class EmailNotificationsBugNotRequiredMixin(EmailNotificationsBugMixin):
     # This test collection is for attributes that can be None.
-
     def test_added_removed_sends_no_emails(self):
         self.change(None, self.old)
         self.change(self.old, None)
@@ -470,6 +466,7 @@ class EmailNotificationsBugTaskMixin(EmailNotificationsBugMixin):
 class EmailNotificationsAddedRemovedMixin:
 
     old = new = added_message = removed_message = None
+
     def add(self, item):
         raise NotImplementedError
     remove = add
@@ -488,7 +485,7 @@ class EmailNotificationsAddedRemovedMixin:
         self.remove(self.old)
         self.add(self.old)
         self.assertEqual(list(self.get_messages()), [])
-        
+
     def test_added_another_removed_sends_emails(self):
         self.add(self.old)
         self.remove(self.new)

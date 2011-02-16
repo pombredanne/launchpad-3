@@ -41,7 +41,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
     IBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
