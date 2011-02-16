@@ -9,11 +9,13 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
 
@@ -52,5 +54,13 @@ class TestPersonMergeJob(TestCaseWithFactory):
         from_email = self.from_person.preferredemail
         removeSecurityProxy(from_email).personID = self.to_person.id
         removeSecurityProxy(from_email).accountID = self.to_person.accountID
-        self.job.run()
+
+        logger = BufferLogger()
+        with log.use(logger):
+            self.job.run()
+
         self.assertEqual(self.to_person, self.from_person.merged)
+        self.assertEqual(
+            ["DEBUG PersonMergeJob is about to merge ~void into ~gestalt",
+             "DEBUG PersonMergeJob has merged ~void into ~gestalt"],
+            logger.getLogBuffer().splitlines())

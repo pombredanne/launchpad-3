@@ -355,12 +355,17 @@ class PersonMergeJob(PersonTransferJobDerived):
 
     def run(self):
         """Perform the merge."""
+        from_person_name = self.from_person.name
+        to_person_name = self.to_person.name
+
         from canonical.launchpad.scripts import log
         log.debug(
-            "%s is about to merge %s into %s", self.log_name,
-            self.from_person.name, self.to_person.name)
+            "%s is about to merge ~%s into ~%s", self.log_name,
+            from_person_name, to_person_name)
+
         getUtility(IPersonSet).merge(
             from_person=self.from_person, to_person=self.to_person)
+
         log.debug(
-            "%s has merged %s into %s", self.log_name,
-            self.from_person.name, self.to_person.name)
+            "%s has merged ~%s into ~%s", self.log_name,
+            from_person_name, to_person_name)
