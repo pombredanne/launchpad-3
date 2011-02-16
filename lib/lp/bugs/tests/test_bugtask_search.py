@@ -14,8 +14,6 @@ from storm.expr import Join
 from storm.store import Store
 from testtools.matchers import (
     Equals,
-    LessThan,
-    Not,
     )
 from zope.component import getUtility
 
@@ -553,7 +551,7 @@ class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
         nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         bugtask_set = getUtility(IBugTaskSet)
         param = BugTaskSearchParams(user=None, searchtext='Monkeys')
-        results = bugtask_set.search(param) 
+        results = bugtask_set.search(param)
         self.assertEqual([self.active_bugtask], list(results))
 
 
