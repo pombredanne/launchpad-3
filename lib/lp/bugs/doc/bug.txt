@@ -1123,7 +1123,7 @@ show messages in the bugtask index template in one shot.
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
-    >>> chunks = bug_two.getMessagesForView()
+    >>> chunks = bug_two.getMessagesForView(None)
     >>> for _, _1, chunk in sorted(chunks, key=lambda x:x[2].id):
     ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
     ...     chunk.content[:30])

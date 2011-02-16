@@ -89,20 +89,28 @@ def group_comments_with_activity(comments, activities):
     Generates a stream of comment instances (with the activity grouped within)
     or `list`s of grouped activities.
 
-    :param comments: An iterable of `BugComment` instances.
+    :param comments: An iterable of `BugComment` instances, which should be
+        sorted by index already.
     :param activities: An iterable of `BugActivity` instances.
     """
     window = COMMENT_ACTIVITY_GROUPING_WINDOW
 
     comment_kind = "comment"
+    if comments:
+        max_index = comments[-1].index + 1
+    else:
+        max_index = 0
     comments = (
-        (comment.datecreated, comment.owner, comment_kind, comment)
+        (comment.datecreated, comment.index, comment.owner, comment_kind, comment)
         for comment in comments)
     activity_kind = "activity"
     activity = (
-        (activity.datechanged, activity.person, activity_kind, activity)
+        (activity.datechanged, max_index, activity.person, activity_kind, activity)
         for activity in activities)
-    events = sorted(chain(comments, activity), key=itemgetter(0, 1))
+    # when an action and a comment happen at the same time, the action comes
+    # second, when two events are tied the comment index is used to
+    # disambiguate.
+    events = sorted(chain(comments, activity), key=itemgetter(0, 1, 2))
 
     def gen_event_windows(events):
         """Generate event windows.
@@ -111,12 +119,12 @@ def group_comments_with_activity(comments, activities):
         an integer, and is incremented each time the windowing conditions are
         triggered.
 
-        :param events: An iterable of `(date, actor, kind, event)` tuples in
-            order.
+        :param events: An iterable of `(date, ignored, actor, kind, event)`
+            tuples in order.
         """
         window_comment, window_actor = None, None
         window_index, window_end = 0, None
-        for date, actor, kind, event in events:
+        for date, _, actor, kind, event in events:
             window_ended = (
                 # A window may contain only one comment.
                 (window_comment is not None and kind is comment_kind) or

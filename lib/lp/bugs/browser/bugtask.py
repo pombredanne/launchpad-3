@@ -849,8 +849,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         if not self.visible_comments_truncated_for_display:
             comments=self.comments
         else:
-            oldest_count = self.visible_initial_comments
-            new_count = self.total_comments-self.visible_recent_comments
+            # the comment function takes 0-offset counts where comment 0 is
+            # the initial description, so we need to add one to the limits
+            # to adjust.
+            oldest_count = 1 + self.visible_initial_comments
+            new_count = 1 + self.total_comments-self.visible_recent_comments
             comments = get_comments_for_bugtask(
                 self.context, truncate=True, for_display=True,
                 slice_info=[
@@ -950,7 +953,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def total_comments(self):
         """We count all comments because the db cannot do visibility yet."""
-        return self.context.bug.bug_messages.count()
+        return self.context.bug.bug_messages.count() - 1
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
