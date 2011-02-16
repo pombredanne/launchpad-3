@@ -30,7 +30,9 @@ class SendBugNotifications(LaunchpadCronScript):
         notifications_sent = False
         pending_notifications = get_email_notifications(getUtility(
             IBugNotificationSet).getNotificationsToSend())
-        for bug_notifications, messages in pending_notifications:
+        for (bug_notifications,
+             omitted_notifications,
+             messages) in pending_notifications:
             for message in messages:
                 self.logger.info("Notifying %s about bug %d." % (
                     message['To'], bug_notifications[0].bug.id))
@@ -38,6 +40,9 @@ class SendBugNotifications(LaunchpadCronScript):
                 self.logger.debug(message.as_string())
             for notification in bug_notifications:
                 notification.date_emailed = UTC_NOW
+            for notification in omitted_notifications:
+                notification.date_emailed = UTC_NOW
+                notification.is_omitted = True
             notifications_sent = True
             # Commit after each batch of email sent, so that we won't
             # re-mail the notifications in case of something going wrong

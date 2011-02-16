@@ -83,6 +83,7 @@ def construct_email_notifications(bug_notifications):
 
     recipients = {}
     filtered_notifications = []
+    omitted_notifications = []
     for notification in bug_notifications:
         key = get_key(notification)
         if (notification.is_comment or
@@ -97,6 +98,8 @@ def construct_email_notifications(bug_notifications):
                     email_people.remove(actor)
                 for email_person in email_people:
                     recipients[email_person] = recipient
+        else:
+            omitted_notifications.append(notification)
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -189,7 +192,7 @@ def construct_email_notifications(bug_notifications):
             rationale, references, msgid)
         messages.append(msg)
 
-    return filtered_notifications, messages
+    return filtered_notifications, omitted_notifications, messages
 
 
 def notification_comment_batches(notifications):

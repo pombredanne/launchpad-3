@@ -105,6 +105,7 @@ class MockBugNotification:
         self.is_comment = is_comment
         self.date_emailed = date_emailed
         self.recipients = [MockBugNotificationRecipient()]
+        self.activity = None
 
 
 class TestGetEmailNotifications(unittest.TestCase):
@@ -161,7 +162,7 @@ class TestGetEmailNotifications(unittest.TestCase):
         email_notifications = get_email_notifications(notifications_to_send)
         to_addresses = set()
         sent_notifications = []
-        for notifications, messages in email_notifications:
+        for notifications, omitted, messages in email_notifications:
             for message in messages:
                 to_addresses.add(message['to'])
             recipients = {}

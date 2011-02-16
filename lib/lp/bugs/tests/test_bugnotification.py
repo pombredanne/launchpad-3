@@ -380,7 +380,9 @@ class EmailNotificationTestBase(TestCaseWithFactory):
     def get_messages(self):
         notifications = self.notification_set.getNotificationsToSend()
         email_notifications = get_email_notifications(notifications)
-        for bug_notifications, messages in email_notifications:
+        for (bug_notifications,
+             omitted_notifications,
+             messages) in email_notifications:
             for message in messages:
                 yield message, message.get_payload(decode=True)
 

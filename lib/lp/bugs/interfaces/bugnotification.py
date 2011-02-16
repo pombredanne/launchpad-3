@@ -51,6 +51,12 @@ class IBugNotification(IHasOwner):
         required=False)
     recipients = Attribute(
         "The people to which this notification should be sent.")
+    is_omitted = Bool(
+        title=u"Omitted", description=(
+            u"Was this notification omitted when emails were sent?  Ignore "
+             "if date_emailed is not yet set.  Only intended to be useful "
+             "for debugging purposes."),
+        required=True)
 
 
 class IBugNotificationSet(Interface):
