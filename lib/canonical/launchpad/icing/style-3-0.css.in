@@ -5,35 +5,21 @@
       launchpad. Rules for just an application or a page do not belong
       in this file.
    2. Do not use IDs because they discourage reuse.
-   3. This style sheet depends on YUI-Font;
-      Only use these percentages expressed in ems.
-      Pixels  em
-      10      0.77
-      11      0.85
-      12      0.93
-      13      1
-      14      1.08
-      15      1.16
-      16      1.231
-      17      1.31
-      18      1.385
-      19      1.465
-      20      1.539
-      21      1.616
-      22      1.67
-      23      1.74
-      24      1.82
-      25      1.89
-      26      1.97
-   4. Use these colors when defing using application colors.
-      * Launchpad-Gold: #F8C300
-      * Answers: #3840BE
-      * Blueprints: #3594BB
-      * Bugs: #9F2B33
-      * Code: #D18B39
-      * Translations: #BB3A84
-      * Registry: default (i.e. black)
-   5. Add rules to the appropriate section.
+   3. Only use these percentages expressed in ems.
+      Engine default font sizes: 16pt
+      Launchpad base measure 16pt * 62.5% = 10pt.
+      Pixels em
+       8     0.8 --smallest text
+       9     0.9
+      10     1
+      11     1.1
+      12     1.2 -- body
+      13     1.3
+      14     1.4
+      16     1.6
+      18     1.8
+      20     2
+   4. Add rules to the appropriate section.
       * Page layout
       * Block
       * Inline
@@ -139,19 +125,25 @@
     width: auto !important;
     min-width: 340px;
     }
-
-html, body {
-    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
-    font-size: 0.93em;
-    }
-body.private {
-    /* It must be obvious to the user that the context is private */
-    background: url("/@@/private-y-bg") top left repeat-y;
+* html {
+    font-size: 100%; /* IE hack. */
     }
 * html body {
     /* stops floats dropping in IE 5.5/6 */
     word-wrap: break-word;
     }
+html {
+    font-size: 62.5%; /* Scale 1em to 10px  */
+    }
+body {
+    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    font-size: 1.2em; /* Base font is 12px */
+    }
+body.private {
+    /* It must be obvious to the user that the context is private */
+    background: url("/@@/private-y-bg") top left repeat-y;
+    }
+
 h1, h2, h3, h4, h5, h6 {
     background: none;
     clear: left;
@@ -159,15 +151,15 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
     clear: none;
     padding-top: 6px; /* An offset from the logo. */
-    font-size: 1.97em;
+    font-size: 2em;
     }
 h2 {
     margin-bottom: 0.3em;
     margin-top: 0.3em;
-    font-size: 1.23em;
+    font-size: 1.6em;
     }
 h3 {
-    font-size: 1.08em;
+    font-size: 1.4em;
     }
 p {
     width: auto;
@@ -185,7 +177,7 @@ table.wide {
     }
 pre, code, samp, tt, .console {
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    font-size: 0.93em;
+    font-size: 1.1em;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -246,7 +238,7 @@ div.profiling_info p {
 div.hide_reveal_profiling {
     text-decoration: underline;
     color: #093;
-    font-size: 0.85em;
+    font-size: 0.9em;
     }
 
 /* =========================
@@ -398,7 +390,7 @@ ul.buttons li {
     margin: 0 0 0 0;
     }
 ul.cross-reference {
-    font-size: 1.231em;
+    font-size: 1.3em;
     }
 .bulleted {
     margin-bottom: 0.5em;
@@ -461,7 +453,7 @@ ol.subordinate {
     }
 .portlet dd {
     margin-bottom: 0.5em;
-    font-size: 0.85em;
+    font-size: 0.9em;
     color: #484848;
     }
 .portlet dl strong {
@@ -483,12 +475,12 @@ ol.subordinate {
 .related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
     content: "";
     display: inline-block;
-    width: 1.5em;
+    width: 1.4em;
     }
 .related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
     content: "⇒ ";
     display: inline-block;
-    width: 1.5em;
+    width: 1.4em;
     }
 .related ul li:before {
     content: "\00BB \0020";
@@ -631,7 +623,7 @@ th.descending {
 table.listing {
     margin: 0;
     width: 100%;
-    font-size: 0.93em;
+    font-size: 1em;
     }
 table.listing, table.listing tbody, table.listing td.end-of-section {
     border-bottom: 1px solid #d2d2d2;
@@ -667,7 +659,7 @@ table.listing table th, table.listing table td {
     padding: 0;
     }
 table.listing thead th, table.listing tr.thead th {
-    font-size: 1.08em;
+    font-size: 1.2em;
     white-space: nowrap;
     }
 table.listing td {
@@ -690,9 +682,9 @@ table.listing table.simple td {
     padding: 0.25em;
     }
 table.listing .section-heading {
-    font-size: 1.08em;
+    font-size: 1.2em;
     border: none;
-    padding-top: 1.5em;
+    padding-top: 1.4em;
     }
 table.summary th, table.summary td,
 table.listing table.summary th, table.listing table.summary td {
@@ -908,7 +900,7 @@ table.form td td {
 .long legend {
     color: #666;
     font-weight: bold;
-    font-size: 1.231em;
+    font-size: 1.3em;
     }
 fieldset.collapsible {
     /* Collapsible sections
@@ -942,7 +934,7 @@ img.collapseIcon {
     margin-bottom: 0;
     }
 h1 .edit {
-    font-size: 0.77em;
+    font-size: 0.8em;
     position: relative;
     top: -3px;
     margin-left: 0.5em;
@@ -1088,7 +1080,7 @@ table.form .error {
    These appear to be 3.0 specific.
 */
 div.see-all {
-    font-size: 1.231em; /* Same as a h2 */
+    font-size: 1.2em; /* Same as a h2 */
     text-align:right;
     }
 span.nolink {
@@ -1100,7 +1092,7 @@ span.see-all {
 .see-all a {
     padding-left: 8px;
     background: inherit;
-    font-size: 0.77em;
+    font-size: 0.8em;
     text-decoration: underline;
     }
 .unseen {
@@ -1124,25 +1116,25 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    font-size: 0.85em;
+    font-size: 0.9em;
     color: #666;
     }
 .description {
     clear: both;
-    font-size: 1em;
+    font-size: 1.1em;
     }
 .application-summary {
-    font-size: 1.231em;
+    font-size: 1.3em;
     }
 .search-results {
     margin-top: 1em;
     }
 p.search-results {
-    font-size: 0.93em;
+    font-size: 1em;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
-    font-size: 1.385em;
+    font-size: 1.4em;
     }
 .main-portlet {
     margin: 1em 0 1em 0;
@@ -1174,13 +1166,13 @@ p.search-results {
 .login-logout {
     position: absolute;
     top: .5em;
-    right: 1.5em;
+    right: 1.4em;
     }
 #rendertime {
     float: left;
     margin: 0.2em 1.2em 0 0;
     color: #666;
-    font-size: 0.77em;
+    font-size: 0.8em;
     }
 div.watermark-apps-portlet {
     clear: both;
@@ -1253,14 +1245,14 @@ div.watermark-apps-portlet span img {
     /* Registered slot */
     margin: .5em 0 1em 0;
     font-style: italic;
-    font-size: 0.77em;
+    font-size: 0.8em;
     color: #666;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    font-size: 0.77em;
+    font-size: 0.8em;
     }
 .breadcrumbs li {
     display:inline;
@@ -1293,7 +1285,7 @@ div.watermark-apps-portlet span img {
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */
-    font-size: 0.77em;
+    font-size: 0.8em;
     margin-right: 0;
     }
 
@@ -1343,7 +1335,7 @@ div.watermark-apps-portlet span img {
     padding: 6%;
     padding-right: 40px;
     color: #fff;
-    font-size: 0.93em;
+    font-size: 1em;
     }
 .downloads .version {
     -moz-border-radius: 5px 5px 0 0;
@@ -1368,7 +1360,7 @@ div.watermark-apps-portlet span img {
 .involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
-    font-size: 1.08em;
+    font-size: 1.2em;
     font-weight: bold;
     }
 .involvement a {
@@ -1409,7 +1401,7 @@ div.watermark-apps-portlet span img {
     border-bottom: 1px solid #d0d0d0;
     }
 .announcement .registered {
-    font-size: 0.93em;
+    font-size: 1em;
     margin-top: -2px;
     }
 
@@ -1784,27 +1776,27 @@ a.unofficial-tag {
     }
 
 .discreet, .lesser, .duplicate-details {
-    font-size: 0.85em;
+    font-size: 0.9em;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 0.93em;
+    font-size: 1em;
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
-    font-size: 0.77em;
+    font-size: 0.8em;
     }
 .cloud-size-small {
-    font-size: 0.85em;
+    font-size: 1.1em;
     }
 .cloud-size-medium {
-    font-size: 1.31em;
+    font-size: 1.3em;
     }
 .cloud-size-large {
-    font-size: 1.67em;
+    font-size: 1.4em;
     }
 .cloud-size-largest {
-    font-size: 1.97em;
+    font-size: 1.8em;
     }
 .cloud-dark {
     color: #00f;
@@ -1822,7 +1814,7 @@ pre.changelog, table.diff,
 div#edit-description,
 div#edit-commit_message {
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    font-size: 0.93em;
+    font-size: 1em;
     margin: 1em 0;
     }
 div#edit-description .yui-ieditor-input,
@@ -2416,7 +2408,7 @@ tr.bug-branch-summary td.first {
 ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     /* For the Latest updates portlet
       at https://launchpad.dev/~cprov/+archive/ppa */
-    font-size: 0.77em;
+    font-size: 0.8em;
     }
 ul.latest-ppa-updates li {
     padding: 3px;

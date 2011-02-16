@@ -77,7 +77,7 @@ form.primary.search {
 
 .official-tags-layout-table th {
   text-align: left;
-  font-size: 1.25em;
+  font-size: 1.167em;
   padding-bottom: 5px;
 }
 
@@ -114,7 +114,7 @@ form.primary.search {
 
 .official-tags-layout-table ul .tag-used-count {
   color: #888;
-  font-size: 77em;
+  font-size: 0.8em;
 }
 
 .official-tags-layout-table .list-scrollable-area {
@@ -136,7 +136,7 @@ form.primary.search {
 
 .official-tag-error-message-header {
   font-weight: bold;
-  font-size: 1.25em;
+  font-size: 1.3em;
   margin-left: 1em;
 }
 
@@ -172,11 +172,11 @@ a.bg-image {
 
 /* == Application-specific styles == */
 
-.description {font-size: 1.125em;}
+.description {font-size: 1.2em;}
 /* person/project/bug descriptions, bug comments */
-.report h2 {font-size: 1.4em;}
+.report h2 {font-size: 1.3em;}
 .boardComment, .boardCommentSummary {border: 1px solid #ddd;}
-.boardComment {margin: 1em 0 1.5em;}
+.boardComment {margin: 1em 0 1.4em;}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -209,7 +209,7 @@ a.bg-image {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
-.boardCommentContent { line-height: 1.5em;}
+.boardCommentContent { line-height: 1.4em;}
 .boardCommentFooter {
   background-color: #eee;
   color: #555;
@@ -358,7 +358,7 @@ form.archive-subscription-activation button {
     padding: 0 0 0 15px;
     margin:0;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1.1em;
 }
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
@@ -372,7 +372,7 @@ div.logtail {
     border: solid gray;
     border-width: 1px;
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    font-size: 1em;
+    font-size: 1.1em;
     -moz-border-radius: 5px;
     -o-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -440,7 +440,7 @@ div.ppa-packaging-tmp-actions .portlet {
   color: black;
   font-weight: bold;
   text-align: center;
-  font-size: 1.616em;
+  font-size: 1.4em;
   margin-top: 0.5em;
 }
 
@@ -464,7 +464,7 @@ div.diff .horizontal {
 }
 
 .yui-diff-overlay table.diff {
-  font-size: 93em;
+  font-size: 0.9em;
 }
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
@@ -531,7 +531,7 @@ div#sub-unsub-spinner {
 
 .highlight-message {
   margin: 2em 0 2em 0;
-  font-size: 1.231em;
+  font-size: 1.3em;
 }
 
 .patches-view-cell {
@@ -567,7 +567,7 @@ input.translate {width: 90%; max-width: 60em;}
 
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.125em;
+  font-size: 1.2em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
@@ -580,7 +580,7 @@ input.translate {width: 90%; max-width: 60em;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer, #page-summary {
-  font-size: 1.2em;
+  font-size: 1.3em;
   line-height: 1.4em;
   margin-top: 0;
 }
@@ -671,7 +671,7 @@ div.popupTitle {
 }
 
 #search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
-  margin-top: 1.5em;
+  margin-top: 1.4em;
   border-top: 1px solid #d2d2d2;
   margin-bottom: 10px;
   background: #e7effc;

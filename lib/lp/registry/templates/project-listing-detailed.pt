@@ -9,7 +9,7 @@
   (<a tal:attributes="href context/fmt:url/+review">Review</a>)
 </tal:review>
 
-<div style="font-size: 85em; margin-left: 25px;">
+<div style="margin-left: 25px;">
   <div class="discreet"
     tal:content="context/summary" tal:condition="context/summary">
       Summary Goes Here
