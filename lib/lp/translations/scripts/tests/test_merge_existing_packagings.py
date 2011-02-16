@@ -42,4 +42,4 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
             'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n',
             stderr)
         self.assertEqual('', stdout)
-        self.assertEqual(1, TestTranslationMergeJob.countTranslations(job))
+        self.assertEqual(1, count_translations(job))
