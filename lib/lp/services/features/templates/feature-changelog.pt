@@ -8,8 +8,31 @@
   <body>
     <div metal:fill-slot="main">
       <p>
-        Something.
+        A diff of each change to the feature rules is stored so that they
+        can be audited.
       </p>
+
+      <div class="results"
+        tal:content="structure view/changes/@@+navigation-links-upper" />
+
+      <table id="changes" class="listing">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Diff</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr tal:repeat="change view/changes/batch">
+            <td tal:content="change/date_changed/fmt:rfc822utcdatetime"/>
+            <td tal:content="structure change/diff/fmt:diff" />
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="results"
+        tal:content="structure view/changes/@@+navigation-links-lower" />
     </div>
   </body>
 </html>
