@@ -1287,17 +1287,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIsNot(None, build_button)
 
-        # Recipes that have no distroseries do not have a build now link
-#        login(ANONYMOUS)
-#        recipe = self.factory.makeSourcePackageRecipe(
-#            owner=self.chef, daily_build_archive=self.ppa,
-#            is_stale=True, build_daily=True)
-#        naked_recipe = removeSecurityProxy(recipe)
-#        naked_recipe.distroseries = None
-#        browser = self.getViewBrowser(recipe)
-#        rb_link = find_tag_by_id(browser.contents, 'request-daily-build')
-#        self.assertIsNot(None, rb_link)
-
         # Recipes that are not stale do not have a build now link
         login(ANONYMOUS)
         recipe = self.factory.makeSourcePackageRecipe(
