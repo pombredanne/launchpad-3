@@ -282,6 +282,7 @@ COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment additio
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 COMMENT ON COLUMN BugNotification.activity IS 'The BugActivity record corresponding to this notification, if any.';
 
+
 -- BugNotificationAttachment
 
 COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
