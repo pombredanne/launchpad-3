@@ -1351,7 +1351,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_link = find_tag_by_id(browser.contents, 'request-daily-builds')
         self.assertIs(None, build_link)
 
-    def test_request_daily_builds(self):
+    def test_request_daily_builds_action(self):
         """Daily builds should be triggered when requested."""
 
         recipe = self.factory.makeSourcePackageRecipe(
@@ -1359,7 +1359,16 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             is_stale=True, build_daily=True)
         browser = self.getViewBrowser(recipe)
         browser.getControl('Build now').click()
-        #todo - finish
+        login(ANONYMOUS)
+        builds = recipe.getPendingBuilds()
+        build_distros = [
+            build.distroseries.displayname for build in builds]
+        build_distros.sort()
+        # Our recipe has a Warty distroseries
+        self.assertEqual(['Warty'], build_distros)
+        self.assertEqual(
+            set([2505]),
+            set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""

@@ -272,6 +272,17 @@ class SourcePackageRecipe(Storm):
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
+    def performDailyBuild(self):
+        """See `ISourcePackageRecipe`."""
+        self.is_stale = False
+        for distroseries in self.distroseries:
+            try:
+                self.requestBuild(
+                    self.daily_build_archive, self.owner,
+                    distroseries, PackagePublishingPocket.RELEASE)
+            except BuildAlreadyPending:
+                continue
+
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""
         where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
@@ -317,14 +328,3 @@ class SourcePackageRecipe(Storm):
             return None
         durations.sort(reverse=True)
         return durations[len(durations) / 2]
-
-    def performDailyBuild(self):
-        """See `ISourcePackageRecipe`."""
-        self.is_stale = False
-        for distroseries in self.distroseries:
-            try:
-                self.requestBuild(
-                    self.daily_build_archive, self.owner,
-                    distroseries, PackagePublishingPocket.RELEASE)
-            except BuildAlreadyPending:
-                continue
