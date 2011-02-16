@@ -50,7 +50,7 @@ class TestRecipeBuild(WindmillTestCase):
             owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
             description=u'This recipe builds a foo for disto bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch],
-            daily_build_archive=self.ppa)
+            daily_build_archive=self.ppa, build_daily=True, is_stale=True)
         transaction.commit()
         login_person(self.chef, "chef@example.com", "test", self.client)
 
@@ -94,3 +94,20 @@ class TestRecipeBuild(WindmillTestCase):
                 '/ul/li'),
             validator=u'An identical build is already pending for %s %s.'
                         % (self.ppa.distribution.name, self.squirrel.name))
+
+    def test_recipe_daily_build_request(self):
+        """Request a recipe build."""
+
+        client = self.client
+        client.open(url=canonical_url(self.recipe))
+        client.waits.forElement(
+            id=u'request-daily-builds', timeout=PAGE_LOAD)
+
+        # Request a daily build.
+        client.click(id=u'request-daily-builds')
+
+        # Ensure it shows up.
+        client.waits.forElement(
+            xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
+                     '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
+            timeout=SLEEP)

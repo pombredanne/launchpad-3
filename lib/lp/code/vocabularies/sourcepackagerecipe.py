@@ -24,7 +24,10 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
-    distros = get_buildable_distroseries_set(getUtility(ILaunchBag).user)
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return SimpleVocabulary([])
+    distros = get_buildable_distroseries_set(user)
     terms = sorted_dotted_numbers(
         [SimpleTerm(distro, distro.id, distro.displayname)
          for distro in distros],
@@ -35,7 +38,10 @@ def buildable_distroseries_vocabulary(context):
 
 def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return SimpleVocabulary([])
+    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
     return make_archive_vocabulary(
         ppa for ppa in ppas
         if check_permission('launchpad.Append', ppa))

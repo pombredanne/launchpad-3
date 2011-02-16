@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
+    find_tag_by_id,
     find_tags_by_class,
     get_feedback_messages,
     get_radio_button_text_for_field,
@@ -1274,6 +1275,71 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_status(build6, BuildStatus.FULLYBUILT)
         self.assertEqual(
             [build1, build2, build3, build4, build5], view.builds)
+
+    def test_request_daily_builds_link(self):
+        """The Build now link should only be rendered when applicable."""
+
+
+        # Recipes that are stale and are built daily have a build now link
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIsNot(None, rb_link)
+
+        # Recipes that have no distroseries do not have a build now link
+#        login(ANONYMOUS)
+#        recipe = self.factory.makeSourcePackageRecipe(
+#            owner=self.chef, daily_build_archive=self.ppa,
+#            is_stale=True, build_daily=True)
+#        naked_recipe = removeSecurityProxy(recipe)
+#        naked_recipe.distroseries = None
+#        browser = self.getViewBrowser(recipe)
+#        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+#        self.assertIsNot(None, rb_link)
+
+        # Recipes that are not stale do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=False, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIs(None, rb_link)
+
+        # Recipes that are not built daily do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=False)
+        browser = self.getViewBrowser(recipe)
+        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIs(None, rb_link)
+
+        # Recipes that have no daily build ppa do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, is_stale=True, build_daily=True)
+        naked_recipe = removeSecurityProxy(recipe)
+        naked_recipe.daily_build_archive = None
+        browser = self.getViewBrowser(recipe)
+        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIs(None, rb_link)
+
+        # Recipes that have a daily build ppa without upload permissions
+        # do not have a build now link
+        login(ANONYMOUS)
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
+        person = self.factory.makePerson()
+        daily_build_archive = self.factory.makeArchive(
+                distribution=distroseries.distribution, owner=person)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=daily_build_archive,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        rb_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIs(None, rb_link)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
