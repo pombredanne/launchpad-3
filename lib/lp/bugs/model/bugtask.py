@@ -1791,7 +1791,8 @@ class BugTaskSet:
         # may be deactivated showing up in our search.
         if params.product is None and params.distribution is None and
            params.productseries is None and params.distroseries is None:
-            pass
+            extra_clauses.append(
+                "AND (Bugtask.product IS NULL OR Product.active)")
 
 
         if params.status is not None:
