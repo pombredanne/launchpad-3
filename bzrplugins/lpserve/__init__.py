@@ -15,6 +15,7 @@ __all__ = [
 
 
 import errno
+import fcntl
 import logging
 import os
 import resource
@@ -31,6 +32,7 @@ from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
 from bzrlib import (
     commands,
+    errors,
     lockdir,
     osutils,
     trace,
@@ -309,6 +311,11 @@ class LPForkingService(object):
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
     WAIT_FOR_REQUEST_TIMEOUT = 1.0 # No request should take longer than this to
                                    # be read
+    CHILD_CONNECT_TIMEOUT = 120.0 # If we get a fork() request, but nobody
+                                  # connects just exit
+                                  # On a heavily loaded server, it could take a
+                                  # couple secs, but it should never take
+                                  # minutes
 
     _fork_function = os.fork
 
@@ -324,6 +331,7 @@ class LPForkingService(object):
         # Map from pid => (temp_path_for_handles, request_socket)
         self._child_processes = {}
         self._children_spawned = 0
+        self._child_connect_timeout = self.CHILD_CONNECT_TIMEOUT
 
     def _create_master_socket(self):
         self._server_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -372,28 +380,89 @@ class LPForkingService(object):
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-    def _create_child_file_descriptors(self, base_path):
+    def _compute_paths(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
+        return (stdin_path, stdout_path, stderr_path)
+
+    def _create_child_file_descriptors(self, base_path):
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
         os.mkfifo(stdin_path)
         os.mkfifo(stdout_path)
         os.mkfifo(stderr_path)
 
-    def _bind_child_file_descriptors(self, base_path):
-        stdin_path = os.path.join(base_path, 'stdin')
-        stdout_path = os.path.join(base_path, 'stdout')
-        stderr_path = os.path.join(base_path, 'stderr')
+    def _set_blocking(self, fd):
+        """Change the file descriptor to unset the O_NONBLOCK flag."""
+        flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        flags = flags & (~os.O_NONBLOCK)
+        fcntl.fcntl(fd, fcntl.F_SETFD, flags)
+
+    def _open_handles(self, base_path):
+        """Open the given file handles.
+
+        This will attempt to open all of these file handles, but will not block
+        while opening them, timing out after self._child_connect_timeout
+        seconds.
+
+        :param base_path: The directory where all FIFOs are located
+        :return: (stdin_fid, stdout_fid, stderr_fid)
+        """
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
         # These open calls will block until another process connects (which
         # must connect in the same order)
-        stdin_fid = os.open(stdin_path, os.O_RDONLY)
-        stdout_fid = os.open(stdout_path, os.O_WRONLY)
-        stderr_fid = os.open(stderr_path, os.O_WRONLY)
+        fids = []
+        to_open = [(stdin_path, os.O_RDONLY), (stdout_path, os.O_WRONLY),
+                   (stderr_path, os.O_WRONLY)]
+        tstart = tnow = time.time()
+        tend = tnow + self._child_connect_timeout
+        while tnow < tend and to_open:
+            tnow = time.time()
+            next_path, next_flags = to_open[0]
+            try:
+                fid = os.open(next_path, next_flags | os.O_NONBLOCK)
+            except OSError, e:
+                # Do we want to test e.errno == errno.ENXIO ?
+                time.sleep(0.01)
+            else:
+                # We opened the handle, remove it from the queue, and set the
+                # the handle back to be blocking mode.
+                to_open.pop(0)
+                self._set_blocking(fid)
+                fids.append(fid)
+        if to_open:
+            error = ('After %.3fs we failed to open %s, exiting'
+                     % (tnow - tstart, [x[0] for x in to_open],))
+            trace.warning(error)
+            for fid in fids:
+                try:
+                    os.close(fid)
+                except OSError:
+                    pass
+            self._cleanup_fifos(base_path)
+            raise errors.BzrError(error)
+        return fids
+
+    def _cleanup_fifos(self, base_path):
+        """Remove the FIFO objects and directory from disk."""
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
+        # Now that we've opened the handles, delete everything so that we don't
+        # leave garbage around. Because the open() is done in blocking mode, we
+        # know that someone has already connected to them, and we don't want
+        # anyone else getting confused and connecting.
+        # See [Decision #5]
+        os.remove(stdin_path)
+        os.remove(stdout_path)
+        os.remove(stderr_path)
+        os.rmdir(base_path)
+
+    def _bind_child_file_descriptors(self, base_path):
         # Note: by this point bzrlib has opened stderr for logging
         #       (as part of starting the service process in the first place).
         #       As such, it has a stream handler that writes to stderr. logging
         #       tries to flush and close that, but the file is already closed.
         #       This just supresses that exception
+        stdin_fid, stdout_fid, stderr_fid = self._open_handles(base_path)
         logging.raiseExceptions = False
         sys.stdin.close()
         sys.stdout.close()
@@ -407,15 +476,7 @@ class LPForkingService(object):
         ui.ui_factory.stdin = sys.stdin
         ui.ui_factory.stdout = sys.stdout
         ui.ui_factory.stderr = sys.stderr
-        # Now that we've opened the handles, delete everything so that we don't
-        # leave garbage around. Because the open() is done in blocking mode, we
-        # know that someone has already connected to them, and we don't want
-        # anyone else getting confused and connecting.
-        # See [Decision #5]
-        os.remove(stderr_path)
-        os.remove(stdout_path)
-        os.remove(stdin_path)
-        os.rmdir(base_path)
+        self._cleanup_fifos(base_path)
 
     def _close_child_file_descriptors(self):
         sys.stdin.close()
@@ -723,6 +784,15 @@ class LPForkingService(object):
         elif request == 'quit\n':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
+            conn.close()
+        elif request.startswith('child_connect_timeout '):
+            try:
+                value = float(request.split(' ', 1)[1])
+            except ValueError, e:
+                conn.sendall('FAILURE: %r\n' % (e,))
+            else:
+                self._child_connect_timeout = value
+                conn.sendall('ok\n')
             conn.close()
         elif request.startswith('fork ') or request.startswith('fork-env '):
             command_argv, env = self._parse_fork_request(conn, client_addr,
