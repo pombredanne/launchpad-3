@@ -219,5 +219,4 @@ alter the buildstate to one that cannot be retried:
     ...     a_build['self_link'], 'rescore', score=1000)
     HTTP/1.1 400 Bad Request
     ...
-    CannotBeRescored: Build cannot be rescored.
-    <BLANKLINE>
+    Build cannot be rescored.

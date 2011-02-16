@@ -2253,6 +2253,28 @@ class LinkFormatterAPI(ObjectFormatterAPI):
             return u''
 
 
+class RevisionAuthorFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IRevisionAuthor` links."""
+
+    traversable_names = {'link': 'link'}
+
+    def link(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`."""
+        context = self._context
+        if context.person is not None:
+            return PersonFormatterAPI(self._context.person).link(
+                view_name, rootsite)
+        elif context.name_without_email:
+            return cgi.escape(context.name_without_email)
+        elif context.email and getUtility(ILaunchBag).user is not None:
+            return cgi.escape(context.email)
+        elif context.email:
+            return "&lt;email address hidden&gt;"
+        else:
+            # The RevisionAuthor name and email is None.
+            return ''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()

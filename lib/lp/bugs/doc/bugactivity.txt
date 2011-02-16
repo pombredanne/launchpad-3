@@ -1,8 +1,10 @@
-= Bug Activity =
+Bug Activity
+~~~~~~~~~~~~
 
-Bugs are problems that occur in software. In Malone, various things can be
-added to, edited and removed from a bug over the course of a bug's lifetime. We
-call this stuff bug activity. This document is about bug activity.
+Bugs are problems that occur in software. In Malone, various things can
+be added to, edited and removed from a bug over the course of a bug's
+lifetime. We call this stuff bug activity. This document is about bug
+activity.
 
 Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
@@ -20,8 +22,7 @@ Bug activity tracking is done using event subscribers. The handlers
 are simple little functions.
 
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import (
-    ...     ObjectCreatedEvent, ObjectModifiedEvent)
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import (
     ...     IBugTaskSet,
@@ -32,7 +33,8 @@ are simple little functions.
     >>> user = getUtility(ILaunchBag).user
 
 
-== User files a bug ==
+User files a bug
+================
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> firefox = getUtility(IProductSet)['firefox']
@@ -50,7 +52,8 @@ are simple little functions.
     u'added bug'
 
 
-== Bug title edited ==
+Bug title edited
+================
 
     >>> from lp.bugs.interfaces.bug import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
@@ -67,12 +70,14 @@ are simple little functions.
     u'new bug title'
 
 
-== Source package assignment edited ==
+Source package assignment edited
+================================
 
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
@@ -116,7 +121,8 @@ previous activity.
     >>> bug.activity[-2].attribute
     u'summary'
 
-== Upstream product assignment edited ==
+Upstream product assignment edited
+==================================
 
     >>> product_assignment = getUtility(IBugTaskSet).createTask(
     ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
@@ -143,7 +149,8 @@ previous activity.
     True
 
 
-== Bug report is marked as a duplicate of another bug report ==
+Bug report is marked as a duplicate of another bug report
+=========================================================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name",
@@ -162,7 +169,8 @@ previous activity.
     True
 
 
-== Bug report has its duplicate marker changed to another bug report ==
+Bug report has its duplicate marker changed to another bug report
+=================================================================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
@@ -181,7 +189,8 @@ previous activity.
     True
 
 
-== The bug report is un-duplicated ==
+The bug report is un-duplicated
+===============================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
@@ -199,7 +208,8 @@ previous activity.
     True
 
 
-==  A bug with multiple duplicates ==
+A bug with multiple duplicates
+==============================
 
 When a bug has multiple duplicates and is itself marked a duplicate,
 the duplicates are automatically duped to the same master bug.  These changes
@@ -239,7 +249,8 @@ final_bug as their master bug.
     True
 
 
-== BugActivityItem ==
+BugActivityItem
+===============
 
 BugActivityItem implements the stuff that BugActivity doesn't need to
 know about.

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,58 +21,13 @@ from lp.registry.model.person import Person
 from lp.testing import (
     BrowserTestCase,
     login_person,
-    login,
-    logout,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
-
-
-class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(DeactivatedContextBugTaskTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        self.active_product = self.factory.makeProduct()
-        self.inactive_product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=self.active_product)
-        self.active_bugtask = self.factory.makeBugTask(
-            bug=bug,
-            target=self.active_product)
-        self.inactive_bugtask = self.factory.makeBugTask(
-            bug=bug,
-            target=self.inactive_product)
-        with person_logged_in(self.person):
-            self.active_bugtask.transitionToAssignee(self.person)
-            self.inactive_bugtask.transitionToAssignee(self.person)
-        login('admin@canonical.com')
-        self.inactive_product.active = False
-        logout()
-
-    def test_listing_not_seen_without_permission(self):
-        # Someone without permission to see deactiveated projects does
-        # not see bugtasks for deactivated projects.
-        login('no-priv@canonical.com')
-        view = create_initialized_view(self.person, "+bugs")
-        self.assertEqual([self.active_bugtask], list(view.searchUnbatched()))
-
-    def test_listing_seen_with_permission(self):
-        # Someone with permission to see deactiveated projects
-        # can see bugtasks for deactivated projects.
-        login('admin@canonical.com')
-        registry_owner = getUtility(
-            ILaunchpadCelebrities).registry_experts.teamowner
-        logout()
-        login_person(registry_owner)
-        view = create_initialized_view(self.person, "+bugs")
-        self.assertEqual(
-            sorted([self.active_bugtask, self.inactive_bugtask]),
-            sorted(list(view.searchUnbatched())))
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):
