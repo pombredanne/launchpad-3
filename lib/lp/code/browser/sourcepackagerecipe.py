@@ -398,18 +398,32 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         return builds_for_recipe(self.context)
 
 
-class SourcePackageRecipeRequestDailyBuildView(LaunchpadView):
+class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     """Supports requests to perform a daily build for a recipe.
 
     Renders the recipe builds table so that the recipe index page can be
     updated with the new build records.
+
+    This view works for both ajax and html form requests.
     """
 
-    def __call__(self):
+    # Attributes for the html version
+    template="../../app/templates/generic-edit.pt"
+    page_title = label = "Build now"
+
+    class schema(Interface):
+        """Schema for requesting a build."""
+
+    @action('Build now', name='build')
+    def build_action(self, action, data):
         recipe = self.context
-        source = getUtility(ISourcePackageRecipeBuildSource)
-        source.makeDailyBuildsForRecipe(recipe)
-        return super(LaunchpadView, self).__call__()
+        recipe.performDailyBuild()
+        if self.request.is_ajax:
+            template = ViewPageTemplateFile(
+                    "../templates/sourcepackagerecipe-builds.pt")
+            return template(self)
+        else:
+            self.next_url = canonical_url(recipe)
 
     @property
     def builds(self):

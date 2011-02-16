@@ -101,16 +101,7 @@ class ISourcePackageRecipeBuildSource(Interface):
     def makeDailyBuilds(logger=None):
         """Create and return builds for stale ISourcePackageRecipes.
 
-        Called from the request_daily_builds cron script.
         :param logger: An optional logger to write debug info to.
-        """
-
-    def makeDailyBuildsForRecipe(recipe):
-        """Create builds for a given recipe.
-
-        Does the same thing as `makeDailyBuilds` but for a single recipe and
-        without the logging.
-        :param recipe: The recipe for which to create the builds.
         """
 
     def getById(build_id):

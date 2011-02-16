@@ -317,3 +317,14 @@ class SourcePackageRecipe(Storm):
             return None
         durations.sort(reverse=True)
         return durations[len(durations) / 2]
+
+    def performDailyBuild(self):
+        """See `ISourcePackageRecipe`."""
+        self.is_stale = False
+        for distroseries in self.distroseries:
+            try:
+                self.requestBuild(
+                    self.daily_build_archive, self.owner,
+                    distroseries, PackagePublishingPocket.RELEASE)
+            except BuildAlreadyPending:
+                continue

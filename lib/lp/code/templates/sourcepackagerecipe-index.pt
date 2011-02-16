@@ -55,7 +55,13 @@
                 tal:define="link context/menu:context/request_daily_build"
                 tal:condition="link/enabled"
                 >
-                <a id="request-daily-builds"
+                <form action="+request-daily-build"
+                      method="post"
+                      id="request-daily-build-form">
+                    <input type="submit" name="field.actions.build"
+                        id="field.actions.build" value="Build now" />
+                </form>
+                <a id="request-daily-build" style="display: none"
                    class="sprite source-package-recipe"
                    tal:attributes="href link/url"
                    tal:content="link/text"/>

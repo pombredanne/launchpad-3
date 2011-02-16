@@ -1244,7 +1244,6 @@
             layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestDailyBuildView"
             name="+request-daily-build"
-            template="../templates/sourcepackagerecipe-builds.pt"
             permission="launchpad.Edit"/>
     </facet>
     <facet facet="branches">

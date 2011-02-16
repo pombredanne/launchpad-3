@@ -101,10 +101,10 @@ class TestRecipeBuild(WindmillTestCase):
         client = self.client
         client.open(url=canonical_url(self.recipe))
         client.waits.forElement(
-            id=u'request-daily-builds', timeout=PAGE_LOAD)
+            id=u'request-daily-build', timeout=PAGE_LOAD)
 
         # Request a daily build.
-        client.click(id=u'request-daily-builds')
+        client.click(id=u'request-daily-build')
 
         # Ensure it shows up.
         client.waits.forElement(

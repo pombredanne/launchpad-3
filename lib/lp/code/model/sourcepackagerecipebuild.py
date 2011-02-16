@@ -224,17 +224,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     builds.append(build)
         return builds
 
-    @staticmethod
-    def makeDailyBuildsForRecipe(recipe):
-        recipe.is_stale = False
-        for distroseries in recipe.distroseries:
-            try:
-                recipe.requestBuild(
-                    recipe.daily_build_archive, recipe.owner,
-                    distroseries, PackagePublishingPocket.RELEASE)
-            except BuildAlreadyPending:
-                continue
-
     def _unqueueBuild(self):
         """Remove the build's queue and job."""
         store = Store.of(self)
