@@ -445,7 +445,7 @@ class RevisionTestMixin:
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
         self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
-        self.assertEqual([rev2],  self._getRevisions(day_limit))
+        self.assertEqual([rev2], self._getRevisions(day_limit))
 
 
 class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,

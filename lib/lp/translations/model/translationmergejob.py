@@ -35,7 +35,6 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationmergejob import (
     ITranslationMergeJobSource,
     )
-from lp.translations.model.potemplate import POTemplate, POTemplateSubset
 from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
@@ -134,16 +133,6 @@ class TranslationMergeJob(StormBase, BaseRunnableJob):
         """See `IRunnableJob`."""
         if not self.distroseries.distribution.full_functionality:
             return
-        template_map = dict()
         tm = TransactionManager(None, False)
-        all_templates = list(POTemplateSubset(
-            sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries))
-        all_templates.extend(POTemplateSubset(
-            productseries=self.productseries))
-        for template in all_templates:
-            template_map.setdefault(template.name, []).append(template)
-        for name, templates in template_map.iteritems():
-            templates.sort(key=POTemplate.sharingKey, reverse=True)
-            merger = TranslationMerger(templates, tm)
-            merger.mergePOTMsgSets()
+        TranslationMerger.mergePackagingTemplates(
+            self.productseries, self.sourcepackagename, self.distroseries, tm)

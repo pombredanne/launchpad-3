@@ -250,6 +250,45 @@ class TestBugSubscriptionFilterView(
         # If nothing is set the conditions list is empty.
         self.assertEqual([], self.view.conditions)
 
+    def test_conditions_with_no_events_subscribed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.assertEqual([], self.view.conditions)
+
+    def test_filters_everything_with_no_events_subscribed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.failUnless(self.view.filters_everything)
+
+    def test_not_filters_everything_normally(self):
+        self.failIf(self.view.filters_everything)
+
+    def test_conditions_for_COMMENTS_events(self):
+        # If we are subscribed to comments, that is all-inclusive: no
+        # conditions are returned.
+        self.assertEqual(BugNotificationLevel.COMMENTS,
+                         self.subscription_filter.bug_notification_level)
+        self.assertEqual([], self.view.conditions)
+
+    def test_conditions_for_METADATA_events(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.METADATA)
+        self.assertEqual(
+            [u'any change is made to the bug, other than a new comment being '
+              'added'],
+            self.view.conditions)
+
+    def test_conditions_for_LIFECYCLE_events(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.LIFECYCLE)
+        self.assertEqual(
+            [u'the bug is fixed or re-opened'],
+            self.view.conditions)
+
     def test_conditions_for_statuses(self):
         # If no statuses have been specified nothing is returned.
         self.assertEqual([], self.view.conditions)
@@ -317,6 +356,8 @@ class TestBugSubscriptionFilterView(
         # If conditions are set but no description, the rendered description
         # is very simple, and the conditions are described.
         with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.METADATA)
             self.subscription_filter.statuses = [
                 BugTaskStatus.NEW,
                 BugTaskStatus.CONFIRMED,
@@ -340,6 +381,14 @@ class TestBugSubscriptionFilterView(
         self.assertRender(
             u"\u201cThe Wait\u201d allows all mail through.",
             u"There are no filter conditions!")
+
+    def test_render_with_no_events_allowed(self):
+        with person_logged_in(self.owner):
+            self.subscription_filter.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+        self.assertRender(
+            u"This filter allows no mail through.",
+            u"")
 
     def test_render_with_description_and_conditions(self):
         # If a description is set it appears in the content of the dt tag,
@@ -463,7 +512,8 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
             for level in displayed_levels:
                 person = self.factory.makePerson()
                 with person_logged_in(person):
-                    subscription = self.target.addBugSubscription(person, person)
+                    subscription = self.target.addBugSubscription(
+                        person, person)
                     form = {
                         "field.description": "New description",
                         "field.statuses": ["NEW", "INCOMPLETE"],

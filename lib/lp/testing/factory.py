@@ -2643,8 +2643,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None):
+                       copy_pofiles=True, side=None, sourcepackage=None):
         """Make a new translation template."""
+        if sourcepackage is not None:
+            assert distroseries is None, (
+                'Cannot specify sourcepackage and distroseries')
+            distroseries = sourcepackage.distroseries
+            assert sourcepackagename is None, (
+                'Cannot specify sourcepackage and sourcepackagename')
+            sourcepackagename = sourcepackage.sourcepackagename
         if productseries is None and distroseries is None:
             if side != TranslationSide.UBUNTU:
                 # No context for this template; set up a productseries.

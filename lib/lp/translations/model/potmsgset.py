@@ -721,9 +721,9 @@ class POTMsgSet(SQLBase):
             that this change is based on.
         """
         template = pofile.potemplate
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            template.translation_side)
-        if traits.getFlag(suggestion):
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
+        if current == suggestion:
             # Message is already current.
             return
 
@@ -796,11 +796,12 @@ class POTMsgSet(SQLBase):
             template, pofile.language, template.translation_side)
         other = self.getOtherTranslation(
             pofile.language, template.translation_side)
-        if other is not None:
-            other.is_current_upstream = False
-        if current is None or other is None:
+        if current is None or other is None or current == other:
             translator = suggestion.submitter
             potranslations = dictify_translations(suggestion.all_msgstrs)
+            if other is not None:
+                # Steal flag beforehand.
+                other.is_current_upstream = False
             self._setTranslation(
                 pofile, translator, suggestion.origin, potranslations,
                 share_with_other_side=True,
@@ -808,8 +809,9 @@ class POTMsgSet(SQLBase):
                 lock_timestamp=lock_timestamp)
         else:
             # Make it only current in upstream.
-            suggestion.is_current_upstream = True
             if suggestion != other:
+                other.is_current_upstream = False
+                suggestion.is_current_upstream = True
                 pofile.markChanged(translator=suggestion.submitter)
 
     def _cloneAndDiverge(self, original_message, pofile):
@@ -1027,6 +1029,16 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
+                        traits.other_side_traits.setFlag(message, True)
+                    elif (incumbent_message is None and
+                          traits.side == TranslationSide.UPSTREAM):
+                        # If this is the first upstream translation, we
+                        # we use it as the current Ubuntu translation
+                        # too, overriding a possibly existing current
+                        # Ubuntu translation.
+                        if other_incumbent is not None:
+                            traits.other_side_traits.setFlag(
+                                other_incumbent, False)
                         traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:

@@ -1926,11 +1926,11 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].hasValidInput() and
             self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].hasValidInput() and
             self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
@@ -4150,7 +4150,8 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
