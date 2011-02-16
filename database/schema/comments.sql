@@ -284,6 +284,7 @@ COMMENT ON COLUMN BugNotification.activity IS 'The BugActivity record correspond
 COMMENT ON COLUMN BugNotification.is_omitted IS 'Was this notification omitted when emails were sent?  Ignore if date_emailed is not yet set.  This is only intended to be useful for debugging purposes.';
 
 
+
 -- BugNotificationAttachment
 
 COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
