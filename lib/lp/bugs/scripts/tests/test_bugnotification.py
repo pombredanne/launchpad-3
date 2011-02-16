@@ -43,13 +43,16 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications,
+    get_activity_key,
     notification_batches,
     notification_comment_batches,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.propertycache import cachedproperty
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory)
 from lp.testing.dbuser import lp_dbuser
 from lp.testing.matchers import Contains
 
@@ -129,6 +132,66 @@ class MockBugNotification:
         self.date_emailed = date_emailed
         self.recipients = [MockBugNotificationRecipient()]
         self.activity = None
+
+
+class FakeNotification:
+    """An even simpler fake notification.
+    
+    Used by TestGetActivityKey, TestNotificationCommentBatches and
+    TestNotificationBatches."""
+
+    class Message(object):
+        pass
+
+    def __init__(self, is_comment=False, bug=None, owner=None):
+        self.is_comment = is_comment
+        self.bug = bug
+        self.message = self.Message()
+        self.message.owner = owner
+        self.activity = None
+
+
+class MockBugActivity:
+    """A mock BugActivity user for testing."""
+    def __init__(self, target=None, attribute=None,
+                 oldvalue=None, newvalue=None):
+        self.target = target
+        self.attribute = attribute
+        self.oldvalue = oldvalue
+        self.newvalue = newvalue
+
+
+class TestGetActivityKey(TestCase):
+    """Tests for get_activity_key()."""
+
+    def test_no_activity(self):
+        self.assertEqual(get_activity_key(FakeNotification()), None)
+
+    def test_normal_bug_attribute_activity(self):
+        notification = FakeNotification()
+        notification.activity = MockBugActivity(attribute='title')
+        self.assertEqual(get_activity_key(notification), 'title')
+
+    def test_collection_bug_attribute_added_activity(self):
+        notification = FakeNotification()
+        notification.activity = MockBugActivity(
+            attribute='cves', newvalue='some cve identifier')
+        self.assertEqual(get_activity_key(notification),
+                         'cves:some cve identifier')
+
+    def test_collection_bug_attribute_removed_activity(self):
+        notification = FakeNotification()
+        notification.activity = MockBugActivity(
+            attribute='cves', oldvalue='some cve identifier')
+        self.assertEqual(get_activity_key(notification),
+                         'cves:some cve identifier')
+
+    def test_bugtask_attribute_activity(self):
+        notification = FakeNotification()
+        notification.activity = MockBugActivity(
+            attribute='status', target='some bug task identifier')
+        self.assertEqual(get_activity_key(notification),
+                         'some bug task identifier:status')
 
 
 class TestGetEmailNotifications(unittest.TestCase):
@@ -262,20 +325,6 @@ class TestGetEmailNotifications(unittest.TestCase):
         # cause any errors.
         bug_four = getUtility(IBugSet).get(4)
         self.assertEqual(bug_four.id, 4)
-
-
-class FakeNotification:
-    """Used by TestNotificationCommentBatches and TestNotificationBatches."""
-
-    class Message(object):
-        pass
-
-    def __init__(self, is_comment=False, bug=None, owner=None):
-        self.is_comment = is_comment
-        self.bug = bug
-        self.message = self.Message()
-        self.message.owner = owner
-        self.activity = None
 
 
 class TestNotificationCommentBatches(unittest.TestCase):

@@ -31,22 +31,36 @@ from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.services.mail.mailwrapper import MailWrapper
 
 
-def get_key(notification):
+def get_activity_key(notification):
+    """Given a notification, return a key for the activity if it exists.
+    
+    The key will be used to determine whether changes for the activity are
+    undone within the same batch of notifications (which are supposed to
+    be all for the same bug when they get to this function).  Therefore,
+    the activity's attribute is a good start for the key.
+    
+    If the activity was on a bugtask, we will also want to distinguish
+    by bugtask, because, for instance, changing a status from INPROGRESS
+    to FIXCOMMITED on one bug task is not undone if the status changes
+    from FIXCOMMITTED to INPROGRESS on another bugtask.
+    
+    Similarly, if the activity is about adding or removing something
+    that we can have multiple of, like a branch or an attachment, the
+    key should include information on that value, because adding one
+    attachment is not undone by removing another one.
+    """
     activity = notification.activity
     if activity is not None:
-        key = activity.whatchanged
-        if key in ('changed duplicate marker',
-                   'marked as duplicate',
-                   'removed duplicate marker'):
-            key = 'duplicate'
-        elif key.endswith(' added'):
-            key = key[:-len('added')] + activity.newvalue
-        elif key.endswith(' removed'):
-            key = key[:-len('removed')] + activity.oldvalue
-        elif key.endswith(' linked'):
-            key = key[:-len('linked')] + activity.newvalue
-        elif key.endswith(' unlinked'):
-            key = key[:-len('unlinked')] + activity.oldvalue
+        key = activity.attribute
+        if activity.target is not None:
+            key = ':'.join((activity.target, key))
+        if key in ('attachments', 'watches', 'cves', 'linked_branches'):
+            # We are intentionally leaving bug task bugwatches out of this
+            # list, so we use the key rather than the activity.attribute.
+            if activity.oldvalue is not None:
+                key = ':'.join((key, activity.oldvalue))
+            elif activity.newvalue is not None:
+                key = ':'.join((key, activity.newvalue))
         return key
 
 
@@ -75,7 +89,7 @@ def construct_email_notifications(bug_notifications):
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
         else:
-            key = get_key(notification)
+            key = get_activity_key(notification)
             if key is not None:
                 if key not in old_values:
                     old_values[key] = notification.activity.oldvalue
@@ -85,7 +99,7 @@ def construct_email_notifications(bug_notifications):
     filtered_notifications = []
     omitted_notifications = []
     for notification in bug_notifications:
-        key = get_key(notification)
+        key = get_activity_key(notification)
         if (notification.is_comment or
             key is None or
             old_values[key] != new_values[key]):

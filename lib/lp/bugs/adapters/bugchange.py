@@ -5,6 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'ATTACHMENT_ADDED',
+    'ATTACHMENT_REMOVED',
+    'BRANCH_LINKED',
+    'BRANCH_UNLINKED',
+    'BUG_WATCH_ADDED',
+    'BUG_WATCH_REMOVED',
+    'CHANGED_DUPLICATE_MARKER',
+    'CVE_LINKED',
+    'CVE_UNLINKED',
+    'MARKED_AS_DUPLICATE',
+    'REMOVED_DUPLICATE_MARKER',
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
     'BugAttachmentChange',
@@ -46,6 +57,21 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.interfaces.product import IProduct
+
+# These are used lp.bugs.model.bugactivity.BugActivity.attribute to normalize
+# the output from these change objects into the attribute that actually
+# changed.  It is fragile, but a reasonable incremental step.
+ATTACHMENT_ADDED = "attachment added"
+ATTACHMENT_REMOVED = "attachment removed"
+BRANCH_LINKED = 'branch linked'
+BRANCH_UNLINKED = 'branch unlinked'
+BUG_WATCH_ADDED = 'bug watch added'
+BUG_WATCH_REMOVED = 'bug watch removed'
+CHANGED_DUPLICATE_MARKER = 'changed duplicate marker'
+CVE_LINKED = 'cve linked'
+CVE_UNLINKED = 'cve unlinked'
+MARKED_AS_DUPLICATE = 'marked as duplicate'
+REMOVED_DUPLICATE_MARKER = 'removed duplicate marker'
 
 
 class NoBugChangeFoundError(Exception):
@@ -254,7 +280,7 @@ class BugWatchAdded(BugChangeBase):
     def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
-            whatchanged='bug watch added',
+            whatchanged=BUG_WATCH_ADDED,
             newvalue=self.bug_watch.url)
 
     def getBugNotification(self):
@@ -278,7 +304,7 @@ class BugWatchRemoved(BugChangeBase):
     def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
-            whatchanged='bug watch removed',
+            whatchanged=BUG_WATCH_REMOVED,
             oldvalue=self.bug_watch.url)
 
     def getBugNotification(self):
@@ -305,7 +331,7 @@ class BranchLinkedToBug(BugChangeBase):
         if self.branch.private:
             return None
         return dict(
-            whatchanged='branch linked',
+            whatchanged=BRANCH_LINKED,
             newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
@@ -328,7 +354,7 @@ class BranchUnlinkedFromBug(BugChangeBase):
         if self.branch.private:
             return None
         return dict(
-            whatchanged='branch unlinked',
+            whatchanged=BRANCH_UNLINKED,
             oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
@@ -397,18 +423,18 @@ class BugDuplicateChange(AttributeChange):
     def getBugActivity(self):
         if self.old_value is not None and self.new_value is not None:
             return {
-                'whatchanged': 'changed duplicate marker',
+                'whatchanged': CHANGED_DUPLICATE_MARKER,
                 'oldvalue': str(self.old_value.id),
                 'newvalue': str(self.new_value.id),
                 }
         elif self.old_value is None:
             return {
-                'whatchanged': 'marked as duplicate',
+                'whatchanged': MARKED_AS_DUPLICATE,
                 'newvalue': str(self.new_value.id),
                 }
         elif self.new_value is None:
             return {
-                'whatchanged': 'removed duplicate marker',
+                'whatchanged': REMOVED_DUPLICATE_MARKER,
                 'oldvalue': str(self.old_value.id),
                 }
         else:
@@ -605,13 +631,13 @@ class BugAttachmentChange(AttributeChange):
 
     def getBugActivity(self):
         if self.old_value is None:
-            what_changed = "attachment added"
+            what_changed = ATTACHMENT_ADDED
             old_value = None
             new_value = "%s %s" % (
                 self.new_value.title,
                 download_url_of_bugattachment(self.new_value))
         else:
-            what_changed = "attachment removed"
+            what_changed = ATTACHMENT_REMOVED
             attachment = self.new_value
             old_value = "%s %s" % (
                 self.old_value.title,
@@ -656,7 +682,7 @@ class CveLinkedToBug(BugChangeBase):
         """See `IBugChange`."""
         return dict(
             newvalue=self.cve.sequence,
-            whatchanged='cve linked')
+            whatchanged=CVE_LINKED)
 
     def getBugNotification(self):
         """See `IBugChange`."""
@@ -674,7 +700,7 @@ class CveUnlinkedFromBug(BugChangeBase):
         """See `IBugChange`."""
         return dict(
             oldvalue=self.cve.sequence,
-            whatchanged='cve unlinked')
+            whatchanged=CVE_UNLINKED)
 
     def getBugNotification(self):
         """See `IBugChange`."""
