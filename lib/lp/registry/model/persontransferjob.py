@@ -45,14 +45,16 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
+    IPersonMergeJob,
+    IPersonMergeJobSource,
     IPersonTransferJob,
     IPersonTransferJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class PersonTransferJob(StormBase):
@@ -321,3 +323,44 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                     self.member_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
         log.debug('MembershipNotificationJob sent email')
+
+
+class PersonMergeJob(PersonTransferJobDerived):
+    """A Job that merges one person or team into another."""
+
+    implements(IPersonMergeJob)
+    classProvides(IPersonMergeJobSource)
+
+    class_job_type = PersonTransferJobType.MERGE
+
+    @classmethod
+    def create(cls, from_person, to_person):
+        """See `IPersonMergeJob`."""
+        return super(PersonMergeJob, cls).create(
+            minor_person=from_person, major_person=to_person, metadata={})
+
+    @property
+    def from_person(self):
+        """See `IPersonMergeJob`."""
+        return self.minor_person
+
+    @property
+    def to_person(self):
+        """See `IPersonMergeJob`."""
+        return self.major_person
+
+    @property
+    def log_name(self):
+        return self.__class__.__name__
+
+    def run(self):
+        """Perform the merge."""
+        from canonical.launchpad.scripts import log
+        log.debug(
+            "%s is about to merge %s into %s", self.log_name,
+            self.from_person.name, self.to_person.name)
+        getUtility(IPersonSet).merge(
+            from_person=self.from_person, to_person=self.to_person)
+        log.debug(
+            "%s has merged %s into %s", self.log_name,
+            self.from_person.name, self.to_person.name)

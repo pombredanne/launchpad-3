@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IMembershipNotificationJob',
     'IMembershipNotificationJobSource',
+    'IPersonMergeJob',
+    'IPersonMergeJobSource',
     'IPersonTransferJob',
     'IPersonTransferJobSource',
     ]
@@ -77,4 +79,25 @@ class IMembershipNotificationJobSource(IJobSource):
 
     def create(member, team, reviewer, old_status, new_status,
                last_change_comment=None):
+        """Create a new IMembershipNotificationJob."""
+
+
+class IPersonMergeJob(IPersonTransferJob):
+    """A Job that merges one person or team into another."""
+
+    from_person = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    to_person = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class IPersonMergeJobSource(IJobSource):
+    """An interface for acquiring IMembershipNotificationJobs."""
+
+    def create(from_person, to_person):
         """Create a new IMembershipNotificationJob."""
