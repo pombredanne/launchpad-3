@@ -294,6 +294,7 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertFalse(os.path.exists(tempdir))
 
 
+
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
 
@@ -739,24 +740,26 @@ class Test_WakeUp(tests.TestCaseInTempDir):
     def test_wakeup_interrupts_fifo_open(self):
         os.mkfifo('test-fifo')
         self.addCleanup(os.remove, 'test-fifo')
-        cancel = lpserve._wake_me_up_in_a_few(0.01)
+        cancel, t = lpserve._wake_me_up_in_a_few(0.01)
         e = self.assertRaises(OSError, os.open, 'test-fifo', os.O_RDONLY)
         self.assertEqual(errno.EINTR, e.errno)
+        t.join()
 
     def test_custom_callback_called(self):
         called = []
         def _sigusr1_called(sig, frame):
             called.append(sig)
             signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-        cancel = lpserve._wake_me_up_in_a_few(0.01, _sigusr1_called)
+        cancel, t = lpserve._wake_me_up_in_a_few(0.01, _sigusr1_called)
         time.sleep(0.1)
         self.assertEqual([signal.SIGUSR1], called)
+        t.join()
 
     def test_cancel_aborts_interrupt(self):
         called = []
         def _sigusr1_called(sig, frame):
             called.append(sig, frame)
-        cancel = lpserve._wake_me_up_in_a_few(0.01)
+        cancel, t = lpserve._wake_me_up_in_a_few(0.01)
         cancel()
         time.sleep(0.1)
         # The signal should not have been fired, and we should have reset the
@@ -764,3 +767,5 @@ class Test_WakeUp(tests.TestCaseInTempDir):
         self.assertEqual([], called)
         self.assertEqual(signal.SIG_DFL,
                          signal.signal(signal.SIGUSR1, signal.SIG_DFL))
+        # Should have already been joined in cancel()
+        t.join()

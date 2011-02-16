@@ -154,7 +154,8 @@ def _wake_me_up_in_a_few(sleep_time, sig_handler=_handle_sigusr1):
     def cancel():
         timer.cancel()
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-    return cancel
+        timer.join()
+    return cancel, timer
 
 
 class LPForkingService(object):
@@ -438,33 +439,27 @@ class LPForkingService(object):
         fids = []
         to_open = [(stdin_path, os.O_RDONLY), (stdout_path, os.O_WRONLY),
                    (stderr_path, os.O_WRONLY)]
-        tstart = tnow = time.time()
-        tend = tnow + self._child_connect_timeout
-        while tnow < tend and to_open:
-            tnow = time.time()
-            next_path, next_flags = to_open[0]
+        cancel, _ = _wake_me_up_in_a_few(self._child_connect_timeout)
+        tstart = time.time()
+        for path, flags in to_open:
             try:
-                fid = os.open(next_path, next_flags | os.O_NONBLOCK)
+                fids.append(os.open(path, flags))
             except OSError, e:
-                # Do we want to test e.errno == errno.ENXIO ?
-                time.sleep(0.01)
-            else:
-                # We opened the handle, remove it from the queue, and set the
-                # the handle back to be blocking mode.
-                to_open.pop(0)
-                self._set_blocking(fid)
-                fids.append(fid)
-        if to_open:
-            error = ('After %.3fs we failed to open %s, exiting'
-                     % (tnow - tstart, [x[0] for x in to_open],))
-            trace.warning(error)
-            for fid in fids:
-                try:
-                    os.close(fid)
-                except OSError:
-                    pass
-            self._cleanup_fifos(base_path)
-            raise errors.BzrError(error)
+                if e.errno == errno.EINTR:
+                    error = ('After %.3fs we failed to open %s, exiting'
+                             % (time.time() - tstart, path,))
+                    trace.warning(error)
+                    for fid in fids:
+                        try:
+                            os.close(fid)
+                        except OSError:
+                            pass
+                    self._cleanup_fifos(base_path)
+                    raise errors.BzrError(error)
+                raise
+        # If we get to here, that means all the handles were opened
+        # successfully, so cancel the wakeup call.
+        cancel()
         return fids
 
     def _cleanup_fifos(self, base_path):
