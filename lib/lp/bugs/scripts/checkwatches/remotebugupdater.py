@@ -145,30 +145,13 @@ class RemoteBugUpdater(WorkingBase):
                     self.external_bugtracker.convertRemoteImportance(
                         new_remote_importance))
             except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
-                error = get_bugwatcherrortype_for_error(ex)
-                message = self.error_type_messages.get(
-                    error, self.error_type_message_default)
-                oops_id = self.warning(
-                    message % {
-                        'bug_id': self.remote_bug,
-                        'base_url': self.external_bugtracker.baseurl,
-                        'local_ids': local_ids,
-                        },
-                    properties=[
-                        ('URL', remote_bug_url),
-                        ('bug_id', self.remote_bug),
-                        ('local_ids', local_ids),
-                        ] + get_remote_system_oops_properties(
-                            self.external_bugtracker),
-                    info=sys.exc_info())
-
                 # Set the error and activity on all bug watches
+                error = get_bugwatcherrortype_for_error(ex)
                 with self.transaction:
                     getUtility(IBugWatchSet).bulkSetError(
                         bug_watches, error)
                     getUtility(IBugWatchSet).bulkAddActivity(
-                        bug_watches, result=error, oops_id=oops_id)
-
+                        bug_watches, result=error)
             else:
                 # Assuming nothing's gone wrong, we can now deal with
                 # each BugWatch in turn.
@@ -178,7 +161,6 @@ class RemoteBugUpdater(WorkingBase):
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance)
-
         except Exception, error:
             # Send the error to the log.
             oops_id = self.error(
