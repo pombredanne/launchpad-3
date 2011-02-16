@@ -72,7 +72,7 @@ Requesting a series that does not exist is a bad request.
     ...     name_or_version='fnord')
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchDistroSeries: No such distribution series: 'fnord'.
+    No such distribution series: 'fnord'.
 
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.

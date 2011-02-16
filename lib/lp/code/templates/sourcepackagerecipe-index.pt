@@ -44,13 +44,12 @@
         <h2>Recipe information</h2>
         <div class="two-column-list">
           <dl id="build_daily">
-            <dt>Build schedule:</dt>
-            <dd tal:condition="context/build_daily">
-              Built daily
-            </dd>
-            <dd tal:condition="not:context/build_daily">
-              Built on request
-            </dd>
+            <dt>Build schedule:
+              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+                &nbsp;<span class="invisible-link">Tag help</span>
+              </a>
+            </dt>
+            <dd tal:content="structure view/daily_build_widget"/>
           </dl>
 
           <dl id="owner">
