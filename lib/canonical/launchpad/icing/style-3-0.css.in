@@ -1471,10 +1471,10 @@ span.help {
    Colors and fonts
 */
 
-h1, h2, h3, 
-table.listing thead, 
-#homepage-stats strong, 
-#application-footer strong, 
+h1, h2, h3,
+table.listing thead,
+#homepage-stats strong,
+#application-footer strong,
 #application-summary strong {
     color: #5a5a5a;
 }
@@ -2204,7 +2204,10 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/ppa-icon-inactive.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-
+.source-package-recipe {
+    background-image: url(/@@/source-package-recipe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .bug-status-expand {
     background-image: url(/@@/bug-status-expand.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

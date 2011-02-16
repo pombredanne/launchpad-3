@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
+from lp.code.interfaces.sourcepackagerecipebuild import ISourcePackageRecipeBuildSource
 
 __metaclass__ = type
 
@@ -174,11 +175,26 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('request_builds',)
+    links = ('request_builds', 'request_daily_build',)
 
     def request_builds(self):
         """Provide a link for requesting builds of a recipe."""
         return Link('+request-builds', 'Request build(s)', icon='add')
+
+    def request_daily_build(self):
+        """Provide a link for requesting a daily build of a recipe."""
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if (ppa is None or not recipe.build_daily or not recipe.is_stale
+                or not recipe.distroseries):
+            show_request_build = False
+        else:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            show_request_build = has_upload
+
+        return Link(
+                '+request-daily-build', 'Build now',
+                enabled=show_request_build)
 
 
 class SourcePackageRecipeView(LaunchpadView):
@@ -376,6 +392,24 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         # errors instead of rendering the form.
         if errors:
             return self._process_error(data, errors, "Request Build")
+
+    @property
+    def builds(self):
+        return builds_for_recipe(self.context)
+
+
+class SourcePackageRecipeRequestDailyBuildView(LaunchpadView):
+    """Supports requests to perform a daily build for a recipe.
+
+    Renders the recipe builds table so that the recipe index page can be
+    updated with the new build records.
+    """
+
+    def __call__(self):
+        recipe = self.context
+        source = getUtility(ISourcePackageRecipeBuildSource)
+        source.makeDailyBuildsForRecipe(recipe)
+        return super(LaunchpadView, self).__call__()
 
     @property
     def builds(self):

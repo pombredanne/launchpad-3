@@ -50,6 +50,17 @@
               </a>
             </dt>
             <dd tal:content="structure view/daily_build_widget"/>
+            <dd>
+              <div
+                tal:define="link context/menu:context/request_daily_build"
+                tal:condition="link/enabled"
+                >
+                <a id="request-daily-builds"
+                   class="sprite source-package-recipe"
+                   tal:attributes="href link/url"
+                   tal:content="link/text"/>
+              </div>
+            </dd>
           </dl>
 
           <dl id="owner">
@@ -110,7 +121,8 @@
         Y.on('load', function() {
             var logged_in = LP.client.links['me'] !== undefined;
             if (logged_in) {
-                Y.lp.code.requestbuild_overlay.connect_requestbuild();
+                Y.lp.code.requestbuild_overlay.connect_requestbuilds();
+                Y.lp.code.requestbuild_overlay.connect_requestdailybuild();
             }
         }, window);
       });"
