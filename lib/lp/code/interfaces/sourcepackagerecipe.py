@@ -135,6 +135,7 @@ class ISourcePackageRecipeView(Interface):
     def performDailyBuild():
         """Perform a build into the daily build archive."""
 
+
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 

@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
-from lp.code.interfaces.sourcepackagerecipebuild import ISourcePackageRecipeBuildSource
 
 __metaclass__ = type
 
