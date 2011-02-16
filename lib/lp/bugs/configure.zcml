@@ -732,7 +732,6 @@
                     messages
                     getBugNotificationRecipients
                     hasBranch
-                    reindexMessages
                     security_related
                     tags
                     getMessageChunks

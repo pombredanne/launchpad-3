@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -177,6 +177,52 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         shared_potmsgset = self.stable_potemplate.getOrCreateSharedPOTMsgSet(
             singular_text, None)
         self.assertEquals(potmsgset, shared_potmsgset)
+
+    def test_getOrCreateSharedPOTMsgSet_initializes_file_references(self):
+        # When creating a POTMsgSet, getOrCreateSharedPOTMsgSet
+        # initializes its filereferences to initial_file_references.
+        singular = self.factory.getUniqueString()
+        file_references = self.factory.getUniqueString()
+        potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular, None, initial_file_references=file_references)
+        self.assertEqual(file_references, potmsgset.filereferences)
+
+    def test_getOrCreateSharedPOTMsgSet_leaves_file_references_intact(self):
+        # In returning an existing POTMsgSet, getOrCreateSharedPOTMsgSet
+        # leaves its existing filereferences unchanged.  The
+        # initial_file_references argument is ignored.
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.devel_potemplate)
+        potmsgset.filereferences = None
+        new_file_references = self.factory.getUniqueString()
+        updated_potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            potmsgset.singular_text, potmsgset.plural_text,
+            initial_file_references=new_file_references)
+        self.assertEqual(potmsgset, updated_potmsgset)
+        self.assertIs(None, potmsgset.filereferences)
+
+    def test_getOrCreateSharedPOTMsgSet_initializes_source_comment(self):
+        # When creating a POTMsgSet, getOrCreateSharedPOTMsgSet
+        # initializes its sourcecomment to initial_source_comment.
+        singular = self.factory.getUniqueString()
+        source_comment = self.factory.getUniqueString()
+        potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular, None, initial_source_comment=source_comment)
+        self.assertEqual(source_comment, potmsgset.sourcecomment)
+
+    def test_getOrCreateSharedPOTMsgSet_leaves_source_comment_intact(self):
+        # In returning an existing POTMsgSet, getOrCreateSharedPOTMsgSet
+        # leaves its existing sourcecomment unchanged.  The
+        # initial_source_comment argument is ignored.
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.devel_potemplate)
+        potmsgset.sourcecomment = None
+        new_source_comment = self.factory.getUniqueString()
+        updated_potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            potmsgset.singular_text, potmsgset.plural_text,
+            initial_source_comment=new_source_comment)
+        self.assertEqual(potmsgset, updated_potmsgset)
+        self.assertIs(None, potmsgset.sourcecomment)
 
 
 class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
