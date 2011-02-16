@@ -7,7 +7,11 @@
 Launchpad developer documentation
 =================================
 
-Contents:
+Welcome to the Launchpad developer documentation.  This documentation is for
+people who want to hack on Launchpad.
+
+Overview
+========
 
 .. toctree::
    :maxdepth: 1
@@ -16,9 +20,28 @@ Contents:
    vision
    values
 
+Technical
+=========
+
+.. toctree::
+   :maxdepth: 1
+
    buildout
+
+Possibly out-of-date
+--------------------
+
+.. toctree::
+   :maxdepth: 1
+
    security
    email
+
+Other
+=====
+
+.. toctree::
+   :maxdepth: 1
 
    historical
 
