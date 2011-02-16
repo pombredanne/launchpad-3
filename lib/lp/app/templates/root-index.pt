@@ -19,11 +19,11 @@
       .homepage-portlet h2 {
           border-bottom: 1px solid;
           margin-top: 2em;
-          font-size: 167%;
+          font-size: 1.67em;
           padding-bottom: 2px;
           }
       .homepage-whatslaunchpad h2 {
-          font-size: 189%;
+          font-size: 1.89em;
           font-weight: bold;
           line-height: 110%;
           margin-bottom: 0.5em;
@@ -34,7 +34,7 @@
       }
       #homepage-whatslaunchpad ul,
       #homepage-whatslaunchpad-tour {
-          font-size: 116%;
+          font-size: 1.16em;
           font-weight: bold;
       }
       #homepage-stats {
@@ -42,7 +42,7 @@
           margin: auto;
           padding-top: 0.5em;
           color: gray;
-          font-size: 83.3%
+          font-size: 0.833em;
       }
       #homepage-blogposts {
           padding-right: 4em;
@@ -51,7 +51,7 @@
           padding-top: 0.5em;
           }
       .featured-project-top h3 {
-          font-size: 131%;
+          font-size: 1.31em;
           font-weight: bold;
           }
       .featured-project-top h3 img {

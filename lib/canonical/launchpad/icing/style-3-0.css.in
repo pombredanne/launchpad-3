@@ -6,25 +6,25 @@
       in this file.
    2. Do not use IDs because they discourage reuse.
    3. This style sheet depends on YUI-Font;
-      Only use these font percentages.
-      Pixels  Percent
-      10      77
-      11      85
-      12      93
-      13      100
-      14      108
-      15      116
-      16      123.1
-      17      131
-      18      138.5
-      19      146.5
-      20      153.9
-      21      161.6
-      22      167
-      23      174
-      24      182
-      25      189
-      26      197
+      Only use these percentages expressed in ems.
+      Pixels  em
+      10      0.77
+      11      0.85
+      12      0.93
+      13      1
+      14      1.08
+      15      1.16
+      16      1.231
+      17      1.31
+      18      1.385
+      19      1.465
+      20      1.539
+      21      1.616
+      22      1.67
+      23      1.74
+      24      1.82
+      25      1.89
+      26      1.97
    4. Use these colors when defing using application colors.
       * Launchpad-Gold: #F8C300
       * Answers: #3840BE
@@ -142,7 +142,7 @@
 
 html, body {
     font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
-    font-size: 93%;
+    font-size: 0.93em;
     }
 body.private {
     /* It must be obvious to the user that the context is private */
@@ -159,15 +159,15 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
     clear: none;
     padding-top: 6px; /* An offset from the logo. */
-    font-size: 197%;
+    font-size: 1.97em;
     }
 h2 {
     margin-bottom: 0.3em;
     margin-top: 0.3em;
-    font-size: 123.1%;
+    font-size: 1.23em;
     }
 h3 {
-    font-size: 108%;
+    font-size: 1.08em;
     }
 p {
     width: auto;
@@ -185,7 +185,7 @@ table.wide {
     }
 pre, code, samp, tt, .console {
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    font-size: 93%;
+    font-size: 0.93em;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -246,7 +246,7 @@ div.profiling_info p {
 div.hide_reveal_profiling {
     text-decoration: underline;
     color: #093;
-    font-size: 85%;
+    font-size: 0.85em;
     }
 
 /* =========================
@@ -398,7 +398,7 @@ ul.buttons li {
     margin: 0 0 0 0;
     }
 ul.cross-reference {
-    font-size: 123.1%;
+    font-size: 1.231em;
     }
 .bulleted {
     margin-bottom: 0.5em;
@@ -461,7 +461,7 @@ ol.subordinate {
     }
 .portlet dd {
     margin-bottom: 0.5em;
-    font-size: 85%;
+    font-size: 0.85em;
     color: #484848;
     }
 .portlet dl strong {
@@ -631,7 +631,7 @@ th.descending {
 table.listing {
     margin: 0;
     width: 100%;
-    font-size: 93%;
+    font-size: 0.93em;
     }
 table.listing, table.listing tbody, table.listing td.end-of-section {
     border-bottom: 1px solid #d2d2d2;
@@ -667,7 +667,7 @@ table.listing table th, table.listing table td {
     padding: 0;
     }
 table.listing thead th, table.listing tr.thead th {
-    font-size: 108%;
+    font-size: 1.08em;
     white-space: nowrap;
     }
 table.listing td {
@@ -690,7 +690,7 @@ table.listing table.simple td {
     padding: 0.25em;
     }
 table.listing .section-heading {
-    font-size: 108%;
+    font-size: 1.08em;
     border: none;
     padding-top: 1.5em;
     }
@@ -908,7 +908,7 @@ table.form td td {
 .long legend {
     color: #666;
     font-weight: bold;
-    font-size: 123.1%;
+    font-size: 1.231em;
     }
 fieldset.collapsible {
     /* Collapsible sections
@@ -942,7 +942,7 @@ img.collapseIcon {
     margin-bottom: 0;
     }
 h1 .edit {
-    font-size: 50%;
+    font-size: 0.77em;
     position: relative;
     top: -3px;
     margin-left: 0.5em;
@@ -1088,7 +1088,7 @@ table.form .error {
    These appear to be 3.0 specific.
 */
 div.see-all {
-    font-size: 123.1%; /* Same as a h2 */
+    font-size: 1.231em; /* Same as a h2 */
     text-align:right;
     }
 span.nolink {
@@ -1100,7 +1100,7 @@ span.see-all {
 .see-all a {
     padding-left: 8px;
     background: inherit;
-    font-size: 72%;
+    font-size: 0.77em;
     text-decoration: underline;
     }
 .unseen {
@@ -1124,25 +1124,25 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    font-size: 85%;
+    font-size: 0.85em;
     color: #666;
     }
 .description {
     clear: both;
-    font-size: 100%;
+    font-size: 1em;
     }
 .application-summary {
-    font-size: 123.1%;
+    font-size: 1.231em;
     }
 .search-results {
     margin-top: 1em;
     }
 p.search-results {
-    font-size: 93%;
+    font-size: 0.93em;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
-    font-size: 138.5%;
+    font-size: 1.385em;
     }
 .main-portlet {
     margin: 1em 0 1em 0;
@@ -1180,7 +1180,7 @@ p.search-results {
     float: left;
     margin: 0.2em 1.2em 0 0;
     color: #666;
-    font-size: 77%;
+    font-size: 0.77em;
     }
 div.watermark-apps-portlet {
     clear: both;
@@ -1253,14 +1253,14 @@ div.watermark-apps-portlet span img {
     /* Registered slot */
     margin: .5em 0 1em 0;
     font-style: italic;
-    font-size: 77%;
+    font-size: 0.77em;
     color: #666;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    font-size: 77%;
+    font-size: 0.77em;
     }
 .breadcrumbs li {
     display:inline;
@@ -1293,7 +1293,7 @@ div.watermark-apps-portlet span img {
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */
-    font-size: 77%;
+    font-size: 0.77em;
     margin-right: 0;
     }
 
@@ -1343,7 +1343,7 @@ div.watermark-apps-portlet span img {
     padding: 6%;
     padding-right: 40px;
     color: #fff;
-    font-size: 93%;
+    font-size: 0.93em;
     }
 .downloads .version {
     -moz-border-radius: 5px 5px 0 0;
@@ -1368,7 +1368,7 @@ div.watermark-apps-portlet span img {
 .involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
-    font-size: 108%;
+    font-size: 1.08em;
     font-weight: bold;
     }
 .involvement a {
@@ -1409,7 +1409,7 @@ div.watermark-apps-portlet span img {
     border-bottom: 1px solid #d0d0d0;
     }
 .announcement .registered {
-    font-size: 93%;
+    font-size: 0.93em;
     margin-top: -2px;
     }
 
@@ -1784,27 +1784,27 @@ a.unofficial-tag {
     }
 
 .discreet, .lesser, .duplicate-details {
-    font-size: 85%;
+    font-size: 0.85em;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 93%;
+    font-size: 0.93em;
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
-    font-size: 77%;
+    font-size: 0.77em;
     }
 .cloud-size-small {
-    font-size: 85%;
+    font-size: 0.85em;
     }
 .cloud-size-medium {
-    font-size: 131%;
+    font-size: 1.31em;
     }
 .cloud-size-large {
-    font-size: 167%;
+    font-size: 1.67em;
     }
 .cloud-size-largest {
-    font-size: 197%;
+    font-size: 1.97em;
     }
 .cloud-dark {
     color: #00f;
@@ -1822,7 +1822,7 @@ pre.changelog, table.diff,
 div#edit-description,
 div#edit-commit_message {
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    font-size: 93%;
+    font-size: 0.93em;
     margin: 1em 0;
     }
 div#edit-description .yui-ieditor-input,
@@ -2416,7 +2416,7 @@ tr.bug-branch-summary td.first {
 ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     /* For the Latest updates portlet
       at https://launchpad.dev/~cprov/+archive/ppa */
-    font-size: 75%;
+    font-size: 0.77em;
     }
 ul.latest-ppa-updates li {
     padding: 3px;
