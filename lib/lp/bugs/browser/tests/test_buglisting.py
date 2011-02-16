@@ -53,25 +53,12 @@ class DeactivatedContextBugTaskTestCase(TestCaseWithFactory):
         self.inactive_product.active = False
         logout()
 
-    def test_listing_not_seen_without_permission(self):
+    def test_deactivated_listings_not_seen(self):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
         login('no-priv@canonical.com')
         view = create_initialized_view(self.person, "+bugs")
         self.assertEqual([self.active_bugtask], list(view.searchUnbatched()))
-
-    def test_listing_seen_with_permission(self):
-        # Someone with permission to see deactiveated projects
-        # can see bugtasks for deactivated projects.
-        login('admin@canonical.com')
-        registry_owner = getUtility(
-            ILaunchpadCelebrities).registry_experts.teamowner
-        logout()
-        login_person(registry_owner)
-        view = create_initialized_view(self.person, "+bugs")
-        self.assertEqual(
-            sorted([self.active_bugtask, self.inactive_bugtask]),
-            sorted(list(view.searchUnbatched())))
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):
