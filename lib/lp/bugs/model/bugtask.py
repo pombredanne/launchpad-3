@@ -1789,10 +1789,16 @@ class BugTaskSet:
         # 4) We're searching for bugtasks for a distroseries
         # because in those instances we don't have arbitrary products which
         # may be deactivated showing up in our search.
-        if params.product is None and params.distribution is None and
-           params.productseries is None and params.distroseries is None:
+        if (params.product is None and
+            params.distribution is None and
+            params.productseries is None and
+            params.distroseries is None):
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
             extra_clauses.append(
-                "AND (Bugtask.product IS NULL OR Product.active)")
+                "(Bugtask.product IS NULL OR Product.active)")
+            join_tables.append(
+                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
 
 
         if params.status is not None:

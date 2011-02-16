@@ -20,7 +20,9 @@ from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
 from lp.testing import (
     BrowserTestCase,
+    login,
     login_person,
+    logout,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
