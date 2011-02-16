@@ -30,6 +30,7 @@ from lp.bugs.mail.bugnotificationbuilder import (
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.services.mail.mailwrapper import MailWrapper
 
+
 def get_key(notification):
     activity = notification.activity
     if activity is not None:
@@ -47,6 +48,7 @@ def get_key(notification):
         elif key.endswith(' unlinked'):
             key = key[:-len('unlinked')] + activity.oldvalue
         return key
+
 
 def construct_email_notifications(bug_notifications):
     """Construct an email from a list of related bug notifications.
@@ -81,7 +83,6 @@ def construct_email_notifications(bug_notifications):
 
     recipients = {}
     filtered_notifications = []
-    omitted_notifications = []
     for notification in bug_notifications:
         key = get_key(notification)
         if (notification.is_comment or
