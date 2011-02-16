@@ -31,6 +31,7 @@ __all__ = [
     ]
 
 
+from contextlib import contextmanager
 from cStringIO import StringIO
 from datetime import (
     datetime,
@@ -410,6 +411,15 @@ class _LogWrapper:
             return value
         else:
             return setattr(self._log, key, value)
+
+    @contextmanager
+    def use(self, log):
+        """Temporarily use a different `log`."""
+        self._log, log = log, self._log
+        try:
+            yield
+        finally:
+            self._log = log
 
     def shortException(self, msg, *args):
         """Like Logger.exception, but does not print a traceback."""
