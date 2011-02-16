@@ -80,7 +80,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -95,7 +94,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -111,7 +109,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -250,7 +247,6 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -437,9 +433,6 @@ top of the email:
     <BLANKLINE>
     Title:
       new bug
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
@@ -461,7 +454,6 @@ top of the email:
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/ubuntu/+bug/16/+subscribe
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
     >>> flush_notifications()
@@ -988,7 +980,6 @@ We can see that Concise Person doesn't receive verbose notifications:
     <BLANKLINE>
     Title:
       In the beginning...
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 However, Concise Person does get an unsubscribe link.
@@ -998,9 +989,8 @@ However, Concise Person does get an unsubscribe link.
     ...
     To unsubscribe from this bug, go to:...
 
-
-Neither does Verbose Team Person - while the team wants verbose emails,
-he wants concise ones.
+Verbose Team Person gets a concise email, even though they belong to a team
+that gets verbose email.
 
     >>> print_notification(collated_messages['verboseteam@example.com'][0])
     To: verboseteam@example.com
@@ -1017,7 +1007,6 @@ he wants concise ones.
     <BLANKLINE>
     Title:
       In the beginning...
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 Whereas Verbose Person does get the description and task status:
@@ -1048,7 +1037,6 @@ Whereas Verbose Person does get the description and task status:
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/.../+bug/.../+subscribe
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 And Concise Team Person does too, even though his team doesn't want them:
@@ -1076,7 +1064,6 @@ And Concise Team Person does too, even though his team doesn't want them:
        This is a long description of the bug, which
        will be automatically wrapped by the BugNotification
        machinery. Ain't technology great?
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 It's important to note that the bug title and description are wrapped
@@ -1092,8 +1079,7 @@ and indented correctly in verbose notifications.
      ...
      'Bug description:',
      '  This is a long description of the bug, which will be automatically',
-     "  wrapped by the BugNotification machinery. Ain't technology great?",
-    ...
+     "  wrapped by the BugNotification machinery. Ain't technology great?"]
 
 The title is also wrapped and indented in normal notifications.
 
@@ -1401,7 +1387,6 @@ no notifications created by addChange().
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     ...
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <...@bugs.launchpad.net>
@@ -1419,7 +1404,6 @@ no notifications created by addChange().
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
