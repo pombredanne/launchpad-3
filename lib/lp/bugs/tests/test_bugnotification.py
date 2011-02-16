@@ -30,7 +30,6 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationSet,
     )
-
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
