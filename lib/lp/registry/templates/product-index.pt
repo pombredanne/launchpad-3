@@ -34,7 +34,7 @@
 
     <script type="text/javascript">
         LPS.use('lp.registry.structural_subscription', function(Y) {
-            Y.lp.registry.structural_subscription.setup({content_box: "#structural_subscription_content_box"});
+            Y.lp.registry.structural_subscription.setup({content_box: "#structural-subscription-content-box"});
         });
     </script>
 
@@ -253,8 +253,7 @@
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
         <div class="yui-u">
-          <div id="add-subscription-container"></div>
-          <div id="structural_subscription_content_box">JavaScript disabled/div>
+          <div id="structural-subscription-content-box"></div>
         </div>
 
       </div>
