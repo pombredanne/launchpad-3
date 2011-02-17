@@ -78,23 +78,38 @@ def locate_key(root, suffix):
     return path
 
 
-class Zeca(Resource):
+class _BaseResource(Resource):
+
     def getChild(self, name, request):
+        """Redirect trailing slash correctly."""
         if name == '':
             return self
         return Resource.getChild(
             self, name, request)
 
+
+class Zeca(_BaseResource):
+    """Root resource for the test keyserver."""
+
+    def __init__(self, root):
+        _BaseResource.__init__(self)
+        keyserver = KeyServer()
+        keyserver.putChild('lookup', LookUp(root))
+        keyserver.putChild('add', SubmitKey(root))
+        self.putChild('pks', keyserver)
+
     def render_GET(self, request):
         return GREETING
 
 
-class KeyServer(Zeca):
+class KeyServer(_BaseResource):
+
     def render_GET(self, request):
         return 'Welcome To Fake SKS service.\n'
 
 
 class LookUp(Resource):
+
     isLeaf = True
     permitted_actions = ['index', 'get']
 

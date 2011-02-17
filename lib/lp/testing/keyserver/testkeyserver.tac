@@ -11,9 +11,6 @@ from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.testing.keyserver.zeca import (
-    KeyServer,
-    LookUp,
-    SubmitKey,
     Zeca,
     )
 
@@ -28,11 +25,7 @@ zecaService = service.IServiceCollection(application)
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(zecaService)
 
-zeca = Zeca()
-keyserver = KeyServer()
-keyserver.putChild('lookup', LookUp(root))
-keyserver.putChild('add', SubmitKey(root))
-zeca.putChild('pks', keyserver)
+zeca = Zeca(root)
 
 site = server.Site(zeca)
 site.displayTracebacks = False

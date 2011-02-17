@@ -118,7 +118,7 @@ class KeyServerTac(TacTestSetup):
 
     @property
     def root(self):
-        return config.zeca.root
+        return config.testkeyserver.root
 
     @property
     def tacfile(self):
