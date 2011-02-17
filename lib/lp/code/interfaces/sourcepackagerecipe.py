@@ -140,13 +140,10 @@ class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
     @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
     @operation_parameters(
         recipe_text=copy_field(
             ISourcePackageRecipeView['recipe_text']))
-    @export_write_operation()
-    @operation_for_version("devel")
-    @operation_removed_in_version("devel")
-    @operation_parameters(recipe_text=Text())
     @export_write_operation()
     def setRecipeText(recipe_text):
         """Set the text of the recipe."""

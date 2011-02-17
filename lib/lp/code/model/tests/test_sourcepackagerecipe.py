@@ -814,7 +814,7 @@ class TestWebservice(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
-    def makeRecipe(self, user=None, owner=None, recipe_text=None):
+    def makeRecipe(self, user=None, owner=None, recipe_text=None, version='devel'):
         # rockstar 21 Jul 2010 - This function does more commits than I'd
         # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
@@ -828,8 +828,9 @@ class TestWebservice(TestCaseWithFactory):
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         transaction.commit()
-        launchpad = launchpadlib_for('test', user,
-                service_root=self.layer.appserver_root_url('api'))
+        launchpad = launchpadlib_for(
+            'test', user, version=version,
+            service_root=self.layer.appserver_root_url('api'))
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
@@ -860,6 +861,17 @@ class TestWebservice(TestCaseWithFactory):
     def test_recipe_text(self):
         recipe_text2 = self.makeRecipeText()
         recipe = self.makeRecipe()[0]
+        recipe.recipe_text = recipe_text2
+        self.assertEqual(recipe_text2, recipe.recipe_text)
+
+    def test_recipe_text_setRecipeText_not_in_devel(self):
+        recipe = self.makeRecipe()[0]
+        method = getattr(recipe, 'setRecipeText', None)
+        self.assertIs(None, method)
+
+    def test_recipe_text_setRecipeText_in_one_zero(self):
+        recipe_text2 = self.makeRecipeText()
+        recipe = self.makeRecipe(version='1.0')[0]
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
 
