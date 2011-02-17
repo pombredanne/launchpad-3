@@ -1116,15 +1116,15 @@ Bug Comments
 ------------
 
 A bug comment is actually made up of a number of chunks. The
-IBug.getMessageChunks() method allows you to retreive these chunks in a
-single shot.
+IBug.getMessagesForView() method allows you to get all the data needed to
+show messages in the bugtask index template in one shot.
 
     >>> from canonical.ftests.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
-    >>> chunks = bug_two.getMessageChunks()
-    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    >>> chunks = bug_two.getMessagesForView(None)
+    >>> for _, _1, chunk in sorted(chunks, key=lambda x:x[2].id):
     ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
     ...     chunk.content[:30])
     (4, 1, 16, u'Problem exists between chair a')
@@ -1140,6 +1140,24 @@ spurious failures it has been changed to tolerate this additional query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
     True
+
+getMessagesForView supports slicing operations:
+
+    >>> def message_ids(slices):
+    ...     chunks = bug_two.getMessagesForView(slices)
+    ...     return sorted(set(
+    ...         bugmessage.index for bugmessage, _, _1 in chunks))
+    >>> message_ids([slice(1, 2)])
+    [1]
+
+We use this to get the first N and last M messages in big bugs:
+    >>> message_ids([slice(None, 1), slice(2, None)])
+    [0, 2]
+
+We also support a negative lookup though the bug view does not use that at the
+moment:
+    >>> message_ids([slice(None, 1), slice(-1, None)])
+    [0, 2]
 
 Bugs have a special attribute, `indexed_messages` which returns the collection
 of messages, each decorated with the index of that message in its context
