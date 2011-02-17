@@ -435,6 +435,11 @@ class LPForkingService(object):
             self._bind_child_file_descriptors(path)
             retcode = self._run_child_command(command_argv)
         finally:
+            # We force os._exit() here, because we don't want to unwind the
+            # stack, which has complex results. (We can get it to unwind back
+            # to the cmd_launchpad_forking_service code, and even back to
+            # main() reporting thereturn code, but after that, suddenly the
+            # return code changes from a '0' to a '1', with no logging of info.
             os._exit(retcode)
 
     def _run_child_command(self, command_argv):
@@ -451,11 +456,6 @@ class LPForkingService(object):
         self._close_child_file_descriptors()
         trace.mutter('%d finished %r'
                      % (os.getpid(), command_argv))
-        # We force os._exit() here, because we don't want to unwind the
-        # stack, which has complex results. (We can get it to unwind back
-        # to the cmd_launchpad_forking_service code, and even back to
-        # main() reporting thereturn code, but after that, suddenly the
-        # return code changes from a '0' to a '1', with no logging of info.
         # TODO: Should we call sys.exitfunc() here? it allows atexit
         #       functions to fire, however, some of those may be still
         #       around from the parent process, which we don't really want.
