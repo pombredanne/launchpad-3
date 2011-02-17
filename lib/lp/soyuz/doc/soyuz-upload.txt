@@ -10,7 +10,7 @@ This test will:
   * Import gpg key for katie
   * Register gpg key for katie
   * Register the katie user in the right team
-  * Turn on the zeca keyserver
+  * Turn on the test keyserver
   * Include the non_free component in the database
   * Run process-upload.py
   * Check result
@@ -261,13 +261,13 @@ Assign the loaded GPG key to the katie user.
   ...                        active=True)
 
 
-Now we want to turn on the zeca key server to provide the key we
+Now we want to turn on the test key server to provide the key we
 just imported. Remember that process-upload.py is running as
 a different process.
 
   >>> from lp.testing.keyserver.harness import ZecaTestSetup
-  >>> zeca = ZecaTestSetup()
-  >>> zeca.setUp()
+  >>> keyserver = ZecaTestSetup()
+  >>> keyserver.setUp()
 
 
 Include non-free in the database. This will be done by the
@@ -770,7 +770,7 @@ everything up.
 Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
-  >>> zeca.tearDown()
+  >>> keyserver.tearDown()
 
 
 Feito! ;-)

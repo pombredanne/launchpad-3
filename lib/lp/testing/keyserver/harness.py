@@ -14,7 +14,7 @@ KEYS_DIR = os.path.join(os.path.dirname(__file__), 'tests/keys')
 
 
 class ZecaTestSetup(TacTestSetup):
-    r"""Setup a zeca for use by functional tests
+    r"""Setup a test key server for use by functional tests
 
     >>> fixture = ZecaTestSetup()
     >>> fixture.setUp()
@@ -127,9 +127,9 @@ class ZecaTestSetup(TacTestSetup):
 
     @property
     def pidfile(self):
-        return os.path.join(self.root, 'zeca.pid')
+        return os.path.join(self.root, 'testkeyserver.pid')
 
     @property
     def logfile(self):
-        return os.path.join(self.root, 'zeca.log')
+        return os.path.join(self.root, 'testkeyserver.log')
 

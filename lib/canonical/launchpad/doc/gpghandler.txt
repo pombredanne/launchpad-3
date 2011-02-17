@@ -288,7 +288,7 @@ keyserver web interface.
 IGPGHandler also allow callsites to upload the public part of a local
 key to the configuration keyserver.
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
     >>> from lp.testing.keyserver.harness import ZecaTestSetup
     >>> z = ZecaTestSetup()
@@ -323,7 +323,7 @@ keyserver side.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
 
-Let's shut zeca down.
+Let's shut the test keyserver down.
 
     >>> z.tearDown()
 

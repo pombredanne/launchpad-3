@@ -19,7 +19,7 @@ The signed repository will contained a detached signature of the
 top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
 export of the public GPG key (name 'key.gpg')
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
     >>> from lp.testing.keyserver.harness import ZecaTestSetup
     >>> z = ZecaTestSetup()
@@ -433,6 +433,6 @@ other tests don't choke on it.
     >>> shutil.rmtree(config.personalpackagearchive.signing_keys_root)
     >>> shutil.rmtree(config.personalpackagearchive.root)
 
-Let's shut zeca down.
+Let's shut the test key server down.
 
     >>> z.tearDown()

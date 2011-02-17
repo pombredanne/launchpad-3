@@ -26,7 +26,7 @@ Try to import a key which is already imported:
   ...
   ...has already been imported...
 
-Finally, kill zeca:
+Finally, kill the test key server:
 
   >>> z.tearDown()
 

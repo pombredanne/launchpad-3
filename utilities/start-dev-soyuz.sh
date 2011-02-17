@@ -11,6 +11,7 @@ start_twistd() {
         -y "daemons/$1.tac"
 }
 
+# XXX: This is broken now that zeca isn't in daemons/
 start_twistd zeca
 start_twistd buildd-manager
 
