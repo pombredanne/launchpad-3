@@ -7,4 +7,6 @@ SET client_min_messages=ERROR;
 ALTER TABLE BugNotification
     ADD COLUMN status INTEGER NOT NULL DEFAULT 10;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 1);
+CLUSTER BugNotification USING bugnotification__date_emailed__idx;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 45, 0);
