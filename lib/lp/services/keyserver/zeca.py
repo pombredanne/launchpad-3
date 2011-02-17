@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """GPG Key Information Server Prototype.
@@ -24,7 +24,6 @@ $ gpg --list-key cprov > 0x681B6469.index
 note: remove the lines containing 'sub' or 'secret' keys
 
 $ gpg --export -a cprov > 0x681B6469.get
-
 """
 
 __metaclass__ = type
