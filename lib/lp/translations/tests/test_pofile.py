@@ -266,8 +266,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Searching for English strings.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               u"Some wild text")
-        potmsgset.setSequence(self.devel_potemplate, 2)
+                                               u"Some wild text", sequence=2)
 
         found_potmsgsets = list(
             self.devel_pofile.findPOTMsgSetsContaining(u"wild"))
@@ -283,8 +282,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Searching for singular in plural messages works as well.
         plural_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                       u"Some singular text",
-                                                      u"Some plural text")
-        plural_potmsgset.setSequence(self.devel_potemplate, 3)
+                                                      u"Some plural text",
+                                                      sequence=3)
 
         found_potmsgsets = list(
             self.devel_pofile.findPOTMsgSetsContaining(u"singular"))
@@ -489,8 +488,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # and a shared translation on newly added POTMsgSet...
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               u"Translated text")
-        potmsgset.setSequence(self.devel_potemplate, 2)
+                                               u"Translated text", sequence=2)
 
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
@@ -599,8 +597,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # ...and a new untranslated POTMsgSet.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               u"Translated text")
-        potmsgset.setSequence(self.devel_potemplate, 2)
+                                               u"Translated text", sequence=2)
 
         # Both POTMsgSets are listed.
         found_translations = list(
@@ -636,8 +633,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Another POTMsgSet has both a translation and a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               u"Translated text")
-        potmsgset.setSequence(self.devel_potemplate, 2)
+                                               u"Translated text",
+                                               sequence=2)
         date_created = datetime.now(pytz.UTC) - timedelta(5)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
@@ -777,15 +774,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # First POTMsgSet (self.potmsgset) is untranslated.
 
         # Second POTMsgSet is untranslated, but with a suggestion.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 2)
+        potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=2)
         self.factory.makeSuggestion(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Unreviewed suggestion"])
 
         # Third POTMsgSet is translated, and with a suggestion.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 3)
+        potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=3)
         update_date = datetime.now(pytz.UTC) - timedelta(1)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
@@ -796,15 +793,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translations=[u"Another suggestion"])
 
         # Fourth POTMsgSet is translated in import.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 4)
+        potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=4)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Imported translation"], current_other=True)
 
         # Fifth POTMsgSet is translated in import, but changed in Ubuntu.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 5)
+        potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=5)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Imported translation"], current_other=True)
@@ -813,8 +810,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translations=[u"LP translation"], current_other=False)
 
         # Sixth POTMsgSet is translated in LP only.
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 6)
+        potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=6)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"New translation"], current_other=False)
@@ -1192,10 +1189,10 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         # Create two POTMsgSets that can be used to test in what order
         # are they returned.  Add them only to devel_potemplate sequentially.
-        self.potmsgset1 = self.factory.makePOTMsgSet(self.devel_potemplate)
-        self.potmsgset1.setSequence(self.devel_potemplate, 1)
-        self.potmsgset2 = self.factory.makePOTMsgSet(self.devel_potemplate)
-        self.potmsgset2.setSequence(self.devel_potemplate, 2)
+        self.potmsgset1 = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=1)
+        self.potmsgset2 = self.factory.makePOTMsgSet(
+            self.devel_potemplate, sequence=2)
 
     def test_getPOTMsgSetTranslated_ordering(self):
         # Translate both POTMsgSets in devel_pofile, so

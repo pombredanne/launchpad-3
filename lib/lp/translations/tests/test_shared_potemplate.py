@@ -44,7 +44,6 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         # Create a single POTMsgSet that is used across all tests,
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        self.potmsgset.setSequence(self.devel_potemplate, 1)
 
     def test_getPOTMsgSets(self):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -116,8 +115,8 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         # Let's add a POTMsgSet with plural forms.
         plural_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                       singular="singular",
-                                                      plural="plural")
-        plural_potmsgset.setSequence(self.devel_potemplate, 4)
+                                                      plural="plural",
+                                                      sequence=4)
 
         # Now, template contains a plural form message.
         self.assertEquals(self.devel_potemplate.hasPluralMessage(), True)
