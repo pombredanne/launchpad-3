@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Python utilities.
@@ -9,6 +9,7 @@ stuff.
 
 __metaclass__ = type
 __all__ = [
+    'AutoDecorate',
     'CachingIterator',
     'decorate_with',
     'docstring_dedent',
@@ -22,10 +23,34 @@ __all__ = [
 from itertools import tee
 import sys
 from textwrap import dedent
+from types import FunctionType
 
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
+
+
+def AutoDecorate(*decorators):
+    """Factory to generate metaclasses that automatically apply decorators.
+
+    AutoDecorate is a metaclass factory that can be used to make a class
+    implicitly wrap all of its methods with one or more decorators.
+    """
+
+    class AutoDecorateMetaClass(type):
+        def __new__(cls, class_name, bases, class_dict):
+            new_class_dict = {}
+            for name, value in class_dict.items():
+                if type(value) == FunctionType:
+                    for decorator in decorators:
+                        value = decorator(value)
+                        assert callable(value), (
+                            "Decorator %s didn't return a callable."
+                            % repr(decorator))
+                new_class_dict[name] = value
+            return type.__new__(cls, class_name, bases, new_class_dict)
+
+    return AutoDecorateMetaClass
 
 
 def iter_split(string, splitter):

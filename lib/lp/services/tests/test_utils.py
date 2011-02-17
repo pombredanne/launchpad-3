@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Tests for lp.services.utils."""
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ import itertools
 import unittest
 
 from lp.services.utils import (
+    AutoDecorate,
     CachingIterator,
     decorate_with,
     docstring_dedent,
@@ -17,6 +18,46 @@ from lp.services.utils import (
     traceback_info,
     )
 from lp.testing import TestCase
+
+
+
+class TestAutoDecorate(TestCase):
+    """Tests for AutoDecorate."""
+
+    def setUp(self):
+        super(TestAutoDecorate, self).setUp()
+        self.log = None
+
+    def decorator_1(self, f):
+        def decorated(*args, **kwargs):
+            self.log.append(1)
+            return f(*args, **kwargs)
+        return decorated
+
+    def decorator_2(self, f):
+        def decorated(*args, **kwargs):
+            self.log.append(2)
+            return f(*args, **kwargs)
+        return decorated
+
+    def test_auto_decorate(self):
+        # All of the decorators passed to AutoDecorate are applied as
+        # decorators in reverse order.
+
+        class AutoDecoratedClass:
+            __metaclass__ = AutoDecorate(self.decorator_1, self.decorator_2)
+            def method_a(s):
+                self.log.append('a')
+            def method_b(s):
+                self.log.append('b')
+
+        obj = AutoDecoratedClass()
+        self.log = []
+        obj.method_a()
+        self.assertEqual([2, 1, 'a'], self.log)
+        self.log = []
+        obj.method_b()
+        self.assertEqual([2, 1, 'b'], self.log)
 
 
 class TestIterateSplit(TestCase):

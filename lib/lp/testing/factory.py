@@ -61,7 +61,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
@@ -233,6 +232,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
