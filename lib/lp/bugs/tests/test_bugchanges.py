@@ -181,7 +181,8 @@ class TestBugChanges(TestCaseWithFactory):
 
     def assertRecipients(self, expected_recipients):
         notifications = self.getNewNotifications()
-        notifications, messages = construct_email_notifications(notifications)
+        notifications, omitted, messages = construct_email_notifications(
+            notifications)
         recipients = set(message['to'] for message in messages)
 
         self.assertEqual(
