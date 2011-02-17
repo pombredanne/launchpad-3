@@ -51,6 +51,7 @@ class IBugMessage(IHasBug):
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
+    bugwatchID = Int(title=u'The bugwatch id.', readonly=True)
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
     visible = Bool(title=u"This message is visible or not.", required=False,
