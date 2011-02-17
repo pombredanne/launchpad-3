@@ -69,6 +69,11 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(expected_bugtasks)
         self.assertEqual(expected, search_result)
 
+    def test_aggregate_by_target(self):
+        # BugTaskSet.search supports returning the counts for each target (as
+        # long only one type of target was selected).
+        params = self.getBugTaskSearchParams(user=None, multitarget=True)
+
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
         # target, if only the bug target is passed as a search parameter.
@@ -557,28 +562,59 @@ class ProjectGroupAndDistributionTests:
 
 
 class BugTargetTestBase:
-    """A base class for the bug target mixin classes."""
+    """A base class for the bug target mixin classes.
+    
+    :ivar searchtarget: A bug context to search within.
+    :ivar searchtarget2: A sibling bug context for testing cross-context
+        searches. Created on demand when
+        getBugTaskSearchParams(multitarget=True) is called.
+    :ivar bugtasks2: Bugtasks created for searchtarget2.
+    """
 
-    def makeBugTasks(self, bugtarget):
-        self.bugtasks = []
-        with person_logged_in(self.owner):
-            self.bugtasks.append(
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
+        if bugtasks is None:
+            self.bugtasks = []
+            bugtasks = self.bugtasks
+        if bugtarget is None:
+            bugtarget = self.searchtarget
+        if owner is None:
+            owner = self.owner
+        with person_logged_in(owner):
+            bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.HIGH
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.TRIAGED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.HIGH
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.TRIAGED, owner)
 
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.LOW
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.NEW, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.LOW
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.NEW, owner)
 
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.CRITICAL
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.CRITICAL
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, owner)
+
+    def getBugTaskSearchParams(self, multitarget=False, *args, **kw):
+        """Return a BugTaskSearchParams object for the given parameters.
+
+        Also, set the bug target.
+
+        :param multitarget: If True multiple targets are used using any(
+            self.searchtarget, self.searchtarget2).
+        """
+        params = BugTaskSearchParams(*args, **kw)
+        if multitarget and getattr(self, 'searchtarget2', None) is None:
+            self.setUpTarget2()
+        if not multitarget:
+            target = self.searchtarget
+        else:
+            target = any(self.searchtarget, self.searchtarget2)
+        self.setBugParamsTarget(params, target)
+        return params
 
 
 class BugTargetWithBugSuperVisor:
@@ -612,16 +648,16 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
         super(ProductTarget, self).setUp()
         self.searchtarget = self.factory.makeProduct()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProduct()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProduct(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProduct(target)
 
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
@@ -640,16 +676,17 @@ class ProductSeriesTarget(BugTargetTestBase):
         super(ProductSeriesTarget, self).setUp()
         self.searchtarget = self.factory.makeProductSeries()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProductSeries(
+            product=self.searchtarget.product)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProductSeries(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProductSeries(target)
 
     def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
         # Change the status of another bugtask of the same bug to the
@@ -686,46 +723,52 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProject()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProject(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProject(target)
 
-    def makeBugTasks(self):
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
         """Create bug tasks for the search target."""
-        self.bugtasks = []
+        if bugtasks is None:
+            self.bugtasks = []
+            bugtasks = self.bugtasks
+        if bugtarget is None:
+            bugtarget = self.searchtarget
+        if owner is None:
+            owner = self.owner
         self.products = []
-        with person_logged_in(self.owner):
-            product = self.factory.makeProduct(owner=self.owner)
+        with person_logged_in(owner):
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.HIGH
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.TRIAGED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.HIGH
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.TRIAGED, owner)
 
-            product = self.factory.makeProduct(owner=self.owner)
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.LOW
-            self.bugtasks[-1].transitionToStatus(
-            BugTaskStatus.NEW, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.LOW
+            bugtasks[-1].transitionToStatus(
+            BugTaskStatus.NEW, owner)
 
-            product = self.factory.makeProduct(owner=self.owner)
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.CRITICAL
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.CRITICAL
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, owner)
 
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task targets."""
@@ -784,22 +827,32 @@ class MilestoneTarget(BugTargetTestBase):
         self.product = self.factory.makeProduct()
         self.searchtarget = self.factory.makeMilestone(product=self.product)
         self.owner = self.product.owner
-        self.makeBugTasks(self.product)
+        self.makeBugTasks(bugtarget=self.product)
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeMilestone(product=self.product)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.product,
+            bugtasks=self.bugtasks2, owner=self.product.owner,
+            searchtarget=self.searchtarget2)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(milestone=self.searchtarget, *args, **kw)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.milestone = target
 
-    def makeBugTasks(self, bugtarget):
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None,
+        searchtarget=None):
         """Create bug tasks for a product and assign them to a milestone."""
-        super(MilestoneTarget, self).makeBugTasks(bugtarget)
-        with person_logged_in(self.owner):
-            for bugtask in self.bugtasks:
-                bugtask.transitionToMilestone(self.searchtarget, self.owner)
+        super(MilestoneTarget, self).makeBugTasks(bugtarget=bugtarget,
+            bugtasks=bugtasks, owner=owner)
+        if bugtasks is None:
+            bugtasks = self.bugtasks
+        if owner is None:
+            owner = self.owner
+        if searchtarget is None:
+            searchtarget = self.searchtarget
+        with person_logged_in(owner):
+            for bugtask in bugtasks:
+                bugtask.transitionToMilestone(searchtarget, owner)
 
     def findBugtaskForOtherProduct(self, bugtask):
         # Return the bugtask for the product that not related to the
@@ -816,16 +869,16 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         super(DistributionTarget, self).setUp()
         self.searchtarget = self.factory.makeDistribution()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistribution()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setDistribution(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setDistribution(target)
 
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
@@ -851,16 +904,17 @@ class DistroseriesTarget(BugTargetTestBase):
         super(DistroseriesTarget, self).setUp()
         self.searchtarget = self.factory.makeDistroSeries()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistroSeries(
+            distribution=self.searchtarget.distribution)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setDistroSeries(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setDistroSeries(target)
 
 
 class SourcePackageTarget(BugTargetTestBase):
@@ -870,16 +924,18 @@ class SourcePackageTarget(BugTargetTestBase):
         super(SourcePackageTarget, self).setUp()
         self.searchtarget = self.factory.makeSourcePackage()
         self.owner = self.searchtarget.distroseries.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeSourcePackage(
+            distroseries=self.searchtarget.distroseries)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distroseries.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setSourcePackage(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setSourcePackage(target)
 
     def subscribeToTarget(self, subscriber):
         # Subscribe the given person to the search target.
@@ -898,16 +954,18 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
         super(DistributionSourcePackageTarget, self).setUp()
         self.searchtarget = self.factory.makeDistributionSourcePackage()
         self.owner = self.searchtarget.distribution.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistributionSourcePackage(
+            distribution=self.searchtarget.distribution)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distribution.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setSourcePackage(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setSourcePackage(target)
 
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""

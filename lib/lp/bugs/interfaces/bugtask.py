@@ -1236,6 +1236,29 @@ class BugTaskSearchParams:
         # Import this here to avoid circular dependencies
         from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
+        if isinstance(sourcepackage, any):
+            # Unwrap the source package.
+            self.sourcepackagename = any(*[
+                pkg.sourcepackagename for pkg in sourcepackage.query_values])
+            distroseries = any(*[pkg.distroseries for pkg in
+                sourcepackage.query_values if ISourcePackage.providedBy(pkg)])
+            distributions = any(*[pkg.distribution for pkg in
+                sourcepackage.query_values
+                if not ISourcePackage.providedBy(pkg)])
+            if distroseries.query_values and not distributions.query_values:
+                self.distroseries = distroseries
+            elif not distroseries.query_values and distributions.query_values:
+                self.distributions = distributions
+            else:
+                # Either we have both distroseries and distributions or neither
+                # of them: set both, which will give us the cross product
+                # due to the search of source packages being sourcepackagename
+                # specific rather than actually context specific. This is not
+                # ideal but is tolerable given no actual use of mixed type
+                # any() exists today.
+                self.distroseries = distroseries
+                self.distributions = distributions
+            return
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
