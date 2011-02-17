@@ -7,8 +7,8 @@ This tests GPG-related pages of an IPerson.
 
 Set up the key server:
 
-  >>> from lp.testing.keyserver.harness import ZecaTestSetup
-  >>> z = ZecaTestSetup()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> z = KeyServerTac()
   >>> z.setUp()
 
 Grab the sample user:

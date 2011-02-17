@@ -4,12 +4,12 @@
 == Setup ==
 
     >>> import email
-    >>> from lp.testing.keyserver.harness import ZecaTestSetup
+    >>> from lp.testing.keyserver import KeyServerTac
     >>> from lp.services.mail import stub
 
-Setup the stub KeyServer:
+Set up the stub KeyServer:
 
-    >>> z = ZecaTestSetup()
+    >>> z = KeyServerTac()
     >>> z.setUp()
 
 

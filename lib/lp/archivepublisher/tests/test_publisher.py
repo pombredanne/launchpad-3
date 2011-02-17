@@ -23,7 +23,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.testing.keyserver.harness import ZecaTestSetup
+from lp.testing.keyserver import KeyServerTac
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -1282,7 +1282,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         # Start the test keyserver, so the signing_key can be uploaded.
-        z = ZecaTestSetup()
+        z = KeyServerTac()
         z.setUp()
 
         # Set a signing key for Celso's PPA.

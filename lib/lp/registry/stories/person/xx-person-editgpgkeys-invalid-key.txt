@@ -6,11 +6,11 @@ Imports and setup of stub keyserver:
   >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-  >>> from lp.testing.keyserver.harness import ZecaTestSetup
+  >>> from lp.testing.keyserver import KeyServerTac
   >>> from lp.registry.interfaces.person import IPersonSet
 
   >>> tokenset = getUtility(ILoginTokenSet)
-  >>> z = ZecaTestSetup()
+  >>> z = KeyServerTac()
   >>> z.setUp()
 
 The following keys are used in these tests:

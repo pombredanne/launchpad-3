@@ -265,8 +265,8 @@ Now we want to turn on the test key server to provide the key we
 just imported. Remember that process-upload.py is running as
 a different process.
 
-  >>> from lp.testing.keyserver.harness import ZecaTestSetup
-  >>> keyserver = ZecaTestSetup()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> keyserver = KeyServerTac()
   >>> keyserver.setUp()
 
 

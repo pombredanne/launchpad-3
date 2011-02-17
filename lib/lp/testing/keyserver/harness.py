@@ -13,10 +13,10 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 KEYS_DIR = os.path.join(os.path.dirname(__file__), 'tests/keys')
 
 
-class ZecaTestSetup(TacTestSetup):
-    r"""Setup a test key server for use by functional tests
+class KeyServerTac(TacTestSetup):
+    r"""Set up a test key server for use by functional tests
 
-    >>> fixture = ZecaTestSetup()
+    >>> fixture = KeyServerTac()
     >>> fixture.setUp()
 
     Make sure the server is running

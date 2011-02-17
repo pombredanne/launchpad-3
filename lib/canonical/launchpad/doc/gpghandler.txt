@@ -290,8 +290,8 @@ key to the configuration keyserver.
 
 We will set up and use the test-keyserver.
 
-    >>> from lp.testing.keyserver.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> z = KeyServerTac()
     >>> z.setUp()
 
 Upload the just-generated key to the keyserver so that we can reset

@@ -58,8 +58,8 @@ using, this essentially boils down to ensuring that test keyserver and the
 librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
-  >>> from lp.testing.keyserver.harness import ZecaTestSetup
-  >>> keyserver = ZecaTestSetup()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> keyserver = KeyServerTac()
   >>> keyserver.setUp()
 
 Import public keyring into current LPDB.

@@ -5,11 +5,13 @@
 
 __all__ = [
     'KeyServer',
+    'KeyServerTac',
     'LookUp',
     'SubmitKey',
     'Zeca',
     ]
 
+from lp.testing.keyserver.harness import KeyServerTac
 from lp.testing.keyserver.zeca import (
     KeyServer,
     LookUp,
