@@ -11,7 +11,7 @@ from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 
-keysdir = os.path.join(os.path.dirname(__file__), 'keys')
+keysdir = os.path.join(os.path.dirname(__file__), 'tests/keys')
 
 
 class ZecaTestSetup(TacTestSetup):

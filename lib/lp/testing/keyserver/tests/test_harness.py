@@ -9,6 +9,5 @@ from canonical.launchpad.testing.systemdocs import default_optionflags
 
 def test_suite():
     return doctest.DocTestSuite(
-        'lp.testing.keyserver.tests.harness',
-        optionflags=default_optionflags)
+        'lp.testing.keyserver.harness', optionflags=default_optionflags)
 
