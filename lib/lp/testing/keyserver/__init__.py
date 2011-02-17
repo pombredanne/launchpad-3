@@ -4,17 +4,7 @@
 # pylint: disable-msg=W0401,W0403
 
 __all__ = [
-    'KeyServer',
     'KeyServerTac',
-    'LookUp',
-    'SubmitKey',
-    'Zeca',
     ]
 
 from lp.testing.keyserver.harness import KeyServerTac
-from lp.testing.keyserver.zeca import (
-    KeyServer,
-    LookUp,
-    SubmitKey,
-    Zeca,
-    )
