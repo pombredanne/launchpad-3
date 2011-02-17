@@ -616,6 +616,35 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual([build], list(recipe.getBuilds()))
         self.assertEqual([], list(recipe.getPendingBuilds()))
 
+    def test_setRecipeText_private_base_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(branch)
+            e = self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
+            self.assertEqual(
+                'Recipe may not refer to private branch: %s' %
+                branch.bzr_identity, str(e))
+
+    def test_setRecipeText_private_referenced_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            base_branch = self.factory.makeAnyBranch(
+                owner=source_package_recipe.owner)
+            referenced_branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(
+                base_branch, referenced_branch)
+            e = self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
+            self.assertEqual(
+                'Recipe may not refer to private branch: %s' %
+                referenced_branch.bzr_identity, str(e))
+
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
@@ -862,6 +891,7 @@ class TestWebservice(TestCaseWithFactory):
         recipe_text2 = self.makeRecipeText()
         recipe = self.makeRecipe()[0]
         recipe.recipe_text = recipe_text2
+        recipe.lp_save()
         self.assertEqual(recipe_text2, recipe.recipe_text)
 
     def test_recipe_text_setRecipeText_not_in_devel(self):
@@ -874,35 +904,6 @@ class TestWebservice(TestCaseWithFactory):
         recipe = self.makeRecipe(version='1.0')[0]
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
-
-    def test_setRecipeText_private_base_branch(self):
-        source_package_recipe = self.factory.makeSourcePackageRecipe()
-        with person_logged_in(source_package_recipe.owner):
-            branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
-            recipe_text = self.factory.makeRecipeText(branch)
-            e = self.assertRaises(
-                PrivateBranchRecipe, source_package_recipe.setRecipeText,
-                recipe_text)
-            self.assertEqual(
-                'Recipe may not refer to private branch: %s' %
-                branch.bzr_identity, str(e))
-
-    def test_setRecipeText_private_referenced_branch(self):
-        source_package_recipe = self.factory.makeSourcePackageRecipe()
-        with person_logged_in(source_package_recipe.owner):
-            base_branch = self.factory.makeAnyBranch(
-                owner=source_package_recipe.owner)
-            referenced_branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
-            recipe_text = self.factory.makeRecipeText(
-                base_branch, referenced_branch)
-            e = self.assertRaises(
-                PrivateBranchRecipe, source_package_recipe.setRecipeText,
-                recipe_text)
-            self.assertEqual(
-                'Recipe may not refer to private branch: %s' %
-                referenced_branch.bzr_identity, str(e))
 
     def test_getRecipe(self):
         """Person.getRecipe returns the named recipe."""
