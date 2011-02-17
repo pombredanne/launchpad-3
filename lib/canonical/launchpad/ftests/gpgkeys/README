@@ -1,6 +1,6 @@
 
 Keys in lib/canonical/launchpad/ftests/gpgkeys should be symlinked to entries
-in lib/lp/services/keyserver/tests/keys. There should be symlinks for each
+in lib/lp/testing/keyserver/tests/keys. There should be symlinks for each
 individual subkey ID; for instance, for a regular sign-and-encrypt key there
 will be a symlink for the main signing subkey and one for the encryption
 subkey.

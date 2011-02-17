@@ -14,7 +14,7 @@ from twisted.web import server
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.services.keyserver import (
+from lp.testing.keyserver import (
     KeyServer,
     LookUp,
     SubmitKey,

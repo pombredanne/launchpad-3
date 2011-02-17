@@ -10,7 +10,7 @@ __all__ = [
     'Zeca',
     ]
 
-from lp.services.keyserver.zeca import (
+from lp.testing.keyserver.zeca import (
     KeyServer,
     LookUp,
     SubmitKey,
