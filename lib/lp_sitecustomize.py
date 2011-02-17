@@ -93,6 +93,13 @@ def silence_warnings():
         category=DeprecationWarning,
         module="Crypto")
 
+    # pygments-0.8 on Python 2.6:
+    #   DeprecationWarning: object.__init__() takes no parameters
+    warnings.filterwarnings(
+        'ignore',
+        category=DeprecationWarning,
+        module='pygments')
+
 
 def customize_logger():
     """Customize the logging system.
