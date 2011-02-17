@@ -633,7 +633,7 @@ class IPersonSettings(Interface):
 
     selfgenerated_bugnotifications = Bool(
         title=_("Send me bug notifications for changes I make."),
-        required=False, default=True)
+        required=False, default=False)
 
 
 class IPersonPublic(IHasBranches, IHasSpecifications,
