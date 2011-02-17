@@ -434,34 +434,14 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
 
-    def reindexMessages(self):
-        """See `IBug`."""
-        store = Store.of(self)
-        if store is None:
-            # Bug hasn't been flushed yet, so use the store policy instead.
-            store = IStore(BugMessage)
-        if (store.find(BugMessage, BugMessage.bugID==self.id,
-            BugMessage.index == None).count() == 0):
-            # Fully indexed
-            return
-        indexed_messages = self._indexed_messages(include_bugmessage=True)
-        # First reset the ones that have changed, so that we don't run into
-        # IntegrityError due to having two temporarily hold the same index.
-        for indexed_message, bugmessage in indexed_messages:
-            if bugmessage.index != indexed_message.index:
-                bugmessage.index = None
-        Store.of(self).flush()
-        for indexed_message, bugmessage in indexed_messages:
-            if bugmessage.index != indexed_message.index:
-                bugmessage.index = indexed_message.index
-
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        # Note that this is a decorated result set, so will cache its value (in
+        # the absence of slices)
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=True,
-        include_bugmessage=False):
+    def _indexed_messages(self, include_content=False, include_parents=True):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
@@ -469,17 +449,12 @@ class Bug(SQLBase):
         :param include_parents: If True retrieve the object for parent
             messages too. If False the parent attribute will be *forced* to
             None to reduce database lookups.
-        :param include_bugmessage: If True returns tuples (message,
-            bugmessage). This exists for the indexMessages API.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        if include_parents or include_bugmessage:
-            to_messages = lambda rows: [row[0] for row in rows]
-        else:
-            to_messages = lambda rows: rows
+        to_messages = lambda rows: [row[0] for row in rows]
 
         def eager_load_owners(messages):
             # Because we may have multiple owners, we spend less time
@@ -512,35 +487,29 @@ class Bug(SQLBase):
                 cache.text_contents = Message.chunks_text(
                     chunk_map[message.id])
 
-        def eager_load(rows, slice_info):
+        def eager_load(rows):
             messages = to_messages(rows)
             eager_load_owners(messages)
             if include_content:
                 eager_load_content(messages)
 
-        def index_message(row, index):
+        def index_message(row):
             # convert row to an IndexedMessage
             if include_parents:
-                if include_bugmessage:
-                    message, parent, bugmessage = row
-                else:
-                    message, parent = row
+                message, parent, bugmessage = row
                 if parent is not None:
                     # If there is an IndexedMessage available as parent, use
                     # that to reduce on-demand parent lookups.
                     parent = message_by_id.get(parent.id, parent)
             else:
-                if include_bugmessage:
-                    message, bugmessage = row
-                else:
-                    message = row
+                message, bugmessage = row
                 parent = None # parent attribute is not going to be accessed.
+            index = bugmessage.index
             result = IndexedMessage(message, inside, index, parent)
-            # This message may be the parent for another: stash it to permit
-            # use.
-            message_by_id[message.id] = result
-            if include_bugmessage:
-                result = result, bugmessage
+            if include_parents:
+                # This message may be the parent for another: stash it to
+                # permit use.
+                message_by_id[message.id] = result
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
@@ -553,25 +522,21 @@ message as parent_message on (
     parent_message.id in (
         select bugmessage.message from bugmessage where bugmessage.bug=%s)),
 BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage
-            if include_bugmessage:
-                lookup = lookup + (BugMessage,)
+            lookup = Message, ParentMessage, BugMessage
             results = store.using(tables).find(
                 lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
         else:
-            lookup = Message
-            if include_bugmessage:
-                lookup = lookup, BugMessage
+            lookup = Message, BugMessage
             results = store.find(lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
-        results.order_by(Message.datecreated, Message.id)
+        results.order_by(BugMessage.index, Message.datecreated, Message.id)
         return DecoratedResultSet(results, index_message,
-            pre_iter_hook=eager_load, slice_info=True)
+            pre_iter_hook=eager_load)
 
     @property
     def displayname(self):
@@ -1127,7 +1092,6 @@ BugMessage""" % sqlvalues(self.id))
         if message not in self.messages:
             if user is None:
                 user = message.owner
-            self.reindexMessages()
             result = BugMessage(bug=self, message=message,
                 bugwatch=bugwatch, remote_comment_id=remote_comment_id,
                 index=self.bug_messages.count())
@@ -1407,39 +1371,55 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self._question_from_bug
 
-    def getMessageChunks(self):
+    def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        query = """
-            Message.id = MessageChunk.message AND
-            BugMessage.message = Message.id AND
-            BugMessage.bug = %s
-            """ % sqlvalues(self)
-
-        chunks = MessageChunk.select(query,
-            clauseTables=["BugMessage", "Message"],
-            # XXX: kiko 2006-09-16 bug=60745:
-            # There is an issue that presents itself
-            # here if we prejoin message.owner: because Message is
-            # already in the clauseTables, the SQL generated joins
-            # against message twice and that causes the results to
-            # break.
-            prejoinClauseTables=["Message"],
-            # Note the ordering by Message.id here; while datecreated in
-            # production is never the same, it can be in the test suite.
-            orderBy=["Message.datecreated", "Message.id",
-                     "MessageChunk.sequence"])
-        chunks = list(chunks)
-
-        # Since we can't prejoin, cache all people at once so we don't
-        # have to do it while rendering, which is a big deal for bugs
-        # with a million comments.
-        owner_ids = set()
-        for chunk in chunks:
-            if chunk.message.ownerID:
-                owner_ids.add(str(chunk.message.ownerID))
-        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
-
-        return chunks
+        # Note that this function and indexed_messages have significant overlap
+        # and could stand to be refactored.
+        slices = []
+        if slice_info is not None:
+            # NB: This isn't a full implementation of the slice protocol,
+            # merely the bits needed by BugTask:+index.
+            for slice in slice_info:
+                if not slice.start:
+                    assert slice.stop > 0, slice.stop
+                    slices.append(BugMessage.index < slice.stop)
+                elif not slice.stop:
+                    if slice.start < 0:
+                        # If the high index is N, a slice of -1: should
+                        # return index N - so we need to add one to the
+                        # range.
+                        slices.append(BugMessage.index >= SQL(
+                            "(select max(index) from "
+                            "bugmessage where bug=%s) + 1 - %s" % (
+                            sqlvalues(self.id, -slice.start))))
+                    else:
+                        slices.append(BugMessage.index >= slice.start)
+                else:
+                    slices.append(And(BugMessage.index >= slice.start,
+                        BugMessage.index < slice.stop))
+        if slices:
+            ranges = [Or(*slices)]
+        else:
+            ranges = []
+        # We expect:
+        # 1 bugmessage -> 1 message -> small N chunks. For now, using a wide
+        # query seems fine as we have to join out from bugmessage anyway.
+        result = Store.of(self).find((BugMessage, Message, MessageChunk),
+            Message.id==MessageChunk.messageID,
+            BugMessage.messageID==Message.id,
+            BugMessage.bug==self.id,
+            *ranges)
+        result.order_by(BugMessage.index, MessageChunk.sequence)
+        def eager_load_owners(rows):
+            owners = set()
+            for row in rows:
+                owners.add(row[1].ownerID)
+            owners.discard(None)
+            if not owners:
+                return
+            PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,

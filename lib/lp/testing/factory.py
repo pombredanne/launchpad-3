@@ -547,7 +547,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None):
+        displayname=None, time_zone=None, latitude=None, longitude=None,
+        selfgenerated_bugnotifications=False):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -564,6 +565,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param time_zone: This person's time zone, as a string.
         :param latitude: This person's latitude, as a float.
         :param longitude: This person's longitude, as a float.
+        :param selfgenerated_bugnotifications: Receive own bugmail.
         """
         if email is None:
             email = self.getUniqueEmailAddress()
@@ -593,6 +595,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # Make sure the non-security-proxied object is not returned.
         del naked_person
+
+        if selfgenerated_bugnotifications:
+            # Set it explicitely only when True because the default
+            # is False.
+            person.selfgenerated_bugnotifications = True
 
         # To make the person someone valid in Launchpad, validate the
         # email.
@@ -2643,8 +2650,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None):
+                       copy_pofiles=True, side=None, sourcepackage=None):
         """Make a new translation template."""
+        if sourcepackage is not None:
+            assert distroseries is None, (
+                'Cannot specify sourcepackage and distroseries')
+            distroseries = sourcepackage.distroseries
+            assert sourcepackagename is None, (
+                'Cannot specify sourcepackage and sourcepackagename')
+            sourcepackagename = sourcepackage.sourcepackagename
         if productseries is None and distroseries is None:
             if side != TranslationSide.UBUNTU:
                 # No context for this template; set up a productseries.
