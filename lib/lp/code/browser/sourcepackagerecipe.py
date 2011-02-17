@@ -14,6 +14,8 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+import itertools
+
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
     RecipeParseError,
@@ -89,10 +91,12 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
 
+RECIPE_BETA_FLAG = 'code.recipes.beta'
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
     'We would love for you to try them out, and if you have '
@@ -181,10 +185,9 @@ class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
         if recipe.build_daily and recipe.daily_build_archive is None:
             self.request.response.addWarningNotification(
@@ -475,9 +478,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
@@ -497,12 +499,28 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         """The branch on which the recipe is built."""
         return self.context
 
+    def _recipe_names(self):
+        """A generator of recipe names."""
+        branch_target_name = self.context.target.path.split('/')[-1]
+        yield "%s-daily" & branch_target_name
+        counter = itertools.count(1)
+        while True:
+            yield "%s-daily-%s" % (branch_target_name, counter.next())
+
+    def _find_unused_name(self, owner):
+        # Grab the last path element of the branch target path.
+        source = getUtility(ISourcePackageRecipeSource)
+        for recipe_name in self._recipe_names():
+             if not source.exists(owner, recipe_name):
+                 return recipe_name
+
     @property
     def initial_values(self):
         return {
+            'name' : self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'build_daily': False,
+            'build_daily': True,
             'use_ppa': EXISTING_PPA,
             }
 

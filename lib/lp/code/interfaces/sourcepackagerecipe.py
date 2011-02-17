@@ -180,7 +180,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             description=_("The name of this recipe.")))
 
     description = Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('A short description of the recipe.'))
 
     date_last_modified = Datetime(required=True, readonly=True)
