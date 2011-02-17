@@ -23,6 +23,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.services.features.changelog import ChangeLog
 
 
 class IFeatureControlForm(Interface):
@@ -68,7 +69,8 @@ class FeatureControlView(LaunchpadFormView):
         # (whitespace normalized) and ordered consistently so the diff is
         # minimal.
         new_rules = self.request.features.rule_source.getAllRulesAsText()
-        diff = '\n'.join(self.diff_rules(original_rules, new_rules))
+        diff = u'\n'.join(self.diff_rules(original_rules, new_rules))
+        ChangeLog.append(diff)
         self.diff = FormattersAPI(diff).format_diff()
 
     @staticmethod

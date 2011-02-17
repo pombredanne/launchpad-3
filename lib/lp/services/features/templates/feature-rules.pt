@@ -18,8 +18,12 @@
         </p>
         <tal:diff replace="structure view/diff"/>
       </div>
-      For more information about the available feature flags and scopes see
-      the <a href="+feature-info">feature flag info</a>.
+      <p>
+        For more information about the available feature flags and scopes see
+        <a class="sprite info" href="+feature-info">feature flag info</a>.
+        You can review the
+        <a class="sprite info" href="+feature-changelog">Changelog</a> to see
+        previous rule changes.
     </div>
   </div>
 </div>

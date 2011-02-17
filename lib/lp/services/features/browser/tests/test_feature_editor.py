@@ -15,6 +15,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.browser.edit import FeatureControlView
+from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.testing.matchers import Contains
 
@@ -110,6 +111,11 @@ class TestFeatureControlPage(BrowserTestCase):
             Equals([
                 ('beta_user', 'some_key', 10, 'some value with spaces'),
                 ]))
+        changes = list(ChangeLog.get())
+        self.assertEqual(1, len(changes))
+        self.assertEqual(
+            '+beta_user\tsome_key\t10\tsome value with spaces',
+            changes[0].diff)
 
     def test_change_message(self):
         """Submitting shows a message that the changes have been applied."""
