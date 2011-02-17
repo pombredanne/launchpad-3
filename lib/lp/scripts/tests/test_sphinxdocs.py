@@ -6,12 +6,11 @@
 __metaclass__ = type
 
 import os
-from StringIO import StringIO
 
-from fixtures import MonkeyPatch
 import sphinx
 
 from canonical.config import config
+from lp.services.utils import run_capturing_output
 from lp.testing import TestCase
 
 
@@ -20,15 +19,12 @@ class TestSphinxDocumentation(TestCase):
 
     def test_docs_build_without_error(self):
         # The Sphinx documentation must build without errors or warnings.
-        stdout = StringIO()
-        stderr = StringIO()
-        self.useFixture(MonkeyPatch('sys.stdout', stdout))
-        self.useFixture(MonkeyPatch('sys.stderr', stderr))
         output_dir = self.makeTemporaryDirectory()
         doc_dir = os.path.join(config.root, 'doc')
-        returncode = sphinx.main(
+        returncode, stdout, stderr = run_capturing_output(
+            sphinx.main,
             ['sphinx-build', '-d', '%s/doctrees' % output_dir,
              '-aNq', doc_dir, '%s/html' % output_dir])
         self.assertEqual(0, returncode)
-        self.assertEqual('Making output directory...\n', stderr.getvalue())
-        self.assertEqual('', stdout.getvalue())
+        self.assertEqual('Making output directory...\n', stderr)
+        self.assertEqual('', stdout)
