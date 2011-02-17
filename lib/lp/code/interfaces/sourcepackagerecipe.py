@@ -14,7 +14,8 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
-    'recipes_enabled',
+    'RECIPE_BETA_FLAG',
+    'RECIPE_ENABLED_FLAG',
     ]
 
 
@@ -53,7 +54,6 @@ from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
-from lp.services import features
 from lp.services.fields import (
     Description,
     PersonChoice,
@@ -61,6 +61,9 @@ from lp.services.fields import (
     )
 from lp.soyuz.interfaces.archive import IArchive
 
+
+RECIPE_ENABLED_FLAG = u'code.recipes_enabled'
+RECIPE_BETA_FLAG = u'code.recipes.beta'
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
     # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
@@ -212,13 +215,3 @@ class ISourcePackageRecipeSource(Interface):
 
     def exists(owner, name):
         """Check to see if a recipe by the same name and owner exists."""
-
-
-def recipes_enabled():
-    """Return True if recipes are enabled."""
-    # Features win:
-    if features.getFeatureFlag(u'code.recipes_enabled'):
-        return True
-    if not config.build_from_branch.enabled:
-        return False
-    return True

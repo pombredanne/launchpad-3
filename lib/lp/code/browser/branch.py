@@ -143,13 +143,14 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
+from lp.code.interfaces.sourcepackagerecipe import RECIPE_ENABLED_FLAG
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
@@ -385,10 +386,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        if not self.context.private and recipes_enabled():
-            enabled = True
-        else:
-            enabled = False
+        # You can't create a recipe for a private branch.
+        enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
