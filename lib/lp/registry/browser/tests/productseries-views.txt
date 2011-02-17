@@ -405,7 +405,7 @@ The delete action will not delete a series that is linked to a package.
     >>> sourcepackagename = factory.makeSourcePackageName('sausage')
     >>> distro_series = factory.makeDistroRelease()
     >>> linked_series = factory.makeProductSeries(product=product)
-    >>> getUtility(IPackagingUtil).createPackaging(
+    >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     linked_series, sourcepackagename, distro_series,
     ...     PackagingType.PRIME, owner=owner)
     >>> linked_view = create_initialized_view(linked_series, '+delete')
@@ -501,7 +501,7 @@ A series cannot be deleted if it is has translation templates.
 The view reports all the reason why a series cannot be deleted.
 
     >>> sourcepackagename = factory.makeSourcePackageName('tomato')
-    >>> getUtility(IPackagingUtil).createPackaging(
+    >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     active_series, sourcepackagename, distro_series,
     ...     PackagingType.PRIME, owner=owner)
     >>> po_template = factory.makePOTemplate(

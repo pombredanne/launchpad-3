@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,6 +7,7 @@ import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
+    Equals,
     LessThan,
     )
 from zope.component import getUtility
@@ -27,14 +28,16 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+
 from lp.app.errors import NotFoundError
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView,
-    )
+    TeamInvitationView)
+
+
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     PersonVisibility,
@@ -44,6 +47,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.soyuz.enums import (

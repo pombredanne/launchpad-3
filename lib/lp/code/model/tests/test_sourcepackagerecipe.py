@@ -645,6 +645,17 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 'Recipe may not refer to private branch: %s' %
                 referenced_branch.bzr_identity, str(e))
 
+    def test_getBuilds_ignores_disabled_archive(self):
+        # Builds into a disabled archive aren't returned.
+        archive = self.factory.makeArchive()
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=archive)
+        with person_logged_in(archive.owner):
+            archive.disable()
+        self.assertEqual([], list(recipe.getBuilds()))
+        self.assertEqual([], list(recipe.getPendingBuilds()))
+
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
