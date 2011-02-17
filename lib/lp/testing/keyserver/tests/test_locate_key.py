@@ -1,13 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the GNU
+# Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
 import os.path
 
+from lp.testing import TestCase
 from lp.testing.keyserver.zeca import locate_key
 
 
-class LocateKeyTestCase(unittest.TestCase):
+class LocateKeyTestCase(TestCase):
     root = os.path.join(os.path.dirname(__file__), 'keys')
 
     def assertKeyFile(self, suffix, filename):
@@ -34,10 +34,4 @@ class LocateKeyTestCase(unittest.TestCase):
 
     def test_locate_key_no_match(self):
         self.assertKeyFile('0xDEADBEEF.get', None)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LocateKeyTestCase))
-    return suite
 
