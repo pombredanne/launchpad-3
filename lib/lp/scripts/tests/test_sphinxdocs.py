@@ -19,6 +19,11 @@ class TestSphinxDocumentation(TestCase):
 
     def test_docs_build_without_error(self):
         # The Sphinx documentation must build without errors or warnings.
+        #
+        # Note that the documents are built on devpad.canonical.com in a
+        # cronscript that runs 'make -C doc html' in the Launchpad tree.  This
+        # test assumes that make command devolves into 'sphinx-build ...',
+        # because running make commands from tests seems distasteful.
         output_dir = self.makeTemporaryDirectory()
         doc_dir = os.path.join(config.root, 'doc')
         returncode, stdout, stderr = run_capturing_output(
