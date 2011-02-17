@@ -5,15 +5,18 @@
 
 This file is based on work from the Python Cookbook and is under the Python
 license.
-
 """
-__all__ = ['base']
+
+__all__ = [
+    'base',
+    ]
 
 import string
-abc = string.digits + string.ascii_letters
+
+ABC = string.digits + string.ascii_letters
 
 def base(number, radix):
-    """Inverse function to int(str,radix) and long(str,radix)
+    """Inverse function to int(str, radix) and long(str, radix)
 
     >>> base(35, 36)
     'z'
@@ -65,17 +68,10 @@ def base(number, radix):
     elif number == 0:
         addon('0')
 
-    _divmod, _abc = divmod, abc
+    _divmod, _abc = divmod, ABC
     while number:
         number, rdigit = _divmod(number, radix)
         addon(_abc[rdigit])
 
     result.reverse()
     return ''.join(result)
-
-def _test():
-    import doctest, base
-    doctest.testmod(base)
-
-if __name__ == '__main__':
-    _test()
