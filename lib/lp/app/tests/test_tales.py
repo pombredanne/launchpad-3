@@ -240,7 +240,7 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         self.assertEqual('None', traverse('link', []))
 
     def test_shorten_traversal(self):
-        # Traversal of 'link' works as expected.
+        # Traversal of 'shorten' works as expected.
         adapter = getAdapter(None, IPathAdapter, 'fmt')
         traverse = getattr(adapter, 'traverse', None)
         # We expect that the last item in extra will be popped off.
