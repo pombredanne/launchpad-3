@@ -3,4 +3,4 @@
 
 # pylint: disable-msg=W0401,W0403
 
-from zeca import *
+from lp.services.keyserver.zeca import *

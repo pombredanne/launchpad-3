@@ -23,11 +23,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import (
-    Config,
-    getPubConfig,
-    )
+from lp.services.keyserver.ftests.harness import ZecaTestSetup
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -1044,7 +1041,6 @@ class TestPublisher(TestPublisherBase):
         ppa.buildd_secret = "geheim"
 
         # Setup the publisher for it and publish its repository.
-        archive_publisher = getPublisher(ppa, [], self.logger)
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))

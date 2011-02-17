@@ -2,7 +2,7 @@ This test verifies that we correctly handle keys which are in some way
 special: either invalid, broken, revoked, expired, or already imported.
 
   >>> import email
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
   >>> from lp.services.mail import stub
 
   >>> z = ZecaTestSetup()

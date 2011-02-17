@@ -9,5 +9,6 @@ from canonical.launchpad.testing.systemdocs import default_optionflags
 
 def test_suite():
     return doctest.DocTestSuite(
-        'canonical.zeca.ftests.harness', optionflags=default_optionflags)
+        'lp.services.keyserver.ftests.harness',
+        optionflags=default_optionflags)
 

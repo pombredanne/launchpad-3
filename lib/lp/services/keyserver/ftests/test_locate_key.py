@@ -4,7 +4,7 @@
 import unittest
 import os.path
 
-from canonical.zeca.zeca import locate_key
+from lp.services.keyserver.zeca import locate_key
 
 
 class LocateKeyTestCase(unittest.TestCase):

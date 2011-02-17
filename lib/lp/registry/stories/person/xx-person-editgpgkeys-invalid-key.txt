@@ -6,7 +6,7 @@ Imports and setup of stub keyserver:
   >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
   >>> from lp.registry.interfaces.person import IPersonSet
 
   >>> tokenset = getUtility(ILoginTokenSet)

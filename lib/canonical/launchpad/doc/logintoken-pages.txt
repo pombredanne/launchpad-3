@@ -40,7 +40,7 @@ perform the last step of the workflow for adding a GPG key.
     ...     fingerprint='A419AE861E88BC9E04B9C26FBA2B9389DFD20543')
 
     # Start our stub GPG keyserver so that the key can be fetched by the page.
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
     >>> z = ZecaTestSetup()
     >>> z.setUp()
 

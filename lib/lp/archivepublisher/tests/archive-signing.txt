@@ -21,7 +21,7 @@ export of the public GPG key (name 'key.gpg')
 
 We will setup and use the test-keyserver (zeca).
 
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
     >>> z = ZecaTestSetup()
     >>> z.setUp()
 
