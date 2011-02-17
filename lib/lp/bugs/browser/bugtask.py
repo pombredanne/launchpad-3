@@ -3858,7 +3858,7 @@ class BugActivityItem:
             'new_value': self.newvalue,
             }
         attribute = self.attribute
-        if attribute == 'summary':
+        if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
