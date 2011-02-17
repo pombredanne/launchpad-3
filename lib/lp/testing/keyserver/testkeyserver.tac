@@ -20,7 +20,7 @@ from lp.testing.keyserver.zeca import (
 # Needed for using IGPGHandler for processing key submit.
 execute_zcml_for_scripts()
 
-root = config.zeca.root
+root = config.testkeyserver.root
 
 application = service.Application('Zeca')
 zecaService = service.IServiceCollection(application)

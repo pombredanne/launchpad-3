@@ -12,7 +12,7 @@ It implements the operations:
  - 'add': adds a key to the collection (does not update the index)
 
 It only depends on GPG for key submission; for retrieval and searching
-it just looks for files in the root (eg. /var/tmp/zeca). The files
+it just looks for files in the root (eg. /var/tmp/testkeyserver). The files
 are named like this:
 
 0x<keyid|fingerprint>.<operation>
