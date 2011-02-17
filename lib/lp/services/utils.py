@@ -10,6 +10,7 @@ stuff.
 __metaclass__ = type
 __all__ = [
     'AutoDecorate',
+    'base',
     'CachingIterator',
     'decorate_with',
     'docstring_dedent',
@@ -21,6 +22,7 @@ __all__ = [
     ]
 
 from itertools import tee
+import string
 import sys
 from textwrap import dedent
 from types import FunctionType
@@ -51,6 +53,44 @@ def AutoDecorate(*decorators):
             return type.__new__(cls, class_name, bases, new_class_dict)
 
     return AutoDecorateMetaClass
+
+
+def base(number, radix):
+    """Convert 'number' to an arbitrary base numbering scheme, 'radix'.
+
+    This function is based on work from the Python Cookbook and is under the
+    Python license.
+
+    Inverse function to int(str, radix) and long(str, radix)
+    """
+    if not 2 <= radix <= 62:
+        raise ValueError("radix must be between 2 and 62")
+
+    result = []
+    addon = result.append
+    if number < 0:
+        number = -number
+        addon('-')
+    elif number == 0:
+        addon('0')
+
+    ABC = string.digits + string.ascii_letters
+    while number:
+        number, rdigit = divmod(number, radix)
+        addon(ABC[rdigit])
+
+    result.reverse()
+    return ''.join(result)
+
+
+def compress_hash(hash_obj):
+    """Compress a hash_obj using `base`.
+
+    Given an ``md5`` or ``sha1`` hash object, compress it down to either 22 or
+    27 characters in a way that's safe to be used in URLs. Takes the hex of
+    the hash and converts it to base 62.
+    """
+    return base(int(hash_obj.hexdigest(), 16), 62)
 
 
 def iter_split(string, splitter):

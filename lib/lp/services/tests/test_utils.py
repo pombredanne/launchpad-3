@@ -6,11 +6,14 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
+import hashlib
 import itertools
 import unittest
 
 from lp.services.utils import (
     AutoDecorate,
+    base,
+    compress_hash,
     CachingIterator,
     decorate_with,
     docstring_dedent,
@@ -58,6 +61,42 @@ class TestAutoDecorate(TestCase):
         self.log = []
         obj.method_b()
         self.assertEqual([2, 1, 'b'], self.log)
+
+
+class TestBase(TestCase):
+
+    def test_simple_base(self):
+        # 35 in base 36 is lowercase 'z'
+        self.assertEqual('z', base(35, 36))
+
+    def test_extended_base(self):
+        # There is no standard representation for numbers in bases above 36
+        # (all the digits, all the letters of the English alphabet). However,
+        # we can represent bases up to 62 by using upper case letters on top
+        # of lower case letters. This is useful as a cheap compression
+        # algorithm.
+        self.assertEqual('A', base(36, 62))
+        self.assertEqual('B', base(37, 62))
+        self.assertEqual('Z', base(61, 62))
+
+    def test_base_matches_builtin_hex(self):
+        # We get identical results to the hex builtin, without the 0x prefix
+        numbers = list(range(5000))
+        using_hex = [hex(i)[2:] for i in numbers]
+        using_base = [base(i, 16) for i in numbers]
+        self.assertEqual(using_hex, using_base)
+
+    def test_compress_md5_hash(self):
+        # compress_hash compresses MD5 hashes down to 22 URL-safe characters.
+        compressed = compress_hash(hashlib.md5('foo'))
+        self.assertEqual('5fX649Stem9fET0lD46zVe', compressed)
+        self.assertEqual(22, len(compressed))
+
+    def test_compress_sha1_hash(self):
+        # compress_hash compresses SHA1 hashes down to 27 URL-safe characters.
+        compressed = compress_hash(hashlib.sha1('foo'))
+        self.assertEqual('1HyPQr2xj1nmnkQXBCJXUdQoy5l', compressed)
+        self.assertEqual(27, len(compressed))
 
 
 class TestIterateSplit(TestCase):

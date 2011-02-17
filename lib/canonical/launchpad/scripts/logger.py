@@ -50,7 +50,6 @@ from pytz import utc
 from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
-from canonical.base import base
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
@@ -61,6 +60,7 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.services.log import loglevels
+from lp.services.utils import base
 
 # Reexport our custom loglevels for old callsites. These callsites
 # should be importing the symbols from lp.services.log.loglevels

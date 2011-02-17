@@ -2,8 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
-import canonical.base
+from lp.services.utils import base
 
 def test_suite():
-    suite = DocTestSuite(canonical.base)
+    suite = DocTestSuite(base.__doc__)
     return suite

@@ -20,16 +20,15 @@ import subprocess
 import tarfile
 import warnings
 
-import gettextpo
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
-import canonical
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
+from lp.services.utils import base
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -443,8 +442,7 @@ def get_filename_from_message_id(message_id):
     It generates a file name that's not easily guessable.
     """
     return '%s.msg' % (
-            canonical.base.base(
-                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
+        base(long(hashlib.sha1(message_id).hexdigest(), 16), 62))
 
 
 def intOrZero(value):
@@ -499,7 +497,7 @@ def get_email_template(filename, app=None):
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
     if app is None:
-        base = os.path.dirname(canonical.launchpad.__file__)
+        base = os.path.dirname(__file__)
         fullpath = os.path.join(base, 'emailtemplates', filename)
     else:
         import lp
