@@ -8,6 +8,7 @@ CREATE UNIQUE INDEX bug__name__key ON Bug (name) WHERE name IS NOT NULL;
 ALTER TABLE BranchRevision SET (fillfactor=100);
 ALTER TABLE MessageChunk SET (fillfactor=100);
 ALTER TABLE Message SET (fillfactor=100);
+ALTER TABLE BugActivity SET (fillfactor=100);
 
 -- Unwanted indexes
 DROP INDEX archive__commercial__idx;
