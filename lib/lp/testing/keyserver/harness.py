@@ -123,10 +123,8 @@ class ZecaTestSetup(TacTestSetup):
 
     @property
     def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/zeca.tac'
-            ))
+        return os.path.abspath(
+            os.path.join(os.path.dirname(__file__), 'testkeyserver.tac'))
 
     @property
     def pidfile(self):

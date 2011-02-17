@@ -1,12 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# XXX: twistd2.3, really?
-
-# XXX: Where and how is this used on production?
-
 # Twisted Application Configuration file.
-# Use with "twistd2.3 -y <file.tac>", e.g. "twistd -noy server.tac"
+# Use with "twistd -y <file.tac>", e.g. "twistd -noy server.tac"
 
 from twisted.application import service, strports
 from twisted.web import server
@@ -14,7 +10,7 @@ from twisted.web import server
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.testing.keyserver import (
+from lp.testing.keyserver.zeca import (
     KeyServer,
     LookUp,
     SubmitKey,
