@@ -501,8 +501,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def _recipe_names(self):
         """A generator of recipe names."""
-        branch_target_name = self.context.target.path.split('/')[-1]
-        yield "%s-daily" & branch_target_name
+        branch_target_name = self.context.target.name.split('/')[-1]
+        yield "%s-daily" % branch_target_name
         counter = itertools.count(1)
         while True:
             yield "%s-daily-%s" % (branch_target_name, counter.next())
@@ -520,7 +520,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             'name' : self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'build_daily': True,
+            'build_daily': False,
             'use_ppa': EXISTING_PPA,
             }
 
