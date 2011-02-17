@@ -7,12 +7,15 @@
 
 import os
 
-from twisted.application import service
+from twisted.application import service, strports
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
+from twisted.cred import checkers
+from twisted.cred.credentials import IAnonymous
 from twisted.cred.portal import IRealm, Portal
+from twisted.protocols import ftp
 from twisted.protocols.policies import TimeoutFactory
-from twisted.python import components
+from twisted.python import components, filepath
 from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
@@ -63,6 +66,25 @@ class Realm:
         return deferred.addCallback(got_user_dict)
 
 
+class FTPRealm:
+    """FTP Realm that lets anyone in."""
+    implements(IRealm)
+
+    def __init__(self, root):
+        self.root = root
+
+    def requestAvatar(self, avatarId, mind, *interfaces):
+        for iface in interfaces:
+            if iface is ftp.IFTPShell:
+                # If you wanted to check credentials here you could, but
+                # we don't care about that in poppy.
+                avatar = ftp.FTPShell(filepath.FilePath(self.root))
+                return ftp.IFTPShell, avatar, getattr(
+                    avatar, 'logout', lambda: None)
+        raise NotImplementedError(
+            "Only IFTPShell interface is supported by this realm")
+
+
 def get_poppy_root():
     """Return the poppy root to use for this server.
 
@@ -85,8 +107,34 @@ components.registerAdapter(
 components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
 
 
+class FTPServiceFactory(service.Service):
+    def __init__(self, port):
+        factory = ftp.FTPFactory()
+        realm = FTPRealm(get_poppy_root())
+        portal = Portal(realm)
+        portal.registerChecker(
+            checkers.AllowAnonymousAccess(), IAnonymous)
+
+        factory.tld = get_poppy_root()
+        # XXX factory.userAnonymous = config.get('userAnonymous', 'anon')
+        factory.portal = portal
+        factory.protocol = ftp.FTP
+        self.ftpfactory = factory
+        self.portno = port
+
+    @staticmethod
+    def makeFTPService(port=2121):
+        strport = "tcp:%s" % port
+        factory = FTPServiceFactory(port)
+        return strports.service(strport, factory.factory)
+        #return reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+
+ftpservice = FTPServiceFactory.makeFTPService()
+
 # Construct an Application that has the Poppy SSH server.
 application = service.Application('poppy-sftp')
+
+ftpservice.setServiceParent(application)
 
 def timeout_decorator(factory):
     """Add idle timeouts to a factory."""
