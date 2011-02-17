@@ -1282,8 +1282,8 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         # Start the test keyserver, so the signing_key can be uploaded.
-        z = KeyServerTac()
-        z.setUp()
+        tac = KeyServerTac()
+        tac.setUp()
 
         # Set a signing key for Celso's PPA.
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
@@ -1305,4 +1305,4 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
             signature.fingerprint, cprov.archive.signing_key.fingerprint)
 
         # All done, turn test-keyserver off.
-        z.tearDown()
+        tac.tearDown()

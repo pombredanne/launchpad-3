@@ -291,8 +291,8 @@ key to the configuration keyserver.
 We will set up and use the test-keyserver.
 
     >>> from lp.testing.keyserver import KeyServerTac
-    >>> z = KeyServerTac()
-    >>> z.setUp()
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 Upload the just-generated key to the keyserver so that we can reset
 the local keyring.
@@ -323,13 +323,10 @@ keyserver side.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
 
-Let's shut the test keyserver down.
-
-    >>> z.tearDown()
-
 An attempt to upload a key when the keyserver is unreachable results
 in a error.
 
+    >>> tac.tearDown()
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
     Traceback (most recent call last):
     ...

@@ -41,8 +41,8 @@ perform the last step of the workflow for adding a GPG key.
 
     # Start our stub GPG keyserver so that the key can be fetched by the page.
     >>> from lp.testing.keyserver import KeyServerTac
-    >>> z = KeyServerTac()
-    >>> z.setUp()
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
@@ -58,6 +58,4 @@ perform the last step of the workflow for adding a GPG key.
     ...     notification.message
     ...     for notification in validategpg_view.request.notifications)
     The key 1024D/DFD20543 was successfully validated...
-
-    # Tear down the stub keyserver.
-    >>> z.tearDown()
+    >>> tac.tearDown()

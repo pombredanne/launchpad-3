@@ -9,8 +9,8 @@
 
 Set up the stub KeyServer:
 
-    >>> z = KeyServerTac()
-    >>> z.setUp()
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 
 == Claim an encrypting GPG key ==
@@ -358,6 +358,4 @@ used in any more tests.)
 
 == Teardown ==
 
-Kill stub KeyServer:
-
-    >>> z.tearDown()
+    >>> tac.tearDown()

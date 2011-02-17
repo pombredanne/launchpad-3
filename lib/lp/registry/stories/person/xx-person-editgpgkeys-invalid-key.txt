@@ -10,8 +10,8 @@ Imports and setup of stub keyserver:
   >>> from lp.registry.interfaces.person import IPersonSet
 
   >>> tokenset = getUtility(ILoginTokenSet)
-  >>> z = KeyServerTac()
-  >>> z.setUp()
+  >>> tac = KeyServerTac()
+  >>> tac.setUp()
 
 The following keys are used in these tests:
 
@@ -116,7 +116,5 @@ key.
   >>> logout()
 
 
-Kill stub KeyServer
-  
-  >>> z.tearDown()
+  >>> tac.tearDown()
 

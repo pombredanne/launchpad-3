@@ -22,8 +22,8 @@ export of the public GPG key (name 'key.gpg')
 We will set up and use the test-keyserver.
 
     >>> from lp.testing.keyserver import KeyServerTac
-    >>> z = KeyServerTac()
-    >>> z.setUp()
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 
 Querying 'pending signing key' PPAs
@@ -427,12 +427,9 @@ have a 'signing_key' set,  it raises an error.
     AssertionError: No signing key available for PPA for Celso Providelo
 
 We'll purge 'signing_keys_root' and the PPA repository root so that
-other tests don't choke on it.
+other tests don't choke on it, and shut down the server.
 
     >>> import shutil
     >>> shutil.rmtree(config.personalpackagearchive.signing_keys_root)
     >>> shutil.rmtree(config.personalpackagearchive.root)
-
-Let's shut the test key server down.
-
-    >>> z.tearDown()
+    >>> tac.tearDown()
