@@ -12,6 +12,7 @@ __all__ = [
     'AutoDecorate',
     'base',
     'CachingIterator',
+    'compress_hash',
     'decorate_with',
     'docstring_dedent',
     'iter_split',
