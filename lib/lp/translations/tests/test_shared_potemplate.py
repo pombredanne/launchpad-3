@@ -662,7 +662,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             distroseries=self.hoary)
         self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
         hoary_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.hoary_template, sequence=1)
+            potemplate=self.hoary_template)
 
         trunk_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
                 singular_text=hoary_potmsgset.singular_text,
@@ -676,7 +676,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
                 self.packagename, self.hoary)
         sourcepackage.setPackaging(self.trunk, self.owner)
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.trunk_template, sequence=1)
+            potemplate=self.trunk_template)
 
         hoary_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
                 singular_text=trunk_potmsgset.singular_text,

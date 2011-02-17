@@ -28,8 +28,7 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             distroseries=new_series,
             sourcepackagename=sourcepackagename)
         self.pofile = self.factory.makePOFile('sr', potemplate=potemplate)
-        self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=potemplate, sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate)
 
         # A POFile in a different context from self.pofile.
         self.other_pofile = self.factory.makePOFile(
