@@ -1292,7 +1292,7 @@ class BugTaskSearchParams:
         elif IProductSeries.providedBy(instance):
             self.setProductSeries(target)
         else:
-            assert "unknown target type %r" % target
+            raise AssertionError("unknown target type %r" % target)
 
     @classmethod
     def _anyfy(cls, value):

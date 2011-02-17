@@ -1188,7 +1188,7 @@ class BugTargetBugListingView:
         """
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
-        series = any(self.series_list)
+        series = any(*self.series_list)
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(series)
         # This would be better as delegation not a case statement.
