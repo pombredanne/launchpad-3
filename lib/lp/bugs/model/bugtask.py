@@ -37,6 +37,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    Count,
     Desc,
     In,
     Join,
@@ -2485,6 +2486,18 @@ class BugTaskSet:
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
+
+    def countBugs(self, params, group_on):
+        """See `IBugTaskSet`."""
+        resultset = self._search(
+            group_on + (Count(BugTask.bugID),), [], None, params).result_set
+        # We group on the related field:
+        resultset.group_by(*group_on)
+        resultset.order_by()
+        result = {}
+        for row in resultset:
+            result[row[:-1]] = row[-1]
+        return result
 
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""

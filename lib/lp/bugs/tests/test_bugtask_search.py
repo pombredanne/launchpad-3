@@ -72,7 +72,15 @@ class SearchTestBase:
     def test_aggregate_by_target(self):
         # BugTaskSet.search supports returning the counts for each target (as
         # long only one type of target was selected).
+        if self.group_on is None:
+            # Not a useful/valid permutation.
+            return
         params = self.getBugTaskSearchParams(user=None, multitarget=True)
+        # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        expected = {(self.targetToGroup(self.searchtarget),): 3,
+            (self.targetToGroup(self.searchtarget2),): 6}
+        self.assertEqual(expected, self.bugtask_set.countBugs(params,
+            group_on=self.group_on))
 
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
@@ -568,7 +576,12 @@ class BugTargetTestBase:
     :ivar searchtarget2: A sibling bug context for testing cross-context
         searches. Created on demand when
         getBugTaskSearchParams(multitarget=True) is called.
-    :ivar bugtasks2: Bugtasks created for searchtarget2.
+    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are made
+        as for searchtarget.
+    :ivar group_on: The columns to group on when calling countBugs. None
+        if the target being testing is not sensible/implemented for counting
+        bugs. For instance, grouping by project group may be interesting but
+        at the time of writing is not implemented.
     """
 
     def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
@@ -616,6 +629,10 @@ class BugTargetTestBase:
         self.setBugParamsTarget(params, target)
         return params
 
+    def targetToGroup(self, target):
+        """Convert a search target to a group_on result."""
+        return target.id
+
 
 class BugTargetWithBugSuperVisor:
     """A base class for bug targets which have a bug supervisor."""
@@ -646,6 +663,7 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(ProductTarget, self).setUp()
+        self.group_on = (BugTask.productID,)
         self.searchtarget = self.factory.makeProduct()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -653,6 +671,8 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
     def setUpTarget2(self):
         self.searchtarget2 = self.factory.makeProduct()
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
@@ -674,6 +694,7 @@ class ProductSeriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(ProductSeriesTarget, self).setUp()
+        self.group_on = (BugTask.productseriesID,)
         self.searchtarget = self.factory.makeProductSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -682,6 +703,8 @@ class ProductSeriesTarget(BugTargetTestBase):
         self.searchtarget2 = self.factory.makeProductSeries(
             product=self.searchtarget.product)
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
@@ -719,6 +742,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
     def setUp(self):
         super(ProjectGroupTarget, self).setUp()
+        self.group_on = None
         self.searchtarget = self.factory.makeProject()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -726,6 +750,8 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
     def setUpTarget2(self):
         self.searchtarget2 = self.factory.makeProject()
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
@@ -825,6 +851,7 @@ class MilestoneTarget(BugTargetTestBase):
     def setUp(self):
         super(MilestoneTarget, self).setUp()
         self.product = self.factory.makeProduct()
+        self.group_on = (BugTask.milestoneID,)
         self.searchtarget = self.factory.makeMilestone(product=self.product)
         self.owner = self.product.owner
         self.makeBugTasks(bugtarget=self.product)
@@ -832,6 +859,9 @@ class MilestoneTarget(BugTargetTestBase):
     def setUpTarget2(self):
         self.searchtarget2 = self.factory.makeMilestone(product=self.product)
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.product,
+            bugtasks=self.bugtasks2, owner=self.product.owner,
+            searchtarget=self.searchtarget2)
         self.makeBugTasks(bugtarget=self.product,
             bugtasks=self.bugtasks2, owner=self.product.owner,
             searchtarget=self.searchtarget2)
@@ -867,6 +897,7 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(DistributionTarget, self).setUp()
+        self.group_on = (BugTask.distributionID,)
         self.searchtarget = self.factory.makeDistribution()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -874,6 +905,8 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
     def setUpTarget2(self):
         self.searchtarget2 = self.factory.makeDistribution()
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
@@ -902,6 +935,7 @@ class DistroseriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(DistroseriesTarget, self).setUp()
+        self.group_on = (BugTask.distroseriesID,)
         self.searchtarget = self.factory.makeDistroSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -910,6 +944,8 @@ class DistroseriesTarget(BugTargetTestBase):
         self.searchtarget2 = self.factory.makeDistroSeries(
             distribution=self.searchtarget.distribution)
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
@@ -922,6 +958,7 @@ class SourcePackageTarget(BugTargetTestBase):
 
     def setUp(self):
         super(SourcePackageTarget, self).setUp()
+        self.group_on = (BugTask.sourcepackagenameID,)
         self.searchtarget = self.factory.makeSourcePackage()
         self.owner = self.searchtarget.distroseries.owner
         self.makeBugTasks()
@@ -930,6 +967,9 @@ class SourcePackageTarget(BugTargetTestBase):
         self.searchtarget2 = self.factory.makeSourcePackage(
             distroseries=self.searchtarget.distroseries)
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distroseries.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2,
             owner=self.searchtarget2.distroseries.owner)
@@ -945,6 +985,9 @@ class SourcePackageTarget(BugTargetTestBase):
             self.searchtarget.distroseries.addSubscription(
                 subscriber, subscribed_by=subscriber)
 
+    def targetToGroup(self, target):
+        return target.sourcepackagename.id
+
 
 class DistributionSourcePackageTarget(BugTargetTestBase,
                                       BugTargetWithBugSuperVisor):
@@ -952,6 +995,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
 
     def setUp(self):
         super(DistributionSourcePackageTarget, self).setUp()
+        self.group_on = (BugTask.sourcepackagenameID,)
         self.searchtarget = self.factory.makeDistributionSourcePackage()
         self.owner = self.searchtarget.distribution.owner
         self.makeBugTasks()
@@ -960,6 +1004,9 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
         self.searchtarget2 = self.factory.makeDistributionSourcePackage(
             distribution=self.searchtarget.distribution)
         self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distribution.owner)
         self.makeBugTasks(bugtarget=self.searchtarget2,
             bugtasks=self.bugtasks2,
             owner=self.searchtarget2.distribution.owner)
@@ -972,6 +1019,9 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
         with person_logged_in(self.owner):
             self.searchtarget.distribution.setBugSupervisor(
                 supervisor, self.owner)
+
+    def targetToGroup(self, target):
+        return target.sourcepackagename.id
 
 
 bug_targets_mixins = (
