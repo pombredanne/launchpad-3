@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE BugNotification
     ADD COLUMN activity INTEGER REFERENCES BugActivity;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 46, 0);
