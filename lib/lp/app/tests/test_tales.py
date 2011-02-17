@@ -9,9 +9,16 @@ from doctest import DocTestSuite
 from lxml import html
 
 from zope.component import getAdapter
-from zope.traversing.interfaces import IPathAdapter
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    TraversalError,
+    )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.app.browser.tales import format_link
 from lp.testing import test_tales, TestCase, TestCaseWithFactory
 
 
@@ -175,6 +182,71 @@ class TestFormattersAPI(TestCase):
         tree = html.fromstring(linkified_text)
         for link in tree.xpath('//a'):
             self.assertEqual('_new', link.get('target'))
+
+
+class TestNoneFormatterAPI(TestCaseWithFactory):
+    """Tests for NoneFormatterAPI"""
+
+    layer = FunctionalLayer
+
+    def test_format_link_none(self):
+        # Test that format_link() handles None correctly.
+        self.assertEqual(format_link(None), 'None')
+        self.assertEqual(format_link(None, empty_value=''), '')
+
+    def test_linkification_with_none(self):
+        # The linkification of None works as expected.
+        linkified_text = test_tales('foo/fmt:link', foo=None)
+        self.assertEqual("None", linkified_text)
+
+    def test_valid_traversal(self):
+        # Traversal of allowed names works as expected.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+
+        allowed_names = set([
+            'approximatedate',
+            'approximateduration',
+            'break-long-words',
+            'date',
+            'datetime',
+            'displaydate',
+            'isodate',
+            'email-to-html',
+            'exactduration',
+            'lower',
+            'nice_pre',
+            'nl_to_br',
+            'pagetitle',
+            'rfc822utcdatetime',
+            'text-to-html',
+            'time',
+            'url',
+            ])
+
+        for name in allowed_names:
+            self.assertEqual('', traverse(name, []))
+
+    def test_invalid_traversal(self):
+        # Traversal of invalid names raises an exception.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+        self.failUnlessRaises(TraversalError, traverse, "foo", [])
+
+    def test_link(self):
+        # Traversal of 'link' works as expected.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+        self.assertEqual('None', traverse('link', []))
+
+    def test_shorten_traversal(self):
+        # Traversal of 'link' works as expected.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+        # We expect that the last item in extra will be popped off.
+        extra = ['1', '2']
+        self.assertEqual('', traverse('shorten', extra))
+        self.assertEqual(['1'], extra)
 
 
 def test_suite():

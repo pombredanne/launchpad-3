@@ -20,11 +20,6 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_none(self):
-        # Test the XHTML representation of None
-        self.assertEqual(format_link(None), 'None')
-        self.assertEqual(format_link(None, empty_value=''), '')
-
     def test_person(self):
         # Test the XHTML representation of a person.
         eric = self.factory.makePerson()
