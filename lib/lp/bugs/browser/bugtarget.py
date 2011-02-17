@@ -125,6 +125,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -1174,7 +1175,7 @@ class BugTargetBugListingView:
             series = self.context.product.series
         else:
             raise AssertionError("series_list called with illegal context")
-        return series
+        return list(series)
 
     @property
     def series_buglistings(self):
@@ -1186,8 +1187,24 @@ class BugTargetBugListingView:
         able to see in a listing.
         """
         series_buglistings = []
+        bug_task_set = getUtility(IBugTaskSet)
+        series = any(self.series_list)
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(series)
+        # This would be better as delegation not a case statement.
+        if IDistribution(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProduct(self.context, None):
+            backlink = BugTask.productseriesID
+        elif IDistroSeries(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProductSeries(self.context, None):
+            backlink = BugTask.productseriesID
+        else:
+            raise AssertionError("illegal context %r" % self.context)
+        counts = bug_task_set.countBugs(open_bugs, (backlink,))
         for series in self.series_list:
-            series_bug_count = series.open_bugtasks.count()
+            series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
                 series_buglistings.append(
                     dict(
@@ -1195,7 +1212,6 @@ class BugTargetBugListingView:
                         url=canonical_url(series) + "/+bugs",
                         count=series_bug_count,
                         ))
-
         return series_buglistings
 
     @property

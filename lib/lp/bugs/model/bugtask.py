@@ -1746,7 +1746,11 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert isinstance(params, BugTaskSearchParams)
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]

@@ -1267,6 +1267,33 @@ class BugTaskSearchParams:
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
 
+    def setTarget(self, target):
+        """Constrain the search to only return items in target.
+
+        This is equivalent to calling setProduct etc but the type of target
+        does not need to be known to the caller.
+
+        :param target: A `IHasBug`, or some search term like all/any/none on
+            `IHasBug`. If using all/any all the targets must be of the same
+            type due to implementation limitations. Currently only distroseries
+            and productseries `IHasBug` implementations are supported.
+        """
+        # Yay circular deps.
+        from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.productseries import IProductSeries
+        if isinstance(target, (any, all)):
+            assert len(target.query_values), \
+                'cannot determine target with no targets'
+            instance = target.query_values[0]
+        else:
+            instance = target
+        if IDistroSeries.providedBy(instance):
+            self.setDistroSeries(target)
+        elif IProductSeries.providedBy(instance):
+            self.setProductSeries(target)
+        else:
+            assert "unknown target type %r" % target
+
     @classmethod
     def _anyfy(cls, value):
         """If value is a sequence, wrap its items with the `any` combinator.
