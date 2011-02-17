@@ -617,7 +617,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual([], list(recipe.getPendingBuilds()))
 
     def test_getBuilds_disabled_archive(self):
-        # Builds into an disabled archive aren't returned
+        # Builds into a disabled archive aren't returned.
         archive = self.factory.makeArchive()
         recipe = self.factory.makeSourcePackageRecipe()
         build = self.factory.makeSourcePackageRecipeBuild(
