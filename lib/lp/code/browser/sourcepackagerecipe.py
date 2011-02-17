@@ -88,7 +88,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     RECIPE_BETA_FLAG,
-   )
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty

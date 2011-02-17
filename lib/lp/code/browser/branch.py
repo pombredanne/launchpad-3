@@ -143,14 +143,12 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.sourcepackagerecipe import RECIPE_ENABLED_FLAG
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
