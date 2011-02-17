@@ -549,7 +549,8 @@ class POTMsgSet(SQLBase):
         else:
             return None
 
-    def submitSuggestion(self, pofile, submitter, new_translations):
+    def submitSuggestion(self, pofile, submitter, new_translations,
+                         from_import=False):
         """See `IPOTMsgSet`."""
         if self.is_translation_credit:
             # We don't support suggestions on credits messages.
