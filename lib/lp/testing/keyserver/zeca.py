@@ -93,16 +93,18 @@ class Zeca(_BaseResource):
 
     def __init__(self, root):
         _BaseResource.__init__(self)
-        keyserver = KeyServer()
-        keyserver.putChild('lookup', LookUp(root))
-        keyserver.putChild('add', SubmitKey(root))
-        self.putChild('pks', keyserver)
+        self.putChild('pks', KeyServer(root))
 
     def render_GET(self, request):
         return GREETING
 
 
 class KeyServer(_BaseResource):
+
+    def __init__(self, root):
+        _BaseResource.__init__(self)
+        self.putChild('lookup', LookUp(root))
+        self.putChild('add', SubmitKey(root))
 
     def render_GET(self, request):
         return 'Welcome To Fake SKS service.\n'
