@@ -62,4 +62,4 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         traverse = getattr(adapter, 'traverse', None)
         extra = ['1', '2']
         self.assertEqual('', traverse('shorten', extra))
-        self.assertEqual(['1'],extra)
+        self.assertEqual(['1'], extra)
