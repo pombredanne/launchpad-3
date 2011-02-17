@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,12 +6,11 @@ __metaclass__ = type
 import os
 import shutil
 
-import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 
-keysdir = os.path.join(os.path.dirname(__file__), 'tests/keys')
+KEYS_DIR = os.path.join(os.path.dirname(__file__), 'tests/keys')
 
 
 class ZecaTestSetup(TacTestSetup):
@@ -115,7 +114,7 @@ class ZecaTestSetup(TacTestSetup):
         """Recreate root directory and copy needed keys"""
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
-        shutil.copytree(keysdir, self.root)
+        shutil.copytree(KEYS_DIR, self.root)
 
     @property
     def root(self):
