@@ -4,7 +4,7 @@
 import os.path
 
 from lp.testing import TestCase
-from lp.testing.keyserver.zeca import locate_key
+from lp.testing.keyserver.web import locate_key
 
 
 class LocateKeyTestCase(TestCase):

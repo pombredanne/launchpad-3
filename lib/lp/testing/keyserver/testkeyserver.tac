@@ -10,7 +10,7 @@ from twisted.web import server
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.testing.keyserver.zeca import KeyServerResource
+from lp.testing.keyserver.web import KeyServerResource
 
 # Needed for using IGPGHandler for processing key submit.
 execute_zcml_for_scripts()
