@@ -97,18 +97,6 @@ class KeyServerTac(TacTestSetup):
     ...
     <title>Submit a key</title>
     ...
-
-    >>> fixture.tearDown()
-
-    And again for luck
-
-    >>> fixture.setUp()
-
-    >>> print urlopen(root_url).readline()
-    Copyright 2004-2009 Canonical Ltd.
-    <BLANKLINE>
-
-    >>> fixture.tearDown()
     """
     def setUpRoot(self):
         """Recreate root directory and copy needed keys"""
@@ -133,3 +121,9 @@ class KeyServerTac(TacTestSetup):
     def logfile(self):
         return os.path.join(self.root, 'testkeyserver.log')
 
+
+    @property
+    def url(self):
+        """The URL that the web server will be running on."""
+        return 'http://%s:%d' % (
+            config.gpghandler.host, config.gpghandler.port)

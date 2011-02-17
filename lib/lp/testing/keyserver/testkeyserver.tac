@@ -24,4 +24,6 @@ readyservice.ReadyService().setServiceParent(svc)
 site = server.Site(KeyServerResource(config.testkeyserver.root))
 site.displayTracebacks = False
 
-strports.service(config.testkeyserver.port, site).setServiceParent(svc)
+# Run on the port that gpghandler is configured to hit.
+port = 'tcp:%s' % (config.gpghandler.port,)
+strports.service(port, site).setServiceParent(svc)
