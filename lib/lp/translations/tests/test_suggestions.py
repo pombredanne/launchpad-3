@@ -19,10 +19,6 @@ from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
-    )
-from lp.translations.utilities.validate import GettextValidationError
 
 
 class TestTranslationSuggestions(TestCaseWithFactory):
@@ -124,7 +120,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         suggestion = barmsg.submitSuggestion(
-            self.bar_nl, self.foo_template.owner, { 0: "Noueh hallo dus." })
+            self.bar_nl, self.foo_template.owner, {0: "Noueh hallo dus."})
 
         transaction.commit()
 
@@ -147,10 +143,10 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=foomsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=barmsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         self.assertNotEqual(suggestion1, suggestion2)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
@@ -178,11 +174,11 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_in_ubuntu },
+            translations={0: translated_in_ubuntu},
             current_other=False)
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_upstream },
+            translations={0: translated_upstream},
             current_other=True)
         ubuntu_translation = potmsgset.getCurrentTranslation(
             self.foo_template, self.foo_nl.language,
