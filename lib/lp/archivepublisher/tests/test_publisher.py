@@ -1040,7 +1040,9 @@ class TestPublisher(TestPublisherBase):
             distribution=self.ubuntutest, private=True)
         ppa.buildd_secret = "geheim"
 
-        # Setup the publisher for it and publish its repository.
+        # Set up the publisher for it and publish its repository.
+        # 'getPublisher' is what actually configures the htaccess file.
+        getPublisher(ppa, [], self.logger)
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
