@@ -28,10 +28,12 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
     IBugNotificationRecipient,
@@ -44,9 +46,15 @@ class BugNotification(SQLBase):
     implements(IBugNotification)
 
     message = ForeignKey(dbName='message', notNull=True, foreignKey='Message')
+    activity = ForeignKey(
+        dbName='activity', notNull=False, foreignKey='BugActivity')
     bug = ForeignKey(dbName='bug', notNull=True, foreignKey='Bug')
     is_comment = BoolCol(notNull=True)
     date_emailed = UtcDateTimeCol(notNull=False)
+    status = EnumCol(
+        dbName='status',
+        schema=BugNotificationStatus, default=BugNotificationStatus.PENDING,
+        notNull=True)
 
     @property
     def recipients(self):
@@ -94,13 +102,13 @@ class BugNotificationSet:
         pending_notifications.reverse()
         return pending_notifications
 
-    def addNotification(self, bug, is_comment, message, recipients):
+    def addNotification(self, bug, is_comment, message, recipients, activity):
         """See `IBugNotificationSet`."""
         if not recipients:
             return
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
-            message=message, date_emailed=None)
+            message=message, date_emailed=None, activity=activity)
         store = Store.of(bug_notification)
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.

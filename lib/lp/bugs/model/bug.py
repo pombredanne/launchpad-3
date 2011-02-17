@@ -1019,14 +1019,14 @@ BugMessage""" % sqlvalues(self.id))
         # original `Bug`.
         return recipients
 
-    def addCommentNotification(self, message, recipients=None):
+    def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
                 level=BugNotificationLevel.COMMENTS)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
-             message=message, recipients=recipients)
+             message=message, recipients=recipients, activity=activity)
 
     def addChange(self, change, recipients=None):
         """See `IBug`."""
@@ -1036,12 +1036,14 @@ BugMessage""" % sqlvalues(self.id))
 
         activity_data = change.getBugActivity()
         if activity_data is not None:
-            getUtility(IBugActivitySet).new(
+            activity = getUtility(IBugActivitySet).new(
                 self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
                 activity_data.get('message'))
+        else:
+            activity = None
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
@@ -1055,7 +1057,7 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients)
+                recipients=recipients, activity=activity)
 
         self.updateHeat()
 
