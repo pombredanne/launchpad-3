@@ -75,8 +75,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 SEPARATOR = ' : '
 
 
-def format_link(obj, view_name=None):
+def format_link(obj, view_name=None, empty_value='None'):
     """Return the equivalent of obj/fmt:link as a string."""
+    if obj is None:
+        return empty_value
     adapter = queryAdapter(obj, IPathAdapter, 'fmt')
     link = getattr(adapter, 'link', None)
     if link is None:
@@ -487,6 +489,8 @@ class NoneFormatter:
             # and not another traversal command.
             furtherPath.pop()
             return ''
+        elif name == 'link':
+            return 'None'
         elif name in self.allowed_names:
             return ''
         else:
