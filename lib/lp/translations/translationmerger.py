@@ -11,17 +11,26 @@ __all__ = [
 
 from operator import methodcaller
 
-from storm.locals import Store
+from storm.locals import (
+    Select,
+    Store,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
+    )
 from canonical.launchpad.scripts.logger import (
     DEBUG2,
     log,
     )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.packaging import Packaging
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -29,8 +38,10 @@ from lp.services.scripts.base import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.potemplate import POTemplate
 
 
 def get_potmsgset_key(potmsgset):
@@ -341,6 +352,52 @@ class TransactionManager:
 
 class TranslationMerger:
     """Merge translations across a set of potemplates."""
+
+    @staticmethod
+    def findMergeablePackagings():
+        """Find packagings where both product and package have templates."""
+        store = IStore(Packaging)
+        upstream_translated = Select(
+            Packaging.id,
+            Packaging.productseries == POTemplate.productseriesID,
+            )
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        result = store.find(
+            Packaging, Packaging.id.is_in(upstream_translated),
+            Packaging.distroseries == POTemplate.distroseriesID,
+            Packaging.distroseries == DistroSeries.id,
+            DistroSeries.distribution == ubuntu.id,
+            Packaging.sourcepackagename == POTemplate.sourcepackagenameID,
+            )
+        # XXX: AaronBentley 2011-02-14 bug=718864: this should be possible
+        # without using a subselect, but a Storm ClassAlias bug prevents us
+        # from doing it this way:
+        # PackageTemplate = ClassAlias(POTemplate)
+        # result = store.find(
+        #     Packaging,
+        #     Packaging.productseries == POTemplate.productseries,
+        #     Packaging.distroseries == PackageTemplate.distroseries,
+        #     Packaging.sourcepackagename ==
+        #         PackageTemplate.sourcepackagename,
+        #     )
+        result.config(distinct=True)
+        return result
+
+    @classmethod
+    def mergePackagingTemplates(cls, productseries, sourcepackagename,
+                                distroseries, tm):
+        template_map = dict()
+        all_templates = list(POTemplateSubset(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries))
+        all_templates.extend(POTemplateSubset(
+            productseries=productseries))
+        for template in all_templates:
+            template_map.setdefault(template.name, []).append(template)
+        for name, templates in template_map.iteritems():
+            templates.sort(key=POTemplate.sharingKey, reverse=True)
+            merger = cls(templates, tm)
+            merger.mergePOTMsgSets()
 
     def __init__(self, potemplates, tm):
         """Constructor.
@@ -713,3 +770,20 @@ class TranslationMerger:
             bequeathe_flags(message, twin)
 
         return True
+
+
+class MergeExistingPackagings(LaunchpadScript):
+    """Script to perform translation on existing packagings."""
+
+    def main(self):
+        tm = TransactionManager(self.txn, False)
+        for packaging in TranslationMerger.findMergeablePackagings():
+            log.info('Merging %s/%s and %s/%s.' % (
+                packaging.productseries.product.name,
+                packaging.productseries.name,
+                packaging.sourcepackagename.name,
+                packaging.distroseries.name))
+            TranslationMerger.mergePackagingTemplates(
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries, tm)
+            tm.endTransaction(False)

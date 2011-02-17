@@ -177,11 +177,10 @@ class TestQueryCountBase(TestCaseWithFactory):
         self.add_bug(bugtask_count)
         login_person(self.owner)
         view = create_initialized_view(milestone, '+index')
-        # Eliminate permission checks for the admin team and registry_experts
-        # from the recorded queries by loading it now. If the test ever
-        # breaks, the person fixing it won't waste time trying to track them
+        # Eliminate permission check for the admin team from the
+        # recorded queries by loading it now. If the test ever breaks,
+        # the person fixing it won't waste time trying to track this
         # query down.
-        getUtility(ILaunchpadCelebrities).registry_experts
         getUtility(ILaunchpadCelebrities).admin
         with StormStatementRecorder() as recorder:
             bugtasks = list(view.bugtasks)
@@ -245,7 +244,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 37
+        query_limit = 34
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)
@@ -261,10 +260,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-
-        # Fetch some things into the cache so we don't muck with query
-        # counts.
-        page_query_limit = 37
+        page_query_limit = 34
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -428,12 +424,12 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  7. Load links to branches.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=11)
+            self.milestone, bugtask_count, query_limit=9)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 36
+        query_limit = 33
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)

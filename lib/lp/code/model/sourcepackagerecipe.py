@@ -73,6 +73,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.model.archive import Archive
 
 
 def get_buildable_distroseries_set(user):
@@ -302,6 +303,8 @@ class SourcePackageRecipe(Storm):
             SourcePackageRecipeBuild.recipe==self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
+            And(PackageBuild.archive_id == Archive.id,
+                Archive._enabled == True),
             where_clause)
         result.order_by(order_by)
         return result

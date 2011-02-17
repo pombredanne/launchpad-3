@@ -2266,10 +2266,13 @@ class RevisionAuthorFormatterAPI(ObjectFormatterAPI):
                 view_name, rootsite)
         elif context.name_without_email:
             return cgi.escape(context.name_without_email)
-        elif getUtility(ILaunchBag).user is not None:
+        elif context.email and getUtility(ILaunchBag).user is not None:
             return cgi.escape(context.email)
-        else:
+        elif context.email:
             return "&lt;email address hidden&gt;"
+        else:
+            # The RevisionAuthor name and email is None.
+            return ''
 
 
 def clean_path_segments(request):
