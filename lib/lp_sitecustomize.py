@@ -92,7 +92,7 @@ def silence_warnings():
         "ignore",
         category=DeprecationWarning,
         module="Crypto")
-    # Filter all deprecation warnings for Zope 3.6, which eminate from
+    # Filter all deprecation warnings for Zope 3.6, which emanate from
     # the zope package.
     filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
     warnings.filterwarnings(

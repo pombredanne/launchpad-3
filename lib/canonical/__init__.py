@@ -3,6 +3,5 @@
 
 """The canonical namespace package.
 
-WARNING: This package is deprecated.  New code should go into the `lp`
-package.
+:deprecated: New code should go into the `lp` package.
 """

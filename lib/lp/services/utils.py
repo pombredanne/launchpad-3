@@ -65,14 +65,14 @@ def base(number, radix):
     Inverse function to int(str, radix) and long(str, radix)
     """
     if not 2 <= radix <= 62:
-        raise ValueError("radix must be between 2 and 62")
+        raise ValueError("radix must be between 2 and 62: %s" % (radix,))
+
+    if number < 0:
+        raise ValueError("number must be non-negative: %s" % (number,))
 
     result = []
     addon = result.append
-    if number < 0:
-        number = -number
-        addon('-')
-    elif number == 0:
+    if number == 0:
         addon('0')
 
     ABC = string.digits + string.ascii_letters

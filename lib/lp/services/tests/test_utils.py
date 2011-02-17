@@ -79,6 +79,10 @@ class TestBase(TestCase):
         self.assertEqual('B', base(37, 62))
         self.assertEqual('Z', base(61, 62))
 
+    def test_negative_numbers(self):
+        # We don't convert negative numbers at all.
+        self.assertRaises(ValueError, base, -43, 62)
+
     def test_base_matches_builtin_hex(self):
         # We get identical results to the hex builtin, without the 0x prefix
         numbers = list(range(5000))
