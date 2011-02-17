@@ -61,7 +61,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
-from lp.testing.sampledata import NO_PRIVILEGE_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -1447,14 +1446,13 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # When a PPA is disabled, it is only viewable to the owner. This
         # case is handled with the view not showing builds into a disabled
         # archive, rather than giving an Unauthorized error to the user.
-        no_priv = getUtility(IPersonSet).getByEmail(NO_PRIVILEGE_EMAIL)
         recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
         recipe.requestBuild(
             recipe.daily_build_archive, recipe.owner, self.squirrel,
             PackagePublishingPocket.RELEASE)
         with person_logged_in(recipe.owner):
             recipe.daily_build_archive.disable()
-        browser = self.getUserBrowser(canonical_url(recipe), user=no_priv)
+        browser = self.getUserBrowser(canonical_url(recipe))
         self.assertIn(
             "This recipe has not been built yet.",
             extract_text(find_main_content(browser.contents)))
