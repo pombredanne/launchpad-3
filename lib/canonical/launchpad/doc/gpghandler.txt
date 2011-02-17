@@ -290,7 +290,7 @@ key to the configuration keyserver.
 
 We will setup and use the test-keyserver (zeca).
 
-    >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
+    >>> from lp.services.keyserver.tests.harness import ZecaTestSetup
     >>> z = ZecaTestSetup()
     >>> z.setUp()
 

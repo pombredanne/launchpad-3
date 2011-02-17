@@ -7,7 +7,7 @@ This tests GPG-related pages of an IPerson.
 
 Set up the key server:
 
-  >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
+  >>> from lp.services.keyserver.tests.harness import ZecaTestSetup
   >>> z = ZecaTestSetup()
   >>> z.setUp()
 

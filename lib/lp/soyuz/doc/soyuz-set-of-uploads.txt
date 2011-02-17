@@ -58,7 +58,7 @@ using, this essentially boils down to ensuring that zeca and the
 librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
-  >>> from lp.services.keyserver.ftests.harness import ZecaTestSetup
+  >>> from lp.services.keyserver.tests.harness import ZecaTestSetup
   >>> zeca = ZecaTestSetup()
   >>> zeca.setUp()
 
