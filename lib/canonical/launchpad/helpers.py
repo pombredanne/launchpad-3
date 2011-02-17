@@ -28,7 +28,7 @@ from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
-from lp.services.utils import base
+from lp.services.utils import compress_hash
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -441,8 +441,7 @@ def get_filename_from_message_id(message_id):
 
     It generates a file name that's not easily guessable.
     """
-    return '%s.msg' % (
-        base(long(hashlib.sha1(message_id).hexdigest(), 16), 62))
+    return '%s.msg' % compress_hash(hashlib.sha1(message_id))
 
 
 def intOrZero(value):
