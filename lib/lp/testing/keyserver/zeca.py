@@ -29,10 +29,7 @@ $ gpg --export -a cprov > 0x681B6469.get
 __metaclass__ = type
 
 __all__ = [
-    'KeyServer',
-    'LookUp',
-    'SubmitKey',
-    'Zeca',
+    'KeyServerResource',
     ]
 
 import glob
@@ -44,8 +41,11 @@ from twisted.web.resource import Resource
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, IGPGHandler, MoreThanOneGPGKeyFound,
-    SecretGPGKeyImportDetected)
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected,
+    )
 
 
 GREETING = 'Copyright 2004-2009 Canonical Ltd.\n'
@@ -88,18 +88,18 @@ class _BaseResource(Resource):
             self, name, request)
 
 
-class Zeca(_BaseResource):
+class KeyServerResource(_BaseResource):
     """Root resource for the test keyserver."""
 
     def __init__(self, root):
         _BaseResource.__init__(self)
-        self.putChild('pks', KeyServer(root))
+        self.putChild('pks', PksResource(root))
 
     def render_GET(self, request):
         return GREETING
 
 
-class KeyServer(_BaseResource):
+class PksResource(_BaseResource):
 
     def __init__(self, root):
         _BaseResource.__init__(self)
