@@ -3,8 +3,8 @@
 
 from doctest import DocTestSuite, ELLIPSIS
 
-import canonical.encoding
+import lp.services.encoding
 
 def test_suite():
-    suite = DocTestSuite(canonical.encoding, optionflags=ELLIPSIS)
+    suite = DocTestSuite(lp.services.encoding, optionflags=ELLIPSIS)
     return suite
