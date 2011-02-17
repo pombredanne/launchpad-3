@@ -152,7 +152,7 @@ class FakeNotification:
 
 
 class MockBugActivity:
-    """A mock BugActivity user for testing."""
+    """A mock BugActivity used for testing."""
     def __init__(self, target=None, attribute=None,
                  oldvalue=None, newvalue=None):
         self.target = target
