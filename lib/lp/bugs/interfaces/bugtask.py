@@ -1576,6 +1576,8 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
+    open_bugtask_search = Attribute("A search returning open bugTasks.")
+
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""

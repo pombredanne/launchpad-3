@@ -1512,6 +1512,14 @@ class BugTaskSet:
 
     title = "A set of bug tasks"
 
+    @property
+    def open_bugtask_search(self):
+        """See `IBugTaskSet`."""
+        return BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
     def get(self, task_id):
         """See `IBugTaskSet`."""
         # XXX: JSK: 2007-12-19: This method should probably return
