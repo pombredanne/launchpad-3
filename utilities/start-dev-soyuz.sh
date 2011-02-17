@@ -8,12 +8,11 @@ start_twistd() {
     bin/twistd \
         --logfile "/var/tmp/development-$1.log" \
         --pidfile "/var/tmp/development-$1.pid" \
-        -y "daemons/$1.tac"
+        -y "$2"
 }
 
-# XXX: This is broken now that zeca isn't in daemons/
-start_twistd zeca
-start_twistd buildd-manager
+start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
+start_twistd buildd-manager daemons/buildd-manager.tac
 
 echo "Starting poppy."
 mkdir -p /var/tmp/poppy

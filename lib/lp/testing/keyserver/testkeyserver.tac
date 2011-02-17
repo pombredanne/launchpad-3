@@ -24,4 +24,4 @@ readyservice.ReadyService().setServiceParent(svc)
 site = server.Site(KeyServerResource(config.testkeyserver.root))
 site.displayTracebacks = False
 
-strports.service('11371', site).setServiceParent(svc)
+strports.service('tcp:11371', site).setServiceParent(svc)
