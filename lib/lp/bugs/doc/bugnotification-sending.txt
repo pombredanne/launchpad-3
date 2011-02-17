@@ -80,7 +80,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -95,7 +94,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -111,7 +109,6 @@ list of emails to send:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -128,6 +125,7 @@ list of emails to send:
     Title:
       Firefox does not support SVG
     <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
 
 You can see that the message above contains the bug's initial comment's
@@ -249,7 +247,6 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -330,7 +327,7 @@ signature, and the signature marker has a trailing space.
      'http://bugs.launchpad.dev/bugs/1',
      '',
      'Title:',
-     '  Firefox does not support SVG']
+     '  Firefox does not support SVG'...]
 
     >>> flush_notifications()
 
@@ -431,14 +428,13 @@ top of the email:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
+    -- 
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
     http://bugs.launchpad.dev/bugs/16
     <BLANKLINE>
     Title:
       new bug
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
@@ -450,7 +446,7 @@ top of the email:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
+    -- 
     You received this bug notification because you are a direct subscriber
     of the bug.
     http://bugs.launchpad.dev/bugs/16
@@ -458,6 +454,8 @@ top of the email:
     Title:
       new bug
     <BLANKLINE>
+    To unsubscribe from this bug, go to:
+    http://bugs.launchpad.dev/ubuntu/+bug/16/+subscribe
     ----------------------------------------------------------------------
 
     >>> flush_notifications()
@@ -879,7 +877,8 @@ with different verbose_bugnotifications settings.
     ...             "will be automatically wrapped by the BugNotification "
     ...             "machinery. Ain't technology great?")
     ...     verbose_person = factory.makePerson(
-    ...         displayname='Verbose Person', email='verbose@example.com')
+    ...         displayname='Verbose Person', email='verbose@example.com',
+    ...         selfgenerated_bugnotifications=True)
     ...     verbose_person.verbose_bugnotifications = True
     ...     ignored = bug.subscribe(verbose_person, verbose_person)
     ...     concise_person = factory.makePerson(
@@ -984,11 +983,17 @@ We can see that Concise Person doesn't receive verbose notifications:
     <BLANKLINE>
     Title:
       In the beginning...
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
-Neither does Verbose Team Person - while the team wants verbose emails,
-he wants concise ones.
+However, Concise Person does get an unsubscribe link.
+
+    >>> print_notification(collated_messages['concise@example.com'][0])
+    To: concise@example.com
+    ...
+    To unsubscribe from this bug, go to:...
+
+Verbose Team Person gets a concise email, even though they belong to a team
+that gets verbose email.
 
     >>> print_notification(collated_messages['verboseteam@example.com'][0])
     To: verboseteam@example.com
@@ -1005,7 +1010,6 @@ he wants concise ones.
     <BLANKLINE>
     Title:
       In the beginning...
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 Whereas Verbose Person does get the description and task status:
@@ -1036,7 +1040,6 @@ Whereas Verbose Person does get the description and task status:
     <BLANKLINE>
     To unsubscribe from this bug, go to:
     http://bugs.launchpad.dev/.../+bug/.../+subscribe
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 And Concise Team Person does too, even though his team doesn't want them:
@@ -1064,7 +1067,6 @@ And Concise Team Person does too, even though his team doesn't want them:
        This is a long description of the bug, which
        will be automatically wrapped by the BugNotification
        machinery. Ain't technology great?
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 It's important to note that the bug title and description are wrapped
@@ -1080,19 +1082,17 @@ and indented correctly in verbose notifications.
      ...
      'Bug description:',
      '  This is a long description of the bug, which will be automatically',
-     "  wrapped by the BugNotification machinery. Ain't technology great?",
-    ...
+     "  wrapped by the BugNotification machinery. Ain't technology great?"]
 
 The title is also wrapped and indented in normal notifications.
 
     >>> message = collated_messages['verboseteam@example.com'][0]
     >>> payload = message.get_payload(decode=True)
-    >>> print payload.split('\n')
+    >>> print payload.strip().split('\n')
     [...
      'Title:',
      '  In the beginning, the universe was created. This has made a lot of',
-     '  people very angry and has been widely regarded as a bad move',
-     '']
+     '  people very angry and has been widely regarded as a bad move']
 
 Self-Generated Bug Notifications
 --------------------------------
@@ -1101,17 +1101,21 @@ People (not teams) will have the choice to receive notifications from actions
 they generated.  For now, everyone receives these notifications whether they
 want them or not.
 
-    >>> verbose_person.selfgenerated_bugnotifications
-    True
     >>> with lp_dbuser():
-    ...     verbose_person.selfgenerated_bugnotifications = False
+    ...     person = factory.makePerson()
+    >>> person.selfgenerated_bugnotifications
+    False
+    >>> with lp_dbuser():
+    ...     person.selfgenerated_bugnotifications = True
 
 Teams provide this attribute read-only.
 
-    >>> verbose_team.selfgenerated_bugnotifications
-    True
     >>> with lp_dbuser():
-    ...     verbose_team.selfgenerated_bugnotifications = False
+    ...     team = factory.makeTeam()
+    >>> team.selfgenerated_bugnotifications
+    False
+    >>> with lp_dbuser():
+    ...     team.selfgenerated_bugnotifications = True
     Traceback (most recent call last):
     ...
     NotImplementedError: Teams do not support changing this attribute.
@@ -1390,7 +1394,6 @@ no notifications created by addChange().
     You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     ...
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <...@bugs.launchpad.net>
@@ -1408,7 +1411,6 @@ no notifications created by addChange().
     <BLANKLINE>
     Title:
       Firefox does not support SVG
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     ...

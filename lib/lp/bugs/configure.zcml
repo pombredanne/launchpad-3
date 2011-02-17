@@ -731,7 +731,7 @@
                     hasBranch
                     security_related
                     tags
-                    getMessageChunks
+                    getMessagesForView
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
