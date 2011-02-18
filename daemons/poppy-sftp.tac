@@ -10,8 +10,7 @@ import os
 from twisted.application import service, strports
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
-from twisted.cred import checkers
-from twisted.cred.credentials import IAnonymous
+from twisted.cred import checkers, credentials
 from twisted.cred.portal import IRealm, Portal
 from twisted.protocols import ftp
 from twisted.protocols.policies import TimeoutFactory
@@ -47,6 +46,21 @@ def make_portal():
     return portal
 
 
+class PoppyAnonymousShell(ftp.FTPShell):
+    pass
+
+
+class PoppyAccessCheck:
+    implements(checkers.ICredentialsChecker)
+    credentialInterfaces = credentials.IUsernamePassword,
+
+    def requestAvatarId(self, credentials):
+        # Poppy allows any credentials.  People can use "anonymous" if
+        # they want but anything goes.  Returning "poppy" here is
+        # a totally arbitrary avatar.
+        return "poppy"
+
+
 class Realm:
     implements(IRealm)
 
@@ -78,7 +92,8 @@ class FTPRealm:
             if iface is ftp.IFTPShell:
                 # If you wanted to check credentials here you could, but
                 # we don't care about that in poppy.
-                avatar = ftp.FTPShell(filepath.FilePath(self.root))
+                print self.root
+                avatar = PoppyAnonymousShell(filepath.FilePath(self.root))
                 return ftp.IFTPShell, avatar, getattr(
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
@@ -113,12 +128,15 @@ class FTPServiceFactory(service.Service):
         realm = FTPRealm(get_poppy_root())
         portal = Portal(realm)
         portal.registerChecker(
-            checkers.AllowAnonymousAccess(), IAnonymous)
+            PoppyAccessCheck())#, IAnonymous)
 
         factory.tld = get_poppy_root()
-        # XXX factory.userAnonymous = config.get('userAnonymous', 'anon')
         factory.portal = portal
         factory.protocol = ftp.FTP
+        # Setting this works around the fact that the twistd FTP server
+        # invokes a special restricted shell when someone logs in as
+        # "anonymous" which is the default for 'dput'.
+        factory.userAnonymous = "poppy"
         self.ftpfactory = factory
         self.portno = port
 
@@ -126,7 +144,7 @@ class FTPServiceFactory(service.Service):
     def makeFTPService(port=2121):
         strport = "tcp:%s" % port
         factory = FTPServiceFactory(port)
-        return strports.service(strport, factory.factory)
+        return strports.service(strport, factory.ftpfactory)
         #return reactor.listenTCP(0, self.factory, interface="127.0.0.1")
 
 ftpservice = FTPServiceFactory.makeFTPService()
