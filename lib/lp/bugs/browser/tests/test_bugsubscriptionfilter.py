@@ -602,7 +602,8 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
     def test_create(self):
         # New filters can be created with +new-filter.
         initial_filter = self.subscription.bug_filters.one()
-        self.assertEqual([initial_filter], list(self.subscription.bug_filters))
+        self.assertEqual(
+            [initial_filter], list(self.subscription.bug_filters))
         form = {
             "field.description": "New description",
             "field.statuses": ["NEW", "INCOMPLETE"],

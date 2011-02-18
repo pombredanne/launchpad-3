@@ -10,7 +10,6 @@ import transaction
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.ftests import (
-    LaunchpadFormHarness,
     login,
     logout,
     )
@@ -19,10 +18,6 @@ from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.bugs.browser.structuralsubscription import (
-    StructuralSubscriptionView,
     )
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
