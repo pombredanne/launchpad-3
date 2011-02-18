@@ -29,7 +29,6 @@ from lazr.restful.declarations import (
     mutator_for,
     operation_for_version,
     operation_parameters,
-    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -51,7 +50,6 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
@@ -193,7 +191,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
                 "be unique for the given owner.")))
 
     description = exported(Description(
-        title=_('Description'), required=False,
+        title=_('Description'), required=True,
         description=_('A short description of the recipe.')))
 
     date_last_modified = exported(
