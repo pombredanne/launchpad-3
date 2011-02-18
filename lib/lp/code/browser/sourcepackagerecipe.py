@@ -307,6 +307,15 @@ def builds_for_recipe(recipe):
         return builds
 
 
+def new_builds_notification_text(builds):
+    nr_builds = len(builds)
+    if nr_builds == 1:
+        builds_text = "%d new recipe build has been queued."
+    else:
+        builds_text = "%d new recipe builds have been queued."
+    return builds_text % nr_builds
+
+
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     """A view for requesting builds of a SourcePackageRecipe."""
 
@@ -356,14 +365,16 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         other builds can ne queued and a message be displayed to the caller.
         """
         errors = {}
+        builds = []
         for distroseries in data['distros']:
             try:
-                self.context.requestBuild(
+                build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
+                builds.append(build)
             except BuildAlreadyPending, e:
                 errors['distros'] = ("An identical build is already pending "
                     "for %s." % e.distroseries)
-        return errors
+        return builds, errors
 
 
 class SourcePackageRecipeRequestBuildsHtmlView(
@@ -382,12 +393,14 @@ class SourcePackageRecipeRequestBuildsHtmlView(
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        errors = self.requestBuild(data)
+        builds, errors = self.requestBuild(data)
         if errors:
             [self.setFieldError(field, message)
                 for (field, message) in errors.items()]
             return
         self.next_url = self.cancel_url
+        self.request.response.addNotification(
+                new_builds_notification_text(builds))
 
 
 class SourcePackageRecipeRequestBuildsAjaxView(
@@ -419,7 +432,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         unexpected exception, that will be handled using the form's standard
         exception processing mechanism (using response code 500).
         """
-        errors = self.requestBuild(data)
+        builds, errors = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
         # errors instead of rendering the form. These errors are processed
         # by the caller's response handler and displayed to the user.
@@ -441,7 +454,7 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     """
 
     # Attributes for the html version
-    page_title = label = "Build now"
+    page_title = "Build now"
 
     class schema(Interface):
         """Schema for requesting a build."""
@@ -449,13 +462,15 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     @action('Build now', name='build')
     def build_action(self, action, data):
         recipe = self.context
-        recipe.performDailyBuild()
+        builds = recipe.performDailyBuild()
         if self.request.is_ajax:
             template = ViewPageTemplateFile(
                     "../templates/sourcepackagerecipe-builds.pt")
             return template(self)
         else:
             self.next_url = canonical_url(recipe)
+            self.request.response.addNotification(
+                    new_builds_notification_text(builds))
 
     @property
     def builds(self):

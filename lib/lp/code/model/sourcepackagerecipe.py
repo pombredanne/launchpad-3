@@ -286,14 +286,17 @@ class SourcePackageRecipe(Storm):
 
     def performDailyBuild(self):
         """See `ISourcePackageRecipe`."""
+        builds = []
         self.is_stale = False
         for distroseries in self.distroseries:
             try:
-                self.requestBuild(
+                build = self.requestBuild(
                     self.daily_build_archive, self.owner,
                     distroseries, PackagePublishingPocket.RELEASE)
+                builds.append(build)
             except BuildAlreadyPending:
                 continue
+        return builds
 
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""

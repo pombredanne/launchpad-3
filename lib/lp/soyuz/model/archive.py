@@ -1969,6 +1969,8 @@ class ArchiveSet:
         # Avoiding circular imports.
         from lp.soyuz.model.archivepermission import ArchivePermission
 
+        if user is None:
+            return []
         store = Store.of(user)
         direct_membership = store.find(
             Archive,

@@ -67,7 +67,7 @@
                 </form>
               </noscript>
               <a id="request-daily-build"
-                 class="sprite source-package-recipe js-action hidden"
+                 class="sprite source-package-recipe js-action unseen"
                  tal:attributes="href link/url"
                  tal:content="link/text"/>
             </dd>
@@ -132,7 +132,7 @@
             if (logged_in) {
                 build_now_link = Y.one('#request-daily-build');
                 if( build_now_link != null ) {
-                  build_now_link.setStyle('display', 'block');
+                  build_now_link.removeClass('unseen');
                   Y.lp.code.requestbuild_overlay.connect_requestdailybuild();
                 }
                 Y.lp.code.requestbuild_overlay.connect_requestbuilds();
