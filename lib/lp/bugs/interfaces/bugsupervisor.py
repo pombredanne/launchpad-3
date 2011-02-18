@@ -36,9 +36,6 @@ class IHasBugSupervisor(Interface):
             "all bugs and will receive email about all activity on all bugs "
             "for this project, so that should be a factor in your decision.  "
             "The bug supervisor will also have access to all private bugs."),
-
-
-
         required=False, vocabulary='ValidPersonOrTeam', readonly=True))
 
     @mutator_for(bug_supervisor)
