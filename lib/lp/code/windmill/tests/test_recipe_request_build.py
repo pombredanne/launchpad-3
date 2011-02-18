@@ -13,7 +13,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
-    SLEEP,
     )
 from lp.testing.windmill.lpuser import login_person
 from lp.app.browser.tales import PPAFormatterAPI
@@ -110,4 +109,4 @@ class TestRecipeBuild(WindmillTestCase):
         client.waits.forElement(
             xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
                      '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
-            timeout=SLEEP)
+            timeout=FOR_ELEMENT)

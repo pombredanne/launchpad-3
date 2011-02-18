@@ -12,6 +12,10 @@
     .binary-build .indent {
       padding-left: 2em;
     }
+    div#edit-recipe_text, div#edit-description {
+      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin-top: -15px;
+    }
   </style>
 </metal:block>
 
@@ -35,8 +39,8 @@
   <div class="yui-g first">
     <div class="yui-u first">
       <div class="portlet">
-        <h2>Description</h2>
-        <tal:description replace="context/description" />
+        <h2 class="lazr-multiline-edit-header">Description</h2>
+        <tal:description replace="structure view/description_widget"/>
       </div>
     </div>
     <div class="yui-u">
@@ -50,24 +54,22 @@
               </a>
             </dt>
             <dd tal:content="structure view/daily_build_widget"/>
-            <dd>
-              <div
-                tal:define="link context/menu:context/request_daily_build"
-                tal:condition="link/enabled"
-                >
-                <noscript>
-                  <form action="+request-daily-build"
-                        method="post"
-                        id="request-daily-build-form">
-                      <input type="submit" name="field.actions.build"
-                          id="field.actions.build" value="Build now" />
-                  </form>
-                </noscript>
-                <a id="request-daily-build" style="display: none"
-                   class="sprite source-package-recipe js-action"
-                   tal:attributes="href link/url"
-                   tal:content="link/text"/>
-              </div>
+            <dd
+              tal:define="link context/menu:context/request_daily_build"
+              tal:condition="link/enabled"
+              >
+              <noscript>
+                <form action="+request-daily-build"
+                      method="post"
+                      id="request-daily-build-form">
+                    <input type="submit" name="field.actions.build"
+                        id="field.actions.build" value="Build now" />
+                </form>
+              </noscript>
+              <a id="request-daily-build"
+                 class="sprite source-package-recipe js-action hidden"
+                 tal:attributes="href link/url"
+                 tal:content="link/text"/>
             </dd>
           </dl>
 
