@@ -18,11 +18,13 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Datetime,
     TextLine,
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationStatus
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import BugField
 
@@ -34,6 +36,11 @@ class IBugNotification(IHasOwner):
     message = Attribute(
         "The message containing the text representation of the changes"
         " to the bug.")
+    activity = Attribute(
+        "The bug activity object corresponding to this notification.  Will "
+        "be None for older notification objects, and will be None if the "
+        "bugchange object that provides the data for the change returns None "
+        "for getBugActivity.")
     bug = BugField(title=u"The bug this notification is for.",
                    required=True)
     is_comment = Bool(
@@ -46,6 +53,13 @@ class IBugNotification(IHasOwner):
         required=False)
     recipients = Attribute(
         "The people to which this notification should be sent.")
+    status = Choice(
+            title=_("Status"), required=True,
+            vocabulary=BugNotificationStatus,
+            default=BugNotificationStatus.PENDING,
+            description=_(
+                "The status of this bug notification."),
+            )
 
 
 class IBugNotificationSet(Interface):
@@ -54,7 +68,7 @@ class IBugNotificationSet(Interface):
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
 
-    def addNotification(self, bug, is_comment, message, recipients):
+    def addNotification(self, bug, is_comment, message, recipients, activity):
         """Create a new `BugNotification`.
 
         Create a new `BugNotification` object and the corresponding

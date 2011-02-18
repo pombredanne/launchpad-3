@@ -157,7 +157,8 @@ class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
         message = MessageSet().fromText(
             subject='subject', content='content')
         BugNotificationSet().addNotification(
-            bug=bug, is_comment=False, message=message, recipients=[])
+            bug=bug, is_comment=False, message=message, recipients=[],
+            activity=None)
 
 
 class TestNotificationsForDuplicates(TestCaseWithFactory):

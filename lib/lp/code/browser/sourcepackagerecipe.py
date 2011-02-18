@@ -72,6 +72,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
+    TextAreaEditorWidget,
     )
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import (
@@ -264,6 +265,12 @@ class SourcePackageRecipeView(LaunchpadView):
             step_title='Select a PPA')
 
     @property
+    def recipe_text_widget(self):
+        """The recipe text as widget HTML."""
+        recipe_text = ISourcePackageRecipe['recipe_text']
+        return TextAreaEditorWidget(self.context, recipe_text, title="")
+
+    @property
     def daily_build_widget(self):
         return BooleanChoiceWidget(
             self.context, ISourcePackageRecipe['build_daily'],
@@ -271,6 +278,13 @@ class SourcePackageRecipeView(LaunchpadView):
             false_text='Built on request',
             true_text='Built daily',
             header='Change build schedule')
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        description = ISourcePackageRecipe['description']
+        return TextAreaEditorWidget(
+            self.context, description, title="")
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
