@@ -1969,6 +1969,7 @@ class ArchiveSet:
         # Avoiding circular imports.
         from lp.soyuz.model.archivepermission import ArchivePermission
 
+        # If there's no user logged in, then there's no archives.
         if user is None:
             return []
         store = Store.of(user)
