@@ -7,7 +7,7 @@ page template, and views derived from RecipeListingView.
 
     >>> from lp.services.features.testing import FeatureFixture
     >>> fixture = FeatureFixture(
-    ...     {'code.recipes_enabled': 'on', 'code.recipes.debug': 'true'})
+    ...     {'code.recipes_enabled': 'on', 'code.recipes.beta': 'true'})
     >>> fixture.setUp()
     >>> def print_recipe_listing_head(browser):
     ...     table = find_tag_by_id(browser.contents, 'recipetable')
