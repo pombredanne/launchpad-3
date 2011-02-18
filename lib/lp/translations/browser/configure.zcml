@@ -797,11 +797,6 @@
         class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:page
-        name="+help-translate-button"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
-    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+imports"
         class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
@@ -862,11 +857,6 @@
         template="../templates/project-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
-        name="+help-translate-button"
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
-    <browser:page
         name="+settings"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.translations.browser.project.ProjectSettingsView"
@@ -896,11 +886,6 @@
         name="+translations"
         template="../templates/distribution-translations.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
-    <browser:page
-        name="+help-translate-button"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
     <browser:page
         name="+configure-translations"
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -991,11 +976,6 @@
         layer="lp.translations.publisher.TranslationsLayer"
         name="+templates"
         template="../templates/object-templates.pt" />
-    <browser:page
-        name="+help-translate-button"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.TranslationsAdmin"

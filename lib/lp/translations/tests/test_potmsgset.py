@@ -270,6 +270,20 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 serbian, self.stable_potemplate.translation_side),
             shared_translation)
 
+    def test_approveExistingShared(self):
+        """"Existing shared translation become current when approved."""
+        pofile = self.factory.makePOFile()
+        shared = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        potmsgset = shared.potmsgset
+        diverged = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, diverged=True)
+        potemplate = diverged.potemplate
+        removeSecurityProxy(potmsgset).approveSuggestion(
+            pofile, shared, shared.reviewer)
+        current = potmsgset.getCurrentTranslation(
+            potemplate, pofile.language, potemplate.translation_side)
+        self.assertEqual(shared, current)
+
     def test_getLocalTranslationMessages(self):
         """Test retrieval of local suggestions."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.

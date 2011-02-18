@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -805,6 +805,71 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
             POMsgID._table, recorder.statements)
         self.assertNoStatementsInvolvingTable(
             POTranslation._table, recorder.statements)
+
+
+class TestFindMergablePackagings(TestCaseWithFactory):
+    """Test TranslationMerger.findMergeablePackagings."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Remove sample data to simplify tests."""
+        super(TestFindMergablePackagings, self).setUp()
+        for packaging in set(TranslationMerger.findMergeablePackagings()):
+            packaging.destroySelf()
+
+    def makePackagingLink(self, non_ubuntu=False):
+        if non_ubuntu:
+            distroseries = self.factory.makeDistroSeries()
+        else:
+            distroseries = self.factory.makeUbuntuDistroSeries()
+        return self.factory.makePackagingLink(distroseries=distroseries)
+
+    def test_no_templates(self):
+        """A Packaging with no templates is ignored."""
+        packaging = self.makePackagingLink()
+        self.assertContentEqual(
+            [], TranslationMerger.findMergeablePackagings())
+
+    def test_no_product_template(self):
+        """A Packaging with no product templates is ignored."""
+        packaging = self.makePackagingLink()
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.assertContentEqual(
+            [], TranslationMerger.findMergeablePackagings())
+
+    def test_no_package_template(self):
+        """A Packaging with no sourcepackage templates is ignored."""
+        packaging = self.makePackagingLink()
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.assertContentEqual(
+            [], TranslationMerger.findMergeablePackagings())
+
+    def test_both_templates(self):
+        """A Packaging with product and package templates is included."""
+        packaging = self.makePackagingLink()
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.assertContentEqual(
+            [packaging], TranslationMerger.findMergeablePackagings())
+
+    def test_multiple_templates(self):
+        """A Packaging with multiple templates appears only once."""
+        packaging = self.makePackagingLink()
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.assertContentEqual(
+            [packaging], TranslationMerger.findMergeablePackagings())
+
+    def test_non_ubuntu(self):
+        """A Packaging not for Ubuntu is ignored."""
+        packaging = self.makePackagingLink(non_ubuntu=True)
+        self.factory.makePOTemplate(productseries=packaging.productseries)
+        self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
+        self.assertContentEqual(
+            [], TranslationMerger.findMergeablePackagings())
 
 
 def test_suite():
