@@ -11,6 +11,7 @@ __all__ = [
 import os
 import signal
 import socket
+import sys
 import urlparse
 
 from zope.event import notify
@@ -183,8 +184,8 @@ class ForkedProcessTransport(process.BaseProcess):
         fd = os.open(path, flags)
         call_on_failure.append((os.close, fd))
         p = proc_class(reactor, self, child_fd, fd)
-        # The ProcessReader/Writer now handles this fileno, don't close
-        # directly anymore
+        # Now that p has been created, it will close fd for us. So switch the
+        # cleanup to calling p.connectionLost()
         call_on_failure[-1] = (p.connectionLost, (None,))
         self.pipes[child_fd] = p
 
@@ -202,9 +203,16 @@ class ForkedProcessTransport(process.BaseProcess):
             self._openHandleFailures(call_on_failure, stderr_path, os.O_RDONLY,
                 process.ProcessReader, reactor, 2)
         except:
+            exc_class, exc_value, exc_tb = sys.exc_info()
             for func, args in call_on_failure:
-                func(*args)
-            raise
+                try:
+                    func(*args)
+                except:
+                    # Just log any exceptions at this point. This makes sure
+                    # all cleanups get called so we don't get leaks. We know
+                    # there is an active exception, or we wouldn't be here.
+                    log.err()
+            raise exc_class, exc_value, exc_tb
         self.pipes['exit'] = self._exiter
 
     def _getReason(self, status):
