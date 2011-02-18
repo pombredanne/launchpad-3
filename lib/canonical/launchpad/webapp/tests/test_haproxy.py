@@ -52,13 +52,13 @@ class HAProxyIntegrationTest(TestCase):
         haproxy.switch_going_down_flag()
         self.assertEquals(True, haproxy.going_down_flag)
 
-    def test_HAProxyStatusView_configured_404(self):
+    def test_HAProxyStatusView_status_code_is_configurable(self):
         config.push('change_haproxy_status_code', dedent('''
             [haproxy_status_view]
-            going_down_status: 404
+            going_down_status: 499
             '''))
         self.addCleanup(config.pop, 'change_haproxy_status_code')
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
-        self.assertEquals(404, result.getStatus())
+        self.assertEquals(499, result.getStatus())
 
