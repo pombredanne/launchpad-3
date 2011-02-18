@@ -42,3 +42,10 @@ class TranslationSplitter:
             UpstreamItem.potemplateID == UpstreamTemplate.id,
             UpstreamTemplate.productseriesID == self.productseries.id,
         )
+
+    @staticmethod
+    def splitPOTMsgSet(ubuntu_item):
+        new_potmsgset = ubuntu_item.potmsgset.clone()
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(ubuntu_item).potmsgset = new_potmsgset
+        return new_potmsgset
