@@ -616,11 +616,40 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual([build], list(recipe.getBuilds()))
         self.assertEqual([], list(recipe.getPendingBuilds()))
 
+    def test_setRecipeText_private_base_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(branch)
+            e = self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
+            self.assertEqual(
+                'Recipe may not refer to private branch: %s' %
+                branch.bzr_identity, str(e))
+
+    def test_setRecipeText_private_referenced_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            base_branch = self.factory.makeAnyBranch(
+                owner=source_package_recipe.owner)
+            referenced_branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(
+                base_branch, referenced_branch)
+            e = self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
+            self.assertEqual(
+                'Recipe may not refer to private branch: %s' %
+                referenced_branch.bzr_identity, str(e))
+
     def test_getBuilds_ignores_disabled_archive(self):
         # Builds into a disabled archive aren't returned.
         archive = self.factory.makeArchive()
         recipe = self.factory.makeSourcePackageRecipe()
-        build = self.factory.makeSourcePackageRecipeBuild(
+        self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, archive=archive)
         with person_logged_in(archive.owner):
             archive.disable()
@@ -825,7 +854,7 @@ class TestWebservice(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
-    def makeRecipe(self, user=None, owner=None, recipe_text=None):
+    def makeRecipe(self, user=None, owner=None, recipe_text=None, version='devel'):
         # rockstar 21 Jul 2010 - This function does more commits than I'd
         # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
@@ -839,8 +868,9 @@ class TestWebservice(TestCaseWithFactory):
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         transaction.commit()
-        launchpad = launchpadlib_for('test', user,
-                service_root=self.layer.appserver_root_url('api'))
+        launchpad = launchpadlib_for(
+            'test', user, version=version,
+            service_root=self.layer.appserver_root_url('api'))
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
@@ -871,37 +901,20 @@ class TestWebservice(TestCaseWithFactory):
     def test_recipe_text(self):
         recipe_text2 = self.makeRecipeText()
         recipe = self.makeRecipe()[0]
-        recipe.setRecipeText(recipe_text=recipe_text2)
+        recipe.recipe_text = recipe_text2
+        recipe.lp_save()
         self.assertEqual(recipe_text2, recipe.recipe_text)
 
-    def test_setRecipeText_private_base_branch(self):
-        source_package_recipe = self.factory.makeSourcePackageRecipe()
-        with person_logged_in(source_package_recipe.owner):
-            branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
-            recipe_text = self.factory.makeRecipeText(branch)
-            e = self.assertRaises(
-                PrivateBranchRecipe, source_package_recipe.setRecipeText,
-                recipe_text)
-            self.assertEqual(
-                'Recipe may not refer to private branch: %s' %
-                branch.bzr_identity, str(e))
+    def test_recipe_text_setRecipeText_not_in_devel(self):
+        recipe = self.makeRecipe()[0]
+        method = getattr(recipe, 'setRecipeText', None)
+        self.assertIs(None, method)
 
-    def test_setRecipeText_private_referenced_branch(self):
-        source_package_recipe = self.factory.makeSourcePackageRecipe()
-        with person_logged_in(source_package_recipe.owner):
-            base_branch = self.factory.makeAnyBranch(
-                owner=source_package_recipe.owner)
-            referenced_branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
-            recipe_text = self.factory.makeRecipeText(
-                base_branch, referenced_branch)
-            e = self.assertRaises(
-                PrivateBranchRecipe, source_package_recipe.setRecipeText,
-                recipe_text)
-            self.assertEqual(
-                'Recipe may not refer to private branch: %s' %
-                referenced_branch.bzr_identity, str(e))
+    def test_recipe_text_setRecipeText_in_one_zero(self):
+        recipe_text2 = self.makeRecipeText()
+        recipe = self.makeRecipe(version='1.0')[0]
+        recipe.setRecipeText(recipe_text=recipe_text2)
+        self.assertEqual(recipe_text2, recipe.recipe_text)
 
     def test_getRecipe(self):
         """Person.getRecipe returns the named recipe."""
