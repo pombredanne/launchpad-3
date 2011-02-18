@@ -6,12 +6,14 @@
 # or similar.  Refer to the twistd(1) man page for details.
 
 import os
+import tempfile
 
 from twisted.application import service, strports
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred import checkers, credentials
 from twisted.cred.portal import IRealm, Portal
+from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.protocols.policies import TimeoutFactory
 from twisted.python import components, filepath
@@ -22,6 +24,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 
+from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
@@ -47,7 +50,62 @@ def make_portal():
 
 
 class PoppyAnonymousShell(ftp.FTPShell):
-    pass
+    """The 'command' interface for sessions.
+
+    Roughly equivalent to the SFTPServer in the sftp side of things.
+    """
+    def __init__(self, fsroot):
+        self._fs_root = fsroot
+        self.uploadfilesystem = UploadFileSystem(tempfile.mkdtemp())
+        self._current_upload = self.uploadfilesystem.rootpath
+        os.chmod(self._current_upload, 0770)
+        #self._log = logging.getLogger("poppy-sftp")
+        # XXX fix hooks
+        #self.hook = Hooks(
+        #    self._fs_root, self._log, "ubuntu", perms='g+rws', prefix='-ftp')
+        #self.hook.new_client_hook(self._current_upload, 0, 0)
+        #self.hook.auth_verify_hook(self._current_upload, None, None)
+        super(PoppyAnonymousShell, self).__init__(fsroot)
+
+    def openForWriting(self, filename):
+        self._create_missing_directories(filename)
+        absfile = self._translate_path(filename)
+        return super(PoppyAnonymousShell, self).openForWriting(absfile)
+
+    def removeFile(self, path):
+        # Same as SFTPServer
+        pass
+
+    def rename(self, old_path, new_path):
+        # Same as SFTPServer
+        abs_old = self._translate_path(old_path)
+        abs_new = self._translate_path(new_path)
+        os.rename(abs_old, abs_new)
+
+    def makeDirectory(self, path):
+        path = "/".join(path)
+        return defer.maybeDeferred(self.uploadfilesystem.mkdir, path)
+
+    def removeDirectory(self, path):
+        # Same as SFTPServer
+        self.uploadfilesystem.rmdir(path)
+
+    def _create_missing_directories(self, filename):
+        # Same as SFTPServer
+        new_dir, new_file = os.path.split(
+            self.uploadfilesystem._sanitize(filename))
+        if new_dir != '':
+            if not os.path.exists(
+                os.path.join(self._current_upload, new_dir)):
+                self.uploadfilesystem.mkdir(new_dir)
+
+    def _translate_path(self, filename):
+        return self.uploadfilesystem._full(
+            self.uploadfilesystem._sanitize(filename))
+
+
+    # XXX Add client_done_hook.
+
 
 
 class PoppyAccessCheck:
@@ -133,9 +191,11 @@ class FTPServiceFactory(service.Service):
         # Setting this works around the fact that the twistd FTP server
         # invokes a special restricted shell when someone logs in as
         # "anonymous" which is the default for 'dput'.
-        factory.userAnonymous = "poppy"
+        factory.userAnonymous = "userthatwillneverhappen"
         self.ftpfactory = factory
         self.portno = port
+        # XXX self.timeOut = ?
+        # XXX self.welcomeMessage = ?
 
     @staticmethod
     def makeFTPService(port=2121):
