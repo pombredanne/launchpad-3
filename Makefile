@@ -263,7 +263,10 @@ run: check_schema inplace stop
 	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: check_schema inplace stop support_files
+run.gdb:
+	echo 'run' > run.gdb
+
+start-gdb: check_schema inplace stop support_files run.gdb
 	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
