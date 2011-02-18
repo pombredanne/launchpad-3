@@ -3,7 +3,7 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include file="zopeapp.zcml" />
+    <include file="zcml/zopeapp.zcml" />
     <include package="canonical" />
 
     <include files="zcml/package-includes/*-meta.zcml" />

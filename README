@@ -102,5 +102,5 @@ of the ones that come up from time to time.
     A directory into which we symlink branches of some of Launchpad's
     dependencies.  Don't ask.
 
-You never have to care about 'benchmarks', 'override-includes' or
-'package-includes'.
+  zcml/
+    Various configuration files for the Zope services. Angels fear to tread.

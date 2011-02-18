@@ -239,7 +239,7 @@ class CanonicalConfig:
 
         Call this method before letting any ZCML processing occur.
         """
-        loader_file = os.path.join(self.root, '+config-overrides.zcml')
+        loader_file = os.path.join(self.root, 'zcml/+config-overrides.zcml')
         loader = open(loader_file, 'w')
 
         print >> loader, """
