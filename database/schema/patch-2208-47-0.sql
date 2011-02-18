@@ -9,4 +9,8 @@ CREATE TABLE PackagingJob (
     distroseries INTEGER NOT NULL CONSTRAINT distroseries_fk REFERENCES DistroSeries
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 90, 0);
+
+CREATE INDEX packagingjob__job__idx ON PackagingJob(job);
+
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 47, 0);
