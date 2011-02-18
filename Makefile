@@ -394,7 +394,7 @@ clean: clean_js clean_buildout
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/zeca
+			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi

@@ -1396,6 +1396,29 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
 
         self.assertEqual([], karma_listener.karma_events)
 
+    def test_from_import_origin(self):
+        # With from_import set, the origin is set to SCM.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(
+            pofile, owner, translation, from_import=True)
+
+        self.assertEqual(RosettaTranslationOrigin.SCM, suggestion.origin)
+
+    def test_from_import_karma(self):
+        # No karma is assigned if from_import is set.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        karma_listener = self._listenForKarma(pofile)
+
+        potmsgset.submitSuggestion(
+            pofile, owner, translation, from_import=True)
+
+        self.assertEqual([], karma_listener.karma_events)
+
 
 class TestSetCurrentTranslation(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
