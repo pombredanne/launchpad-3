@@ -103,6 +103,9 @@ class PoppyAnonymousShell(ftp.FTPShell):
         return self.uploadfilesystem._full(
             self.uploadfilesystem._sanitize(filename))
 
+    def list(self, path_segments, attrs):
+        return defer.fail(ftp.CmdNotImplementedError("LIST"))
+
 
     # XXX Add client_done_hook.
 
