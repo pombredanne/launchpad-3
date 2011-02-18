@@ -11,6 +11,8 @@ __all__ = [
     'switch_going_down_flag',
     ]
 
+from canonical.config import config
+
 # This is the global flag, when this is True, the HAProxy view
 # will return 500, it returns 200 otherwise.
 going_down_flag = False
@@ -46,6 +48,10 @@ class HAProxyStatusView:
     restart them. The probe URL will then return 500 and the app server will
     be taken out of rotation. Once HAProxy reports that all connections to the
     app servers are finished, we can restart the server safely.
+
+    The returned result code when the server is going down can be configured
+    through the haproxy_status_view.going_down_status configuration variable.
+    It defaults to 500.
     """
 
     def __init__(self, context, request):
@@ -55,8 +61,10 @@ class HAProxyStatusView:
     def __call__(self):
         """Return 200 or 500 depending on the global flag."""
         global going_down_flag
+
         if going_down_flag:
-            self.request.response.setStatus(500)
+            self.request.response.setStatus(
+                config.haproxy_status_view.going_down_status)
             return u"May day! May day! I'm going down. Stop the flood gate."
         else:
             self.request.response.setStatus(200)
