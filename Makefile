@@ -134,7 +134,7 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build
+inplace: build clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
@@ -260,20 +260,17 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
 
 start-gdb: check_schema inplace stop support_files run.gdb
-	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
@@ -287,7 +284,6 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -363,7 +359,10 @@ clean_buildout:
 	$(RM) -r build
 	$(RM) _pythonpath.py
 
-clean: clean_js clean_buildout
+clean_logs:
+	$(RM) logs/thread*.request
+
+clean: clean_js clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -377,7 +376,6 @@ clean: clean_js clean_buildout
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -rf $(CODEHOSTING_ROOT)
@@ -498,4 +496,4 @@ pydoctor:
 	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
 	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
 	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor
+	sprite_image css_combine compile check_schema pydoctor clean_logs \
