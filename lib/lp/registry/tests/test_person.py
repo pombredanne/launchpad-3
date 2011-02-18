@@ -404,9 +404,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):

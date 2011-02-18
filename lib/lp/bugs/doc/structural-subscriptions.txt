@@ -6,6 +6,7 @@ structure like a product, project, productseries, distribution,
 distroseries, milestone or a combination of sourcepackagename and
 distribution.
 
+    >>> from lp.testing import person_logged_in
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -20,21 +21,22 @@ distribution.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
-    >>> ff_sub = StructuralSubscription(product=firefox,
-    ...     subscriber=sampleperson, subscribed_by=foobar)
+    >>> with person_logged_in(foobar):
+    ...     ff_sub = firefox.addBugSubscription(
+    ...         subscriber=sampleperson, subscribed_by=foobar)
     >>> ff_sub.target
     <Product at ...>
 
-    >>> ubuntu_sub = StructuralSubscription(distribution=ubuntu,
-    ...     subscriber=sampleperson, subscribed_by=foobar)
+    >>> with person_logged_in(foobar):
+    ...     ubuntu_sub = ubuntu.addBugSubscription(
+    ...         subscriber=sampleperson, subscribed_by=foobar)
     >>> ubuntu_sub.target
     <Distribution 'Ubuntu' (ubuntu)>
 
-    >>> evolution = getUtility(ISourcePackageNameSet).getOrCreateByName(
-    ...    'evolution')
-    >>> evolution_sub = StructuralSubscription(distribution=ubuntu,
-    ...     sourcepackagename=evolution, subscriber=sampleperson,
-    ...     subscribed_by=foobar)
+    >>> evolution = ubuntu.getSourcePackage('evolution')
+    >>> with person_logged_in(foobar):
+    ...     evolution_sub = evolution.addBugSubscription(
+    ...         subscriber=sampleperson, subscribed_by=foobar)
     >>> evolution_sub.target
     <...DistributionSourcePackage object at ...>
 
