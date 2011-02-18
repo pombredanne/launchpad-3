@@ -7,24 +7,24 @@
     xmlns:rdb="http://namespaces.zope.org/rdb"
     xmlns:mail="http://namespaces.zope.org/mail">
 
-    <include file="zopeapp.zcml" />
+    <include file="zcml/zopeapp.zcml" />
     <!-- Session machinery -->
-    <include file="zopeappsession.zcml" />
+    <include file="zcml/zopeappsession.zcml" />
 
     <!-- Browser Configurations -->
-    <include file="zopeappbrowser.zcml" />
+    <include file="zcml/zopeappbrowser.zcml" />
 
     <include package="canonical" />
 
-    <include files="package-includes/*-meta.zcml" />
-    <includeOverrides file="override-meta.zcml" />
+    <include files="zcml/package-includes/*-meta.zcml" />
+    <includeOverrides file="zcml/override-meta.zcml" />
 
-    <include files="package-includes/*-configure.zcml" />
-    <include files="package-includes/*-configure-testing.zcml" />
-    <includeOverrides file="override-configure.zcml" />
-    <includeOverrides file="override-configure-testing.zcml" />
+    <include files="zcml/package-includes/*-configure.zcml" />
+    <include files="zcml/package-includes/*-configure-testing.zcml" />
+    <includeOverrides file="zcml/override-configure.zcml" />
+    <includeOverrides file="zcml/override-configure-testing.zcml" />
 
-    <include file="securitypolicy.zcml" />
+    <include file="zcml/securitypolicy.zcml" />
 
-    <include file="summarizerequests.zcml" />
+    <include file="zcml/summarizerequests.zcml" />
 </configure>
