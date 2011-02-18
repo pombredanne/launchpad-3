@@ -608,9 +608,9 @@ COMMENT ON COLUMN FeatureFlag.flag IS
 
 -- FeatureFlagChange
 
-COMMENT ON TABLE FeatureFlagChange IS 'A record of changes to the FeatureFlag table.';
-COMMENT ON COLUMN FeatureFlagChange.date_changed IS 'The timestamp for when the change was made';
-COMMENT ON COLUMN FeatureFlagChange.diff IS 'A unified diff of the change.';
+COMMENT ON TABLE FeatureFlagChangelogEntry IS 'A record of changes to the FeatureFlag table.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.date_changed IS 'The timestamp for when the change was made';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.diff IS 'A unified diff of the change.';
 
 -- KarmaCategory
 

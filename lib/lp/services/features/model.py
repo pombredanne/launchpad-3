@@ -3,7 +3,7 @@
 
 __all__ = [
     'FeatureFlag',
-    'FeatureFlagChange',
+    'FeatureFlagChangelogEntry',
     'getFeatureStore',
     ]
 
@@ -56,16 +56,16 @@ class FeatureFlag(Storm):
         self.value = value
 
 
-class FeatureFlagChange(Storm):
+class FeatureFlagChangelogEntry(Storm):
     """A record of a change to the whole set of feature flags."""
 
-    __storm_table__ = 'FeatureFlagChange'
+    __storm_table__ = 'FeatureFlagChangelogEntry'
 
     id = Int(primary=True)
     date_changed = UtcDateTimeCol(notNull=True)
     diff = Unicode(allow_none=False)
 
     def __init__(self, diff):
-        super(FeatureFlagChange, self).__init__()
+        super(FeatureFlagChangelogEntry, self).__init__()
         self.diff = diff
         self.date_changed = datetime.now(pytz.timezone('UTC'))

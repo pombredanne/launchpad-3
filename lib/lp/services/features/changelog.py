@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Classes that manage FeatureFlagChange changes."""
+"""Classes that manage FeatureFlagChangelogEntry items."""
 
 __all__ = [
     'ChangeLog',
@@ -12,26 +12,26 @@ __metaclass__ = type
 from storm.locals import Desc
 
 from lp.services.features.model import (
-    FeatureFlagChange,
+    FeatureFlagChangelogEntry,
     getFeatureStore,
     )
 
 
 class ChangeLog:
-    """A log of `FeatureFlagChange` changes."""
+    """A log of `FeatureFlagChangelogEntry` items."""
 
     @staticmethod
     def get():
-        """return a result set of `FeatureFlagChange` changes."""
+        """return a result set of `FeatureFlagChangelogEntry` items."""
         store = getFeatureStore()
-        rs = store.find(FeatureFlagChange)
-        rs.order_by(Desc(FeatureFlagChange.date_changed))
+        rs = store.find(FeatureFlagChangelogEntry)
+        rs.order_by(Desc(FeatureFlagChangelogEntry.date_changed))
         return rs
 
     @staticmethod
     def append(diff):
-        """Append a diff to the FeatureFlagChange changes."""
+        """Append a FeatureFlagChangelogEntry to the ChangeLog."""
         store = getFeatureStore()
-        feature_flag_change = FeatureFlagChange(diff)
+        feature_flag_change = FeatureFlagChangelogEntry(diff)
         store.add(feature_flag_change)
         return feature_flag_change

@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-CREATE TABLE FeatureFlagChange (
+CREATE TABLE FeatureFlagChangelogEntry (
     id serial NOT NULL,
     date_changed timestamp without time zone NOT NULL
         DEFAULT timezone('UTC'::text, now()),

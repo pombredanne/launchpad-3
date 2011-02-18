@@ -11,7 +11,7 @@ from datetime import datetime
 import pytz
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.services.features.model import FeatureFlagChange
+from lp.services.features.model import FeatureFlagChangelogEntry
 from lp.services.features.changelog import ChangeLog
 from lp.testing import TestCase
 
@@ -21,15 +21,15 @@ diff = (
     u"+bugs.new_feature team:testers 10 off")
 
 
-class TestFeatureFlagChange(TestCase):
-    """Test the FeatureFlagChange data."""
+class TestFeatureFlagChangelogEntry(TestCase):
+    """Test the FeatureFlagChangelogEntry data."""
 
     layer = DatabaseFunctionalLayer
 
     def test_FeatureFlagChange_creation(self):
-        # A FeatureFlagChange has a diff and a date of change.
+        # A FeatureFlagChangelogEntry has a diff and a date of change.
         before = datetime.now(pytz.timezone('UTC'))
-        feature_flag_change = FeatureFlagChange(diff)
+        feature_flag_change = FeatureFlagChangelogEntry(diff)
         after = datetime.now(pytz.timezone('UTC'))
         self.assertEqual(
             diff, feature_flag_change.diff)
@@ -43,7 +43,7 @@ class TestChangeLog(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_ChangeLog_append(self):
-        # The append() method creates a FeatureFlagChange.
+        # The append() method creates a FeatureFlagChangelogEntry.
         feature_flag_change = ChangeLog.append(diff)
         self.assertEqual(
             diff, feature_flag_change.diff)
