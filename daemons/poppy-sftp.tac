@@ -83,7 +83,7 @@ class PoppyAnonymousShell(ftp.FTPShell):
         os.rename(abs_old, abs_new)
 
     def makeDirectory(self, path):
-        path = "/".join(path)
+        path = os.sep.join(path)
         return defer.maybeDeferred(self.uploadfilesystem.mkdir, path)
 
     def removeDirectory(self, path):
