@@ -13,6 +13,10 @@
       tal:content="structure context_menu/subscription/render" />
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
+    <tal:show-mute
+        condition="request/features/malone.advanced-subscriptions.enabled">
+      <div tal:content="structure context_menu/mute_subscription/render" />
+    </tal:show-mute>
   </div>
   <a id="subscribers-ids-link"
      tal:define="bug context/bug|context"
