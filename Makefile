@@ -402,7 +402,6 @@ clean: clean_js clean_buildout clean_logs
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
-	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
 
 
 realclean: clean
@@ -456,33 +455,6 @@ tags: compile
 ID: compile
 	# idutils ID file
 	bin/tags -i
-
-lp.sfood:
-	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
-	-I lib/contrib -I lib/canonical/not-used lib/canonical \
-	lib/lp 2>/dev/null | grep -v contrib/ \
-	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell > lp.sfood.tmp
-	mv lp.sfood.tmp lp.sfood
-
-
-lp-clustered.sfood: lp.sfood lp-sfood-packages
-	# Cluster the import dependency graph
-	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
-	mv lp-clustered.sfood.tmp lp-clustered.sfood
-
-
-lp-clustered.dot: lp-clustered.sfood
-	# Build the visual graph
-	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
-	mv lp-clustered.dot.tmp lp-clustered.dot
-
-
-lp-clustered.svg: lp-clustered.dot
-	# Render to svg
-	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
-	mv lp-clustered.svg.tmp lp-clustered.svg
 
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS =

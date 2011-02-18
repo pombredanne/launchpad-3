@@ -1,3 +1,4 @@
+lp/vostok
 lp/translations
 lp/testopenid
 lp/testing
@@ -19,6 +20,7 @@ lp/app
 lp/answers
 canonical/widgets
 canonical/tests
+canonical/testing/layers
 canonical/testing
 canonical/poppy
 canonical/not-used
