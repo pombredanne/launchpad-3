@@ -39,7 +39,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -72,7 +71,6 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     ws_object,
     )
@@ -375,24 +373,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         queue_record = build.buildqueue_record
         queue_record.score()
         self.assertEqual(2705, queue_record.lastscore)
-
-    def test_requestBuildHonoursConfig(self):
-        recipe = self.factory.makeSourcePackageRecipe()
-        (distroseries,) = list(recipe.distroseries)
-        ppa = self.factory.makeArchive()
-        self.pushConfig('build_from_branch', enabled=False)
-        self.assertRaises(
-            ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
-            PackagePublishingPocket.RELEASE)
-
-    def test_recipes_enabled_config(self):
-        self.pushConfig('build_from_branch', enabled=False)
-        self.assertFalse(recipes_enabled())
-
-    def test_recipes_enabled_flag(self):
-        self.pushConfig('build_from_branch', enabled=False)
-        set_feature_flag(u'code.recipes_enabled', u'on')
-        self.assertTrue(recipes_enabled())
 
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
