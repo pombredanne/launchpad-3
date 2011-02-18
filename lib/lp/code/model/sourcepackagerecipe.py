@@ -15,7 +15,10 @@ from datetime import (
     datetime,
     timedelta,
     )
+
+from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 from pytz import utc
 from storm.expr import (
     And,
@@ -50,7 +53,10 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
+    NoSuchBranch,
+    PrivateBranchRecipe,
     TooManyBuilds,
+    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -160,8 +166,13 @@ class SourcePackageRecipe(Storm):
         return self._recipe_data.base_branch
 
     def setRecipeText(self, recipe_text):
-        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
-        self._recipe_data.setRecipe(parsed)
+        try:
+            parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+            self._recipe_data.setRecipe(parsed)
+        except (RecipeParseError, NoSuchBranch, PrivateBranchRecipe,
+                TooNewRecipeFormat) as e:
+            expose(e)
+            raise
 
     @property
     def recipe_text(self):
