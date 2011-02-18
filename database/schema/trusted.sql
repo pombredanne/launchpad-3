@@ -52,7 +52,7 @@ COMMENT ON FUNCTION null_count(anyarray) IS
 
 
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -73,7 +73,7 @@ COMMENT ON FUNCTION replication_lag() IS
 
 
 CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -96,7 +96,7 @@ COMMENT ON FUNCTION replication_lag(integer) IS
 
 
 CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     BEGIN
         DELETE FROM DatabaseReplicationLag;
@@ -117,7 +117,7 @@ COMMENT ON FUNCTION update_replication_lag_cache() IS
 'Updates the DatabaseReplicationLag materialized view.';
 
 CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
-LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     import subprocess
@@ -206,7 +206,7 @@ COMMENT ON FUNCTION update_database_stats() IS
 
 SET check_function_bodies=false; -- Handle forward references
 CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
-LANGUAGE sql VOLATILE SECURITY DEFINER AS
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     INSERT INTO DatabaseDiskUtilization
     SELECT
@@ -306,7 +306,7 @@ $$;
 SET check_function_bodies=true; -- Handle forward references
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_node_id integer;
@@ -325,7 +325,7 @@ COMMENT ON FUNCTION getlocalnodeid() IS
 
 CREATE OR REPLACE FUNCTION activity()
 RETURNS SETOF pg_catalog.pg_stat_activity
-LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+LANGUAGE SQL VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     SELECT
         datid, datname, procpid, usesysid, usename,
@@ -586,7 +586,7 @@ COMMENT ON FUNCTION is_printable_ascii(text) IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -604,7 +604,7 @@ COMMENT ON FUNCTION mv_pillarname_distribution() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -623,7 +623,8 @@ COMMENT ON FUNCTION mv_pillarname_product() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, project, active)
@@ -641,8 +642,8 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
-RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+RETURNS TRIGGER VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 DECLARE
     v_trash_old BOOLEAN;
 BEGIN
@@ -843,7 +844,7 @@ COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for s
 
 CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER SET search_path TO public AS
+SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
@@ -915,8 +916,8 @@ COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the
 
 
 CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
-RETURNS boolean
-LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
+RETURNS boolean LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT
+SECURITY DEFINER SET search_path TO public AS
 $$
     SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
@@ -1026,7 +1027,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -1554,7 +1555,7 @@ COMMENT ON FUNCTION mv_branch_distribution_update() IS
 -- in a seperate replication set.
 -- Insert triggers
 CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_TeamParticipation SELECT NEW.*;
@@ -1563,7 +1564,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_PersonLocation SELECT NEW.*;
@@ -1572,7 +1573,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_Person (
@@ -1591,7 +1592,7 @@ $$;
 
 -- Obsolete. Remove next cycle.
 CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_Account (id, openid_identifier)
@@ -1601,7 +1602,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- Support obsolete lp_Account.openid_identifier as best we can
@@ -1622,7 +1623,7 @@ $$;
 
 -- UPDATE triggers
 CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_TeamParticipation
@@ -1635,7 +1636,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_PersonLocation
@@ -1655,7 +1656,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_Person
@@ -1695,7 +1696,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
@@ -1708,7 +1709,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF OLD.identifier <> NEW.identifier THEN
@@ -1727,7 +1728,7 @@ $$;
 
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
@@ -1736,7 +1737,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_del() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 DECLARE
     next_identifier text;
@@ -1759,7 +1760,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION add_test_openid_identifier(account_ integer)
-RETURNS BOOLEAN SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- The generated OpenIdIdentifier is not a valid OpenId Identity URL
@@ -1782,7 +1783,7 @@ COMMENT ON FUNCTION add_test_openid_identifier(integer) IS
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
-RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE bug SET latest_patch_uploaded =
@@ -1797,7 +1798,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
-RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     PERFORM bug_update_latest_patch_uploaded(NEW.bug);
@@ -1807,7 +1808,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
-RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     PERFORM bug_update_latest_patch_uploaded(OLD.bug);
