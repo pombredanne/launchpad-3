@@ -3,11 +3,11 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include file="zcml/zopeapp.zcml" />
+    <include file="zopeapp.zcml" />
     <include package="canonical" />
 
-    <include files="zcml/package-includes/*-meta.zcml" />
-    <includeOverrides file="zcml/override-meta.zcml" />
+    <include files="package-includes/*-meta.zcml" />
+    <includeOverrides file="override-meta.zcml" />
 
     <!-- Add a hook to configure the email stuff using ZCML stored outside
         of the launchpad tree -->
@@ -19,8 +19,8 @@
         package-includes/*-configure-testing.zcml contain configuration
         that needs to be different between normal and test modes.
     -->
-    <include files="zcml/package-includes/*-configure.zcml" />
-    <include files="zcml/package-includes/*-configure-normal.zcml" />
+    <include files="package-includes/*-configure.zcml" />
+    <include files="package-includes/*-configure-normal.zcml" />
 
     <!--
         Overrides are currently disabled. Currently, nothing we
@@ -34,5 +34,5 @@
     <!-- Make sure that the scripts have access to to the error
          reporting utility.
     -->
-    <includeOverrides file="zcml/override-includes/errorlog-configure.zcml" />
+    <includeOverrides file="override-includes/errorlog-configure.zcml" />
 </configure>

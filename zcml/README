@@ -8,7 +8,9 @@ ZCML files in turn load other parts.
 
   site.zcml
     The big kahuna. Various config files (e.g. launchpad.conf) refer
-    to this file.
+    to this file.  For the time being, this must be available in the root
+    directory of the Launchpad tree, since production configuration files
+    depend on it being there.
 
   ftesting.zcml
     Used to configure the functional testing layer.  Look in

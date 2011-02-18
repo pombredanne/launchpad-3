@@ -4,5 +4,5 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
     <include file="script.zcml" />
-    <includeOverrides files="zcml/package-includes/*-configure-testing.zcml" />
+    <includeOverrides files="package-includes/*-configure-testing.zcml" />
 </configure>
