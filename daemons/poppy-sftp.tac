@@ -71,10 +71,21 @@ class PoppyAnonymousShell(ftp.FTPShell):
         super(PoppyAnonymousShell, self).__init__(
             filepath.FilePath(self._current_upload))
 
-    def openForWriting(self, filename):
+    def openForWriting(self, file_segments):
+        """Write the uploaded file to disk, safely.
+
+        :param file_segments: A list containing string items, one for each
+            path component of the file being uploaded.  The file referenced
+            is relative to the temporary root for this session.
+
+        If the file path contains directories, we create them.
+        """
+        # XXX this code is currently using internal sanitisation and
+        # file ops, it should be converted to use FilePath exclusively.
+        filename = os.sep.join(file_segments)
         self._create_missing_directories(filename)
-        absfile = self._translate_path(filename)
-        return super(PoppyAnonymousShell, self).openForWriting(absfile)
+        #absfile = self._translate_path(filename)
+        return super(PoppyAnonymousShell, self).openForWriting(file_segments)
 
     def removeFile(self, path):
         # Same as SFTPServer
