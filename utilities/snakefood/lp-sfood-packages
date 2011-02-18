@@ -20,13 +20,13 @@ lp/app
 lp/answers
 canonical/widgets
 canonical/tests
-canonical/testing/layers
 canonical/testing
 canonical/poppy
 canonical/not-used
 canonical/lp
 canonical/librarian
 canonical/lazr
+canonical/launchpad/webapp
 canonical/launchpad
 canonical/ftests
 canonical/doap

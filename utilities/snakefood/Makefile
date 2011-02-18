@@ -9,7 +9,8 @@ lp.sfood:
 	-I $(LIB_DIR)/canonical/not-used $(LIB_DIR)/canonical \
 	$(LIB_DIR)/lp 2>/dev/null | grep -v contrib/ \
 	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell > lp.sfood.tmp
+	| grep -v schoolbell | grep -v '/tests/' | grep -v '/ftests/' \
+    | grep -v 'canonical/config' > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
 
 
