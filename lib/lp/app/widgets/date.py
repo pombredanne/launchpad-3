@@ -112,9 +112,11 @@ class DateTimeWidget(TextWidget):
     supported_input_formats = [
         '%Y-%m-%d %H:%M:%S%z',
         '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
         '%Y-%m-%d',
         '%m-%d-%Y %H:%M:%S%z',
         '%m-%d-%Y %H:%M:%S',
+        '%m-%d-%Y %H:%M',
         '%m-%d-%Y',
         ]
 
@@ -130,7 +132,8 @@ class DateTimeWidget(TextWidget):
     def __init__(self, context, request):
         request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
-        self.system_time_zone = getUtility(ILaunchBag).time_zone
+        launchbag = getUtility(ILaunchBag)
+        self.system_time_zone = launchbag.time_zone
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
@@ -316,24 +319,10 @@ class DateTimeWidget(TextWidget):
         return value
 
     def _checkSupportedFormat(self, input):
-        """Checks that the input is in a usable format.
-
-          >>> from zope.publisher.browser import TestRequest
-          >>> from zope.schema import Field
-          >>> field = Field(__name__='foo', title=u'Foo')
-          >>> widget = DateTimeWidget(field, TestRequest())
-
-        Dates in unsupported formats result in a ConversionError:
-
-          >>> widget._checkSupportedFormat('15-5-2010')  #doctest: +ELLIPSIS
-          Traceback (most recent call last):
-            ...
-          ConversionError: ('Invalid date value', ...)
-
-        """
+        """Checks that the input is in a usable format."""
         for fmt in self.supported_input_formats:
             try:
-                datetime.strptime(input, fmt)
+                datetime.strptime(input.strip(), fmt)
             except (ValueError), e:
                 if 'unconverted data remains' in e.message:
                     return
