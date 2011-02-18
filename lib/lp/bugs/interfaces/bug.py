@@ -411,6 +411,16 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IMessage)),
         exported_as='messages')
 
+    def _indexed_messages(include_content=False, include_parents=False):
+        """Low level query for getting bug messages.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent
+            messages too. If False the parent attribute will be *forced* to
+            None to prevent lazy evaluation triggering database lookups.
+        """
+
     followup_subject = Attribute("The likely subject of the next message.")
 
     has_patches = Attribute("Does this bug have any patches?")
