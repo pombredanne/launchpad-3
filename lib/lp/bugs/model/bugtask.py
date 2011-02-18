@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskSet',
     'NullBugTask',
     'bugtask_sort_key',
+    'determine_target',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -146,7 +147,6 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -163,6 +163,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -267,6 +268,29 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
+def determine_target(product, productseries, distribution, distroseries,
+                     sourcepackagename):
+    """Returns the IBugTarget defined by the given arguments."""
+    if product:
+        return product
+    elif productseries:
+        return productseries
+    elif distribution:
+        if sourcepackagename:
+            return distribution.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distribution
+    elif distroseries:
+        if sourcepackagename:
+            return distroseries.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distroseries
+    else:
+        raise AssertionError("Unable to determine bugtask target.")
+
+
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
 
@@ -312,24 +336,9 @@ class BugTaskMixin:
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
-        if self.product:
-            return self.product
-        elif self.productseries:
-            return self.productseries
-        elif self.distribution:
-            if self.sourcepackagename:
-                return self.distribution.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distribution
-        elif self.distroseries:
-            if self.sourcepackagename:
-                return self.distroseries.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distroseries
-        else:
-            raise AssertionError("Unable to determine bugtask target.")
+        return determine_target(
+            self.product, self.productseries, self.distribution,
+            self.distroseries, self.sourcepackagename)
 
     @property
     def related_tasks(self):
@@ -2205,9 +2214,14 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-                searchtext_like_quoted)]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted
+            ]
+        no_targetnamesearch = bool(features.getFeatureFlag(
+            'malone.disable_targetnamesearch'))
+        if not no_targetnamesearch:
+            text_search_clauses.append(
+                "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted))
         # Due to performance problems, whether to search in comments is
         # controlled by a config option.
         if config.malone.search_comments:
@@ -2917,10 +2931,6 @@ class BugTaskSet:
                 orderby_arg.append(BugTask.id)
 
         return tuple(orderby_arg)
-
-    def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select(orderBy='id')
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

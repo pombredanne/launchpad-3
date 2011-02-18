@@ -22,21 +22,22 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeTranslationMergeJob(self):
-        singular = self.factory.getUniqueString()
-        upstream_pofile = self.factory.makePOFile(
+    @staticmethod
+    def makeTranslationMergeJob(factory):
+        singular = factory.getUniqueString()
+        upstream_pofile = factory.makePOFile(
             side=TranslationSide.UPSTREAM)
-        upstream_potmsgset = self.factory.makePOTMsgSet(
+        upstream_potmsgset = factory.makePOTMsgSet(
             upstream_pofile.potemplate, singular, sequence=1)
-        upstream = self.factory.makeCurrentTranslationMessage(
+        upstream = factory.makeCurrentTranslationMessage(
             pofile=upstream_pofile, potmsgset=upstream_potmsgset)
-        ubuntu_potemplate = self.factory.makePOTemplate(
+        ubuntu_potemplate = factory.makePOTemplate(
             side=TranslationSide.UBUNTU, name=upstream_pofile.potemplate.name)
-        ubuntu_pofile = self.factory.makePOFile(
+        ubuntu_pofile = factory.makePOFile(
             potemplate=ubuntu_potemplate, language=upstream_pofile.language)
-        ubuntu_potmsgset = self.factory.makePOTMsgSet(
+        ubuntu_potmsgset = factory.makePOTMsgSet(
             ubuntu_pofile.potemplate, singular, sequence=1)
-        ubuntu = self.factory.makeCurrentTranslationMessage(
+        ubuntu = factory.makeCurrentTranslationMessage(
             pofile=ubuntu_pofile, potmsgset=ubuntu_potmsgset,
             translations=upstream.translations)
         productseries = upstream_pofile.potemplate.productseries
@@ -47,7 +48,7 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_interface(self):
         """TranslationMergeJob must implement IRunnableJob."""
-        job = self.makeTranslationMergeJob()
+        job = self.makeTranslationMergeJob(self.factory)
         verifyObject(IRunnableJob, job)
 
     @staticmethod
@@ -81,7 +82,7 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_run_merges_msgset(self):
         """Run should merge msgsets."""
-        job = self.makeTranslationMergeJob()
+        job = self.makeTranslationMergeJob(self.factory)
         self.becomeDbUser('rosettaadmin')
         product_msg = self.getMsgSets(productseries=job.productseries)
         package_msg = self.getMsgSets(
@@ -97,7 +98,7 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_run_merges_translations(self):
         """Run should merge translations."""
-        job = self.makeTranslationMergeJob()
+        job = self.makeTranslationMergeJob(self.factory)
         self.becomeDbUser('rosettaadmin')
         self.assertEqual(2, self.countTranslations(job))
         job.run()
