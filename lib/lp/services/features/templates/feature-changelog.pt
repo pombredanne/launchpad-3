@@ -12,27 +12,28 @@
         can be audited.
       </p>
 
-      <div class="results"
-        tal:content="structure view/changes/@@+navigation-links-upper" />
+      <div style="max-width:45em;">
+        <div class="results"
+          tal:content="structure view/changes/@@+navigation-links-upper" />
 
-      <table id="changes" class="listing">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Diff</th>
-          </tr>
-        </thead>
+        <dl id="changes">
+          <tal:item repeat="change view/changes/batch">
+            <dt>
+              <tal:date replace="change/date_changed/fmt:rfc822utcdatetime" />
+              by <a tal:replace="structure change/person/fmt:link" />
+            </dt>
 
-        <tbody>
-          <tr tal:repeat="change view/changes/batch">
-            <td tal:content="change/date_changed/fmt:rfc822utcdatetime"/>
-            <td tal:content="structure change/diff/fmt:diff" />
-          </tr>
-        </tbody>
-      </table>
+            <dd class="subordinate">
+              <p tal:content="change/comment">comment</p>
 
-      <div class="results"
-        tal:content="structure view/changes/@@+navigation-links-lower" />
+              <div tal:content="structure change/diff/fmt:diff" />
+            </dd>
+          </tal:item>
+        </dl>
+
+        <div class="results"
+          tal:content="structure view/changes/@@+navigation-links-lower" />
+        </div>
     </div>
   </body>
 </html>

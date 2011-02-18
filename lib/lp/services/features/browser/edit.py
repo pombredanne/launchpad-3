@@ -13,6 +13,7 @@ __all__ = [
 from difflib import unified_diff
 import logging
 
+from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
 from zope.security.interfaces import Unauthorized
@@ -20,6 +21,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
@@ -40,6 +42,10 @@ class IFeatureControlForm(Interface):
             u"whitespace-separated.  Numerically higher "
             u"priorities match first."),
         required=False)
+    comment = Text(
+        title=u"Comment",
+        description=(u"Who requested this change and why."),
+        required=True)
 
 
 class FeatureControlView(LaunchpadFormView):
@@ -51,9 +57,10 @@ class FeatureControlView(LaunchpadFormView):
 
     schema = IFeatureControlForm
     page_title = label = 'Feature control'
-    field_names = ['feature_rules']
+    field_names = ['feature_rules', 'comment']
     diff = None
     logger_name = 'lp.services.features'
+    custom_widget('comment', TextAreaWidget, height=2)
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
@@ -70,8 +77,8 @@ class FeatureControlView(LaunchpadFormView):
         # minimal.
         new_rules = self.request.features.rule_source.getAllRulesAsText()
         diff = u'\n'.join(self.diff_rules(original_rules, new_rules))
-        # XXX sinzui 2011-02-18: Comment is hardcoded. The form must provide.
-        ChangeLog.append(diff, u'comment', self.user)
+        comment = data['comment']
+        ChangeLog.append(diff, comment, self.user)
         self.diff = FormattersAPI(diff).format_diff()
 
     @staticmethod

@@ -42,11 +42,11 @@ class TestFeatureControlPage(BrowserTestCase):
         # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
         # must know the password; we can't get the password for an existing
         # user so we have to make a new one.
-        user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson(password='test')
         for team in teams:
             with person_logged_in(team.teamowner):
-                team.addMember(user, reviewer=team.teamowner)
-        return self.getUserBrowser(url=None, user=user, password='test')
+                team.addMember(self.user, reviewer=team.teamowner)
+        return self.getUserBrowser(url=None, user=self.user, password='test')
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
@@ -105,6 +105,7 @@ class TestFeatureControlPage(BrowserTestCase):
         new_value = 'beta_user some_key 10 some value with spaces'
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = new_value
+        browser.getControl(name="field.comment").value = 'Bob is testing.'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
@@ -116,6 +117,8 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertEqual(
             '+beta_user\tsome_key\t10\tsome value with spaces',
             changes[0].diff)
+        self.assertEqual('Bob is testing.', changes[0].comment)
+        self.assertEqual(self.user, changes[0].person)
 
     def test_change_message(self):
         """Submitting shows a message that the changes have been applied."""
@@ -123,6 +126,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = 'beta_user some_key 10 some value with spaces'
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             browser.contents,
@@ -134,7 +138,9 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 another value with spaces')
         browser.getControl(name="field.actions.change").click()
@@ -157,6 +163,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             browser.contents,
@@ -171,6 +178,7 @@ class TestFeatureControlPage(BrowserTestCase):
         new_value = ''
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = new_value
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
