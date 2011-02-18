@@ -59,7 +59,7 @@ class HAProxyStatusView:
         self.request = request
 
     def __call__(self):
-        """Return 200 or 500 depending on the global flag."""
+        """Return 200 or going down status depending on the global flag."""
         global going_down_flag
 
         if going_down_flag:
