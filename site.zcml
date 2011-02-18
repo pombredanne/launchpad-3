@@ -4,14 +4,14 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <include file="zopeapp.zcml" />
+    <include file="zcml/zopeapp.zcml" />
     <!--<include package="zope.app" />-->
 
     <!-- Session machinery -->
-    <include file="zopeappsession.zcml" />
+    <include file="zcml/zopeappsession.zcml" />
 
     <!-- Browser Configurations -->
-    <include file="zopeappbrowser.zcml" />
+    <include file="zcml/zopeappbrowser.zcml" />
     <!-- <include package="zope.app" file="browser.zcml" /> -->
 
     <include package="canonical" />
@@ -32,10 +32,10 @@
     <includeOverrides file="override-configure.zcml" />
     <includeOverrides file="override-configure-normal.zcml" />
 
-    <include file="securitypolicy.zcml" />
+    <include file="zcml/securitypolicy.zcml" />
 
     <!-- include request summarizer here so it only affects webapp -->
-    <include file="summarizerequests.zcml" />
+    <include file="zcml/summarizerequests.zcml" />
 
     <include package="zc.zservertracelog" />
 
