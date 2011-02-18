@@ -316,6 +316,15 @@
                 set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
         </class>
 
+        <!-- BugTaskSearchParams -->
+        <class
+            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            <allow
+                attributes="
+                    setTarget
+                    "/>
+        </class>
+
         <!-- BugTaskSet -->
 
         <class
