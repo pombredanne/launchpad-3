@@ -308,7 +308,12 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 ', '.join(over_quota_distroseries))
 
     def requestBuild(self, data):
-        """User action for requesting a number of builds."""
+        """User action for requesting a number of builds.
+
+        We raise exceptions for most errors but if there's already a pending
+        build for a particular distroseries, we simply record that so that
+        other builds can ne queued and a message be displayed to the caller.
+        """
         errors = {}
         for distroseries in data['distros']:
             try:
@@ -349,19 +354,34 @@ class SourcePackageRecipeRequestBuildsAjaxView(
     """Supports AJAX form recipe build requests."""
 
     def _process_error(self, data, errors, reason):
+        """Set up the response and json data to return to the caller."""
         self.request.response.setStatus(400, reason)
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(errors)
 
     def failure(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+           We simply convert the errors to json and return that data to the
+           caller for display to the user.
+        """
         return self._process_error(data, self.widget_errors, "Validation")
 
     @action('Request builds', name='request', failure=failure)
     def request_action(self, action, data):
-        """User action for requesting a number of builds."""
+        """User action for requesting a number of builds.
+
+        The failure handler will handle any validation errors. We still need
+        to handle errors which may occur when invoking the business logic.
+        These "expected" errors are ones which result in a predefined message
+        being displayed to the user. If the business method raises an
+        unexpected exception, that will be handled using the form's standard
+        exception processing mechanism (using response code 500).
+        """
         errors = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form.
+        # errors instead of rendering the form. These errors are processed
+        # by the caller's response handler and displayed to the user.
         if errors:
             return self._process_error(data, errors, "Request Build")
 

@@ -76,7 +76,7 @@ class TestRecipeBuild(WindmillTestCase):
         client.waits.forElement(
             xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
                      '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
-            timeout=SLEEP)
+            timeout=FOR_ELEMENT)
 
         # And try the same one again.
         client.click(id=u'request-builds')
