@@ -6,6 +6,7 @@
 # or similar.  Refer to the twistd(1) man page for details.
 
 import os
+import logging
 import tempfile
 
 from twisted.application import service, strports
@@ -25,6 +26,7 @@ from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 
 from lp.poppy.filesystem import UploadFileSystem
+from lp.poppy.hooks import Hooks
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
@@ -59,13 +61,15 @@ class PoppyAnonymousShell(ftp.FTPShell):
         self.uploadfilesystem = UploadFileSystem(tempfile.mkdtemp())
         self._current_upload = self.uploadfilesystem.rootpath
         os.chmod(self._current_upload, 0770)
-        #self._log = logging.getLogger("poppy-sftp")
+        self._log = logging.getLogger("poppy-sftp")
         # XXX fix hooks
-        #self.hook = Hooks(
-        #    self._fs_root, self._log, "ubuntu", perms='g+rws', prefix='-ftp')
-        #self.hook.new_client_hook(self._current_upload, 0, 0)
-        #self.hook.auth_verify_hook(self._current_upload, None, None)
-        super(PoppyAnonymousShell, self).__init__(fsroot)
+        self.hook = Hooks(
+            self._fs_root, self._log, "ubuntu", perms='g+rws',
+            prefix='-twftp')
+        self.hook.new_client_hook(self._current_upload, 0, 0)
+        self.hook.auth_verify_hook(self._current_upload, None, None)
+        super(PoppyAnonymousShell, self).__init__(
+            filepath.FilePath(self._current_upload))
 
     def openForWriting(self, filename):
         self._create_missing_directories(filename)
@@ -90,6 +94,13 @@ class PoppyAnonymousShell(ftp.FTPShell):
         # Same as SFTPServer
         self.uploadfilesystem.rmdir(path)
 
+    def logout(self):
+        """Called when the client disconnects.
+
+        We need to post-process the upload.
+        """
+        self.hook.client_done_hook(self._current_upload, 0, 0)
+
     def _create_missing_directories(self, filename):
         # Same as SFTPServer
         new_dir, new_file = os.path.split(
@@ -105,10 +116,6 @@ class PoppyAnonymousShell(ftp.FTPShell):
 
     def list(self, path_segments, attrs):
         return defer.fail(ftp.CmdNotImplementedError("LIST"))
-
-
-    # XXX Add client_done_hook.
-
 
 
 class PoppyAccessCheck:
@@ -151,7 +158,7 @@ class FTPRealm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         for iface in interfaces:
             if iface is ftp.IFTPShell:
-                avatar = PoppyAnonymousShell(filepath.FilePath(self.root))
+                avatar = PoppyAnonymousShell(self.root)
                 return ftp.IFTPShell, avatar, getattr(
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
