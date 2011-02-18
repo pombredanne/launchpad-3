@@ -565,6 +565,7 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         BadResponseCode,
         ConnectionSkipped,
         ProberTimeout,
+        RedirectToDifferentFile,
         UnknownURLSchemeAfterRedirect,
         )
 
