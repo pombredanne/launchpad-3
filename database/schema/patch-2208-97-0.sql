@@ -1,9 +1,12 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE FeatureFlagChangelogEntry (
-    id serial NOT NULL,
-    date_changed timestamp without time zone NOT NULL
+    id serial PRIMARY KEY,
+    date_changed TIMESTAMP without time zone NOT NULL
         DEFAULT timezone('UTC'::text, now()),
-    diff text NOT NULL);
+    diff text NOT NULL,
+    "comment" text NOT NULL,
+    person INTEGER NOT NULL REFERENCES person (id));
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 97, 0);

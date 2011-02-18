@@ -70,7 +70,8 @@ class FeatureControlView(LaunchpadFormView):
         # minimal.
         new_rules = self.request.features.rule_source.getAllRulesAsText()
         diff = u'\n'.join(self.diff_rules(original_rules, new_rules))
-        ChangeLog.append(diff)
+        # XXX sinzui 2011-02-18: Comment is hardcoded. The form must provide.
+        ChangeLog.append(diff, u'comment', self.user)
         self.diff = FormattersAPI(diff).format_diff()
 
     @staticmethod

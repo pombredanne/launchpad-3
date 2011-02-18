@@ -16,6 +16,7 @@ import pytz
 from storm.locals import (
     DateTime,
     Int,
+    Reference,
     Storm,
     Unicode,
     )
@@ -64,8 +65,13 @@ class FeatureFlagChangelogEntry(Storm):
     id = Int(primary=True)
     date_changed = UtcDateTimeCol(notNull=True)
     diff = Unicode(allow_none=False)
+    comment = Unicode(allow_none=False)
+    person_id = Int(name='person', allow_none=False)
+    person = Reference(person_id, 'Person.id')
 
-    def __init__(self, diff):
+    def __init__(self, diff, comment, person):
         super(FeatureFlagChangelogEntry, self).__init__()
-        self.diff = diff
+        self.diff = unicode(diff)
         self.date_changed = datetime.now(pytz.timezone('UTC'))
+        self.comment = unicode(comment)
+        self.person = person

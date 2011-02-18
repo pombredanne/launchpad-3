@@ -29,9 +29,10 @@ class ChangeLog:
         return rs
 
     @staticmethod
-    def append(diff):
+    def append(diff, comment, person):
         """Append a FeatureFlagChangelogEntry to the ChangeLog."""
         store = getFeatureStore()
-        feature_flag_change = FeatureFlagChangelogEntry(diff)
+        feature_flag_change = FeatureFlagChangelogEntry(
+            diff, comment, person)
         store.add(feature_flag_change)
         return feature_flag_change

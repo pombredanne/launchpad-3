@@ -611,6 +611,8 @@ COMMENT ON COLUMN FeatureFlag.flag IS
 COMMENT ON TABLE FeatureFlagChangelogEntry IS 'A record of changes to the FeatureFlag table.';
 COMMENT ON COLUMN FeatureFlagChangelogEntry.date_changed IS 'The timestamp for when the change was made';
 COMMENT ON COLUMN FeatureFlagChangelogEntry.diff IS 'A unified diff of the change.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.comment IS 'A comment explaining the change.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.person IS 'The person who made this change.';
 
 -- KarmaCategory
 

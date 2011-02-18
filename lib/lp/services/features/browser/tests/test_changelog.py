@@ -22,8 +22,8 @@ from lp.testing.views import create_view
 
 
 diff = (
-    u"-bugs.feature_%(idx)s team:testers 10 on\n"
-    u"+bugs.feature_%(idx)s team:testers 10 off")
+    "-bugs.feature_%(idx)s team:testers 10 on\n"
+    "+bugs.feature_%(idx)s team:testers 10 off")
 
 
 class TestChangeLogView(TestCaseWithFactory):
@@ -34,11 +34,12 @@ class TestChangeLogView(TestCaseWithFactory):
     def setUp(self):
         super(TestChangeLogView, self).setUp()
         self.root = getUtility(ILaunchpadRoot)
+        self.person = self.factory.makePerson()
 
-    @staticmethod
-    def makeFeatureFlagChanges():
+    def makeFeatureFlagChanges(self):
         for i in range(0, 11):
-            ChangeLog.append(diff % dict(idx=i))
+            ChangeLog.append(
+                diff % dict(idx=i), 'comment %s' % i, self.person)
 
     def test_anonymous_no_access(self):
         # Anonymous users cannot access the view.
