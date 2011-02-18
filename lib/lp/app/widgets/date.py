@@ -110,14 +110,14 @@ class DateTimeWidget(TextWidget):
 
     timeformat = '%Y-%m-%d %H:%M:%S'
     supported_input_formats = [
-        '%Y-%m-%d %H:%M:%S%z', 
-        '%Y-%m-%d %H:%M:%S', 
-        '%Y-%m-%d', 
+        '%Y-%m-%d %H:%M:%S%z',
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d',
         '%m-%d-%Y %H:%M:%S%z',
         '%m-%d-%Y %H:%M:%S',
         '%m-%d-%Y',
         ]
-        
+
     required_time_zone = None
     display_zone = True
     from_date = None
@@ -317,7 +317,7 @@ class DateTimeWidget(TextWidget):
 
     def _checkSupportedFormat(self, input):
         """Checks that the input is in a usable format.
-        
+
           >>> from zope.publisher.browser import TestRequest
           >>> from zope.schema import Field
           >>> field = Field(__name__='foo', title=u'Foo')
@@ -384,7 +384,7 @@ class DateTimeWidget(TextWidget):
         """
         if input == self._missing:
             return self.context.missing_value
-        self._checkSupportedFormat(input) 
+        self._checkSupportedFormat(input)
         try:
             year, month, day, hour, minute, second, dummy_tz = parse(input)
             second, micro = divmod(second, 1.0)
@@ -599,6 +599,7 @@ class DateWidget(DateTimeWidget):
 
 class DatetimeDisplayWidget(DisplayWidget):
     """Display timestamps in the users preferred time zone"""
+
     def __call__(self):
         time_zone = getUtility(ILaunchBag).time_zone
         if self._renderedValueSet():
