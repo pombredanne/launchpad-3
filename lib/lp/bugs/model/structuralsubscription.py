@@ -177,6 +177,7 @@ class StructuralSubscription(Storm):
             BugSubscriptionFilter.structural_subscription == self).remove()
         store.remove(self)
 
+
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
 

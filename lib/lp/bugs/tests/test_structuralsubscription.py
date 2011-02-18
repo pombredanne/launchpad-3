@@ -63,8 +63,7 @@ class TestStructuralSubscription(TestCaseWithFactory):
                 store.find(
                     BugSubscriptionFilter,
                     BugSubscriptionFilter.structural_subscription_id ==
-                        subscription_id
-                    ).one(),
+                        subscription_id).one(),
                 None)
 
     def test_bug_filters_default(self):
