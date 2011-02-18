@@ -1,0 +1,16 @@
+This is all a bit speculative.
+
+Entry points
+============
+
+These are the bits of ZCML that are explicitly loaded by Python code. These
+ZCML files in turn load other parts.
+
+  site.zcml
+    The big kahuna. Various config files (e.g. launchpad.conf) refer
+    to this file.
+
+  ftesting.zcml
+    Used to configure the functional testing layer.  Look in
+    canonical.testing.layers to see how it gets hooked in.
+
