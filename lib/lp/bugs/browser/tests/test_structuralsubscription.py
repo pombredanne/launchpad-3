@@ -243,9 +243,12 @@ class TestStructuralSubscriptionAPI(TestCaseWithFactory):
         with person_logged_in(self.owner):
             self.subscription = self.structure.addBugSubscription(
                 self.owner, self.owner)
+            self.initial_filter = self.subscription.bug_filters[0]
         transaction.commit()
         self.service = self.factory.makeLaunchpadService(self.owner)
         self.ws_subscription = ws_object(self.service, self.subscription)
+        self.ws_subscription_filter = ws_object(
+            self.service, self.initial_filter)
 
     def test_newBugFilter(self):
         # New bug subscription filters can be created with newBugFilter().
@@ -263,15 +266,18 @@ class TestStructuralSubscriptionAPI(TestCaseWithFactory):
         bug_filter_links = lambda: set(
             bug_filter.self_link for bug_filter in (
                 self.ws_subscription.bug_filters))
-        self.assertEqual(set(), bug_filter_links())
+        initial_filter_link = self.ws_subscription_filter.self_link
+        self.assertContentEqual(
+            [initial_filter_link], bug_filter_links())
         # A new filter appears in the bug_filters collection.
         ws_subscription_filter1 = self.ws_subscription.newBugFilter()
-        self.assertEqual(
-            set([ws_subscription_filter1.self_link]),
+        self.assertContentEqual(
+            [ws_subscription_filter1.self_link, initial_filter_link],
             bug_filter_links())
         # A second new filter also appears in the bug_filters collection.
         ws_subscription_filter2 = self.ws_subscription.newBugFilter()
-        self.assertEqual(
-            set([ws_subscription_filter1.self_link,
-                 ws_subscription_filter2.self_link]),
+        self.assertContentEqual(
+            [ws_subscription_filter1.self_link,
+             ws_subscription_filter2.self_link,
+             initial_filter_link],
             bug_filter_links())

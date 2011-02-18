@@ -67,7 +67,7 @@ class TestStructuralSubscription(TestCaseWithFactory):
                 None)
 
     def test_bug_filters_default(self):
-        # The bug_filters attribute has a default empty bug filter
+        # The bug_filters attribute has a default non-filtering bug filter
         # to begin with.
         self.assertEqual([self.original_filter],
                          list(self.subscription.bug_filters))
