@@ -75,6 +75,7 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.potranslation import POTranslation
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -173,7 +174,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
                 LIMIT %d
                 )
             """ % (self.table_name, self.table_name, int(chunksize)))
-        self._num_removed = result._raw_cursor.rowcount
+        self._num_removed = result.rowcount
         transaction.commit()
 
     def isDone(self):
@@ -787,6 +788,66 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class POTranslationPruner(TunableLoop):
+    """Remove unlinked POTranslation entries."""
+
+    maximum_chunk_size = 0
+
+    def __init__(self, log, abort_time=None):
+        super(POTranslationPruner, self).__init__(log, abort_time)
+        self.store = IMasterStore(POTranslation)
+        self.store.execute("DROP TABLE IF EXISTS GarbagePOTranslation")
+        self.store.execute("""
+            CREATE TEMPORARY TABLE GarbagePOTranslation AS
+            SELECT POTranslation.id AS potranslation FROM POTranslation
+            EXCEPT (
+                SELECT potranslation FROM POComment
+
+                UNION ALL SELECT msgstr0 FROM TranslationMessage
+                    WHERE msgstr0 IS NOT NULL
+
+                UNION ALL SELECT msgstr1 FROM TranslationMessage
+                    WHERE msgstr1 IS NOT NULL
+
+                UNION ALL SELECT msgstr2 FROM TranslationMessage
+                    WHERE msgstr2 IS NOT NULL
+
+                UNION ALL SELECT msgstr3 FROM TranslationMessage
+                    WHERE msgstr3 IS NOT NULL
+
+                UNION ALL SELECT msgstr4 FROM TranslationMessage
+                    WHERE msgstr4 IS NOT NULL
+
+                UNION ALL SELECT msgstr5 FROM TranslationMessage
+                    WHERE msgstr5 IS NOT NULL
+                )
+            """, noresult=True)
+        self.store.execute("""
+            CREATE INDEX garbagepotranslation__potranslation__idx
+            ON GarbagePOTranslation(potranslation)
+            """, noresult=True)
+        self.offset = 0
+
+    num_removed = None
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.num_removed == 0
+
+    def __call__(self, chunk_size):
+        result = self.store.execute("""
+            DELETE FROM POTranslation
+            USING (
+                SELECT potranslation FROM GarbagePOTranslation
+                OFFSET %d LIMIT %d
+                ) AS LimitedGarbagePOTranslation
+            WHERE POTranslation.id = LimitedGarbagePOTranslation.potranslation
+            """ % (self.offset, chunk_size))
+        self.num_removed = result.rowcount
+        transaction.commit()
+        self.offset += chunk_size
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -895,6 +956,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
+        POTranslationPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
