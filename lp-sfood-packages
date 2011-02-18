@@ -17,7 +17,6 @@ lp/archiveuploader
 lp/archivepublisher
 lp/app
 lp/answers
-canonical/zeca
 canonical/widgets
 canonical/tests
 canonical/testing

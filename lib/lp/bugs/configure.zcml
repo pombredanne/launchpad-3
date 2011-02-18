@@ -58,9 +58,6 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -314,6 +311,15 @@
             <require
                 permission="launchpad.Edit"
                 set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
+        </class>
+
+        <!-- BugTaskSearchParams -->
+        <class
+            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            <allow
+                attributes="
+                    setTarget
+                    "/>
         </class>
 
         <!-- BugTaskSet -->
@@ -732,10 +738,9 @@
                     messages
                     getBugNotificationRecipients
                     hasBranch
-                    reindexMessages
                     security_related
                     tags
-                    getMessageChunks
+                    getMessagesForView
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
@@ -915,9 +920,6 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
